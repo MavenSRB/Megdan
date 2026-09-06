@@ -20,6 +20,7 @@ using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Board;
 using NUnit.Framework;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Tests.EditMode
 {
@@ -1008,6 +1009,11 @@ namespace GuardsDigital.Tests.EditMode
         /// Log rendering per entry kind. Every <see cref="MatchLogEntryKind"/> the selection contract
         /// carries produces a line, ROUND/TURN boundaries render as headers and everything else does
         /// not - a closed switch proved against the closed vocabulary rather than a handful of samples.
+        ///
+        /// <para>It asks <see cref="MatchLogFormatter.ComposeOldestFirst"/> rather than the whole
+        /// view model, because item 2 of the 2026-09-06 refinements made the READING ORDER a second
+        /// decision (<see cref="MatchLogFormatter.NewestFirst"/>) with its own fixtures below. This
+        /// one is about the closed vocabulary only, and stays a straight index-for-index walk.</para>
         /// </summary>
         [Test]
         public void EveryMatchLogEntryKind_RendersItsOwnLineOrHeader()
@@ -1124,12 +1130,12 @@ namespace GuardsDigital.Tests.EditMode
 
             var projection = new MatchLogReadModel(
                 session.Projection, cases.Select(entry => entry.Entry).ToArray(), MatchUndoMarker.None);
-            var viewModel = MatchLogFormatter.CreateViewModel(projection, isOpen: true);
+            var lines = MatchLogFormatter.ComposeOldestFirst(projection);
 
-            Assert.That(viewModel.Lines, Has.Count.EqualTo(cases.Length));
+            Assert.That(lines, Has.Count.EqualTo(cases.Length));
             for (var index = 0; index < cases.Length; index++)
             {
-                var line = viewModel.Lines[index];
+                var line = lines[index];
                 var expected = cases[index];
                 Assert.That(line.Text, Does.Contain(expected.MustContain),
                     $"Case {index} ({expected.Entry.Kind}): '{line.Text}'.");
@@ -1140,11 +1146,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The undo marker: "&lt;HERO&gt; took back N actions", reading last - the current status
-        /// rather than a moment in the history above it.
+        /// The undo marker: "&lt;HERO&gt; took back N actions", reading at the "now" end of the list
+        /// - the current status rather than a moment in the history beside it. Item 2 of the
+        /// 2026-09-06 refinements turned the list around, so that end is now the TOP.
         /// </summary>
         [Test]
-        public void TheUndoMarker_RendersLastAsTheCurrentStatus()
+        public void TheUndoMarker_RendersFirstAsTheCurrentStatus()
         {
             var session = CreateSession();
             var hero = session.Projection.Setup.Heroes.First().HeroId;
@@ -1155,10 +1162,274 @@ namespace GuardsDigital.Tests.EditMode
             var viewModel = MatchLogFormatter.CreateViewModel(projection, isOpen: true);
 
             Assert.That(viewModel.Lines, Has.Count.EqualTo(2));
-            var marker = viewModel.Lines[1];
+            var marker = viewModel.Lines[0];
             Assert.That(marker.Text, Does.Contain("TOOK BACK 2 ACTIONS"));
             Assert.That(marker.Sequence, Is.EqualTo(int.MaxValue),
-                "Reads last - it names no rule event, so it cannot sort by one.");
+                "It names no rule event, so it cannot sort by one - it takes the 'now' end.");
+            Assert.That(viewModel.Lines[1].Text, Does.Contain("ROUND 1"),
+                "And the history reads beneath it.");
+
+            // It is not part of the recorded stream, so the composition step does not carry it at
+            // all - the marker is the view model's own addition and only there.
+            Assert.That(MatchLogFormatter.ComposeOldestFirst(projection), Has.Count.EqualTo(1));
+        }
+
+        /// <summary>
+        /// Item 2 of the 2026-09-06 log drop-down refinements: "NEWEST TEXT ON TOP -
+        /// reverse-chronological ordering, with the ROUND/TURN group headers adapting correctly (the
+        /// newest round's group at the top, entries within a group also newest-first)".
+        /// </summary>
+        /// <remarks>
+        /// The worked example a plain <c>Reverse()</c> gets wrong. Reversed naively, ROUND 1 would
+        /// lead the list and every header would sit UNDER the entries it heads - which is precisely
+        /// the "headers adapting correctly" half of the item. Asserted as an exact expected list
+        /// rather than as a property, so the reading order is legible in the fixture itself.
+        /// </remarks>
+        [Test]
+        public void NewestFirst_LeadsWithTheNewestGroup_AndKeepsEveryHeaderAboveItsOwnEntries()
+        {
+            var lines = new[]
+            {
+                new MatchLogLineViewModel(1, "ROUND 1", isHeader: true),
+                new MatchLogLineViewModel(2, "TURN 1", isHeader: true),
+                new MatchLogLineViewModel(3, "A MOVED", isHeader: false),
+                new MatchLogLineViewModel(4, "A ATTACKED", isHeader: false),
+                new MatchLogLineViewModel(5, "TURN 1 ENDED", isHeader: true),
+                new MatchLogLineViewModel(6, "TURN 2", isHeader: true),
+                new MatchLogLineViewModel(7, "B MOVED", isHeader: false),
+                new MatchLogLineViewModel(8, "ROUND 1 COMPLETE", isHeader: true),
+                new MatchLogLineViewModel(9, "ROUND 2", isHeader: true),
+                new MatchLogLineViewModel(10, "TURN 3", isHeader: true),
+                new MatchLogLineViewModel(11, "C MOVED", isHeader: false)
+            };
+
+            Assert.That(
+                MatchLogFormatter.NewestFirst(lines).Select(line => line.Text).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    "TURN 3",            // the newest group leads,
+                    "C MOVED",           // with its own entries under its own header.
+                    "ROUND 2",
+                    "ROUND 1 COMPLETE",
+                    "TURN 2",
+                    "B MOVED",
+                    "TURN 1 ENDED",
+                    "TURN 1",
+                    "A ATTACKED",        // newest-first WITHIN the group,
+                    "A MOVED",           // still beneath the header that names it.
+                    "ROUND 1"
+                }));
+        }
+
+        /// <summary>
+        /// A retained window truncated mid-round opens with activity lines and no header of their
+        /// own. They form a headerless leading group, reversed like any other - nothing is dropped
+        /// and no header is invented to cover them.
+        /// </summary>
+        [Test]
+        public void NewestFirst_ReversesALeadingRunThatHasNoHeaderOfItsOwn()
+        {
+            var lines = new[]
+            {
+                new MatchLogLineViewModel(1, "A MOVED", isHeader: false),
+                new MatchLogLineViewModel(2, "A ATTACKED", isHeader: false),
+                new MatchLogLineViewModel(3, "TURN 4", isHeader: true),
+                new MatchLogLineViewModel(4, "B MOVED", isHeader: false)
+            };
+
+            Assert.That(
+                MatchLogFormatter.NewestFirst(lines).Select(line => line.Text).ToArray(),
+                Is.EqualTo(new[] { "TURN 4", "B MOVED", "A ATTACKED", "A MOVED" }));
+        }
+
+        /// <summary>
+        /// The ordering step re-orders and ONLY re-orders. Every line in, every line out, none
+        /// added and none reworded.
+        /// </summary>
+        /// <remarks>
+        /// This is the seat-public guarantee stated where it can be checked cheaply: milestone
+        /// 8.35r drew the selection and the privacy predicate once, in <c>MatchLogProjection</c>,
+        /// and a presentation-side re-order must not be able to surface anything that was not
+        /// already in the list handed to it. A permutation cannot.
+        /// </remarks>
+        [Test]
+        public void NewestFirst_IsAPermutation_AndInventsNothing()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var entries = new[]
+            {
+                new MatchLogEntry(1, MatchLogEntryKind.RoundStarted, 1, 0),
+                new MatchLogEntry(2, MatchLogEntryKind.TurnStarted, 1, 1),
+                new MatchLogEntry(3, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero),
+                new MatchLogEntry(4, MatchLogEntryKind.Clear, 1, 1, subjectHeroId: hero),
+                new MatchLogEntry(5, MatchLogEntryKind.TurnEnded, 1, 1, subjectHeroId: hero),
+                new MatchLogEntry(6, MatchLogEntryKind.RoundCompleted, 1, 0)
+            };
+
+            var projection = new MatchLogReadModel(
+                session.Projection, entries, MatchUndoMarker.None);
+            var oldestFirst = MatchLogFormatter.ComposeOldestFirst(projection);
+            var newestFirst = MatchLogFormatter.NewestFirst(oldestFirst);
+
+            Assert.That(newestFirst, Has.Count.EqualTo(oldestFirst.Count));
+            Assert.That(
+                newestFirst.OrderBy(line => line.Sequence).Select(line => line.Text).ToArray(),
+                Is.EqualTo(oldestFirst.OrderBy(line => line.Sequence)
+                    .Select(line => line.Text).ToArray()),
+                "The same lines, in a different order - never a different set of lines.");
+            Assert.That(newestFirst, Is.Not.EqualTo(oldestFirst),
+                "And it really did re-order them.");
+        }
+
+        /// <summary>
+        /// The whole drop-down, end to end, at item 2's own words: the newest activity is the first
+        /// line a player reads under the tray's title.
+        /// </summary>
+        [Test]
+        public void TheDropDown_DrawsTheNewestLineFirstAllTheWayIntoTheElementTree()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var entries = new[]
+            {
+                new MatchLogEntry(1, MatchLogEntryKind.RoundStarted, 1, 0),
+                new MatchLogEntry(2, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero),
+                new MatchLogEntry(3, MatchLogEntryKind.Clear, 1, 1, subjectHeroId: hero)
+            };
+
+            var tray = new MatchLogUnityView();
+            tray.Render(MatchLogFormatter.CreateViewModel(
+                new MatchLogReadModel(session.Projection, entries, MatchUndoMarker.None),
+                isOpen: true));
+
+            var drawn = tray.PanelRoot.Query<Label>().ToList()
+                .Select(label => label.text)
+                .Where(text => !string.IsNullOrEmpty(text))
+                .ToList();
+
+            Assert.That(drawn.First(), Is.EqualTo("MATCH LOG"), "The tray's own title leads.");
+            var clearIndex = drawn.FindIndex(text => text.Contains("CLEARED"));
+            var moveIndex = drawn.FindIndex(text => text.Contains("MOVED"));
+            Assert.That(clearIndex, Is.GreaterThanOrEqualTo(0), "The newest line is drawn.");
+            Assert.That(moveIndex, Is.GreaterThan(clearIndex),
+                "The newer Clear is drawn above the older Move - newest text on top in the real " +
+                "element tree, not only in the view model.");
+        }
+
+        /// <summary>
+        /// Item 3 of the 2026-09-06 log drop-down refinements: "a HEALTHY connection is the default
+        /// state and earns no screen - show NOTHING when connected".
+        /// </summary>
+        [Test]
+        public void AHealthyConnection_DrawsNoBannerAtAll()
+        {
+            var banner = MatchConnectionBanner.For(
+                attached: true,
+                matchStarted: true,
+                state: PrivateSessionClientState.Seated,
+                reconnecting: false,
+                hasProjection: true,
+                waiting: false,
+                feedback: string.Empty,
+                rejection: string.Empty,
+                delayed: false);
+
+            Assert.That(banner.IsShown, Is.False);
+            Assert.That(banner.Text, Is.Empty,
+                "Not merely hidden with its sentence retained - there is nothing to draw.");
+            Assert.That(banner, Is.EqualTo(MatchConnectionBannerViewModel.Hidden));
+        }
+
+        /// <summary>
+        /// The other half of item 3, swept: EVERY state that is not the healthy one earns its
+        /// banner, and every state that words itself "Connected to the host." is the healthy one.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why the sweep is stated against the wording table.</b>
+        /// <see cref="MatchConnectionBanner.EarnsScreen"/> deliberately does NOT read the composed
+        /// sentence back - a wording change would then silently change which states are hidden. So
+        /// the two are kept independent in the code and pinned together here: if
+        /// <c>NetworkMatchFeedback</c> ever grows a second healthy-sounding branch, or the predicate
+        /// drifts from it, this fails rather than a player losing a notice they needed.</para>
+        /// </remarks>
+        [Test]
+        public void EveryStateThatIsNotTheHealthyOne_EarnsItsBanner()
+        {
+            var flags = new[] { false, true };
+            var feedbacks = new[] { string.Empty, "the host refused it" };
+            var seen = 0;
+            var shown = 0;
+
+            foreach (PrivateSessionClientState state in
+                Enum.GetValues(typeof(PrivateSessionClientState)))
+            {
+                foreach (var hasProjection in flags)
+                foreach (var waiting in flags)
+                foreach (var delayed in flags)
+                foreach (var reconnecting in flags)
+                foreach (var feedback in feedbacks)
+                {
+                    seen++;
+                    var wording = NetworkMatchFeedback.ForState(
+                        state, reconnecting, hasProjection, waiting, feedback, "Unknown", delayed);
+                    var earns = MatchConnectionBanner.EarnsScreen(
+                        state, hasProjection, waiting, feedback);
+
+                    Assert.That(earns, Is.EqualTo(wording != "Connected to the host."),
+                        $"{state}/proj:{hasProjection}/wait:{waiting}/fb:'{feedback}' worded " +
+                        $"'{wording}' but EarnsScreen said {earns}.");
+
+                    var banner = MatchConnectionBanner.For(
+                        attached: true,
+                        matchStarted: true,
+                        state: state,
+                        reconnecting: reconnecting,
+                        hasProjection: hasProjection,
+                        waiting: waiting,
+                        feedback: feedback,
+                        rejection: "Unknown",
+                        delayed: delayed);
+                    Assert.That(banner.IsShown, Is.EqualTo(earns));
+                    if (banner.IsShown)
+                    {
+                        shown++;
+                        Assert.That(banner.Text, Is.EqualTo(wording.ToUpperInvariant()),
+                            "A shown banner says exactly what the wording table already says.");
+                    }
+                }
+            }
+
+            Assert.That(seen, Is.GreaterThan(200), "The sweep really did cover the state space.");
+            Assert.That(shown, Is.GreaterThan(0), "And anomalous states really are surfaced.");
+        }
+
+        /// <summary>
+        /// The two structural silences: no online HUD on screen, and a match that has not started.
+        /// Neither is an anomaly to report on the match HUD - the lobby is still drawing its own
+        /// status in its own layout - so neither takes the banner.
+        /// </summary>
+        [Test]
+        public void TheBanner_StaysSilentBeforeTheOnlineHudIsShowingAMatch()
+        {
+            foreach (var (attached, started) in
+                new[] { (false, false), (false, true), (true, false) })
+            {
+                Assert.That(
+                    MatchConnectionBanner.For(
+                        attached,
+                        started,
+                        PrivateSessionClientState.Disconnected,
+                        reconnecting: false,
+                        hasProjection: false,
+                        waiting: false,
+                        feedback: string.Empty,
+                        rejection: "Unknown",
+                        delayed: false).IsShown,
+                    Is.False,
+                    $"attached:{attached} started:{started} - even a Disconnected state draws " +
+                    "nothing here, because this banner is not that surface yet.");
+            }
         }
 
         [Test]

@@ -348,6 +348,23 @@ namespace GuardsDigital.Tests.EditMode
                 ConfiguredMatchHudRenderer.CalculateNarrationBarRect(width, height),
                 Is.EqualTo(new Rect(830f, 56f, 900f, 40f)),
                 "The narration bar is centred beneath the identity row, capped short of both rails.");
+
+            // The 2026-09-06 log drop-down refinements. Item 1 took the 4-unit gap out, so the tray
+            // hangs FLUSH from the strip's own bottom edge and reads as the band unrolling rather
+            // than as a separate box under it; item 3 puts the connection banner beneath the tray's
+            // whole open extent, which is what makes it clear of the drop-down open AND closed.
+            var dropdown = ConfiguredMatchHudRenderer.CalculateMatchLogDropdownRect(width, height);
+            var banner = ConfiguredMatchHudRenderer.CalculateConnectionBannerRect(width, height);
+            Assert.That(dropdown, Is.EqualTo(new Rect(960f, 96f, 640f, 320f)));
+            Assert.That(dropdown.yMin,
+                Is.EqualTo(ConfiguredMatchHudRenderer.CalculateNarrationBarRect(width, height).yMax),
+                "Item 1: flush with the bar it hangs from, with no gap for a floating box to read in.");
+            Assert.That(dropdown.yMin, Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight),
+                "Which is also the strip's own bottom edge - the two are the same line.");
+            Assert.That(banner, Is.EqualTo(new Rect(1020f, 428f, 520f, 40f)));
+            Assert.That(banner.width, Is.LessThan(dropdown.width),
+                "Item 3 demotes the notice: it is narrower than the log it sits under, so it reads " +
+                "as a note rather than as a second competing panel.");
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
                     width, height, TeamSide.Red),
@@ -407,6 +424,79 @@ namespace GuardsDigital.Tests.EditMode
                 ConfiguredMatchHudRenderer.CalculateTieBreakerRailBannerRect(
                     width, height, TeamSide.Blue)), Is.False,
                 "End Turn keeps a clear gap from the banner above the rail it sits beside.");
+        }
+
+        /// <summary>
+        /// Item 3 of the 2026-09-06 log drop-down refinements, proved offline at every viewport
+        /// rather than eyeballed at one: the connection banner is clear of the narration bar and of
+        /// the match-log drop-down, "verified against both open and closed states".
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why one rectangle answers both states.</b> A closed drop-down draws nothing, so
+        /// its rectangle is the largest either state occupies - clearing the OPEN extent clears the
+        /// closed one by containment. Placing the banner state-dependently would have needed two
+        /// checks and could have been wrong in exactly one of them, which is the shape of the defect
+        /// this item reports.</para>
+        /// <para><b>Why the degenerate viewports are in the sweep.</b> The overlap the user
+        /// screenshotted was a percentage-based rectangle agreeing with a reference-unit one at the
+        /// reference and nowhere else. So the guarantee is asserted where it is hardest: a panel
+        /// far too short to seat a 320-unit tray at all, where the drop-down's own height budget is
+        /// what has to give the banner its band.</para>
+        /// </remarks>
+        [Test]
+        public void TheConnectionBanner_ClearsTheNarrationBarAndTheLogDropdown_AtEveryViewport()
+        {
+            var panels = new List<Vector2>();
+            foreach (var device in ReferenceShapedResolutions)
+            {
+                panels.Add(MatchHudPanelScaling.ReferenceViewport(device.x, device.y));
+            }
+
+            // Off-16:9 and deliberately degenerate panels, stated directly rather than resolved from
+            // a device size, so the short cases really are short.
+            panels.Add(new Vector2(2560f, 1440f));
+            panels.Add(new Vector2(3440f, 1440f));
+            panels.Add(new Vector2(1280f, 1024f));
+            panels.Add(new Vector2(1280f, 800f));
+            panels.Add(new Vector2(778f, 300f));
+            panels.Add(new Vector2(640f, 200f));
+            panels.Add(new Vector2(400f, 140f));
+            panels.Add(new Vector2(300f, 100f));
+
+            foreach (var panel in panels)
+            {
+                var narration = ConfiguredMatchHudRenderer.CalculateNarrationBarRect(panel.x, panel.y);
+                var dropdown = ConfiguredMatchHudRenderer.CalculateMatchLogDropdownRect(
+                    panel.x, panel.y);
+                var banner = ConfiguredMatchHudRenderer.CalculateConnectionBannerRect(
+                    panel.x, panel.y);
+
+                Assert.That(banner.Overlaps(narration), Is.False,
+                    $"{panel}: the banner reaches the narration bar {narration} at {banner}.");
+                Assert.That(banner.Overlaps(dropdown), Is.False,
+                    $"{panel}: the banner reaches the OPEN drop-down {dropdown} at {banner}.");
+                Assert.That(banner.yMin, Is.GreaterThanOrEqualTo(dropdown.yMax),
+                    $"{panel}: the banner sits beneath the whole drop-down, not beside part of it.");
+                Assert.That(banner.xMin, Is.GreaterThanOrEqualTo(0f), $"{panel}: on-panel left edge.");
+                Assert.That(banner.xMax, Is.LessThanOrEqualTo(panel.x), $"{panel}: on-panel right edge.");
+
+                // Staying ON the panel vertically is asserted from the shortest panel any fixture
+                // here uses (778x300) upward. Below roughly 172 units the strip alone is taller than
+                // the panel and EVERY element placed under it hangs off the bottom - the TIEBREAKER
+                // rail banner at StatusBarHeight + Margin does too - so a stricter bound here would
+                // be asserting something this HUD has never claimed. The non-overlap guarantee above
+                // is asserted at those sizes regardless, because that IS the item's claim.
+                if (panel.y >= 300f)
+                {
+                    Assert.That(banner.yMax, Is.LessThanOrEqualTo(panel.y),
+                        $"{panel}: and it stays on the panel while doing it.");
+                }
+
+                // A closed drop-down draws nothing at all, so the same banner is trivially clear of
+                // it; stated so the "both open and closed states" reading is not left implicit.
+                Assert.That(banner.Overlaps(new Rect(dropdown.x, dropdown.y, dropdown.width, 0f)),
+                    Is.False, $"{panel}: and clear of the closed drop-down's own zero extent.");
+            }
         }
 
         /// <summary>

@@ -164,8 +164,16 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(director == null || director.style.display.value == DisplayStyle.None, Is.True);
             var status = lobby.GetComponent<UIDocument>().rootVisualElement.Q<Label>(
                 PrivateLobbyDriver.MatchStatusName);
-            Assert.That(status.style.display.value, Is.EqualTo(DisplayStyle.Flex));
-            Assert.That(status.text, Does.Contain("CONNECTED"));
+            // Item 3 of the 2026-09-06 log drop-down refinements INVERTED this assertion, and
+            // deliberately: it used to read Flex + "CONNECTED", which is precisely the banner the
+            // user screenshotted sitting across the open match log's header. "A HEALTHY connection
+            // is the default state and earns no screen - show NOTHING when connected." The seat is
+            // still proved connected by everything around this line (the read model, the seat id,
+            // the private hand); it is simply no longer proved by a slab of chrome saying so.
+            Assert.That(status.style.display.value, Is.EqualTo(DisplayStyle.None),
+                "A healthy connection draws no banner at all.");
+            Assert.That(status.text, Is.Empty,
+                "And it is genuinely empty, not merely hidden with its sentence retained.");
 
             var initialHands = root.Runtime.HandsView.Model;
             var initialVersion = client.LatestProjection.Version;

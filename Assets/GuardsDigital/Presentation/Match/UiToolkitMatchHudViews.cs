@@ -650,6 +650,30 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class MatchStatusBarUnityView
     {
+        /// <summary>
+        /// The corner radius the strip's own narration pill is drawn at.
+        /// </summary>
+        /// <remarks>
+        /// Named and exposed by item 1 of the 2026-09-06 log drop-down refinements ("make the
+        /// dropdown match the top, not to be different like this"). The match-log drop-down reads
+        /// THIS rather than repeating the number, so "the tray matches the strip" is one shared
+        /// source instead of two literals that happen to agree today - which is the whole failure
+        /// the item reports, in the small.
+        /// </remarks>
+        public const float CornerRadius = 14f;
+
+        /// <summary>The strip's own left inset, shared with the drop-down that hangs from it.</summary>
+        public const float PaddingLeft = 14f;
+
+        /// <summary>The strip's own right inset, shared with the drop-down that hangs from it.</summary>
+        public const float PaddingRight = 12f;
+
+        /// <summary>
+        /// The hairline the strip closes its band with, and the weight every border in this
+        /// family is drawn at.
+        /// </summary>
+        public const float BorderWidth = 1f;
+
         private readonly VisualElement content;
         private readonly VisualElement identityRow;
         private readonly VisualElement narrationLane;
@@ -665,9 +689,9 @@ namespace GuardsDigital.Presentation.Match
             // width-capped, centred bar rather than a full-width flex row - see Layout/Render below -
             // so Root itself no longer needs a column flex layout to stack the two.
             Root.style.overflow = Overflow.Hidden;
-            Root.style.paddingLeft = 14f;
-            Root.style.paddingRight = 12f;
-            Root.style.borderBottomWidth = 1f;
+            Root.style.paddingLeft = PaddingLeft;
+            Root.style.paddingRight = PaddingRight;
+            Root.style.borderBottomWidth = BorderWidth;
             Root.style.borderBottomColor = MatchHudTheme.PanelBorder;
 
             identityRow = new VisualElement { name = "gd-topbar-identity" };
@@ -700,7 +724,7 @@ namespace GuardsDigital.Presentation.Match
             narrationLane.style.overflow = Overflow.Hidden;
             narrationLane.style.paddingLeft = 14f;
             narrationLane.style.paddingRight = 10f;
-            HudElements.Border(narrationLane, MatchHudTheme.PanelBorder, 1f, 14f);
+            HudElements.Border(narrationLane, MatchHudTheme.PanelBorder, BorderWidth, CornerRadius);
             Root.Add(narrationLane);
         }
 
@@ -793,7 +817,7 @@ namespace GuardsDigital.Presentation.Match
             Root.style.backgroundColor = background;
             Root.style.borderBottomColor = borderColor;
             narrationLane.style.backgroundColor = background;
-            HudElements.Border(narrationLane, borderColor, 1f, 14f);
+            HudElements.Border(narrationLane, borderColor, BorderWidth, CornerRadius);
 
             content.Clear();
             content.Add(HudElements.Text(
@@ -6702,19 +6726,63 @@ namespace GuardsDigital.Presentation.Match
             });
             ToggleRoot = toggle;
 
-            PanelRoot = HudElements.Panel(MatchHudTheme.PanelBackground);
+            // Item 1 of the 2026-09-06 log drop-down refinements, the user's own words: "make the
+            // dropdown match the top, not to be different like this". Every value below is READ FROM
+            // the top strip rather than restated, so the two cannot drift again: the band's own
+            // background (this drew MatchHudTheme.PanelBackground - a lighter, different dark - which
+            // is the "foreign dark box floating under the bar" the item reports, in one line), the
+            // strip's border colour and weight, its corner radius and its two horizontal insets.
+            PanelRoot = HudElements.Panel(MatchHudTheme.TopBarBackground);
             PanelRoot.name = "gd-match-log";
             PanelRoot.style.position = Position.Absolute;
             PanelRoot.style.display = DisplayStyle.None;
             PanelRoot.style.flexDirection = FlexDirection.Column;
-            HudElements.Padding(PanelRoot, 10f);
-            HudElements.Border(PanelRoot, MatchHudTheme.PanelBorder, 1f, 4f);
-            panelTitle = HudElements.Text("MATCH LOG", 11f, MatchHudTheme.MutedText, FontStyle.Bold);
+            PanelRoot.style.paddingLeft = MatchStatusBarUnityView.PaddingLeft;
+            PanelRoot.style.paddingRight = MatchStatusBarUnityView.PaddingRight;
+            PanelRoot.style.paddingTop = TrayVerticalPadding;
+            PanelRoot.style.paddingBottom = TrayVerticalPadding;
+            HudElements.Border(
+                PanelRoot,
+                MatchHudTheme.PanelBorder,
+                MatchStatusBarUnityView.BorderWidth,
+                MatchStatusBarUnityView.CornerRadius);
+            // The tray hangs FLUSH from the strip's bottom edge (see
+            // ConfiguredMatchHudRenderer.CalculateMatchLogDropdownRect), so the seam where the two
+            // meet is squared and unbordered - the strip's own bottom hairline is already drawn
+            // there, and a second one plus two rounded corners is what made this read as a separate
+            // box rather than as the band unrolling. The three free edges keep the strip's radius.
+            PanelRoot.style.borderTopWidth = 0f;
+            PanelRoot.style.borderTopLeftRadius = 0f;
+            PanelRoot.style.borderTopRightRadius = 0f;
+
+            // The strip's own label type - MutedText at the identity row's size, bold - closed with
+            // the same hairline the strip closes its band with, so the tray's header row echoes the
+            // seam above it instead of inventing a second heading treatment.
+            panelTitle = HudElements.Text(
+                "MATCH LOG", TrayLabelFontSize, MatchHudTheme.MutedText, FontStyle.Bold);
+            panelTitle.style.paddingBottom = 6f;
+            panelTitle.style.marginBottom = 6f;
+            panelTitle.style.borderBottomWidth = MatchStatusBarUnityView.BorderWidth;
+            panelTitle.style.borderBottomColor = MatchHudTheme.PanelBorder;
+
             entries = new ScrollView(ScrollViewMode.Vertical);
             entries.style.flexGrow = 1f;
             PanelRoot.Add(panelTitle);
             PanelRoot.Add(entries);
         }
+
+        /// <summary>
+        /// The tray's own top and bottom inset. The strip states only its horizontal ones (it sizes
+        /// its two rows by height instead), so this is the one padding the tray has to name itself;
+        /// it is the strip's smaller horizontal inset, so the box still reads as evenly inset.
+        /// </summary>
+        private const float TrayVerticalPadding = 10f;
+
+        /// <summary>
+        /// The type size the strip's own identity-row labels are drawn at (ROUND/TURN, the Wave
+        /// count), which the tray's title and lines now share - the "panel language" half of item 1.
+        /// </summary>
+        private const float TrayLabelFontSize = 12f;
 
         public VisualElement ToggleRoot { get; }
 
@@ -6741,6 +6809,7 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
+            var wasOpen = Model?.IsOpen == true;
             Model = model ?? throw new ArgumentNullException(nameof(model));
             toggle.text = Model.ToggleLabel;
             PanelRoot.style.display = Model.IsOpen ? DisplayStyle.Flex : DisplayStyle.None;
@@ -6754,9 +6823,18 @@ namespace GuardsDigital.Presentation.Match
             {
                 entries.Add(HudElements.Text(
                     line.Text,
-                    11f,
+                    TrayLabelFontSize,
                     line.IsHeader ? MatchHudTheme.MutedText : MatchHudTheme.PrimaryText,
                     line.IsHeader ? FontStyle.Bold : FontStyle.Normal));
+            }
+
+            // Item 2's last clause: "scroll position rests at top showing the latest". The list is
+            // newest-first, so the top IS the latest and an opening tray only has to start there.
+            // Only on the closed -> open transition, never on a later refresh: a new entry arriving
+            // while somebody is reading back through the history must not yank them to the top.
+            if (!wasOpen)
+            {
+                entries.scrollOffset = Vector2.zero;
             }
         }
 

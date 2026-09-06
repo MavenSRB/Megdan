@@ -680,19 +680,29 @@ namespace GuardsDigital.Presentation.Interaction
             BuildPanel();
             view = new PrivateLobbyUnityView();
             document.rootVisualElement?.Add(view.Root);
+            // Item 3 of the 2026-09-06 log drop-down refinements. This notice used to be a 30%-wide,
+            // 18pt slab pinned at top:92 in a mixed percent/reference geometry - which put it across
+            // x 896..1664, y 92..136 at the reference viewport, straight over the open match log's
+            // own header band (x 960..1600, y 96..416). It is now demoted on all three counts the
+            // item names: it is HIDDEN outright while the connection is healthy, it is placed by
+            // ConfiguredMatchHudRenderer.CalculateConnectionBannerRect clear of both the narration
+            // bar and the drop-down's full open extent, and it wears the HUD's own panel chrome at
+            // the strip's own type size rather than an ad-hoc dark slab twice everything else's.
             matchStatus = new Label { name = MatchStatusName };
             matchStatus.style.position = Position.Absolute;
-            matchStatus.style.top = 92f;
-            matchStatus.style.left = new StyleLength(new Length(35f, LengthUnit.Percent));
-            matchStatus.style.width = new StyleLength(new Length(30f, LengthUnit.Percent));
-            matchStatus.style.minHeight = 44f;
             matchStatus.style.unityTextAlign = TextAnchor.MiddleCenter;
-            matchStatus.style.fontSize = 18f;
-            matchStatus.style.color = new Color(0.93f, 0.94f, 0.96f, 1f);
-            matchStatus.style.backgroundColor = new Color(0.06f, 0.07f, 0.09f, 0.94f);
+            matchStatus.style.fontSize = ConnectionBannerFontSize;
+            matchStatus.style.color = MatchHudTheme.PrimaryText;
+            matchStatus.style.backgroundColor = MatchHudTheme.PanelBackground;
+            HudElements.Border(
+                matchStatus,
+                MatchHudTheme.PanelBorder,
+                MatchStatusBarUnityView.BorderWidth,
+                MatchStatusBarUnityView.CornerRadius);
             matchStatus.style.display = DisplayStyle.None;
             matchStatus.pickingMode = PickingMode.Ignore;
             document.rootVisualElement?.Add(matchStatus);
+            LayoutMatchStatus();
             presenter = new PrivateLobbyPresenter(view);
             view.ControlPressed += (control, entry) => presenter.Press(control, entry);
             // Milestone 8.35z37. Clicking a hero only says which one the next PICK HERO
@@ -938,6 +948,41 @@ namespace GuardsDigital.Presentation.Interaction
             return builder.ToString();
         }
 
+        /// <summary>
+        /// The connection banner's own type size. The strip's identity row reads at 12-13 and the
+        /// narration at its own larger size; this sits just above the labels so an anomaly is
+        /// noticed without competing with the line the whole HUD is built around - item 3's
+        /// "demoted", in one number (it was 18).
+        /// </summary>
+        private const float ConnectionBannerFontSize = 14f;
+
+        /// <summary>
+        /// Puts the banner where item 3 asks for it: clear of the narration bar and of the match-log
+        /// drop-down's full open extent, in the panel's own reference units.
+        /// </summary>
+        /// <remarks>
+        /// The lobby's <c>UIDocument</c> loads the SAME <c>PanelSettings</c> the HUD does (see
+        /// <c>BuildPanel</c>), so the two coordinate spaces are one space and this rectangle can be
+        /// stated in the HUD's own terms rather than in the percentages it used to mix with them.
+        /// Re-stated on every status render, so a window resized between two states still places it
+        /// correctly; at every supported viewport the rectangle is the same one anyway, because both
+        /// terms it derives from are capped well inside the panel.
+        /// </remarks>
+        private void LayoutMatchStatus()
+        {
+            if (matchStatus == null)
+            {
+                return;
+            }
+
+            var viewport = MatchHudPanelScaling.CurrentReferenceViewport();
+            var rect = ConfiguredMatchHudRenderer.CalculateConnectionBannerRect(viewport.x, viewport.y);
+            matchStatus.style.left = rect.x;
+            matchStatus.style.top = rect.y;
+            matchStatus.style.width = rect.width;
+            matchStatus.style.height = rect.height;
+        }
+
         private void RenderMatchStatus()
         {
             if (matchStatus == null)
@@ -945,9 +990,26 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            var show = onlineHudAttached && machine != null && machine.HasMatchStarted;
-            matchStatus.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
-            matchStatus.text = show ? NetworkMatchFeedback.For(machine).ToUpperInvariant() : string.Empty;
+            // Item 3 of the 2026-09-06 log drop-down refinements: "a HEALTHY connection is the
+            // default state and earns no screen". The decision itself is MatchConnectionBanner's, so
+            // that every state it hides and every state it surfaces is provable in an Edit Mode
+            // fixture rather than only in a running six-client session.
+            var banner = machine == null
+                ? MatchConnectionBannerViewModel.Hidden
+                : MatchConnectionBanner.For(
+                    onlineHudAttached,
+                    machine.HasMatchStarted,
+                    machine.State,
+                    machine.IsReconnecting,
+                    machine.LatestProjection != null,
+                    machine.IsWaitingForHost,
+                    machine.MatchFeedback,
+                    machine.RejectionReason.ToString(),
+                    machine.IsHostResponseDelayed);
+
+            LayoutMatchStatus();
+            matchStatus.style.display = banner.IsShown ? DisplayStyle.Flex : DisplayStyle.None;
+            matchStatus.text = banner.Text;
         }
 
         /// <summary>

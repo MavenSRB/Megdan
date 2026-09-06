@@ -435,6 +435,20 @@ namespace GuardsDigital.Core.Participants
         /// The verified printed set a hero deals, by hero id. One place names the six, so a
         /// configuration that deals four of them cannot deal a different Wasp than one dealing six.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z41. The printed set this build deals for one hero id, so a fixture can
+        /// assert that every hero a selector OFFERS can actually be dealt. `DEV-005`.
+        /// </summary>
+        /// <remarks>
+        /// The roster a picker reads and the switch below are two halves of one claim, and a hero
+        /// present in the first but absent from the second is a pick that throws at the moment the
+        /// match composes. Exposing the real factory rather than a reflection of the switch is the
+        /// point: the assertion has to be able to observe the throw.
+        /// </remarks>
+        public static ConfiguredHand CreateVerifiedHandForInternalTest(
+            string heroIdValue, string instancePrefix) =>
+            CreateVerifiedHand(heroIdValue, instancePrefix);
+
         private static ConfiguredHand CreateVerifiedHand(string heroIdValue, string instancePrefix)
         {
             var heroId = new HeroId(heroIdValue);
@@ -452,6 +466,16 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.BroganCardContent.CreateHand(heroId, instancePrefix);
                 case OfficialSixPlayerParticipants.SabinaHeroIdValue:
                     return Cards.Verified.SabinaCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.35z41. The two heroes this build deals through a staged configuration
+                // rather than through the printed line-up. Until now a line-up could not name them
+                // because this switch is what deals a selected hero's cards, so making them
+                // OFFERABLE without adding them here would have offered a pick that threw at the
+                // moment the match composed. The roster and this switch are the two halves of one
+                // claim; a fixture asserts every offerable hero deals rather than trusting either.
+                case Setup.QuickGameSetupConfiguration.DodgerHeroIdValue:
+                    return Cards.Verified.DodgerCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.MisaHeroIdValue:
+                    return Cards.Verified.MisaCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",

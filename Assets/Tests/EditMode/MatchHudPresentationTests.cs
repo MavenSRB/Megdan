@@ -4469,12 +4469,93 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(logIndex, Is.GreaterThan(railIndex),
                     "The drop-down must be added AFTER the hero rails so it paints above them, " +
                     "never clipped behind a rail column.");
+
+                // The rest of the tray's paint-order neighbourhood, checked at the same time as the
+                // rail it was actually clipped behind. Item 1 makes the tray read as the top strip
+                // unrolling, which only works while it paints ABOVE the strip's own band; and the
+                // tooltip layer stays above everything, the tray included.
+                var stripIndex = children.FindIndex(child => child.name == "gd-topbar");
+                var bannerIndex = children.FindIndex(
+                    child => child.name == "gd-tie-breaker-rail-banner");
+                Assert.That(stripIndex, Is.GreaterThanOrEqualTo(0));
+                Assert.That(logIndex, Is.GreaterThan(stripIndex),
+                    "The drop-down paints above the strip it unrolls from, so the seam between " +
+                    "them is the tray's own squared top edge and never the strip's border over it.");
+                if (bannerIndex >= 0)
+                {
+                    Assert.That(logIndex, Is.GreaterThan(bannerIndex),
+                        "And above the TIEBREAKER rail banner, the other element added between the " +
+                        "rails and it.");
+                }
+
+                Assert.That(logIndex, Is.LessThan(children.Count - 1),
+                    "The tray is not the topmost layer either - the tooltip layer and the corner " +
+                    "controls are still added after it, so a tooltip is never drawn under the log.");
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(host);
             }
         }
+
+        /// <summary>
+        /// Item 1 of the 2026-09-06 log drop-down refinements, in the user's own words: "make the
+        /// dropdown match the top, not to be different like this". The tray drew
+        /// <c>MatchHudTheme.PanelBackground</c> - a lighter, different dark than the band above it -
+        /// at a 4-unit corner radius and a 10-unit even inset, which is the "foreign dark box
+        /// floating under the bar" the item reports.
+        /// </summary>
+        /// <remarks>
+        /// Every assertion here reads the STRIP's own constant rather than a literal, so this fails
+        /// if either side moves alone. That is the point: the defect was two independent styles that
+        /// disagreed, and a fixture comparing the tray against a hard-coded copy of today's strip
+        /// would let them disagree again the moment the strip changed.
+        /// </remarks>
+        [Test]
+        public void MatchLogDropdown_WearsTheTopStripsOwnBandChrome()
+        {
+            var strip = new MatchStatusBarUnityView();
+            var tray = new MatchLogUnityView();
+
+            Assert.That(tray.PanelRoot.style.backgroundColor.value,
+                Is.EqualTo(strip.Root.style.backgroundColor.value),
+                "The tray is painted in the band's own colour, not the panel chrome's lighter one.");
+            Assert.That(tray.PanelRoot.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.TopBarBackground));
+            Assert.That(tray.PanelRoot.style.backgroundColor.value,
+                Is.Not.EqualTo(MatchHudTheme.PanelBackground),
+                "Which is exactly the colour it used to be, and the one the user called foreign.");
+
+            Assert.That(tray.PanelRoot.style.paddingLeft.value.value,
+                Is.EqualTo(MatchStatusBarUnityView.PaddingLeft));
+            Assert.That(tray.PanelRoot.style.paddingRight.value.value,
+                Is.EqualTo(MatchStatusBarUnityView.PaddingRight));
+            Assert.That(tray.PanelRoot.style.paddingLeft.value.value,
+                Is.EqualTo(strip.Root.style.paddingLeft.value.value),
+                "The two are inset by the same amount, read from one source.");
+
+            Assert.That(tray.PanelRoot.style.borderBottomColor.value,
+                Is.EqualTo(MatchHudTheme.PanelBorder));
+            Assert.That(tray.PanelRoot.style.borderBottomColor.value,
+                Is.EqualTo(strip.Root.style.borderBottomColor.value),
+                "Same hairline colour the strip closes its own band with.");
+            Assert.That(tray.PanelRoot.style.borderBottomWidth.value,
+                Is.EqualTo(MatchStatusBarUnityView.BorderWidth));
+
+            Assert.That(tray.PanelRoot.style.borderBottomLeftRadius.value.value,
+                Is.EqualTo(MatchStatusBarUnityView.CornerRadius));
+            Assert.That(tray.PanelRoot.style.borderBottomRightRadius.value.value,
+                Is.EqualTo(MatchStatusBarUnityView.CornerRadius));
+
+            // The seam. The tray hangs flush from the strip's bottom edge, so its top edge is a join
+            // rather than an outline: squared, and unbordered because the strip's own bottom hairline
+            // is already drawn on that exact line.
+            Assert.That(tray.PanelRoot.style.borderTopLeftRadius.value.value, Is.Zero);
+            Assert.That(tray.PanelRoot.style.borderTopRightRadius.value.value, Is.Zero);
+            Assert.That(tray.PanelRoot.style.borderTopWidth.value, Is.Zero,
+                "One hairline on the seam, not the strip's plus the tray's stacked on it.");
+        }
+
 
         [Test]
         public void EndTurn_ShinesFullyExactlyWhenItIsTheOnlyOfferLeft()

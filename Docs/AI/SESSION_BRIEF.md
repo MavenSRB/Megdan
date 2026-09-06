@@ -8,11 +8,11 @@ Read this compact startup route once per new task before planning or changing th
 
 ## Current implementation
 
-The route has completed approved local HUD, rules, lifecycle, six-seat, and private-online work through **8.35z39**. **The default match is rulebook p.5's six-player Quick Game**: six heroes, three Waves, five Lives a side, the Tie Breaker, twelve minions, 108 cards - with pp.5-6's 2v2 and both lengths selectable since **8.35z16**. Its director and six authorized local seat clients prove all victory causes plus replay, restore, retained-prefix Undo, restart, snapshots, and event logs. Unity 6000.5.9f1 with URP 17.5 is the checked-in baseline; the board/HUD and Win64 smoke path are intact. All six heroes pass the permanent player-path gate, all 114 roster fronts are source-verified, and schema v38 persists every pause and pins the content contract set. `RISK-SCALE-001` is retired; `RISK-ONLINE-001` stays active through the invited-internet gate. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the shards below.
+The route has completed approved local HUD, rules, lifecycle, six-seat, and private-online work through **8.35z41**. **The default match is rulebook p.5's six-player Quick Game**: six heroes, three Waves, five Lives a side, the Tie Breaker, twelve minions, 108 cards - with pp.5-6's 2v2 and both lengths selectable since **8.35z16**. Its director and six authorized local seat clients prove all victory causes plus replay, restore, retained-prefix Undo, restart, snapshots, and event logs. Unity 6000.5.9f1 with URP 17.5 is the checked-in baseline; the board/HUD and Win64 smoke path are intact. All six heroes pass the permanent player-path gate, all 114 roster fronts are source-verified, and schema v38 persists every pause and pins the content contract set. `RISK-SCALE-001` is retired; `RISK-ONLINE-001` stays active through the invited-internet gate. Exact behavior and gaps live in [Project/CURRENT_IMPLEMENTATION.md](Project/CURRENT_IMPLEMENTATION.md) and the shards below.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.35z39**.
+- Current completed milestone: **8.35z41**.
 - Active authorized milestone: **8.36**, readiness recorded and the invited playtest outstanding.
 - Next proposed milestone: **8.36**.
 

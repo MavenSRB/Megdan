@@ -227,6 +227,32 @@ namespace GuardsDigital.Presentation.Match
         private const float MatchLogDropdownHeight = 320f;
 
         /// <summary>
+        /// The connection banner's own width, in reference units. Item 3 of the 2026-09-06 log
+        /// drop-down refinements demotes this notice - it is narrower than the drop-down it sits
+        /// under so that an anomalous connection reads as a note beneath the log rather than as a
+        /// second, competing panel across the top of the screen.
+        /// </summary>
+        private const float ConnectionBannerWidth = 520f;
+
+        /// <summary>The connection banner's own height, in reference units.</summary>
+        private const float ConnectionBannerHeight = 40f;
+
+        /// <summary>
+        /// The band beneath the match-log drop-down that the connection banner is guaranteed to
+        /// find free, in reference units - its own height plus the margin above it.
+        ///
+        /// <para><b>Why the drop-down's height budget subtracts this rather than the banner's rect
+        /// clamping itself into whatever is left.</b> Item 3 asks for a banner "placed clear of the
+        /// narration bar and the log drop-down (verify against both open and closed states)". A
+        /// clamp would hold at the reference viewport and quietly fail on a short one, which is the
+        /// exact shape of the overlap this item exists to remove. Reserving the band inside
+        /// <see cref="CalculateMatchLogDropdownRect"/> instead makes the clearance structural at
+        /// EVERY viewport - and costs nothing at any supported one, where the drop-down's own
+        /// <see cref="MatchLogDropdownHeight"/> is the smaller of the two terms anyway.</para>
+        /// </summary>
+        private const float ConnectionBannerReservedBand = ConnectionBannerHeight + Margin;
+
+        /// <summary>
         /// The identity row of the standing status strip: the build name, the round and turn, both
         /// Life counters, the Wave count, and the Tie Breaker chip. It is what the whole strip was
         /// before milestone 8.30b, and the chip's rectangle is still measured against it, so widening
@@ -654,7 +680,7 @@ namespace GuardsDigital.Presentation.Match
                 (IsDirectorDrawerOpen && GetDirectorDrawerRect().Contains(panelPosition)) ||
                 (diagnostics?.Model?.IsExpanded == true && GetRuleEventLogRect().Contains(panelPosition)) ||
                 (matchLog?.Model?.IsOpen == true &&
-                    GetMatchLogDropdownRect(GetNarrationBarRect()).Contains(panelPosition)))
+                    GetMatchLogDropdownRect().Contains(panelPosition)))
             {
                 return true;
             }
@@ -1138,7 +1164,7 @@ namespace GuardsDigital.Presentation.Match
             var bar = CalculateStatusBarRect(width, height);
             var narrationBar = CalculateNarrationBarRect(width, height);
             statusBar?.Layout(bar, narrationBar);
-            matchLog?.Layout(GetMatchLogDropdownRect(narrationBar));
+            matchLog?.Layout(CalculateMatchLogDropdownRect(width, height));
             LayoutTieBreakerRailBanner(width, height);
             // Milestone 8.25f2. The tray is a transparent full-width layout band. Its fixed ordinary
             // height fits one 420-unit face plus only card chrome, while the five faces overlap inside
@@ -1961,20 +1987,60 @@ namespace GuardsDigital.Presentation.Match
         /// so a preferred width wider than a narrow bar still centres on the SCREEN rather than
         /// overflowing it; clear of both hero rail columns by construction, the same guarantee
         /// <see cref="CalculateNarrationBarRect"/> gives the bar itself.
+        ///
+        /// <para><b>Item 1 of the 2026-09-06 log drop-down refinements ("make the dropdown match the
+        /// top, not to be different like this") took the 4-unit gap out.</b> The tray now hangs
+        /// FLUSH from <c>narrationBar.yMax</c>, which is exactly the strip's own bottom edge, so the
+        /// panel reads as the band unrolling rather than as a separate box floating below it - and
+        /// the squared top corners <see cref="MatchLogUnityView"/> now draws only read as a seam
+        /// because there is no gap for them to hang over.</para>
+        ///
+        /// <para>Stated as a function of the viewport, and public, for the reason
+        /// <see cref="CalculateNarrationBarRect"/> is: a fixture with no live panel has to be able
+        /// to ask where this lands at a viewport it is not running at - which is what lets the
+        /// connection banner's clearance be PROVED offline rather than eyeballed in a screenshot.</para>
         /// </summary>
-        private static Rect GetMatchLogDropdownRect(Rect narrationBar)
+        public static Rect CalculateMatchLogDropdownRect(float panelWidth, float panelHeight)
         {
-            var viewport = PanelViewport;
-            var width = Mathf.Min(MatchLogDropdownWidth, Mathf.Max(0f, viewport.x - (Margin * 2f)));
+            var narrationBar = CalculateNarrationBarRect(panelWidth, panelHeight);
+            var width = Mathf.Min(MatchLogDropdownWidth, Mathf.Max(0f, panelWidth - (Margin * 2f)));
             var height = Mathf.Min(
                 MatchLogDropdownHeight,
-                Mathf.Max(0f, viewport.y - narrationBar.yMax - (Margin * 2f)));
+                Mathf.Max(
+                    0f,
+                    panelHeight - narrationBar.yMax - (Margin * 2f) - ConnectionBannerReservedBand));
             var left = Mathf.Clamp(
                 narrationBar.center.x - (width * 0.5f),
                 Margin,
-                Mathf.Max(Margin, viewport.x - Margin - width));
-            return new Rect(left, narrationBar.yMax + 4f, width, height);
+                Mathf.Max(Margin, panelWidth - Margin - width));
+            return new Rect(left, narrationBar.yMax, width, height);
         }
+
+        /// <summary>
+        /// Item 3 of the 2026-09-06 log drop-down refinements: where an ANOMALOUS connection state
+        /// says so. Centred beneath the match-log drop-down's own full open extent, so it is clear
+        /// of both the narration bar and the drop-down whether that drop-down is open or closed -
+        /// the "verify against both open and closed states" the item asks for, answered by
+        /// construction rather than by a state-dependent position that could be wrong in one of them.
+        ///
+        /// <para>A HEALTHY connection draws nothing at all; see
+        /// <see cref="MatchConnectionBanner.EarnsScreen"/>. This rectangle only says where the
+        /// anomalous cases go.</para>
+        /// </summary>
+        public static Rect CalculateConnectionBannerRect(float panelWidth, float panelHeight)
+        {
+            var dropdown = CalculateMatchLogDropdownRect(panelWidth, panelHeight);
+            var width = Mathf.Min(ConnectionBannerWidth, Mathf.Max(0f, panelWidth - (Margin * 2f)));
+            var height = Mathf.Min(ConnectionBannerHeight, Mathf.Max(0f, panelHeight));
+            return new Rect(
+                Mathf.Max(0f, (panelWidth - width) * 0.5f),
+                dropdown.yMax + Margin,
+                width,
+                height);
+        }
+
+        private static Rect GetMatchLogDropdownRect() =>
+            CalculateMatchLogDropdownRect(PanelViewport.x, PanelViewport.y);
 
         /// <summary>
         /// Positions the TIEBREAKER rail banner above the HOLDING team's own rail column, or hides

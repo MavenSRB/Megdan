@@ -53,140 +53,7 @@ Milestones **8.35z13** through **8.35z18** are complete. Their exact definitions
 
 Milestones **8.35z19** through **8.35z24** are complete. Their exact definitions remain active authority in [the sixth completed Phase 8 definitions shard](PHASE_8_COMPLETED_6.md), at [8.35z19](PHASE_8_COMPLETED_6.md#x-835z19-make-a-tooltip-render-in-a-player-build-at-all), [8.35z20](PHASE_8_COMPLETED_6.md#x-835z20-correct-blend-into-shadows-transposed-secondary-icon-and-sweep-the-roster-for-the-same-trap), [8.35z21](PHASE_8_COMPLETED_6.md#x-835z21-fire-the-last-minion-lane-push-at-the-end-of-each-action-instance-repeats-included), [8.35z22](PHASE_8_COMPLETED_6.md#x-835z22-give-the-practice-bots-a-brain-a-seat-can-actually-run), [8.35z23](PHASE_8_COMPLETED_6.md#x-835z23-make-every-snapshot-this-session-takes-readable-by-the-same-session) and [8.35z24](PHASE_8_COMPLETED_6.md#x-835z24-answer-a-defense-pause-whose-target-stopped-being-reachable-instead-of-refusing-every-answer-to-it); their completion evidence stays indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md). Milestones **8.35z25** through **8.35z27** are complete and followed them to that same sixth shard on 2026-09-06, at [8.35z25](PHASE_8_COMPLETED_6.md#x-835z25-play-combat-reflexes-and-leaping-strike-in-their-own-printed-reading-order), [8.35z26](PHASE_8_COMPLETED_6.md#x-835z26-give-the-practice-bots-a-one-ply-lookahead-in-the-one-place-full-information-already-exists) and [8.35z27](PHASE_8_COMPLETED_6.md#x-835z27-run-one-complete-attack-per-chosen-bullet-of-a-modal-attack-as-one-action).
 
-### [x] 8.35z28 Compose Dodger the Warlock's printed set and the empty-spawn-point derivation
-
-The first of the six-hero content wave, and the only one of the six that covers two phases of work: her printed set was composed in one branch and her ruled faces in a second, and both landed together because the second is unreviewable without the first.
-
-Observable outcome: seventeen of Dodger's nineteen printed faces exist as definition content that a configured match could load and validate, with every capability they name declared and none of it registered, and her nine spawn-point faces all reading one derivation rather than nine readings of one phrase.
-
-**One printed phrase, one derivation, reached two ways.** Nine of nineteen faces condition on "empty spawn points ... in the battle zone", and `EmptyMinionSpawnPointQuery` answers all nine: her three Blue Defense primaries reach it through the value pipeline because a Defense value is a number, and her rituals reach it through the effect frame because a ritual is a step. RULING 4 narrows p.19's broader glossary entry to minion spawn points only, which printed p.14's own worked example of Vampiric Shield II counts the same way, and the designer's own 2026-07-25 answer makes the condition ZONE-ANCHORED - the Battle Zone is asked of the spawn point and never of whoever is measuring, so Dodger standing outside it still counts what is inside.
-
-**THE IDENTITY-ORACLE RULE THIS MILESTONE ESTABLISHED, and which the whole wave then followed.** A threshold placed on the shared declaration struct moved THREE shipped heroes' content digests for zero behaviour change, because the oracle walks public properties. The threshold moved into the query kind's NAME instead - a predicate shape, as `TargetPlayedAttackCardThisTurn` has been since 8.19b - and all six pins came back byte-identical. The preference order the wave inherited is: a new enum member, then a new capability id, then a new optional capability parameter, and NEVER a new public property.
-
-**Two faces are parked and both parkings are evidence.** Rusty Razor is the standing p.20 Handicap deferral. Middlefinger of Death is parked on a MEASURED SEAM CONFLICT rather than on difficulty: the only shape in this build producing a second complete p.14 order is `RepeatAction`, and Ruling 14 makes Enfeeblement forbid exactly p.10 Repeats - so composing choose-both as a repeat would hand one card a restriction neither clause prints. That is milestone 8.35z27's contract, and it is only detectable because both halves of the conflict composed in one milestone.
-
-Acceptance checks:
-
-- Seventeen faces compose; the two parked ones name their triggers through `PrintedTextComposition.DeferredUntil` and are asserted in both directions.
-- Every capability the set names is declared and NONE is registered, which milestone 7.9's deferral gate requires while she is undealt; the registered-handler count is unmoved at 53.
-- All six shipped heroes' content identity digests are byte-identical, measured by the complete `VerifiedContentIdentityTests` oracle rather than by a filtered pin run.
-- Rulebook p.14's worked example of Vampiric Shield II reproduces 4+2=6 on a purpose-built map, and the designer's zone-anchoring answer is measured rather than assumed.
-- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,189 to 2,245 for this milestone's fifty-six new cases and nothing else.
-
-Non-goals: she is NOT dealt and NOT registered - composition and dealing are inseparable and dealing needs four new showcase consumers, so both belong to her dealing milestone; no player-path gate table, which names journeys by string and cannot be written before she is dealt; no artwork rows, because the catalog names only dealt heroes; and no implementation of RULING 48's respawn-hosting correction, which supersedes a reading this milestone shipped and is explicitly scheduled onto her next phase.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z28-compose-dodger-the-warlocks-printed-set-and-the-empty-spawn-point-derivation-completion-evidence).
-
-### [x] 8.35z29 Compose Misa the Samurai's printed set and the choose-both raiser
-
-Observable outcome: eighteen of Misa's nineteen printed faces exist as definition content a configured match could load and validate, including the first modification in this build that changes a control-flow node rather than a fact about a piece.
-
-**The tenth modification family, and why it is a family rather than a value.** `RuleModificationKind.ChoiceCardinality` answers "how many bullets does this decision admit", which is a property of a question the rules are about to ask and of nothing standing on the board. Folding it into the value modifier would have made a modal's cardinality a contribution to a printed channel, and p.17 states cardinality in words rather than printing it anywhere. It raises the ceiling and never the floor, because the card says "you may", and it cannot invent a bullet the card does not print.
-
-**RULING 29 was measured, not implemented.** The reading that terrain is crossable while the endpoint is denied turned out to be what milestone 6.8e already did, so this milestone proved it on a purpose-built terrain-ring board instead of building it - which is the cheapest possible outcome for a ruling and the one a measure-first brief exists to find.
-
-**THE LAW THIS MILESTONE ADDED, which every later hero in the wave obeys.** A capability must NOT be registered before its hero is dealt. The registered list is SERIALIZED, so eager registration moves pinned snapshot bytes and presents as a serialization defect while the content never moved. Every capability file therefore carries a `RegisteredHandlers`/`DeferredHandlers` pair, and the wave unified that second name across all four files.
-
-Acceptance checks:
-
-- Eighteen faces compose; Leaf on the Wind alone is parked on the standing p.20 Handicap deferral.
-- Eight capability declarations and four rules are declared and ALL deferred; the registered-handler count is unmoved at 53 and no corpus digest or pinned snapshot byte moves.
-- All six shipped heroes' content identity digests are byte-identical under the complete oracle.
-- RULING 29 is proved by measurement on a purpose-built board rather than by an implementation that could not be wrong.
-- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,245 to 2,276 for this milestone's thirty-one new cases and nothing else.
-
-Non-goals: she is not dealt or registered; no seventh identity pin, which must be measured at her dealing rather than predicted; no per-placement self-place trigger firing, which needs a serialized `EffectInterruptKind` member and is therefore the next schema milestone rather than part of this one - and which is indistinguishable from the shipped behaviour for her printed set.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z29-compose-misa-the-samurais-printed-set-and-the-choose-both-raiser-completion-evidence).
-
-### [x] 8.35z30 Compose Silverarrow the Pathfinder's printed set and give the turn's end a producer
-
-Observable outcome: eighteen of Silverarrow's nineteen printed faces exist as definition content a configured match could load and validate, and the turn's own close now visits `TimingCheckpoint.TurnEnded` through the triggered-effect authority, which nothing in this build had ever reached.
-
-**Measure-first paid twice in one milestone.** `RuleModificationKind.ActivityLimit` already existed from 8.20 - Arien's Deluge prints her Blue line's sentence word for word - and `retrieve-card@1` already existed, registered, with no consumer. Neither needed building. A third measurement settled RULING 39 by construction rather than by argument: her Red modal's isolation clause yields the SAME union whether the attacker is counted or not, proved on a purpose-built board.
-
-**The end-of-turn duration is one moment that both triggers and expires.** Creation activates it immediately and expiry is the same checkpoint it triggers at, with the lifecycle emitting the trigger BEFORE the expiry when a definition names one checkpoint for both - so the work happens and the effect does not survive into the next turn looking for a second one. The re-entrancy guard is deliberately NOT serialized: expiry already provides the guarantee, and storing it would cost a schema bump for nothing.
-
-**The oracle rule in its third form.** A public property on `BeforeActionTrigger` moved all six shipped digests; it is a method now. The two rules that fell out: methods are free and properties are not, and RENAMING AN ENUM TYPE also moves digests, because type names are in the canonical string.
-
-Acceptance checks:
-
-- Eighteen faces compose; Keep the Distance alone is parked on the standing p.20 Handicap deferral.
-- One live end-of-turn trigger is driven through a whole turn, which was the largest unverified claim in the branch's own report.
-- Both minted contracts are deferred; the registered-handler count is unmoved at 53 and all six shipped digests are byte-identical under the complete oracle.
-- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,276 to 2,308 for this milestone's thirty-two new cases and nothing else.
-
-Non-goals: she is not dealt or registered; Rain of Arrows' SECOND repeat clause is a MEASURED ENGINE GAP and is deliberately not composed - a repeated Attack reads its admitted unit kind from its card's declaration, which cannot distinguish two repeat clauses on one card, and hers is the first face printing two, so the shortfall is asserted by test rather than papered over.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z30-compose-silverarrow-the-pathfinders-printed-set-and-give-the-turns-end-a-producer-completion-evidence).
-
-### [x] 8.35z31 Compose Ursafar the Savage's printed set and the borrow contract
-
-Observable outcome: seventeen of Ursafar's nineteen printed faces exist as definition content a configured match could load and validate, including the first contract in this build that performs one card's primary action from another card.
-
-**The borrow, and the one decision that made it small.** The offer names the BORROWED card, so its values, text, icons and supertype are its own by construction rather than by copying: a borrowed primary runs as a full action instance of that card, including its own enrage grant; the borrowed card does not change state; it is not a p.10 Repeat; and the turn still spends one action. Tali's Commune consumes the same surface - `FromDiscardedCards(CardColor)` - rather than minting a second one, which is why this milestone lands before hers.
-
-**Enrage is a build-up, and it is structural rather than conventional.** Thirteen faces grant p.17's enraged state, one Active effect per card with its own uniqueness key so several coexist, and EVERY grant is created when its action starts and becomes active only when that action ends. That single pair of checkpoints is what makes a card unable to satisfy its own "If enraged", whatever order its text is composed in - so the rule is a property of the content rather than of a convention a later editor could break.
-
-**A general ruling this milestone settled for the whole roster.** An "If X, do Y" clause whose condition is false simply SKIPS and the card continues. p.10's stop-and-skip applies to steps you attempt and cannot complete, never to conditions that are merely false - so Angry Roar played calm still grants enrage. It coexists with the designer's own answer that a mandatory action step which cannot be performed stops the card.
-
-Acceptance checks:
-
-- Seventeen faces compose; Jaws That Bite is parked on the standing p.20 Handicap deferral and the Ultimate prints no action.
-- The inventory's "fourteen granting faces" is corrected to THIRTEEN by arithmetic and pinned by test.
-- All seventeen new capability references are deferred; the registered-handler count is unmoved at 53 and all six shipped digests are byte-identical under the complete oracle.
-- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,308 to 2,370 for this milestone's sixty-two new cases and nothing else.
-
-Non-goals: he is not dealt or registered; the borrow dispatch is not wired through the four guards that must admit a text-granted instance, which belongs with dealing; and the three removal Reds compose their enrage grant and NOT their removal clause, because nothing in this build records whether an Attack's target survived - a named shortfall carried in content as `UrsafarEffectContent.TargetSurvivedFactIsOwed` rather than guessed at.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z31-compose-ursafar-the-savages-printed-set-and-the-borrow-contract-completion-evidence).
-
-### [x] 8.35z32 Build Tali the Spiritcaller's token system and compose her whole Green line
-
-Observable outcome: all nineteen of Tali's printed faces are defined, her whole Green line composes end to end, and the token system her set needs exists and is measured - one supply pile counted and reclaimed over a group, an aura that counts itself, a mandatory removal prevention paid with its own source, and immunity that finally names a token.
-
-**One pile of three, counted over the group.** `SupplyGroupId` makes an Ice placement pull back a standing totem, measured rather than asserted, and a group that disagrees about its own size is refused outright. The Ice aura has each token contribute its own -1 beside ITSELF - emergent counting, because a counted query would triple-charge - and there is no floor. The totem save is a MANDATORY removal prevention paid with the source token, a new Automatic shape beside the Offered one, which now skips non-card prices. Immunity uses `RuleObjectKind.Token`, the member milestone 6.4 omitted: Clear is REFUSED against a Venerated totem, ALLOWED against an Ancestral one, and end-of-round cleanup still takes it.
-
-**Thirteen faces are deferred with named causes, and the causes are the deliverable.** Four distinct causes, asserted in both directions in `TaliEffectContent.CompositionOwed`, and ONE of them - the self-referential discard predicate - unlocks seven of the thirteen. That is what makes her next phase the largest of the six and what lets it be scheduled rather than discovered.
-
-**A gap found by test rather than by reading.** `CardColor` has no Purple member, and Commune is the first content in the project to ask for one. It is pinned as a fails-when-added test rather than fixed here, because adding a colour is a content-identity event and belongs with the milestone that needs it.
-
-**p.10's third sentence, transcribed verbatim and applied:** "Unless specified in the card text, the card has to be discarded from your hand." Commune's optional discard is therefore HAND-ONLY, and the designer's already-resolved-discard pointer answers no.
-
-Acceptance checks:
-
-- All nineteen faces are defined; five compose, Ice Shard is parked on the p.20 deferral, and thirteen carry named causes asserted in both directions.
-- The token system's four claims - group reclamation, self-counting aura, mandatory prevention paid with its source, and token immunity - are each measured on a staged board.
-- All six shipped digests are byte-identical under the COMPLETE oracle, which is the check that matters: this milestone's own work proved that filtered aggregate and corpus pin runs can be green while six digests move.
-- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,370 to 2,435 for this milestone's sixty-five new cases and nothing else.
-
-Non-goals: she is not dealt or registered; no white token art or runtime team colour, which is presentation and belongs to its own slice; no placement driven through a live frame, so the token system has definition-level and rules-level coverage but no execution coverage yet; and none of the thirteen deferred faces is composed on a guess.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z32-build-tali-the-spiritcallers-token-system-and-compose-her-whole-green-line-completion-evidence).
-
-### [x] 8.35z33 Compose Whisper the Outcast's printed set and settle the wave's shared declarations
-
-The last of the six-hero content wave, and the one that closes it: her own set, plus the five declarations two branches had each minted independently against the same output.
-
-Observable outcome: eighteen of Whisper's nineteen printed faces exist as definition content a configured match could load and validate, including the first card in this build that hands a decision to an OPPONENT, and the wave's shared declarations exist exactly once each.
-
-**The opponent-chooser is one enum member and nothing else.** `EffectChooserRole.BoundHero` lets a Choose node bind its chooser as an input, and the validator refuses a named-role node that binds nobody. Milestone 8.35r's decision-owner routing needed no change at all, which is the measurement worth keeping: the routing was already general and only the binding was missing.
-
-**Swift Justice's rider costs zero snapshot bytes.** "The card they defended with" is read off the Attack's own accepted `DefenseOffer` - a derived field rather than a stored one - and the forced move is steered by the TARGET's seat, on the designer's 2026-08-19 answer that the rules text draws no distinction between player and hero.
-
-**THE FIVE UNIFICATIONS, and the fact that every one of them was SILENT.** Two branches adding the same declaration in different places do not conflict: git takes both, and the tree compiles until the second copy is used. This milestone found and merged a duplicated query class, a duplicated capability handler where NEITHER side was a superset, a duplicated static constant, a duplicated deferred-handler list, and a catalog line that had drifted to a `Handlers()` call which on a merged tree would have registered the entire wave by accident. The merged handler is the true superset of both: one milestone's printed-radius arm and Ultimate overlay, the other's optional counted maximum.
-
-Acceptance checks:
-
-- Eighteen faces compose; Vile Accusation alone is parked on the standing p.20 Handicap deferral.
-- Each of the wave's shared declarations exists exactly once, under one id and one meta GUID, with every call site of both minting milestones compiling unchanged.
-- The registered-handler count is unmoved at 53, no corpus digest or pinned snapshot byte moves, and all six shipped digests are byte-identical under the complete oracle.
-- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass, the harness moving 2,435 to 2,470 for this milestone's thirty-five new cases and nothing else.
-
-Non-goals: she is not dealt or registered; RULING 17's two-tier modal rule is UNIMPLEMENTED and is deliberately left so - it is a one-line split at the option-feasibility walk but reaches Brogan's whole Choose-one family, so it is owed its own corrective rather than a change smuggled inside a hero's content diff; and the shipped-content observation about a Skill's `DifferentTarget` declaration having no route into a repeated instance is recorded as a measurement, not acted on, until her printed face is re-read.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z33-compose-whisper-the-outcasts-printed-set-and-settle-the-waves-shared-declarations-completion-evidence).
-
+Milestones **8.35z28** through **8.35z33** are complete. Their exact definitions remain active authority in [the sixth completed Phase 8 definitions shard](PHASE_8_COMPLETED_6.md), at [8.35z28](PHASE_8_COMPLETED_6.md#x-835z28-compose-dodger-the-warlocks-printed-set-and-the-empty-spawn-point-derivation), [8.35z29](PHASE_8_COMPLETED_6.md#x-835z29-compose-misa-the-samurais-printed-set-and-the-choose-both-raiser), [8.35z30](PHASE_8_COMPLETED_6.md#x-835z30-compose-silverarrow-the-pathfinders-printed-set-and-give-the-turns-end-a-producer), [8.35z31](PHASE_8_COMPLETED_6.md#x-835z31-compose-ursafar-the-savages-printed-set-and-the-borrow-contract), [8.35z32](PHASE_8_COMPLETED_6.md#x-835z32-build-tali-the-spiritcallers-token-system-and-compose-her-whole-green-line) and [8.35z33](PHASE_8_COMPLETED_6.md#x-835z33-compose-whisper-the-outcasts-printed-set-and-settle-the-waves-shared-declarations). They are the six-hero content wave's COMPOSITION milestones; the dealing milestones that register, gate and journey each of those heroes stay below, because four of the six are still to be dealt and read beside the two that are.
 ### [x] 8.35z34 Deal, register and player-path gate Dodger the Warlock as the seventh hero
 
 The six-hero content wave composed six printed sets and dealt none of them. This is the first of the six dealing milestones, and it is the whole per-hero completion ceremony the roster's first six each took: register, deal, gate, journey, govern, verify.
@@ -362,6 +229,61 @@ Acceptance checks:
 Non-goals: no Bloom or post-processing; no new mark, colour or footprint; no change to which spaces are marked; no HUD element added; and no tuning of the luminous strength against the painted board, which is one number and wants the user's eye on a rendered frame.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z39-breathe-the-awaited-outlines-and-draw-the-boards-marks-as-light-completion-evidence).
+
+### [x] 8.35z40 Unroll the match log from the top strip, newest first, and stop announcing a healthy connection
+
+Three refinements the user asked for with a screenshot, the first quoted verbatim: "make the dropdown match the top, not to be different like this".
+
+Observable outcome: opening the match log unrolls the top strip's own band downward instead of dropping a foreign dark box under it; the newest thing that happened is the first thing read; and the words "CONNECTED TO THE HOST." stop sitting on top of the log's header, because a healthy connection no longer says anything at all.
+
+**The chrome is READ from the strip rather than copied, which is the difference between a fix and a coincidence.** The tray drew the shared panel background while the strip drew its own darker one - two independent styles that happened to disagree - so the correction is one shared source: the status bar publishes its own band language (background, corner radius, border width, insets, label size) and both it and the tray use it. A second literal that agrees today would drift the next time either moved. The tray also hangs FLUSH now, with the squared, unbordered top edge meeting the strip's own bottom hairline, so the seam reads as one band unrolling rather than as two bordered boxes with a gap between them.
+
+**A plain reversal is the wrong answer to "newest first", and saying why is the whole of item 2.** Reversing the rendered lines puts every ROUND and TURN header BELOW the entries it heads. So the stream is grouped into a header plus the lines under it, the groups are reversed, and each group's body is reversed beneath its own header - which is what "with the group headers adapting correctly" means, pinned by a worked example in the fixture. The undo marker moves from last to first, because under newest-first the top is where "now" reads. The scroll position resets only on the closed-to-open transition, so an arriving entry cannot yank a reader who has scrolled back into the history.
+
+**The reorder is proved to be a PERMUTATION, which is how milestone 8.35r's privacy boundary survives it untouched.** Same lines in, same lines out: a re-order cannot surface a fact that was not already in the list handed to it. The closed-vocabulary rendering is byte-identical - the diff ends before it - so this milestone changed reading order and chrome and nothing about what the log may say.
+
+**A healthy connection earns no screen, and the branch that decides it is stated structurally.** The banner used to be shown for every state the moment the online HUD attached, the healthy one included. It is now hidden exactly when the feedback would have read "Connected to the host.", derived from the same condition rather than by comparing the sentence back - and the fixture sweeps the whole state space asserting the two agree, so a drift fails a test instead of silently hiding a notice. The anomalous states are placed clear of both the narration bar and the open drop-down BY CONSTRUCTION, under the tray's whole open extent, so one rectangle answers "both open and closed" instead of a state-dependent position that could be wrong in one of them.
+
+**A shipped Play Mode test PINNED the defect**, which is the finding worth carrying: a fixture whose name is about HUD reuse and host loss asserted that the status element was visible and contained "CONNECTED". Nothing in the presentation change would have revealed it - the harness cannot see Play Mode and the compile probes only compile it. It was found by grepping every reader of the element before committing. **When a change makes something stop being drawn, grep for who asserts that it IS drawn.**
+
+Acceptance checks:
+
+- The tray's background, corner radius, border, insets and label size are read from the status bar's own published band language rather than restated, and its top edge is squared and unbordered against the strip.
+- The reading order is newest-first with each group header above its own newest-first body, pinned by a transcribed worked example, and asserted to be a permutation of its input.
+- The undo marker renders first, and the scroll offset resets only on the closed-to-open transition.
+- The connection banner is hidden exactly when the feedback would be the healthy sentence, asserted across the whole state space rather than for sampled states.
+- The banner's rectangle clears the narration bar and the open drop-down at every supported viewport, and stays on the panel from the shortest one any sibling fixture uses.
+- The drop-down's paint order is asserted against the strip, both rails, the tie-breaker banner and the tooltip layer.
+
+Non-goals: no change to what the log may say - the entry vocabulary, the privacy predicate, the wire and the schema are untouched; no new log content, filter or search; and no permanent connection indicator, which is left as a question for the user rather than answered by this milestone.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z40-unroll-the-match-log-from-the-top-strip-newest-first-and-stop-announcing-a-healthy-connection-completion-evidence).
+
+### [x] 8.35z41 Offer every hero this build deals, not only the six the printed line-up seats
+
+A corrective to milestone 8.35z36, and a blocker cleared before the twelve-hero package.
+
+Observable outcome: a player picking a hero in the lobby is offered every hero this build can actually deal - the printed six and the ones dealt since - and picking one of the newer heroes composes a match that deals their cards.
+
+**The deviation, and why it stayed invisible for two milestones.** Milestone 8.35z36's brief said the selector's roster is the DEALT set; the implementation read `QuickGameSetupConfiguration.RegisteredHeroes`, which is the printed LINE-UP table. With six dealt heroes all of them printed, the two lists were equal and nothing could tell them apart. They diverged the moment a hero was dealt through a staged configuration instead - Dodger at 8.35z34, then Misa at 8.35z38 - and both are fully dealt, registered, player-path gated and journeyed while being unpickable. The selector capped at six while the build dealt eight.
+
+**The invariant INVERTS, and getting its direction right is the substance of the change.** What was recorded was a strict subset - the registered six inside the dealt eight - written down as the correct state of affairs. It is not: the subset is the SYMPTOM. After this milestone the roster a picker offers IS the dealt set, and the surviving invariant runs the other way - every hero the printed line-up seats is offerable, because the printed table is a subset of what the build deals.
+
+**A roster is only half a claim, and the other half is that the pick can be dealt.** The composer deals a selected hero's cards from a switch over hero ids that knew only the printed six and refused anything else by name. Widening the roster without widening that switch would have offered a pick that threw at the moment the match composed - a lobby-time promise broken at match time. So the two heroes gain their own hero ids, the switch gains their printed sets, and the acceptance check asserts both directions at once by BUILDING each offered hero's hand rather than reading the switch: dealt-implies-offered would pass for a roster naming heroes nothing can deal, and offerable-implies-dealable would pass for an empty roster.
+
+**Minting the two hero ids moves nothing, and that is measured rather than hoped.** A staged one-versus-one deals these heroes under a generic staged hero id, because on a staged board a hero's identity is the CONTENT it holds; a selected line-up needs a stable per-hero id instead, since two of them can sit on one board. No existing composition names the new ids, so no snapshot, digest or pinned identity can see them until a lobby picks one.
+
+Acceptance checks:
+
+- The selector's roster is the build's dealing table itself rather than a copy, and the printed line-up is asserted to be a subset of it.
+- Each hero dealt outside the printed table is offerable and pickable, and is asserted to have no printed line-up row - which is what made the gap invisible.
+- Every hero the selector offers deals a printed set of eighteen, proved by building the hand rather than by reading the registration.
+- The one-copy rule, the refusal vocabulary and every existing selection invariant are unchanged, and the stand-in hero that stood for "dealt tomorrow" moves to the next undealt hero rather than being retired.
+- The complete unfiltered dotnet harness passes at the final revision.
+
+Non-goals: no hero is dealt here and no content moves; no change to the printed line-up table, which milestone 8.25 owns; no seat, spawn point or format change; and no lobby surface work beyond the roster the existing picker reads.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z41-offer-every-hero-this-build-deals-not-only-the-six-the-printed-line-up-seats-completion-evidence).
 
 ### Queued corrective debt recorded at 8.35z23
 

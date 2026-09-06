@@ -249,23 +249,31 @@ namespace GuardsDigital.Core.Setup
     public static class RegisteredHeroRoster
     {
         /// <summary>
-        /// Every hero the PRINTED LINE-UP deals, in setup step 7's own order - which is what a lobby
-        /// selection screen may offer.
+        /// Every hero this build can put on a board - which is what a lobby selection screen may
+        /// offer. The printed line-up's six in setup step 7's order, then the staged-dealt heroes.
         /// </summary>
         /// <remarks>
-        /// <para>Derived, never counted: it is <see cref="QuickGameSetupConfiguration.RegisteredHeroes"/>, which is
-        /// the printed line-up table itself. A dealing milestone that gives its hero a row there grows this
-        /// list, the selector built on it, and the bot filler in the same commit.</para>
-        /// <para><b>This is a subset of the heroes the build can put on a board, and saying so is the
-        /// point.</b> Milestone 8.35z34 dealt Dodger the Warlock through a STAGED one-versus-one
-        /// configuration rather than through the printed table, and deliberately changed no official
-        /// line-up (8.25 owns that table). So a hero can be fully dealt, registered and gated while
-        /// having no row here - and it must not be offered in a lobby, because a lobby composes the
-        /// printed formats and those are seated from this table. Read this list for what a picker may
-        /// offer; read the dealing configurations for what the build can compose. They are two
-        /// questions and this answers only the first.</para>
+        /// <para>Derived, never counted: it is <see cref="QuickGameSetupConfiguration.DealtHeroes"/>. A dealing
+        /// milestone that gives its hero a row there grows this list, the selector built on it, its
+        /// refusals and the lobby's option list in the same commit.</para>
+        /// <para><b>This is a SUPERSET of the printed line-up, and milestone 8.35z41 is why.</b>
+        /// Milestone 8.35z36 built the selector on
+        /// <see cref="QuickGameSetupConfiguration.RegisteredHeroes"/> - the printed line-up TABLE - where its own
+        /// brief said the dealt roster. The consequence was invisible until a second hero was dealt
+        /// outside that table: Dodger and Misa are dealt, registered, player-path gated and
+        /// journeyed, and neither could be picked, so the selector capped at six while the build
+        /// dealt eight. The two questions the earlier note separated are still two questions, but
+        /// this one answers "what may a picker offer", and the honest answer is everything the build
+        /// can deal.</para>
+        /// <para><b>A hero here has no printed SEAT, and that costs nothing.</b> A line-up moves the
+        /// hero column and never a seat: the Nth hero of a team takes the Nth marked point whatever
+        /// hero it is, so a staged-dealt hero selected into a position is seated exactly as a printed
+        /// one is. What a hero here DOES need is a printed set the composer can deal, which
+        /// <c>MatchConfiguration.CreateVerifiedHand</c> states hero by hero and refuses loudly for
+        /// anything it does not know - so this list and that switch are two halves of one claim and
+        /// a fixture asserts them against each other rather than trusting either alone.</para>
         /// </remarks>
-        public static IReadOnlyList<RegisteredHero> ForThisBuild => QuickGameSetupConfiguration.RegisteredHeroes;
+        public static IReadOnlyList<RegisteredHero> ForThisBuild => QuickGameSetupConfiguration.DealtHeroes;
 
         /// <summary>
         /// One team's marked hero spawn points, in the order the printed line-up fills them.

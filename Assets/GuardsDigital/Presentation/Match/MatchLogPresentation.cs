@@ -32,8 +32,11 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// The source entry's own <see cref="MatchLogEntry.Sequence"/>, or <see cref="int.MaxValue"/>
-        /// for the standing undo marker - which names no rule event and always reads last, as the
-        /// match's current status rather than a moment in its history.
+        /// for the standing undo marker - which names no rule event and reads as the match's current
+        /// status rather than as a moment in its history, so it takes whichever end of the list
+        /// "now" is. Under item 2's newest-first ordering that is the TOP; before it, the bottom.
+        /// The value itself is unchanged: it is the marker's "later than every sequence" fact, not
+        /// its position.
         /// </summary>
         public int Sequence { get; }
 
@@ -62,8 +65,9 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Milestone 8.35x. What the narration bar's drop-down draws: the log's rendered lines, oldest
-    /// first, and whether the drop-down is currently open.
+    /// Milestone 8.35x. What the narration bar's drop-down draws: the log's rendered lines, NEWEST
+    /// first (milestone 8.35z40, item 2 of the 2026-09-06 refinements), and whether the drop-down is
+    /// currently open.
     /// </summary>
     /// <remarks>
     /// <para><b>Open/closed is local presentation state, not match state</b> - the same distinction
@@ -193,20 +197,106 @@ namespace GuardsDigital.Presentation.Match
             var lines = new List<MatchLogLineViewModel>();
             if (isOpen)
             {
-                foreach (var entry in projection.MatchLog ?? Array.Empty<MatchLogEntry>())
-                {
-                    if (entry == null)
-                    {
-                        continue;
-                    }
-
-                    AppendLine(lines, projection, entry);
-                }
-
+                // The standing undo marker leads, for the reason it used to trail: it names no
+                // rule event, so it is the match's CURRENT status rather than a moment in the
+                // history. Under item 2's newest-first ordering the top is where "current" reads.
                 AppendUndoMarker(lines, projection);
+                lines.AddRange(NewestFirst(ComposeOldestFirst(projection)));
             }
 
             return new MatchLogViewModel(projection.Version, isOpen, Array.AsReadOnly(lines.ToArray()));
+        }
+
+        /// <summary>
+        /// The log's activity lines in the order the recorded event stream states them - oldest
+        /// first, one line per <see cref="MatchLogEntry"/>, the undo marker excluded because it is
+        /// not one of them.
+        /// </summary>
+        /// <remarks>
+        /// Exposed as its own step so the closed-vocabulary rendering (one line per
+        /// <see cref="MatchLogEntryKind"/>) and the reading ORDER (<see cref="NewestFirst"/>) can be
+        /// proved separately. They are two different decisions and a single fixture over the
+        /// composed result would have to know both to assert either.
+        /// </remarks>
+        public static IReadOnlyList<MatchLogLineViewModel> ComposeOldestFirst(IMatchReadModel projection)
+        {
+            if (projection == null)
+            {
+                throw new ArgumentNullException(nameof(projection));
+            }
+
+            var lines = new List<MatchLogLineViewModel>();
+            foreach (var entry in projection.MatchLog ?? Array.Empty<MatchLogEntry>())
+            {
+                if (entry == null)
+                {
+                    continue;
+                }
+
+                AppendLine(lines, projection, entry);
+            }
+
+            return Array.AsReadOnly(lines.ToArray());
+        }
+
+        /// <summary>
+        /// Item 2 of the 2026-09-06 log drop-down refinements: "NEWEST TEXT ON TOP -
+        /// reverse-chronological ordering, with the ROUND/TURN group headers adapting correctly (the
+        /// newest round's group at the top, entries within a group also newest-first)".
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why this is not <c>Reverse()</c>.</b> A plain reversal puts every ROUND/TURN
+        /// header BELOW the entries it heads, because a header is emitted before its group in the
+        /// oldest-first stream - the "headers adapting correctly" the item names is exactly the part
+        /// a plain reversal gets wrong. So the stream is split into groups first (a header line and
+        /// the activity lines following it), the GROUPS are reversed, and each group's own body is
+        /// reversed beneath its header, which stays on top of it. The result reads the way a chat
+        /// log grouped by day reads: newest group first, newest line first inside it, and every
+        /// heading still labelling what is under it.</para>
+        /// <para>A leading run of activity lines with no header of its own - the shape of a retained
+        /// window truncated mid-round - forms a headerless group and is reversed like any other, so
+        /// nothing is dropped and nothing is invented to head it.</para>
+        /// <para><b>It re-orders, and only re-orders.</b> No line is added, removed or re-worded
+        /// here, so the seat-public selection and the privacy predicate drawn once in
+        /// <c>MatchLogProjection</c> are untouched by definition - this cannot surface a fact that
+        /// was not already in the list handed to it.</para>
+        /// </remarks>
+        public static IReadOnlyList<MatchLogLineViewModel> NewestFirst(
+            IReadOnlyList<MatchLogLineViewModel> oldestFirst)
+        {
+            if (oldestFirst == null)
+            {
+                throw new ArgumentNullException(nameof(oldestFirst));
+            }
+
+            var groups = new List<List<MatchLogLineViewModel>>();
+            foreach (var line in oldestFirst)
+            {
+                if (line.IsHeader || groups.Count == 0)
+                {
+                    groups.Add(new List<MatchLogLineViewModel>());
+                }
+
+                groups[groups.Count - 1].Add(line);
+            }
+
+            var ordered = new List<MatchLogLineViewModel>(oldestFirst.Count);
+            for (var group = groups.Count - 1; group >= 0; group--)
+            {
+                var lines = groups[group];
+                var headed = lines[0].IsHeader;
+                if (headed)
+                {
+                    ordered.Add(lines[0]);
+                }
+
+                for (var body = lines.Count - 1; body >= (headed ? 1 : 0); body--)
+                {
+                    ordered.Add(lines[body]);
+                }
+            }
+
+            return Array.AsReadOnly(ordered.ToArray());
         }
 
         private static void AppendUndoMarker(List<MatchLogLineViewModel> lines, IMatchReadModel projection)

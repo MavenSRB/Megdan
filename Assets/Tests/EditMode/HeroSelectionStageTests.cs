@@ -58,8 +58,10 @@ namespace GuardsDigital.Tests.EditMode
             var roster = RegisteredHeroRoster.ForThisBuild;
 
             Assert.That(
-                roster, Is.SameAs(QuickGameSetupConfiguration.RegisteredHeroes),
-                "The selector must offer the dealing table itself, not a copy that can drift.");
+                roster, Is.SameAs(QuickGameSetupConfiguration.DealtHeroes),
+                "The selector must offer the dealing table itself, not a copy that can drift. " +
+                "Milestone 8.35z41: that table is what the build DEALS, which is a superset of " +
+                "the printed line-up.");
 
             foreach (var heroId in ShippedHeroIds)
             {
@@ -85,9 +87,12 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         /// <remarks>
         /// <para>Driven by handing the stage a registration that contains a hero this build does
-        /// not deal today. That stands in for the roster expansion: when Dodger's dealing milestone
-        /// adds his row, the live registration grows exactly this way and every assertion below is
-        /// what will then be true of him - offered, pickable, refused as a duplicate afterwards.</para>
+        /// not deal today. That stands in for the roster expansion: when Silverarrow's dealing
+        /// milestone adds her row, the live registration grows exactly this way and every assertion
+        /// below is what will then be true of her - offered, pickable, refused as a duplicate
+        /// afterwards. It stood in for Dodger until milestone 8.35z41, which made the prediction
+        /// come true for real: she is in the live roster now, so the stand-in moved to the next
+        /// undealt hero rather than being retired, because what this case pins is the MECHANISM.</para>
         /// <para>This is the case that would fail if anything in the stage counted the roster,
         /// cached it at construction, or hard-coded six or twelve.</para>
         /// </remarks>
@@ -98,7 +103,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(new[]
                 {
                     new RegisteredHero(
-                        "hero-dodger", new HeroContentId("dodger"), "Dodger the Warlock")
+                        "hero-silverarrow", new HeroContentId("silverarrow"), "Silverarrow the Ranger")
                 })
                 .ToArray();
 
@@ -106,21 +111,96 @@ namespace GuardsDigital.Tests.EditMode
                 SixSeats(), TeamSide.Red, HeroSelectionMethod.AllPick, tomorrow);
 
             Assert.That(
-                stage.AvailableHeroes.Any(hero => hero.HeroIdValue == "hero-dodger"), Is.True,
+                stage.AvailableHeroes.Any(hero => hero.HeroIdValue == "hero-silverarrow"), Is.True,
                 "A newly dealt hero is offered the moment the registration names it.");
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-red-1"), "hero-dodger", out var refusal), Is.True,
+                stage.TryChoose(new SeatId("seat-red-1"), "hero-silverarrow", out var refusal), Is.True,
                 $"... and is pickable: {refusal}.");
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-blue-1"), "hero-dodger", out refusal), Is.False,
+                stage.TryChoose(new SeatId("seat-blue-1"), "hero-silverarrow", out refusal), Is.False,
                 "... and the one-copy rule applies to him exactly as to the shipped six.");
             Assert.That(refusal, Is.EqualTo(HeroSelectionRefusal.HeroAlreadyTaken));
 
             Assert.That(
                 stage.AvailableHeroes.Count, Is.EqualTo(tomorrow.Length - 1),
                 "The available list is the registration minus what is taken - derived, not counted.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z41. Every hero this build DEALS is offerable - the shipped six and the two
+        /// dealt outside the printed line-up - and every hero offered can actually be dealt.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The gap this closes.</b> Milestone 8.35z36 built the selector on the printed
+        /// line-up TABLE where its brief said the dealt roster, so Dodger and Misa - fully dealt,
+        /// registered, player-path gated and journeyed - could not be picked. The selector capped at
+        /// six while the build dealt eight, which is the twelve-hero package's headline feature
+        /// capped at half.</para>
+        /// <para><b>Asserted in BOTH directions, because one direction alone is satisfiable by a
+        /// lie.</b> Offerable-implies-dealable would pass for an empty roster; dealt-implies-offered
+        /// would pass for a roster naming heroes nothing can deal - which is exactly the failure
+        /// that would ship if the roster grew and <c>CreateVerifiedHand</c> did not. The hand is
+        /// really built rather than the switch being read, so a hero offered but undealable fails
+        /// here rather than at the moment a lobby composes the match.</para>
+        /// </remarks>
+        [Test]
+        public void EveryDealtHeroIsOfferable_AndEveryOfferedHeroCanBeDealt()
+        {
+            var roster = RegisteredHeroRoster.ForThisBuild;
+
+            // The printed six are a SUBSET of what a picker offers - the direction that stays true
+            // after 8.35z41 inverted the old strict registered-subset-of-dealt reading.
+            foreach (var printed in QuickGameSetupConfiguration.RegisteredHeroes)
+            {
+                Assert.That(
+                    roster.Contains(printed), Is.True,
+                    $"The printed line-up seats '{printed.HeroIdValue}', so a picker must offer it.");
+            }
+
+            foreach (var heroId in ShippedHeroIds)
+            {
+                Assert.That(
+                    roster.Any(hero => hero.HeroIdValue == heroId), Is.True,
+                    $"'{heroId}' shipped pickable and must stay pickable.");
+            }
+
+            // The two the printed table does not seat, which is the whole point of the milestone.
+            foreach (var dealt in new[]
+            {
+                QuickGameSetupConfiguration.DodgerHeroIdValue,
+                QuickGameSetupConfiguration.MisaHeroIdValue
+            })
+            {
+                Assert.That(
+                    QuickGameSetupConfiguration.RegisteredHeroes
+                        .Any(hero => hero.HeroIdValue == dealt), Is.False,
+                    $"'{dealt}' is dealt by a staged configuration and has no printed line-up row - " +
+                    "which is what made the gap invisible until a second such hero existed.");
+                Assert.That(
+                    roster.Any(hero => hero.HeroIdValue == dealt), Is.True,
+                    $"'{dealt}' is dealt by this build, so a selector must offer it.");
+
+                var stage = new HeroSelectionStage(SixSeats(), TeamSide.Red);
+                Assert.That(
+                    stage.TryChoose(new SeatId("seat-red-1"), dealt, out var refusal), Is.True,
+                    $"... and is pickable rather than merely listed: {refusal}.");
+            }
+
+            // And the other half of the claim: what the picker offers, the composer can deal. Built
+            // for real - reading the switch would prove nothing about whether it throws.
+            foreach (var hero in roster)
+            {
+                var hand = MatchConfiguration.CreateVerifiedHandForInternalTest(
+                    hero.HeroIdValue, "probe-01");
+                Assert.That(
+                    hand, Is.Not.Null,
+                    $"'{hero.HeroIdValue}' is offered by the selector, so the composer must deal it.");
+                Assert.That(
+                    hand.Definitions.Count, Is.EqualTo(18),
+                    $"'{hero.HeroIdValue}' deals a printed set of eighteen like every dealt hero.");
+            }
         }
 
         /// <summary>
@@ -132,7 +212,7 @@ namespace GuardsDigital.Tests.EditMode
             var stage = new HeroSelectionStage(SixSeats(), TeamSide.Red);
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-red-1"), "hero-dodger", out var refusal),
+                stage.TryChoose(new SeatId("seat-red-1"), "hero-silverarrow", out var refusal),
                 Is.False);
             Assert.That(refusal, Is.EqualTo(HeroSelectionRefusal.UnregisteredHero));
         }

@@ -299,6 +299,58 @@ namespace GuardsDigital.Core.Setup
             .ToArray();
 
         /// <summary>
+        /// Milestone 8.35z41. The heroes this build DEALS but the printed line-up does not seat -
+        /// dealt through a staged configuration by their own dealing milestones.
+        /// </summary>
+        /// <remarks>
+        /// <para>These rows carry a hero id, a printed set and setup step 7's epithet, and nothing
+        /// else: they name no side and no marked point, because they have no printed SEAT. A line-up
+        /// that selects one of them takes the seat and the marked point of whichever position it was
+        /// chosen into, which is what <see cref="Setup.HeroLineupComposition"/> has done since the
+        /// selector arrived - the hero column moves and no seat does.</para>
+        /// <para><b>The hero ids are minted here and are new.</b> A staged one-versus-one deals these
+        /// heroes under the generic staged blue hero id, because on a staged board the hero's identity
+        /// is the CONTENT it holds; a selected line-up needs a stable per-hero id instead, because two
+        /// of them can sit on one board and the projection has to tell them apart. Minting them moves
+        /// nothing: no existing composition names them, so no snapshot, digest or pinned identity can
+        /// see this list until a lobby actually picks one.</para>
+        /// </remarks>
+        /// <summary>Milestone 8.35z41. Dodger's own hero id, minted where she becomes pickable.</summary>
+        public const string DodgerHeroIdValue = "hero-dodger";
+
+        /// <summary>Milestone 8.35z41. Misa's own hero id, on the same terms.</summary>
+        public const string MisaHeroIdValue = "hero-misa";
+
+        private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
+            StagedDealtHeroRows =
+            {
+                // Milestone 8.35z34 dealt her; 8.35z41 makes her pickable.
+                (DodgerHeroIdValue, "dodger", "Dodger the Warlock"),
+                // Milestone 8.35z38 dealt her; 8.35z41 makes her pickable.
+                (MisaHeroIdValue, "misa", "Misa the Samurai")
+            };
+
+        /// <summary>
+        /// Milestone 8.35z41. Every hero this build can put on a board: the printed line-up's own
+        /// rows first, in setup step 7's order, then the staged-dealt heroes in dealing order.
+        /// </summary>
+        /// <remarks>
+        /// <para>This is what a hero-selection screen may OFFER, and it is a SUPERSET of
+        /// <see cref="RegisteredHeroes"/> rather than the same list. Milestone 8.35z36 read the
+        /// printed table for the selector's roster where its own brief said the dealt one, so a hero
+        /// could be fully dealt, registered, gated and journeyed and still be unpickable - which
+        /// capped the selector at the shipped six while the build dealt eight.</para>
+        /// <para>Derived, never counted: a dealing milestone adds one row here (or a row to the
+        /// printed table, which flows in through the concatenation) and the selector, its refusals
+        /// and the lobby's option list all grow in the same commit. The order is deliberate - the
+        /// printed six keep their setup step 7 positions at the head of every picker.</para>
+        /// </remarks>
+        public static IReadOnlyList<RegisteredHero> DealtHeroes { get; } = RegisteredHeroes
+            .Concat(StagedDealtHeroRows.Select(row => new RegisteredHero(
+                row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName)))
+            .ToArray();
+
+        /// <summary>
         /// Milestone 8.35z36. The printed line-up as pairs of hero and the side step 7
         /// deals it to - the shipped demo arrangement, which selection generalises.
         /// </summary>
