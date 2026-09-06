@@ -1,3 +1,4 @@
+using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using UnityEngine;
@@ -20,13 +21,14 @@ namespace GuardsDigital.Presentation.Units.Heroes
     /// Crystal/light-blue to Blue once, off-line, under the reviewed milestone 4.4 mapping, and at
     /// runtime the team decides the file rather than the file deciding the team.</para>
     ///
-    /// <para><b>The team is stated a second time, in the project's own colours.</b> The official faces
-    /// are ringed orange and light blue, which are the source set's team colours rather than this
-    /// project's; a player reading the board should not have to know that orange means Red. So the
-    /// piece carries a rim in <see cref="TeamRim"/>, drawn from the authoritative
-    /// <see cref="TeamSide"/> - the same two colours the prism it replaces has been drawn in since
-    /// milestone 4.4, stated once here and read by both, so the board's Red is one Red whichever piece
-    /// is standing on it.</para>
+    /// <para><b>Milestone 8.35z36 made the team a runtime fact.</b> A baked pair of faces
+    /// per hero was sound only while each hero had one team for the life of the build. With a hero
+    /// selector any hero can be on either side, so a hero may instead ship ONE team-neutral
+    /// white-background face and state its team entirely in the ring. The decision of which face
+    /// and which ring lives in <see cref="RuntimeTeamIdentity"/>, Unity-free, so it is provable in
+    /// the cross-platform harness; this type is the adapter that loads what that decision names.
+    /// The baked face still wins wherever one exists, which is why the six shipped heroes' pieces
+    /// are exactly what they were.</para>
     /// </summary>
     public static class HeroTokenArtwork
     {
@@ -35,7 +37,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// <c>Private/</c> for the reason milestone 8.11a's board face is: Git keeps the whole folder
         /// out, so the tracked project cannot carry the artwork even by accident.
         /// </summary>
-        public const string ResourceRoot = "Private/Heroes";
+        public const string ResourceRoot = RuntimeTeamIdentity.TokenResourceRoot;
 
         /// <summary>
         /// The whole piece's radius in world units at <see cref="Board.HexWorldLayout.DefaultOuterRadius"/>,
@@ -46,10 +48,14 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// round tokens standing on one space - and so a hero covers its space the way milestone 8.11a
         /// made a minion cover its own.
         /// </summary>
-        public const float TokenOuterRadius = 0.81f;
+        public const float TokenOuterRadius = RuntimeTeamIdentity.TokenOuterRadius;
 
-        /// <summary>The official face's radius, inside the rim.</summary>
-        public const float FaceRadius = 0.72f;
+        /// <summary>
+        /// The official face's radius, inside the rim. This is the TEAM-BAKED radius; a team-neutral
+        /// face uses <see cref="RuntimeTeamIdentity.NeutralFaceRadius"/> and carries a wider ring,
+        /// because it has no team-coloured field of its own to state the side a second time.
+        /// </summary>
+        public const float FaceRadius = RuntimeTeamIdentity.TeamBakedFaceRadius;
 
         /// <summary>
         /// How much of the source face's inscribed circle the disc samples.
@@ -69,11 +75,19 @@ namespace GuardsDigital.Presentation.Units.Heroes
         public const int Segments = 64;
 
         /// <summary>
-        /// The resource this hero's face would be at. Content identity and team, in that order, the
-        /// same shape <see cref="Units.Minions.StandardMinionArtCatalog"/> addresses a minion by.
+        /// The resource this hero's team-baked face would be at. Content identity and team, in that
+        /// order, the same shape <see cref="Units.Minions.StandardMinionArtCatalog"/> addresses a
+        /// minion by.
         /// </summary>
         public static string ResourcePath(HeroContentId contentId, TeamSide teamSide) =>
-            $"{ResourceRoot}/{contentId.Value}-{TeamToken(teamSide)}";
+            RuntimeTeamIdentity.TeamBakedResourcePath(contentId, teamSide);
+
+        /// <summary>
+        /// The resource this hero's team-neutral white-background face would be at: the content
+        /// identity alone, with no team in the address at all.
+        /// </summary>
+        public static string NeutralResourcePath(HeroContentId contentId) =>
+            RuntimeTeamIdentity.NeutralResourcePath(contentId);
 
         /// <summary>
         /// Loads a hero's prepared token face, answering false when there is none. Absence is the
@@ -89,19 +103,51 @@ namespace GuardsDigital.Presentation.Units.Heroes
         }
 
         /// <summary>
+        /// Milestone 8.35z36. Loads whichever of this hero's faces the build has, and says
+        /// how the piece must then be drawn.
+        /// </summary>
+        /// <remarks>
+        /// Resolution order and its whole point: the team-baked face first, so the six shipped
+        /// heroes resolve to exactly the file and radius they always did; then the team-neutral
+        /// face, drawn inside a wider team ring; then nothing, and the caller keeps the prism. The
+        /// ORDER is the zero-regression guarantee, and it is asserted in the harness against the
+        /// shipped six rather than argued for here.
+        /// </remarks>
+        public static TokenPresentation ResolveToken(
+            HeroContentId contentId, TeamSide teamSide, out Texture2D texture)
+        {
+            texture = null;
+            if (teamSide != TeamSide.Red && teamSide != TeamSide.Blue)
+            {
+                return RuntimeTeamIdentity.ResolveToken(
+                    contentId, TeamSide.Red, false, false);
+            }
+
+            var baked = Resources.Load<Texture2D>(
+                RuntimeTeamIdentity.TeamBakedResourcePath(contentId, teamSide));
+            var neutral = baked != null
+                ? null
+                : Resources.Load<Texture2D>(RuntimeTeamIdentity.NeutralResourcePath(contentId));
+
+            texture = baked != null ? baked : neutral;
+            return RuntimeTeamIdentity.ResolveToken(
+                contentId, teamSide, baked != null, neutral != null);
+        }
+
+        /// <summary>
         /// This project's own board colour for a team, from the authoritative side.
         ///
         /// These are the two colours the generated hero prism has carried since milestone 4.4. They are
-        /// stated here rather than there because the token's rim and the prism must be one Red and one
-        /// Blue - the piece changes shape when the private artwork is present, and a player should not
-        /// see the team's colour change with it.
+        /// stated in <see cref="RuntimeTeamIdentity.TeamColor"/> rather than here so that the token's
+        /// rim, the prism and every Unity-free fixture read one Red and one Blue - the piece changes
+        /// shape when the private artwork is present, and a player should not see the team's colour
+        /// change with it.
         /// </summary>
-        public static Color TeamRim(TeamSide teamSide) =>
-            teamSide == TeamSide.Blue
-                ? new Color(0.1f, 0.35f, 0.9f, 1f)
-                : new Color(0.82f, 0.12f, 0.12f, 1f);
-
-        private static string TeamToken(TeamSide teamSide) =>
-            teamSide == TeamSide.Blue ? "blue" : "red";
+        public static Color TeamRim(TeamSide teamSide)
+        {
+            var value = RuntimeTeamIdentity.TeamColor(
+                teamSide == TeamSide.Blue ? TeamSide.Blue : TeamSide.Red);
+            return new Color(value.R, value.G, value.B, value.A);
+        }
     }
 }

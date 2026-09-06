@@ -275,6 +275,55 @@ namespace GuardsDigital.Core.Setup
         };
 
         /// <summary>
+        /// Milestone 8.35z36. Every hero this build can deal, in setup step 7's own order.
+        /// </summary>
+        /// <remarks>
+        /// <para>The printed line-up table is what a lobby may OFFER: a hero appears here exactly when a
+        /// dealing milestone has given it a row, and the printed formats are seated from this table.
+        /// Publishing it means a hero-selection screen offers what a printed match can deal without
+        /// counting or restating anything, and a hero given a row tomorrow appears in every selector the
+        /// same commit it appears here.</para>
+        /// <para>It is NOT the set of heroes the build can put on a board, and the difference arrived
+        /// with milestone 8.35z34: Dodger the Warlock is dealt, registered and gated, but through a
+        /// STAGED one-versus-one configuration rather than through this table, because that milestone
+        /// deliberately changed no official line-up. A hero outside this table must not be offered in a
+        /// lobby.</para>
+        /// <para>This is a projection of the existing table and adds no row, no value and no
+        /// content of its own, so it moves no content digest - the identity oracle walks the card
+        /// catalogs, and a setup table has never been in that walk. Measured rather than assumed;
+        /// see the milestone's evidence.</para>
+        /// </remarks>
+        public static IReadOnlyList<RegisteredHero> RegisteredHeroes { get; } = OfficialHeroRows
+            .Select(row => new RegisteredHero(
+                row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName))
+            .ToArray();
+
+        /// <summary>
+        /// Milestone 8.35z36. The printed line-up as pairs of hero and the side step 7
+        /// deals it to - the shipped demo arrangement, which selection generalises.
+        /// </summary>
+        public static IReadOnlyList<(RegisteredHero Hero, TeamSide Side)> PrintedLineupSides { get; } =
+            OfficialHeroRows
+                .Select(row => (
+                    new RegisteredHero(
+                        row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName),
+                    row.Side))
+                .ToArray();
+
+        /// <summary>
+        /// Milestone 8.35z36. The marked hero spawn points of both Throne zones, in the
+        /// order the printed line-up fills them.
+        /// </summary>
+        /// <remarks>
+        /// Derived from the same rows, because that is where the points are written down; what
+        /// changes with a selector is that the point belongs to the SEAT rather than to the hero
+        /// standing on it. See <see cref="HeroSpawnSlot"/> for why that separation is load-bearing.
+        /// </remarks>
+        public static IReadOnlyList<HeroSpawnSlot> HeroSpawnSlots { get; } = OfficialHeroRows
+            .Select(row => new HeroSpawnSlot(row.Side, row.Spawn, row.Space))
+            .ToArray();
+
+        /// <summary>
         /// The official board for any of p.5-6's four printed setups: the format's own heroes on
         /// their hero spawn points, the format's Wave and Life counts, and setup step 10's minions.
         ///
@@ -526,6 +575,14 @@ namespace GuardsDigital.Core.Setup
         /// configurations place the same minions, and two lists that must agree forever are one list.
         /// </para>
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.35z36 published it as <see cref="OfficialMinionPlacements"/> so a
+        /// board composed from a SELECTED line-up places the same twelve minions as the printed one
+        /// - the two lists that must agree forever staying one list, one caller further out.
+        /// </remarks>
+        public static IEnumerable<QuickGameMinionPlacementDefinition> OfficialMinionPlacements(
+            MapId mapId) => CreateOfficialMinionPlacements(mapId);
+
         private static IEnumerable<QuickGameMinionPlacementDefinition> CreateOfficialMinionPlacements(
             MapId mapId)
         {
