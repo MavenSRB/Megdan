@@ -42,6 +42,7 @@ namespace GuardsDigital.Core.Snapshots
             WriteRemovalPrevention(writer, state.PendingRemovalPrevention);
             WriteCardTextRemainder(writer, state.PendingCardTextRemainder);
             WriteAfterActionRepeatSubject(writer, state.AfterActionRepeatSubject);
+            WriteOwedRepeats(writer, state);
             if (continuationKind == CardActionContinuationKind.Movement)
             {
                 WriteMovementResolution(writer, pendingMovement);
@@ -166,6 +167,57 @@ namespace GuardsDigital.Core.Snapshots
                     break;
             }
             return new PendingAfterActionRepeat(resolutionId, card, action, actor, kind, target);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z21, schema v37. The two repeat instances that have been decided and not yet
+        /// started, with the target each may not take.
+        ///
+        /// <para>They cross the wire for the reason milestone 8.10's <c>ExcludedTarget</c> does one
+        /// level down, at a moment that only existed from 8.35z21: p.8's mid-turn Lane Push is drained at
+        /// the end of each action instance, and a push that stops on p.8's sidebar Place leaves a
+        /// decided repeat standing across a player's answer. Every command captures a pre-image and a
+        /// refused command is rolled back by deserializing it, so an owed instance that did not cross
+        /// would vanish on the next refusal rather than merely read short after a reload.</para>
+        ///
+        /// <para>Only identity crosses, as it does for the subject above: the second instance takes its
+        /// meaning from the trusted card definitions when it starts, and the legal target set is
+        /// re-derived on restore - which is exactly why the exclusion has to be written, or a restored
+        /// repeat would offer the unit the card just forbade.</para>
+        /// </summary>
+        private static void WriteOwedRepeats(
+            BinaryWriter writer, CardActionResolutionRestoreState state)
+        {
+            writer.Write(state.OwedAttackRepeat != null);
+            if (state.OwedAttackRepeat != null)
+            {
+                WriteAttackResolution(writer, state.OwedAttackRepeat);
+            }
+
+            WriteAttackTarget(writer, state.OwedAttackRepeatExclusion);
+            WriteAfterActionRepeatSubject(writer, state.OwedAfterActionRepeat);
+            WriteAttackTarget(writer, state.OwedAfterActionRepeatExclusion);
+        }
+
+        private static void WriteAttackTarget(BinaryWriter writer, AttackTarget target)
+        {
+            writer.Write((int)target.Kind);
+            if (target.Kind == AttackTargetKind.Hero) writer.Write(target.HeroId.Value);
+            if (target.Kind == AttackTargetKind.Minion) writer.Write(target.MinionId.Value);
+        }
+
+        private static AttackTarget ReadAttackTarget(BinaryReader reader, string label)
+        {
+            var kind = SnapshotEnumReader.Read<AttackTargetKind>(reader, label);
+            switch (kind)
+            {
+                case AttackTargetKind.Hero:
+                    return AttackTarget.Hero(new HeroId(reader.ReadString()));
+                case AttackTargetKind.Minion:
+                    return AttackTarget.Minion(new MinionId(reader.ReadString()));
+                default:
+                    return default;
+            }
         }
 
         private static PendingAttackCardTextRemainder ReadCardTextRemainder(BinaryReader reader)
@@ -685,6 +737,12 @@ namespace GuardsDigital.Core.Snapshots
             var removalPrevention = ReadRemovalPrevention(reader);
             var cardTextRemainder = ReadCardTextRemainder(reader);
             var afterActionRepeatSubject = ReadAfterActionRepeatSubject(reader);
+            var owedAttackRepeat = reader.ReadBoolean() ? ReadAttackResolution(reader) : null;
+            var owedAttackRepeatExclusion = ReadAttackTarget(
+                reader, "owed card-text repeat exclusion kind");
+            var owedAfterActionRepeat = ReadAfterActionRepeatSubject(reader);
+            var owedAfterActionRepeatExclusion = ReadAttackTarget(
+                reader, "owed after-action repeat exclusion kind");
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -760,7 +818,12 @@ namespace GuardsDigital.Core.Snapshots
                 state.WithPreAction(preAction)
                     .WithInterruptions(effectInterrupt, removalPrevention)
                     .WithCardTextRemainder(cardTextRemainder)
-                    .WithAfterActionRepeatSubject(afterActionRepeatSubject),
+                    .WithAfterActionRepeatSubject(afterActionRepeatSubject)
+                    .WithOwedRepeats(
+                        owedAttackRepeat,
+                        owedAttackRepeatExclusion,
+                        owedAfterActionRepeat,
+                        owedAfterActionRepeatExclusion),
                 null, null, null, definitions, cards,
                 participants, markers, modifications, heroItems,
                 rosterState: rosterState);

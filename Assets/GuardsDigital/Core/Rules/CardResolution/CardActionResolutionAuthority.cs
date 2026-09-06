@@ -1394,7 +1394,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // a trigger that is standing. It rides whatever continuation the capture found, for
                 // the reason the Lane-Push request does.
                 .WithCardTextRemainder(pendingCardTextAwaitingInterrupt)
-                .WithAfterActionRepeatSubject(repeatSubject);
+                .WithAfterActionRepeatSubject(repeatSubject)
+                // Milestone 8.35z21. A repeat instance that has been decided and not yet started, which
+                // p.8's sidebar Place can now stand in the middle of; see the restore state's own
+                // account of why this stopped being a within-command fact.
+                .WithOwedRepeats(
+                    owedAttackRepeat,
+                    owedAttackRepeatExclusion,
+                    owedAfterActionRepeat,
+                    owedAfterActionRepeatExclusion);
 
         private CardActionResolutionRestoreState CaptureContinuation()
         {
@@ -1482,6 +1490,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             restoredAuthority.pendingLanePush = state.PendingImmediateLanePush;
             restoredAuthority.pendingPreAction = state.PendingPreAction;
             restoredAuthority.repeatSubject = state.AfterActionRepeatSubject;
+
+            // Milestone 8.35z21, outside the continuation switch for the same reason as everything above
+            // it: a decided-and-unstarted repeat instance is a fact about the action boundary rather
+            // than a continuation of its own.
+            restoredAuthority.owedAttackRepeat = state.OwedAttackRepeat;
+            restoredAuthority.owedAttackRepeatExclusion = state.OwedAttackRepeatExclusion;
+            restoredAuthority.owedAfterActionRepeat = state.OwedAfterActionRepeat;
+            restoredAuthority.owedAfterActionRepeatExclusion = state.OwedAfterActionRepeatExclusion;
 
             // Milestone 8.19c1. Restored outside the continuation switch for the reason the Lane-Push
             // request is: neither is a continuation, and both stand beside whichever one the action
@@ -3892,17 +3908,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
-        /// The one place a mid-turn Lane-Push request is produced.
-        ///
-        /// A conformance rule holds it to being the only one, in the shape milestone 6.6 used for p.8's
-        /// question itself: moving, pushing, swapping, placing, spawning and replacing record no cause,
-        /// so they cannot reach this, and nothing else can build a request.
-        ///
-        /// A request already held is never replaced. The turn is stopped from the moment the first one
-        /// is recorded, so a second cause could only arise inside the same action instance, and p.8
-        /// describes one push per emptied side rather than one per piece taken.
-        /// </summary>
-        /// <summary>
         /// Forgets the mid-turn request p.8's transition has just finished (milestone 6.11).
         ///
         /// Consuming it is the round's business rather than this authority's - the transition is a
@@ -3916,6 +3921,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
             pendingLanePush = null;
         }
 
+        /// <summary>
+        /// Milestone 8.35z21. The held request re-read from the board as it stands now, or <c>null</c>
+        /// when p.8's winner sentence no longer has a subject here.
+        ///
+        /// <para>p.8 names the winner by looking - "The team with one or more minions still remaining
+        /// in the Battle Zone wins the push" - and the designer's 2026-06-18 ruling puts the push at
+        /// the end of the action, so the look belongs there rather than where the cause was recorded.
+        /// Between the two, p.14 step 7's "After the attack:" text runs and can move, place or remove
+        /// minions in the zone, so the two answers can genuinely differ.</para>
+        ///
+        /// <para>The <em>cause</em> is not re-derived and could not be: nothing about an emptied zone
+        /// distinguishes p.8's two sentences, which is the division of labour milestone 6.6
+        /// established and <see cref="ImmediateLanePushQuery"/> keeps. So this asks the same query the
+        /// record asked, with the same cause, on today's board - which also means it mints the same
+        /// <c>LanePushRequestId</c>, and a replay of the same commands still names the same push.</para>
+        /// </summary>
+        public PendingImmediateLanePushRequest DeriveImmediateLanePushAtEndOfAction(
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var held = pendingLanePush;
+            return held == null
+                ? null
+                : ImmediateLanePushQuery.From(
+                    held.Cause, held.CauseResolutionId, board, participants, modifications);
+        }
+
+        /// <summary>
+        /// The one place a mid-turn Lane-Push request is produced.
+        ///
+        /// A conformance rule holds it to being the only one, in the shape milestone 6.6 used for p.8's
+        /// question itself: moving, pushing, swapping, placing, spawning and replacing record no cause,
+        /// so they cannot reach this, and nothing else can build a request.
+        ///
+        /// <para>A request already held is never replaced, and since milestone 8.35z21 that is exactly
+        /// one request per <em>action instance</em>. The turn authority drains it at the end of the
+        /// instance that recorded it, so a second cause reaching this can only be a second cause inside
+        /// the same instance - and p.8 describes one push per emptied side rather than one per piece
+        /// taken, which is why the first is kept. Before 8.35z21 the same guard read as one request per
+        /// card resolution, and its stated reason - "the turn is stopped from the moment the first one
+        /// is recorded" - was false across a repeat: the stop is <c>GetCommonRejection</c>, which only
+        /// bites while <c>HasPendingResolution</c> is false, and a running repeat instance makes it
+        /// true. A qualifying cause in the second instance was therefore dropped where the ruling owes
+        /// a second push. It is not dropped now, because the first request is gone before the second
+        /// instance starts.</para>
+        /// </summary>
         private void RecordImmediateLanePush(
             LanePushCauseKind cause,
             ActionResolutionId resolutionId,

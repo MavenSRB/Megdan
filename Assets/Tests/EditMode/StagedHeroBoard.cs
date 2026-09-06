@@ -190,7 +190,8 @@ namespace GuardsDigital.Tests.EditMode
             bool unlockUltimate = false,
             int? enemyHandSize = null,
             IReadOnlyCollection<CardDefinitionId> heroDiscards = null,
-            bool clearTheNeighbourhood = true)
+            bool clearTheNeighbourhood = true,
+            IReadOnlyCollection<HexCoordinate> obstacles = null)
         {
             if (spec == null) throw new ArgumentNullException(nameof(spec));
             var configuration = spec.Configuration(tier, secondSibling);
@@ -278,7 +279,14 @@ namespace GuardsDigital.Tests.EditMode
                 configuration.Participants, configuration.CardDefinitions,
                 configuration.CardInstances, configuration.TieBreakerState, map.Reference,
                 setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
-                Array.Empty<ObstacleOccupancy>());
+                // Milestone 8.35z21. Setup obstacles, for the one case that needs a space to be
+                // occupied before anything has moved: p.8's sidebar owes a Place only when a
+                // respawning minion's own Spawn point is taken, and that is the state in which a
+                // mid-turn push stops in the middle of an action.
+                (obstacles ?? Array.Empty<HexCoordinate>())
+                    .Select((coordinate, index) => new ObstacleOccupancy(
+                        new ObstacleId($"staged-obstacle-{index}"), coordinate))
+                    .ToArray());
             var initialState = new MatchSessionInitialState(scenario, setup, new[] { map });
             return new StagedHeroBoard(
                 initialState, new MatchSession(initialState), hero, enemy);

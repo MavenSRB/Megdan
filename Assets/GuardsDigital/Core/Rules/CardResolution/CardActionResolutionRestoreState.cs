@@ -65,8 +65,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingEffectInterrupt pendingEffectInterrupt = null,
             PendingRemovalPreventionDecision pendingRemovalPrevention = null,
             PendingAttackCardTextRemainder pendingCardTextRemainder = null,
-            PendingAfterActionRepeat afterActionRepeatSubject = null)
+            PendingAfterActionRepeat afterActionRepeatSubject = null,
+            PendingAttackResolution owedAttackRepeat = null,
+            AttackTarget owedAttackRepeatExclusion = default,
+            PendingAfterActionRepeat owedAfterActionRepeat = null,
+            AttackTarget owedAfterActionRepeatExclusion = default)
         {
+            OwedAttackRepeat = owedAttackRepeat;
+            OwedAttackRepeatExclusion = owedAttackRepeatExclusion;
+            OwedAfterActionRepeat = owedAfterActionRepeat;
+            OwedAfterActionRepeatExclusion = owedAfterActionRepeatExclusion;
             AfterActionRepeatSubject = afterActionRepeatSubject;
             PendingCardTextRemainder = pendingCardTextRemainder;
             PendingEffectInterrupt = pendingEffectInterrupt;
@@ -98,6 +106,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// and the pause itself is the triggered frame written as the Skill continuation beside it.
         /// </summary>
         public PendingAfterActionRepeat AfterActionRepeatSubject { get; }
+
+        /// <summary>
+        /// Milestone 8.35z21. The two repeat instances that have been <em>decided</em> and not yet
+        /// started, with the target each may not take, or <c>null</c>/<c>default</c>.
+        ///
+        /// <para><b>Why they became persisted state at 8.35z21.</b> Both used to be settled and started
+        /// inside one command, so neither could be observed by a restore - with one reachable
+        /// exception nothing had a reason to look at, milestone 8.22's after-push trigger, which stops
+        /// the page after <c>RecordOwedAttackRepeat</c> has already run. 8.35z21 drains p.8's mid-turn
+        /// Lane Push at the end of each action instance, and a push that stops on p.8's sidebar Place
+        /// leaves the turn holding a decided repeat across a player's answer. Every command captures a
+        /// pre-image and a refused one is rolled back by deserializing it, so an unpersisted decision
+        /// here is a repeat that disappears when the next command is refused - not merely a snapshot
+        /// that reads short.</para>
+        ///
+        /// <para>They ride every continuation kind, for the reason milestone 6.9's Lane-Push request
+        /// does: an owed repeat is not a kind of pause but a fact about the action boundary the pause
+        /// is standing on.</para>
+        /// </summary>
+        public PendingAttackResolution OwedAttackRepeat { get; }
+
+        /// <summary>The unit p.14's owed card-text repeat may not take. Milestone 8.35z21.</summary>
+        public AttackTarget OwedAttackRepeatExclusion { get; }
+
+        /// <summary>Milestone 8.35z21. p.10's owed after-action instance; see <see cref="OwedAttackRepeat"/>.</summary>
+        public PendingAfterActionRepeat OwedAfterActionRepeat { get; }
+
+        /// <summary>The unit p.10's owed after-action repeat may not take. Milestone 8.35z21.</summary>
+        public AttackTarget OwedAfterActionRepeatExclusion { get; }
 
         public CardActionContinuationKind ContinuationKind { get; }
 
@@ -308,7 +345,37 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PendingEffectInterrupt,
                 PendingRemovalPrevention,
                 PendingCardTextRemainder,
-                afterActionRepeatSubject);
+                afterActionRepeatSubject,
+                OwedAttackRepeat,
+                OwedAttackRepeatExclusion,
+                OwedAfterActionRepeat,
+                OwedAfterActionRepeatExclusion);
+
+        /// <summary>The same state carrying milestone 8.35z21's two decided-and-unstarted repeats.</summary>
+        public CardActionResolutionRestoreState WithOwedRepeats(
+            PendingAttackResolution owedAttackRepeat,
+            AttackTarget owedAttackRepeatExclusion,
+            PendingAfterActionRepeat owedAfterActionRepeat,
+            AttackTarget owedAfterActionRepeatExclusion) =>
+            new CardActionResolutionRestoreState(
+                ContinuationKind,
+                PendingMovementResolution,
+                PendingAttackResolution,
+                PendingSkillResolution,
+                CoinLedger,
+                PendingCorrection,
+                PendingRepeat,
+                PendingImmediateLanePush,
+                PendingCardText,
+                PendingPreAction,
+                PendingEffectInterrupt,
+                PendingRemovalPrevention,
+                PendingCardTextRemainder,
+                AfterActionRepeatSubject,
+                owedAttackRepeat,
+                owedAttackRepeatExclusion,
+                owedAfterActionRepeat,
+                owedAfterActionRepeatExclusion);
 
         public static CardActionResolutionRestoreState WithPendingCardText(
             PendingAttackCardTextResolution pendingCardText,

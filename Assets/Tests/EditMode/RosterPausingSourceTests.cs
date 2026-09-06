@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(36),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(37),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -556,7 +556,12 @@ namespace GuardsDigital.Tests.EditMode
                 "list PER HERO still choosing where v35 wrote exactly one of each. No v35 payload " +
                 "can be reinterpreted, because the count this version writes sits where that one " +
                 "wrote its item-present boolean - the old bytes do not fail to mean something, they " +
-                "mean something else. This " +
+                "mean something else - and once more at milestone 8.35z21, which is the first move for " +
+                "state that is not a pause and not an arity but a DECISION ALREADY TAKEN: the repeat " +
+                "instance p.10 owes and has not started. It could not be observed before, because a " +
+                "v36 build always started one inside the command that decided it; 8.35z21 drains p.8's " +
+                "mid-turn Lane Push at the end of each action instance, and a push stopped on the " +
+                "sidebar's Place stands between the decision and the instance. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }

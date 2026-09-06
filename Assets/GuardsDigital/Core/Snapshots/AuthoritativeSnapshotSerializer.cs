@@ -282,7 +282,20 @@ namespace GuardsDigital.Core.Snapshots
         // boolean, so a v35 payload read as v36 does not fail to mean something - it means something
         // else, and would run off the end of the pause. There is no reading of the old bytes that is
         // true of both builds.
-        public const int CurrentSchemaVersion = 36;
+        // Milestone 8.35z21 moves it to 37: the card-action section now writes the two repeat instances
+        // that have been decided and not yet started, with the target each may not take. Both used to
+        // be settled and started inside one command and so could not be observed by a restore; 8.35z21
+        // drains rulebook p.8's mid-turn Lane Push at the end of each action instance, and a push that
+        // stops on p.8's sidebar Place holds a decided repeat across a player's answer. Because every
+        // command captures a pre-image and a refused one is rolled back by deserializing it, an
+        // unwritten decision there is a repeat that disappears at the next refusal.
+        //
+        // v36 is rejected rather than migrated, on v25's and v32's reasoning: the absent field has no
+        // reading true of both builds. Absent would mean "no repeat is owed", which a v36 payload
+        // taken at a paused mid-turn push cannot promise - it is exactly the state whose owed instance
+        // the old build did not record - so a migrated payload would silently drop p.10's second
+        // instance and finish an action the rules say is not over.
+        public const int CurrentSchemaVersion = 37;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

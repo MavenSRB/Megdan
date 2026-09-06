@@ -1357,6 +1357,20 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Accept(triggerEvents);
             }
 
+            // Milestone 8.35z21. A held subject says the action itself has ended and the turn is only
+            // waiting on the ability that may repeat it, so this is that action's end and p.8's push it
+            // owes resolves here - before the answer below turns "you may repeat it once" into a second
+            // instance. It is asked only for a held action: a trigger that finished with nothing held
+            // may have fired in the middle of one, and a push must not run while p.14's page is open.
+            if (heldAction != null)
+            {
+                var pushed = ResolveOwedImmediateLanePush(triggerEvents);
+                if (pushed.HasValue)
+                {
+                    return pushed.Value;
+                }
+            }
+
             // Milestone 8.25a. The answer is where "you may repeat it once" becomes an instance, so it
             // is where that instance starts - inside the same command, while the hero it belongs to is
             // still the one Initiative selected and their card is still unresolved. An instance that
@@ -1369,7 +1383,7 @@ namespace GuardsDigital.Core.Cards
 
             if (heldAction != null)
             {
-                return CompleteHeldActionAfterItsTrigger(triggerEvents);
+                return CompleteTheActionTheTurnHeldOpen(triggerEvents);
             }
 
             // Milestone 8.21, unchanged, for every trigger this turn is not holding an action for.
@@ -1387,8 +1401,13 @@ namespace GuardsDigital.Core.Cards
         /// Milestone 8.25a. Finishes the action the turn held open across its ability's decision, now
         /// that the decision is answered and asked for no repeat - or asked for one that has already
         /// run to its end inside this command.
+        ///
+        /// <para>Milestone 8.35z21 renamed it from <c>CompleteHeldActionAfterItsTrigger</c> and gave it a
+        /// second caller, because a trigger is no longer the only thing an action can be held open
+        /// across: a mid-turn Lane Push that paused on p.8's sidebar Place holds one in exactly the
+        /// same position - card unresolved, actor still selected - and finishes it the same way.</para>
         /// </summary>
-        private TurnResolutionResult CompleteHeldActionAfterItsTrigger(
+        private TurnResolutionResult CompleteTheActionTheTurnHeldOpen(
             List<TurnResolutionEvent> events)
         {
             // A composition that resolved its card before the trigger ran holds nothing to finish:
@@ -1411,7 +1430,7 @@ namespace GuardsDigital.Core.Cards
             if (card == null || card.State.ResolutionStatus != CardResolutionStatus.Unresolved)
             {
                 throw new InvalidOperationException(
-                    "An action held for the ability that may repeat it was finished against a " +
+                    "An action the turn was holding open was finished against a " +
                     "selected actor whose card is " +
                     (card == null ? "absent" : "already resolved") +
                     ", so Initiative was never acknowledged for it.");
@@ -1420,7 +1439,7 @@ namespace GuardsDigital.Core.Cards
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
-                    "An action held for the ability that may repeat it could not resolve its " +
+                    "An action the turn was holding open could not resolve its " +
                     "prevalidated source card.");
             }
 
@@ -1443,6 +1462,13 @@ namespace GuardsDigital.Core.Cards
             CardInstance card,
             List<TurnResolutionEvent> events)
         {
+            // Milestone 8.35z21: this instance's end, before anything it owes afterwards.
+            var pushed = ResolveOwedImmediateLanePush(events);
+            if (pushed.HasValue)
+            {
+                return pushed.Value;
+            }
+
             var repeated = TryStartOwedAfterActionRepeat(events);
             if (repeated.HasValue)
             {
@@ -1614,6 +1640,13 @@ namespace GuardsDigital.Core.Cards
         private TurnResolutionResult CompleteGeneralRuleActionAndAdvance(
             List<TurnResolutionEvent> events, string action)
         {
+            // Milestone 8.35z21: this instance's end, before anything it owes afterwards.
+            var pushed = ResolveOwedImmediateLanePush(events);
+            if (pushed.HasValue)
+            {
+                return pushed.Value;
+            }
+
             var repeatedInstance = TryStartOwedAfterActionRepeat(events);
             if (repeatedInstance.HasValue)
             {
@@ -2346,6 +2379,13 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Accept(events);
             }
 
+            // Milestone 8.35z21: this instance's end, before anything it owes afterwards.
+            var pushed = ResolveOwedImmediateLanePush(events);
+            if (pushed.HasValue)
+            {
+                return pushed.Value;
+            }
+
             var repeatedInstance = TryStartOwedAfterActionRepeat(events);
             if (repeatedInstance.HasValue)
             {
@@ -2619,7 +2659,15 @@ namespace GuardsDigital.Core.Cards
         ///
         /// <para>An owed repeat is deliberately not one of the things that holds it: rulebook p.10's
         /// repeat is started by <see cref="CompleteAttackOrStartItsRepeat"/>, on the other side of
-        /// this question, and <c>HasPendingResolution</c> names no owed repeat of either family.</para>
+        /// this question, and <c>HasPendingResolution</c> names no owed repeat of either family.
+        /// <b>Milestone 8.35z21 corrected what that ordering was taken to license.</b> It is right about
+        /// <em>this</em> question - the instance that asked for the repeat is over, which is why the
+        /// repeat may start at all - and it was wrongly read as also saying that everything the
+        /// instance's end owes may wait for the last instance. p.8's mid-turn Lane Push is owed by the
+        /// instance that emptied the zone and resolves at that instance's end, because the designer's
+        /// 2026-06-18 ruling makes each repeat instance a separate action; it is now drained by
+        /// <see cref="ResolveOwedImmediateLanePush"/> on the near side of the repeat, not the far
+        /// side.</para>
         ///
         /// <para>It is <see cref="TheTurnsActionIsUnderWay"/> asked from the other side, and it is
         /// written as that one negated rather than as a second copy of the condition: an offer set and
@@ -2639,11 +2687,25 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private TurnResolutionResult CompleteAttackOrStartItsRepeat(List<TurnResolutionEvent> events)
         {
+            // Milestone 8.35z21. This instance has ended, so p.8's push it owes resolves before the next
+            // instance exists - the designer's "repeat instances are separate actions", stated as an
+            // ordering. The repeat below then chooses on the pushed board.
+            var pushed = ResolveOwedImmediateLanePush(events);
+            if (pushed.HasValue)
+            {
+                return pushed.Value;
+            }
+
             if (!cardActions.HasOwedAttackRepeat)
             {
                 return CompleteAttackAndAdvance(events);
             }
 
+            return StartTheOwedAttackRepeat(events);
+        }
+
+        private TurnResolutionResult StartTheOwedAttackRepeat(List<TurnResolutionEvent> events)
+        {
             var repeated = cardActions.StartOwedAttackRepeat(
                 definitions, instances, participants, CurrentModifications());
             events.AddRange(MaterializeSteps(repeated.Steps, TurnResolutionEvent.FromAttackAction));
@@ -2654,6 +2716,16 @@ namespace GuardsDigital.Core.Cards
 
         private TurnResolutionResult CompleteAttackAndAdvance(List<TurnResolutionEvent> events)
         {
+            // Milestone 8.35z21. The second instance's own end, when a repeat completed inside this
+            // command: the first instance's request was drained above and a cause the repeat recorded
+            // is a request of its own. Nothing is owed here on the ordinary route, where the drain
+            // that ran a few lines up already took it.
+            var pushedAfterRepeat = ResolveOwedImmediateLanePush(events);
+            if (pushedAfterRepeat.HasValue)
+            {
+                return pushedAfterRepeat.Value;
+            }
+
             var repeatedInstance = TryStartOwedAfterActionRepeat(events);
             if (repeatedInstance.HasValue)
             {
@@ -2704,6 +2776,11 @@ namespace GuardsDigital.Core.Cards
         /// The round calls this, because the answer that finished the push arrived as a round command.
         /// There is no "an Initiative advance is owed" flag anywhere: a held request with no push
         /// running is exactly that fact, and a second record of it could only ever disagree.
+        ///
+        /// <para>Milestone 8.35z21. Since the push also drains at the end of each action instance, what
+        /// a finished one hands back is no longer always Initiative: a push that paused inside an
+        /// action owes that action's own tail first. See
+        /// <see cref="ResumeTheActionTheLanePushInterrupted"/> for how the two are told apart.</para>
         /// </summary>
         internal TurnResolutionResult ContinueAfterImmediateLanePush()
         {
@@ -2712,7 +2789,9 @@ namespace GuardsDigital.Core.Cards
                 TurnResolutionEvent.TurnCheckpoint(TurnResolutionEventKind.ImmediateLanePushResolved)
             };
             cardActions?.ConsumeImmediateLanePush();
-            return AdvanceInitiative(events);
+            return initiative.SelectedActor.IsDefined
+                ? ResumeTheActionTheLanePushInterrupted(events)
+                : AdvanceInitiative(events);
         }
 
         /// <summary>
@@ -2767,6 +2846,127 @@ namespace GuardsDigital.Core.Cards
             });
         }
 
+        /// <summary>
+        /// Rulebook p.8's mid-turn Lane Push, resolved at the end of the action that caused it.
+        /// Returns <c>null</c> when the caller may carry on - nothing was owed, or the push ran to its
+        /// end - and a result when the turn stops here.
+        ///
+        /// <para><b>Why this is called at every action boundary and not only from
+        /// <see cref="AdvanceInitiative"/>.</b> The designer's 2026-06-18 ruling on p.8's "immediately
+        /// Pushed" is that it fires <em>"at the end of the action. However, repeat instances are
+        /// separate actions."</em> Until milestone 8.35z21 this build drained the request in
+        /// <see cref="AdvanceInitiative"/> alone, which every repeat family reaches only after its last
+        /// instance - so a first instance that emptied the Battle Zone left the Lane unpushed while the
+        /// repeat chose its target, and the second instance picked from a board the rules say had
+        /// already advanced. The drain moved to the end of each instance, which is what "each repeat
+        /// instance is a separate action" means here, and the request the instance recorded is gone
+        /// before the next instance's confirm-or-decline is opened - so milestone 8.35z15's
+        /// offer-feasibility gate judges the repeat against the pushed board rather than the stale one.
+        /// <see cref="AdvanceInitiative"/> keeps the call as the last boundary, for every path that
+        /// records a cause without completing an action instance: p.13's hero-respawn decline, an
+        /// after-push trigger answered on its own, and a trigger finished with no action held.</para>
+        ///
+        /// <para><b>Why the winner is read here rather than replayed.</b> p.8 states the winner by
+        /// looking - "The team with one or more minions still remaining in the Battle Zone wins the
+        /// push" - and "at the end of the action" is when the ruling makes that look happen, so the
+        /// sides are re-derived from the board this moment stands on rather than from the board the
+        /// cause was recorded on. p.14 step 7's "After the attack:" text runs in between and can move,
+        /// place or remove minions in the zone. When the board no longer decides a winner at all -
+        /// both sides hold one, or neither does - the recorded answer stands: p.8 says nothing about
+        /// a push whose subject has gone, and dropping it would invent an outcome the rulebook does
+        /// not print. Recorded as a reading rather than a rule in `RULES_LEDGER.md`.</para>
+        /// </summary>
+        private TurnResolutionResult? ResolveOwedImmediateLanePush(List<TurnResolutionEvent> events)
+        {
+            var request = cardActions?.PendingImmediateLanePush;
+            if (request == null)
+            {
+                return null;
+            }
+
+            // The other half of the ruling, and the half this build already conformed to: the push
+            // fires at the end of the action, so it may not fire while anything about that action is
+            // still open. It is asked as <see cref="TheTurnsActionIsUnderWay"/> rather than as a fresh
+            // condition so the drain and the six Attack completion points cannot disagree about what
+            // "the action is over" means. The case it defers is real: an after-action ability standing
+            // on its own question keeps the action open, and the drain for it is the one in
+            // <see cref="FinishTriggerAnswer"/>, which is still on the near side of the repeat.
+            if (TheTurnsActionIsUnderWay())
+            {
+                return null;
+            }
+
+            events.Add(TurnResolutionEvent.TurnCheckpoint(
+                TurnResolutionEventKind.ImmediateLanePushRequested));
+            if (lanePush == null)
+            {
+                // No Lane to push: a board with no Battle Zone cannot have produced this request,
+                // so this is a composition without the transition rather than a rules outcome.
+                return TurnResolutionResult.Accept(events);
+            }
+
+            var decided = cardActions.DeriveImmediateLanePushAtEndOfAction(
+                participants, CurrentModifications()) ?? request;
+            var consumption = lanePush.TryConsume(
+                decided.RequestId, decided.WinningSide, decided.LosingSide,
+                initiative.TieBreakerState);
+            if (!consumption.Accepted || consumption.IsPaused)
+            {
+                // A refused push leaves the request standing at its checkpoint, exactly as it stood
+                // before milestone 6.11; a paused one withholds the rest of the action until the
+                // sidebar's Place has been answered. Both are "the turn does not continue yet",
+                // which is the one thing p.8 requires of an unfinished push.
+                return TurnResolutionResult.Accept(events);
+            }
+
+            cardActions.ConsumeImmediateLanePush();
+            events.Add(TurnResolutionEvent.TurnCheckpoint(
+                TurnResolutionEventKind.ImmediateLanePushResolved));
+
+            // p.8: "the game ends immediately". The round authority reads the ended push and stops the
+            // match; nothing later in this turn runs - including a repeat instance the action still
+            // owed, which is why this is reported as a stop rather than as a finished push.
+            return consumption.Finished.EndedTheGame
+                ? (TurnResolutionResult?)TurnResolutionResult.Accept(events)
+                : null;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z21. Finishes the action a mid-turn push interrupted, once the push that paused
+        /// on p.8's sidebar Place has been answered to its end.
+        ///
+        /// <para>Which of the two things a finished push owes is decided by whether an actor is still
+        /// selected, and by nothing else - there is no "the action was mid-flight" flag, for the reason
+        /// milestone 6.11 gave about the advance itself: every drain site that is not an action
+        /// boundary has already resolved its card and had Initiative acknowledge it, and
+        /// acknowledging is what clears the selection. A selected actor at this point therefore says
+        /// exactly one thing: the push ran at the end of an action instance whose own tail has not
+        /// run yet. A second record of that could only ever disagree with the first.</para>
+        /// </summary>
+        private TurnResolutionResult ResumeTheActionTheLanePushInterrupted(
+            List<TurnResolutionEvent> events)
+        {
+            // p.14's own repeat first, in the order CompleteAttackOrStartItsRepeat runs it.
+            if (cardActions.HasOwedAttackRepeat)
+            {
+                return StartTheOwedAttackRepeat(events);
+            }
+
+            var repeatedInstance = TryStartOwedAfterActionRepeat(events);
+            if (repeatedInstance.HasValue)
+            {
+                return repeatedInstance.Value;
+            }
+
+            var held = HoldTheActionForTheAbilityThatMayRepeatIt(events);
+            if (held.HasValue)
+            {
+                return held.Value;
+            }
+
+            return CompleteTheActionTheTurnHeldOpen(events);
+        }
+
         private TurnResolutionResult AdvanceInitiative(IEnumerable<TurnResolutionEvent> priorEvents)
         {
             var events = new List<TurnResolutionEvent>(priorEvents);
@@ -2777,48 +2977,17 @@ namespace GuardsDigital.Core.Cards
             if (cardActions?.IsPendingTriggeredEffect == true)
                 return TurnResolutionResult.Accept(events);
 
-
-            // Milestone 6.9's immediate checkpoint, which milestone 6.11 turned from a stop into p.8's
-            // transition. The page pushes the Lane in the middle of the turn and only then does "the
-            // turn continue in the Initiative order as normal", so the push runs here rather than after
-            // the next actor is selected.
-            //
-            // It also has to be here rather than in the round dispatcher: this same advance ends the
-            // turn when no unresolved cards remain, so a push placed after it would let a mid-turn
-            // request fall through into end-of-round resolution.
-            var request = cardActions?.PendingImmediateLanePush;
-            if (request != null)
+            // Milestone 6.9's immediate checkpoint, kept here as the last of the drain points rather
+            // than as the only one; see <see cref="ResolveOwedImmediateLanePush"/>. It has to be here
+            // rather than in the round dispatcher: this same advance ends the turn when no unresolved
+            // cards remain, so a push placed after it would let a mid-turn request fall through into
+            // end-of-round resolution. Everything that reaches this line has already resolved its
+            // card and had Initiative acknowledge it, so nothing is selected - which is exactly what
+            // tells a finished push whether it interrupted an action or ended a card.
+            var pushed = ResolveOwedImmediateLanePush(events);
+            if (pushed.HasValue)
             {
-                events.Add(TurnResolutionEvent.TurnCheckpoint(
-                    TurnResolutionEventKind.ImmediateLanePushRequested));
-                if (lanePush == null)
-                {
-                    // No Lane to push: a board with no Battle Zone cannot have produced this request,
-                    // so this is a composition without the transition rather than a rules outcome.
-                    return TurnResolutionResult.Accept(events);
-                }
-
-                var consumption = lanePush.TryConsume(
-                    request.RequestId, request.WinningSide, request.LosingSide,
-                    initiative.TieBreakerState);
-                if (!consumption.Accepted || consumption.IsPaused)
-                {
-                    // A refused push leaves the request standing at its checkpoint, exactly as it stood
-                    // before milestone 6.11; a paused one withholds the Initiative advance until the
-                    // sidebar's Place has been answered. Both are "the turn does not continue yet",
-                    // which is the one thing p.8 requires of an unfinished push.
-                    return TurnResolutionResult.Accept(events);
-                }
-
-                cardActions.ConsumeImmediateLanePush();
-                events.Add(TurnResolutionEvent.TurnCheckpoint(
-                    TurnResolutionEventKind.ImmediateLanePushResolved));
-                if (consumption.Finished.EndedTheGame)
-                {
-                    // p.8: "the game ends immediately". The round authority reads the ended push and
-                    // stops the match; nothing later in this turn runs.
-                    return TurnResolutionResult.Accept(events);
-                }
+                return pushed.Value;
             }
 
             // Milestone 8.35g. The turn is finished but not handed on. It waits here for its own

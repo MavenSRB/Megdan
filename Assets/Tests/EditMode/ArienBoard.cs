@@ -56,7 +56,8 @@ namespace GuardsDigital.Tests.EditMode
             bool unlockUltimate = false,
             int? enemyHandSize = null,
             IReadOnlyCollection<CardDefinitionId> arienDiscards = null,
-            bool clearHisNeighbourhood = true) =>
+            bool clearHisNeighbourhood = true,
+            IReadOnlyCollection<HexCoordinate> obstacles = null) =>
             StagedHeroBoard.Create(
                 Spec,
                 tier,
@@ -67,6 +68,7 @@ namespace GuardsDigital.Tests.EditMode
                 unlockUltimate,
                 enemyHandSize,
                 arienDiscards,
-                clearHisNeighbourhood);
+                clearHisNeighbourhood,
+                obstacles);
     }
 }
