@@ -76,7 +76,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - Card execution outside the six configured heroes' 108 playable definitions, any seventh pitch hero, and unapproved future capability/content work.
 - Public distribution or commercialization.
 - Public online play, public server discovery, or production live-service operation.
-- AI opponents.
+- AI opponents, with ONE bounded exception amended in deliberately at milestone 8.35z22 under the user's FOURTEENTH amendment ("tier one sounds good", 2026-09-04): the practice drivers that fill empty seats for solo playtesting may reason about the game rather than answer at random. The exception is bounded three ways and is not a general licence. **Vehicle:** it applies only to a spawned test-driver process holding an ordinary keyed network seat, never to a shipped single-player mode, a difficulty setting, or a product-AI claim. **Information:** a driver chooses only among commands its own seat was already offered, scoring them from its own owner-scoped projection, so the privacy boundary is exactly the one every human seat has. **Purpose:** it exists so one person can playtest a six-seat game, and it stays a testing and solo-practice affordance.
 - Pass-and-play.
 - Any seventh pitch hero or post-pitch batch not separately selected and approved.
 - A universal card-text parser.

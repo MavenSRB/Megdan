@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Application.Bots;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
@@ -219,6 +220,38 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateLobbyDriver lobby;
         private PrivateSeatDriverOptions options;
         private System.Random random;
+
+        /// <summary>
+        /// Every GAMEPLAY draw comes from here, never from <see cref="random"/>, which is left to the
+        /// think-delay jitter alone. The split is the point: <see cref="DeterministicBotRandom"/> is
+        /// the same four lines on Mono and on .NET, so one seed names one match in the real build and
+        /// in the harness that measured this bot - which is what makes a measured win rate a
+        /// statement about the shipped bot rather than about a harness-only twin.
+        /// </summary>
+        private IBotRandom botRandom;
+
+        /// <summary>
+        /// Commands this seat was OFFERED and the rules then REFUSED, at the projection version they
+        /// were refused on. Milestone 8.35z22 added it, and the Solo cohort is what forced it.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>A deterministic brain cannot escape an infeasible offer by luck, and a random one
+        /// could.</b> <see cref="Submit"/> does nothing on a refusal, so the driver simply re-ticks;
+        /// under random-legal (and under the tier-0.5 pass, which falls back to it) the next tick drew
+        /// a different candidate and the seat moved on. Tier-1 answers the same unchanged projection
+        /// with the same command every time, so a single offered-then-refused command becomes a hot
+        /// infinite loop: the first live Solo cohort spun 11,000+ refusals on one seat at a frozen
+        /// version 1022 and the match never advanced.</para>
+        /// <para>The cause is not the brain. It is the offer-feasibility defect this milestone
+        /// records as corrective debt - the projection offering a Defense card the rules refuse -
+        /// and the brain only made a latent hazard permanent. Dropping the refused candidate and
+        /// re-choosing from what remains is exactly what <c>BotSelfPlay</c> does, and doing it here is
+        /// what makes the SHIPPED driver behave the way the measured configuration behaved. It never
+        /// widens the candidate set, so every answer stays one the seat was already offered.</para>
+        /// </remarks>
+        private readonly HashSet<DirectorCommand> refusedThisVersion = new HashSet<DirectorCommand>();
+        private long refusedVersion = -1;
+        private bool exhaustionReported;
         private DateTime nextActionUtc;
         private DateTime nextParentCheckUtc;
         private DateTime? outcomeSeenUtc;
@@ -258,6 +291,8 @@ namespace GuardsDigital.Presentation.Interaction
             random = options != null && options.Seed != 0
                 ? new System.Random(options.Seed)
                 : new System.Random();
+            botRandom = new DeterministicBotRandom(
+                options != null && options.Seed != 0 ? options.Seed : Environment.TickCount);
         }
 
         private void Update()
@@ -477,9 +512,53 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            var selected = SelectGreedyCommand(commands, runtime.ReadModel, runtime.Seat.HeroId, random) ??
-                commands[random.Next(commands.Count)];
-            Submit(runtime.SubmitProjectedCommand(selected));
+            // See refusedThisVersion. The refusal memory is scoped to one projection version,
+            // because a version move is the only thing that can make a refused command legal again.
+            var version = machine.LatestProjection.Version;
+            if (version != refusedVersion)
+            {
+                refusedThisVersion.Clear();
+                refusedVersion = version;
+                exhaustionReported = false;
+            }
+
+            var candidates = commands;
+            if (refusedThisVersion.Count > 0)
+            {
+                candidates = commands.Where(value => !refusedThisVersion.Contains(value)).ToList();
+                if (candidates.Count == 0)
+                {
+                    // Every offer this seat holds has been refused at this version. Nothing legal is
+                    // left to try, so waiting for the version to move is the only honest answer - but
+                    // it is said out loud once, because a silent wait and a live deadlock look
+                    // identical in a log and the previous behaviour at least made noise.
+                    if (!exhaustionReported)
+                    {
+                        exhaustionReported = true;
+                        Marker("every offered command refused at version " +
+                            version.ToString(CultureInfo.InvariantCulture));
+                    }
+
+                    return;
+                }
+            }
+
+            // FOURTEENTH amendment, tier-1. The lookahead argument is deliberately absent: a bot
+            // holding a network seat has no live session to try a move on, because its whole view is
+            // the seat projection the host sends it. That is the 8.32 privacy law holding, not a gap
+            // - see IBotLookahead's remarks. The policy judges by BotEvaluation and by the previews
+            // the authority already publishes, which is exactly the configuration the harness
+            // measured.
+            var selected = BotPolicy.SelectTierOne(
+                candidates, runtime.ReadModel, runtime.Seat.HeroId, botRandom)
+                ?? candidates[botRandom.Next(candidates.Count)];
+            var accepted = runtime.SubmitProjectedCommand(selected);
+            if (!accepted)
+            {
+                refusedThisVersion.Add(selected);
+            }
+
+            Submit(accepted);
         }
 
         /// <summary>
@@ -508,187 +587,36 @@ namespace GuardsDigital.Presentation.Interaction
                 return null;
             }
 
-            return PreferSufficientDefense(commands, readModel, random) ??
-                PreferKillableAttackTarget(commands, readModel, random) ??
-                PreferAdvancingMovement(commands, readModel, ownHeroId, random) ??
-                PreferAttackStart(commands, readModel, random);
+            // The tier-0.5 preferences now live in Application beside the tier-1 evaluation, so both
+            // tiers are one door and the harness can pit them against each other. This delegation is
+            // what keeps this milestone's move honest: the tier-0.5 fixture still enters here.
+            return BotPolicy.SelectGreedy(
+                commands, readModel, ownHeroId, new SystemBotRandom(random));
         }
 
         /// <summary>
-        /// Preference 1 (the "start an action" half): among enumerated <see
-        /// cref="DirectorCommandKind.StartAction"/> commands, prefer one whose action is an Attack.
-        /// Safe without checking for a legal target separately - <c>TurnResolutionAuthority
-        /// .CanStartAttack</c> already refuses to offer an Attack with nobody to hit, so an Attack
-        /// StartAction command reaching this list has already cleared that bar. Falls back to
-        /// <c>null</c> (random-legal over every offered action, Attack or not) the moment no
-        /// StartAction is offered at all, or none of the ones offered is an Attack.
+        /// The four tier-0.5 preferences, kept here as the door the tier-0.5 fixture already knocks
+        /// on and delegating to <see cref="BotPolicy"/>, where they now live beside the tier-1
+        /// evaluation. Deliberately thin: the fixture drives these signatures, so an unchanged
+        /// fixture passing against a delegating body is the evidence that moving them changed no
+        /// behaviour.
         /// </summary>
         internal static DirectorCommand PreferAttackStart(
-            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random)
-        {
-            var starts = commands.Where(command => command.Kind == DirectorCommandKind.StartAction).ToArray();
-            if (starts.Length == 0)
-            {
-                return null;
-            }
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random) =>
+            BotPolicy.PreferAttackStart(commands, readModel, new SystemBotRandom(random));
 
-            var attackStarts = starts.Where(command => IsAttackAction(readModel, command)).ToArray();
-            return attackStarts.Length == 0 ? null : attackStarts[random.Next(attackStarts.Length)];
-        }
-
-        private static bool IsAttackAction(IMatchReadModel readModel, DirectorCommand startCommand)
-        {
-            var card = readModel.Cards.FirstOrDefault(value => value.Id.Equals(startCommand.CardInstanceId));
-            var definition = card == null
-                ? null
-                : readModel.Definitions.FirstOrDefault(value => value.Reference.Equals(card.DefinitionReference));
-            var action = definition?.ActionDefinitions.FirstOrDefault(
-                value => value.Id.Equals(startCommand.ActionDefinitionId));
-            return action != null && action.Kind == ActionKind.Attack;
-        }
-
-        /// <summary>
-        /// Preference 1 (the "choose a target" half): among <see
-        /// cref="DirectorCommandKind.ChooseAttackTarget"/> commands that name a hero, prefer the
-        /// target on the team with the fewest remaining <see cref="IMatchReadModel.TeamLifeCounters"/>
-        /// - the game's own "closest to losing" vocabulary, which is what "lowest-Life" reads as for
-        /// a hero rather than a per-hero hit-point pool this game does not have - tie-broken by the
-        /// lowest total minion Defense bonus <see cref="IMatchReadModel.PendingAttackTargetDefensePreviews"/>
-        /// already previews for that hero, i.e. "killable": the fewer nearby minions would help this
-        /// target's Defense, the more likely a Life-costing hit lands. Falls back to <c>null</c> when
-        /// every legal target is a minion (no comparable "Life" fact exists for one), preserving
-        /// random-legal exactly as instructed.
-        /// </summary>
         internal static DirectorCommand PreferKillableAttackTarget(
-            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random)
-        {
-            var targets = commands.Where(command =>
-                command.Kind == DirectorCommandKind.ChooseAttackTarget && command.HeroId.IsDefined).ToArray();
-            if (targets.Length == 0)
-            {
-                return null;
-            }
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random) =>
+            BotPolicy.PreferKillableAttackTarget(commands, readModel, new SystemBotRandom(random));
 
-            var lifeByTeam = (readModel.TeamLifeCounters ?? Array.Empty<KeyValuePair<TeamId, int>>())
-                .ToDictionary(entry => entry.Key, entry => entry.Value);
-            var previews = readModel.PendingAttackTargetDefensePreviews ??
-                Array.Empty<AttackTargetDefensePreviewProjection>();
-
-            var scored = targets
-                .Select(command =>
-                {
-                    var team = readModel.Participants.GetTeamForHero(command.HeroId);
-                    var life = lifeByTeam.TryGetValue(team.Id, out var counters) ? counters : int.MaxValue;
-                    var preview = previews.FirstOrDefault(value => value.HeroId.Equals(command.HeroId));
-                    var defenseBonus = preview?.MinionContributions.Sum(value => value.Amount) ?? 0;
-                    return (Command: command, Life: life, Bonus: defenseBonus);
-                })
-                .OrderBy(value => value.Life)
-                .ThenBy(value => value.Bonus)
-                .ToArray();
-
-            var best = scored[0];
-            var tied = scored
-                .Where(value => value.Life == best.Life && value.Bonus == best.Bonus)
-                .Select(value => value.Command)
-                .ToArray();
-            return tied[random.Next(tied.Length)];
-        }
-
-        /// <summary>
-        /// Preference 2: among <see cref="DirectorCommandKind.ChooseMovementDestination"/> commands,
-        /// prefer the destination with the lowest simple hex distance
-        /// (<see cref="HexDistanceQuery.Calculate"/> - no pathfinding beyond what the offer itself
-        /// already enumerates) to the nearest objective, where "objective" is every enemy hero's
-        /// current space plus every minion's current space - minions being the one board-public proxy
-        /// for "the lane battle" this read model exposes; the current Battle Zone id itself is
-        /// Director-only board state, never published to a seat. Falls back to <c>null</c> (stays
-        /// random-legal) when the board has neither an enemy hero nor a minion to read a distance to.
-        /// </summary>
         internal static DirectorCommand PreferAdvancingMovement(
-            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, HeroId ownHeroId, System.Random random)
-        {
-            var moves = commands.Where(command =>
-                command.Kind == DirectorCommandKind.ChooseMovementDestination).ToArray();
-            if (moves.Length == 0)
-            {
-                return null;
-            }
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, HeroId ownHeroId,
+            System.Random random) =>
+            BotPolicy.PreferAdvancingMovement(commands, readModel, ownHeroId, new SystemBotRandom(random));
 
-            var ownTeamId = readModel.Participants.GetTeamForHero(ownHeroId).Id;
-            var objectives = readModel.Heroes
-                .Where(occupancy => !occupancy.HeroId.Equals(ownHeroId) &&
-                    !readModel.Participants.GetTeamForHero(occupancy.HeroId).Id.Equals(ownTeamId))
-                .Select(occupancy => occupancy.Coordinate)
-                .Concat(readModel.Minions.Select(minion => minion.Coordinate))
-                .ToArray();
-            if (objectives.Length == 0)
-            {
-                return null;
-            }
-
-            var scored = moves
-                .Select(command => (
-                    Command: command,
-                    Distance: objectives.Min(objective => HexDistanceQuery.Calculate(command.Coordinate, objective))))
-                .OrderBy(value => value.Distance)
-                .ToArray();
-            var bestDistance = scored[0].Distance;
-            var tied = scored
-                .Where(value => value.Distance == bestDistance)
-                .Select(value => value.Command)
-                .ToArray();
-            return tied[random.Next(tied.Length)];
-        }
-
-        /// <summary>
-        /// Preference 3: when this seat's own standing <see cref="IMatchReadModel.PendingDefensePreview"/>
-        /// already says Declining would let the Attack succeed - the hero would be Defeated - play the
-        /// cheapest-sufficient Defense card instead: the legal, non-decline choice whose own preview
-        /// Outcome is <see cref="AttackResolutionOutcome.SuccessfullyDefended"/>, ordered by the lowest
-        /// Defense Total that still clears the Attack Total (a Block preview carries no Total and sorts
-        /// last, since there is nothing cheaper to compare it against). Falls back to <c>null</c> - stays
-        /// random-legal, matching the instruction that a non-lethal hit is not this preference's
-        /// business - the instant the preview is absent, Declining already survives, or no legal card
-        /// would save the hero anyway.
-        /// </summary>
         internal static DirectorCommand PreferSufficientDefense(
-            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random)
-        {
-            var defenseCommands = commands.Where(command =>
-                command.Kind == DirectorCommandKind.ChooseDefenseCard ||
-                command.Kind == DirectorCommandKind.DeclineDefense).ToArray();
-            if (defenseCommands.Length == 0)
-            {
-                return null;
-            }
-
-            var preview = readModel.PendingDefensePreview;
-            var decline = preview?.Choices.FirstOrDefault(choice => choice.IsDecline);
-            if (decline == null || decline.Outcome != AttackResolutionOutcome.AttackSuccessful)
-            {
-                return null;
-            }
-
-            var sufficientCardIds = preview.Choices
-                .Where(choice => !choice.IsDecline && choice.Outcome == AttackResolutionOutcome.SuccessfullyDefended)
-                .OrderBy(choice => choice.DefenseTotal ?? int.MaxValue)
-                .ThenBy(choice => choice.CardInstanceId.Value.Value, StringComparer.Ordinal)
-                .Select(choice => choice.CardInstanceId.Value)
-                .ToArray();
-
-            foreach (var cardId in sufficientCardIds)
-            {
-                var match = defenseCommands.FirstOrDefault(command =>
-                    command.Kind == DirectorCommandKind.ChooseDefenseCard && command.CardInstanceId.Equals(cardId));
-                if (match != null)
-                {
-                    return match;
-                }
-            }
-
-            return null;
-        }
+            IReadOnlyList<DirectorCommand> commands, IMatchReadModel readModel, System.Random random) =>
+            BotPolicy.PreferSufficientDefense(commands, readModel, new SystemBotRandom(random));
 
         /// <summary>
         /// Live-fire evidence, not a guess: the first Solo-cohort run hung here indefinitely.
@@ -765,7 +693,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            Submit(compositionRoot.Runtime.SubmitProjectedCommand(commands[random.Next(commands.Length)]));
+            Submit(compositionRoot.Runtime.SubmitProjectedCommand(commands[botRandom.Next(commands.Length)]));
         }
 
         private void Submit(bool accepted)
