@@ -180,12 +180,42 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            if (conductor == null && !TryCompose(runtime))
+            // Milestone 8.35z43. Update reads the five things the tick needs off the scene
+            // runtime and does nothing else, so everything below this line can be driven without a
+            // composed Unity scene. That is not a testing convenience bolted on: this component's own
+            // contract is that it holds no game logic, and the seam is where that claim becomes
+            // checkable. Milestone 8.35z26 shipped it with no durable coverage at all, and its FIRST
+            // EVER launch found an uncaught per-frame throw out of exactly this path.
+            Tick(
+                runtime.Seat,
+                runtime.Host,
+                runtime.Session,
+                runtime.InitialState,
+                runtime.ReadModel.Outcome.HasEnded);
+        }
+
+        /// <summary>
+        /// One frame's work, given what the scene runtime would have supplied. The whole of the
+        /// component's behaviour; <see cref="Update"/> is the adapter that reads these five values.
+        /// </summary>
+        internal void Tick(
+            MatchSeat seat,
+            IMatchHost host,
+            IMatchSession session,
+            MatchSessionInitialState initialState,
+            bool matchHasEnded)
+        {
+            if (stopped || options == null)
             {
                 return;
             }
 
-            if (runtime.ReadModel.Outcome.HasEnded || DateTime.UtcNow < nextActionUtc)
+            if (conductor == null && !TryCompose(seat, host, session, initialState))
+            {
+                return;
+            }
+
+            if (matchHasEnded || DateTime.UtcNow < nextActionUtc)
             {
                 return;
             }
@@ -205,9 +235,19 @@ namespace GuardsDigital.Presentation.Interaction
             }
         }
 
-        private bool TryCompose(Match.ConfiguredMatchSceneRuntime runtime)
+        /// <summary>Whether this driver has seated itself. For the fixture, which cannot see a field.</summary>
+        internal bool HasSeated => conductor != null;
+
+        /// <summary>Whether a refusal has stopped this driver for good.</summary>
+        internal bool HasStopped => stopped;
+
+        private bool TryCompose(
+            MatchSeat seat,
+            IMatchHost host,
+            IMatchSession session,
+            MatchSessionInitialState initialState)
         {
-            if (runtime.Seat != null)
+            if (seat != null)
             {
                 // A seat-scoped composition is a NETWORK client: its host is frozen at the opening
                 // position and its view is the projection the real host sends it. Nothing here is
@@ -228,17 +268,17 @@ namespace GuardsDigital.Presentation.Interaction
             // command line is the expected way to reach this. MatchSeatBinding.Find answers null
             // for an unknown seat precisely so a caller can refuse instead of throwing, so the
             // check is made here, before anything is composed, and it names what IS bound.
-            var bound = runtime.Host.Seats;
+            var bound = host.Seats;
             var unknown = options.Seats
-                .Where(seat => bound.Find(seat) == null)
-                .Select(seat => seat.Value)
+                .Where(requested => bound.Find(requested) == null)
+                .Select(requested => requested.Value)
                 .ToArray();
             if (unknown.Length > 0)
             {
                 Fail(
                     "no seat named " + string.Join(", ", unknown) + " is bound in this match; " +
                     "this match binds " +
-                    string.Join(", ", bound.Seats.Select(seat => seat.Id.Value)));
+                    string.Join(", ", bound.Seats.Select(known => known.Id.Value)));
                 return false;
             }
 
@@ -247,15 +287,14 @@ namespace GuardsDigital.Presentation.Interaction
             // that could build its own session could build a second authority. The conformance suite
             // enforces this by scanning source TEXT, so even naming the constructor in a comment
             // fails it - which is how this comment came to be worded around it.
-            var initialState = runtime.InitialState;
             var lookahead = initialState == null
                 ? null
                 : ShadowSessionBotLookahead.ForMatch(
-                    runtime.Session, initialState, BotEvaluationWeights.Default);
+                    session, initialState, BotEvaluationWeights.Default);
             try
             {
                 conductor = new BotSeatConductor(
-                    runtime.Host, options.Seats, options.Seed, lookahead, BotEvaluationWeights.Default);
+                    host, options.Seats, options.Seed, lookahead, BotEvaluationWeights.Default);
             }
             catch (ArgumentException failure)
             {
@@ -265,7 +304,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             Debug.Log(
                 "GUARDS_PRACTICEBOT: seated " +
-                string.Join(", ", conductor.Seats.Select(seat => seat.Value)) +
+                string.Join(", ", conductor.Seats.Select(owned => owned.Value)) +
                 " seed=" + options.Seed.ToString(CultureInfo.InvariantCulture) +
                 " lookahead=" + (lookahead != null));
             return true;

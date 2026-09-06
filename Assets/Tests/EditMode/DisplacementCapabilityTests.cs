@@ -817,6 +817,55 @@ namespace GuardsDigital.Tests.EditMode
                 "The enemy unit the first answer left out is still standing beside the actor.");
         }
 
+        /// <summary>
+        /// MILESTONE 8.35z43, closing the sibling milestone 8.35z34 recorded and did not
+        /// test. A restored pause re-enters a node through <c>Execute</c> rather than through
+        /// <c>Resume</c>, so a node that asks TWICE must not ask its first question again once that
+        /// question has been answered.
+        /// </summary>
+        /// <remarks>
+        /// <para>8.35z34 measured that failure on Dodger's two-question Respawn and fixed it there,
+        /// then recorded this batch Push as an untested sibling on the note that it "consults those
+        /// answers only in Resume". <b>That reading was wrong, and this case is what says so:</b>
+        /// <c>ExecutePush</c> has consulted <c>AnswersAlreadyGiven</c> since milestone 8.8, in the
+        /// same breath that added the second question. The gap was in the coverage, not in the code -
+        /// so this closes as verified rather than as fixed, and the note at the Respawn site is
+        /// corrected to point here.</para>
+        /// <para>Stated at the HANDLER, with no session and no card behind it, because that is the
+        /// tier at which "which question is outstanding" is decided. The composed statement of the
+        /// same property lives in <c>ConfiguredKineticSkillTests</c>; neither one alone would have
+        /// caught 8.35z34's defect, which is why both exist.</para>
+        /// </remarks>
+        [Test]
+        public void WithTheUnitsAlreadyAnswered_ExecuteAsksTheDistanceRatherThanTheUnitsAgain()
+        {
+            var board = CreateMixedTeamBoard();
+            var enemyHeroAt = ActorAt.GetNeighbor(HexDirection.East);
+
+            var reEntered = Handler(SyntheticDisplacementCapabilities.ObjectPushV3).Execute(
+                KineticContext(
+                    board, maximumTargets: 2, distance: 4, leastDistance: 3,
+                    answeredEarlier: new[] { EffectValue.Space(enemyHeroAt) }));
+
+            Assert.That(reEntered.Kind, Is.EqualTo(EffectExecutionResultKind.NeedsChoice),
+                "The node is still owed its second answer, so re-entering it asks for one.");
+            Assert.That(
+                reEntered.Choice.Candidates.Select(candidate => candidate.IntegerValue),
+                Is.EqualTo(new[] { 3, 4 }),
+                "and the question it asks is the DISTANCE one. Re-offering the units is what a " +
+                "restored pause did on the other two-question node before 8.35z34 fixed it: both " +
+                "questions share one node, so nothing but the candidates' KIND says which is standing.");
+            Assert.That(
+                reEntered.Choice.Candidates.All(candidate =>
+                    candidate.Kind == EffectValueKind.Integer),
+                Is.True,
+                "No coordinate is offered, so the unit selection is not being reopened.");
+            Assert.That(
+                board.Occupancies.Single(occupancy => occupancy.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(enemyHeroAt),
+                "and re-entering the node moved nobody: asking is not resolving.");
+        }
+
         [Test]
         public void ADistanceTheCardNamesExactly_OpensNoSecondQuestionEvenUnderAnOptionalCount()
         {

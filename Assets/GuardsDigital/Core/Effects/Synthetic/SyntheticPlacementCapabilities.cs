@@ -910,9 +910,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 //
                 // The rule this states, which is wider than this handler: a capability that asks more
                 // than once is only restore-safe while its Execute is idempotent with respect to
-                // `AnswersAlreadyGiven`. p.18's batch Push shares the two-question shape and consults
-                // those answers only in Resume; no journey has ever captured a snapshot on its second
-                // question, so whether it has the same gap is untested rather than known.
+                // `AnswersAlreadyGiven`. p.18's batch Push shares the two-question shape, and
+                // milestone 8.35z43 CHECKED it rather than leaving the question open: its
+                // `ExecutePush` has read those answers since milestone 8.8, in the same change that
+                // gave it a second question, so it never had this gap. The note here previously said
+                // it consulted them only in Resume, which was a misreading of the code rather than a
+                // measurement. Both tiers now pin it - `DisplacementCapabilityTests` at the handler
+                // and `ConfiguredKineticSkillTests` through a real session.
                 if (TryReadDestinationAnswer(context, out var alreadyAnswered))
                 {
                     return ResumeWithDestination(context, alreadyAnswered);

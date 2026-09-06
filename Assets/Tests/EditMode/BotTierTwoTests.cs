@@ -201,12 +201,18 @@ namespace GuardsDigital.Tests.EditMode
         /// <c>TeamLife</c>, <c>BoardPresence</c> and <c>LevelAdvantage</c> to zero, to half, to double
         /// and to quadruple, and every single configuration returned <b>exactly 50.0%</b> against the
         /// unmodified brain over forty matches. This case is why that is not a coincidence.</para>
-        /// <para><b>What it means for anyone told to "tune the evaluation".</b> Six of the nine terms
-        /// are inert for selection; the four that are not (<c>TeamLife</c> and <c>OwnCoin</c> and
-        /// <c>MinionPressure</c> through the attack-target delta, <c>OwnHandSize</c> through the
-        /// defense one) and the two geometry terms only bite inside a delta. The weights that decide
-        /// what this bot does are <see cref="BotPolicyWeights"/>. That is also, in hindsight, why the
-        /// one weight phase A successfully tuned was a policy weight.</para>
+        /// <para><b>What it means for anyone told to "tune the evaluation".</b> A term that appears
+        /// only in the position score cannot rank anything; the terms that CAN only bite inside a
+        /// delta. The weights that decide what this bot does are <see cref="BotPolicyWeights"/>. That
+        /// is also, in hindsight, why the one weight phase A successfully tuned was a policy weight.</para>
+        /// <para><b>Corrected at milestone 8.35z43, by measurement.</b> This remark used to
+        /// name <c>OwnCoin</c> and <c>MinionPressure</c> (through the attack-target delta) and
+        /// <c>OwnHandSize</c> (through the defense one) as terms that are NOT inert. When those three
+        /// were finally play-screened they changed the win rate at no multiplier and changed no
+        /// chosen command at all - see
+        /// <see cref="TheFiveScreenedEvaluationTerms_MoveExactlyTheDecisionsTheirWinRatesImply"/>,
+        /// which holds the numbers. Appearing in a delta's CODE is not the same as moving a decision,
+        /// and this remark had inferred the second from the first.</para>
         /// </remarks>
         [Test]
         public void EvaluationTermsOutsideADeltaCannotChangeTheChosenCommand()
@@ -254,6 +260,127 @@ namespace GuardsDigital.Tests.EditMode
             TestContext.WriteLine("decisions compared: " + compared);
             Assert.That(compared, Is.GreaterThan(50),
                 "Too few multi-candidate decisions were reached to make this claim.");
+        }
+
+        /// <summary>
+        /// MILESTONE 8.35z43. The five evaluation terms milestone 8.35z26 shipped WITHOUT
+        /// ever play-screening them, screened - and the result pinned here as a command-level fact
+        /// rather than only as a win rate.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The measurement.</b> <c>BotTierTwoTuning.TheWeightSensitivityScreen</c> was run
+        /// for terms 4-8 at 0/half/2x/4x, one process each, plus terms 1 and 2 as controls. The
+        /// tuning-seed win rates:</para>
+        /// <list type="bullet">
+        /// <item><c>OwnCoin</c> (6): 65.0% at 0, 3, 12, 24 - and 65.0% at the incumbent.</item>
+        /// <item><c>MinionPressure</c> (12): 65.0% at 0, 6, 24, 48.</item>
+        /// <item><c>OwnHandSize</c> (5): 65.0% at 0, 3, 10, 20.</item>
+        /// <item><c>EngagementProximity</c> (4): <b>45.0%</b> at 0, 65.0% at 2, <b>42.5%</b> at 8,
+        /// 57.5% at 16. The one live term of the five.</item>
+        /// <item><c>ThreatAdjacency</c> (15): 67.5% at 0, then 65.0% at 8, 30, 60. The 67.5% is ONE
+        /// match in forty, and this case's own decision count for it is zero - so the row is noise,
+        /// corroborated by the mechanism, rather than a reason to switch the term off.</item>
+        /// <item>Controls <c>BoardPresence</c> and <c>LevelAdvantage</c>: 65.0% at every value, which
+        /// reproduces the recorded INVARIANCE exactly.</item>
+        /// </list>
+        /// <para><b>NOTHING WAS RETUNED, and the numbers are why.</b> EngagementProximity's incumbent
+        /// is already the joint best of its row - every alternative ties it or is far worse - so
+        /// there is nothing to move to. ThreatAdjacency at zero reads +2.5 points, which is inside
+        /// both the instrument's own +/-8-point noise band and its 5-point
+        /// <c>MeaningfulMargin</c>, so it is not a result. This was screening, not tuning.</para>
+        /// <para><b>The control level moved from the recorded 50.0% to 65.0%, and that is expected
+        /// rather than alarming.</b> The screen holds the EVALUATION vector at phase A and lets the
+        /// POLICY vector default; when 50.0% was recorded, <c>BotPolicyWeights.Default</c> still
+        /// equalled <c>PhaseA</c>, so the screen was measuring a mirror match. Tier-2's tuning then
+        /// moved <c>CommitPrintedValue</c> 6 -> 0, so the same screen now measures a genuinely
+        /// stronger brain against tier-1. The invariance - the thing the structural finding is
+        /// actually about - reproduces exactly.</para>
+        /// <para><b>Why this case counts DECISIONS rather than replaying the screen.</b> A win rate
+        /// takes minutes and answers "did the outcome move"; this answers "did the CHOICE move",
+        /// which is the mechanism, runs in about a second, and is therefore something the standing
+        /// suite can keep. A term that changes no chosen command anywhere cannot move a win rate,
+        /// which is what makes the three exact 65.0% rows above a consequence rather than a
+        /// coincidence.</para>
+        /// </remarks>
+        [Test]
+        public void TheFiveScreenedEvaluationTerms_MoveExactlyTheDecisionsTheirWinRatesImply()
+        {
+            var counts = new Dictionary<string, int>();
+            foreach (var term in new[] { 4, 5, 6, 7, 8 })
+            {
+                counts[BotEvaluationWeights.TermNames[term]] = DecisionsChangedByScaling(term);
+            }
+
+            foreach (var pair in counts)
+            {
+                TestContext.WriteLine(pair.Key + ": " + pair.Value + " decisions changed");
+            }
+
+            Assert.That(counts["EngagementProximity"], Is.GreaterThan(0),
+                "EngagementProximity measured 45.0% at zero against 65.0% at its incumbent, so it " +
+                "must be changing chosen commands. A zero here would mean the win-rate difference " +
+                "came from somewhere this case cannot see, and the screening result would be unsafe " +
+                "to act on. (Measured: 61 of this walk's decisions.)");
+
+            foreach (var inert in new[] { "OwnCoin", "MinionPressure", "ThreatAdjacency", "OwnHandSize" })
+            {
+                Assert.That(counts[inert], Is.EqualTo(0),
+                    inert + " changed a chosen command. When this was screened it changed NONE, " +
+                    "which is what made its flat 65.0% win-rate row a mechanism rather than a " +
+                    "coincidence. A non-zero here means this term now reads a delta - the content " +
+                    "underneath moved - and the term needs re-screening before anyone relies on the " +
+                    "recorded verdict in this case's remarks.");
+            }
+        }
+
+        /// <summary>
+        /// How many multi-candidate decisions of one deterministic walk pick a different command when
+        /// this term alone is scaled hard. Same walk, same seeds and same policy on both sides, so
+        /// the term is the only difference.
+        /// </summary>
+        private static int DecisionsChangedByScaling(int term)
+        {
+            var session = BotSelfPlay.CreateSymmetricBench(BotTierTwoBench.LifeCountersPerTeam);
+            var walk = new DeterministicBotRandom(23);
+            var baseline = BotEvaluationWeights.PhaseA;
+            // Zero and eightfold, so a term that reads a delta at all has every chance to show it.
+            var scaled = baseline.WithTerm(term, baseline[term] * 8);
+            var zeroed = baseline.WithTerm(term, 0);
+            var changed = 0;
+
+            for (var step = 0; step < 300; step++)
+            {
+                var candidates = DeterministicMatchLoop.EnumerateLegalCommands(session.Projection);
+                if (candidates.Count == 0)
+                {
+                    break;
+                }
+
+                var hero = BotSelfPlay.DecidingHero(session.Projection);
+                if (hero.IsDefined && candidates.Count > 1)
+                {
+                    var underBase = BotPolicy.SelectTierTwo(
+                        candidates, session.Projection, hero, new DeterministicBotRandom(7), null,
+                        BotPolicyFamilies.All, baseline, BotPolicy.ExactTiesOnly);
+                    var underScaled = BotPolicy.SelectTierTwo(
+                        candidates, session.Projection, hero, new DeterministicBotRandom(7), null,
+                        BotPolicyFamilies.All, scaled, BotPolicy.ExactTiesOnly);
+                    var underZero = BotPolicy.SelectTierTwo(
+                        candidates, session.Projection, hero, new DeterministicBotRandom(7), null,
+                        BotPolicyFamilies.All, zeroed, BotPolicy.ExactTiesOnly);
+                    if (!ReferenceEquals(underScaled, underBase) || !ReferenceEquals(underZero, underBase))
+                    {
+                        changed++;
+                    }
+                }
+
+                if (!session.Execute(candidates[walk.Next(candidates.Count)]).Accepted)
+                {
+                    break;
+                }
+            }
+
+            return changed;
         }
 
         // =====================================================================================

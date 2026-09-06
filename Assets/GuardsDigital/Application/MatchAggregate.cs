@@ -212,6 +212,12 @@ namespace GuardsDigital.Application
         private AuthoritativeSnapshotCapture memoizedAuthoritative;
 
         /// <summary>
+        /// Armed only by <see cref="CorruptNextPreImagePayloadForTest"/>, and cleared by the capture
+        /// it corrupts. Null in every shipped path.
+        /// </summary>
+        private string nextPreImagePayloadCorruptionForTest;
+
+        /// <summary>
         /// The completed-round history's serialized bytes, written once per round instead of once
         /// per command. A derived cache: it validates itself against the round authority's own
         /// records on every capture and rebuilds on any divergence, so a restore, a replay and a
@@ -282,6 +288,15 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>Detaches the current graphs and streams so another aggregate can adopt them.</summary>
+        /// <remarks>
+        /// Milestone 8.35z43 also made this THIS aggregate's rollback for a failed
+        /// <see cref="Restore"/>, paired with <see cref="Adopt"/>. It is the right one there and the
+        /// wrong one for a command: a restore REPLACES the graphs, so the ones it displaces are still
+        /// intact and putting them back is an assignment; a command mutates them in place, where only
+        /// <see cref="CapturePreImage"/>'s serialized description survives. The difference matters
+        /// because an assignment cannot fail and a re-deserialization can - and a rollback that throws
+        /// on the failure path is what leaves a session damaged.
+        /// </remarks>
         public MatchGraphSet Capture()
         {
             return MatchGraphSet.ForRestore(
@@ -513,10 +528,13 @@ namespace GuardsDigital.Application
         /// </remarks>
         public MatchPreImage CapturePreImage()
         {
+            var corruption = nextPreImagePayloadCorruptionForTest;
+            nextPreImagePayloadCorruptionForTest = null;
             return new MatchPreImage(
                 CaptureAuthoritative(),
                 eventLog.Entries,
-                roundEvents.Entries);
+                roundEvents.Entries,
+                corruption);
         }
 
         public void Rollback(MatchPreImage preImage)
@@ -530,6 +548,24 @@ namespace GuardsDigital.Application
                 restored.Round,
                 preImage.EventLogEntries,
                 preImage.RoundEvents));
+        }
+
+        /// <summary>
+        /// One-shot friend-assembly seam that makes the NEXT <see cref="CapturePreImage"/> report an
+        /// unreadable payload, so a fixture can state what happens when the state a rollback would
+        /// re-deserialize cannot be read back.
+        /// </summary>
+        /// <remarks>
+        /// It exists because milestone 8.35z23 fixed all three causes that could produce such a state
+        /// before recording that the rollback could not survive one, which leaves the hardening with a
+        /// property and no way to reach it. The seam is deliberately internal, instance-scoped and
+        /// one-shot, and it corrupts only the reported PAYLOAD: no runtime mode or public construction
+        /// path can reach it, and nothing about the graphs themselves changes.
+        /// </remarks>
+        internal void CorruptNextPreImagePayloadForTest(string payload)
+        {
+            nextPreImagePayloadCorruptionForTest =
+                payload ?? throw new ArgumentNullException(nameof(payload));
         }
 
         /// <summary>
@@ -572,20 +608,30 @@ namespace GuardsDigital.Application
 
     internal sealed class MatchPreImage
     {
+        private readonly string corruptedPayloadForTest;
+
         public MatchPreImage(
             AuthoritativeSnapshotCapture authoritative,
             IReadOnlyList<RuleEventLogEntry> eventLogEntries,
-            IReadOnlyList<RoundResolutionEvent> roundEvents)
+            IReadOnlyList<RoundResolutionEvent> roundEvents,
+            string corruptedPayloadForTest = null)
         {
             Authoritative = authoritative ?? throw new ArgumentNullException(nameof(authoritative));
             EventLogEntries = eventLogEntries ?? throw new ArgumentNullException(nameof(eventLogEntries));
             RoundEvents = roundEvents ?? throw new ArgumentNullException(nameof(roundEvents));
+            this.corruptedPayloadForTest = corruptedPayloadForTest;
         }
 
         public AuthoritativeSnapshotCapture Authoritative { get; }
 
         /// <summary>The capture's encoded payload, materialized only when a rollback needs it.</summary>
-        public string AuthoritativePayload => Authoritative.Payload;
+        /// <remarks>
+        /// The override is <see cref="MatchAggregate.CorruptNextPreImagePayloadForTest"/>'s, and it is
+        /// null everywhere else. Only the PAYLOAD is replaceable: <see cref="Authoritative"/> stays the
+        /// true capture, so the refusal comparison in <see cref="MatchAggregate.Commit{TPlan}"/> reads
+        /// the same state it always did and cannot be steered by this seam.
+        /// </remarks>
+        public string AuthoritativePayload => corruptedPayloadForTest ?? Authoritative.Payload;
 
         public IReadOnlyList<RuleEventLogEntry> EventLogEntries { get; }
         public IReadOnlyList<RoundResolutionEvent> RoundEvents { get; }

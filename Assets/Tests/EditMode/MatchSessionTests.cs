@@ -128,6 +128,106 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(retried.Projection.IsHistoryAvailable, Is.False);
         }
 
+        /// <summary>
+        /// MILESTONE 8.35z43, and the whole point of it: a restore that fails degrades to
+        /// REFUSED-AND-UNCHANGED even when the state it would have rolled back to is one this build
+        /// cannot read.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>What used to happen.</b> The rollback carried a serialized pre-image and rebuilt
+        /// the session from it. So the failure path ran the deserializer - and a failed restore is
+        /// exactly the situation where the state being described may be unreadable. The second throw
+        /// escaped <c>RestoreSnapshot</c> uncaught, after <c>aggregate.Restore</c> had already
+        /// replaced the graphs, leaving the live match holding a half-finished restore. Milestone
+        /// 8.35z23 recorded that as structural fragility after fixing the three causes that could
+        /// produce such a state, which is why this repro is SYNTHETIC: there is deliberately no
+        /// reachable one left, and a property with no way to reach it is a property nobody can keep.
+        /// </para>
+        /// <para><b>Why the fix makes the seam moot, and why that is the assertion.</b> The rollback
+        /// now reinstates the graphs the session was holding - an assignment, not a parse - so the
+        /// corrupted pre-image below is never read. "The failure path does not depend on the
+        /// pre-image being readable" is the claim, and a seam that is armed and ignored is what
+        /// proves it. The companion case immediately below keeps that from being vacuous by showing
+        /// the seam really does produce a payload the deserializing rollback still chokes on.</para>
+        /// </remarks>
+        [Test]
+        public void RestoreWhoseRollbackStateIsUnreadable_RefusesUnchangedInsteadOfEscaping()
+        {
+            var source = CreateSession();
+            var sourceCard = GetCards(source, TeamSide.Red)[0];
+            Assert.That(source.Execute(
+                DirectorCommand.CommitCard(sourceCard.OwnerId, sourceCard.Id)).Accepted, Is.True);
+            var payload = source.CaptureSnapshot();
+
+            var session = CreateSession();
+            var currentCard = GetCards(session, TeamSide.Red)[1];
+            Assert.That(session.Execute(
+                DirectorCommand.CommitCard(currentCard.OwnerId, currentCard.Id)).Accepted, Is.True);
+            var before = session.Projection;
+
+            // Both halves of the old failure, together: the restore itself gets far enough to replace
+            // the graphs, and then the publication throws - which is the only path on which anything
+            // has to be put back at all.
+            session.CorruptNextPreImagePayloadForTest(UnreadablePayload(session));
+            session.FaultNextProjectionForTest(new ArgumentException("restore projection failure"));
+
+            var faulted = session.RestoreSnapshot(payload);
+
+            Assert.That(faulted.Accepted, Is.False);
+            Assert.That(faulted.RejectionReason, Is.EqualTo(MatchSessionRejectionReason.EngineFault),
+                "A failed restore is a typed refusal. Before this milestone the rollback's own throw " +
+                "escaped instead, so the caller got an exception and the session got a half-restore.");
+            Assert.That(faulted.Detail, Does.StartWith("ArgumentException:"),
+                "and the reported cause is the ORIGINAL failure, not whatever the rollback met.");
+            Assert.That(session.Projection, Is.SameAs(before),
+                "Unchanged means the exact previous immutable projection is still published.");
+            AssertProjectionTransactionState(session.Projection, before);
+
+            // The session is not merely refused, it is USABLE - which is the claim "unchanged" is
+            // making and the one a damaged session would fail.
+            var retried = session.RestoreSnapshot(payload);
+            Assert.That(retried.Accepted, Is.True, retried.Detail);
+            Assert.That(retried.Projection.AuthoritativeSnapshot,
+                Is.EqualTo(source.Projection.AuthoritativeSnapshot));
+            Assert.That(retried.Projection.AcceptedCommands, Is.Empty);
+            Assert.That(retried.Projection.IsHistoryAvailable, Is.False);
+        }
+
+        /// <summary>
+        /// Keeps the case above honest. The seam it arms produces a payload the DESERIALIZING
+        /// rollback still fails on, so "the restore survived it" is a statement about the restore
+        /// rather than about a harmless seam.
+        /// </summary>
+        [Test]
+        public void TheUnreadablePreImageSeam_StillDefeatsTheDeserializingRollback()
+        {
+            var session = CreateSession();
+            var card = GetCards(session, TeamSide.Red)[0];
+            Assert.That(session.Execute(
+                DirectorCommand.CommitCard(card.OwnerId, card.Id)).Accepted, Is.True);
+
+            session.CorruptNextPreImagePayloadForTest(UnreadablePayload(session));
+            var corrupted = session.aggregate.CapturePreImage();
+
+            Assert.That(() => session.aggregate.Rollback(corrupted), Throws.Exception,
+                "The pre-image the seam produces cannot be read back, which is the state milestone " +
+                "8.35z23 said a rollback had no answer for.");
+            Assert.That(corrupted.Authoritative.Payload, Is.Not.EqualTo(corrupted.AuthoritativePayload),
+                "and only the reported payload is corrupt - the capture behind it is the true one, " +
+                "so the refusal comparison the commit boundary runs cannot be steered by this seam.");
+        }
+
+        /// <summary>
+        /// A payload that is well-formed base64 and truncated authoritative state: it decodes and then
+        /// runs out mid-read, which is what an unreadable snapshot actually looks like here. A
+        /// non-base64 string would fail one step earlier and prove less.
+        /// </summary>
+        private static string UnreadablePayload(MatchSession session)
+        {
+            var bytes = Convert.FromBase64String(session.Projection.AuthoritativeSnapshot);
+            return Convert.ToBase64String(bytes.Take(bytes.Length / 3).ToArray());
+        }
+
         [Test]
         public void RetainedPrefixUndoWhoseProjectionFaults_LeavesCheckpointsAndPublishedStateIntact()
         {

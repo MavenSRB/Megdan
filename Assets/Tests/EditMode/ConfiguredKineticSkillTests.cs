@@ -401,6 +401,116 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(restored.CaptureSnapshot(), Is.EqualTo(afterThePush));
         }
 
+        /// <summary>
+        /// MILESTONE 8.35z43. The restore half of the pause above, ISOLATED - and restored
+        /// into the SESSION THAT IS PLAYING rather than into a fresh one.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why isolation is the method rather than a preference.</b> Milestone 8.35z34 found
+        /// its two-question restore defect only by separating undo from restore: a case that does both
+        /// can be carried by whichever half works, and the combined case above restores into a
+        /// FRESHLY CONSTRUCTED session, which is not the shape a live restore has. A session that has
+        /// been played has graphs, history, checkpoints and a published projection to displace; a new
+        /// one has none of that. This states the property on the shape that ships.</para>
+        /// <para>It is also the shape milestone 8.35z43 changed underneath: the restore path's
+        /// rollback no longer re-deserializes. A restore that SUCCEEDS must be untouched by that, and
+        /// the byte comparison at the end is what says the green path did not move.</para>
+        /// </remarks>
+        [Test]
+        public void ThePauseBetweenTheTwoQuestions_RestoresIntoTheSessionThatIsAlreadyPlaying()
+        {
+            var session = ConfiguredMatchFixtures.CreateKineticSession(
+                WaspCardContent.KineticBlast, stoppedShort: false);
+            CommitAgainstStopProjectiles(session, WaspCardContent.KineticBlast);
+            var actorAt = HeroSpace(session, TeamSide.Red);
+
+            StartSkill(session);
+            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
+            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            var betweenQuestions = session.CaptureSnapshot();
+
+            // Play PAST the pause, so the restore has real state to displace rather than an opening
+            // position that happens to match.
+            Answer(
+                session,
+                session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
+                    invocation.Candidate.Value.IntegerValue == 4));
+            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "The push resolved, so the node is closed and there is something to come back from.");
+
+            Assert.That(session.RestoreSnapshot(betweenQuestions).Accepted, Is.True);
+
+            var distance = session.Projection.PendingEffectChoice;
+            Assert.That(distance, Is.Not.Null,
+                "The restored pause is a pause: the node is open again.");
+            Assert.That(
+                distance.SelectInvocations.Select(invocation =>
+                    invocation.Candidate.Value.IntegerValue),
+                Is.EqualTo(new[] { 3, 4 }),
+                "and it is the DISTANCE question, not the unit question re-asked. A restored pause " +
+                "re-enters through Execute, so this is only true while Execute reads the answers " +
+                "already given - which is exactly what 8.35z34 found missing on the other node.");
+            Assert.That(distance.ConfirmInvocation, Is.Null,
+                "The restored question keeps its own floor, so it is the second question in full " +
+                "rather than a re-derived first one wearing the right candidates.");
+
+            Answer(
+                session,
+                distance.SelectInvocations.Single(invocation =>
+                    invocation.Candidate.Value.IntegerValue == 3));
+            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            Assert.That(
+                HexDistanceQuery.Calculate(actorAt, HeroSpace(session, TeamSide.Blue)),
+                Is.EqualTo(4),
+                "and the unit the FIRST answer named is the one that travelled, at the distance the " +
+                "second one chose after the restore.");
+        }
+
+        /// <summary>
+        /// MILESTONE 8.35z43. The undo half, isolated, asserting the QUESTION rather than the
+        /// snapshot bytes.
+        /// </summary>
+        /// <remarks>
+        /// The combined case above proves the undone position serializes to the same payload, which is
+        /// a statement about state. This one asks what a player would be looking at, which is a
+        /// statement about the offer - and the two can differ, because the pending choice is re-derived
+        /// on publication rather than read out of the payload. 8.35z34's defect was invisible in the
+        /// bytes and visible in the question.
+        /// </remarks>
+        [Test]
+        public void ThePauseBetweenTheTwoQuestions_IsTheDistanceQuestionAgainAfterAnUndo()
+        {
+            var session = ConfiguredMatchFixtures.CreateKineticSession(
+                WaspCardContent.KineticBlast, stoppedShort: false);
+            CommitAgainstStopProjectiles(session, WaspCardContent.KineticBlast);
+
+            StartSkill(session);
+            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
+            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            Answer(
+                session,
+                session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
+                    invocation.Candidate.Value.IntegerValue == 4));
+            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+
+            // Two commands closed the distance question - naming a number and confirming it.
+            Assert.That(session.Undo().Accepted, Is.True);
+            Assert.That(session.Undo().Accepted, Is.True);
+
+            var distance = session.Projection.PendingEffectChoice;
+            Assert.That(distance, Is.Not.Null,
+                "Undo puts the resolution back between its two questions.");
+            Assert.That(
+                distance.SelectInvocations.Select(invocation =>
+                    invocation.Candidate.Value.IntegerValue),
+                Is.EqualTo(new[] { 3, 4 }),
+                "and the standing question is the DISTANCE one. An undo rebuilds by replaying, so " +
+                "this can hold while the restore path does not - which is why the two are separate " +
+                "cases rather than one.");
+        }
+
         // ---------------------------------------------------------------------------------------
         // The two primaries are no longer greyed
         // ---------------------------------------------------------------------------------------

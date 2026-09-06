@@ -392,6 +392,11 @@ namespace GuardsDigital.Application
         /// with no composer transitions exactly as milestone 8.35a wrote it, serving the match it was
         /// constructed with. That is the whole backward-compatibility guarantee, expressed as an
         /// absent optional rather than as a flag.</para>
+        /// <para><b>Milestone 8.35z43 bounded that guarantee to what it was always for.</b>
+        /// A session predating this seam never picks a hero, so leaving this null is only silent
+        /// while the selection stays untouched. A session that COMPLETED a selection and has no
+        /// composer is refused loudly at the transition rather than quietly fielding the printed
+        /// line-up over the top of six accepted picks.</para>
         /// <para>Settable rather than a constructor argument because the thing that composes a scene
         /// and the thing that starts a listener are the same object, and it configures itself in a
         /// Unity <c>Start</c> that runs after this host is built. It is read exactly once, at the
@@ -1170,13 +1175,21 @@ namespace GuardsDigital.Application
         /// host to what it built.
         /// </summary>
         /// <remarks>
-        /// <para><b>Three ways this does nothing at all, and each is a real path.</b> No composer
-        /// attached: every fixture and every rehearsal that predates the seam, which serve the match
-        /// they were constructed with. A composer that returns null: a scene that has already
-        /// composed exactly what was asked for and has nothing to rebuild. An incomplete selection:
-        /// a session where nobody picked, whose line-up is the printed one the provisional match
-        /// already deals - recomposing it would produce the identical match, which is asserted
-        /// rather than assumed, so not composing is the same answer for less work.</para>
+        /// <para><b>Two ways this does nothing at all, and each is a real path.</b> An incomplete
+        /// selection: a session where nobody picked - every fixture and every rehearsal that predates
+        /// the seam included - whose line-up is the printed one the provisional match already deals;
+        /// recomposing it would produce the identical match, which is asserted rather than assumed,
+        /// so not composing is the same answer for less work. A composer that returns null: a scene
+        /// that has already composed exactly what was asked for and has nothing to rebuild.</para>
+        ///
+        /// <para><b>Milestone 8.35z43: "no composer attached" is no longer one of them.</b>
+        /// It used to share the incomplete-selection return, which made a session that had accepted
+        /// and broadcast six picks and could not honour them indistinguishable from one correctly
+        /// leaving the printed line-up alone. The backward-compatibility guarantee is unchanged,
+        /// because the condition that actually means "this session predates the seam" is the
+        /// SELECTION being untouched, not the composer being absent - and those two only ever
+        /// coincided. A completed selection with nowhere to send it is a wiring defect and is thrown
+        /// on, naming the line-up that would have been discarded.</para>
         ///
         /// <para><b>The seat check is not defensive coding.</b> Every live connection's seat, epoch
         /// and reconnect capability is keyed by <see cref="SeatId"/>, so a recomposed match that
@@ -1188,10 +1201,57 @@ namespace GuardsDigital.Application
         /// </remarks>
         private void ComposeMatchForSelection()
         {
-            var composer = Composition;
-            if (composer == null || !selection.IsComplete)
+            if (!selection.IsComplete)
             {
+                // Nobody picked anything. `FillUnpickedSeats` deliberately leaves an untouched
+                // selection incomplete, and this is the guard that reading is for: the printed
+                // line-up the provisional match already deals is the right answer, and composing it
+                // again would produce the identical match for more work.
                 return;
+            }
+
+            var composer = Composition;
+            if (composer == null)
+            {
+                // Milestone 8.35z43. The two conditions used to share one `return`, which
+                // made this case - a selection that COMPLETED with no composer attached - silently
+                // indistinguishable from the legitimate one above, and the players' picks were
+                // dropped on the floor while every one of them had been accepted and broadcast.
+                //
+                // It is a wiring defect rather than a session state: production attaches the composer
+                // in `PrivateLobbyViews` at the one moment it can, unconditionally, so reaching here
+                // means something composed a host that can take picks and cannot honour them. That is
+                // thrown on for the same reason the seat check below is - a silently wrong board is
+                // worse than a loud stop - and it names the line-up that would have been discarded so
+                // the report is about the players' choices rather than about a null.
+                //
+                // The cost of getting this wrong is measured rather than imagined: milestone
+                // 8.35z37's own Play Mode journey drove a host with no composer for exactly this
+                // reason, accepted six picks, fielded the printed line-up, and still passed - because
+                // six heroes into six seats is always the same SET. This is what that failure sounds
+                // like now.
+                var named = new System.Text.StringBuilder();
+                foreach (var seat in selection.PickOrder)
+                {
+                    if (!selection.TryGetChoice(seat.Seat, out var hero))
+                    {
+                        continue;
+                    }
+
+                    if (named.Length > 0)
+                    {
+                        named.Append(", ");
+                    }
+
+                    named.Append(seat.Seat.Value).Append('=').Append(hero.HeroIdValue);
+                }
+
+                throw new InvalidOperationException(
+                    "A completed hero selection has no composition to hand it to, so the line-up " +
+                    "every seat settled on would be discarded and the provisional match fielded in " +
+                    "its place. The discarded line-up is " + named + ". A host that admits hero " +
+                    "picks must be given an " + nameof(IDeferredMatchComposition) +
+                    " before the transition.");
             }
 
             var composed = composer.ComposeForLineup(selection.BuildLineup());

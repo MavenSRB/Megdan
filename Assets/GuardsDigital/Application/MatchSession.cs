@@ -211,9 +211,26 @@ namespace GuardsDigital.Application
             return Reconstruct(Array.Empty<DirectorCommand>(), "Restart");
         }
 
+        /// <summary>
+        /// Installs the state a snapshot describes, or refuses and leaves this session exactly as it
+        /// was. There is no third outcome: a restore this session cannot complete never damages the
+        /// match that was being played.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Milestone 8.35z43: the rollback here REINSTATES rather than
+        /// re-deserializes.</b> It used to carry a pre-image and rebuild from it, which meant the
+        /// failure path parsed a payload - and a failed restore is exactly the situation in which the
+        /// state being described may be one this build cannot read back. The second throw then escaped
+        /// this method uncaught, leaving the session holding graphs from a half-finished restore.
+        /// Milestone 8.35z23 recorded that after fixing the three causes that could reach it.</para>
+        /// <para>Reinstatement is available here and nowhere else, which is why this is not a change
+        /// to the aggregate's general rollback: a restore REPLACES the graphs rather than mutating
+        /// them, so the ones it displaces are still intact and putting them back cannot fail. A
+        /// command mutates in place, and for that a description really is all there is.</para>
+        /// </remarks>
         public MatchSessionOperationResult RestoreSnapshot(string payload)
         {
-            var rollback = aggregate.CapturePreImage();
+            var reinstatement = aggregate.Capture();
             var rollbackHistory = history.Commands;
             var rollbackCheckpoints = checkpoints.ToArray();
             var rollbackCanRecordHistory = canRecordHistory;
@@ -221,13 +238,13 @@ namespace GuardsDigital.Application
             try
             {
                 // A snapshot restore begins a fresh round position, so it installs no prior round
-                // events. A rollback goes through the aggregate instead, carrying the pre-image it
-                // captured, because a refused operation must leave that stream as it found it.
+                // events. A rollback goes through the aggregate instead, putting back the graphs it
+                // was holding, because a refused operation must leave that stream as it found it.
                 aggregate.Restore(payload);
             }
             catch (Exception exception)
             {
-                aggregate.Rollback(rollback);
+                aggregate.Adopt(reinstatement);
                 return OperationRejected(MatchSessionRejectionReason.SnapshotRejected, exception.Message);
             }
 
@@ -247,7 +264,7 @@ namespace GuardsDigital.Application
             }
             catch (Exception exception)
             {
-                aggregate.Rollback(rollback);
+                aggregate.Adopt(reinstatement);
                 history.ReplaceWith(rollbackHistory);
                 checkpoints.Clear();
                 checkpoints.AddRange(rollbackCheckpoints);
@@ -621,7 +638,12 @@ namespace GuardsDigital.Application
             IReadOnlyList<DirectorCommand> commands,
             string operation)
         {
-            var rollback = aggregate.CapturePreImage();
+            // Milestone 8.35z43. The reinstatement rollback, for the same reason
+            // `RestoreSnapshot` uses one: `Adopt` REPLACES the graphs rather than mutating them, so
+            // the ones it displaces are still intact and putting them back is an assignment that
+            // cannot fail. Re-deserializing a pre-image here could, and an Undo whose rollback threw
+            // would leave the session holding an adopted candidate it had just refused.
+            var reinstatement = aggregate.Capture();
             // The history's snapshot survives any replacement, so holding it is the rollback copy.
             var rollbackHistory = history.Commands;
             var rollbackCheckpoints = checkpoints.ToArray();
@@ -666,7 +688,7 @@ namespace GuardsDigital.Application
             }
             catch (Exception exception)
             {
-                aggregate.Rollback(rollback);
+                aggregate.Adopt(reinstatement);
                 history.ReplaceWith(rollbackHistory);
                 checkpoints.Clear();
                 checkpoints.AddRange(rollbackCheckpoints);
@@ -969,6 +991,22 @@ namespace GuardsDigital.Application
         internal void FaultNextProjectionForTest(Exception fault)
         {
             nextProjectionFaultForTest = fault ?? throw new ArgumentNullException(nameof(fault));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z43. Makes the next pre-image this session's aggregate captures
+        /// report an unreadable payload, so a fixture can state what a rollback does when the state it
+        /// would have re-deserialized cannot be read back.
+        /// </summary>
+        /// <remarks>
+        /// The property under test is that <see cref="RestoreSnapshot"/> no longer cares: it rolls
+        /// back by reinstating the graphs it was holding, so nothing on its failure path asks the
+        /// serializer to read anything. The seam is one-shot and internal on the same terms as
+        /// <see cref="FaultNextProjectionForTest"/>.
+        /// </remarks>
+        internal void CorruptNextPreImagePayloadForTest(string payload)
+        {
+            aggregate.CorruptNextPreImagePayloadForTest(payload);
         }
 
         /// <summary>

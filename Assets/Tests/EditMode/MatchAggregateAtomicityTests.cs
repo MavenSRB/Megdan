@@ -137,8 +137,20 @@ namespace GuardsDigital.Tests.EditMode
             // ignores both is exactly as correct as one that rebuilds them.
             var derivedCaches = new[] { "memoizedAuthoritative", "completedRoundsCache" };
 
+            // Milestone 8.35z43. Not state the aggregate holds ABOUT THE MATCH at all: a
+            // one-shot arming flag for a friend-assembly seam, armed by a fixture and consumed by
+            // the very next capture. It is deliberately its own category rather than filed under
+            // `derivedCaches`, because a cache is re-derivable from authoritative state and this is
+            // not derivable from anything - it is an instruction that has not been carried out yet.
+            //
+            // The classification decision this fixture asks for: a rollback must NOT preserve it.
+            // Nothing about the match depends on it, and a rollback that carried it forward would
+            // re-arm a seam the capture had already spent. It is null in every shipped path.
+            var testSeams = new[] { "nextPreImagePayloadCorruptionForTest" };
+
             var classified = new HashSet<string>(
-                serializedGraphs.Concat(carriedStreams).Concat(constructionInputs).Concat(derivedCaches),
+                serializedGraphs.Concat(carriedStreams).Concat(constructionInputs)
+                    .Concat(derivedCaches).Concat(testSeams),
                 StringComparer.Ordinal);
             var actual = typeof(MatchAggregate)
                 .GetFields(BindingFlags.NonPublic | BindingFlags.Instance)
@@ -153,8 +165,9 @@ namespace GuardsDigital.Tests.EditMode
                 "through a rollback. Decide which it is: restored by the authoritative payload " +
                 "(add it to the serializer and to `serializedGraphs`); authoritative but not " +
                 "persisted (carry it in `MatchPreImage` and add it to `carriedStreams`); or neither " +
-                "authoritative nor persisted (`constructionInputs` or `derivedCaches`). Choosing " +
-                "wrongly loses the state at the next refused command, which is `RISK-STATE-002`.");
+                "authoritative nor persisted (`constructionInputs`, `derivedCaches` or " +
+                "`testSeams`). Choosing wrongly loses the state at the next refused command, which " +
+                "is `RISK-STATE-002`.");
         }
 
         /// <summary>

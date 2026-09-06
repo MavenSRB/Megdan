@@ -312,11 +312,38 @@ Non-goals: no content edit and no new capability; no change to the bound-target 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z42-grey-a-card-text-attack-whose-own-move-cannot-bring-anything-into-reach-completion-evidence).
 
+### [x] 8.35z43 Roll a refused restore back with the graphs it displaced, not by re-reading them
+
+Discharges the corrective debt milestone 8.35z23 recorded against `RISK-STATE-002`, and carries four smaller structural hardenings that were queued behind it.
+
+Observable outcome: a restore the reader refuses leaves the session refused-and-unchanged rather than half-restored, on the undo and restart paths as well as the restore path; a practice-bot seat driver that is asked to drive a seat it does not own refuses; and a completed hero selection with no composer fails loudly instead of quietly composing nothing.
+
+**The rollback ran the deserializer on the failure path, which is where it is least safe.** `MatchSession.RestoreSnapshot` caught a failed restore and rolled back by RE-DESERIALIZING the pre-image - and a failed restore is exactly the situation where the state being described may be one this build cannot read. The second throw escaped uncaught, after the graphs had already been replaced, leaving a live session holding a half-finished restore where its own contract promises "refused, unchanged".
+
+**The fix needed no new type, and the reason it is available here is structural.** The aggregate already carried the capture/adopt pair the replay path uses, and that pair IS a rollback that cannot fail: a restore REPLACES the graphs and never mutates the ones it displaces, so the old graphs are still intact and reinstalling them is an assignment. A command, by contrast, mutates its graphs in place, and for that a serialized pre-image really is all that is left - which is why the aggregate's own rollback stays exactly as it was for command execution. The same two lines extend to reconstruction (undo and restart), whose catch had the identical fragility; hardening one and leaving its twin would have been half a fix. A second property fell out unlooked for: the old rollback replaced the live authorities with deserialized copies even on a REFUSAL, so "refused, unchanged" silently swapped every authority object. It is now literally untouched.
+
+**The recorded batch-push finding was WRONG, and the gap was coverage rather than behaviour.** Milestone 8.35z34's site note claimed a batched push could re-enter execution without consulting the answers already given. It has consulted them since milestone 8.8, blamed to the commit that introduced it; what was missing was a test saying so. Three cases now say it, and the stale note is corrected rather than left to mislead the next reader.
+
+**The bot evaluation screening retuned nothing, and that is the honest result.** Three signals measure as inert and one is live with the incumbent weight already jointly best; the one apparent outlier is one match in forty, which is noise. A wrinkle is recorded rather than smoothed over: the default configuration no longer reproduces the recorded phase-A invariance figure, so the standing suite pins the MECHANISM - the decision-change counts - rather than a replay of a number that has moved.
+
+Acceptance checks:
+
+- A restore whose pre-image cannot be read is refused with a typed refusal, leaves the published projection instance and the full transaction state untouched, and a subsequent restore of a readable snapshot succeeds - which a damaged session would fail.
+- The seam that produces an unreadable pre-image is proved still to defeat a deserializing rollback, so the case above cannot pass vacuously.
+- The undo and restart reconstruction path is hardened by the same pair and asserted on the same terms.
+- A practice-bot seat driver refuses a seat it does not own, drives one it does, is absent by default, and does not throw on a per-frame update in any of its three states.
+- A completed hero selection with no composer throws naming the discarded line-up seat by seat.
+- The complete unfiltered dotnet harness passes at the final revision.
+
+Non-goals: no bot weight is retuned and no evaluation signal is added or removed; no change to the aggregate's command-execution rollback, which is a different mechanism; and no reassessment of `RISK-STATE-002` itself, which needs the register's own ownership review.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z43-roll-a-refused-restore-back-with-the-graphs-it-displaced-not-by-re-reading-them-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.
 
-- **The refused-restore rollback can fail on the recovery path.** `MatchSession.RestoreSnapshot` catches a failed restore and rolls the aggregate back by RE-DESERIALIZING the pre-image. When the state that failed is one the reader refuses, the rollback throws a second time, uncaught, and the session is left damaged where the session's own contract promises "restore refused, unchanged" - which is why milestone 8.35z22's reporting run logged a throw rather than a refusal. This is a mechanism `RISK-STATE-002` does not currently name: that row records the rollback as LOSSY for unpersisted state, not as ABLE TO FAIL. Milestone 8.35z23 removed the two reachable causes rather than the mechanism, so no repro remains to drive a hardening and none was invented; the candidates are carrying the pre-image as an object, or making a rollback failure non-throwing. Proposed as its own corrective; not scheduled here.
+- **The refused-restore rollback can fail on the recovery path.** `MatchSession.RestoreSnapshot` catches a failed restore and rolls the aggregate back by RE-DESERIALIZING the pre-image. When the state that failed is one the reader refuses, the rollback throws a second time, uncaught, and the session is left damaged where the session's own contract promises "restore refused, unchanged" - which is why milestone 8.35z22's reporting run logged a throw rather than a refusal. This is a mechanism `RISK-STATE-002` does not currently name: that row records the rollback as LOSSY for unpersisted state, not as ABLE TO FAIL. Milestone 8.35z23 removed the two reachable causes rather than the mechanism, so no repro remains to drive a hardening and none was invented; the candidates are carrying the pre-image as an object, or making a rollback failure non-throwing. Proposed as its own corrective; not scheduled here. **Discharged by milestone 8.35z43**, which took the first of the two candidates named above: the pre-image is carried as an OBJECT through the aggregate's existing capture/adopt pair, so the rollback is an assignment that cannot fail, and the same two lines harden the undo and restart reconstruction path whose catch carried the identical fragility. The reassessment of `RISK-STATE-002` itself still waits on that register's ownership review.
 ### [~] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
 Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.

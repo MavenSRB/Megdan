@@ -277,6 +277,43 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// MILESTONE 8.35z43. A selection that COMPLETED with no composer attached is a
+        /// wiring defect, and it now says so instead of dropping the players' picks.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The two cases either side of this one are what made it necessary.</b> "No
+        /// composer" and "nobody picked" used to share a single early return, so a host that had
+        /// taken six picks, broadcast them on the roster, and had nowhere to send them was
+        /// indistinguishable from a host that was correctly leaving the printed line-up alone. The
+        /// backward-compatibility guarantee above is preserved exactly - it is keyed on the SELECTION
+        /// being untouched, which is the condition that actually means "this session predates the
+        /// seam" - and only the impossible combination is loud.</para>
+        /// <para><b>It is a safety net rather than a live path.</b> Production attaches the composer
+        /// in <c>PrivateLobbyViews</c> unconditionally, at the one moment it can; every fixture that
+        /// picks a hero attaches one too. The cost of NOT having the net is on record: milestone
+        /// 8.35z37's own Play Mode journey ran a composer-less host through six accepted picks and
+        /// still passed, because six heroes into six seats is always the same set.</para>
+        /// </remarks>
+        [Test]
+        public void ACompletedSelectionWithNoComposer_IsRefusedLoudlyAndNamesWhatWouldBeDiscarded()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            SeatEveryone(driver);
+            PickInPrintedOrder(driver);
+
+            var failure = Assert.Throws<System.InvalidOperationException>(
+                () => ReadyEveryone(driver),
+                "A host that accepted every pick and has nowhere to send them must not transition " +
+                "quietly onto the printed board.");
+
+            Assert.That(failure.Message, Does.Contain("hero-sabina"),
+                "The refusal names the line-up that would have been discarded, so the report is " +
+                "about the players' choices rather than about a null reference.");
+            Assert.That(failure.Message, Does.Contain(nameof(IDeferredMatchComposition)),
+                "and it names the thing that was missing, which is what makes it actionable.");
+        }
+
+        /// <summary>
         /// THE GUARD that keeps the shipped default: nobody picked, so the composer is never called
         /// and the provisional - printed - match stands.
         /// </summary>
