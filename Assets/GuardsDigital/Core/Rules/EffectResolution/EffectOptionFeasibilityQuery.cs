@@ -34,14 +34,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <summary>
         /// What a walk proves about one node or branch. The three are distinct because the enclosing
         /// sequence treats them differently: only <see cref="Blocked"/> means nothing after this can
-        /// run, and only <see cref="Performable"/> means the option is worth offering.
+        /// run, and only <see cref="Performable"/> means the option is worth <em>taking</em>.
+        ///
+        /// <para>Worth taking and worth offering stopped being the same question at milestone
+        /// 8.35z35. <see cref="FindUnperformableOptions"/> refuses <see cref="Blocked"/> alone,
+        /// because a mode that can be taken and would change nothing is a legal answer - p.12's Hold on
+        /// the actor's own modal, and the escape hatch on one the card hands to an opponent. The other
+        /// two callers still ask "worth taking": <see cref="CanApplyAnything"/> will not offer an action
+        /// that can do nothing at all, and <see cref="CanPerformOptionalBranch"/> will not open a
+        /// confirm-or-decline whose two answers leave the same board. Those are questions about whether
+        /// a prompt should exist; this one is about which answers a prompt that exists may carry.</para>
         /// </summary>
         private enum Verdict
         {
             /// <summary>Applies nothing here, and stops nothing either: execution carries on.</summary>
             Empty = 0,
 
-            /// <summary>Something here can apply, pause, or publish. The option is offered.</summary>
+            /// <summary>Something here can apply, pause, or publish.</summary>
             Performable = 1,
 
             /// <summary>A mandatory step cannot be taken, so the resolution stops at it.</summary>
@@ -57,12 +66,31 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>
         /// The options of <paramref name="chooseNode"/> the chooser cannot perform, in the definition's
-        /// own order. Empty when every option can be performed, and never larger than the option set.
+        /// own order. Empty when every option can be taken, and never larger than the option set.
         ///
         /// Feasibility is a reading of the state as it stands, never a stored fact: this is asked again
         /// at every pause, on snapshot restore, on replay, and on retained-prefix Undo, so a mode that
         /// becomes performable inside one frame becomes selectable and one that stops being performable
         /// stops being offered.
+        ///
+        /// <para><b>Milestone 8.35z35 - the two-tier rule, and it is a rules decision rather than
+        /// a presentation one.</b> Only <see cref="Verdict.Blocked"/> is refused here. Since milestone
+        /// 6.5ac this asked for <see cref="Verdict.Performable"/> and greyed everything else, which put
+        /// two different rules facts behind one grey: a mode that <em>cannot be taken</em> - a mandatory
+        /// step of it stops the resolution - and a mode that <em>can be taken and would apply
+        /// nothing</em>. The designer's 2026-08-19 ruling separates them, and the separation matters
+        /// because the second one is a move. "An enemy hero in range chooses one" hands the choice to
+        /// the opponent, and the bullet that does nothing to them is the escape hatch that decision
+        /// exists to offer; on the actor's own modal it is p.12's Hold, which the page says a player can
+        /// always take. Greying it deleted a legal answer from the board.</para>
+        ///
+        /// <para>Nothing about the refused tier moves. A mandatory step that cannot be taken still ends
+        /// its branch, so the option still carries no way to select it, still says which standing rule
+        /// refused it (milestone 8.35l), and a node whose every option is blocked still reaches
+        /// milestone 6.5ae's stop. What changes is that a branch the walk proves merely <em>empty</em>
+        /// is now offered and choosing it completes the node applying nothing - which is what the
+        /// resolver already did with every empty step inside such a branch, so the answer and the offer
+        /// finally read the state the same way.</para>
         /// </summary>
         public static IReadOnlyList<EffectChoiceCandidate> FindUnperformableOptions(
             EffectNodeDefinition chooseNode,
@@ -79,7 +107,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             foreach (var option in chooseNode.ChildNodeIds)
             {
                 var budget = MaximumNodesPerOption;
-                if (Walk(option, frame, completed, context, ref budget) != Verdict.Performable)
+                if (Walk(option, frame, completed, context, ref budget) == Verdict.Blocked)
                 {
                     refused.Add(EffectChoiceCandidate.Option(option));
                 }

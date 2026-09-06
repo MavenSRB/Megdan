@@ -943,6 +943,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             // Milestone 6.5ac: an option the chooser cannot perform is refused rather
                             // than offered, so no card is spent on a mode that was never going to do
                             // anything.
+                            // Milestone 8.35z35 narrowed what that sentence covers. Refused now
+                            // means blocked - a mandatory step of the branch stops the resolution - and
+                            // an option that can be taken while applying nothing is offered, because
+                            // taking it is a legal answer rather than a wasted card. Every count below
+                            // reads this list, so `everyOptionRefused`, the p.10 decline and milestone
+                            // 6.5ae's stop all follow the narrowed reading without being told twice.
                             var unavailable = EffectOptionFeasibilityQuery.FindUnperformableOptions(
                                 node, frame, outcomes, context);
                             var everyOptionRefused = unavailable.Count == node.ChildNodeIds.Count;

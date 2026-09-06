@@ -765,6 +765,48 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z35 (Ruling 17) at the card the ruling was written about. These two
+        /// faces are the canonical opponent-chosen modal, and their first bullets sit on OPPOSITE sides
+        /// of the two-tier line - by their printed words, not by anything the resolver decides.
+        ///
+        /// <para>Lesser Evil's discard is <c>if able</c>, so against a hero holding nothing the bullet
+        /// applies nothing and STOPS nothing: the feasibility walk reads it empty rather than blocked,
+        /// and Ruling 17 offers an empty option. That is the escape hatch the decision exists to give -
+        /// the card hands the choice to the enemy, and the enemy is entitled to the bullet that costs
+        /// them least. Greater Good's discard is mandatory with an escalation behind it, so it is one
+        /// step with two ways to complete and is never merely empty.</para>
+        ///
+        /// <para>The offer rule itself is proven over the synthetic vocabulary in
+        /// <c>EffectOptionFeasibilityTests</c>, where nothing reads a card. What is pinned here is the
+        /// declaration that puts THIS card on THIS side of it, so a later content edit that made the
+        /// discard mandatory would fail here rather than silently deleting the escape hatch.</para>
+        /// </summary>
+        [Test]
+        public void LesserEvilsFirstBullet_IsEmptyRatherThanBlocked_SoRuling17OffersIt()
+        {
+            var lesser = SkillRoot(WhisperCardContent.LesserEvil);
+            var lesserModal = NodesOf(lesser).Single(node => node.Kind == EffectNodeKind.Choose);
+            var lesserPrice = lesser.GetNode(lesserModal.ChildNodeIds[0]);
+
+            Assert.That(lesserPrice.Kind, Is.EqualTo(EffectNodeKind.Sequence));
+            Assert.That(
+                lesserPrice.ChildNodeIds.Select(id => lesser.GetNode(id).FailurePolicy),
+                Is.EqualTo(new[] { EffectFailurePolicy.IfAble }),
+                "The bullet's every step is `if able`, so nothing in it can stop the resolution: the " +
+                "branch is empty, never blocked, and an empty option is offered.");
+
+            var greater = SkillRoot(WhisperCardContent.GreaterGood);
+            var greaterModal = NodesOf(greater).Single(node => node.Kind == EffectNodeKind.Choose);
+            var greaterPrice = greater.GetNode(greaterModal.ChildNodeIds[0]);
+
+            Assert.That(
+                greater.GetNode(greaterPrice.ChildNodeIds[0]).FailurePolicy,
+                Is.EqualTo(EffectFailurePolicy.Mandatory),
+                "Greater Good prints \"or is defeated\" instead, so its first step is mandatory and " +
+                "this bullet is not the empty one.");
+        }
+
+        /// <summary>
         /// The 2026-09-06 ruling on WH-08: "a minion" and "3 minions" name no side, and Whisper's own
         /// vocabulary prints "enemy" five times elsewhere, so the omission is the definition.
         /// </summary>

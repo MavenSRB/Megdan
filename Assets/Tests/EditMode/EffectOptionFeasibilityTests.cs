@@ -563,6 +563,140 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Milestone 8.35z35: the two tiers. Blocked is greyed; empty-but-takeable is offered.
+        //
+        // Ruling 17 splits one grey into two rules facts. Since milestone 6.5ac a `Choose` greyed every
+        // option the walk did not prove `Performable`, which put "a mandatory step of this branch stops
+        // the resolution" and "this branch can be taken and would apply nothing" behind the same
+        // disabled control. Only the first is a refusal. The second is a move: p.12's Hold on the
+        // actor's own modal - the page says a player is never forced to perform an action - and on a
+        // node the card hands to an opponent ("An enemy hero in range chooses one") it is the escape
+        // hatch the decision exists to offer. Greying it deleted a legal answer.
+        //
+        // The fixtures below are the same synthetic vocabulary the cases above use, and the one thing
+        // that separates the tiers is the refusing node's own failure policy: `ImpossibleV1` under
+        // `Mandatory` blocks, and the identical capability under `if able` is skipped, which is exactly
+        // p.10's distinction rather than anything this milestone invented.
+        // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void AnOptionThatCanBeTakenAndAppliesNothing_IsOfferedRatherThanGreyed()
+        {
+            var paused = Start(Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.IfAble),
+                Leaf(Second, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory)));
+
+            var choice = paused.Frame.PendingChoice;
+            Assert.That(choice.UnavailableCandidates, Is.Empty,
+                "`if able` turns the impossible step into a skip, so nothing stops this branch: it " +
+                "can be taken, and taking it applies nothing. That is a legal answer, not a refusal.");
+            Assert.That(choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { First, Second }),
+                "So both modes carry a way to select them.");
+            Assert.That(choice.StopInvocation, Is.Null,
+                "And nothing here is refused, so milestone 6.5ae's stop has nothing to close.");
+        }
+
+        [Test]
+        public void AMixedNode_GreysTheBlockedArmAndStillOffersTheEmptyOne()
+        {
+            // The case that proves the split is a split rather than a blanket lift: one option of this
+            // node genuinely cannot be taken and the other can, and they are the same capability.
+            var paused = Start(Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.IfAble)));
+
+            var choice = paused.Frame.PendingChoice;
+            Assert.That(choice.Candidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { First, Second }),
+                "Both modes are projected, as they always were.");
+            Assert.That(choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Is.EqualTo(new[] { First }),
+                "Only the arm a mandatory step stops is greyed.");
+            Assert.That(choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { Second }),
+                "And the empty arm keeps the way to select it.");
+            Assert.That(choice.StopInvocation, Is.Null,
+                "The node still offers something, so it is not milestone 6.5ae's position.");
+        }
+
+        [Test]
+        public void AMandatoryNodeWhoseOptionsAreAllEmpty_OffersEveryOneOfThemAndNoStop()
+        {
+            // Every option applies nothing and every option can be taken. Before the split this greyed
+            // all of them and offered p.10's stop, which ENDS THE ACTION - so a later step of the card
+            // never ran. Taking an empty bullet completes the node instead, which is the difference
+            // between a card that did nothing here and a card that stopped here.
+            var paused = Start(Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.IfAble),
+                Leaf(Second, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.IfAble)));
+
+            var choice = paused.Frame.PendingChoice;
+            Assert.That(choice.UnavailableCandidates, Is.Empty);
+            Assert.That(choice.SelectInvocations.Select(invocation => invocation.Candidate.OptionNodeId),
+                Is.EqualTo(new[] { First, Second }));
+            Assert.That(choice.StopInvocation, Is.Null,
+                "The stop is for a node with nothing takeable in it, and this node is all takeable.");
+        }
+
+        [Test]
+        public void ChoosingAnEmptyOption_AppliesNothingAndLetsTheRestOfTheActionRun()
+        {
+            // The no-op has to be honest in both directions: nothing applied, and nothing hung either.
+            var after = new EffectNodeId("after");
+            var sequence = new EffectNodeId("sequence");
+            var definition = new EffectDefinition(
+                new EffectDefinitionId("empty-option-fixture"), "rev-1", sequence,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { Root, after }),
+                    new EffectNodeDefinition(
+                        Root, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { First, Second },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 1),
+                    Leaf(First, SyntheticEffectCapabilities.ImpossibleV1, EffectFailurePolicy.IfAble),
+                    Leaf(Second, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory),
+                    Leaf(after, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory)
+                });
+
+            var paused = Start(definition);
+            var choice = paused.Frame.PendingChoice;
+
+            var selection = choice.SelectInvocations
+                .SingleOrDefault(invocation => invocation.Candidate.OptionNodeId.Equals(First));
+            Assert.That(selection, Is.Not.Null,
+                "The empty option carries a way to select it, which is the whole ruling.");
+
+            var selected = EffectResolutionSession.Answer(
+                paused.Frame, selection, Context(definition));
+            Assert.That(selected.Accepted, Is.True);
+
+            var confirmation = selected.Frame.PendingChoice.ConfirmInvocation;
+            Assert.That(confirmation, Is.Not.Null,
+                "One empty selection satisfies the node's minimum, so it is confirmable.");
+
+            var confirmed = EffectResolutionSession.Answer(
+                selected.Frame, confirmation, Context(definition));
+
+            Assert.That(confirmed.Accepted, Is.True);
+            Assert.That(confirmed.IsComplete, Is.True,
+                "The action finishes rather than hanging on a pause nobody can answer.");
+            Assert.That(confirmed.Frame, Is.Null);
+            Assert.That(Kinds(confirmed), Does.Contain("root=Applied"),
+                "The node completes: a mode was chosen and its text was applied, and its text " +
+                "applying nothing is what the branch says.");
+            Assert.That(Kinds(confirmed), Does.Contain("after=Applied"),
+                "So the ordered step after the modal still runs - which the stop would have skipped.");
+        }
+
+        // -------------------------------------------------------------------------------------------
         // Milestone 8.29e: the same question, asked of an `Optional` node's one branch
         // -------------------------------------------------------------------------------------------
 

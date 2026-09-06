@@ -239,11 +239,21 @@ namespace GuardsDigital.Tests.EditMode
                 "Repeat can ask for one.");
         }
 
+        /// <summary>
+        /// The walk's verdict on a repeat has not moved: a repeat re-runs the very action being judged,
+        /// so it adds nothing of its own to that judgement and is read as empty rather than performable.
+        ///
+        /// <para><b>What the verdict now decides is narrower.</b> Milestone 8.35z35 (Ruling 17)
+        /// stopped <see cref="EffectOptionFeasibilityQuery.FindUnperformableOptions"/> greying an empty
+        /// option: only a branch a mandatory step blocks is refused, and a repeat is blocked by nothing.
+        /// So this option is offered, and the concern the empty verdict exists for is answered where it
+        /// was always the real question - <see cref="EffectOptionFeasibilityQuery.CanApplyAnything"/>,
+        /// which still refuses to offer an ACTION that can do nothing but repeat itself. Both halves are
+        /// asserted here so the pair cannot drift into one.</para>
+        /// </summary>
         [Test]
         public void TheFeasibilityWalk_JudgesARepeatEmptyRatherThanPerformable()
         {
-            // A `Choose` between a repeat and an inert branch: if a repeat counted as performable, the
-            // option would be offered on the strength of being able to do nothing twice.
             var definition = Definition(
                 new EffectNodeDefinition(
                     new EffectNodeId("root"), EffectNodeKind.Choose, EffectFailurePolicy.UpTo,
@@ -256,24 +266,41 @@ namespace GuardsDigital.Tests.EditMode
 
             var refused = EffectOptionFeasibilityQuery.FindUnperformableOptions(
                 definition.GetNode(new EffectNodeId("root")),
-                EffectResolutionSession.BuildStartFrame(
-                    new EffectResolutionId("feasibility-fixture"),
-                    new CardInstanceId("session-card"),
-                    default,
-                    new ActionDefinitionId("session-action"),
-                    Actor,
-                    Controller,
-                    ActionInvocationContext.PrintedPrimary,
-                    Context(definition)),
+                StartFrame(definition),
                 Array.Empty<EffectNodeOutcome>(),
                 Context(definition));
 
             Assert.That(
-                refused.Select(candidate => candidate.OptionNodeId.Value),
-                Is.EqualTo(new[] { "repeat" }),
-                "What a repeat re-runs is the action the walk is judging, so it adds nothing of its " +
-                "own to that judgement.");
+                refused, Is.Empty,
+                "Nothing stops the repeat arm, so Ruling 17 offers it: an option is greyed for being " +
+                "blocked, never for being empty.");
+
+            // The other half. A definition that is nothing but a repeat still proves empty, which is
+            // the verdict itself - had the walk called a repeat performable this would read true.
+            var repeatOnly = Definition(
+                new EffectNodeDefinition(
+                    new EffectNodeId("root"), EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { new EffectNodeId("repeat") }),
+                RepeatNode(EffectFailurePolicy.IfAble, EffectChooserRole.None));
+
+            Assert.That(
+                EffectOptionFeasibilityQuery.CanApplyAnything(
+                    StartFrame(repeatOnly), Context(repeatOnly)),
+                Is.False,
+                "What a repeat re-runs is the action being judged, so an action whose whole text is a " +
+                "repeat is still proven empty and still not offered.");
         }
+
+        private static PendingResolution StartFrame(EffectDefinition definition) =>
+            EffectResolutionSession.BuildStartFrame(
+                new EffectResolutionId("feasibility-fixture"),
+                new CardInstanceId("session-card"),
+                default,
+                new ActionDefinitionId("session-action"),
+                Actor,
+                Controller,
+                ActionInvocationContext.PrintedPrimary,
+                Context(definition));
 
         /// <summary>
         /// Starts one instance. Since milestone 8.6 the two ways of saying "this is a repeat" travel

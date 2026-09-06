@@ -312,6 +312,36 @@ Non-goals: Middlefinger of Death stays parked, on a narrowed and precisely locat
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z34-deal-register-and-player-path-gate-dodger-the-warlock-as-the-seventh-hero-completion-evidence).
 
+### [x] 8.35z35 Offer a modal option that would do nothing, and grey only one that cannot be taken
+
+The corrective [rules-ledger row 23](../RULES_LEDGER.md#open-source-and-rules-questions) recorded as open and roster-wide at milestone 8.35z33, and deliberately kept out of a hero's content diff because it reaches every `Choose one` face in the build.
+
+Observable outcome: on a modal whose bullet would achieve nothing, a player may take that bullet - the card is not spent on a stop, the node completes, and the rest of the printed text resolves. A bullet that genuinely cannot be performed is still greyed and still names its blocker.
+
+**The whole change is which verdict refuses an option.** The feasibility walk has answered three ways since milestone 6.5ac - empty, performable, blocked - and the search for unperformable options collapsed two of them by refusing everything that was not performable. It now refuses the blocked verdict alone. The walk itself is untouched, so every verdict is derived exactly as before, and so are its other two callers: one asks whether an action is worth offering at all and the other whether a confirm-or-decline is worth opening. **Those ask whether a prompt should exist; this asks which answers an existing prompt may carry**, and conflating the two questions is the whole defect.
+
+**The split lands on the printed word, which is what says it is a transcription rather than a preference.** The refusing node's own failure policy decides the tier, and that policy is p.10's mandatory-versus-optional distinction. Every arm that changes prints `may` or `if able`; every arm that stays greyed prints a mandatory step. Measured over all eleven modal families in the build rather than argued: four arms move - Ursafar's optional retrieve, Whisper's optional retrieve, Whisper's Lesser Evil price bullet and the showcase Blue Feint's return-marker mode - and six families do not move at all, because each terminates in a mandatory step.
+
+**Red Bombard, the card the ledger row was measured on, does not move - and that was verified from the composition rather than from the wording.** Both of its modes terminate in mandatory steps, so both are blocked rather than empty. Row 11's scope is amended; its verdict on that card stands exactly as recorded.
+
+**The teeth are in the all-empty mandatory case.** Milestone 6.5ae's stop ends the whole action, so a later ordered step of the same card never ran. Under this ruling the bullet is taken, applies nothing, and the sequence carries on - the difference between a card that did nothing here and a card that stopped here. The one position that could have stranded a player is a node needing more selections than it offers, and that is closed by the content rather than by an assumption: no `Choose` in the build declares a minimum above one, and the split only ever adds selectable options.
+
+**A latent persistence bug closes for free.** A legitimately selected empty option can now round-trip a snapshot; the restore used to refuse as malformed a state the live session had just produced.
+
+**The Sabina half of row 23 was answered by reading the face, and its implied fix was backwards.** Path to Victory prints no different-target clause of any kind, so the shipped declaration is unsupported by the card and inert at runtime, the live behaviour already matches the text, and routing the exclusion into Skill repeats would have introduced a rules defect. Nothing changed; the cleanup is queued onto her next content revision, where it costs a revision bump, an identity-digest move and the artwork catalog.
+
+Acceptance checks:
+
+- An option that can be taken and applies nothing is offered and selectable beside a performable one; an option a mandatory step blocks is still greyed with its blocker named; a mixed node greys only the blocked arm and offers no stop.
+- Choosing an empty option completes the resolution, records the node applied, and lets an ordered step after the modal run - the step 6.5ae's stop would have skipped.
+- The declaration that puts the canonical opponent-chosen modal on the empty side of the line is pinned, so a later content edit cannot silently delete the escape hatch.
+- Rules-ledger row 23 is answered and row 11's scope amended without disturbing its Red Bombard verdict.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: no schema and no wire movement, no content edited and no identity digest moved, and no "this would do nothing" hint on the offered bullet - the blocker channel exists for blocked arms, and whether an empty one should say anything is a design question this corrective deliberately did not answer.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z35-offer-a-modal-option-that-would-do-nothing-and-grey-only-one-that-cannot-be-taken-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

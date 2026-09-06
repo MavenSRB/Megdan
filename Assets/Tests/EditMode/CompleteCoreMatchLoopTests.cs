@@ -143,8 +143,17 @@ namespace GuardsDigital.Tests.EditMode
         /// scan is worth recording for one detail it changed: seed 51 still takes a Clear and now
         /// REACHES AN ENDING as well (2,091 commands, 67 rounds), so this fixture is no longer down to
         /// a single candidate. 20 stays because it is the lower and the shorter of the two.</para>
+        ///
+        /// <para>Milestone 8.35z35 re-derived it again, 20 -> 15, and the cause is the one the
+        /// first paragraph names: the release moves every trajectory. Ruling 17 offers options a modal
+        /// used to grey, so the walk has more legal answers and diverges from the FIRST such pause
+        /// onward - both 20 and 51 now go somewhere else. Scanning seeds 1-160 found exactly ONE that
+        /// takes a Clear, so the fixture is back to a single candidate and 15 is it. Nothing about the
+        /// p.13 page-coverage assertion was weakened to fit, which is the same discipline 8.35g
+        /// recorded: the Clear observed here is still one offered over a real candidate, and a narrow
+        /// search is what the property costs.</para>
         /// </remarks>
-        private const int ClearReachabilitySeed = 20;
+        private const int ClearReachabilitySeed = 15;
 
         /// <summary>
         /// Generous enough that the three complete matches finish well inside it, and small enough that

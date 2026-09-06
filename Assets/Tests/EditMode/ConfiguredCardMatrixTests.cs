@@ -552,12 +552,30 @@ namespace GuardsDigital.Tests.EditMode
                 "Milestone 6.8b's two timing modes and the three the retired Cache card handed over, " +
                 "in the definition's own order, offered from the card the configured scene deals.");
             Assert.That(choice.ChooserId, Is.EqualTo(session.Projection.SelectedActor.ActorId));
+
+            // Milestone 8.35z35 (Ruling 17). This mode used to be projected greyed here, and the
+            // reason recorded was that p.18 scopes a return to the source that gave and this hand has
+            // given no marker. The scoping is unchanged and still true; what changed is what it makes
+            // the mode. The node declares `if able`, which is p.10 saying an impossible step is simply
+            // not taken - so nothing about this branch stops the resolution, and a branch that stops
+            // nothing is empty rather than blocked. Ruling 17 offers an empty option, because taking it
+            // is a legal answer: the return does not happen, the node completes, and the card is not
+            // spent on a stop. Greying it was the offer surface disagreeing with the branch's own
+            // declared policy.
+            // `Has.No.Member` rather than `Does.Not.Contain`: the sequence's element is the value type
+            // EffectNodeId, and under Unity's compiler `Does.Not.Contain` binds to NUnit's string
+            // overload and fails the Edit Mode BUILD while the single-assembly dotnet harness compiles
+            // it happily. Fourth recorded instance of that trap; the collection form is this one.
+            Assert.That(
+                choice.UnavailableCandidates.Select(candidate => candidate.OptionNodeId),
+                Has.No.Member(FeintReturnMarker),
+                "`if able` means the step is skipped, not that the mode cannot be taken.");
             Assert.That(
                 choice.SelectInvocations.Any(invocation =>
                     invocation.Candidate.OptionNodeId.Equals(FeintReturnMarker)),
-                Is.False,
-                "p.18 scopes a return to the source that gave, and this hand has given no marker, so " +
-                "the mode is offered and unavailable rather than absent.");
+                Is.True,
+                "So the mode is offered AND selectable, and choosing it returns no marker - which is " +
+                "exactly what the card text says happens when there is none to return.");
         }
 
         [Test]
