@@ -358,6 +358,24 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// replaces the object's rules and qualities with the declared type's, so this answers only the
         /// effective question; <see cref="IntrinsicKindQuery"/> answers what the object still is.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z31. How many Life counters beyond rulebook p.13's schedule a hero
+        /// defeated by <paramref name="attacker"/> spends - Ursafar's Tear, and nothing else in the
+        /// roster today.
+        ///
+        /// <para>Declarations are counted rather than collapsed to a flag, because two sources that
+        /// each said "one additional" both said something and a reading that took the maximum would
+        /// silently drop the second. It is read once, at the moment p.13's cost is computed, which is
+        /// what makes the whole charge a single spend.</para>
+        /// </summary>
+        public int AdditionalDefeatLifeCost(RuleObject attacker) =>
+            attacker.IsDefined
+                ? Modifications.Count(modification =>
+                    modification.AffectedObject.Equals(attacker) &&
+                    modification.Modification.Kind ==
+                        RuleModificationKind.AdditionalDefeatLifeCost)
+                : 0;
+
         public bool CountsAs(RuleObject affectedObject, EffectiveUnitKind effectiveUnitKind)
         {
             if (effectiveUnitKind == EffectiveUnitKind.None)

@@ -1440,7 +1440,13 @@ namespace GuardsDigital.Core.Snapshots
                 resolution.RoundIndex,
                 resolution.TurnIndex,
                 resolution.Participants,
-                null,
+                // Milestone 8.35z31, and the fourth link in the chain this method's remarks
+                // already describe. Ursafar's Silver derives its candidates from which of his cards are
+                // currently the source of a live Active effect, so an empty timing state re-asks the
+                // handler a different question than live execution asked and the restore fails with
+                // "no longer requests a choice" - the 8.35i shape exactly. Every capability written
+                // before his ignored this argument, so supplying it changes no existing candidate set.
+                resolution.Timing,
                 resolution.Modifications,
                 resolution.CardState,
                 resolution.EnclosingActionKind,
@@ -1454,7 +1460,8 @@ namespace GuardsDigital.Core.Snapshots
                 answersAlreadyGiven: EffectResolutionSession.AnswersAlreadyGiven(restored, node),
                 enclosingAttack: resolution.EnclosingAttack,
                 rosterState: resolution.RosterState,
-                immunityOverrides: node.ImmunityOverrides));
+                immunityOverrides: node.ImmunityOverrides,
+                capabilities: resolution.Catalog));
             if (offered.Choice == null)
             {
                 throw Malformed(

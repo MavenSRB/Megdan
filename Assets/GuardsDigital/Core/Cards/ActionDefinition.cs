@@ -745,15 +745,22 @@ namespace GuardsDigital.Core.Cards
             // that says nothing carries BeforeTheMovement and a card that says otherwise carries
             // 8.19a's AroundTheAction. Both are still text on a Movement, so both arrive with a timing
             // or not at all.
+            // Milestone 8.35z31 adds the third. Ursafar's three swap faces print "after
+            // movement" in so many words, which is the "otherwise" p.11's sentence allows, so the side
+            // is the card's statement rather than the page's default or the actor's answer. It joins
+            // the same list for the same reason: still text on a Movement, still arriving with a
+            // timing or not at all.
             if (EffectRoot != null &&
                 Kind != ActionKind.Skill && Kind != ActionKind.Attack && Kind != ActionKind.Defense &&
                 !(Kind == ActionKind.Movement &&
                     (CardTextTiming == CardTextTiming.AroundTheAction ||
-                        CardTextTiming == CardTextTiming.BeforeTheMovement)))
+                        CardTextTiming == CardTextTiming.BeforeTheMovement ||
+                        CardTextTiming == CardTextTiming.AfterTheMovement)))
             {
                 throw new ArgumentException(
-                    "Only a Skill, an Attack, a Defense, or a Movement action applying text before or " +
-                    "around itself executes through the typed effect frame.", nameof(EffectRoot));
+                    "Only a Skill, an Attack, a Defense, or a Movement action applying text before, " +
+                    "after or around itself executes through the typed effect frame.",
+                    nameof(EffectRoot));
             }
 
             if (CardTextTiming != CardTextTiming.None)

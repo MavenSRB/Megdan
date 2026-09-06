@@ -59,6 +59,35 @@ namespace GuardsDigital.Core.Rules.Consequences
         public static int LifeCounters(CardTier lowestCardTier) => TierOrdinal(lowestCardTier, nameof(lowestCardTier));
 
         /// <summary>
+        /// Milestone 8.35z31. The same charge with an attacker's declared additions composed
+        /// into it - Ursafar's Tear, "that hero spends 1 additional [Life] Life counter".
+        ///
+        /// <para>It is one number rather than a second call because the user's 2026-09-06 ruling says
+        /// so in as many words: the cost is computed once as Tier + 1 and spent once, at the defeat.
+        /// The card prints the clause under "After the attack:", which by p.14 is step 7 - after the
+        /// defeat and its spend have already happened - and the ruling reads that placement as when the
+        /// condition is <em>checked</em> rather than when the counter is paid. So the addition is
+        /// composed here, where p.13's own number is produced, and there is no second spend anywhere
+        /// for a payload or a replay to disagree about.</para>
+        ///
+        /// <para>The distinction matters at exactly one moment and it ends the game: a team on its last
+        /// counters loses them in this single combined spend, rather than losing the last one to p.13
+        /// and never reaching the card's clause at all.</para>
+        /// </summary>
+        public static int LifeCounters(CardTier lowestCardTier, int additionalCounters)
+        {
+            if (additionalCounters < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(additionalCounters),
+                    additionalCounters,
+                    "A declared addition to p.13's Life cost adds counters; nothing printed reduces it.");
+            }
+
+            return LifeCounters(lowestCardTier) + additionalCounters;
+        }
+
+        /// <summary>
         /// The Tier read as the count the page writes it as. <see cref="CardTier.None"/> is refused
         /// rather than read as zero: p.15's Basic pair has no Tier and is "not considered when checking
         /// your lowest card Tier", so a caller that found no non-Basic card has no Tier to convert and

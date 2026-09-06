@@ -1406,7 +1406,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.EnclosingAttack,
                 context.RosterState,
                 node.ImmunityOverrides,
-                node.Outputs);
+                node.Outputs,
+                context.Catalog);
         }
 
         /// <summary>

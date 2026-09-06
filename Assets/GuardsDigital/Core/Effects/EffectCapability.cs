@@ -243,8 +243,10 @@ namespace GuardsDigital.Core.Effects
             EnclosingAttackFacts enclosingAttack = default,
             EffectRosterState rosterState = null,
             IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null,
-            IReadOnlyList<EffectOutputBinding> declaredOutputs = null)
+            IReadOnlyList<EffectOutputBinding> declaredOutputs = null,
+            EffectCapabilityCatalog capabilities = null)
         {
+            Capabilities = capabilities;
             EnclosingAttack = enclosingAttack;
             if (!Enum.IsDefined(typeof(ActionKind), enclosingActionKind) ||
                 enclosingActionKind == ActionKind.None)
@@ -288,6 +290,23 @@ namespace GuardsDigital.Core.Effects
             DeclaredOutputs = new ReadOnlyCollection<EffectOutputBinding>(
                 (declaredOutputs ?? Enumerable.Empty<EffectOutputBinding>()).ToArray());
         }
+
+        /// <summary>
+        /// The registered capability set this frame is running against, or <c>null</c> where the caller
+        /// has none to give.
+        ///
+        /// <para>Milestone 8.35z31. Every handler before Ursafar's borrow answered its question
+        /// from the board, the cards, the roster or the timing state; his Silver asks one that is about
+        /// <em>content</em> - "one of your active cards <b>with an active effect</b>", where whether a
+        /// card's text prints an active effect is a fact about what that card composes. The catalog is
+        /// where composition meaning lives, so the reading is taken from it rather than from a flag
+        /// declared beside each card, which could be set wrongly and would be one more thing to keep in
+        /// step with the text.</para>
+        ///
+        /// <para>Optional because two of this type's callers are outside a content walk and neither
+        /// needs it; a handler that requires it says so by refusing when it is absent.</para>
+        /// </summary>
+        public EffectCapabilityCatalog Capabilities { get; }
 
         /// <summary>
         /// The outputs this node asked for, which is the exact set a handler may publish.

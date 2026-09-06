@@ -3067,6 +3067,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.35z31. Holds a Movement card's text on the far side of its own walk,
+        /// where the card says it belongs.
+        ///
+        /// <para>p.11's default puts a Movement card's text before the walk and
+        /// <see cref="StartBeforeMovementText"/> runs it there; the page's own "unless it says
+        /// otherwise" is what this is. Ursafar's three swap faces print "after movement", and a swap is
+        /// about the space the walk left him on, so there is nothing to run yet - what this does is
+        /// park the continuation that owes the work, exactly as an actor-placed
+        /// <c>AfterTheAction</c> answer parks one. The Movement then starts underneath it and the owed
+        /// work enters through <see cref="StartOwedAroundActionWork"/> when the walk completes, which is
+        /// the same seam and not a second one.</para>
+        ///
+        /// <para>No frame is created here and no effect node is entered, which is why the returned
+        /// result carries no steps: a text that has not begun has produced no facts to report.</para>
+        /// </summary>
+        public CardActionResolutionResult HoldAfterMovementText(
+            ActionResolutionId heldResolutionId,
+            ActionOffer heldOffer,
+            IEnumerable<CardDefinition> definitions)
+        {
+            if (pendingPreAction != null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.ResolutionAlreadyPending, null, null);
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var action = ActionOfferQuery.FindActionDefinition(heldOffer, materializedDefinitions);
+            if (action.CardTextTiming != CardTextTiming.AfterTheMovement || action.EffectRoot == null)
+            {
+                return CardActionResolutionResult.Reject(
+                    CardActionResolutionRejectionReason.UnsupportedInvocationContext, null, null);
+            }
+
+            pendingPreAction = new PendingPreActionResolution(
+                null,
+                PreActionContinuationKind.AroundPrimaryAction,
+                PreActionPlacement.AfterTheAction,
+                heldResolutionId,
+                heldOffer);
+            return CardActionResolutionResult.Accept(
+                true, null, null, Array.Empty<ResolutionStep>());
+        }
+
+        /// <summary>
         /// Milestone 8.19a. Enters the work the actor placed after the primary action, once that action
         /// has finished. The continuation carried the side and the identity; the work itself is read
         /// from the trusted definition the held offer names, never from anything the payload said.
@@ -3092,8 +3138,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var action = ActionOfferQuery.FindActionDefinition(
                 owed.HeldOffer, materializedDefinitions);
             pendingPreAction = null;
+
+            // Milestone 8.35z31. Two shapes reach this seam and they enter at different nodes.
+            // 8.19a's ordering question puts the work in the root sequence's second child, because the
+            // first child is the question; a card that states its own side never asks one, so its root
+            // IS the work - the same reading StartBeforeMovementText takes of the other side.
+            var entryNodeId = action.CardTextTiming == CardTextTiming.AfterTheMovement
+                ? action.EffectRoot.RootNodeId
+                : AroundActionShape.WorkNode(action.EffectRoot);
             return StartAroundActionEntry(
-                AroundActionShape.WorkNode(action.EffectRoot),
+                entryNodeId,
                 isWorkEntry: true,
                 owed.Placement,
                 owed.HeldResolutionId,

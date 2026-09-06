@@ -141,7 +141,36 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// be satisfied from a list of one. On the two-bullet modal Misa actually prints, admitting two
         /// means admitting both, which is the user's 2026-09-06 ruling in as many words.</para>
         /// </summary>
-        ChoiceCardinality = 10
+        ChoiceCardinality = 10,
+
+        /// <summary>
+        /// Milestone 8.35z31. A hero defeated by the affected object spends one Life counter
+        /// more than rulebook p.13's schedule charges - Ursafar's Tear, "if you defeated a hero, that
+        /// hero spends 1 additional [Life] Life counter".
+        ///
+        /// <para>It is an eleventh family rather than a <see cref="ValueModifier"/> because a Life counter
+        /// is not one of p.9's printed value channels and never becomes one: p.13's cost is read off
+        /// the <em>defeated</em> hero's lowest card Tier, so it is not a value the attacker's card
+        /// prints, has no icon, and no p.16 item could match it. A channel invented to carry it would
+        /// be a printed value nothing prints.</para>
+        ///
+        /// <para><b>It carries no amount, and the omission is the printed reading.</b> The user's 2026-
+        /// 09-06 ruling settles the arithmetic: the cost is computed <b>once</b> as Tier + 1 and spent
+        /// once, at the defeat - the card's "After the attack:" placement says when the condition is
+        /// checked, not when the counter is paid. One printed face says "1 additional", so the family
+        /// says one; two declarations therefore charge two, which is the only reading that keeps a
+        /// second source from being silently swallowed. A face printing a different number widens this
+        /// to an amount then, on the standing rule that this project does not build a reading no
+        /// content prints - the same reason <c>RemovalPreventionCostKind</c> has exactly one
+        /// member.</para>
+        ///
+        /// <para>It is declared about the <em>attacker</em>, which is what "you defeated a hero" names,
+        /// and read at the moment p.13's spend is computed. That is why Tear declares it before its
+        /// Attack rather than in the after-the-attack clause it is printed in: by step 7 the defeat has
+        /// already been paid for, and a second payment there would be the two-spend reading the ruling
+        /// rejects.</para>
+        /// </summary>
+        AdditionalDefeatLifeCost = 11
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -680,6 +709,22 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// immunity, and p.18 already has one; declaring it here would give a card two spellings of the
         /// same rule with different answers to "may this unit be targeted".</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z31. One extra Life counter charged for a hero this object defeats.
+        /// See <see cref="RuleModificationKind.AdditionalDefeatLifeCost"/> for why it carries nothing.
+        /// </summary>
+        public static RuleModification ForAdditionalDefeatLifeCost() =>
+            new RuleModification(
+                RuleModificationKind.AdditionalDefeatLifeCost,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
         {
             if (!cost.IsDeclared)

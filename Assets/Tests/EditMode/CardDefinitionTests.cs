@@ -317,7 +317,10 @@ namespace GuardsDigital.Tests.EditMode
             // at is still refused, exactly as an Attack carrying one without a moment is. Milestone
             // 8.20 adds p.11's own default moment beside 8.19a's placed one - "Unless it says
             // otherwise, the card text comes into effect before movement" - and a root naming neither
-            // is refused exactly as it was.
+            // is refused exactly as it was. Milestone 8.35z31 adds the "otherwise" the same
+            // sentence allows, for the three faces that print "after movement" in so many words; a
+            // root still naming no moment at all is refused exactly as it was, which is what this
+            // case has always been about.
             Assert.That(
                 Assert.Throws<ArgumentException>(() => new ActionDefinition(
                     new ActionDefinitionId("movement-with-text"),
@@ -328,7 +331,7 @@ namespace GuardsDigital.Tests.EditMode
                     AttackRangeKind.None,
                     default,
                     SingleNodeText())).Message,
-                Does.Contain("Movement action applying text before or around itself"));
+                Does.Contain("Movement action applying text before, after or around itself"));
         }
 
         /// <summary>

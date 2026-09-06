@@ -256,6 +256,36 @@ namespace GuardsDigital.Core.Cards
         /// one printed sentence is not several abilities; an ability that also ran an effect at a
         /// moment would be a second sentence, and this factory cannot express one.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z31. An Ultimate whose permanent ability is a standing <em>declaration</em>
+        /// other rules read by name, rather than a rule that changes a value, a permission or a type.
+        ///
+        /// <para>Ursafar's Unbound Fury is what forces it: "You are always enraged and all your
+        /// resolved cards count as active." Neither clause modifies anything. The first asserts a named
+        /// hero condition his own faces test; the second widens which of his cards a borrow may reach.
+        /// Both are read off the <see cref="ContinuousRuleSource.RuleKind"/> that
+        /// <c>UnlockedUltimate</c> already builds from <paramref name="ruleKind"/> while the card sits
+        /// beside the dashboard and its hero is on the board - so the ability lives exactly as long as
+        /// p.16 says it does, and nothing about it is stored.</para>
+        ///
+        /// <para><b>It declares no modification, and that is a statement rather than an omission.</b>
+        /// <see cref="PermanentAbility"/> refuses an empty declaration because an Ultimate whose whole
+        /// printed content is an ability may not print no ability - and that invariant is satisfied here
+        /// by the rule kind, which is not decoration: it is the name every reader matches on, so an
+        /// Ultimate that declared nothing at all could not be constructed and one that declares this is
+        /// read by something. Inventing a modification family for "is enraged" would have been worse
+        /// than nothing: the five existing families each answer a question some engine query asks, and a
+        /// tenth that no query asked would be a rule the seam conformance could not find a consumer
+        /// for.</para>
+        /// </summary>
+        public static UltimateRuleDefinition PermanentDeclaration(string ruleId, string ruleKind) =>
+            new UltimateRuleDefinition(
+                ruleId,
+                ruleKind,
+                Array.Empty<RuleModification>(),
+                PrintedTextComposition.None,
+                Array.Empty<PrintedValueDefinition>());
+
         public static UltimateRuleDefinition PermanentAbility(
             string ruleId,
             string ruleKind,

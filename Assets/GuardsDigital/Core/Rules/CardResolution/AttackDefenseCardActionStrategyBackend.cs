@@ -2144,7 +2144,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 out var lowestTier);
             var defeatCoins = HeroDefeatRewardSchedule.DefeatCoins(defeatedLevel);
             var assistCoins = hasTier ? HeroDefeatRewardSchedule.AssistCoins(lowestTier) : 0;
-            var lifeCounters = hasTier ? HeroDefeatRewardSchedule.LifeCounters(lowestTier) : 0;
+            // Milestone 8.35z31. p.13's own number, plus whatever the attacking hero has
+            // declared it adds - Ursafar's Tear, and nothing else in the roster. It is composed into
+            // the count here rather than spent again later because the ruling that admits it says the
+            // charge is computed once and paid once; a hero with no such declaration reads exactly the
+            // number the page prints, which is what makes this change invisible to every other face.
+            var additionalLifeCounters = modifications == null
+                ? 0
+                : modifications.AdditionalDefeatLifeCost(
+                    RuleObject.ForHero(completedResolution.ActorId));
+            var lifeCounters = hasTier
+                ? HeroDefeatRewardSchedule.LifeCounters(lowestTier, additionalLifeCounters)
+                : 0;
 
             var outcome = new DefeatOutcome(
                 new DefeatOutcomeId($"{completedResolution.ResolutionId.Value}:hero-defeat"),

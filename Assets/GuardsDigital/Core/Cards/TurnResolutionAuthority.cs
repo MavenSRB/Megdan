@@ -1121,6 +1121,20 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
+            // Milestone 8.35z31. p.11's "unless it says otherwise", said. Ursafar's three swap
+            // faces print "after movement", so nothing runs here: the continuation that owes the work
+            // is parked, the Movement starts underneath it, and the work enters when the walk finishes
+            // through the same seam an actor-placed after-side answer uses.
+            if (DeclaresTextAfterTheMovement(offer))
+            {
+                var held = cardActions.HoldAfterMovementText(resolutionId, offer, definitions);
+                if (!held.Accepted)
+                {
+                    return TurnResolutionResult.Reject(
+                        TurnResolutionRejectionReason.MovementActionRejected);
+                }
+            }
+
             return StartHeldMovement(resolutionId, offer, events);
         }
 
@@ -1184,6 +1198,11 @@ namespace GuardsDigital.Core.Cards
         private bool DeclaresTextBeforeTheMovement(ActionOffer offer) =>
             ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) &&
             action.CardTextTiming == CardTextTiming.BeforeTheMovement &&
+            action.EffectRoot != null;
+
+        private bool DeclaresTextAfterTheMovement(ActionOffer offer) =>
+            ActionOfferQuery.TryFindActionDefinition(offer, definitions, out var action) &&
+            action.CardTextTiming == CardTextTiming.AfterTheMovement &&
             action.EffectRoot != null;
 
         public TurnResolutionResult TryAnswerMovementChoice(MovementChoiceCommand command)

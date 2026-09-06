@@ -76,7 +76,32 @@ namespace GuardsDigital.Core.Cards
         /// Movement: "The card text is applied even if you choose to move zero spaces." A text that
         /// ran as part of the walk would not run for a hero who never took one.</para>
         /// </summary>
-        BeforeTheMovement = 5
+        BeforeTheMovement = 5,
+
+        /// <summary>
+        /// Milestone 8.35z31. The other half of p.11's sentence - the "otherwise" a card is
+        /// allowed to say: "<b>Unless it says otherwise</b>, the card text comes into effect before
+        /// movement."
+        ///
+        /// <para>Three of Ursafar's five Blue faces say otherwise in so many words. Prowling Brute
+        /// prints "If enraged, <b>after movement</b>, you may swap with a unit or a token adjacent to
+        /// you"; Rampaging Beast and Unstoppable Force print the same clause and add a further
+        /// displacement to it. The swap is about where the walk left him, so a text that ran first
+        /// would be asking about a space he has not reached.</para>
+        ///
+        /// <para>It is a sixth member rather than a reuse of <see cref="AroundTheAction"/> for the
+        /// reason <see cref="BeforeTheMovement"/> is a fifth: that one is a question the actor answers
+        /// and this is a side the card states. Composing these three as an ordering question would
+        /// offer a choice the face does not print, and - since one of the two answers would be wrong
+        /// about the board - a choice the player could get wrong on the card's behalf.</para>
+        ///
+        /// <para>Everything downstream of the declaration is shared rather than duplicated: the held
+        /// offer, the parked continuation and the entry after the Movement completes are milestone
+        /// 8.19a's <c>PreActionPlacement.AfterTheAction</c> path exactly, which is why this member
+        /// moves no snapshot field - the continuation it parks is one the codec has written since
+        /// 8.19a.</para>
+        /// </summary>
+        AfterTheMovement = 6
     }
 
     public static class CardTextTimingQuery
@@ -118,6 +143,7 @@ namespace GuardsDigital.Core.Cards
                     return ActionKind.Defense;
                 case CardTextTiming.AroundTheAction:
                 case CardTextTiming.BeforeTheMovement:
+                case CardTextTiming.AfterTheMovement:
                     return ActionKind.Movement;
                 default:
                     throw new ArgumentOutOfRangeException(
