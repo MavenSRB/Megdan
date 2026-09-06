@@ -1524,12 +1524,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.UnavailableOffer);
             }
 
-            var legalTargets = FindLegalAttackTargets(
-                pendingAttackResolution.ActorId,
-                attackOffer.Value,
-                materializedDefinitions,
-                participants,
-                modifications);
             var expectedAttackValue = CalculateAttackValue(
                 attackOffer.Value,
                 pendingAttackResolution.Target,
@@ -1537,7 +1531,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedInstances,
                 participants,
                 modifications);
-            if (!legalTargets.Contains(AttackTarget.Hero(pendingAttackResolution.TargetHeroId)) ||
+
+            // Milestone 8.35z24. What p.14's step 3 needs is a target still STANDING, not a
+            // target still reachable - the same narrowing milestone 8.23 made at step 6 in
+            // <see cref="ResolveOutcome"/>, stated there at length and wired into that one site only.
+            //
+            // Step 6's case was a Defense text that moved the DEFENDER. This is the mirror of it, and
+            // it needs no card text on the defender's side at all: rulebook p.14 names the target at
+            // step 2, and the attacker's own "Before the attack:" body is applied AFTER that (see
+            // ContinueAfterBeforeAttackText, which validates a text-BOUND target against the post-move
+            // board and leaves an ordinarily-chosen one alone). Tigerclaw's Combat Reflexes and Leaping
+            // Strike - "Before the attack: You may move 1 space. Target a unit adjacent to you." - are
+            // the verified faces that reach it: the attacker legally steps out of contact between
+            // naming his target and the defender answering, and re-deriving his reach here refused the
+            // page its own step 3.
+            //
+            // It refused the WHOLE pause rather than one card, because this guard stands above both of
+            // p.14's answers: the defender was offered Defense cards the preview scored as
+            // SuccessfullyDefended, and Decline with them, and every one of the three was rejected
+            // InvalidChoice. A pause no answer can leave is not an infeasible offer, it is a dead end,
+            // and a deterministic driver that re-picks the same answer never leaves it.
+            //
+            // The narrowing is presence rather than legality for that reason, and it is exactly as
+            // narrow as step 6's: the resolution id, the step id, the printed Attack value and the
+            // whole Defense choice are all still compared below, so an answer that is not the one this
+            // pause asked for is still refused.
+            if (!adjacentMoveAuthority.Occupancies.Any(occupancy =>
+                    occupancy.HeroId.Equals(pendingAttackResolution.TargetHeroId)) ||
                 !PrintedValuesMatch(pendingAttackResolution.AttackValue, expectedAttackValue))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -2119,15 +2139,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
             else
             {
-                var legalTargets = backend.FindLegalAttackTargets(
-                    pendingResolution.ActorId,
-                    offer.Value,
-                    materializedDefinitions,
-                    participants,
-                    modifications);
-                if (!legalTargets.Contains(AttackTarget.Hero(pendingResolution.TargetHeroId)))
+                // Milestone 8.35z24. The same narrowing the live paths make, for the same
+                // reason and at the same two phases this branch covers - DefenseResponse and
+                // CompareOutcome. A capture taken while p.14 stands at either, after the attacker's own
+                // "Before the attack:" body or the defender's step-4 rider has moved somebody out of
+                // contact, is a legitimate payload of a legitimate position; asking it for a still
+                // REACHABLE target made it unreadable by the very session that wrote it, which is
+                // milestone 8.23's step-6 finding arriving through the restore door instead.
+                if (!backend.adjacentMoveAuthority.Occupancies.Any(occupancy =>
+                    occupancy.HeroId.Equals(pendingResolution.TargetHeroId)))
                 {
-                    throw new ArgumentException("Pending Attack target is no longer legal.", nameof(pendingResolution));
+                    throw new ArgumentException("Pending Attack target is no longer on the board.", nameof(pendingResolution));
                 }
 
                 var expectedAttackValue = backend.CalculateAttackValue(
