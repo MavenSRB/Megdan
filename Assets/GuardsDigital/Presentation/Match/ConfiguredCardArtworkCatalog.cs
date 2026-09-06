@@ -38,7 +38,7 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// The validated 126-card presentation catalog used by both local preparation and runtime lookup.
+    /// The validated 144-card presentation catalog used by both local preparation and runtime lookup.
     /// </summary>
     public sealed class CardArtworkCatalog
     {
@@ -53,7 +53,8 @@ namespace GuardsDigital.Presentation.Match
                 { "arien", "Arien" },
                 { "brogan", "Brogan" },
                 { "sabina", "Sabina" },
-                { "dodger", "Dodger" }
+                { "dodger", "Dodger" },
+                { "misa", "Misa" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -290,7 +291,7 @@ namespace GuardsDigital.Presentation.Match
 
     /// <summary>
     /// Loads and pins the one tracked catalog against every dealt definition of every hero this build
-    /// deals - seven heroes and 126 cards since milestone 8.35z34 dealt Dodger the Warlock.
+    /// deals - eight heroes and 144 cards since milestone 8.35z38 dealt Misa the Samurai.
     /// </summary>
     public static class ConfiguredCardArtworkCatalog
     {
@@ -309,6 +310,12 @@ namespace GuardsDigital.Presentation.Match
                 // structurally blind to the omission, so her own content file records the same debt
                 // from the other side and neither can move alone.
                 .Concat(DodgerCardContent.DealtDefinitions)
+                // Milestone 8.35z38. Misa's eighteen, on exactly the terms Dodger's row above states.
+                // Her rows are the second proof of the same shape rather than a repetition of it: her
+                // content revision was re-based in this same change, so an omission here would have
+                // been a revision MISMATCH rather than an absence - the loud half of milestone 8.35l's
+                // trap rather than the silent half.
+                .Concat(MisaCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

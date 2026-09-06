@@ -621,7 +621,57 @@ namespace GuardsDigital.Tests.PlayMode
                 {
                     PlayerInteractionShape.BoardSpaceSelection,
                     PlayerInteractionShape.RespawnedMinionTypeChoice
-                }
+                },
+
+                // Milestone 8.35z38. Misa the Samurai's six, and the split between them is the same
+                // difference between a question and a fact that Dodger's six drew.
+                //
+                // Her two Places ask for a space a player clicks, exactly as the three Place arms above
+                // do. What differs is which spaces are offered - a ring rather than a disk for the
+                // first (RULING 1's "at maximum range"), and a disk narrowed to spaces standing beside
+                // two or more enemy units for the second - and that is a difference in the CANDIDATE
+                // SET, not in what the player is asked. A shape is the input a player supplies, so two
+                // reaches that both end in one board click introduce one shape.
+                //
+                // It is worth saying what this classification does NOT claim, because RULING 1 makes
+                // the empty case ordinary rather than exotic: a ring of radius four can have no empty
+                // member, and a disk can hold no space beside two enemies. Both are then a node with
+                // no legal answer, which milestone 8.35l's machinery greys with its blocker named
+                // rather than offering. That is the absence of the question, not a different question,
+                // so it moves no shape - and Misa's gate rows owe a journey that reaches it.
+                ["synthetic-place-at-maximum-range"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["synthetic-place-in-radius-beside-two-or-more-enemies"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Her five Blue Skills' two nodes. The line's end is a space clicked on the board; the
+                // unit she moved through is a piece clicked on the board. They are two shapes rather
+                // than one because they are two clicks in sequence and a player can be stopped after
+                // either - the line may have no legal end, and a legal line may have crossed nobody.
+                ["choose-line-destination"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["choose-traversed-unit"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Her two Swap Skills' pair selections, on exactly the terms `choose-target-pair@1`
+                // carries since milestone 8.22: a pair of units is units clicked on the board, and the
+                // pair-ness is a constraint on which clicks are admitted rather than a second kind of
+                // input. Storm Spirit's equal-distance relation is the first RELATIONAL constraint in
+                // the build and still asks for the same thing - two pieces.
+                ["choose-unit-pair-at-maximum-radius"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["choose-unit-pair-at-equal-distance-in-radius"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Her Red ranged pair's two tenses, which ask nobody anything. "If the target was at
+                // maximum range" and "if the target is not adjacent to you" are readings of p.14's own
+                // captured facts and of the live board; the player is shown no control for either, and
+                // sees only what the rider does afterwards. Same classification, same grammar and the
+                // same milestone-8.22 sentence as `pre-consequence-adjacency@1` and
+                // `target-is-adjacent@1` two dozen lines above - which is the point: RULING 32 makes
+                // the two MOMENTS differ and leaves the player's part in them identical.
+                ["target-was-at-maximum-range"] = Array.Empty<PlayerInteractionShape>(),
+                ["target-is-not-adjacent"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

@@ -13,7 +13,7 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ConfiguredCardArtworkCatalogTests
     {
         [Test]
-        public void ConfiguredCatalog_IsA126EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA144EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -23,15 +23,22 @@ namespace GuardsDigital.Tests.EditMode
             // Unity-only fixture - the dotnet harness excludes it, because the catalog is Presentation -
             // so this is exactly the pin a green harness is structurally blind to, which is milestone
             // 8.35l's recorded trap arriving on schedule.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(126));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(126));
+            //
+            // MILESTONE 8.35z38 TOOK IT 126 TO 144 AND WAS CAUGHT BY IT AGAIN, which is what makes the
+            // paragraph above a rule rather than one milestone's bad luck. The complete dotnet harness
+            // was 2,535 passed / 0 failed with this pin reading 126 against a 144-entry catalog: the
+            // harness cannot see this file at all, so the FIRST complete Edit Mode launch is the only
+            // thing in the build that can, and a dealing milestone that skips that tier ships a catalog
+            // whose own count is wrong. Two consecutive dealings, two identical catches.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(144));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(144));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(126),
+                Is.EqualTo(144),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -39,8 +46,8 @@ namespace GuardsDigital.Tests.EditMode
                     .OrderBy(group => group.Hero),
                 Is.EqualTo(new[]
                 {
-                    ("arien", 18), ("brogan", 18), ("dodger", 18), ("sabina", 18),
-                    ("tigerclaw", 18), ("wasp", 18), ("xargatha", 18)
+                    ("arien", 18), ("brogan", 18), ("dodger", 18), ("misa", 18),
+                    ("sabina", 18), ("tigerclaw", 18), ("wasp", 18), ("xargatha", 18)
                 }));
 
             foreach (var entry in catalog.Entries)

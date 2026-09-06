@@ -506,6 +506,25 @@ namespace GuardsDigital.Core.Setup
             CreateOneVsOne(new HeroContentId("dodger"), "Dodger the Warlock");
 
         /// <summary>
+        /// Milestone 8.35z38. Wasp on Red against Misa the Samurai on Blue, the eighth hero this build
+        /// deals and the second from outside the mapped pitch roster.
+        ///
+        /// <para>She needs no ally seat, and the reason is stronger than Dodger's: not one of her
+        /// nineteen faces names a friendly hero at all. What her set asks for is enemy UNITS in
+        /// particular arrangements - a minion adjacent to her, two or more enemy units flanking one
+        /// space, an enemy standing on a straight line out of her own - and the one-vs-one board with
+        /// p.8's waves supplies every one of them.</para>
+        ///
+        /// <para><b>What this staging cannot guarantee, stated rather than assumed.</b> RULING 1 reads
+        /// "at maximum range" as EXACTLY the printed number, so Watch How I Soar's first bullet wants an
+        /// empty space exactly four away and Living Tornado a unit pair exactly three apart. Both are
+        /// ordinary questions with ordinary answers here, and both can legitimately have none - which
+        /// milestone 8.35z38 journeys as an outcome rather than staging around.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusMisaOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("misa"), "Misa the Samurai");
+
+        /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master
         /// Skald print and the reason two of Brogan's nineteen faces would otherwise be unreachable.

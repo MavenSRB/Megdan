@@ -488,10 +488,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Every capability her content names is one this build can load, and the two she mints are
-        /// deliberately not registered until she is dealt - which is the law milestone 8.35z29
+        /// Every capability her content names is one this build can load, and the ONE she mints alone
+        /// is deliberately not registered until she is dealt - which is the law milestone 8.35z29
         /// recorded, because the registered list is serialized and eager registration moves pinned
         /// snapshot bytes.
+        ///
+        /// <para><b>MILESTONE 8.35z38 NARROWED THIS CASE FROM TWO CONTRACTS TO ONE, and the reason is
+        /// worth carrying to every hero still waiting.</b> As written it claimed both
+        /// <c>choose-line-destination@1</c> and <c>fast-travel@1</c> were deferred. The first is the
+        /// content wave's SHARED declaration - milestone 8.35z30 and 8.35z29 both minted it against the
+        /// same output and the wave kept one superset - and Misa's five Blue Skills name it too. So
+        /// dealing Misa registered it, and this case failed in the dealing milestone's own first
+        /// complete run.</para>
+        ///
+        /// <para><b>That failure was correct and the assertion was wrong, which is the finding.</b> The
+        /// deferral gate asks whether a contract is reachable from a card a match DEALS - not from
+        /// whose content minted it. A shared declaration is therefore deferred only until the FIRST of
+        /// its sharers is dealt, and a phase-1 hero's claim to it silently expires at that moment. What
+        /// this case can honestly own is her own <c>fast-travel@1</c>, which no dealt card names; the
+        /// shared one is asserted from the other side, in <c>MisaPrintedSetTests</c>, by the hero whose
+        /// dealing earned it.</para>
+        ///
+        /// <para>Silverarrow's own faces reaching a registered contract when she is dealt is the
+        /// ordinary case of two heroes sharing one rule, and needs nothing from her milestone.</para>
         /// </summary>
         [Test]
         public void HerMintedCapabilities_AreDeferredUntilSheIsDealt()
@@ -503,16 +522,26 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(handler => handler.Reference)
                 .ToArray();
 
-            // Stated as "hers are among the deferred" rather than as the whole deferred list: the
-            // six-hero content wave puts five other undealt heroes' contracts into this same list, so
-            // an exhaustive assertion here would be an assertion about them. The claim this milestone
-            // owns is that BOTH of hers are deferred and NEITHER is registered, and the intersection
-            // check below is what makes the second half exact.
+            // Stated as "hers is among the deferred" rather than as the whole deferred list: the
+            // six-hero content wave puts other undealt heroes' contracts into this same list, so an
+            // exhaustive assertion here would be an assertion about them. The claim this case owns is
+            // that her OWN contract is deferred and not registered, and the intersection check below
+            // is what makes the second half exact.
             Assert.That(deferred, Is.SupersetOf(new[]
             {
-                SyntheticRosterCapabilities.ChooseLineDestinationV1,
                 SyntheticRosterCapabilities.FastTravelV1
             }));
+
+            // The shared declaration, asserted in the direction that is true: milestone 8.35z38 dealt
+            // Misa, whose five Blue Skills name it, so it is registered and no longer deferred. Stated
+            // here rather than deleted, because a reader of this file needs to know WHY her other
+            // contract is not beside it - and because the day Silverarrow is dealt, this line is
+            // already correct and needs no edit.
+            Assert.That(registered, Has.Member(
+                SyntheticRosterCapabilities.ChooseLineDestinationV1));
+            Assert.That(deferred, Has.No.Member(
+                SyntheticRosterCapabilities.ChooseLineDestinationV1));
+
             Assert.That(registered.Intersect(deferred), Is.Empty);
         }
 

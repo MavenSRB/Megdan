@@ -43,7 +43,16 @@ namespace GuardsDigital.Tests.EditMode
             // MEASURED, not predicted. The digest below was read off this oracle's own failure output
             // after the pin was added with a deliberately wrong value, on a COMPLETE unfiltered run -
             // never off a filtered pin run, on the near-miss milestone 8.35z32 recorded.
-            new IdentityPin("dodger", "dodger-8-35z34-rev-1", "c17dd5f7626150d6d2407fa3a730e201b055478e350b563cca2bd0487bbe853c")
+            new IdentityPin("dodger", "dodger-8-35z34-rev-1", "c17dd5f7626150d6d2407fa3a730e201b055478e350b563cca2bd0487bbe853c"),
+            // Milestone 8.35z38. THE EIGHTH PIN, arriving on exactly the terms the seventh did: a pin
+            // is a claim about content a configured match loads, and milestone 8.35z29 composed Misa
+            // without dealing her.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
+            // deliberately wrong value and the digest read off this oracle's own failure output. A
+            // filtered pin run has been green while digests moved, which is why the rule is the
+            // complete run rather than the cheap one.
+            new IdentityPin("misa", "misa-8-35z38-rev-1", "4472b5aa57a237ca7f9ff955ce5107bfa054ca2f890505db8921ad2f21eee5d6")
         };
 
         [Test]
@@ -129,6 +138,12 @@ namespace GuardsDigital.Tests.EditMode
         private static IReadOnlyList<CardDefinition> EveryDealtDefinition() =>
             MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red).CardDefinitions
                 .Concat(MatchConfiguration.CreateStagedDodgerForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.35z38. Misa's staged configuration joins for the reason Dodger's did,
+                // and the list is now the shape every later dealing milestone appends to rather than
+                // a special case for one hero: no official line-up deals either of them, so an
+                // official-only read would measure both as absent.
+                .Concat(MatchConfiguration.CreateStagedMisaForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

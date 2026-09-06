@@ -834,6 +834,103 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.35z38. The staged Wasp-versus-Misa match, on the same `DEV-005` terms the six
+        /// staged matches before it are on. This is the configuration that makes Misa the eighth dealt
+        /// hero.
+        ///
+        /// <para>Misa takes the Blue seat though the roster-expansion amendment has not yet placed her
+        /// in an official line-up at all, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals rulebook p.5's six.</para>
+        ///
+        /// <para><b>She needs no ally seat, and what she needs instead is somebody to be beside.</b>
+        /// Not one face of hers names a friendly hero, so the Brogan problem does not arise. What her
+        /// set asks for is enemy UNITS in particular arrangements - a minion adjacent to her for Watch
+        /// How I Soar's second bullet, two or more enemy units flanking one space for Swoop In, and an
+        /// enemy standing on a straight line out of her space for every Blue rider. p.8's waves supply
+        /// all three in every configuration this build has, and the enemy hero supplies the rest.</para>
+        ///
+        /// <para><b>Her exact-distance faces are the ones a staging can silently starve, and this is
+        /// the honest statement of it.</b> RULING 1 reads "at maximum range" as EXACTLY the printed
+        /// number, so Watch How I Soar's first bullet asks for an empty space exactly four away and
+        /// Living Tornado for a unit pair exactly three apart. Both are ordinary at p.6's spawn
+        /// positions and both can be empty offers on a crowded board - which is the card design and
+        /// what milestone 8.35z38's gate rows measure rather than assume.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedMisaForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedMisaHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z38. The staged Wasp-versus-Misa match at rulebook p.15's Tier II stage, with
+        /// Misa holding one Tier II card of each colour on the branch the caller names - the same
+        /// pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        ///
+        /// <para>Which branch a staged hand took decides which of the user's Misa rulings this match
+        /// can observe at all, and the division is stated in full on
+        /// <see cref="Cards.Verified.MisaProgressedHands"/>: the first branch carries RULING 31's
+        /// escalating free move and RULING 29's place-what-you-passed rider, and the second carries
+        /// RULING 32's tense pair, RULING 29's discard rider and both Swaps.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedMisaTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.MisaUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedMisaHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z38. The staged Wasp-versus-Misa match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and Power
+        /// Overwhelming in Misa's.
+        ///
+        /// <para><b>Hers is the only unlocked Ultimate in this build that changes how a DECISION is
+        /// shaped rather than what a rule is true of.</b> Its first clause raises the ceiling on her
+        /// own modal from one option to two, so Watch How I Soar stops being "choose one" and becomes
+        /// "choose both, in whichever order she picks them" (RULING 28); its second arms a trigger on
+        /// her own self-placements (RULING 30). So this configuration is the only one in which the
+        /// modal's second bullet is reachable in the same play as its first, and the only one in which
+        /// placing herself costs an adjacent enemy hero a card.</para>
+        ///
+        /// <para><b>An honest bound on the first clause, recorded rather than discovered later.</b>
+        /// Watch How I Soar is the only modal in Misa's nineteen faces, so the raiser has exactly one
+        /// trigger in her whole set - and in a handicapped game, where p.20 substitutes Leaf on the
+        /// Wind, it has none at all, because that card prints no "Choose one". RULING 28 records that
+        /// as printed rather than as a defect.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedMisaTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.MisaUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedMisaHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.MisaCardContent.PowerOverwhelming)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -1166,6 +1263,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.DodgerProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.DodgerProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.35z38. One seat's verified Misa hand, prefixed by the seat's team side for the
+        /// reason the seven earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedMisaHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.MisaCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedMisaHand(
+            bool tierThree, Cards.Verified.MisaUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.MisaProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.MisaProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

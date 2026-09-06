@@ -60,7 +60,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha', 'dodger')]
+    [ValidateSet('wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha', 'dodger', 'misa')]
     [string] $Hero = 'wasp',
     [switch] $Check,
     [switch] $Force
@@ -93,6 +93,12 @@ $declaredHeroes = @{
     # hero miniature rather than rulebook p.19's token category - and its id is recorded in
     # Docs/AI/Rules/HERO_DODGER.md beside the atlas it is cut from.
     dodger = @{ ElementId = 8596247; ElementName = 'Dodger'; DisplayName = 'Dodger' }
+
+    # Milestone 8.35z38. The EIGHTH hero. Same element shape as the seven above - the manifest's
+    # `VerticalTokens` standee - but her id sits far from every other hero's, at 8629811 against the
+    # 85962xx/85973xx band the rest occupy, which is exactly why this table declares ids rather than
+    # searching for them by name.
+    misa = @{ ElementId = 8629811; ElementName = 'Misa'; DisplayName = 'Misa' }
 }
 
 $declared = $declaredHeroes[$Hero]

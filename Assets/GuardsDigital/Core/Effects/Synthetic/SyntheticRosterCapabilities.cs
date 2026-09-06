@@ -813,16 +813,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers()
         {
             yield return new PlayedAttackThisTurnHandler();
-            yield return new EnclosingTargetDistanceHandler(
-                TargetWasAtMaximumRangeV1, "wasAtMaximumRange", atTargetingTime: true);
-            yield return new EnclosingTargetDistanceHandler(
-                TargetIsNotAdjacentV1, "notAdjacent", atTargetingTime: false);
-            yield return new LineDestinationHandler();
-            yield return new TraversedUnitHandler();
-            yield return new UnitPairHandler(
-                ChooseUnitPairAtMaximumRadiusV1, onTheMaximumRingOnly: true);
-            yield return new UnitPairHandler(
-                ChooseUnitPairAtEqualDistanceInRadiusV1, onTheMaximumRingOnly: false);
+
+            // MILESTONE 8.35z38'S SIX HAVE LEFT THIS LIST - see `RegisteredHandlers` below. Misa the
+            // Samurai is dealt, so her Red ranged pair, her five Blue Skills and her two Swap Skills
+            // are cards a configured match puts in a hand, and the gate that held them here is
+            // satisfied on both halves at once.
+            //
+            // `choose-line-destination@1` is the wave's shared declaration and Silverarrow's three
+            // straight-line faces name it too. Registering it is not a registration on her behalf: the
+            // gate asks whether a DEALT card starts the contract, and Misa's five Blues do. What stays
+            // here is Silverarrow's own `fast-travel@1`, which no dealt card names.
             yield return new CardTextFastTravelHandler();
             yield return new ChooseTargetTrioHandler();
             yield return new DefendedCardForcedMoveHandler();
@@ -923,6 +923,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EmptyMinionSpawnPointsAdjacentV1, readsPrintedRadius: false);
             yield return new UltimateUnlockedHandler();
             yield return new GainItemFromTheBoxHandler();
+
+            // Milestone 8.35z38 is the second dealing milestone, and this is the edit it makes. Misa
+            // the Samurai's six roster contracts move across because that milestone deals her: Power
+            // Shot and Thunder Shot start the two tenses of the enclosing-target distance question,
+            // her five Blue Skills start the straight-line destination and its traversal selection,
+            // and Living Tornado and Storm Spirit start the two unit-pair selections. Both halves of
+            // the gate are satisfied together - the first by dealing her, and the second by the three
+            // showcase cards milestone 8.35z38 added, because each of these is a handler TYPE this
+            // build had never registered.
+            //
+            // SIX IDS ACROSS FOUR TYPES, and the gap is the whole reason the conformance count counts
+            // types: the two tenses share one EnclosingTargetDistanceHandler and the two pair
+            // selections share one UnitPairHandler.
+            yield return new EnclosingTargetDistanceHandler(
+                TargetWasAtMaximumRangeV1, "wasAtMaximumRange", atTargetingTime: true);
+            yield return new EnclosingTargetDistanceHandler(
+                TargetIsNotAdjacentV1, "notAdjacent", atTargetingTime: false);
+            yield return new LineDestinationHandler();
+            yield return new TraversedUnitHandler();
+            yield return new UnitPairHandler(
+                ChooseUnitPairAtMaximumRadiusV1, onTheMaximumRingOnly: true);
+            yield return new UnitPairHandler(
+                ChooseUnitPairAtEqualDistanceInRadiusV1, onTheMaximumRingOnly: false);
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>

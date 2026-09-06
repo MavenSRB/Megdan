@@ -208,7 +208,27 @@ namespace GuardsDigital.Tests.EditMode
             // question it was not asked. The Respawn is the one worth naming: RULING 48 gives it a
             // SECOND question, and it is still one handler under these rules because the second
             // question is asked of the same context the first was answered against.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(57),
+            // MILESTONE 8.35z38 IS THE SECOND DEALING MILESTONE, and it moves this count by FOUR
+            // again - from 57 to 61 - on the same arithmetic and for a different set of reasons.
+            // Misa the Samurai's dealing registers EIGHT capability ids across exactly four new
+            // handler types: the two tenses of her Red ranged pair share one
+            // EnclosingTargetDistanceHandler, her two Swap Skills share one UnitPairHandler, her five
+            // Blue Skills bring LineDestinationHandler and TraversedUnitHandler one each - and her TWO
+            // PLACE DECLARATIONS BRING NOTHING, being further declarations over PlaceHandler, the type
+            // the three arms of Place have registered since milestone 6.6.
+            //
+            // Her six Active-effect creations move it by nothing on the sentence milestones 8.24 and
+            // 8.35z34 already wrote: ActiveEffectCreationHandler is a type this build has had since
+            // milestone 6.8. That is now three heroes in a row for whom the sentence is true, which is
+            // what makes it a rule about the type rather than a coincidence about the content.
+            //
+            // Each of the four joins these rules like any other - each performs its own work, each
+            // Anticipate mirrors its Execute against the same live state, and none refuses a question
+            // it was not asked. The pair selection is the one worth naming: it is the first RELATIONAL
+            // constraint in the build - two units at the same distance from the actor - and it is
+            // still one handler under these rules because the relation is derived from the same live
+            // board each candidate is drawn from.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(61),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

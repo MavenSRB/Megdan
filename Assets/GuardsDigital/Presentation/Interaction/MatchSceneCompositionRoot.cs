@@ -382,7 +382,64 @@ namespace GuardsDigital.Presentation.Interaction
         /// player's own input - her Ultimate is up, so Necromastery's Respawn takes any empty space in
         /// its printed Radius, and at a granted point it asks which minion type comes back.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedDodger = 39
+        VerifiedTierThreeAlternateEngagedStagedDodger = 39,
+
+        /// <summary>
+        /// Milestone 8.35z38. The staged Wasp-versus-Misa hands with both heroes restaged already
+        /// engaged, exactly as <see cref="VerifiedEngagedStagedDodger"/> stages its two. She is the
+        /// eighth hero this build deals.
+        ///
+        /// <para>Misa takes the Blue seat rather than joining it, for the reason the five arms before
+        /// hers record: milestone 8.25 owns the official six-player configuration. She needs no ally
+        /// arm - no face of hers names a friendly hero at all.</para>
+        ///
+        /// <para><b>What her arms need is the engaged position's DISTANCES.</b> RULING 1 makes four of
+        /// her faces ask for something at exactly the printed number, and the engaged staging is what
+        /// puts two heroes close enough for a Blue line to cross one and far enough for a ring of four
+        /// to have empty members. A fixture that stood them at spawn would leave half her set
+        /// unreachable and say nothing about why.</para>
+        /// </summary>
+        VerifiedEngagedStagedMisa = 40,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Misa holding the first sibling of
+        /// each colour: Matter of Honor, Gust of Wind and Discipline.
+        ///
+        /// <para>This is the branch that carries RULING 31's escalating free move and RULING 29's
+        /// place-the-unit-you-moved-through rider - see
+        /// <see cref="Cards.Verified.MisaProgressedHands"/>, which records the whole split.</para>
+        /// </summary>
+        VerifiedTierTwoEngagedStagedMisa = 41,
+
+        /// <summary>
+        /// The Tier II staging with Misa holding the <em>second</em> sibling of each colour - Power
+        /// Shot, Dash and Slash and Living Tornado - which is the half of p.15's upgrade the row above
+        /// does not deal. It is the only Tier II arm of hers that carries a ranged Attack or a Swap at
+        /// all, so RULING 32's tense pair and RULING 1's maximum-radius pair are reachable here and
+        /// nowhere else at this Tier.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedMisa = 42,
+
+        /// <summary>
+        /// The engaged staging at p.15's Tier III stage, with p.16's Ultimate unlocked on both seats -
+        /// High Voltage in Wasp's area and Power Overwhelming in Misa's - and Misa holding the first
+        /// sibling of each colour: Worthy Opponent, Crushing Squall and Mastery.
+        ///
+        /// <para>Hers is the only unlocked Ultimate in this build that changes how a DECISION is shaped
+        /// rather than what a rule is true of. Its first clause raises the ceiling on her own modal
+        /// from one option to two (RULING 28), so this staging is the only one in which Watch How I
+        /// Soar's two bullets are reachable in one play; its second arms a discard on her own
+        /// self-placements (RULING 30).</para>
+        /// </summary>
+        VerifiedTierThreeEngagedStagedMisa = 43,
+
+        /// <summary>
+        /// The Tier III staging with Misa holding the second sibling of each colour: Thunder Shot,
+        /// Death from Above and Storm Spirit. This is the one arm in which RULING 32's present tense
+        /// and RULING 1's equal-distance pair are both reachable through a player's own input, with her
+        /// Ultimate up.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedMisa = 44
     }
 
     [ExecuteAlways]
@@ -741,6 +798,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedDodgerTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.DodgerUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedMisa =>
+                    MatchConfiguration.CreateStagedMisaForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedMisa =>
+                    MatchConfiguration.CreateStagedMisaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MisaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedMisa =>
+                    MatchConfiguration.CreateStagedMisaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MisaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedMisa =>
+                    MatchConfiguration.CreateStagedMisaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MisaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedMisa =>
+                    MatchConfiguration.CreateStagedMisaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MisaUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -781,7 +857,8 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedSabina(content) ||
                 IsStagedTigerclaw(content) ||
                 IsStagedXargatha(content) ||
-                IsStagedDodger(content))
+                IsStagedDodger(content) ||
+                IsStagedMisa(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1164,6 +1241,11 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusDodgerOneVsOne();
                     }
 
+                    if (IsStagedMisa(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusMisaOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -1230,6 +1312,19 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedDodger ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedDodger ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedDodger;
+
+        /// <summary>
+        /// Whether this content puts Misa the Samurai on the Blue seat. Milestone 8.35z38's five arms,
+        /// on the one-hero-per-team setup and the ordinary engaged restaging: no face of hers names a
+        /// friendly hero at all, so an ally seat would widen nothing - what her set needs is enemy
+        /// units at particular distances, which the engaged position and p.8's waves supply.
+        /// </summary>
+        private static bool IsStagedMisa(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedMisa ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedMisa ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedMisa ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedMisa ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedMisa;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

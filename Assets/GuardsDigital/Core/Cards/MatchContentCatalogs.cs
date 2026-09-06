@@ -111,7 +111,17 @@ namespace GuardsDigital.Core.Cards
                     // difference between the cards.
                     XargathaActiveEffectContent.ConstrictTriggeredEffect.Definition,
                     XargathaActiveEffectContent.FinalEmbraceTriggeredEffect.Definition
-                }));
+                }
+                .Concat(
+                    // Milestone 8.35z38. Misa's four, joining at the milestone that deals her rather
+                    // than at the one that composed them, for the reason every registration in this
+                    // file joins at a dealing milestone. Hers is the first group whose members reach
+                    // two different windows: Power Overwhelming's discard runs on the after-action
+                    // rails when she has placed herself, and her three Green step-moves run at
+                    // milestone 8.35z29's `BeforePrimaryAction` checkpoint, which is a window this
+                    // build had a producer for and no content behind until now.
+                    MisaEffectContent.TriggeredDefinitions(MisaCardContent.ContentRevision))
+                .ToArray()));
 
         /// <summary>
         /// The verified declarations this build contributes to the generic handler set. The order is
@@ -138,6 +148,12 @@ namespace GuardsDigital.Core.Cards
                 // dealt her. They are the one group of hers that owed no showcase consumer: both run on
                 // ActiveEffectCreationHandler, the type Arien's five persistent texts already proved,
                 // and the gate's second half is asked of the handler type.
-                .Concat(DodgerActiveEffectContent.Handlers());
+                .Concat(DodgerActiveEffectContent.Handlers())
+                // Milestone 8.35z38. Misa's six creations - three "This turn: Gain +N Defense" guards
+                // and three "Next turn: Before you perform a primary action" steps - joining at the
+                // milestone that deals her. Like Dodger's pair they owe no showcase consumer: all six
+                // run on ActiveEffectCreationHandler, the type Arien's five persistent texts proved,
+                // and the deferral gate's second half is asked of the handler type.
+                .Concat(MisaActiveEffectContent.Handlers());
     }
 }

@@ -241,7 +241,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new RespawnFriendlyMinionHandler(
                     RespawnFriendlyMinionAdjacentV1, readsPrintedRadius: false),
                 new RespawnFriendlyMinionHandler(
-                    RespawnFriendlyMinionInRadiusV1, readsPrintedRadius: true)
+                    RespawnFriendlyMinionInRadiusV1, readsPrintedRadius: true),
+
+                // Milestone 8.35z38. Misa's two, moved across by the milestone that deals her: Watch
+                // How I Soar starts the exact-Range ring and Swoop In the qualified Radius, and both
+                // are now cards a configured match puts in a hand. These owe the showcase half of the
+                // gate NOTHING, and it is worth saying why rather than leaving it to be noticed: both
+                // are further declarations over PlaceHandler, the type the three arms above have
+                // registered since milestone 6.6, and that half of the gate is asked of a handler
+                // TYPE. They move the conformance count by nought for exactly the same reason.
+                new PlaceHandler(
+                    PlaceAtMaximumRangeV1, PrintedValueChannel.Range,
+                    PlaceDestinationScope.EmptySpacesAtExactlyRadius),
+                new PlaceHandler(
+                    PlaceInRadiusBesideTwoOrMoreEnemiesV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits)
             };
 
         /// <summary>
@@ -252,28 +267,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// name the content wave settled on, so that what is deferred can be read and counted without a
         /// caller having to know which hero deferred it.
         ///
-        /// <para>Milestone 8.35z29's two are further declarations over <see cref="PlaceHandler"/>
-        /// rather than new implementations, exactly as the printed-Range and printed-Radius arms were:
-        /// Misa's Watch How I Soar and Leaf on the Wind measure the printed Range as a ring, and her
-        /// Swoop In measures the printed Radius and then asks each candidate space who is standing
-        /// beside it.</para>
+        /// <para>Milestone 8.35z28's two Respawns left this list at milestone 8.35z34, which deals
+        /// Dodger; milestone 8.35z29's two Places left it at milestone 8.35z38, which deals Misa. Both
+        /// pairs are now cards a match puts in a hand, and the gate that held them here is satisfied on
+        /// both halves at once - see <see cref="RegisteredHandlers"/>.</para>
         ///
-        /// <para>Milestone 8.35z28's two Respawns HAVE LEFT this list. Milestone 8.35z34 deals Dodger,
-        /// so Necromancy and Necromastery are cards a match puts in a hand, and the gate that held them
-        /// here is satisfied on both halves at once - see <see cref="RegisteredHandlers"/>. What
-        /// remains is Misa's, whose own dealing milestone will do the same.</para>
+        /// <para><b>THE LIST IS EMPTY, AND IT IS KEPT RATHER THAN DELETED.</b> An empty deferral list is
+        /// a statement this file should go on being able to make: the next hero worker who mints a
+        /// placement declaration for a hero nobody deals yet needs somewhere to put it that is not the
+        /// registered set, and finding the name already here - beside the reason - is the difference
+        /// between that worker following milestone 7.9's gate and rediscovering it through two
+        /// pinned-byte failures that look like a serialization defect. Every caller of this method still
+        /// composes it, so the empty case is exercised rather than assumed.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[]
-            {
-                new PlaceHandler(
-                    PlaceAtMaximumRangeV1, PrintedValueChannel.Range,
-                    PlaceDestinationScope.EmptySpacesAtExactlyRadius),
-                new PlaceHandler(
-                    PlaceInRadiusBesideTwoOrMoreEnemiesV1, PrintedValueChannel.Radius,
-                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits)
-            };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being

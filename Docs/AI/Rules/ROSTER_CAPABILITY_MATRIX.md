@@ -5,7 +5,8 @@
 Canonical planning map for milestone 8.19. Return to [CARD_COVERAGE.md](CARD_COVERAGE.md). Source truth and
 exact face text remain in the hero shards; this file owns only capability classification, effect-node
 contracts, dependency order, and source-linked scenario IDs for every hero added after Wasp - the five
-milestone 8.19 planned, and Dodger, added at milestone 8.35z34 from outside that line-up.
+milestone 8.19 planned, and Dodger and Misa, added at milestones 8.35z34 and 8.35z38 from outside that
+line-up.
 
 ## Reading the matrix
 
@@ -34,7 +35,7 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `synthetic-range-target@1`, `synthetic-radius-target@1`, `synthetic-choose-target@1`, and
 `repeat-action@1`. New or refined identities must be introduced by an approved dependency slice and registered before verified content can use them.
 
-Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete, and milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v38 and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Five further heroes are composed and NOT dealt** - Misa, Silverarrow, Ursafar, Tali and Whisper, from the six-hero content wave - and their contracts stay in the deferred lists until each hero's own dealing milestone, which is milestone 7.9's gate working rather than an omission.
+Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete; milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34 - and milestone 8.35z38 an EIGHTH on the same terms, Misa, composed at 8.35z29 and dealt at 8.35z38. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v38 and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Four further heroes are composed and NOT dealt** - Silverarrow, Ursafar, Tali and Whisper, from the six-hero content wave - and their contracts stay in the deferred lists until each hero's own dealing milestone, which is milestone 7.9's gate working rather than an omission. Milestone 8.35z38 recorded the one way that rule reads differently for a SHARED declaration: `choose-line-destination@1` is Misa's and Silverarrow's both, so dealing Misa registered it and Silverarrow's phase-one claim to it expired - a shared contract is deferred only until the FIRST of its sharers is dealt.
 
 **The block's own prerequisite claim needs qualifying, and this is now three heroes running:** each of
 8.20, 8.20a and 8.21 found printed sentences needing vocabulary no 8.19 slice built - a restriction
@@ -166,6 +167,31 @@ number, a ritual is a step, and a Silver basic's clause is a narrowing on who ma
 | Necromancy / Necromastery | R, N | `synthetic-respawn-friendly-minion-adjacent@1` / `-in-radius@1`. p.19's eligibility is stated once in `MinionRespawnEligibilityQuery`. Under RULING 48 the node asks up to TWO questions: which empty space in reach, and - at a point the Ultimate granted - which eligible type comes back `[dodger/necromancy]`. |
 | Tide of Darkness | R, N | p.16 permanent ability declaring one `RuleModification` member, `AllSpacesCountAsFriendlyMinionSpawnPointsInBattleZone`. The whole rule lives in the member's NAME rather than in a field beside it, because adding a property to a shared declaration struct moves every hero who reaches it `[dodger/tide]`. |
 | Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/dodger, team slot, deck, profile/dashboard references; validation-only)` `[dodger/components]`. No rules component supply. |
+
+## Misa
+
+Source: [HERO_MISA.md](HERO_MISA.md). Misa owns no token, marker, alternate form, or statue. She was added
+at milestone 8.35z38, after Dodger, and is the second hero here from outside milestone 8.17's line-up.
+
+**Six of her nineteen faces read ONE geometric quantity as an EQUALITY rather than as a bound**, and the
+rows below name it once rather than per face: the user's RULING 1 reads "at maximum range/radius" as
+exactly the printed number, so her candidate sets are rings and equalities where every earlier hero's are
+disks. That is what makes an empty offer an ordinary outcome for her, and what makes each of these a
+capability id of its own rather than a parameter on an existing one - a reader auditing a node learns the
+shape from the reference it carries.
+
+| Faces / component | Class | Effect nodes and exact contract |
+| --- | --- | --- |
+| Watch How I Soar / Leaf on the Wind | R, F | p.10 modal over two printed bullets: `synthetic-place-at-maximum-range@1` (printed Range as a RING, RULING 1), or `choose-target@2` on a minion adjacent on either side then `synthetic-defeat-minion@1`. Leaf on the Wind prints only the first bullet and carries p.20's standing Handicap deferral `[misa/gold]`. |
+| Swoop In | R, N | `synthetic-place-in-radius-beside-two-or-more-enemies@1` then `retrieve-card@1 (May)`. The first destination test in this build that qualifies the SPACE being considered rather than the space the actor stands in; the threshold is in the capability NAME, per the identity-oracle rule `[misa/swoop]`. |
+| Challenge Accepted / Matter of Honor / Worthy Opponent | R, N | Adjacent-unit Attack then step-7 `create-active-effect@1 (ThisTurn, ControllerHero)` declaring `ForValue(Defense, +2/+3/+5)`. One sentence with one number, and the only thing that changes between the three `[misa/melee]`. |
+| Power Shot / Thunder Shot | R, N | Printed-Range unit Attack then step-7 `target-was-at-maximum-range@1` / `target-is-not-adjacent@1` gating `synthetic-direct-move@3 (1 space, DestinationPolicy AwayFromActor; May)`. **Two capability ids over ONE handler**, because RULING 32 makes the tense difference a difference of MOMENT rather than of phrasing `[misa/ranged]`. |
+| Sudden Breeze / Gust of Wind / Crushing Squall | R, N | `choose-line-destination@1 (maximumDistance 3/4/5, ignoresObstacles=true)`, `synthetic-direct-move@3 (NamedSpace, movesThroughObstacles)`, then `choose-traversed-unit@1 (Unit, OpposingSource; IfAble)` and `synthetic-place@2 (May)`. RULING 29 was ALREADY the movement rule's behaviour since 6.8e - measured rather than implemented; only the chooser is new `[misa/blue-place]`. |
+| Dash and Slash / Death from Above | R, N | The same line and Move, then `choose-traversed-unit@1 (Hero, OpposingSource)` and `discard-owned-card@1 (IfAble)`. The unit KIND is the only difference between her two Blue riders `[misa/blue-discard]`. |
+| Focus / Discipline / Mastery | F, N | `create-active-effect@1 (NextTurn, ControllerHero, carried)` declaring `TimingCheckpoint.BeforePrimaryAction` against a triggered `synthetic-direct-move@3` of 1 / up to 2 / up to 3. RULING 31 fires it ONCE; the spent latch is the existing one. The cancellation is `TurnOnlyCancellationBeforeTurnEnded`, which is what carries it across the turn boundary `[misa/steps]`. |
+| Living Tornado / Storm Spirit | R, N | `choose-unit-pair-at-maximum-radius@1` / `choose-unit-pair-at-equal-distance-in-radius@1` then `synthetic-swap@1`. Two ids over ONE handler again; the second is the build's **first relational pair constraint** - the admissible second member depends on the first `[misa/swaps]`. |
+| Power Overwhelming | R, N | p.16 permanent ability declaring `RuleModificationKind.ChoiceCardinality` - the ninth member and the first that modifies a CONTROL-FLOW node rather than a fact about a piece - plus `UltimateTriggerCondition.AfterControllerPlacesSelf` feeding a `choose-target@2` on an adjacent enemy hero and `discard-owned-card@1 (IfAble)`. Watch How I Soar is the raiser's only trigger in her whole set, and in a handicapped game it has none `[misa/ultimate]`. |
+| Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/misa, team slot, deck, profile/dashboard references; validation-only)` `[misa/components]`. No rules component supply. |
 
 ## Delta register and dependency order
 

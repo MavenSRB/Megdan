@@ -5,6 +5,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
@@ -24,21 +25,27 @@ namespace GuardsDigital.Tests.EditMode
     /// against a catalog holding every contract it names, and whether each ruling actually reached the
     /// composition rather than only the document that records it.</para>
     ///
-    /// <para><b>She is not dealt in this phase, so there is no staged match to drive.</b> The capability
-    /// behaviours her rulings turn on are measured directly, in
-    /// <see cref="MisaCapabilityTests"/>; this file measures the definitions.</para>
+    /// <para><b>Milestone 8.35z38 deals her, and the sentence that stood here has been replaced rather
+    /// than deleted.</b> It read "she is not dealt in this phase, so there is no staged match to
+    /// drive". There is one now - <c>MatchConfiguration.CreateStagedMisaForInternalTest</c> - and the
+    /// two cases at the end of this file are what that milestone owed this file: that her contracts
+    /// are registered, and that a configured match deals the cards which is what earns the
+    /// registration. The capability behaviours her rulings turn on are still measured directly, in
+    /// <see cref="MisaCapabilityTests"/>; this file still measures the definitions.</para>
     /// </summary>
     public sealed class MisaPrintedSetTests
     {
         /// <summary>
-        /// The catalog her composed faces are legal against: everything the build registers, plus the
-        /// three deferred lists this phase minted and deliberately left unregistered because she is not
-        /// dealt yet - the two placement declarations, the six roster contracts, and her own six
-        /// Active-effect creations.
+        /// The catalog her composed faces are legal against: everything the build registers, plus
+        /// whatever is still declared as deferred, plus her own Active-effect creations.
         ///
-        /// <para>It is composed by naming the declared lists rather than by naming handlers here, so
-        /// that the milestone which deals her moves each contract from one list to the other and needs
-        /// no edit in this file.</para>
+        /// <para>It is composed by naming the declared LISTS rather than by naming handlers here, and
+        /// milestone 8.35z38 is the proof that this was worth doing: dealing her moved eight of her
+        /// contracts out of those lists and into the registered set, and this expression did not need
+        /// one character changed. What it reads today is the four contracts other undealt heroes still
+        /// defer plus her six creations, and it composed her eight registered ones yesterday - the same
+        /// sentence either way, because the sentence is "everything a definition of hers may
+        /// name".</para>
         /// </summary>
         private static EffectCapabilityCatalog Catalog() =>
             SyntheticEffectCapabilities.CreateCatalog(
@@ -566,5 +573,137 @@ namespace GuardsDigital.Tests.EditMode
                     EffectExecutionResultKind.Applied,
                     Array.Empty<EffectOutcomeFact>()))
                 .ToArray();
+
+        // -----------------------------------------------------------------------------------------
+        // Milestone 8.35z38: the two halves of milestone 7.9's deferral gate, asserted against each
+        // other so neither can move alone
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The fourteen contracts milestone 8.35z29 minted are now IN the build's registration list,
+        /// and the reason is the same rule that kept them out of it: milestone 7.9's deferral gate
+        /// refuses a registration no printed card a match deals can start, and milestone 8.35z38 deals
+        /// her.
+        ///
+        /// <para>The phase-1 worker's finding F-8 is what this case exists to keep true. Registering
+        /// eagerly does not produce one clean refusal - it produces two pinned-byte failures that read
+        /// like a serialization defect, because the registered capability list is recorded in every
+        /// snapshot. So the registration and the dealing are one change, and this case cannot claim the
+        /// registration without <see cref="SheIsDealtByAConfiguredMatch"/> below proving there is a
+        /// match that deals the cards.</para>
+        ///
+        /// <para>The gate's second half did real work again. It is asked of a <em>handler type</em>
+        /// rather than of a capability id, so each new type owed a <c>SyntheticShowcaseHand</c>
+        /// consumer before it could register - and milestone 8.35z38 added three showcase cards
+        /// carrying four types between them. Her two Place declarations and her six Active-effect
+        /// creations owed none, running on <c>PlaceHandler</c> and
+        /// <c>ActiveEffectCreationHandler</c>, types this build has had since milestones 6.6 and
+        /// 6.8.</para>
+        /// </summary>
+        [Test]
+        public void TheNewContracts_AreRegisteredNowSheIsDealt()
+        {
+            var registered = MatchContentCatalogs.ForThisBuild().Capabilities.Registered
+                .Select(value => value.ToString())
+                .ToArray();
+
+            Assert.That(registered, Has.Member("synthetic-place-at-maximum-range@1"));
+            Assert.That(registered, Has.Member(
+                "synthetic-place-in-radius-beside-two-or-more-enemies@1"));
+            Assert.That(registered, Has.Member("choose-line-destination@1"));
+            Assert.That(registered, Has.Member("choose-traversed-unit@1"));
+            Assert.That(registered, Has.Member("choose-unit-pair-at-maximum-radius@1"));
+            Assert.That(registered, Has.Member("choose-unit-pair-at-equal-distance-in-radius@1"));
+            Assert.That(registered, Has.Member("target-was-at-maximum-range@1"));
+            Assert.That(registered, Has.Member("target-is-not-adjacent@1"));
+
+            foreach (var handler in MisaActiveEffectContent.Handlers())
+            {
+                Assert.That(registered, Has.Member(handler.Reference.ToString()),
+                    "Her Active-effect creations register with the rest of her contracts, in the " +
+                    "same change, because they are reached by the same dealt cards.");
+            }
+
+            // And the other side of the move: none of them is still declared as deferred. Stated per
+            // contract rather than over the whole list, and deliberately - the content wave leaves
+            // four other undealt heroes' contracts in the roster list, so an exhaustive assertion here
+            // would be an assertion about them.
+            var deferred = SyntheticRosterCapabilities.DeferredHandlers()
+                .Concat(SyntheticPlacementCapabilities.DeferredHandlers())
+                .Select(handler => handler.Reference.ToString())
+                .ToArray();
+
+            Assert.That(deferred, Has.No.Member("synthetic-place-at-maximum-range@1"));
+            Assert.That(deferred, Has.No.Member(
+                "synthetic-place-in-radius-beside-two-or-more-enemies@1"));
+            Assert.That(deferred, Has.No.Member("choose-line-destination@1"));
+            Assert.That(deferred, Has.No.Member("choose-traversed-unit@1"));
+            Assert.That(deferred, Has.No.Member("choose-unit-pair-at-maximum-radius@1"));
+            Assert.That(deferred, Has.No.Member("choose-unit-pair-at-equal-distance-in-radius@1"));
+            Assert.That(deferred, Has.No.Member("target-was-at-maximum-range@1"));
+            Assert.That(deferred, Has.No.Member("target-is-not-adjacent@1"));
+        }
+
+        /// <summary>
+        /// A configured match deals her eighteen cards, which is the half of milestone 7.9's gate the
+        /// registration above rests on. Asserted through the configuration rather than through the
+        /// content, because "she is dealt" is a statement about a match and not about a card file.
+        /// </summary>
+        [Test]
+        public void SheIsDealtByAConfiguredMatch()
+        {
+            var configuration = MatchConfiguration.CreateStagedMisaForInternalTest(TeamSide.Red);
+
+            var hers = configuration.CardInstances
+                .Where(card => card.DefinitionReference.DefinitionId.Value
+                    .StartsWith(MisaCardContent.ContentSetId + "-", StringComparison.Ordinal))
+                .ToArray();
+
+            Assert.That(hers, Has.Length.EqualTo(18),
+                "p.6 deals her eighteen of her nineteen faces; Leaf on the Wind is p.20's Handicap " +
+                "card and is in the box.");
+            Assert.That(
+                hers.Count(card => card.State.Location == CardLocation.Hand), Is.EqualTo(5),
+                "p.6 step 11's starting hand: the three Tier I cards and the two basics.");
+            Assert.That(
+                hers.All(card => string.Equals(
+                    card.DefinitionReference.ContentRevision,
+                    MisaCardContent.ContentRevision,
+                    StringComparison.Ordinal)),
+                Is.True,
+                "Every dealt instance carries the revision this milestone pinned her identity at.");
+        }
+
+        /// <summary>
+        /// Both staged upgrade branches deal a legal p.15 position: the two basics plus one Tier card
+        /// of each colour in hand, and the Ultimate in the deck where p.6's validator requires it.
+        ///
+        /// <para>It asserts both branches rather than one, because
+        /// <see cref="MisaProgressedHands"/> records that every ruling of hers above Tier I lives on
+        /// exactly one branch - so a fixture that only ever staged one would leave half her printed set
+        /// unreachable by any journey and say nothing about it.</para>
+        /// </summary>
+        [Test]
+        public void BothProgressedBranches_DealOneTierCardOfEachColour(
+            [Values(MisaUpgradeBranch.FirstSibling, MisaUpgradeBranch.SecondSibling)]
+            MisaUpgradeBranch branch)
+        {
+            foreach (var configuration in new[]
+            {
+                MatchConfiguration.CreateStagedMisaTierTwoForInternalTest(TeamSide.Red, branch),
+                MatchConfiguration.CreateStagedMisaTierThreeForInternalTest(TeamSide.Red, branch)
+            })
+            {
+                var hers = configuration.CardInstances
+                    .Where(card => card.DefinitionReference.DefinitionId.Value
+                        .StartsWith(MisaCardContent.ContentSetId + "-", StringComparison.Ordinal))
+                    .ToArray();
+
+                Assert.That(hers, Has.Length.EqualTo(18));
+                Assert.That(
+                    hers.Count(card => card.State.Location == CardLocation.Hand), Is.EqualTo(5),
+                    "The two basics plus one Tier card of each of her three colours.");
+            }
+        }
     }
 }

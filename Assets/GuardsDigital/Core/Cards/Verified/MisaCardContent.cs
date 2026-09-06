@@ -41,8 +41,26 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="XargathaCardContent.ContentRevision"/> has: it moves when Misa's content does.
+        ///
+        /// <para><b>Milestone 8.35z38 is her dealing milestone, and it pays three debts at once
+        /// because they have one cause.</b> Her eighteen artwork rows, her identity pin and the
+        /// registration of her fourteen deferred contracts arrive together, and none of them is
+        /// separable from the others: <c>ConfiguredCardArtworkCatalog</c> names DEALT heroes, the pin
+        /// is a claim about content a match can load, and milestone 7.9's gate refuses a registration
+        /// no dealt card can start. Milestone 8.35l's trap - that a content-revision bump owes the
+        /// artwork catalog and a green harness is structurally blind to the omission - is therefore
+        /// paid here and cannot be paid anywhere else.</para>
+        ///
+        /// <para><b>The revision is re-based rather than incremented, on the reading
+        /// <see cref="DodgerCardContent.ContentRevision"/> settled one milestone earlier.</b> The
+        /// earlier revision was minted under the placeholder id <c>8.35x</c>, which is a claim rather
+        /// than a milestone - the wave-one law's own words. This is her first revision under an id that
+        /// exists, and the first one any match has dealt, so it is <c>rev-1</c> of that id rather than
+        /// <c>rev-2</c> of a chain no build ever ran. Nothing read the old string: no pin named her, no
+        /// artwork row named her, and no configuration dealt her, which is exactly what makes the
+        /// re-base free here and would not make it free again.</para>
         /// </summary>
-        public const string ContentRevision = "misa-8-35x-rev-1";
+        public const string ContentRevision = "misa-8-35z38-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

@@ -98,6 +98,10 @@ namespace GuardsDigital.Tests.EditMode
                 // dealing milestone put them into MatchContentCatalogs - which this list deliberately
                 // mirrors by hand rather than calling, because a mirror that called the production
                 // composer would agree with it by construction and prove nothing.
-                .Concat(DodgerActiveEffectContent.Handlers());
+                .Concat(DodgerActiveEffectContent.Handlers())
+                // Milestone 8.35z38. Misa's six - three "This turn" Defense guards and three "Next
+                // turn" step-moves - joining the moment her dealing milestone put them into
+                // MatchContentCatalogs, and mirrored by hand here for the same reason Dodger's pair is.
+                .Concat(MisaActiveEffectContent.Handlers());
     }
 }

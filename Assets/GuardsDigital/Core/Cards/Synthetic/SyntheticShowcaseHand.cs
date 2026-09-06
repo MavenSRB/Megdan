@@ -939,6 +939,68 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 boxItemSkillProfile: RedBoxItemSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.35z38: the four handler types Misa the Samurai's dealing registers, proved here
+        // on cards that are nobody's
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.35z38's straight-line Skill, sitting outside its team's ordinary Initiative band
+        /// for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedLineTravelSkillProfile { get; } =
+            new SyntheticSkillProfile("red-windrunner", "Red Windrunner", 27);
+
+        /// <summary>Milestone 8.35z38's unit-pair Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedUnitPairSkillProfile { get; } =
+            new SyntheticSkillProfile("red-weathervane", "Red Weathervane", 28);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z38's straight-line Skill, which is how
+        /// <c>choose-line-destination@1</c> and <c>choose-traversed-unit@1</c> become reachable from
+        /// showcase content rather than arriving for the first time inside Misa's own slice.
+        ///
+        /// <para>One card carries both because the second cannot be asked without the first: the
+        /// traversal selection re-derives a line's interior from the two ends, and one of those ends is
+        /// the destination the first node chose. A fixture that asked them apart would have to invent
+        /// an origin, which is a fixture stating an answer rather than proving a contract.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithLineTravelSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                lineTravelSkillProfile: RedLineTravelSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z38's unit-pair Skill, which is how
+        /// <c>choose-unit-pair-at-maximum-radius@1</c> becomes reachable on the same terms. Storm
+        /// Spirit's equal-distance sibling runs on the same handler type and is admitted by the concat
+        /// beside her dealt cards, which is exactly the division the deferral gate draws.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithUnitPairSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                unitPairSkillProfile: RedUnitPairSkillProfile);
+
+        /// <summary>
+        /// Misa's two range tenses on one Attack, which no printed face prints together - the same
+        /// arrangement milestone 8.22 built for Sabina's two adjacency tenses, and for the same reason.
+        /// </summary>
+        private static SyntheticAttackTextProfile RedRangeTenseRidersProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-stormarcher", "Red Stormarcher", 10, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false, continuation: SyntheticContinuationShape.AfterAttackRangeTenseRiders);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.35z38's Attack-text card, which is how
+        /// <c>target-was-at-maximum-range@1</c> and <c>target-is-not-adjacent@1</c> become reachable
+        /// from showcase content rather than waiting for the hero whose faces print them. They need an
+        /// enclosing Attack to be about, which is why they are here rather than on a Skill.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithRangeTenseRiderText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedRangeTenseRidersProfile });
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1041,6 +1103,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile rosterTheftSkillProfile = null,
             SyntheticSkillProfile spawnPointSkillProfile = null,
             SyntheticSkillProfile boxItemSkillProfile = null,
+            SyntheticSkillProfile lineTravelSkillProfile = null,
+            SyntheticSkillProfile unitPairSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1222,6 +1286,22 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateBoxItemSkillDefinition(boxItemSkillProfile),
                     boxItemSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (lineTravelSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateLineTravelSkillDefinition(lineTravelSkillProfile),
+                    lineTravelSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (unitPairSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateUnitPairSkillDefinition(unitPairSkillProfile),
+                    unitPairSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -2764,6 +2844,181 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 });
         }
 
+        /// <summary>
+        /// Milestone 8.35z38. A Skill that asks the two straight-line contracts Misa's five Blue Skills
+        /// are the first printed content to reach: where a straight line out of the actor's own space
+        /// ends, and who was standing on it.
+        ///
+        /// <para>Every number here is a fixture number and the sentence is nobody's card. What it
+        /// proves is that each contract composes and runs, so neither arrives for the first time inside
+        /// a verified hero's slice - the second half of the rule <c>ConfiguredCardMatrixTests</c> asks,
+        /// and that half is asked of the handler TYPE.</para>
+        ///
+        /// <para><b>It walks p.18's obstacles rather than crossing them, and that is the point of the
+        /// card rather than an oversight.</b> The shared <c>choose-line-destination@1</c> takes
+        /// <c>ignoresObstacles</c> as an OPTIONAL parameter, and every one of Misa's Blues binds it
+        /// true. A showcase card that also bound it true would leave the default arm - the one
+        /// milestone 8.35z30's Silverarrow faces will print - reachable from no content at all. So this
+        /// card omits the parameter, which exercises the schema's optionality and the handler's
+        /// obstacle-walking arm in the same node.</para>
+        ///
+        /// <para>Both nodes are <c>IfAble</c>: a line with no legal end and a line that crossed nobody
+        /// are ordinary board states, and a mandatory node here would make the card unplayable on the
+        /// very boards it exists to be played on.</para>
+        /// </summary>
+        private static CardDefinition CreateLineTravelSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("line-travel-root");
+            var actorSpace = new EffectNodeId("line-travel-actor-space");
+            var destination = new EffectNodeId("line-travel-destination");
+            var traversed = new EffectNodeId("line-travel-traversed");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z38-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { actorSpace, destination, traversed }),
+                    new EffectNodeDefinition(
+                        actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        destination, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.ChooseLineDestinationV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                "maximumDistance", EffectValue.Integer(2))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("destination", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        traversed, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.ChooseTraversedUnitV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "origin", actorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromNodeOutput(
+                                "destination", destination, "destination",
+                                EffectValueKind.Coordinate),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation
+                                    .OpposingSource)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenMinionOutput,
+                                EffectValueKind.Minion),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenSpaceOutput,
+                                EffectValueKind.Coordinate)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z38-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-line-travel-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.35z38. A Skill that asks the pair selection Misa's two Swap Skills are the first
+        /// printed content to reach: two units standing at the same distance from the actor, on the
+        /// printed ring.
+        ///
+        /// <para>It declares the maximum-radius arm and not the equal-distance one, because the
+        /// showcase half of the deferral gate is asked of a handler TYPE and both arms are one
+        /// <c>UnitPairHandler</c>. Which arm a node asks is carried in the capability id rather than in
+        /// a parameter, so a reader auditing this card learns the question from the reference - and
+        /// Storm Spirit's sibling is admitted by the concat beside Misa's dealt cards.</para>
+        ///
+        /// <para>The node publishes its pair and no later node consumes it, which is milestone 8.35l's
+        /// declared optionality exercised rather than described: a selection whose result nothing reads
+        /// still has a legal shape, and this card is where that shape is proved on content that is
+        /// nobody's.</para>
+        /// </summary>
+        private static CardDefinition CreateUnitPairSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("unit-pair-root");
+            var pair = new EffectNodeId("unit-pair-select");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z38-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { pair }),
+                    new EffectNodeDefinition(
+                        pair, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.ChooseUnitPairAtMaximumRadiusV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("firstHero", EffectValueKind.Hero),
+                            new EffectOutputBinding("firstMinion", EffectValueKind.Minion),
+                            new EffectOutputBinding("secondHero", EffectValueKind.Hero),
+                            new EffectOutputBinding("secondMinion", EffectValueKind.Minion)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z38-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-unit-pair-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[]
+                        {
+                            new PrintedValueDefinition(PrintedValueChannel.Radius, 3)
+                        },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
         private static CardDefinition CreateRosterCommandSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("roster-command-root");
@@ -3271,7 +3526,27 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// a fixture that only ever ran the constrained arm could not show the difference is
             /// real.</para>
             /// </summary>
-            BeforeAttackModalSequencesOnDifferentTargets = 12
+            BeforeAttackModalSequencesOnDifferentTargets = 12,
+
+            /// <summary>
+            /// Milestone 8.35z38. Misa's two range tenses side by side: "After the attack:" text that
+            /// asks both whether the target <em>was</em> at maximum range when the Attack bound it and
+            /// whether it <em>is</em> not adjacent now, and moves it one space away when the second
+            /// holds.
+            ///
+            /// <para>It carries both questions on one card for the reason
+            /// <see cref="AfterAttackAdjacencyRiders"/> carries its pair: RULING 32 says the tense
+            /// difference is DELIBERATE, so the two are judged at different moments and can disagree
+            /// exactly when something displaced the target between them. Misa's own faces print one
+            /// each - Power Shot the past tense, Thunder Shot the present - so neither of hers is this
+            /// card and this card is neither of hers.</para>
+            ///
+            /// <para>It is also the only showcase content that reaches the away-from-actor destination
+            /// policy through a rider, which is what Thunder Shot's "to a space farther away from you"
+            /// prints and what milestone 8.35z29 added
+            /// <c>DirectMoveDestinationPolicy.AwayFromActor</c> for.</para>
+            /// </summary>
+            AfterAttackRangeTenseRiders = 13
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -3792,6 +4067,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new EffectNodeId("riders-root"),
                         AdjacencyRiderNodes());
 
+                case SyntheticContinuationShape.AfterAttackRangeTenseRiders:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-35z38-rev-1",
+                        new EffectNodeId("range-tense-root"),
+                        RangeTenseRiderNodes());
+
                 case SyntheticContinuationShape.AroundTheMovement:
                     return new EffectDefinition(
                         new EffectDefinitionId($"placeholder-{id}-text"),
@@ -4097,6 +4379,99 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// resolution. That is the arrangement no printed face has: hers ask one each, and a fixture
         /// that did the same could never show that the two disagree about a removed target.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z38. Both of the roster's RANGE questions about an enclosing Attack's target,
+        /// asked at rulebook p.14's step 7, with a move away from the attacker behind the one that
+        /// reads the live board.
+        ///
+        /// <para>It is nobody's card, and it exists for the half of milestone 7.9's deferral gate about
+        /// implementations rather than declarations: both arms of
+        /// <c>EnclosingTargetDistanceHandler</c> were built at milestone 8.35z29 and would otherwise be
+        /// reachable only from Misa's printed faces - precisely a reusable contract arriving for the
+        /// first time inside a verified hero's slice.</para>
+        ///
+        /// <para>Both are asked before either is acted on, so the two answers exist side by side in one
+        /// resolution. That is the arrangement no printed face has: hers ask one each, and a fixture
+        /// that did the same could never show that RULING 32's two moments disagree.</para>
+        ///
+        /// <para>The past-tense answer gates nothing here, deliberately. Gating the move on it would
+        /// make the second question unreachable whenever the first is false, and both questions are
+        /// what this card exists to reach. The move sits behind the present-tense one because that is
+        /// the arm Thunder Shot prints, and because a move away from the attacker is only meaningful
+        /// about a target the attacker is not standing beside.</para>
+        /// </summary>
+        private static EffectNodeDefinition[] RangeTenseRiderNodes()
+        {
+            var root = new EffectNodeId("range-tense-root");
+            var wasAtMaximum = new EffectNodeId("range-tense-was-at-maximum");
+            var isNotAdjacent = new EffectNodeId("range-tense-is-not-adjacent");
+            var gate = new EffectNodeId("range-tense-gate");
+            var moveSequence = new EffectNodeId("range-tense-move-sequence");
+            var targetSpace = new EffectNodeId("range-tense-target-space");
+            var move = new EffectNodeId("range-tense-move");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { wasAtMaximum, isNotAdjacent, gate }),
+                new EffectNodeDefinition(
+                    wasAtMaximum, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.TargetWasAtMaximumRangeV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("wasAtMaximumRange", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    isNotAdjacent, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.TargetIsNotAdjacentV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("notAdjacent", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticEffectCapabilities.IsFlaggedV1,
+                    childNodeIds: new[] { moveSequence },
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "flag", isNotAdjacent, "notAdjacent", EffectValueKind.Boolean)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("value", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    moveSequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { targetSpace, move }),
+                new EffectNodeDefinition(
+                    targetSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.FormerTargetSpaceV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                    }),
+                new EffectNodeDefinition(
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "mover", targetSpace, "space", EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                            GuardsDigital.Core.Rules.Displacement.DirectMoveDestinationPolicy
+                                .AwayFromActor)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                    })
+            };
+        }
+
         private static EffectNodeDefinition[] AdjacencyRiderNodes()
         {
             var root = new EffectNodeId("riders-root");

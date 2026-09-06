@@ -375,7 +375,19 @@ namespace GuardsDigital.Tests.EditMode
                     // the first two run on the same two types and are admitted by the concat below,
                     // which is exactly the division this gate draws.
                     SyntheticShowcaseHand.CreateRedWithSpawnPointSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithBoxItemSkill(owner)
+                    SyntheticShowcaseHand.CreateRedWithBoxItemSkill(owner),
+                    // Milestone 8.35z38's three, on exactly the division the two above draw: Misa's
+                    // dealing registers SIX capability ids across FOUR handler types, and the showcase
+                    // half of this gate is asked of the type. The Windrunner reaches the straight-line
+                    // destination and its traversal selection; the Weathervane reaches the unit-pair
+                    // selection; the Stormarcher's Attack text reaches both tenses of the
+                    // enclosing-target range question, which need an enclosing Attack to be about and
+                    // therefore cannot live on a Skill. Her second declaration of each shared type -
+                    // the equal-distance pair, the present tense - runs on the same type and is
+                    // admitted by the concat below.
+                    SyntheticShowcaseHand.CreateRedWithLineTravelSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithUnitPairSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithRangeTenseRiderText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -425,6 +437,17 @@ namespace GuardsDigital.Tests.EditMode
                 // and says why - it runs on ActiveEffectCreationHandler, which the showcase has reached
                 // since milestone 6.8.
                 .Concat(DodgerCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.35z38. Misa's printed set is the EIGHTH, admitted on the same half of the
+                // rule: a capability named by a card a configured match deals is not a deferral. The
+                // other half did real work again - four of her six new roster contracts are new HANDLER
+                // TYPES, proved on the three showcase cards above before this concat admits the faces
+                // that name them. Her two Place declarations and her six Active-effect creations are
+                // the exceptions and say why: PlaceHandler and ActiveEffectCreationHandler are types
+                // the showcase has reached since milestones 6.6 and 6.8.
+                //
+                // Her three Green step-moves reach their effects through the triggered-effect concat
+                // below rather than through a card node, which is what that concat is there for.
+                .Concat(MisaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

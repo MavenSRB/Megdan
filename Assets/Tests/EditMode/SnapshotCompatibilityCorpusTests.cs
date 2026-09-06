@@ -1150,24 +1150,44 @@ namespace GuardsDigital.Tests.EditMode
         // move and somebody has to say why. The half worth checking, and checked: the byte counts move
         // by a handful per fixture and in one direction, which is a longer capability list and nothing
         // else. A structural change would not be uniform.
+        //
+        // MILESTONE 8.35z38 RE-PINNED ALL SIXTEEN AGAIN, and the decision is MIGRATE for the same
+        // reason - stated here with the measurement that turns 8.35z34's reasoning into evidence.
+        //
+        // The schema did NOT move: every fixture name below still reads `-v38`, the writer's version
+        // field is unchanged, and no field was added, removed or reordered. What moved is the
+        // registered capability list, which grew by FOURTEEN contracts the moment Misa the Samurai was
+        // dealt: six roster, two placement and her six Active-effect creations.
+        //
+        // TWO MEASUREMENTS MAKE THAT A FINDING RATHER THAN A CLAIM, and both were taken rather than
+        // reasoned. First, reverting the three registration files alone - `SyntheticRosterCapabilities`,
+        // `SyntheticPlacementCapabilities` and `MatchContentCatalogs` - and leaving every other edit of
+        // this milestone in place restored all sixteen digests below to their 8.35z34 values EXACTLY,
+        // so registration is the sole cause and dealing her is not independently moving a byte.
+        // Second, the growth is UNIFORM: every one of the sixteen authoritative payloads grew by
+        // exactly 458 bytes (setup 8,799 to 9,257; verified-hand-setup 7,898 to 8,356; parked-pre-action
+        // 9,984 to 10,442; and so on for all sixteen). One identical constant across sixteen unrelated
+        // captures is a longer list appended to a field they all carry. A structural change would vary
+        // with what each fixture contains, and a behavioural one would not touch the fixtures that
+        // never reach the new contracts at all - eleven of these sixteen never so much as name Misa.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v38", "47fff7ee835819f7c8d95cc1f54a65bfc392d9067096cd8e5373ee7d6e28c307"),
-            new CompatibilityFixture("active-turn-v38", "b9f1026fa5d02afe2b5772dcfd0abe67df10fb4035ed9082e251053fb4b0930f"),
-            new CompatibilityFixture("pending-choice-v38", "c9aa0033015a090ecbf254a3079b912a8557fc5cb38db9a4a0698ec4c39d6909"),
-            new CompatibilityFixture("end-of-round-v38", "82ede4f3576740069697db292be43c0e281980b4cf12009eca3f42aa73940304"),
-            new CompatibilityFixture("pending-minion-battle-v38", "2c3781fe5d66fc6a36ff7bf0f8a43948a68ed3a49b9454acf33ae0433877ff01"),
-            new CompatibilityFixture("placed-token-v38", "d7fc4782e8103d9bbeb73d09f474cb2b4b07220814c252922f7679681a0d64f0"),
-            new CompatibilityFixture("attached-marker-v38", "e407a0dc2370f9b1dcab4f3e1291549fba38a0f556052f31a8d382c51d8a06e4"),
-            new CompatibilityFixture("pending-correction-v38", "95b1b67ff91a5c0efb99ae603663fb11df66e0291ad474b5cb578851c1c79725"),
-            new CompatibilityFixture("paused-level-up-v38", "75a224ea116939e0cc7a8a557663dcb837a1026dbee8194c0ce425d6072dfcbd"),
-            new CompatibilityFixture("ended-match-v38", "0341c608daa9bff742da6107be64fc0c99abd57ca35bf4d259b18232d0cd7915"),
-            new CompatibilityFixture("verified-hand-setup-v38", "72be5dafd7429e070644e03d3de4454d4c7ae720f7a60fe0b946ff11ca17fe3f"),
-            new CompatibilityFixture("paused-orbit-repeat-v38", "35f99dfd848e7bf18b34b5206466554a92b0894968cd733486c9fe410d55b47d"),
-            new CompatibilityFixture("paused-card-text-v38", "807b312414d8aa44a8ccaf24f6c9104dad6056257300bbcdbc5e4b2692396a8e"),
-            new CompatibilityFixture("paused-block-rider-v38", "af7c0cbc9d1bc8a5348e2cbd1baf8b12afaa4863b2776d1ce900420004d572ff"),
-            new CompatibilityFixture("paused-repeated-attack-v38", "80c8726cbdded089026618082be4ff056d23265cd2f9b8ee98d5657310064b8e"),
-            new CompatibilityFixture("parked-pre-action-v38", "fc4c73f6432b6c5bcbef09440f3035da65c50b436d9ba2f122a1df9495ec5c39")
+            new CompatibilityFixture("setup-v38", "81b8a2f13fbfd5f738ea0fce599d52fadfb147b1fc23c8058604211eb4d5617f"),
+            new CompatibilityFixture("active-turn-v38", "4bf7abceb71c2a922e9efc8c6af56039c28a84463121d59c9f561dde0a451093"),
+            new CompatibilityFixture("pending-choice-v38", "e74b230eab40419147dcfe4fcbdacb72a2b5518a5f6ae38f71f153d91358485f"),
+            new CompatibilityFixture("end-of-round-v38", "8d12510504792d806fb40365cb3e40e82ad31efbd777bbf5d055cbbeab0922db"),
+            new CompatibilityFixture("pending-minion-battle-v38", "5c160ac96d6f37afa9caa23e3b76e9d9c16d47019a1f8ef28cb7941df77cef31"),
+            new CompatibilityFixture("placed-token-v38", "cddc60e63067cc1bc3f93f9a74ba163e5ea25a0793136ce316c715984cff9349"),
+            new CompatibilityFixture("attached-marker-v38", "d3b477c6f1a165fbd90633a1dc42af16d9b942c2ab15fcafcc51eaf708566058"),
+            new CompatibilityFixture("pending-correction-v38", "e5544f52e65f4546b81e6fc5d89eef579dd81a566493ea1a70ae5071ff351a6e"),
+            new CompatibilityFixture("paused-level-up-v38", "6dc7620131d3697b9d8b04c8bfc61bc0722a59ca06ad63e3a567cf9fb3b8a554"),
+            new CompatibilityFixture("ended-match-v38", "52f1dbd5b74ecf2b78e41db4571e6df68659888767d20572f75df67885e4edad"),
+            new CompatibilityFixture("verified-hand-setup-v38", "f2fcb291256acfe5021afb9f0d9ae1ea4b437879cd418c1a358a84dc027bf046"),
+            new CompatibilityFixture("paused-orbit-repeat-v38", "71d962427c171f1eee666e8194466fc03f951ec0375efd2f3c30725a87ab901a"),
+            new CompatibilityFixture("paused-card-text-v38", "d07682fe8b34c74203d1ed37148efc34a3ca6241b82dc6e311999a8a3e8161e6"),
+            new CompatibilityFixture("paused-block-rider-v38", "b61e950fff4a6381a9732795d9789c4af9b30dadd53df57ffa961bfedd8afea4"),
+            new CompatibilityFixture("paused-repeated-attack-v38", "51e3257ee1879c2a65517b5324be3fd5c93397298f0ccbd550e4b66c7af03a08"),
+            new CompatibilityFixture("parked-pre-action-v38", "bbc56f8f6433f8b9208f5e23aef4b9bc8fd1aa3017eb892dea2c6c5a63ec9d7d")
         };
 
         [Test]
