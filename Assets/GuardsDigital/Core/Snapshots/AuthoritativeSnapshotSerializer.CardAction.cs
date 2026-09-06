@@ -1078,7 +1078,7 @@ namespace GuardsDigital.Core.Snapshots
 
             var trusted = FindTrustedEffectRoot(definitions, common, effectReference) ??
                 FindTrustedTriggeredEffectRoot(
-                    definitions, common, effectReference, triggeredEffects);
+                    definitions, common, effectReference, triggeredEffects, capabilities);
             if (trusted == null)
             {
                 throw new SnapshotLoadException(
@@ -1417,22 +1417,96 @@ namespace GuardsDigital.Core.Snapshots
             return null;
         }
 
+        /// <summary>
+        /// Whether this build's own content reaches <paramref name="reference"/> from the action the
+        /// payload names, and the trusted root if it does.
+        ///
+        /// <para><b>Milestone 8.35z23: there are two routes, and this knew only one.</b> p.16's Ultimate
+        /// rule names a triggered effect directly, and that is what this checked. Since milestone 8.24
+        /// an <em>Active</em> effect declares one too - the action creates the effect, and the effect
+        /// says what it runs when its window arrives - which is how Xargatha's Constrict and Final
+        /// Embrace reach p.8's pre-battle moment from an ordinary primary Skill. Their frames were
+        /// written by this serializer and then refused by it: a snapshot the same session could not
+        /// read back, which is what a round trip means.</para>
+        ///
+        /// <para>The second route is bound exactly as strictly as the first. It is not "any registered
+        /// triggered effect": the named action must itself compose a node whose registered capability
+        /// declares an Active effect that names this reference. A payload therefore still cannot hang
+        /// one card's triggered effect off another card's action.</para>
+        /// </summary>
         private static EffectDefinition FindTrustedTriggeredEffectRoot(
             IReadOnlyList<CardDefinition> definitions,
             CommonResolution common,
             EffectDefinitionReference reference,
-            TriggeredEffectCatalog triggeredEffects)
+            TriggeredEffectCatalog triggeredEffects,
+            EffectCapabilityCatalog capabilities)
         {
             if (triggeredEffects == null || !triggeredEffects.TryGet(reference, out var effect))
                 return null;
 
             var definition = definitions.SingleOrDefault(value =>
                 value.Reference.Equals(common.DefinitionReference));
-            var rule = definition?.UltimateRule;
-            return rule != null && rule.EffectSourceId.Equals(common.ActionId) &&
-                rule.TriggeredEffect.HasValue && rule.TriggeredEffect.Value.Equals(reference)
-                    ? effect
-                    : null;
+            if (definition == null) return null;
+
+            var rule = definition.UltimateRule;
+            if (rule != null && rule.EffectSourceId.Equals(common.ActionId) &&
+                rule.TriggeredEffect.HasValue && rule.TriggeredEffect.Value.Equals(reference))
+            {
+                return effect;
+            }
+
+            return NamedActionCreatesAnActiveEffectRunning(
+                definition, common.ActionId, reference, capabilities)
+                ? effect
+                : null;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z23. Whether the named action composes a node whose registered capability
+        /// creates an Active effect that declares <paramref name="reference"/> as what it runs.
+        ///
+        /// <para>The walk is over the action's own composed text - both printed bodies, because either
+        /// may be the one that creates the effect - and every capability is resolved through the
+        /// registered catalog rather than trusted from the payload. An unregistered capability answers
+        /// nothing, which is the same refusal the effect walk itself would make.</para>
+        /// </summary>
+        private static bool NamedActionCreatesAnActiveEffectRunning(
+            CardDefinition definition,
+            ActionDefinitionId actionId,
+            EffectDefinitionReference reference,
+            EffectCapabilityCatalog capabilities)
+        {
+            if (capabilities == null) return false;
+            foreach (var action in definition.ActionDefinitions)
+            {
+                if (!action.Id.Equals(actionId)) continue;
+                foreach (var root in new[] { action.EffectRoot, action.SecondCardTextRoot })
+                {
+                    if (root == null) continue;
+                    foreach (var node in root.Nodes)
+                    {
+                        if (!node.Capability.IsDefined ||
+                            !capabilities.TryLoad(node.Capability, out var handler))
+                        {
+                            continue;
+                        }
+
+                        var declared = handler.ActiveEffectDefinitions;
+                        if (declared == null) continue;
+                        for (var index = 0; index < declared.Count; index++)
+                        {
+                            var active = declared[index];
+                            if (active != null && active.TriggeredEffect.HasValue &&
+                                active.TriggeredEffect.Value.Equals(reference))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static EffectChoiceCandidate ReadEffectCandidate(BinaryReader reader)

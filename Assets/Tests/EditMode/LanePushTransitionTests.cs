@@ -458,6 +458,59 @@ namespace GuardsDigital.Tests.EditMode
                 "Replaying the same answer reproduces the same authoritative state byte for byte.");
         }
 
+        /// <summary>
+        /// Milestone 8.35z23. p.8's END-OF-ROUND push, stopped on the sidebar's Place, round-trips
+        /// through its own snapshot.
+        ///
+        /// <para><b>Why the mid-turn twin above did not cover this.</b> The mid-turn push holds an
+        /// <c>ImmediateLanePush</c>; the end-of-round one holds a <c>PendingLanePushRequest</c>, and
+        /// only that second one is checked against the board on restore. The check described the
+        /// moment the Minion Battle ENDED - the request's own Battle Zone is still the current one,
+        /// and the losing side has nothing left standing in it. Both are false the instant the push
+        /// starts running: p.8's step 2 moves the Battle Zone and step 3 respawns into the new one,
+        /// and the request is only spent when the whole transition finishes. So a snapshot taken
+        /// while the push waits for its Place was written by this engine and then refused by it.</para>
+        ///
+        /// <para>The assertions below pin the two facts the old check was contradicting: the request
+        /// still stands, and the zone has already moved past the one it names.</para>
+        /// </summary>
+        [Test]
+        public void APausedEndOfRoundPush_RoundTripsThroughItsOwnSnapshot()
+        {
+            var session = StartEndOfRoundPushOverTheLastBlueMinion();
+            var request = session.Projection.PendingLanePushRequest;
+            var pending = session.Projection.PendingSystemTransitionStep;
+
+            Assert.That(request, Is.Not.Null,
+                "The Minion Battle removed the only Blue unit in the Battle Zone, so Red is owed " +
+                "p.8's push and the request stands until the push it began has finished.");
+            Assert.That(pending, Is.Not.Null,
+                "An obstacle stands on a Spawn point of the new Battle Zone, so p.8's sidebar owes " +
+                "its owning team a Place and the push stops on it.");
+            Assert.That(pending.StepId, Is.EqualTo(LanePushSystemTransition.RespawnStepId));
+            Assert.That(session.Projection.CurrentEndOfRoundStage,
+                Is.EqualTo(EndOfRoundStage.ResolveRequestedLanePush),
+                "A paused stage is not a completed one, so the cursor has not moved on.");
+            Assert.That(pending.CompletedStepIds,
+                Has.Member(LanePushSystemTransition.AdvanceZoneStepId),
+                "p.8's step 2 has already run, so the Battle Zone the request names is no longer the " +
+                "current one - which is exactly the fact the restore check used to read as an " +
+                "impossible state. It is asserted off the paused step rather than off a restored " +
+                "board, because restoring is the thing under test.");
+
+            var payload = session.CaptureSnapshot();
+            var restored = session.RestoreSnapshot(payload);
+
+            Assert.That(restored.Accepted, Is.True, restored.Detail);
+            Assert.That(session.Projection.PendingSystemTransitionStep.ItemId,
+                Is.EqualTo(pending.ItemId));
+            Assert.That(session.Projection.PendingLanePushRequest.RequestId,
+                Is.EqualTo(request.RequestId));
+            Assert.That(session.CaptureSnapshot(), Is.EqualTo(payload),
+                "and the restored match writes the same bytes, so the stopped push round-trips " +
+                "rather than being approximated.");
+        }
+
         // -------------------------------------------------------------------------------------------
         // The fixture: a real turn on the official map, driven to the mid-turn checkpoint
         // -------------------------------------------------------------------------------------------
@@ -468,6 +521,124 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         internal static MatchSession CreatePausedLanePushPlaceSession() =>
             StartRemoveSkillAgainstTheLastMinion(blockBlueApproachSpawnPoints: true);
+
+        /// <summary>
+        /// Milestone 8.35z23. The other way p.8's push begins: nobody removes anything mid-turn, the
+        /// round simply ends with one Blue minion in the Battle Zone, and the Minion Battle takes it.
+        /// The Spawn points of the Zone the push will reach are blocked, so the push stops on its
+        /// Place with the end-of-round request still standing.
+        /// </summary>
+        private static MatchSession StartEndOfRoundPushOverTheLastBlueMinion()
+        {
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+
+            var survivor = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue &&
+                minion.MinionType != StandardMinionType.Heavy &&
+                BattleZoneQuery.IsInStartingBattleZone(map, minion.Coordinate));
+            var relocatedSetup = new QuickGameSetupState(
+                setup.SelectedMap, setup.WaveCount, setup.TieBreakerState, setup.Teams, setup.Heroes,
+                setup.Minions
+                    .Where(minion => minion.TeamSide != TeamSide.Blue ||
+                        minion.MinionId.Equals(survivor.MinionId))
+                    .ToArray());
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                map.Reference,
+                relocatedSetup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                BlueApproachSpawnPointObstacles(map));
+            var session = new MatchSession(
+                new MatchSessionInitialState(scenario, relocatedSetup, new[] { map }));
+
+            for (var step = 0; step < 200 &&
+                session.Projection.PendingSystemTransitionStep == null &&
+                session.Projection.Phase != RoundResolutionPhase.GameEnded; step++)
+            {
+                if (session.Projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+                {
+                    CommitOrPassBothSides(session);
+                    continue;
+                }
+
+                if (session.Projection.Phase == RoundResolutionPhase.ResolvingTurn)
+                {
+                    var tie = session.Projection.PendingInitiativeChoice;
+                    if (tie != null)
+                    {
+                        Accept(session, DirectorCommand.ChooseTiedActor(
+                            tie.OwningSide, tie.CandidateCardInstanceIds[0]));
+                        continue;
+                    }
+
+                    if (session.Projection.PendingTurnRelease != null)
+                    {
+                        Accept(session, DirectorCommand.ReleaseTurn());
+                        continue;
+                    }
+
+                    Accept(session, DirectorCommand.PerformHold(
+                        session.Projection.SelectedActor.CardInstanceId));
+                    continue;
+                }
+
+                if (session.Projection.PendingMinionBattleChoice != null)
+                {
+                    while (session.Projection.PendingMinionBattleChoice.SelectInvocations.Count > 0)
+                    {
+                        Accept(session, DirectorCommand.SelectMinionBattleRemoval(
+                            session.Projection.PendingMinionBattleChoice.SelectInvocations[0]));
+                    }
+
+                    Accept(session, DirectorCommand.ConfirmMinionBattleRemovals(
+                        session.Projection.PendingMinionBattleChoice.ConfirmInvocation));
+                    continue;
+                }
+
+                Accept(session, DirectorCommand.AdvanceEndOfRound());
+            }
+
+            Assert.That(session.Projection.PendingSystemTransitionStep, Is.Not.Null,
+                "The drive has to actually reach p.8's stopped Place, or the case below would be " +
+                "round-tripping an ordinary position. " +
+                $"Phase={session.Projection.Phase}, Round={session.Projection.RoundIndex}, " +
+                $"Stage={session.Projection.CurrentEndOfRoundStage}, " +
+                $"Push={session.Projection.PendingLanePushRequest != null}");
+            return session;
+        }
+
+        /// <summary>p.7's commitment for both seats, passing for a seat that has nothing left to play.</summary>
+        private static void CommitOrPassBothSides(MatchSession session)
+        {
+            foreach (var side in new[] { TeamSide.Red, TeamSide.Blue })
+            {
+                var card = session.Projection.Cards.FirstOrDefault(candidate =>
+                    session.Projection.Participants.GetTeamForHero(candidate.OwnerId).Side == side &&
+                    candidate.State.Location == CardLocation.Hand);
+                if (card == null)
+                {
+                    Accept(session, DirectorCommand.Pass(session.Projection.Setup.Heroes
+                        .Single(value => value.TeamSide == side).HeroId));
+                    continue;
+                }
+
+                Accept(session, DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            }
+        }
+
+        private static void Accept(MatchSession session, DirectorCommand command)
+        {
+            var result = session.Execute(command);
+            Assert.That(result.Accepted, Is.True, command.Kind + ": " + result.Detail);
+        }
 
         /// <summary>
         /// A played turn in which the Red hero's Skill removes the one Blue minion left in the Battle

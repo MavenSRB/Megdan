@@ -77,6 +77,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Additional completed milestone definitions](Roadmap/PHASE_8_COMPLETED_2.md)
 - [Phase 8 - Further completed milestone definitions](Roadmap/PHASE_8_COMPLETED_3.md)
 - [Phase 8 - Yet more completed milestone definitions](Roadmap/PHASE_8_COMPLETED_4.md)
+- [Phase 8 - Still more completed milestone definitions](Roadmap/PHASE_8_COMPLETED_5.md)
 - [Phase 9 - Presentation and pitch polish](Roadmap/PHASE_9.md)
 - [Phase 10 - Private publisher pitch package](Roadmap/PHASE_10.md)
 - [Post-pitch production direction - not scheduled](Roadmap/POST_PITCH.md)

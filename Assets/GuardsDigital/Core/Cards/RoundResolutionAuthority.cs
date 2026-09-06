@@ -930,6 +930,26 @@ namespace GuardsDigital.Core.Cards
                 }
             }
 
+            // Milestone 8.35z23. What a restored end-of-round push request can honestly be checked
+            // against is its own identity - the round it belongs to, the two teams and their sides,
+            // and the Minion Battle that caused it. The board question below is asked only while the
+            // push has not begun, and the board question that used to stand beside it is gone.
+            //
+            // THE ZONE. p.8's push is a transition with numbered steps and it can stop on the
+            // sidebar's Place. By then step 2 has moved the Battle Zone and step 3 has been
+            // respawning into the new one, while the request is only spent when the whole transition
+            // finishes - so "the current Zone is still the one the request names" is false on a
+            // position this engine itself produced, and a snapshot taken there was written by this
+            // serializer and then refused by it.
+            //
+            // THE LOSING SIDE'S MINIONS. That clause asked whether the battle had emptied the Zone
+            // out. Milestone 8.19c made the answer irrelevant: a substituted removal "loses the push
+            // instead", and that request stands whether or not the side emptied out. Which of the two
+            // causes made a given request is not recorded anywhere in the payload, so no reader can
+            // ask the question the clause was asking - and the clause read raw minions where the
+            // creating rule reads EFFECTIVE units and heroes as well, so it did not even ask the
+            // creating rule's question. It is removed rather than narrowed.
+            var lanePushHasBegun = lanePush != null && lanePush.IsRunning;
             if (pendingLanePushRequest != null &&
                 (phase != RoundResolutionPhase.EndOfRound ||
                     !currentEndOfRoundStage.HasValue ||
@@ -942,13 +962,10 @@ namespace GuardsDigital.Core.Cards
                         pendingLanePushRequest.LosingSide ||
                     !pendingLanePushRequest.CauseResolutionId.Equals(
                         new EndOfRoundResolutionId($"round-{roundIndex}-minion-battle")) ||
-                    !GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.TryGetCurrentBattleZone(
-                        board, out var currentZone) ||
-                    !currentZone.Id.Equals(pendingLanePushRequest.BattleZoneId) ||
-                    board.Minions.Any(value =>
-                        value.TeamSide == pendingLanePushRequest.LosingSide &&
-                        GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.IsInCurrentBattleZone(
-                            board, value.OccupiedSpace.SpaceId))))
+                    (!lanePushHasBegun &&
+                        (!GuardsDigital.Core.Rules.Modifications.BattleZoneQuery.TryGetCurrentBattleZone(
+                                board, out var currentZone) ||
+                            !currentZone.Id.Equals(pendingLanePushRequest.BattleZoneId)))))
             {
                 throw new ArgumentException("Restored Lane-Push request does not match authoritative end-of-round state.");
             }

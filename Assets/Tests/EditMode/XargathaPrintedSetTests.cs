@@ -522,6 +522,60 @@ namespace GuardsDigital.Tests.EditMode
                 "parenthesis without changing when it happens.");
         }
 
+        /// <summary>
+        /// Milestone 8.35z23. The frame Constrict's trigger opens survives a snapshot round trip taken
+        /// in the same session that wrote it.
+        ///
+        /// <para><b>Why this case exists.</b> The writer records a pending Skill frame by naming the
+        /// effect definition it is running. The reader re-binds that name to the trusted content
+        /// before it accepts a byte of the frame's state, and until this corrective it knew only one
+        /// route from a card action to a triggered effect: the Ultimate rule. Xargatha's two are the
+        /// first verified effects reached from an <em>Active effect's</em> own trigger - the primary
+        /// Skill creates the effect, and the effect declares what it runs - so the reader could not
+        /// authorize a name its own writer had just produced, and refused the payload as content this
+        /// build does not have.</para>
+        ///
+        /// <para>The moment is the one the trigger stops on, which is why the crossing stops there:
+        /// a case that let the pause be answered first would round-trip a frame that no longer
+        /// exists and prove nothing.</para>
+        /// </summary>
+        [Test]
+        public void ConstrictsTriggeredFrame_RoundTripsThroughItsOwnSnapshot()
+        {
+            var fixture = Create(
+                tier: 2,
+                branch: XargathaUpgradeBranch.SecondSibling,
+                minionPlacements: At("red-melee-01", FirstAdjacent),
+                clearHerNeighbourhood: false);
+
+            fixture.StartPrimary(XargathaCardContent.Constrict);
+            fixture.AnswerEveryStandingChoice();
+            fixture.CrossTheRoundBoundaryAnsweringPauses(
+                stopWhen: () => StandsOnConstrictsTrigger(fixture.Session));
+
+            Assert.That(StandsOnConstrictsTrigger(fixture.Session), Is.True,
+                "The round has to actually stop inside Constrict's own effect, or the round trip " +
+                "below would be measuring an ordinary end-of-round position.");
+
+            var payload = fixture.Session.CaptureSnapshot();
+            var restored = fixture.Session.RestoreSnapshot(payload);
+
+            Assert.That(restored.Accepted, Is.True, restored.Detail);
+            Assert.That(StandsOnConstrictsTrigger(fixture.Session), Is.True,
+                "and the restored match is still standing on the same trigger's frame.");
+            Assert.That(fixture.Session.CaptureSnapshot(), Is.EqualTo(payload),
+                "The restored match writes the same bytes, so the frame round-trips rather than " +
+                "being approximated.");
+        }
+
+        private static bool StandsOnConstrictsTrigger(MatchSession session)
+        {
+            var pending = session.Projection.PendingSkillResolution;
+            return pending != null &&
+                pending.EffectDefinitionReference.Equals(
+                    XargathaActiveEffectContent.ConstrictTriggeredEffect.Reference);
+        }
+
         // -----------------------------------------------------------------------------------------
         // p.16's permanent ability
         // -----------------------------------------------------------------------------------------
