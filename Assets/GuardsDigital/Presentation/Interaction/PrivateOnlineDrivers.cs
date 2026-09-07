@@ -189,6 +189,20 @@ namespace GuardsDigital.Presentation.Interaction
                 case PrivateSessionEventKind.SeatReadinessChanged:
                     Log("READINESS_CHANGED ordinal=" + ordinal + " seat=" + record.Seat.Value);
                     return;
+                // Milestone 8.35z62. THE ACCEPTED PICK HAD NO MARKER AT ALL. The host has raised
+                // SeatHeroChosen since milestone 8.35z37, and this switch simply had no case for it,
+                // so a returned host log showed every REFUSED pick and not one accepted one. Reading
+                // the 2026-09-08 logs, that asymmetry made 24 refusals look like a table where
+                // nothing could be picked, when the refusals were seats picking out of turn in
+                // p.22's alternating order and the accepted picks were invisible beside them. A log
+                // that records only failures is a log that cannot be reasoned from.
+                case PrivateSessionEventKind.SeatHeroChosen:
+                    Log(
+                        "HERO_PICKED ordinal=" + ordinal +
+                        " seat=" + record.Seat.Value +
+                        " hero=" + record.Hero.Value +
+                        " team=" + record.TeamSide);
+                    return;
                 case PrivateSessionEventKind.MatchStarted:
                     Log("MATCH_STARTED");
                     return;

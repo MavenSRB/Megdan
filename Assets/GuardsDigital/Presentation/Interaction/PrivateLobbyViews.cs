@@ -931,12 +931,62 @@ namespace GuardsDigital.Presentation.Interaction
                     // name a line-up this build can compose, and the honest answer is to leave this
                     // process on the match it has rather than compose something else and call it the
                     // same match.
+                    // Milestone 8.35z62. THE TEAM-SIZE GUARD BELOW USED TO FAIL SILENTLY, and that
+                    // silence is the second half of the same defect 8.35z62 opens with. When the
+                    // host's line-up did not match this process's own composed team size, the
+                    // recomposition was skipped and the very next line attached the HUD TO THE
+                    // PROVISIONAL RUNTIME ANYWAY - so the board rebuilt from the host's projections
+                    // while the hero rails and the hand fan kept drawing the printed demo six, and
+                    // the hand stayed Director-scoped because the seat was bound onto a runtime the
+                    // chosen line-up had never reached. That is exactly what the 2026-09-08 session
+                    // reported: correct tokens on the map, six strangers in the trays.
+                    //
+                    // The team size can differ for a real reason - milestone 8.35z57's own finding is
+                    // that a joiner composes a format before it can know the host's - so the answer
+                    // is to ADOPT THE HOST'S FORMAT rather than to skip. The roster names the
+                    // line-up, and a line-up names its team size, so the format is derivable here
+                    // without a new message, exactly as z57 derives it from the plaintext refusal.
                     var lineup = machine.ComposedLineup();
-                    if (lineup != null && compositionRoot.ComposedPlan != null &&
-                        lineup.HeroesPerTeam == compositionRoot.ComposedPlan.Format.HeroesPerTeam)
+                    if (lineup != null && compositionRoot.ComposedPlan != null)
                     {
-                        compositionRoot.Recompose(
-                            compositionRoot.ComposedPlan.WithLineup(lineup));
+                        var plan = compositionRoot.ComposedPlan;
+                        if (lineup.HeroesPerTeam != plan.Format.HeroesPerTeam)
+                        {
+                            var hostFormat = FindFormatForTeamSize(
+                                lineup.HeroesPerTeam, plan.Format);
+                            if (hostFormat == null)
+                            {
+                                // Nothing this build can compose seats that line-up. Refuse LOUDLY
+                                // and do not attach: a HUD bound to a match whose seats disagree with
+                                // the host's is the state this whole block exists to make
+                                // unreachable.
+                                PrivateOnlineMarkers.Log(
+                                    "LOBBY_TRANSITION_REFUSED reason=UncomposableLineup heroesPerTeam=" +
+                                    lineup.HeroesPerTeam.ToString(CultureInfo.InvariantCulture));
+                                RenderMatchStatus();
+                                return;
+                            }
+
+                            PrivateOnlineMarkers.Log(
+                                "LOBBY_FORMAT_INHERITED_AT_TRANSITION format=" + hostFormat.Id);
+                            plan = MatchCompositionPlan.Printed(hostFormat);
+                        }
+
+                        compositionRoot.Recompose(plan.WithLineup(lineup));
+                    }
+                    else if (lineup == null)
+                    {
+                        // The roster does not name a line-up this build can read. This STILL
+                        // attaches, deliberately and unchanged: the seam's original remark is that
+                        // the honest answer is to leave this process on the match it has rather than
+                        // compose something else and call it the same match, and refusing to attach
+                        // here would strand the player in a lobby whose match has already started.
+                        // What is new is that it is no longer SILENT - a returned playtest log can
+                        // now distinguish "the trays are wrong because the line-up never arrived"
+                        // from every other reason they might be wrong, which is precisely the
+                        // distinction the 2026-09-08 report could not be diagnosed from.
+                        PrivateOnlineMarkers.Log(
+                            "LOBBY_TRANSITION_LINEUP_ABSENT seat=" + machine.TargetSeat.Value);
                     }
 
                     compositionRoot.Runtime.AttachOnlineClient(machine);
@@ -1158,8 +1208,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// </remarks>
         private void CycleMatchFormat()
         {
-            if (listener != null || session != null || machine != null ||
-                compositionRoot?.ComposedPlan == null)
+            if (RefuseFormatChangeIfUnavailable())
             {
                 return;
             }
@@ -1199,8 +1248,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// </remarks>
         private void ChooseMatchSetup(PrivateLobbyControl control)
         {
-            if (listener != null || session != null || machine != null ||
-                compositionRoot?.ComposedPlan == null)
+            if (RefuseFormatChangeIfUnavailable())
             {
                 return;
             }
@@ -1223,14 +1271,113 @@ namespace GuardsDigital.Presentation.Interaction
                 }
             }
 
-            if (chosen == null || string.Equals(chosen.Id, current.Id, StringComparison.Ordinal))
+            if (chosen == null)
             {
+                RefuseFormatChange(
+                    "NoSuchPrintedSetup",
+                    "No printed setup on pp.5-6 matches that choice, so nothing was changed.");
+                return;
+            }
+
+            if (string.Equals(chosen.Id, current.Id, StringComparison.Ordinal))
+            {
+                // Milestone 8.35z62. Benign, but SAID. This used to return silently, and a silent
+                // no-op is indistinguishable from a broken button to the person pressing it - which
+                // is exactly the confusion the live 2026-09-08 session reported.
+                presenter.ShowEntry(
+                    LocalSeats(),
+                    "Already playing " + chosen.Id + ".",
+                    ComposedFormatLabel());
                 return;
             }
 
             compositionRoot.Recompose(MatchCompositionPlan.Printed(chosen));
             PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + chosen.Id);
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
+        }
+
+        /// <summary>
+        /// Milestone 8.35z62. The printed setup that seats a team of this size, keeping the game
+        /// length already composed so only the axis the host actually disagrees on moves. Null when
+        /// no printed setup on pp.5-6 seats that many, which is a refusal rather than a fallback.
+        /// </summary>
+        private static MatchFormat FindFormatForTeamSize(int heroesPerTeam, MatchFormat current)
+        {
+            var wantsLong = IsLongGame(current);
+            MatchFormat sameLength = null;
+            foreach (var candidate in MatchFormat.All)
+            {
+                if (candidate.HeroesPerTeam != heroesPerTeam)
+                {
+                    continue;
+                }
+
+                if (IsLongGame(candidate) == wantsLong)
+                {
+                    return candidate;
+                }
+
+                sameLength = sameLength ?? candidate;
+            }
+
+            return sameLength;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z62. Whether a format press can apply at all, and if not, SAYING SO.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The defect this closes, from the user's own 2026-09-08 session.</b> Both format
+        /// entry points opened with the same guard, and that guard <c>return</c>ed SILENTLY. A player
+        /// who pressed HOST and then pressed 2V2 got no format change, no refusal, no marker and no
+        /// line on screen - the host log from that session has NO <c>LOBBY_FORMAT</c> entry at all
+        /// while the session went on to host the composed default. From the player's chair that is
+        /// indistinguishable from a dead button, and it cost a whole playtest.</para>
+        ///
+        /// <para><b>The guard itself is CORRECT and is kept.</b> A session's seats are counted from
+        /// the format, and every live connection, epoch and reconnect capability the host holds is
+        /// keyed by seat, so a format changed after anybody can hold a seat would move the seats out
+        /// from under them - <c>MatchSceneCompositionRoot.ComposeForLineup</c>'s own remark states
+        /// this rule. What was wrong was never the refusal; it was the SILENCE. So this refuses on
+        /// exactly the same condition and now names it, both to the log a returned playtest carries
+        /// and to the entry form the player is looking at.</para>
+        /// </remarks>
+        private bool RefuseFormatChangeIfUnavailable()
+        {
+            if (compositionRoot?.ComposedPlan == null)
+            {
+                RefuseFormatChange(
+                    "NoComposedMatch",
+                    "The scene has not composed a match yet, so there is no setup to change.");
+                return true;
+            }
+
+            if (listener != null || session != null || machine != null)
+            {
+                RefuseFormatChange(
+                    "AlreadyHosting",
+                    "The setup is fixed once hosting begins - the seats are counted from it. " +
+                    "Leave the lobby to choose a different setup.");
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z62. One refusal, said in both places a refusal has to be said: the marker
+        /// stream a returned playtest log is read from, and the entry form the player is looking at.
+        /// </summary>
+        private void RefuseFormatChange(string reason, string sentence)
+        {
+            PrivateOnlineMarkers.Log("LOBBY_FORMAT_REFUSED reason=" + reason);
+            if (compositionRoot?.ComposedPlan == null)
+            {
+                presenter.ShowEntry(Array.Empty<SeatRosterEntry>(), sentence, string.Empty);
+                return;
+            }
+
+            presenter.ShowEntry(LocalSeats(), sentence, ComposedFormatLabel());
         }
 
         /// <summary>

@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -865,6 +866,203 @@ namespace GuardsDigital.Tests.PlayMode
                 "The seats the entry form then lists are the new format's, which is what a joining " +
                 "client's admission tuple will be checked against.");
             Assert.That(seatsBefore, Is.Not.Zero);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z62, DEFECT A. A format press that cannot apply SAYS SO, at the panel, in
+        /// the same place every other lobby refusal is drawn.
+        /// </summary>
+        /// <remarks>
+        /// <para>The user's 2026-09-08 session is the whole reason this case exists. They pressed
+        /// 2V2 and got a six-seat 3v3 table, and their host log carries NO <c>LOBBY_FORMAT</c> line
+        /// at all - because both format entry points opened with a guard that <c>return</c>ed
+        /// SILENTLY once hosting had begun. Nothing was logged, nothing was drawn, and from the
+        /// chair it is a dead button.</para>
+        /// <para>The guard is CORRECT and is kept: seats are counted from the format, and every
+        /// connection, epoch and reconnect capability the host holds is keyed by seat. This case
+        /// pins the SILENCE as the defect, not the refusal - it presses the control through the
+        /// real panel, exactly as a finger does, and requires a drawn sentence naming why.</para>
+        /// </remarks>
+        [UnityTest]
+        public IEnumerator AFormatPressAfterHostingBegins_IsRefusedInWordsRatherThanIgnored()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            yield return null;
+
+            var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            probe.Start();
+            var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+            probe.Stop();
+
+            Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
+            Field(driver, PrivateLobbyUnityView.PortFieldName).value =
+                port.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
+            yield return null;
+
+            var composedBeforeHosting = Root().ComposedPlan.Format.Id;
+            UiPlayer.Click(Control(driver, "HOST"));
+            yield return null;
+            yield return null;
+            yield return null;
+            Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.Host),
+                "This case is about a press made WHILE hosting, so hosting has to have begun.");
+
+            // The press a finger makes. If the format controls are not drawn once hosting has begun,
+            // that is itself an acceptable answer to "never ignored" - a control that is not there
+            // cannot be pressed - so the case admits either shape and requires only that the press,
+            // where it is possible, is answered.
+            var formatControls = ControlLabels(driver).Where(label =>
+                label == "2V2" || label == "3V3" ||
+                label == "SHORT GAME" || label == "LONG GAME").ToArray();
+            if (formatControls.Length == 0)
+            {
+                Assert.Pass(
+                    "The lobby withdraws its format controls once hosting begins, which answers " +
+                    "'never silently ignored' by making the press unreachable. Drawn: " +
+                    string.Join(", ", ControlLabels(driver)) + ".");
+            }
+
+            var pressed = formatControls[0];
+            UiPlayer.Click(Control(driver, pressed));
+            yield return null;
+            yield return null;
+
+            var said = Text(driver, PrivateLobbyUnityView.FeedbackName);
+            Assert.That(said, Is.Not.Empty,
+                "Pressing " + pressed + " while hosting drew NOTHING. That is the defect: the " +
+                "refusal is correct, the silence is not.");
+            Assert.That(said.Length, Is.LessThanOrEqualTo(PrivateLobbyLabels.MaxLabelChars),
+                "A refusal is one bounded line like every other the lobby draws.");
+            Assert.That(Root().ComposedPlan.Format.Id, Is.EqualTo(composedBeforeHosting),
+                "...and the refusal actually refused: the composed setup is unmoved, so no seat " +
+                "was pulled out from under anybody holding one.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z62, DEFECT B. THE RENDERED TIER after the one-way transition: the hero
+        /// rails on screen name the heroes that were PICKED, and the seat is no longer the Director.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why this case exists beside
+        /// <see cref="SixPickedHeroes_ComposeTheBoardThatWasChosen"/>, which already passes.</b> That
+        /// case asserts the MODEL - <c>Runtime().Host.Seats.Seats</c> - and the 2026-09-08 session
+        /// proved a model can be entirely right while the screen is wrong: the board spawned the
+        /// picked heroes correctly and the side rails went on drawing the printed demo six, with a
+        /// hand that was still Director-scoped and cyclable across everybody's cards. A projection
+        /// assertion cannot see that. This one queries the actual UI Toolkit panel.</para>
+        /// <para>Each rail stamps its own hero on <c>userData</c> (milestone 8.35z11 put it there for
+        /// the kinetic anchors), so "which heroes are on screen" is answerable exactly rather than by
+        /// reading labels.</para>
+        /// </remarks>
+        [UnityTest]
+        public IEnumerator TheTransition_DrawsTheRailsOfTheHeroesThatWerePicked()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            wire.Session.Composition = Root();
+            driver.Presenter.AttachClient(wire.Client(1));
+            yield return null;
+
+            ReadyEverySeat(wire, seats);
+
+            var chosenBySeat = new string[seats.Count];
+            for (var pick = 0; pick < seats.Count; pick++)
+            {
+                var picking = wire.Session.Selection.PickingSeat.Value;
+                var ordinal = seats.ToList().IndexOf(picking) + 1;
+                var hero = wire.Session.Selection.AvailableHeroes.Last().HeroIdValue;
+                Assert.That(wire.Client(ordinal).TryChooseHero(hero), Is.True,
+                    "Seat " + picking + " could not take " + hero + ".");
+                wire.Pump();
+                chosenBySeat[ordinal - 1] = hero;
+            }
+
+            Assert.That(wire.Session.Selection.IsComplete, Is.True);
+
+            driver.Presenter.Refresh();
+            yield return null;
+            yield return null;
+            Assert.That(wire.Session.HasMatchStarted, Is.True);
+
+            // THE SEAM, driven exactly as PrivateLobbyDriver drives it at the one-way transition.
+            //
+            // This fixture attaches its client to the PRESENTER, which is how every case in this
+            // file has always seated one - but the driver's own transition block reads its private
+            // `machine` field, which only a real host/join through the panel sets. So a case that
+            // stopped at Refresh() would exercise no transition at all, and would "fail" for the
+            // uninteresting reason that the HUD was never attached to anything. The runtime call
+            // below IS the seam under test: it is the one line the driver runs after recomposing,
+            // and it is where every seat-scoped presenter and every rebuilt view is bound.
+            var seatedClient = wire.Client(1);
+            Assert.That(seatedClient.HasMatchStarted, Is.True,
+                "The admitted client must see the match started before the HUD may attach.");
+            Root().Runtime.AttachOnlineClient(seatedClient);
+            Root().Runtime.RefreshAll();
+            yield return null;
+            yield return null;
+
+            var hud = Root().Hud;
+            Assert.That(hud, Is.Not.Null, "The match HUD is not composed into the scene.");
+
+            var rails = UiPlayer.Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-hero-rail")
+                .ToArray();
+            var drawnHeroes = rails
+                .Select(rail => rail.userData)
+                .OfType<HeroId>()
+                .Select(id => id.Value)
+                .OrderBy(value => value, System.StringComparer.Ordinal)
+                .ToArray();
+
+            var composedHeroes = Runtime().Host.Seats.Seats
+                .Select(seat => seat.HeroId.Value)
+                .OrderBy(value => value, System.StringComparer.Ordinal)
+                .ToArray();
+            var pickedHeroes = chosenBySeat
+                .OrderBy(value => value, System.StringComparer.Ordinal)
+                .ToArray();
+
+            // Diagnostics, printed before the assertions so a failure says WHICH tier disagreed:
+            // the runtime's own read model, the view instance the HUD is currently configured with,
+            // and how many rail containers are in the tree at all.
+            var readModelHeroes = Runtime().ReadModel.Heroes
+                .Select(occupancy => occupancy.HeroId.Value)
+                .OrderBy(value => value, System.StringComparer.Ordinal)
+                .ToArray();
+            var railRoots = UiPlayer.Descendants(hud.RootElement)
+                .Count(element => element.name == "gd-hero-rails");
+            Debug.Log(
+                "GUARDS_DIAG readModel=[" + string.Join(",", readModelHeroes) + "] " +
+                "railRoots=" + railRoots + " rails=" + rails.Length +
+                " viewRootInTree=" + (Runtime().HeroOverviewsView?.Root?.panel != null) +
+                " seat=" + (Runtime().Seat?.Id.Value ?? "<none>"));
+
+            CollectionAssert.AreEqual(pickedHeroes, composedHeroes,
+                "Precondition: the composed match must already field the picked heroes, or this " +
+                "case is testing the wrong seam.");
+            CollectionAssert.AreEqual(pickedHeroes, readModelHeroes,
+                "The runtime's OWN read model must field the picked heroes. If this is what fails, " +
+                "the defect is upstream of any view: the HUD is bound to a match nobody chose.");
+            Assert.That(rails, Has.Length.EqualTo(composedHeroes.Length),
+                "One rail per hero in the composed match. Drawn " + rails.Length + " rails for " +
+                composedHeroes.Length + " seats.");
+            CollectionAssert.AreEqual(pickedHeroes, drawnHeroes,
+                "THE RAILS ON SCREEN MUST NAME THE HEROES THAT WERE PICKED. Drawn: " +
+                string.Join(", ", drawnHeroes) + ". Picked: " + string.Join(", ", pickedHeroes) +
+                ". A mismatch here is the 2026-09-08 report exactly: correct tokens on the board, " +
+                "six strangers in the trays.");
+
+            Assert.That(Runtime().Seat, Is.Not.Null,
+                "The transition must bind the admitted seat, or the HUD is still the Director's.");
+            Assert.That(
+                Runtime().SeatScopedPresenters.All(presenter => presenter.HomeHeroId.IsDefined),
+                Is.True,
+                "Every seat-scoped presenter carries the admitted seat's hero after the transition; " +
+                "a half-bound HUD - some panels the seat's, others the Director's - is the state " +
+                "milestone 8.35z4's fan-out exists to make unreachable.");
         }
 
         /// <summary>Every registered hero's option button on the selection panel.</summary>

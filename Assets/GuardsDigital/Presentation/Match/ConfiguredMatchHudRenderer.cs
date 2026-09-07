@@ -841,7 +841,54 @@ namespace GuardsDigital.Presentation.Match
             return true;
         }
 
+        /// <summary>
+        /// Milestone 8.35z62. THE PANEL IS BUILT ONCE; THE SURFACES ON IT ARE COMPOSED EVERY TIME.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The defect this split closes, reproduced before it was fixed.</b> This method used
+        /// to open with <c>if (root != null) return;</c> - once-only for the whole body. That is
+        /// correct for the panel (instantiating <c>PanelSettings</c> again would throw away the live
+        /// panel), and WRONG for everything below it, because
+        /// <see cref="ConfiguredMatchSceneRuntime"/> constructs a NEW view for every surface it owns
+        /// - hands, round, undo/restart, diagnostics, minion choice, hero overviews, match log - and
+        /// hands them to <see cref="Configure"/> on every composition. At the one-way lobby
+        /// transition the scene recomposes, <see cref="Configure"/> swapped in the new views, called
+        /// this, and this RETURNED IMMEDIATELY: the new roots were never added to the tree and the
+        /// PREVIOUS composition's views stayed on screen, wired to the previous composition's
+        /// presenters.</para>
+        ///
+        /// <para>That is exactly what the 2026-09-08 playtest reported and what
+        /// <c>PrivateLobbyPlayModeTests.TheTransition_DrawsTheRailsOfTheHeroesThatWerePicked</c>
+        /// pins: the board rebuilt correctly and spawned the heroes that were picked, while the hero
+        /// rails went on drawing the printed demo six and the hand fan stayed on the previous
+        /// composition's Director-scoped presenter. The runtime's own read model was RIGHT
+        /// throughout - the diagnostic that found this printed the picked line-up from
+        /// <c>Runtime().ReadModel</c> in the same breath as <c>viewRootInTree=False</c> - so no
+        /// amount of projection or seat-binding correctness could have shown it. Only the rendered
+        /// tier could.</para>
+        ///
+        /// <para><b>Why re-composing is safe.</b> <see cref="ComposeSurfaces"/> begins with
+        /// <c>root.Clear()</c> and re-adds every child from the views it currently holds, so it was
+        /// already written to be idempotent - it had simply never been reachable a second time. It is
+        /// called from exactly one place, <see cref="Configure"/>, which runs once per composition,
+        /// so this trades no per-frame work for the fix.</para>
+        /// </remarks>
         private void Build()
+        {
+            EnsurePanelBuilt();
+            if (root == null)
+            {
+                return;
+            }
+
+            ComposeSurfaces();
+        }
+
+        /// <summary>
+        /// The live panel and its settings, which are created once and then kept: re-instantiating
+        /// <c>PanelSettings</c> would discard the panel every surface below is drawn on.
+        /// </summary>
+        private void EnsurePanelBuilt()
         {
             if (root != null)
             {
@@ -905,11 +952,16 @@ namespace GuardsDigital.Presentation.Match
                 root = document.rootVisualElement;
             }
 
-            if (root == null)
-            {
-                return;
-            }
+        }
 
+        /// <summary>
+        /// Every surface on the panel, composed from the views this renderer currently holds. Safe to
+        /// run again: it clears the root and re-adds each child from the CURRENT views, which is what
+        /// makes a re-composition replace the previous composition's surfaces instead of leaving them
+        /// on screen. See <see cref="Build"/> for the defect that made this a separate method.
+        /// </summary>
+        private void ComposeSurfaces()
+        {
             root.Clear();
             root.name = "gd-root";
             root.pickingMode = PickingMode.Ignore;
