@@ -1,0 +1,242 @@
+using System.Collections.Generic;
+using System.Linq;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Rules.CardResolution;
+using NUnit.Framework;
+
+namespace GuardsDigital.Tests.EditMode
+{
+    /// <summary>
+    /// Milestone 8.35z49. THE OFFER-DELTA SWEEP HARNESS the Crimson Trail
+    /// Conditional fix will be judged by, built OFFLINE against the corpus's own composed content -
+    /// no Unity launcher, no staged board, no registration.
+    ///
+    /// <para><b>What the feasibility prover's own family sweep could not see, and why.</b>
+    /// `worker-moveprover`'s throwaway probe (milestone 8.35z42, its own `family-sweep-findings.txt`)
+    /// walked every effect definition's DIRECT sequence children looking for a Move standing before
+    /// another node, and found 30 such shapes across 264 cards. It never descended into a `Conditional`
+    /// or `Choose` node's OWN children, so a Move nested inside one - which is exactly Whisper's Crimson
+    /// Trail's shape - was invisible to it. Its own notes name the gap: "A sweep for this shape must
+    /// descend into Conditional and Choose children." This fixture is that descent.</para>
+    ///
+    /// <para><b>What "at risk" means here, precisely.</b> A card is flagged when its composed tree
+    /// contains a `Conditional` or `Choose` node whose OWN subtree reaches no mandatory typed
+    /// attack-target binding (`set-attack-target@1` or a mandatory `attack-sequence@1` leaf), while the
+    /// WHOLE definition contains one such binding somewhere else. That is deliberately narrower than
+    /// "contains a Conditional/Choose and a binding": Swift Justice and Middlefinger of Death both
+    /// compose their binding AS one of a `Choose`'s own children (the modal picks the bullet, and the
+    /// bullet IS the binding) - the shape `WalkToAttackTargetBinding` already reads correctly, and
+    /// flagging it would be noise. Crimson Trail's gate instead wraps an unrelated optional Move, and
+    /// the binding stands AFTER the gate, in the enclosing Sequence, which the walk's current
+    /// `Choose`/`Conditional` arm cannot see past.</para>
+    ///
+    /// <para><b>THE SWEEP FOUND A SECOND CARD ITS OWN AUTHOR DID NOT PREDICT, which is the point of
+    /// building it rather than reasoning about Crimson Trail alone.</b> Ursafar's Claws That Catch
+    /// (`UrsafarEffectContent.CreateProwl`, "If enraged, you may move 1 space to a space adjacent to an
+    /// enemy hero; target a unit adjacent to you") composes the identical shape one level deeper - a
+    /// mandatory `Conditional` (enraged?) wrapping an `Optional`(May) wrapping the move - and it fails
+    /// for the same reason: the `Optional` case returns `Continue` correctly, but the walk then finds
+    /// the enclosing `Conditional` itself binds nothing in its own subtree and reports `Blocked` before
+    /// ever reaching the mandatory retarget standing after it. Ursafar is also undealt, and his own
+    /// dealing-prep worker already wrote a journey for exactly this card without knowing it cannot
+    /// currently start - flagged below and in this milestone's own notes for whoever executes his
+    /// dealing, since fixing it is the identical engine change and not this milestone's to make either
+    /// way.</para>
+    ///
+    /// <para><b>Why this is the harness the FIX is judged by, not a fix itself.</b> This prep worker's
+    /// brief forbids touching `WalkToAttackTargetBinding` - the `Choose` arm shares the exact code this
+    /// bug lives in and 8.35z27's whole modal-Attack family depends on the `Choose` reading standing
+    /// still, so the corrective needs its own offer-delta sweep and belongs to the Opus executor. What
+    /// this fixture records is CURRENT BEHAVIOUR: the complete, corpus-wide set of cards the fix could
+    /// possibly move, enumerated by structure rather than guessed at. Re-run it after the fix lands -
+    /// the STRUCTURAL enumeration below will not change (the fix does not alter composition, only the
+    /// walk's verdict), and <c>AttackTargetBindingProbe_CrimsonTrailShape_...</c> in
+    /// <c>EffectOptionFeasibilityTests.cs</c> is the behavioural half for Whisper's own card: `Is.False`
+    /// today, `Is.True` once the fix lands. Ursafar's Claws That Catch would move the same way but has
+    /// no regression case of its own here - one behavioural proof of the shared engine code is enough,
+    /// and duplicating it under his name would be this milestone reaching into his.</para>
+    ///
+    /// <para><b>Why no staged-board offer table accompanies this.</b> The moveprover's own 89-row
+    /// `offers-before.txt`/`offers-after.txt` table already exhaustively measured every DEALT hero
+    /// (Tigerclaw, Brogan) with a card-text-bound Attack, and neither of the two cards that table moved
+    /// (Combat Reflexes, Leaping Strike) composes a `Conditional` or `Choose` at all - their gap was an
+    /// unenumerated Move, a different bug in the same family, already fixed. Dodger's and Misa's dealt
+    /// sets contain no card-text-bound Attack that nests a Move under a `Conditional`/`Choose` either
+    /// (confirmed by the sweep below). So the corpus-wide structural enumeration IS the complete
+    /// board-level picture today: both heroes it affects (Whisper, Ursafar) are undealt, which is
+    /// exactly why nobody has hit it in Play Mode.</para>
+    /// </summary>
+    public sealed class AttackTargetBindingConditionalChooseOfferSweepTests
+    {
+        [Test, Explicit(
+            "Offline structural sweep, not a regression case - prints its findings rather than " +
+            "asserting one. Run it (dotnet test --filter) before and after the executor's Crimson " +
+            "Trail Conditional fix and diff stdout: the fix changes no composition, so this list " +
+            "should be BYTE-IDENTICAL both times - see the class doc comment for why the behavioural " +
+            "half lives in EffectOptionFeasibilityTests.cs instead.")]
+        public void SweepEveryHerosCorpus_ForAConditionalOrChooseGateHidingAMandatoryBindingBehindIt()
+        {
+            var corpus = WholeCorpus().ToArray();
+            Assert.That(corpus, Is.Not.Empty, "The sweep has to have something to walk.");
+
+            var atRisk = new List<string>();
+            foreach (var (owner, definition) in corpus)
+            {
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                foreach (var gate in FindUnresolvedGates(definition))
+                {
+                    atRisk.Add(
+                        $"{owner} | {definition.Id.Value} | gate={gate.Id.Value}:{gate.Kind} " +
+                        $"({gate.FailurePolicy}) hides a binding that stands elsewhere in the " +
+                        "definition");
+                }
+            }
+
+            TestContext.WriteLine($"cards swept: {corpus.Length}");
+            foreach (var line in atRisk)
+            {
+                TestContext.WriteLine(line);
+            }
+
+            TestContext.WriteLine($"at-risk gates found: {atRisk.Count}");
+
+            // MEASURED, milestone 8.35z49, and NOT what this file predicted on its
+            // first draft: TWO cards in the whole corpus have this shape today, not one.
+            //
+            // Whisper's Crimson Trail (`CreateGatedStepThenTarget`) - undealt, which is why nothing in
+            // Play Mode has ever exercised it. Sanguine Path and Blood Pilgrimage share the identical
+            // family but gate on `empty-minion-spawn-points-in-radius@1` with an UNCONDITIONAL move (an
+            // `UpTo` Capability node directly under the Sequence, not wrapped in a `Conditional`) -
+            // only Crimson Trail wraps its move in an actual `Conditional`, because only its clause is
+            // boolean ("if there is...") rather than numeric ("up to N for every...").
+            //
+            // Ursafar's Claws That Catch (`UrsafarEffectContent.CreateProwl`) - ALSO undealt as of this
+            // writing, found by running this sweep rather than predicted: "If enraged, you may move 1
+            // space to a space adjacent to an enemy hero; target a unit adjacent to you" composes
+            // `Sequence[EnragedGate(Conditional, Mandatory) -> [Optional(May) -> moveSequence], victim,
+            // retarget]` - the identical shape one level deeper (the Conditional's child is an
+            // `Optional` wrapping the move rather than the move directly, which changes nothing about
+            // the defect: `WalkToAttackTargetBinding`'s `Optional` case already returns `Continue`
+            // correctly, so the walk still reaches the `Conditional` node itself, finds no binding in
+            // ITS subtree, and reports `Blocked` before ever reaching `retarget`). Ursafar's own
+            // dealing-prep worker already wrote a journey for this exact card
+            // (`ClawsThatCatch_..._MovesThenTargetsOnceEnraged`) without knowing it is currently
+            // unstartable on every board - flagged for whoever executes his dealing, separately from
+            // this milestone's own scope.
+            //
+            // This assertion is the sweep's own claim about the corpus, not a claim about the engine;
+            // a different result here means either a new card shares the shape (read which) or one of
+            // these two cards' composition changed (re-derive the regression case in
+            // EffectOptionFeasibilityTests.cs against the new shape).
+            Assert.That(
+                atRisk.Select(line => line.Split('|')[1].Trim()).Distinct().OrderBy(id => id).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    "ursafar-claws-that-catch-attack-text",
+                    "whisper-crimson-trail-attack-text"
+                }),
+                "Exactly two composed definitions in the whole corpus nest an unrelated optional " +
+                "step inside a mandatory Conditional ahead of their own typed target binding: " +
+                "Whisper's Crimson Trail and Ursafar's Claws That Catch. A different result here " +
+                "means either a new card shares the shape (read which) or one of these two changed " +
+                "(re-derive the regression case in EffectOptionFeasibilityTests.cs against the new " +
+                "shape).");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // The corpus - every hero's composed content, dealt or not, exactly as the family sweep's own
+        // corpus was assembled: one hero, one AllDefinitions call, no registration required. A
+        // `CardDefinition` is the whole printed card; its `ActionDefinitions` each carry the actual
+        // `EffectDefinition`s (`EffectRoot`, and `SecondCardTextRoot` where a card prints a second p.14
+        // moment) - the units `WalkToAttackTargetBinding` actually walks.
+        // -------------------------------------------------------------------------------------------
+
+        private static IEnumerable<(string Owner, EffectDefinition Definition)> WholeCorpus()
+        {
+            foreach (var card in ArienCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("arien", d);
+            foreach (var card in BroganCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("brogan", d);
+            foreach (var card in SabinaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("sabina", d);
+            foreach (var card in TigerclawCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("tigerclaw", d);
+            foreach (var card in WaspCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("wasp", d);
+            foreach (var card in XargathaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("xargatha", d);
+            foreach (var card in DodgerCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("dodger", d);
+            foreach (var card in MisaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("misa", d);
+            foreach (var card in SilverarrowCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("silverarrow", d);
+            foreach (var card in UrsafarCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ursafar", d);
+            foreach (var card in TaliCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("tali", d);
+            foreach (var card in WhisperCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("whisper", d);
+        }
+
+        /// <summary>Every `EffectDefinition` one printed card composes, across all of its actions.</summary>
+        private static IEnumerable<EffectDefinition> EffectRoots(CardDefinition card)
+        {
+            foreach (var action in card.ActionDefinitions)
+            {
+                if (action.EffectRoot != null)
+                {
+                    yield return action.EffectRoot;
+                }
+
+                if (action.SecondCardTextRoot != null)
+                {
+                    yield return action.SecondCardTextRoot;
+                }
+            }
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // The descent WalkToAttackTargetBinding itself does not yet do.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Every `Conditional`/`Choose` node in <paramref name="definition"/> whose own subtree binds
+        /// nothing, where the definition's WHOLE tree binds something anyway - the shape a `Sequence`
+        /// standing over the gate can reach past today, and a `Sequence` standing over a `Choose`
+        /// cannot (nothing to reach past to: a `Choose` IS the decision).
+        /// </summary>
+        private static IEnumerable<EffectNodeDefinition> FindUnresolvedGates(EffectDefinition definition)
+        {
+            if (!ContainsAMandatoryBinding(definition, definition.RootNodeId))
+            {
+                yield break;
+            }
+
+            foreach (var node in definition.Nodes)
+            {
+                if ((node.Kind != EffectNodeKind.Conditional && node.Kind != EffectNodeKind.Choose) ||
+                    ContainsAMandatoryBinding(definition, node.Id))
+                {
+                    continue;
+                }
+
+                yield return node;
+            }
+        }
+
+        /// <summary>Whether the subtree rooted at <paramref name="nodeId"/> reaches a mandatory typed binding.</summary>
+        private static bool ContainsAMandatoryBinding(EffectDefinition definition, EffectNodeId nodeId)
+        {
+            if (!definition.TryGetNode(nodeId, out var node))
+            {
+                return false;
+            }
+
+            if (node.FailurePolicy == EffectFailurePolicy.Mandatory &&
+                (node.Capability.Equals(SyntheticContinuationCapabilities.SetAttackTargetV1) ||
+                    node.Capability.Equals(SyntheticSequenceCapabilities.AttackSequenceV1)))
+            {
+                return true;
+            }
+
+            return node.ChildNodeIds != null &&
+                node.ChildNodeIds.Any(child => ContainsAMandatoryBinding(definition, child));
+        }
+    }
+}

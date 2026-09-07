@@ -246,6 +246,15 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(AdjacentAttackTarget, CombatReflexesJourney),
                         Prove(BeforeAttackTextPause, CombatReflexesJourney),
+                        // Milestone 8.35z49. This row has named p.14's step-1 pause since milestone
+                        // 8.23 and not its step-7 one, though the face prints both - because
+                        // HeroPlayerPathMatrix read an action's FIRST card-text body only and never its
+                        // second. The derivation reads both now, and the evidence this row needed was
+                        // already written: the journey named here is
+                        // `CombatReflexes_DeclinesItsFirstMoveAndTakesTheSecondAfterTheAttack`, which
+                        // takes the step-7 move and says so in its own name. Nothing about the face
+                        // changed; the table stopped under-claiming it.
+                        Prove(AfterAttackTextPause, CombatReflexesJourney),
                         Prove(ConfirmOrDecline, CombatReflexesJourney),
                         Prove(BoardUnitSelection, CombatReflexesJourney),
                         Prove(BoardSpaceSelection, CombatReflexesJourney),
@@ -285,6 +294,10 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(AdjacentAttackTarget, CombatReflexesJourney),
                         Prove(BeforeAttackTextPause, CombatReflexesJourney),
+                        // Milestone 8.35z49, for Combat Reflexes' reason exactly: the face prints both
+                        // of p.14's attacker moments and the derivation now reads both bodies rather
+                        // than the first alone.
+                        Prove(AfterAttackTextPause, CombatReflexesJourney),
                         Prove(ConfirmOrDecline, CombatReflexesJourney),
                         // Milestone 8.35z25, for Combat Reflexes' reason exactly: it
                         // prints the identical step-1 body and now names its target through it.

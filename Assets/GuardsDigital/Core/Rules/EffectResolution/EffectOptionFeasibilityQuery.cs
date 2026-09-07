@@ -396,6 +396,37 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         }
                     }
 
+                    // Milestone 8.35z49. A CONDITIONAL IS NOT A CHOOSE, and reading them as one greyed
+                    // two cards on every board.
+                    //
+                    // <para>The two kinds arrive here together because both branch, and they were given
+                    // one answer because for a Choose that answer is right: a Choose IS the decision, so
+                    // a mandatory one whose every arm fails to reach the binding has no path to a
+                    // binding at all, and `Blocked` is the honest verdict. Milestone 8.35z27's whole
+                    // modal-Attack family depends on that reading and it is deliberately unchanged.</para>
+                    //
+                    // <para>A Conditional is the other thing entirely. An unsatisfied "if" is a step
+                    // that simply does not happen, and the enclosing Sequence carries on to whatever
+                    // stands after the gate - so a binding may legitimately stand AFTER it rather than
+                    // inside it, and reporting `Blocked` made the Sequence short-circuit before ever
+                    // reaching that binding. Whisper's Crimson Trail and Ursafar's Claws That Catch both
+                    // compose exactly that shape (a mandatory enraged/discard gate wrapping an unrelated
+                    // optional Move, with the mandatory `set-attack-target@1` standing after it), and
+                    // both had their Attack greyed on EVERY board, whatever the board looked like.</para>
+                    //
+                    // <para><b>Why this cannot over-offer.</b> `Continue` is not an assertion that a
+                    // binding exists - it is the absence of a verdict, which hands the question back to
+                    // the enclosing Sequence. Where a binding stands after the gate the walk now reaches
+                    // it and answers `Bound`; where none does, the Sequence runs out of children and
+                    // returns `Continue`, and the caller reads anything that is not `Bound` as "not
+                    // offerable" exactly as it read `Blocked`. So the ONLY definitions whose answer can
+                    // move are those with a binding standing after such a gate, which is the set the
+                    // offer-delta sweep enumerates structurally - and it is two.</para>
+                    if (node.Kind == EffectNodeKind.Conditional)
+                    {
+                        return BindingVerdict.Continue;
+                    }
+
                     return node.FailurePolicy == EffectFailurePolicy.Mandatory
                         ? BindingVerdict.Blocked
                         : BindingVerdict.Continue;

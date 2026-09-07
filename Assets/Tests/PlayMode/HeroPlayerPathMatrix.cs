@@ -691,6 +691,17 @@ namespace GuardsDigital.Tests.PlayMode
                 ["target-was-at-maximum-range"] = Array.Empty<PlayerInteractionShape>(),
                 ["target-is-not-adjacent"] = Array.Empty<PlayerInteractionShape>(),
 
+                // Milestone 8.35z49. Tigerclaw's, and it is here now because the SECOND CARD TEXT is
+                // read now - see AddCardTextShapes. Combat Reflexes' step-7 body asks whether its actor
+                // moved during its own step-1 body, which is a reading of what the resolution already
+                // recorded and draws no control at all, on exactly the terms `pre-consequence-adjacency@1`
+                // and `hero-defeated-this-round@1` carry. It was unclassified for two milestones without
+                // failing anything, because nothing walked the node it sits in - so classifying it is not
+                // an addition this milestone chose but one the walk forces: an unclassified capability
+                // THROWS rather than deriving nothing, and the two rows the fix moves are exactly the two
+                // faces that name it.
+                ["actor-moved-this-action"] = Array.Empty<PlayerInteractionShape>(),
+
                 // Milestone 8.35z46. Silverarrow the Pathfinder's two NEW entries.
                 // `choose-line-destination` is not repeated here - Misa's dealing already classifies
                 // it above, and it is the same contract her own three straight-line faces name
@@ -832,7 +843,51 @@ namespace GuardsDigital.Tests.PlayMode
                 shapes.Add(PlayerInteractionShape.MinionDefenseSuppressionReading);
             }
 
-            switch (action.CardTextTiming)
+            // BOTH printed bodies, and reading only the first was a standing under-report this table
+            // corrected at milestone 8.35z49.
+            //
+            // <para><b>What was wrong.</b> Milestone 8.5 gave one action TWO card-text bodies -
+            // `EffectRoot` at `CardTextTiming` and `SecondCardTextRoot` at `SecondCardTextTiming` -
+            // because a face may print "Before the attack:" and "After the attack:" on one card. This
+            // derivation read the first pair only, so every shape the SECOND body asks for was
+            // invisible to the gate. Tigerclaw's Combat Reflexes and Leaping Strike have carried a
+            // step-7 body since milestone 8.23 and neither row declared p.14's after-attack pause,
+            // which is a coverage claim the content did not support in the direction this table exists
+            // to catch.</para>
+            //
+            // <para><b>Why it stayed invisible for two milestones.</b> Both of those second bodies
+            // compose an optional step and a direct Move, and both faces already declare
+            // `ConfirmOrDecline` and `BoardSpaceSelection` from their FIRST body - so the missing walk
+            // dropped no shape that was not already on the row by another route, and the missing timing
+            // was one enum member on two rows. The only observable was an absent
+            // `AfterAttackTextPause`.</para>
+            //
+            // <para><b>The blast radius was MEASURED before the change rather than discovered after
+            // it</b>, by enumerating the whole corpus structurally rather than by diffing derived
+            // shapes: of 611 actions across all twelve composed heroes, exactly FIVE declare a
+            // non-null `SecondCardTextRoot` - Tigerclaw's Combat Reflexes and Leaping Strike, Ursafar's
+            // Claws That Catch and Tear, and Whisper's Swift Justice, every one of them
+            // `AfterTheAttack`. Only Tigerclaw's two belong to a DEALT hero, so exactly two shipped
+            // rows move and each gains exactly one shape; the other three heroes are undealt and gate
+            // their own faces at their own dealings. Every other action's derivation is byte-identical
+            // by construction, because the added call walks a null root and returns after its timing
+            // switch. Both moved rows are proved by `TigerclawProgressedUiJourneyPlayModeTests
+            // .CombatReflexes_DeclinesItsFirstMoveAndTakesTheSecondAfterTheAttack`, which has driven
+            // that exact step since milestone 8.23 and says so in its own name - so this is a gate that
+            // starts asking for evidence that already exists, the cheapest shape a correction of this
+            // kind can have.</para>
+            AddCardTextShapes(action.CardTextTiming, action.EffectRoot, shapes);
+            AddCardTextShapes(action.SecondCardTextTiming, action.SecondCardTextRoot, shapes);
+        }
+
+        /// <summary>
+        /// One printed card-text body: the p.14 or p.11 moment it arrives at, and every shape its own
+        /// nodes ask for. Called once per body, because an action may print two.
+        /// </summary>
+        private void AddCardTextShapes(
+            CardTextTiming timing, EffectDefinition root, ISet<PlayerInteractionShape> shapes)
+        {
+            switch (timing)
             {
                 case CardTextTiming.BeforeTheAttack:
                     shapes.Add(PlayerInteractionShape.BeforeAttackTextPause);
@@ -848,14 +903,14 @@ namespace GuardsDigital.Tests.PlayMode
                     break;
             }
 
-            if (action.EffectRoot == null)
+            if (root == null)
             {
                 return;
             }
 
-            foreach (var node in action.EffectRoot.Nodes)
+            foreach (var node in root.Nodes)
             {
-                AddNodeShapes(node, action.EffectRoot, shapes);
+                AddNodeShapes(node, root, shapes);
             }
         }
 

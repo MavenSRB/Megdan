@@ -260,6 +260,90 @@ namespace GuardsDigital.Tests.EditMode
                 "One legal modal branch that reaches the typed binding keeps the Attack available.");
         }
 
+        /// <summary>
+        /// THE CRIMSON TRAIL / CLAWS THAT CATCH DEFECT, fixed at milestone 8.35z49.
+        ///
+        /// <para>A <c>Conditional</c> is not a <c>Choose</c>: an unsatisfied "if" is a step that simply
+        /// does not happen and the enclosing Sequence carries on to whatever stands after the gate.
+        /// <see cref="EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding"/>'s walk did
+        /// not honour that distinction - its <c>Choose</c>/<c>Conditional</c> arm returned
+        /// <c>Blocked</c> whenever none of a mandatory node's own children reached the binding, which is
+        /// the right answer for a <c>Choose</c> (nothing selectable leads anywhere) and the wrong one
+        /// for a <c>Conditional</c> (the binding can legitimately stand after the gate).</para>
+        ///
+        /// <para>This fixture composes that shape directly rather than reaching into either hero's
+        /// content, so it keeps proving the engine rule after any card is recomposed:
+        /// <c>Sequence[Conditional(Mandatory) -&gt; [optional work], bind]</c>. Two shipped faces carry
+        /// it - Whisper's Crimson Trail and Ursafar's Claws That Catch, enumerated corpus-wide by
+        /// <c>AttackTargetBindingConditionalChooseOfferSweepTests</c> - and both had their Attack greyed
+        /// on every board before the fix. It was written on the Whisper dealing-prep branch as an
+        /// <c>[Explicit]</c> case asserting the answer the engine did not yet give; the fix lands in
+        /// this same milestone, so it is an ordinary passing case here.</para>
+        /// </summary>
+        [Test]
+        public void AttackTargetBindingProbe_CrimsonTrailShape_AMandatoryConditionalsOwnBranchNotBinding_StillLetsTheBindingAfterItStand()
+        {
+            var gate = new EffectNodeId("mandatory-gate");
+            var gatedWork = new EffectNodeId("gated-work");
+            var bind = new EffectNodeId("binding-after-the-gate");
+            var definition = new EffectDefinition(
+                new EffectDefinitionId("mandatory-conditional-before-binding-fixture"), "rev-1", Root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        Root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { gate, bind }),
+
+                    // Crimson Trail's and Claws That Catch's shared shape: an optional step nested as
+                    // the ONLY child of a MANDATORY Conditional. Nothing under the gate reaches the
+                    // typed binding - it stands AFTER the gate, in the enclosing Sequence.
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.IsFlaggedV1,
+                        childNodeIds: new[] { gatedWork },
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral("flag", EffectValue.Boolean(true))
+                        }),
+                    Leaf(gatedWork, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.May),
+                    Leaf(bind, SyntheticContinuationCapabilities.SetAttackTargetV1,
+                        EffectFailurePolicy.Mandatory)
+                });
+            var context = Context(definition);
+
+            Assert.That(
+                EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding(
+                    Prospective(context, "mandatory-conditional-before-binding-probe"), context),
+                Is.True,
+                "The mandatory bind stands right after the gate in the enclosing Sequence, so a " +
+                "legal path to it exists whatever the gate's own branch does - a Conditional is not " +
+                "the only path to a binding the way a Choose with no performable arm is.");
+        }
+
+        /// <summary>
+        /// The control that keeps the fix above honest: a mandatory <c>Choose</c> whose every arm fails
+        /// to reach the binding still reports the Attack unavailable. Milestone 8.35z49 split the two
+        /// node kinds apart, and this is the half that did NOT move - milestone 8.35z27's modal-Attack
+        /// family depends on it. Without this case the fix could be widened to <c>Choose</c> and
+        /// nothing would fail.
+        /// </summary>
+        [Test]
+        public void AttackTargetBindingProbe_AMandatoryChooseWithNoBindingArm_StillRefusesTheAttack()
+        {
+            var definition = Choose(
+                EffectFailurePolicy.Mandatory, 1, 1,
+                Leaf(First, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory),
+                Leaf(Second, SyntheticEffectCapabilities.NoteActorV1, EffectFailurePolicy.Mandatory));
+            var context = Context(definition);
+
+            Assert.That(
+                EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding(
+                    Prospective(context, "modal-no-binding-probe"), context),
+                Is.False,
+                "A Choose IS the decision, so a mandatory one with no arm reaching the binding has no " +
+                "path to one at all - unlike a Conditional, which an enclosing Sequence walks past.");
+        }
+
         [Test]
         public void AChoiceWithOnePerformableOption_OffersNoStop()
         {
