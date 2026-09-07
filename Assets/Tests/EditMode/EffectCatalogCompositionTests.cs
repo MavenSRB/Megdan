@@ -120,6 +120,15 @@ namespace GuardsDigital.Tests.EditMode
                 // `attack-target-survived@1` are generic capabilities registered from their own
                 // Synthetic files, and this mirror is of VerifiedCapabilityHandlers alone, exactly as
                 // Silverarrow's CardTextFastTravelHandler is excluded above.
-                .Concat(UrsafarActiveEffectContent.RegisteredHandlers());
+                .Concat(UrsafarActiveEffectContent.RegisteredHandlers())
+                // Milestone 8.35z53. Whisper's one - Death Seeker's turn-long immunity to enemy hero
+                // actions (RULING 33) - joining the moment her dealing milestone put it into
+                // MatchContentCatalogs, and mirrored BY HAND here for the reason Dodger's pair records.
+                // Her FOUR genuinely new contracts are NOT in this list - `choose-target-trio@1`,
+                // `defended-card-forced-move@1`, `enemy-hero-with-discard-present@1` and
+                // `choose-swap-subject@1` are generic capabilities registered from
+                // SyntheticRosterCapabilities, and this mirror is of VerifiedCapabilityHandlers alone,
+                // exactly as Silverarrow's CardTextFastTravelHandler is excluded above.
+                .Concat(WhisperActiveEffectContent.Handlers());
     }
 }

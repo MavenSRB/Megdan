@@ -546,7 +546,66 @@ namespace GuardsDigital.Presentation.Interaction
         /// and the borrow's post-Ultimate widening (RULING 43) are both reachable through a player's
         /// own input, with his Ultimate up.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedUrsafar = 54
+        VerifiedTierThreeAlternateEngagedStagedUrsafar = 54,
+
+        /// <summary>
+        /// Milestone <c>8.35z53</c>. The staged Wasp-versus-Whisper hands with both
+        /// heroes restaged already engaged, exactly as <see cref="VerifiedEngagedStagedMisa"/> stages
+        /// its two. She is the ELEVENTH hero this build deals, and the first from the Devoted Hero pack.
+        ///
+        /// <para>Whisper takes the Blue seat rather than joining it, for the reason the arms before
+        /// hers record: milestone 8.25 owns the official six-player configuration. She needs no ally
+        /// arm - no face of hers names a friendly hero at all.</para>
+        ///
+        /// <para><b>What her arms need is CONTACT and the enemy's own spent cards.</b> Her whole Red
+        /// line ends in "Target a unit adjacent to you", her Gold basic's second bullet asks for a unit
+        /// adjacent to her, and Lesser Evil's and Greater Good's Defeats are measured from her space -
+        /// so a fixture that stood the two heroes at spawn would leave most of her set with no subject
+        /// at all. The engaged position supplies that. What NO staging can supply is a discard pile:
+        /// five of her faces read one and p.6 deals every card to a hand or a deck, so those faces come
+        /// alive on turn two and RULING 42 records that as printed rather than as a defect.</para>
+        /// </summary>
+        VerifiedEngagedStagedWhisper = 55,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Whisper holding the first sibling
+        /// of each colour: Sanguine Path, Sprouts of Panic and Shadow Walk.
+        ///
+        /// <para>This is the branch that MOVES - the Spawn-point-counted step before the Attack, the
+        /// two-space enemy displacement and the Range 4 self-placement. See
+        /// <see cref="Cards.Verified.WhisperProgressedHands"/>, which records the whole split.</para>
+        /// </summary>
+        VerifiedTierTwoEngagedStagedWhisper = 56,
+
+        /// <summary>
+        /// The Tier II staging with Whisper holding the <em>second</em> sibling of each colour - Blood
+        /// Fury, Lesser Evil and Cruel Twist - which is the half of p.15's upgrade the row above does
+        /// not deal. It is the only Tier II arm of hers that carries a repeat chain, an opponent-chosen
+        /// modal or a Swap at all, so RULING 34's chain and RULING 17's escape hatch are reachable here
+        /// and nowhere else at this Tier.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedWhisper = 57,
+
+        /// <summary>
+        /// The engaged staging at p.15's Tier III stage, with p.16's Ultimate unlocked on both seats -
+        /// High Voltage in Wasp's area and Grim Reaper in Whisper's - and Whisper holding the first
+        /// sibling of each colour: Blood Pilgrimage, Blooming Nightmare and Creeping Shadow.
+        ///
+        /// <para>Grim Reaper raises the option ceiling on her two BASIC cards alone, so this staging is
+        /// the only one in which Swift Justice offers both of its printed bullets and Death Seeker
+        /// applies both of its. It reaches nothing this arm's three upgrades print, which is the
+        /// scoping made observable: p.9 makes every action on a basic card a basic action, and none of
+        /// these three is a basic card.</para>
+        /// </summary>
+        VerifiedTierThreeEngagedStagedWhisper = 58,
+
+        /// <summary>
+        /// The Tier III staging with Whisper holding the second sibling of each colour: Blood Frenzy,
+        /// Greater Good and Sealed Fate. This is the one arm in which RULING 34's five-instance chain,
+        /// RULING 17's opponent-chosen modal at its widest, and Grim Reaper's raised ceiling are all
+        /// reachable through a player's own input at once.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedWhisper = 59
     }
 
     [ExecuteAlways]
@@ -962,6 +1021,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedUrsafarTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.UrsafarUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedWhisper =>
+                    MatchConfiguration.CreateStagedWhisperForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedWhisper =>
+                    MatchConfiguration.CreateStagedWhisperTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.WhisperUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedWhisper =>
+                    MatchConfiguration.CreateStagedWhisperTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.WhisperUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedWhisper =>
+                    MatchConfiguration.CreateStagedWhisperTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.WhisperUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedWhisper =>
+                    MatchConfiguration.CreateStagedWhisperTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.WhisperUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1005,7 +1083,8 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedDodger(content) ||
                 IsStagedMisa(content) ||
                 IsStagedSilverarrow(content) ||
-                IsStagedUrsafar(content))
+                IsStagedUrsafar(content) ||
+                IsStagedWhisper(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1388,6 +1467,11 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusDodgerOneVsOne();
                     }
 
+                    if (IsStagedWhisper(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusWhisperOneVsOne();
+                    }
+
                     if (IsStagedMisa(content))
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusMisaOneVsOne();
@@ -1402,6 +1486,11 @@ namespace GuardsDigital.Presentation.Interaction
                     if (IsStagedUrsafar(content))
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusUrsafarOneVsOne();
+                    }
+
+                    if (IsStagedWhisper(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusWhisperOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
@@ -1509,6 +1598,20 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedUrsafar ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedUrsafar ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedUrsafar;
+
+        /// <summary>
+        /// Whether this content puts Whisper the Outcast on the Blue seat. Milestone
+        /// <c>8.35z53</c>'s five arms, on the one-hero-per-team setup and the ordinary
+        /// engaged restaging: no face of hers names a friendly hero, so an ally seat would widen
+        /// nothing - what her set needs is an enemy hero in CONTACT and, for five of her faces, one who
+        /// has spent a card, and only the first of those is something a staging can arrange.
+        /// </summary>
+        private static bool IsStagedWhisper(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedWhisper ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedWhisper ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedWhisper ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedWhisper ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedWhisper;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

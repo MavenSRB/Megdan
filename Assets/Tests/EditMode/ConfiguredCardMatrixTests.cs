@@ -407,7 +407,19 @@ namespace GuardsDigital.Tests.EditMode
                     // exactly the division this gate draws.
                     SyntheticShowcaseHand.CreateRedWithHeroConditionSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithBorrowedActionSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithTargetSurvivedRiderText(owner)
+                    SyntheticShowcaseHand.CreateRedWithTargetSurvivedRiderText(owner),
+                    // Milestone 8.35z53's four handler types on THREE cards, which is the same
+                    // grouping 8.35z34 used to reach four ids on two: the Executioner carries the
+                    // discard predicate and the minion trio because Whisper's own faces put them in
+                    // one sentence, the Displacer carries the union-selection her two Swaps name, and
+                    // the Magistrate's second card-text body carries the defender-steered forced move,
+                    // which needs p.14's Defense window to have happened before it is about anything.
+                    // `synthetic-radius-unit-target@1` needs no card here - it is a seventh declaration
+                    // over PrintedIconTargetHandler - and her one Active-effect creation runs on
+                    // ActiveEffectCreationHandler, so both are admitted by the concat below.
+                    SyntheticShowcaseHand.CreateRedWithDiscardGatedTrioSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithSwapSubjectSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithDefendedForcedMoveText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -493,6 +505,15 @@ namespace GuardsDigital.Tests.EditMode
                 // reached since milestone 6.8 - and he contributes no triggered definition at all,
                 // because Unbound Fury prints a permanent ability and declares none.
                 .Concat(UrsafarCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.35z53. Whisper's nineteen faces, on the same terms. FOUR of her roster
+                // contracts are new HANDLER TYPES - `choose-target-trio@1`, `defended-card-forced-move@1`,
+                // `enemy-hero-with-discard-present@1` and `choose-swap-subject@1` - each proved on its
+                // own showcase card above before this concat admits the faces that name it.
+                // `synthetic-radius-unit-target@1` owes no showcase card: it is a seventh declaration
+                // over PrintedIconTargetHandler, the type p.9's two icons have shared since 8.19b. Her
+                // one Active-effect creation (Death Seeker's turn-long immunity) owes none either - it
+                // runs on ActiveEffectCreationHandler, the type the showcase has reached since 6.8.
+                .Concat(WhisperCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

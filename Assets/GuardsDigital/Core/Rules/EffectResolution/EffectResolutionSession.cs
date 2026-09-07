@@ -1038,13 +1038,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                                 frame, node, context, EffectChoiceKind.SelectOption,
                                 node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray(),
                                 node.MinimumSelections,
+                                // Milestone 8.35z53 SUPPLIES THE SUPERTYPE, and until it did the scoped
+                                // half of this rule could never fire. `SourceCardClassification` was
+                                // written at 8.35z33 for exactly this argument and had NO CALLER: the
+                                // overload defaults to `CardClassification.None`, and the query
+                                // deliberately refuses a scoped declaration for a card it cannot name,
+                                // so a `ControllerBasicAction` modification was unreachable in a live
+                                // match while passing every Edit Mode case that called the query
+                                // directly. Misa's Power Overwhelming is declared `Always` and is
+                                // unaffected either way; Whisper's Grim Reaper is the first
+                                // declaration in the build to carry a scope, and without this
+                                // argument her Ultimate raised nothing a player could see.
                                 GuardsDigital.Core.Rules.Modifications.ChoiceCardinalityQuery
                                     .MaximumOptions(
                                         node.MaximumSelections,
                                         node.ChildNodeIds.Count,
                                         frame.ControllerId,
                                         ResolveChooser(node.Chooser, frame, context),
-                                        context.Modifications),
+                                        context.Modifications,
+                                        SourceCardClassification(frame, context)),
                                 unavailableCandidates: unavailable,
                                 canStop: everyOptionRefused,
                                 chooserHeroOverride: boundChooser));

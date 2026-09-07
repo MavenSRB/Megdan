@@ -5,8 +5,9 @@
 Canonical planning map for milestone 8.19. Return to [CARD_COVERAGE.md](CARD_COVERAGE.md). Source truth and
 exact face text remain in the hero shards; this file owns only capability classification, effect-node
 contracts, dependency order, and source-linked scenario IDs for every hero added after Wasp - the five
-milestone 8.19 planned, and Dodger, Misa and Silverarrow, added at milestones 8.35z34, 8.35z38 and
-8.35z46 from outside that line-up.
+milestone 8.19 planned, and Dodger, Misa, Silverarrow, Ursafar and Whisper, added at milestones 8.35z34,
+8.35z38, 8.35z46, 8.35z50 and 8.35z53 from outside that line-up. Whisper is the first from the Devoted
+Hero pack rather than from the base box.
 
 ## Reading the matrix
 
@@ -35,7 +36,7 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `synthetic-range-target@1`, `synthetic-radius-target@1`, `synthetic-choose-target@1`, and
 `repeat-action@1`. New or refined identities must be introduced by an approved dependency slice and registered before verified content can use them.
 
-Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete; milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34 - milestone 8.35z38 an EIGHTH on the same terms, Misa, composed at 8.35z29 and dealt at 8.35z38 - and milestone 8.35z46 a NINTH, Silverarrow, composed at 8.35z30 and dealt at 8.35z46. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v40 and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Three further heroes are composed and NOT dealt** - Ursafar, Tali and Whisper, from the six-hero content wave - and their contracts stay in the deferred lists until each hero's own dealing milestone, which is milestone 7.9's gate working rather than an omission. Milestone 8.35z38 recorded the one way that rule reads differently for a SHARED declaration: `choose-line-destination@1` is Misa's and Silverarrow's both, so dealing Misa registered it and Silverarrow's phase-one claim to it expired - a shared contract is deferred only until the FIRST of its sharers is dealt. Milestone 8.35z46 moved her own remaining contract, `fast-travel@1`, across on the ordinary half of the rule: a card a configured match now deals starts it.
+Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete; milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34 - milestone 8.35z38 an EIGHTH on the same terms, Misa, composed at 8.35z29 and dealt at 8.35z38 - and milestone 8.35z46 a NINTH, Silverarrow, composed at 8.35z30 and dealt at 8.35z46. Milestone 8.35z50 added a TENTH, Ursafar, composed at 8.35z31 and dealt at 8.35z50, and milestone 8.35z53 an ELEVENTH, Whisper, composed at 8.35z33 and dealt at 8.35z53. **Ursafar's own capability section is still owed here**: his dealing added the hero-composition/gate row and the registrations but never wrote his section into this file, which is recorded rather than quietly filled because writing it is content authoring against his printed set rather than a restatement of this milestone's work. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v40 and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **One further hero is composed and NOT dealt** - Tali, from the six-hero content wave - and her contracts stay in the deferred lists until her own dealing milestone, which is milestone 7.9's gate working rather than an omission. Milestone 8.35z38 recorded the one way that rule reads differently for a SHARED declaration: `choose-line-destination@1` is Misa's and Silverarrow's both, so dealing Misa registered it and Silverarrow's phase-one claim to it expired - a shared contract is deferred only until the FIRST of its sharers is dealt. Milestone 8.35z46 moved her own remaining contract, `fast-travel@1`, across on the ordinary half of the rule: a card a configured match now deals starts it.
 
 **The block's own prerequisite claim needs qualifying, and this is now three heroes running:** each of
 8.20, 8.20a and 8.21 found printed sentences needing vocabulary no 8.19 slice built - a restriction
@@ -219,6 +220,34 @@ not an effect, which is what makes it one answer for the offer, the choice and t
 | Fae Healing / Nature's Blessing | R, N | Printed-Radius hero selection with `includeSelf` and no team narrowing - RULING 8 - then `retrieve-card@1 (owner AND chooser = the named hero; May)` publishing `retrievedBy` on success, bound into `gain-resource@1 (1/2 coins)`. The "if they do" is that binding being undefined on a decline `[silverarrow/retrievals]`. |
 | Wild Hunt | R, N | p.16 permanent ability declaring `BeforeActionTrigger(ActionKind.None, BeforeActionTriggerFrequency.EveryAction)`, whose effect is `choose-line-destination@1 (maximumDistance 2)` then a straight-line `synthetic-direct-move@3`. The first Ultimate in this build that fires before EVERY action, and the first printing neither Range nor Radius `[silverarrow/wild-hunt]`. |
 | Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/silverarrow, team slot, deck, profile/dashboard references; validation-only)` `[silverarrow/components]`. No rules component supply. |
+
+## Whisper
+
+Source: [HERO_WHISPER.md](HERO_WHISPER.md). Whisper owns no token, marker, alternate form, or statue.
+She was added at milestone `8.35z53`, after Ursafar, and is the fifth hero here from outside
+milestone 8.17's line-up - and the first from the **Devoted Hero pack** rather than from the base box,
+which is why PLAN Ruling 27 makes the Tabletopia extraction the sole authority for her faces.
+
+**Five of her nineteen faces read an enemy hero's DISCARD PILE and a sixth reads the negative of it**,
+which is more discard-conditioned text than any hero here prints, and the rows below name the
+consequence once rather than per face: a pile fills by exactly two routes in this build - a card spent
+as a Defense, and a card some text made a hero discard - so her kit opens only after the other player
+has paid for something. **Two of her sentences hand a decision to somebody who is not the actor**, in
+two different ways: a modal put to an enemy hero she named (`EffectChooserRole.BoundHero`), and a target
+made to PERFORM a move (`defended-card-forced-move@1`). No hero above her does either.
+
+| Faces / component | Class | Effect nodes and exact contract |
+| --- | --- | --- |
+| Swift Justice / Vile Accusation | R, F | p.10 modal over two `attack-sequence@1` leaves, `distinctTargets:false`: a printed-Range hero, or an adjacent unit. Each leaf performs nothing and publishes its bullet's printed targeting sentence, so one chosen bullet is one complete p.14 order. Step-7 rider `defended-card-forced-move@1` under `IfAble`. **The roster's first face carrying a p.14 timing keyword INSIDE a modal bullet.** Vile Accusation is p.20's Handicap, narrowed to heroes on its second bullet, and carries the standing deferral. |
+| Death Seeker | R, N | `Conditional(enemy-hero-with-discard-present@1)` gating `Choose(Actor, 1..1)` over `whisper-death-seeker-immunity@1` and `Optional(May) -> retrieve-card@1`. The gate is why RULING 42 applies: no pile holds anything on round 1's first turn. |
+| Crimson Trail / Sanguine Path / Blood Pilgrimage | R, F | Actor space, then a Spawn-point read - a `Conditional` on Crimson Trail, a counted `empty-minion-spawn-points-in-radius@1 (maximumCounted 2/3)` on the other two - then `synthetic-direct-move@3 (UpTo)`, then `choose-target@2 (Actor, distance 1, Unit, Opposing)`, then `set-attack-target@1`. Target bound in card text under row 18's printed reading order. |
+| Blood Fury / Blood Frenzy | R, N | `Conditional(enemy-hero-with-discard-present@1)` gating `RepeatAction(IfAble, max 1 / 5, DifferentTarget)` at p.14 step 7. The condition is a live query inside a body that runs per instance, which is what makes a defender's own spent card arm the instances after it. Blood Frenzy is the first face in the roster where pairwise-distinct diverges from the engine's single slot - see ledger row 27. |
+| Seeds of Fear / Sprouts of Panic / Blooming Nightmare | R, N | `synthetic-radius-unit-target@1 (occupiesSpawnPoint=true, Opposing)` then `synthetic-direct-move@3` at 1 (Mandatory, EXACT) / 2 / 3 (UpTo). "A spawn point" here is p.19's broad term - these three print neither "minion" nor "in the battle zone" where seven other faces of hers print both. |
+| Lesser Evil / Greater Good | R, F | `synthetic-range-hero-target@1 (Opposing)` then `Choose(**BoundHero**, 1..1)` over a price bullet and a Defeat bullet. Lesser Evil's price is `synthetic-discard-chosen-card@2 (IfAble)` and its Defeat is `Optional(May) -> choose-target@2 + synthetic-defeat-minion@1`; Greater Good's price is Mandatory with `synthetic-is-flagged@1 -> synthetic-defeat-hero@1` behind it, and its Defeat is `choose-target-trio@1 (minimum 0, maximum 3)` feeding three `IfAble` Defeats. The minions are of EITHER team, because neither face prints "enemy". |
+| Shadow Step / Shadow Walk / Creeping Shadow | R, N | `synthetic-place-in-range@1` with `PlaceSpawnPointExclusion`, the inverse of Arien's three Greens: his carve Spawn-point spaces OUT of the disk, hers admit only those spaces and - on Creeping Shadow - the ring beside one. Mandatory, so rule 14 refuses the action rather than wasting the card. |
+| Cruel Twist / Sealed Fate | R, N | `choose-swap-subject@1` over the union of an adjacency arm (p.19's ring, any team) and a printed-Range hero arm (Opposing, requiring a discard), then `synthetic-swap-actor@1`, then `synthetic-direct-move@3 (UpTo 2/3)` from the space the exchange published. |
+| Grim Reaper | R | p.16 permanent ability declaring one `RuleModification.ForChoiceCardinality(2, ControllerBasicAction)`. It states no fact about the board: it raises how many options a modal on one of her own BASIC cards admits, which reaches Swift Justice and Death Seeker and no Red, Blue or Green face of hers. |
+| Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/whisper, team slot, deck, profile/dashboard references; validation-only)`. No rules component supply - her nineteen faces place no token and give no marker. |
 
 ## Delta register and dependency order
 

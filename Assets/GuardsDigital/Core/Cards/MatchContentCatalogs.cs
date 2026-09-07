@@ -183,6 +183,16 @@ namespace GuardsDigital.Core.Cards
                 // of his. He contributes no triggered definition at all: Unbound Fury prints a
                 // permanent ability and declares no TriggeredEffect, which is an explicit empty
                 // contribution rather than a missing registration.
-                .Concat(UrsafarActiveEffectContent.RegisteredHandlers());
+                .Concat(UrsafarActiveEffectContent.RegisteredHandlers())
+                // Milestone 8.35z53. Whisper's own creations, joining at the milestone that deals her.
+                // Like the groups above they owe no showcase consumer: they run on
+                // ActiveEffectCreationHandler, the type Arien's five persistent texts proved, and
+                // milestone 7.9's deferral gate asks its second half of the handler TYPE rather than of
+                // a capability id. Her four genuinely new roster contracts - `choose-target-trio@1`,
+                // `defended-card-forced-move@1`, `enemy-hero-with-discard-present@1` and
+                // `choose-swap-subject@1` - register from SyntheticRosterCapabilities rather than from
+                // here, because they are generic capabilities this build now owns rather than content
+                // of hers.
+                .Concat(WhisperActiveEffectContent.Handlers());
     }
 }

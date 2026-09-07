@@ -1097,10 +1097,26 @@ namespace GuardsDigital.Tests.EditMode
         /// covers both: a hero's fixture may claim only what that hero alone owns. What remains below
         /// is exactly the set no other hero's content names.</para>
         /// </summary>
+        /// <para><b>INVERTED at milestone 8.35z53, which is the dealing this case was written to
+        /// wait for.</b> The assertion is not deleted, because the debt it tracked is exactly the
+        /// thing the dealing has to discharge: every contract that was named here as unregistered is
+        /// named here now as registered, so the case keeps testing the same six references and simply
+        /// swaps which answer is correct. A dealing that flipped the roster lists but missed one of
+        /// the six - the shape milestone 8.35z50 hit when a registration flip silently invalidated
+        /// every reader of <c>DeferredHandlers()</c> - fails here by name rather than in a Play Mode
+        /// journey.</para>
         [Test]
-        public void HerNewContracts_AreNotRegisteredWhileSheIsUndealt()
+        public void HerNewContracts_AreRegisteredNowThatSheIsDealt()
         {
-            var registered = SyntheticEffectCapabilities.CreateCatalog();
+            // THE CATALOG HAD TO CHANGE WITH THE DIRECTION OF THE CLAIM, and getting it wrong is the
+            // first thing this milestone's own run caught. The undealt form asked the argument-less
+            // `SyntheticEffectCapabilities.CreateCatalog()`, which registers the synthetic vocabulary
+            // and NOTHING a verified hero contributes - so it could answer "not registered" about
+            // `whisper-death-seeker-immunity@1` for a reason that had nothing to do with Whisper being
+            // undealt, and would have gone on answering it after she was dealt. The dealt form must ask
+            // the catalog the BUILD composes, which is Ursafar's own dealing template
+            // (`EverythingOfHisIsRegisteredNow_BecauseThisBuildDealsHim`).
+            var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
 
             foreach (var reference in new[]
             {
@@ -1112,10 +1128,11 @@ namespace GuardsDigital.Tests.EditMode
                 WhisperActiveEffectContent.DeathSeekerImmunityV1
             })
             {
-                Assert.That(registered.IsRegistered(reference), Is.False,
-                    reference + " is registered while Whisper is not dealt. The registration list is " +
-                    "what a snapshot compares, so registering early moves pinned bytes as well as " +
-                    "failing the reachability gate. Register it in the same change that deals her.");
+                Assert.That(registered.IsRegistered(reference), Is.True,
+                    reference + " is NOT registered though Whisper is dealt. Milestone 8.35z53 deals " +
+                    "her, so every contract her printed set names must be reachable from a card a " +
+                    "configured match puts in a hand - which is the half of milestone 7.9's gate this " +
+                    "list exists to keep honest.");
             }
         }
 

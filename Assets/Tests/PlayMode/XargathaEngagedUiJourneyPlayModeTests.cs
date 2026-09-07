@@ -857,10 +857,28 @@ namespace GuardsDigital.Tests.PlayMode
             // releases it, so stopping at the empty selection would leave the round standing in a
             // pause and report it as finished - which is exactly what the round-boundary assertion
             // below would then read as a phase that never turned over.
+            // Milestone 8.35z53. A TURN HOLDING AN OPEN DECISION IS NOT ENDABLE, and until Whisper was
+            // dealt no setup arc could leave one standing here. Her Gold basic's "After the attack:"
+            // rider asks the hero who DEFENDED for a space (`defended-card-forced-move@1`), so an arc
+            // that drives an Attack-and-Defence exchange to fill a discard pile - which four of her
+            // journeys must, because no staging can deal a pile - reaches this loop with a destination
+            // question open and `SubmitEndTurn` correctly refusing. Answering what stands before
+            // insisting the turn is endable restores this helper's own stated contract rather than
+            // widening it: for every hero dealt before her nothing stands, the predicate is false on
+            // the first look, and the loop behaves exactly as it did.
             for (var budget = 0;
-                (runtime.SelectedActor.IsDefined || runtime.PendingTurnRelease != null) && budget < 12;
+                (runtime.SelectedActor.IsDefined || runtime.PendingTurnRelease != null) && budget < 24;
                 budget++)
             {
+                if (MisaUiJourneyPlayModeTests.AStandingChoiceCanBeAnswered(runtime))
+                {
+                    Assert.That(
+                        MisaUiJourneyPlayModeTests.AnswerStandingChoiceHeadlessly(runtime), Is.True,
+                        "A decision that says it can be answered must answer. " + Remaining(runtime));
+                    yield return null;
+                    continue;
+                }
+
                 Assert.That(runtime.SubmitEndTurn(), Is.True,
                     "Every remaining turn of this round is setup and must be endable. " +
                     Remaining(runtime));

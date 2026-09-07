@@ -330,6 +330,12 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 8.35z50. Ursafar's own hero id, minted at his own dealing.</summary>
         public const string UrsafarHeroIdValue = "hero-ursafar";
 
+        /// <summary>
+        /// Milestone 8.35z53. Whisper's own hero id - and the first that names a
+        /// hero from the Devoted Hero pack rather than from the base box.
+        /// </summary>
+        public const string WhisperHeroIdValue = "hero-whisper";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
@@ -346,7 +352,12 @@ namespace GuardsDigital.Core.Setup
                 (SilverarrowHeroIdValue, "silverarrow", "Silverarrow the Pathfinder"),
                 // Milestone 8.35z50 deals him and makes him pickable in the same commit, which is what
                 // the rule above asks for.
-                (UrsafarHeroIdValue, "ursafar", "Ursafar the Savage")
+                (UrsafarHeroIdValue, "ursafar", "Ursafar the Savage"),
+                // Milestone 8.35z53 deals her and makes her pickable in the same commit, which is what
+                // the rule above asks for. Her prep deliberately withheld this row until the
+                // registration flip landed: it makes her PICKABLE, and composing her match throws
+                // until her capabilities are registered.
+                (WhisperHeroIdValue, "whisper", "Whisper the Outcast")
             };
 
         /// <summary>
@@ -630,6 +641,27 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusUrsafarOneVsOne() =>
             CreateOneVsOne(new HeroContentId("ursafar"), "Ursafar the Savage");
+
+        /// <summary>
+        /// Milestone 8.35z53. Wasp on Red against Whisper the Outcast on Blue, on
+        /// the same `DEV-005` terms the staged pairings before it are on.
+        ///
+        /// <para><b>What this staging supplies and what it structurally cannot, stated rather than
+        /// assumed.</b> Whisper's kit reads the board in two places and the enemy's DISCARD PILE in
+        /// five. The board half is ordinary here - p.8's waves leave empty minion Spawn points for her
+        /// whole Red line to count and her three Green Places to reach, and put enemy units on Spawn
+        /// points for her three Blue displacements. The discard half cannot be staged at all: p.6 deals
+        /// every card to a hand or a deck, so at the first turn of round 1 no pile in the match holds
+        /// anything, and Death Seeker, Blood Fury, Blood Frenzy and the printed-Range arm of both Swaps
+        /// all read false. RULING 42 accepts that as printed rather than as a defect - the card is
+        /// greyed with rule 14's ordinary refusal and becomes playable the moment anybody has spent a
+        /// card - so a journey that needs a discard SPENDS one rather than staging around it.</para>
+        ///
+        /// <para>The inverse is what makes her Gold basic reachable on turn one: Swift Justice's first
+        /// bullet wants a hero with an EMPTY discard, and on the opening turn every hero has one.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusWhisperOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("whisper"), "Whisper the Outcast");
         /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master

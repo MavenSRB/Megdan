@@ -1107,6 +1107,100 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedTargetSurvivedProfile });
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.35z53: the four handler types Whisper the Outcast's dealing registers, proved
+        // here on cards that are nobody's, on the division every dealing since 8.35z34 has drawn.
+        // Three are questions a Skill can ask and one needs an enclosing Attack that has already been
+        // defended against. Two of the three share one card because they share one sentence on her
+        // faces too - a discard-gated selection - which is the same grouping milestone 8.35z34's
+        // Gravedigger and Reliquary used to reach four ids on two cards.
+        //
+        // NONE OF THESE CARDS CONSUMES ITS SELECTION, and that is deliberate rather than lazy. The
+        // natural consumer of the minion trio is a Defeat, and `DefeatMinionHandler` is one of exactly
+        // two implementations milestone 8.13 approved as hero-only. A fixture that defeated what it
+        // selected would drag that handler into the showcase-reachable set and silently retire an
+        // approved pin as a side effect of proving something else. What this gate asks of a new type is
+        // that a showcase card REACH it; the selection node does that, and it is the same node the
+        // printed face composes rather than a weakened copy.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.35z53's discard-gated selection Skill, sitting outside its team's ordinary
+        /// Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedDiscardGatedTrioSkillProfile { get; } =
+            new SyntheticSkillProfile("red-executioner", "Red Executioner", 32);
+
+        /// <summary>Milestone 8.35z53's swap-subject Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedSwapSubjectSkillProfile { get; } =
+            new SyntheticSkillProfile("red-displacer", "Red Displacer", 33);
+
+        /// <summary>
+        /// Whisper's Swift Justice shape as showcase content: an Attack whose second card-text body
+        /// makes the DEFENDER move on the card they defended with.
+        /// </summary>
+        private static SyntheticAttackTextProfile RedDefendedForcedMoveProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-magistrate", "Red Magistrate", 13, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false,
+                continuation: SyntheticContinuationShape.AfterAttackDefendedCardForcedMove);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z53's discard-gated selection Skill, which is how
+        /// <c>enemy-hero-with-discard-present@1</c> AND <c>choose-target-trio@1</c> become reachable
+        /// from showcase content rather than arriving for the first time inside Whisper's own slice.
+        ///
+        /// <para>One card reaches two contracts because her own faces put them in one sentence: Blood
+        /// Fury and Blood Frenzy gate on "if an enemy hero in radius has a card in the discard", and
+        /// Sprouts of Panic and its two upgrades select "up to 3 minions adjacent to you". The gate is
+        /// the Conditional naming the capability directly with a then-child and no else-child - the
+        /// shape <c>WhisperEffectContent</c> composes - and the selection underneath is her trio node
+        /// with its own minimum of nothing, because "up to 3" makes zero an answer.</para>
+        ///
+        /// <para>The predicate reads the ENEMY's pile, so on the opening turn of a match it is false
+        /// and this card does nothing at all. That is the contract as printed (RULING 42) rather than a
+        /// fixture limitation, and it is why the gate and the selection are proved here as a pair: a
+        /// fixture that reached the selection without the gate would never have exercised the arm that
+        /// makes her whole kit wait for somebody to spend a card.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithDiscardGatedTrioSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                discardGatedTrioSkillProfile: RedDiscardGatedTrioSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z53's swap-subject Skill, which is how
+        /// <c>choose-swap-subject@1</c> becomes reachable on the same terms.
+        ///
+        /// <para>The contract is one selection over the UNION of two differently reached sets - "a unit
+        /// adjacent to you, or an enemy hero in range with a card in the discard" - which is Cruel
+        /// Twist's and Sealed Fate's printed sentence. The union is what makes it its own contract
+        /// rather than a second use of <c>choose-target@2</c>: composing it as a modal would have drawn
+        /// a "which kind of swap?" control neither card prints, and composing it as two selections
+        /// would have asked the player twice for one click.</para>
+        ///
+        /// <para>The inputs are hers verbatim, including the ranged arm's discard requirement, because
+        /// what has to be reachable is the handler as it ships and not a widened copy of it.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithSwapSubjectSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                swapSubjectSkillProfile: RedSwapSubjectSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.35z53's defender-steered rider Attack, which is how
+        /// <c>defended-card-forced-move@1</c> becomes reachable from showcase content rather than
+        /// waiting for the hero whose Gold basic prints it.
+        ///
+        /// <para>It is on an Attack rather than a Skill because the rider is about the card the
+        /// DEFENDER spent, so it needs p.14's Defense window to have happened before it can be about
+        /// anything - the same reason milestone 8.35z50's survival rider is on an Attack.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithDefendedForcedMoveText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedDefendedForcedMoveProfile });
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1214,6 +1308,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile fastTravelSkillProfile = null,
             SyntheticSkillProfile heroConditionSkillProfile = null,
             SyntheticSkillProfile borrowedActionSkillProfile = null,
+            SyntheticSkillProfile discardGatedTrioSkillProfile = null,
+            SyntheticSkillProfile swapSubjectSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1435,6 +1531,22 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateBorrowedActionSkillDefinition(borrowedActionSkillProfile),
                     borrowedActionSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (discardGatedTrioSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateDiscardGatedTrioSkillDefinition(discardGatedTrioSkillProfile),
+                    discardGatedTrioSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (swapSubjectSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateSwapSubjectSkillDefinition(swapSubjectSkillProfile),
+                    swapSubjectSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -3234,6 +3346,156 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// continues - the user's general conditional ruling, and the shape every one of Ursafar's
         /// nineteen printed readings has.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z53's discard-gated selection Skill: "If an enemy hero in radius has a card in
+        /// the discard, you choose up to 3 minions adjacent to you."
+        ///
+        /// <para>Two contracts on one card, because two of Whisper's faces put them in one sentence.
+        /// The gate is a Conditional naming <c>enemy-hero-with-discard-present@1</c> directly with a
+        /// then-child and no else-child, which is what a condition that simply skips its clause looks
+        /// like here; the selection under it is <c>choose-target-trio@1</c> with her own inputs, a
+        /// minimum of nothing and a maximum of three.</para>
+        ///
+        /// <para><b>The selection is not consumed, and the comment above the factory says why.</b>
+        /// Defeating what it selects would make <c>DefeatMinionHandler</c> showcase-reachable and
+        /// silently retire one of milestone 8.13's two approved hero-only implementations. The node
+        /// itself is unweakened, which is what this gate asks for.</para>
+        /// </summary>
+        private static CardDefinition CreateDiscardGatedTrioSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("discard-gated-trio-root");
+            var gate = new EffectNodeId("discard-gated-trio-gate");
+            var set = new EffectNodeId("discard-gated-trio-set");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z53-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { gate }),
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.EnemyHeroWithDiscardPresentV1,
+                        childNodeIds: new[] { set },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.PresentOutput, EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        set, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ChooseTargetTrioV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.OriginParameter, GuardsDigital.Core.Rules.CardResolution.RosterQueryOrigin.Actor),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(1)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.UnitKindParameter, GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Minion),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.AnyTeam),
+                            EffectInputBinding.FromLiteral("minimum", EffectValue.Integer(0)),
+                            EffectInputBinding.FromLiteral("maximum", EffectValue.Integer(3))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("selectedCount", EffectValueKind.Integer),
+                            new EffectOutputBinding("firstMinion", EffectValueKind.Minion),
+                            new EffectOutputBinding("secondMinion", EffectValueKind.Minion),
+                            new EffectOutputBinding("thirdMinion", EffectValueKind.Minion)
+                        })
+                });
+
+            return CreateSkillCard(profile, "primary-discard-gated-trio-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z53's swap-subject Skill: one selection over the union of "a unit adjacent to
+        /// you" and "an enemy hero in range with a card in the discard".
+        ///
+        /// <para>The inputs are Cruel Twist's and Sealed Fate's verbatim, discard requirement included.
+        /// The selection publishes the three outputs the contract declares and nothing consumes them
+        /// here, for the reason the trio Skill above does not defeat what it names: the swap that
+        /// normally follows runs on <c>SwapWithActorV1</c>, whose reachability is a separate question
+        /// this card has no business answering as a side effect.</para>
+        /// </summary>
+        private static CardDefinition CreateSwapSubjectSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("swap-subject-root");
+            var subject = new EffectNodeId("swap-subject-selection");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z53-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { subject }),
+                    new EffectNodeDefinition(
+                        subject, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ChooseSwapSubjectV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.AdjacentUnitKindParameter,
+                                GuardsDigital.Core.Rules.CardResolution.RosterUnitKind.Unit),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.RangedHeroRelationParameter,
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.OpposingSource),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.RangedHeroRequiresDiscardParameter,
+                                EffectValue.Boolean(true))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenSpaceOutput,
+                                EffectValueKind.Coordinate),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenMinionOutput,
+                                EffectValueKind.Minion)
+                        })
+                });
+
+            return CreateSkillCard(profile, "primary-swap-subject-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z53. The card shell milestone 8.35z50's two Skills and this milestone's two
+        /// build identically, extracted so a fourth fixture Skill states its effect and nothing else.
+        /// </summary>
+        private static CardDefinition CreateSkillCard(
+            SyntheticSkillProfile profile, string actionId, EffectDefinition effect) =>
+            new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z53-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId(actionId),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+
         private static CardDefinition CreateHeroConditionSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("hero-condition-root");
@@ -3916,7 +4178,25 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// the same one-space displacement <see cref="AfterAttackRangeTenseRiders"/> performs,
             /// because what this card exists to prove is the READING and not the consequence.</para>
             /// </summary>
-            AfterAttackTargetSurvivedRider = 14
+            AfterAttackTargetSurvivedRider = 14,
+
+            /// <summary>
+            /// Milestone 8.35z53. Whisper's Swift Justice shape: "After the attack:" text that makes
+            /// the hero who DEFENDED perform a forced direct move on the card they defended with.
+            ///
+            /// <para>It is the first showcase shape whose choice is issued to somebody who is not the
+            /// actor - <c>EffectChoiceRequest.ChooserHeroId</c> names the Attack's own target - so what
+            /// it proves is not only that the handler is reachable but that a decision can leave the
+            /// acting seat at all. It needs an enclosing Attack, and specifically one that has already
+            /// passed p.14's Defense window, which is why it is a second-moment rider and not a
+            /// Skill.</para>
+            ///
+            /// <para>The node is the single <c>IfAble</c> capability Whisper's own second body
+            /// composes, unchanged - a rider with no printed Movement value on the defended card fails
+            /// the "if able" and nothing happens, which is RULING 16 as printed. A fixture that wrapped
+            /// it in something declinable would prove a weaker contract than the one that ships.</para>
+            /// </summary>
+            AfterAttackDefendedCardForcedMove = 15
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -4451,6 +4731,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new EffectNodeId("target-survived-root"),
                         TargetSurvivedRiderNodes());
 
+                case SyntheticContinuationShape.AfterAttackDefendedCardForcedMove:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-35z53-rev-1",
+                        new EffectNodeId("defended-forced-move-root"),
+                        DefendedCardForcedMoveRiderNodes());
+
                 case SyntheticContinuationShape.AroundTheMovement:
                     return new EffectDefinition(
                         new EffectDefinitionId($"placeholder-{id}-text"),
@@ -4861,6 +5148,43 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// one-space push away from the attacker - so that nothing in the consequence is new and the
         /// only thing this fixture introduces is the question.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z53's defender-steered rider: the hero who defended performs a forced direct
+        /// move on the card they defended with, moving full distance in a straight line.
+        ///
+        /// <para><b>It is ONE node, and that is the whole point.</b> Whisper's Swift Justice composes
+        /// exactly this single <c>IfAble</c> capability as its second card-text body, so this fixture
+        /// is not a simplification of her face - it is the same node on a card that is nobody's. The
+        /// handler answers with an <c>EffectChoiceRequest</c> whose <c>ChooserHeroId</c> is the
+        /// Attack's own <c>HeroTargetId</c>, which makes this the first showcase content in the build
+        /// where the seat that is asked is not the seat that acted.</para>
+        ///
+        /// <para>The <c>IfAble</c> policy carries RULING 16's "if able" directly: a defended card
+        /// printing no Movement value offers nothing and the rider fizzles, and a hero hemmed in on
+        /// every one of p.19's six directions does the same. Neither is an error, and wrapping the
+        /// node in something declinable would have hidden that by turning a fizzle into a decline.</para>
+        /// </summary>
+        private static EffectNodeDefinition[] DefendedCardForcedMoveRiderNodes()
+        {
+            var root = new EffectNodeId("defended-forced-move-root");
+            var rider = new EffectNodeId("defended-forced-move-rider");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { rider }),
+                new EffectNodeDefinition(
+                    rider, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                    SyntheticRosterCapabilities.DefendedCardForcedMoveV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticRosterCapabilities.MovedOutput, EffectValueKind.Coordinate)
+                    })
+            };
+        }
+
         private static EffectNodeDefinition[] TargetSurvivedRiderNodes()
         {
             var root = new EffectNodeId("target-survived-root");

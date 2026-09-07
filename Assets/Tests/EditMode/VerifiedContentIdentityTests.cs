@@ -91,7 +91,18 @@ namespace GuardsDigital.Tests.EditMode
             // the nine pins above confirmed byte-identical in that same run. A filtered pin run has
             // been green while digests moved, which is why the rule is the complete run rather than
             // the cheap one.
-            new IdentityPin("ursafar", "ursafar-8-35z50-rev-1", "7197e73ba0c224c32b7463bcf943e96fa43d40bfc6ba1daa5eb79ad1251d9be1")
+            new IdentityPin("ursafar", "ursafar-8-35z50-rev-1", "7197e73ba0c224c32b7463bcf943e96fa43d40bfc6ba1daa5eb79ad1251d9be1"),
+            // Milestone 8.35z53. THE ELEVENTH PIN, arriving on exactly the terms the seventh through
+            // tenth did: a pin is a claim about content a configured match loads, and milestone
+            // 8.35z33 composed Whisper without dealing her.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
+            // deliberately wrong value and the digest read off this oracle's own failure output, with
+            // the ten pins above confirmed byte-identical in that same run. Milestone 8.35z50's own
+            // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
+            // measures the hero as contributing ZERO cards, and hers was added in the same commit that
+            // made her pickable, so the digest below is over her whole dealt set.
+            new IdentityPin("whisper", "whisper-8-35z53-rev-1", "ea0a8a40564a260fe94f9f5b9788fa7564b85fbe593e8cd6484b74027f6e09a9")
         };
 
         [Test]
@@ -194,6 +205,14 @@ namespace GuardsDigital.Tests.EditMode
                 // minted the pin actually reported. The append is not optional bookkeeping - it is
                 // half of what a pin means.
                 .Concat(MatchConfiguration.CreateStagedUrsafarForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.35z53. Whisper's staged configuration joins on the same terms, and the
+                // line above earned its warning: her pin was added first and the complete run reported
+                // her contributing ZERO definitions, exactly as his did. The trap is that a pin and its
+                // staged source are ONE change - a pin alone names a hero the union cannot see, and the
+                // oracle then fails on the count rather than on a digest, which reads like a content
+                // fault and is not one.
+                .Concat(MatchConfiguration.CreateStagedWhisperForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

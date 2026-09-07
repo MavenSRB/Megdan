@@ -510,6 +510,17 @@ namespace GuardsDigital.Tests.PlayMode
                 ["synthetic-hero-adjacent-to-minion"] =
                     new[] { PlayerInteractionShape.BoardUnitSelection },
 
+                // Milestone 8.35z53. The last unclassified member of the printed-icon
+                // family, and its absence was an accident of which heroes had been dealt rather than a
+                // decision: the written-radius, range-hero, range-unit, radius-hero, radius-minion and
+                // range-minion arms have all been here since milestone 8.20b or 8.21, and the
+                // RADIUS-UNIT arm is the one no dealt hero had named. Whisper's three Blue displacements
+                // name it - "Target an enemy unit in radius occupying a spawn point" - and it asks what
+                // its six siblings ask: the piece, where it stands. The `occupiesSpawnPoint` narrowing
+                // changes which pieces are offered and not what a player supplies, which is the same
+                // candidate-set-versus-shape line milestone 8.35z38 drew for Misa's ring.
+                ["synthetic-radius-unit-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+
                 // The written-radius Place, whose destination is a space a player clicks. Its
                 // printed-Range sibling `synthetic-place-in-range` is above.
                 ["synthetic-place"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
@@ -769,7 +780,45 @@ namespace GuardsDigital.Tests.PlayMode
                 // occupancy. A reading, not a question: the player sees only what the removal rider
                 // does afterwards, on the same terms `pre-consequence-adjacency@1` and
                 // `target-is-adjacent@1` already carry for the Attack's other captured facts.
-                ["attack-target-survived"] = Array.Empty<PlayerInteractionShape>()
+                ["attack-target-survived"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.35z53. Whisper the Outcast's four, and the split between them is the
+                // same difference between a question and a fact that Dodger's six and Misa's six drew.
+                //
+                // THE FORCED MOVE IS A QUESTION, and it is asked of somebody who is not the actor -
+                // which is what makes it the most surprising entry in this whole table. "That hero
+                // performs a movement action on the card they defended with, moving full distance in a
+                // straight line" offers the DEFENDER the furthest space each of p.19's six directions
+                // reaches and takes one board click, with `EffectChoiceRequest.ChooserHeroId` naming
+                // that hero rather than the actor. "Full distance" removes p.11's "up to", so the
+                // intermediate spaces are not offers and the six candidates are the whole question; a
+                // direction that cannot be entered contributes nothing, which is how a hero hemmed in on
+                // every side leaves the `if able` doing nothing at all. It is a space and not a unit
+                // because the piece is already named - the Attack named it - and what is being asked is
+                // where it goes.
+                ["defended-card-forced-move"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Her two multi-arm selections, which are board clicks on exactly the terms
+                // `choose-target-set@1` and `choose-target-pair@1` carry since milestone 8.22. The trio
+                // takes up to three minions adjacent to her and the swap subject takes one unit out of
+                // the union of two differently reached sets - "a unit adjacent to you, OR an enemy hero
+                // in range with a card in the discard". A player names each by clicking where it
+                // stands, and the union-ness is a constraint on which clicks are admitted rather than a
+                // second kind of input: composing it as a modal would have drawn a "which kind of
+                // swap?" control the card never prints.
+                ["choose-target-trio"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["choose-swap-subject"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // A presence question about the board, answered by the rules rather than by anybody -
+                // "if an enemy hero in radius has a card in the discard", which Death Seeker asks once
+                // and Blood Frenzy asks again before every instance of its chain. Whisper's content
+                // reaches it only as a `Conditional`, and this table classifies only `Capability`
+                // nodes, so today nothing consults this entry. It is declared all the same, for the
+                // reason the dictionary's own header gives: an unknown capability is a question this
+                // table cannot answer, and a later face that names this one as a Capability node would
+                // fail on the id rather than on the shape. Classifying it costs nothing and leaving it
+                // out would be a trap laid for whoever prints the next discard-gated sentence.
+                ["enemy-hero-with-discard-present"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

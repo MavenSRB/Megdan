@@ -246,7 +246,17 @@ namespace GuardsDigital.Tests.EditMode
             // three removal Reds gate on). His FIFTEEN Active-effect creations move it by nothing, on
             // the sentence four dealings have now written: `ActiveEffectCreationHandler` is a type this
             // build has had since milestone 6.8, and this rule counts TYPES.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(65),
+            // Milestone 8.35z53 moves it 65 -> 69, and the arithmetic is the dealing's own: Whisper's
+            // registration crosses FOUR new handler TYPES - `ChooseTargetTrioHandler` (the up-to-three
+            // minion selection her Green line names), `DefendedCardForcedMoveHandler` (Swift Justice's
+            // printed rider, the first contract in this build whose choice is issued to a hero who is
+            // not the actor), `EnemyHeroWithDiscardPresentHandler` (the discard predicate Death Seeker
+            // and Blood Frenzy gate on) and `ChooseSwapSubjectHandler` (the union-selection her two
+            // Swaps name). `synthetic-radius-unit-target@1` moves it by NOTHING even though it left the
+            // deferred list in the same commit - it is a seventh declaration over
+            // `PrintedIconTargetHandler`, and this rule counts TYPES - and her one Active-effect
+            // creation moves it by nothing on the sentence five dealings have now written.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(69),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

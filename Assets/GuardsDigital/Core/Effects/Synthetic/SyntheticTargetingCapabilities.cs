@@ -360,19 +360,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// registration list is what a snapshot compares, so a capability registered before a dealt
         /// card can start it moves pinned bytes and fails milestone 7.9's reachability gate.
         ///
-        /// <para>Whisper's Blue displacement Skills name <c>synthetic-radius-unit-target@1</c> and
-        /// this phase does not deal her, so it waits here for her completion milestone. It is a
-        /// declaration over a handler this build already registers six times, not a new handler type,
-        /// so the gate's second half - a new handler must be reachable from a showcase card - has
-        /// nothing to ask of it.</para>
+        /// <para>Milestone 8.35z53 emptied this list. Whisper's Blue displacement Skills name
+        /// <c>synthetic-radius-unit-target@1</c> and that milestone deals her, so the declaration moved
+        /// into <see cref="RegisteredHandlers"/> below. It is a declaration over a handler this build
+        /// already registers six times, not a new handler type, so the gate's second half - a new
+        /// handler must be reachable from a showcase card - had nothing to ask of it.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[]
-            {
-                new PrintedIconTargetHandler(
-                    RadiusUnitTargetV1, PrintedValueChannel.Radius,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit)
-            };
+            Array.Empty<IEffectCapabilityHandler>();
 
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[]
@@ -397,6 +392,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Minion),
                 new PrintedIconTargetHandler(
                     RangeUnitTargetV1, PrintedValueChannel.Range,
+                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit),
+                // Milestone 8.35z53. The Radius half of the printed-icon UNIT pair, which waited in
+                // `DeferredHandlers` above until a dealt card named it: Whisper's three Blue
+                // displacement Skills are the first, and this is the seventh declaration over the one
+                // handler p.9's two icons already share rather than a new type.
+                new PrintedIconTargetHandler(
+                    RadiusUnitTargetV1, PrintedValueChannel.Radius,
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit),
                 new HeroAdjacentToMinionHandler()
             };

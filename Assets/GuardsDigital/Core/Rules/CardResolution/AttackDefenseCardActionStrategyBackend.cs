@@ -3094,6 +3094,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard:
                     return target.Kind == AttackTargetKind.Hero &&
                         HeroDiscardPileQuery.HasAnyCard(instances, target.HeroId);
+                // Milestone 8.35z53. Whisper's Swift Justice, bullet 1: "Target a
+                // hero in range with an empty discard" - the exact negation of the case above,
+                // reading the same query so the two cannot come to disagree about one pile.
+                case AttackSequenceSubjectNarrowing.HasAnEmptyDiscard:
+                    return target.Kind == AttackTargetKind.Hero &&
+                        !HeroDiscardPileQuery.HasAnyCard(instances, target.HeroId);
                 default:
                     return true;
             }

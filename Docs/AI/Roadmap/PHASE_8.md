@@ -244,6 +244,55 @@ Non-goals: no schema, wire or content-revision movement - the third branch chang
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z51-land-the-three-corrective-branches-un-park-the-journeys-the-last-of-them-explains-and-burn-down-what-the-parked-reasons-can-now-answer-completion-evidence).
 
+### [x] 8.35z52 Burn down the parked Silverarrow journeys as far as evidence reaches, and name the rest
+
+The journey burn-down milestone 8.35z46 queued, executed under the user's own skips rule for the ten-hero cut: resolve what is resolvable, and ship whatever remains explicitly skipped with its reason attached to the test that carries it. **Recorded here at milestone 8.35z53 rather than at the time**: the work landed inside 8.35z51's commit and its id was written into two shipped `[Explicit]` reason strings, which named a roadmap entry that did not yet exist. The entry is written from the burn-down's own evidence rather than reconstructed.
+
+Observable outcome: nothing a player can see changes. What changes is that two of the seven parked journeys stop resting on an unanswered fixture question, because that question is now answered - and a reader of any remaining skip is told what has been ruled out rather than what was once suspected.
+
+**TWO HYPOTHESES ARE ELIMINATED, AND BOTH WERE THE FIXTURE-GEOMETRY HALF OF THEIR OWN FORK.** Each parking recorded two candidate causes and said which reading it could not choose between; that is what made them cheap to advance.
+
+- `ShootAndScoot` asked whether the compact engaged arena contains a second Zone at all - if it did not, the after-attack Fast Travel rider is legitimately infeasible and the assertion was written against a geometry the staging never promised. It does. The official map declares **seven** zones - two thrones, three lane zones, two jungles - and `EngagedMirrorStaging` places both heroes mid-board in the 60-space starting battle zone, which the map's own ordered lane makes adjacent to both approach zones. `SameOrAdjacentZone` therefore has a large eligible destination set from the staged space, so the fixture reading is false and what remains is a content or feasibility question.
+- `FaeHealing_RetrievesACardForTheEnemyHeroItNamed` asked whether the staged distance exceeds the printed Radius 4. It cannot. Every staged Silverarrow scene is restaged by `EngagedMirrorStaging`, which by construction returns only a board where the two heroes stand **exactly two spaces apart** - it iterates free neighbours and returns on the first pair whose distance reads 2, and throws rather than staging anything else. Two is inside four, so both heroes are in the disk and what remains is the content half: the candidate query admits one hero where RULING 8 admits any hero in the disk, self included.
+
+**WHAT REMAINS IS NAMED RATHER THAN GUESSED AT, and the reason is a rule this project already keeps.** Neither surviving question is a fixture edit: one is a feasibility reading and one is a candidate-set narrowing with an identity re-pin behind it. Both are rules-side corrections, and the brakes amendment plus the user's own skips rule make a package cut the wrong place to smuggle one. Every remaining `[Explicit]` reason string now records what has been ruled out, by what evidence, so the milestone that takes one up starts from measurement rather than from suspicion.
+
+Acceptance checks:
+
+- Every remaining skip is `[Explicit]` with a reason naming both what is eliminated and what stands.
+- The Play Mode skip count is unchanged and each skip is accounted for by name in the package evidence.
+- No production code, schema, wire or content revision moves.
+
+Non-goals: the two surviving questions are not fixed here, and neither is any journey belonging to a hero other than Silverarrow.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z52-burn-down-the-parked-silverarrow-journeys-as-far-as-evidence-reaches-and-name-the-rest-completion-evidence).
+
+### [x] 8.35z53 Deal, register and player-path gate Whisper the Outcast as the eleventh hero
+
+The eleventh hero this build deals, and the first from the **Devoted Hero pack** rather than from the base box. Her dealing-prep branch was written offline at `a44629be` and partially extracted at 8.35z49; this milestone lands the rest, flips her registration, and gates her nineteen faces against a real scene.
+
+Observable outcome: a player can pick Whisper the Outcast in the hero selector and play her printed set. Two of her sentences hand a decision to somebody who is not the acting player - a modal put to an enemy hero she named, and a target made to perform a move on the card they just defended with - and no hero dealt before her does either.
+
+**HER REGISTRATION IS FOUR NEW HANDLER TYPES AND ONE DECLARATION, and the arithmetic is stated rather than implied.** `choose-target-trio@1`, `defended-card-forced-move@1`, `enemy-hero-with-discard-present@1` and `choose-swap-subject@1` are new TYPES and take the registered-handler count 65 -> 69; `synthetic-radius-unit-target@1` leaves the targeting file's deferred list in the same commit and moves the count by nothing, being a seventh declaration over the printed-icon handler p.9's two icons already share. Her one Active-effect creation - Death Seeker's turn-long immunity to enemy hero actions, RULING 33 - runs on the type this build has had since milestone 6.8.
+
+**MILESTONE 7.9'S GATE ASKED ITS SECOND HALF OF ALL FOUR NEW TYPES, and the answer is three showcase cards rather than four.** The Executioner carries the discard predicate and the minion trio together because two of her faces put them in one sentence; the Displacer carries the union-selection her two Swaps name; and the Magistrate's second card-text body carries the defender-steered forced move, which needs p.14's Defense window to have happened before it is about anything. **None of the three consumes its own selection**, and that is a decision rather than an omission: the natural consumer of the minion trio is a Defeat, and `DefeatMinionHandler` is one of exactly two implementations milestone 8.13 approved as hero-only, so a fixture that defeated what it selected would have retired an approved pin as a side effect of proving something else.
+
+**THE SCENE ENUM COLLIDED THREE WAYS AND WAS RENUMBERED BY READING, not by a red run.** Her prep claimed `SceneCardContent` 45-49, which main holds for Silverarrow and whose successors 50-54 Ursafar's dealing consumed; hers are 55-59.
+
+**THE OPEN-QUESTIONS REGISTER WAS SHARDED TO FIT HER FIVE ROWS.** `RULES_LEDGER.md` stood at 8,426 words against a 9,000-word hard cap - already over its own warning line - and her five roster-wide rulings need 1,247. The register moved to `Rules/OPEN_QUESTIONS.md` on exactly the terms milestone 7.8e moved the rule-system tables, with the pointer section keeping the heading the governance check requires; the numbering continues unbroken and no question was reworded, merged or dropped.
+
+Acceptance checks:
+
+- Whisper is pickable in the live hero selector and a configured match composes her hand without throwing.
+- Her nineteen faces and five components pass the content-derived player-path gate under Unity.
+- The registered-handler count, every corpus digest, both scenario-digest families and the artwork bijection are re-pinned from measurement, and the schema version does not move.
+- Her identity pin is minted from a complete unfiltered run and the ten prior pins are byte-identical on it.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: no schema or wire movement; no Tali work; no second playtest package.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z53-deal-register-and-player-path-gate-whisper-the-outcast-as-the-eleventh-hero-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

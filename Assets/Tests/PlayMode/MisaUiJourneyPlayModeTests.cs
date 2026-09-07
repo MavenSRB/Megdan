@@ -395,6 +395,30 @@ namespace GuardsDigital.Tests.PlayMode
         /// Watch How I Soar's ring and Sudden Breeze's line - and repeating it in a drive loop proves
         /// nothing those two do not.</para>
         /// </summary>
+        /// <summary>
+        /// Whether <see cref="AnswerStandingChoiceHeadlessly"/> has anything to answer right now.
+        ///
+        /// <para>Milestone 8.35z53 added this because <c>runtime.PendingEffectChoice</c> is NOT the
+        /// same question. A drain loop conditioned on that property sees a standing MODE or CARD
+        /// choice and is blind to a standing DESTINATION one - the surface a forced move presents -
+        /// so the loop body never runs and the next `SubmitEndTurn` fails against a decision nobody
+        /// answered. Whisper's dealing is where that first bit: her Gold basic's rider asks the hero
+        /// who DEFENDED for a space, so a setup arc that drives an Attack-and-Defence exchange to
+        /// fill a discard pile leaves a destination standing that no earlier hero's arc could.</para>
+        ///
+        /// <para>It mirrors <see cref="AnswerStandingChoiceHeadlessly"/>'s own selection exactly
+        /// rather than re-deriving it, so the two cannot come to disagree about what is answerable.</para>
+        /// </summary>
+        internal static bool AStandingChoiceCanBeAnswered(ConfiguredMatchSceneRuntime runtime)
+        {
+            var model = runtime.RoundView.Model;
+            return model.EffectChoiceDestinations.Any() ||
+                model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select ||
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm ||
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
+        }
+
         internal static bool AnswerStandingChoiceHeadlessly(ConfiguredMatchSceneRuntime runtime)
         {
             var model = runtime.RoundView.Model;

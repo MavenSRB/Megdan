@@ -71,7 +71,12 @@ namespace GuardsDigital.Presentation.Match
                 // Unity-free harness does not compile at all and the one-assembly compile probe can
                 // only compile, never run. The first Unity Edit Mode run failed sixteen cases on it.
                 // A dealing owes BOTH halves: the rows, and the hero this map can address them to.
-                { "ursafar", "Ursafar" }
+                { "ursafar", "Ursafar" },
+                // Milestone 8.35z53. Her extraction directory spells the name plainly, as his does.
+                // This line is the FOURTH consecutive dealing to be told by the comment above rather
+                // than by a check: it is written here at the same moment as the eighteen rows, because
+                // the rows alone are what every offline tier can see.
+                { "whisper", "Whisper" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -343,6 +348,11 @@ namespace GuardsDigital.Presentation.Match
                 // exactly as Dodger's Rusty Razor, Misa's Leaf on the Wind and Silverarrow's Keep the
                 // Distance are not among theirs.
                 .Concat(UrsafarCardContent.DealtDefinitions)
+                // Milestone 8.35z53. Whisper's eighteen, on exactly the terms the rows above state.
+                // Vile Accusation is p.20's Handicap card and is not among her DealtDefinitions,
+                // exactly as Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the
+                // Distance and Ursafar's Jaws That Bite are not among theirs.
+                .Concat(WhisperCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

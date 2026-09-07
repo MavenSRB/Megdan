@@ -489,6 +489,10 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.SilverarrowCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.UrsafarHeroIdValue:
                     return Cards.Verified.UrsafarCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.35z53. The first hero of the Devoted Hero pack, on
+                // exactly the terms the rows above it are on.
+                case Setup.QuickGameSetupConfiguration.WhisperHeroIdValue:
+                    return Cards.Verified.WhisperCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1148,6 +1152,112 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.35z53. The staged Wasp-versus-Whisper match, on the same
+        /// `DEV-005` terms the staged matches before it are on. This is the configuration that
+        /// makes Whisper the ELEVENTH dealt hero, and the first from the Devoted Hero pack.
+        ///
+        /// <para>Whisper takes the Blue seat though the roster-expansion amendment has not yet placed
+        /// her in an official line-up at all, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals rulebook p.5's six.</para>
+        ///
+        /// <para><b>She needs no ally seat, and what her set asks of a staging is unusually specific.</b>
+        /// Not one of her nineteen faces names a friendly hero, so the Brogan problem does not arise.
+        /// What she needs is an ENEMY HERO WITH A CARD IN THEIR DISCARD, and she needs it more often
+        /// than any hero dealt before her: five of her faces condition on it - Death Seeker's whole
+        /// gate, Blood Fury's and Blood Frenzy's repeat gate, and the printed-Range arm of Cruel Twist's
+        /// and Sealed Fate's swap - and a sixth, Swift Justice's first bullet, conditions on the
+        /// OPPOSITE (an EMPTY discard). No configuration can stage a discard pile: p.6 deals every card
+        /// to a hand or a deck, and a pile fills only when somebody spends a card. So her
+        /// discard-gated faces are reachable from turn two onward and not before, which RULING 42
+        /// accepts as product behaviour rather than something a staging should route around - see
+        /// <see cref="Cards.Verified.WhisperEffectContent"/>'s reading of Death Seeker.</para>
+        ///
+        /// <para><b>What the board supplies without help</b> is the other half of her kit: empty minion
+        /// Spawn points for her whole Red line and her three Places to count and reach (p.8's waves
+        /// leave several in every configuration this build has), enemy units standing ON Spawn points
+        /// for her three Blue displacements, and units adjacent to her for the modal Attack's second
+        /// bullet and for Lesser Evil's and Greater Good's Defeats.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedWhisperForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedWhisperHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z53. The staged Wasp-versus-Whisper match at rulebook
+        /// p.15's Tier II stage, with Whisper holding one Tier II card of each colour on the branch the
+        /// caller names - the same pairing rule
+        /// <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        ///
+        /// <para>Which branch a staged hand took decides which of the user's Whisper rulings this match
+        /// can observe at all, and the division is stated in full on
+        /// <see cref="Cards.Verified.WhisperProgressedHands"/>: the FIRST branch is the seat that moves
+        /// itself and other people's units, and the SECOND carries RULING 34's repeat chain, RULING
+        /// 17's opponent-chosen modal and both Swaps.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedWhisperTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.WhisperUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedWhisperHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z53. The staged Wasp-versus-Whisper match at rulebook
+        /// p.15's Tier III stage with p.16's Ultimate unlocked on both seats: High Voltage faceup in
+        /// Red's Ultimate area and Grim Reaper in Whisper's.
+        ///
+        /// <para><b>Hers is the second unlocked Ultimate in this build that changes how a DECISION is
+        /// shaped rather than what a rule is true of, and it is narrower than Misa's.</b> "When
+        /// performing basic actions you may choose one, or both" raises the ceiling on a modal from one
+        /// option to two, scoped by <c>RuleValueApplicability.ControllerBasicAction</c> - so it reaches
+        /// Swift Justice's Attack and Death Seeker's Skill, which are her only two dealt BASIC cards,
+        /// and reaches no Red, Blue or Green face of hers at all. It does not reach Lesser Evil or
+        /// Greater Good even though those print modals, for two independent reasons: they are not basic
+        /// cards, and their modal is not one Whisper is choosing.</para>
+        ///
+        /// <para><b>So this configuration is the only one in which "both" is observable</b>, and the
+        /// two cards mean two different things by it. On Death Seeker the bullets are two effects and
+        /// both apply. On Swift Justice they are two TARGETING SENTENCES, and RULING 19 makes "both"
+        /// two complete rulebook p.14 orders inside one action - each with its own targeting against
+        /// the board as it then stands, its own Defense window and its own Attack Total. The face
+        /// prints no "(on different targets)", so under RULING 19's rider both sequences may point at
+        /// the same unit provided it still satisfies each bullet's own sentence when that bullet
+        /// resolves.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedWhisperTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.WhisperUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedWhisperHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WhisperCardContent.GrimReaper)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -1528,6 +1638,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.UrsafarProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.UrsafarProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.35z53. One seat's verified Whisper hand, prefixed by the
+        /// seat's team side for the reason the ten earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedWhisperHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.WhisperCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedWhisperHand(
+            bool tierThree, Cards.Verified.WhisperUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.WhisperProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.WhisperProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

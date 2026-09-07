@@ -62,7 +62,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <see cref="GuardsDigital.Core.Cards.HeroDiscardPileQuery"/> so the two cannot come to
         /// disagree.</para>
         /// </summary>
-        HasOneOrMoreCardsInTheDiscard = 1
+        HasOneOrMoreCardsInTheDiscard = 1,
+
+        /// <summary>
+        /// "a hero in range <b>with an empty discard</b>" - the exact negation of
+        /// <see cref="HasOneOrMoreCardsInTheDiscard"/>, and the first member this vocabulary needed a
+        /// second entry for rather than a boolean flip of the first: a closed enum names each printed
+        /// reading rather than pairing one member with an inverted bit, so a reader that recognises only
+        /// the earlier value is not silently handed the opposite candidate set. Whisper the Outcast's
+        /// Swift Justice, milestone 8.35z53.
+        ///
+        /// <para>Bullet 1's own printed sentence - "Target a hero in range with an empty discard" - is
+        /// the candidate predicate; the step-7 rider that follows it ("that hero performs a movement
+        /// action on the card they defended with") is a separate reading of the same completed
+        /// sequence and is not this member's concern. Consults the same
+        /// <see cref="GuardsDigital.Core.Cards.HeroDiscardPileQuery"/> as its complement, so "empty" and
+        /// "one or more" cannot come to disagree about the same pile.</para>
+        /// </summary>
+        HasAnEmptyDiscard = 2
     }
 
     /// <summary>

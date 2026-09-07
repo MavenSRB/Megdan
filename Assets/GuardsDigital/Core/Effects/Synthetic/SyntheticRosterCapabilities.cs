@@ -825,10 +825,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // left this list already, at Misa's dealing: registering it there was not a registration on
             // Silverarrow's behalf, but her three straight-line faces reach the same registered
             // contract now that it is one, which is the ordinary case of two heroes sharing one rule.
-            yield return new ChooseTargetTrioHandler();
-            yield return new DefendedCardForcedMoveHandler();
-            yield return new EnemyHeroWithDiscardPresentHandler();
-            yield return new ChooseSwapSubjectHandler();
+            //
+            // MILESTONE 8.35z53'S FOUR HAVE ALSO LEFT THIS LIST - see `RegisteredHandlers` below.
+            // Whisper the Outcast is dealt, so her Gold basic's forced-move rider, her Red trio, her
+            // discard-gated Conditional and her two Swaps are all cards a configured match puts in a
+            // hand, and the gate that held them here is satisfied on both halves at once.
         }
 
         /// <summary>
@@ -959,6 +960,28 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // straight-line faces reach the same registered contract Misa's five Blue Skills do, which
             // is the ordinary case of two heroes sharing one rule and not a second registration.
             yield return new CardTextFastTravelHandler();
+
+            // Milestone 8.35z53. Whisper the Outcast's four roster contracts move across because that
+            // milestone deals her, and the split between them is worth reading: three are questions a
+            // player answers and one is a question the rules answer.
+            //
+            // `choose-target-trio@1` is Sprouts of Panic's and its two upgrades' "defeat up to 3
+            // minions adjacent to you" - `choose-target-set@1`'s own terms with a third slot.
+            // `choose-swap-subject@1` is Cruel Twist's and Sealed Fate's one selection over the UNION
+            // of two differently reached sets. `defended-card-forced-move@1` is Swift Justice's
+            // printed rider, and it is the first contract in this build whose choice is issued to a
+            // hero who is NOT the actor - `EffectChoiceRequest.ChooserHeroId` names the DEFENDER, which
+            // milestone 8.35r's decision-owner routing already sends to the right seat because it reads
+            // exactly that field. `enemy-hero-with-discard-present@1` is the discard gate Death Seeker
+            // asks once and Blood Frenzy asks before every instance of its chain; it asks nobody
+            // anything and is reached only as a `Conditional`.
+            //
+            // All four are handler TYPES this build had never registered, so milestone 7.9's gate asks
+            // its second half of each.
+            yield return new ChooseTargetTrioHandler();
+            yield return new DefendedCardForcedMoveHandler();
+            yield return new EnemyHeroWithDiscardPresentHandler();
+            yield return new ChooseSwapSubjectHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>

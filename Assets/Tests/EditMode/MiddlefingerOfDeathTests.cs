@@ -216,12 +216,17 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     (int)AttackSequenceSubjectNarrowing.None,
-                    (int)AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard
+                    (int)AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard,
+                    (int)AttackSequenceSubjectNarrowing.HasAnEmptyDiscard
                 }.OrderBy(value => value).ToArray()),
-                "Two members today. A second printed clause - Whisper's Swift Justice prints the " +
-                "COMPLEMENT, \"a hero in range with an EMPTY discard\" - is a member and nothing " +
-                "more, which is the whole reason this is an enum rather than a capability reference: " +
-                "the next one costs no schema move.");
+                "Three members as of milestone 8.35z53. The second printed clause - " +
+                "Whisper's Swift Justice prints the COMPLEMENT, \"a hero in range with an EMPTY " +
+                "discard\" - arrived as exactly the member and nothing more this comment predicted, " +
+                "which is the whole reason this is an enum rather than a capability reference: the " +
+                "next one costs no schema move. Because `EffectIntegerDomain.All<T>()` reads the enum " +
+                "TYPE, the parameter's own domain admitted the new member automatically; this " +
+                "assertion is the one place that has to be told by hand, and being told is the point " +
+                "- a domain that silently grew would be a domain nobody was watching.");
         }
 
         // -------------------------------------------------------------------------------------------

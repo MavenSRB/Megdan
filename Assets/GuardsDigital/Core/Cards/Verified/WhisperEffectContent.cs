@@ -267,18 +267,29 @@ namespace GuardsDigital.Core.Cards.Verified
         /// "if he does not move, it can be the SAME target as well". So both bullets may point at one
         /// unit provided it still satisfies each bullet's own sentence when that bullet resolves.</para>
         ///
-        /// <para><b>TWO CLAUSES OF BULLET 1 ARE NOT COMPOSED, and the reason is the contract's own
-        /// named gap.</b> "with an empty discard" is a predicate about the candidate, and
+        /// <para><b>BULLET 1'S "WITH AN EMPTY DISCARD" IS NOW COMPOSED, milestone
+        /// 8.35z53.</b> "with an empty discard" is a predicate about the candidate, and
         /// <see cref="PrintedAttackTargetPolicy"/> states which units, how far and which line - it
-        /// cannot state a predicate. The multi-sequence contract records that as its one open extension
-        /// point, sized for Dodger's Middlefinger of Death, which is parked for the identical reason;
-        /// Whisper's Gold card is the second printed face to need it and the first that cannot be
-        /// parked. The consequence is measured rather than assumed and is asserted by test: bullet 1
-        /// over-offers, admitting any enemy hero in range rather than only those with an empty discard.
-        /// The step-7 rider below inherits the same gap from the other side - it fires on whichever
-        /// bullet's sequence took a hero, where the face prints it on bullet 1 alone. Both are one
-        /// change: a per-bullet field on <c>AttackSequenceBullet</c>, which the chain persists, so it
-        /// forces a schema bump and is not phase-one work.</para>
+        /// cannot state a predicate. The multi-sequence contract recorded that as its one open extension
+        /// point, sized for Dodger's Middlefinger of Death; milestone 8.35z45 took the extension point
+        /// as <see cref="AttackSequenceSubjectNarrowing"/>, and this bullet is its second printed
+        /// consumer, reading the exact negation of Middlefinger's own clause -
+        /// <see cref="AttackSequenceSubjectNarrowing.HasAnEmptyDiscard"/> - so the two members cannot
+        /// come to disagree about what one hero's discard pile holds. Composing it costs no schema:
+        /// the field it travels through was already widened at Middlefinger's dealing, and a bullet
+        /// declaring a member of an already-open domain moves no shared declaration and no other
+        /// shipped hero's content identity.</para>
+        ///
+        /// <para><b>THE RIDER'S OWN GATING IS A SEPARATE, STILL-OPEN GAP.</b> The step-7 rider below
+        /// (<see cref="CreateDefendedCardForcedMove"/>) fires whenever EITHER bullet's sequence
+        /// completes, because <c>SecondAttackTextFor</c> is asked once per completed sequence and does
+        /// not yet read which bullet ran. The printed "After the attack:" clause is embedded inside
+        /// bullet 1's own sentence alone, so a hero taken by bullet 2 (adjacent unit, which admits
+        /// heroes too) who then defends would still trigger the rider today - reachable now that bullet
+        /// 1 is properly narrowed rather than only when it over-offered. The fix reads
+        /// <c>SequenceBulletFor(resolution).SubjectNarrowing == AttackSequenceSubjectNarrowing
+        /// .HasAnEmptyDiscard</c> at the rider's own gate, which is dealing-time work and is not
+        /// composed here - flagged for the executor rather than folded into this prep's scope.</para>
         /// </summary>
         private static EffectDefinition CreateModalAttackSequences(
             CardDefinitionId cardId,
@@ -302,49 +313,78 @@ namespace GuardsDigital.Core.Cards.Verified
                         minimumSelections: 1,
                         maximumSelections: 1),
 
-                    // "Target a hero in range ..." - the printed Range icon, heroes only.
+                    // "Target a hero in range with an empty discard ..." - the printed Range icon,
+                    // heroes only, and the pile clause as the bullet's own subject narrowing. Vile
+                    // Accusation shares this exact bullet unchanged (its printed text differs only on
+                    // the second bullet), which is why the narrowing lives here rather than being
+                    // duplicated at her own composition when she is dealt.
                     ModalBulletNode(
-                        rangedHero, AttackTargetableUnits.HeroesOnly, AttackTargetReach.PrintedRange),
+                        rangedHero, AttackTargetableUnits.HeroesOnly, AttackTargetReach.PrintedRange,
+                        AttackSequenceSubjectNarrowing.HasAnEmptyDiscard),
 
                     // "Target a unit adjacent to you." - p.19's units at p.19's innermost ring. Vile
                     // Accusation narrows this one bullet to heroes and nothing else about the face.
                     ModalBulletNode(
-                        adjacentUnit, adjacentBulletUnits, AttackTargetReach.AdjacentOnly)
+                        adjacentUnit, adjacentBulletUnits, AttackTargetReach.AdjacentOnly,
+                        AttackSequenceSubjectNarrowing.None)
                 });
         }
 
+        /// <summary>
+        /// One bullet of Swift Justice's (and, when she is dealt, Vile Accusation's) modal, as an
+        /// <c>attack-sequence@1</c> leaf. Widened at milestone 8.35z53 to accept the
+        /// candidate predicate <see cref="AttackSequenceSubjectNarrowing"/> declares, mirroring
+        /// Middlefinger of Death's own <c>ModalBulletNode</c> exactly: the parameter and its output
+        /// binding are added to the node ONLY where the bullet actually narrows, so a bullet declaring
+        /// <see cref="AttackSequenceSubjectNarrowing.None"/> - every bullet composed before this one -
+        /// is unchanged down to the byte.
+        /// </summary>
         private static EffectNodeDefinition ModalBulletNode(
             EffectNodeId nodeId,
             AttackTargetableUnits targetableUnits,
-            AttackTargetReach reach) =>
-            new EffectNodeDefinition(
+            AttackTargetReach reach,
+            AttackSequenceSubjectNarrowing subjectNarrowing)
+        {
+            var inputs = new List<EffectInputBinding>
+            {
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.TargetableUnitsParameter, targetableUnits),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.ReachParameter, reach),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.LineParameter, AttackTargetLine.AnyLine),
+
+                // The face prints no "(on different targets)", so the contract adds none.
+                EffectInputBinding.FromLiteral(
+                    SyntheticSequenceCapabilities.DistinctTargetsParameter,
+                    EffectValue.Boolean(false))
+            };
+            var outputs = new List<EffectOutputBinding>
+            {
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.TargetableUnitsOutput, EffectValueKind.Integer),
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.ReachOutput, EffectValueKind.Integer),
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.LineOutput, EffectValueKind.Integer),
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.DistinctTargetsOutput, EffectValueKind.Boolean)
+            };
+
+            if (subjectNarrowing != AttackSequenceSubjectNarrowing.None)
+            {
+                inputs.Add(EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.SubjectNarrowingParameter, subjectNarrowing));
+                outputs.Add(new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.SubjectNarrowingOutput, EffectValueKind.Integer));
+            }
+
+            return new EffectNodeDefinition(
                 nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                 SyntheticSequenceCapabilities.AttackSequenceV1,
-                inputs: new[]
-                {
-                    EffectInputBinding.FromClosedVocabulary(
-                        SyntheticSequenceCapabilities.TargetableUnitsParameter, targetableUnits),
-                    EffectInputBinding.FromClosedVocabulary(
-                        SyntheticSequenceCapabilities.ReachParameter, reach),
-                    EffectInputBinding.FromClosedVocabulary(
-                        SyntheticSequenceCapabilities.LineParameter, AttackTargetLine.AnyLine),
-
-                    // The face prints no "(on different targets)", so the contract adds none.
-                    EffectInputBinding.FromLiteral(
-                        SyntheticSequenceCapabilities.DistinctTargetsParameter,
-                        EffectValue.Boolean(false))
-                },
-                outputs: new[]
-                {
-                    new EffectOutputBinding(
-                        SyntheticSequenceCapabilities.TargetableUnitsOutput, EffectValueKind.Integer),
-                    new EffectOutputBinding(
-                        SyntheticSequenceCapabilities.ReachOutput, EffectValueKind.Integer),
-                    new EffectOutputBinding(
-                        SyntheticSequenceCapabilities.LineOutput, EffectValueKind.Integer),
-                    new EffectOutputBinding(
-                        SyntheticSequenceCapabilities.DistinctTargetsOutput, EffectValueKind.Boolean)
-                });
+                inputs: inputs,
+                outputs: outputs);
+        }
 
         /// <summary>
         /// "After the attack: If able, that hero performs a movement action on the card they defended
