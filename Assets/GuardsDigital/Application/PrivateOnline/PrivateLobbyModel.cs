@@ -72,7 +72,59 @@ namespace GuardsDigital.Application
         /// the wire: <c>PrivateSessionIdentity</c> rejects a peer on <c>MatchFormatMismatch</c>, so a
         /// host that changed format mid-lobby would refuse every client it already had.
         /// </remarks>
-        SetMatchFormat = 9
+        SetMatchFormat = 9,
+
+        /// <summary>
+        /// 8.35z54. Entry form, host side: play the printed FOUR-player setup.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Named buttons replace the cycling one, and the reason is measured rather than
+        /// aesthetic.</b> The user's own host log from the failed session is six consecutive
+        /// <c>LOBBY_FORMAT</c> lines and no <c>LOBBY_HOST</c> at all - they pressed one SETUP button
+        /// six times hunting for a setup and gave up without hosting. A cycle makes the four printed
+        /// options invisible and makes reaching one a guess; four buttons make the whole choice
+        /// readable at once, which is what "i need 2v2 and 3v3 buttons" asks for.</para>
+        /// <para>Team size and game length are SEPARATE controls because they are separate printed
+        /// decisions - pp.5-6 print four setups as two crossed pairs - and a player who wants the
+        /// long 3v3 should not have to know which position it holds in somebody's cycle.</para>
+        /// </remarks>
+        ChooseTwoVsTwo = 10,
+
+        /// <summary>8.35z54. Entry form, host side: play the printed SIX-player setup.</summary>
+        ChooseThreeVsThree = 11,
+
+        /// <summary>8.35z54. Entry form, host side: the SHORT (quick) game of that size.</summary>
+        ChooseShortGame = 12,
+
+        /// <summary>8.35z54. Entry form, host side: the LONG game of that size.</summary>
+        ChooseLongGame = 13,
+
+        /// <summary>
+        /// 8.35z54. Seated client, after everyone is ready and before this seat has picked:
+        /// take the seat this player pressed.
+        /// </summary>
+        /// <remarks>
+        /// The player-side half of the spec - "they join the server, see open seats, they pick a
+        /// seat". It is offered only to a connection that is IN the session and holds no seat yet,
+        /// which is <see cref="PrivateSessionClientState.Admitted"/>; before this milestone that
+        /// state did not exist and the seat had to be chosen on the entry form, blind.
+        /// </remarks>
+        ClaimSeat = 14,
+
+        /// <summary>
+        /// 8.35z54. Host only, before the transition: step the lobby back by one.
+        /// </summary>
+        /// <remarks>
+        /// <para>The user's stuck-state escape hatch - "have an undo button there, which is director
+        /// undo, if we get stuck we can get out". It rewinds the most recent lobby step: the last
+        /// hero pick if any has been made, otherwise the readiness that opened the pick phase.</para>
+        /// <para><b>It cannot rewind into a started match, and that bound is structural rather than
+        /// a check on a button.</b> The transition out of the lobby is one-way by milestone 8.35a's
+        /// rule - a later disconnect reserves a seat and pauses rather than reopening the lobby - so
+        /// the control is not offered once the match has begun and the host refuses it by name if a
+        /// stale surface presses it anyway.</para>
+        /// </remarks>
+        HostUndo = 15
     }
 
     /// <summary>
@@ -283,6 +335,9 @@ namespace GuardsDigital.Application
                 case PrivateSessionClientState.Faulted: return "CONNECTION FAULT";
                 case PrivateSessionClientState.Resynchronizing: return "RESYNCHRONIZING";
                 case PrivateSessionClientState.HostLost: return "HOST LOST";
+                // 8.35z54. In the session, holding no seat yet - which is a whole step of
+                // the flow now rather than an instant inside the handshake, so it has words.
+                case PrivateSessionClientState.Admitted: return "PICK YOUR SEAT";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(state), state,
@@ -372,9 +427,19 @@ namespace GuardsDigital.Application
                 case PrivateLobbyControl.Unready: return "CANCEL READY";
                 case PrivateLobbyControl.Leave: return "LEAVE";
                 case PrivateLobbyControl.Reconnect: return "RECONNECT";
-                case PrivateLobbyControl.FillWithTestDrivers: return "FILL WITH TEST DRIVERS";
+                // 8.35z54. The user's own word for what this does. It spawns exactly the
+                // same keyed seat drivers it always has; what changed is that they are what the
+                // spec calls bots, and calling them "test drivers" on a playtest screen described
+                // the implementation to somebody who only wants the empty chairs filled.
+                case PrivateLobbyControl.FillWithTestDrivers: return "FILL WITH BOTS";
                 case PrivateLobbyControl.ChooseHero: return "PICK HERO";
                 case PrivateLobbyControl.SetMatchFormat: return "SETUP";
+                case PrivateLobbyControl.ChooseTwoVsTwo: return "2V2";
+                case PrivateLobbyControl.ChooseThreeVsThree: return "3V3";
+                case PrivateLobbyControl.ChooseShortGame: return "SHORT GAME";
+                case PrivateLobbyControl.ChooseLongGame: return "LONG GAME";
+                case PrivateLobbyControl.ClaimSeat: return "TAKE THIS SEAT";
+                case PrivateLobbyControl.HostUndo: return "UNDO";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(control), control, "Every offered control must have words on it.");
@@ -530,7 +595,15 @@ namespace GuardsDigital.Application
             };
             if (!string.IsNullOrEmpty(matchFormatLabel))
             {
-                controls.Insert(0, PrivateLobbyControl.SetMatchFormat);
+                // 8.35z54. The four printed setups as TWO named choices, team size and game
+                // length, put ahead of HOST because they are decided before hosting: a session's
+                // seats are counted from the format, so the format has to be settled before a
+                // listener exists. That was already the rule (see SetMatchFormat's remarks); what
+                // changes is that the choice is now readable instead of being a cycle.
+                controls.Insert(0, PrivateLobbyControl.ChooseTwoVsTwo);
+                controls.Insert(1, PrivateLobbyControl.ChooseThreeVsThree);
+                controls.Insert(2, PrivateLobbyControl.ChooseShortGame);
+                controls.Insert(3, PrivateLobbyControl.ChooseLongGame);
             }
 
             return new PrivateLobbyModel(
@@ -657,6 +730,16 @@ namespace GuardsDigital.Application
                 controls.Add(PrivateLobbyControl.FillWithTestDrivers);
             }
 
+            // 8.35z54. The stuck-state escape hatch, host-only and lobby-only. Offered
+            // while there is a lobby step to take back and never once the match has begun - the
+            // transition is one-way, so an undo that could cross it would be undoing a match rather
+            // than a lobby. `CanUndoLobbyStep` is the host's own answer, so the button stands
+            // exactly where the host would honour it.
+            if (host.CanUndoLobbyStep)
+            {
+                controls.Add(PrivateLobbyControl.HostUndo);
+            }
+
             controls.Add(PrivateLobbyControl.Leave);
 
             return new PrivateLobbyModel(
@@ -689,6 +772,23 @@ namespace GuardsDigital.Application
             IReadOnlyList<SeatRosterEntry> roster, TeamSide firstPickingTeam, SeatId viewingSeat)
         {
             if (firstPickingTeam != TeamSide.Red && firstPickingTeam != TeamSide.Blue)
+            {
+                return PrivateLobbySelection.NotRunning;
+            }
+
+            // 8.35z54. THE PICKS RUN AFTER READINESS, which is the order the user's spec
+            // states: "they pick a seat, click ready. Once they are ready, everyone picks their
+            // heroes." Before this the selection opened the moment a coin was published, so a
+            // joiner who had just sat down was already being shown a hero list and a turn order
+            // over a table that was still filling up - which is how a player comes to press PICK
+            // HERO on somebody else's turn and be told nothing they can act on.
+            //
+            // It is derived from the roster and from nothing else, on both sides, so the host's
+            // screen and every client's screen open the selection at the same instant without a
+            // message saying so: every row Claimed and every row ready are facts the roster has
+            // carried since milestone 8.35a. The host enforces the same rule on the pick itself -
+            // this is the surface agreeing with the host rather than a second authority.
+            if (!IsPickPhaseOpen(roster))
             {
                 return PrivateLobbySelection.NotRunning;
             }
@@ -755,6 +855,68 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
+        /// 8.35z54. Everything about a roster that a lobby surface DRAWS, as one string, so
+        /// a surface that redraws only when its state moves can tell whether it moved.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>It lives here because the bug it exists to prevent was a copy of it living
+        /// somewhere else.</b> The shipped lobby driver built this string inline and named a row's
+        /// seat, occupancy and readiness only - so an accepted hero pick, which moves the row's HERO
+        /// and its CHOSEN flag and nothing else, left the string character-for-character identical
+        /// and no surface redrew. The host had accepted the pick and broadcast it; every client had
+        /// applied it; and the player saw nothing at all.</para>
+        /// <para>Stating it once, beside the rows themselves, is what makes it testable without a
+        /// running Unity scene and what makes "a roster field was added" and "the lobby notices it"
+        /// the same edit. Every field a <see cref="PrivateLobbySeatRow"/> draws is named here.</para>
+        /// </remarks>
+        public static string RosterSignature(IReadOnlyList<SeatRosterEntry> roster)
+        {
+            var builder = new System.Text.StringBuilder();
+            foreach (var entry in roster ?? Array.Empty<SeatRosterEntry>())
+            {
+                builder.Append('|').Append(entry.Seat.Value)
+                    .Append(entry.Occupancy)
+                    .Append(entry.IsReady ? '1' : '0')
+                    .Append(entry.Hero.Value)
+                    .Append(entry.HasChosenHero ? '1' : '0');
+            }
+
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// 8.35z54. Whether rulebook p.22's picking has opened: every seat taken and every
+        /// seat ready.
+        /// </summary>
+        /// <remarks>
+        /// <para>The one derivation of the spec's ordering, read by the host's screen, by every
+        /// client's screen, and - through <c>PrivateSessionHost.IsPickPhaseOpen</c>, which asks the
+        /// same two questions of the same roster - by the authority that refuses an early pick. It
+        /// takes no message of its own because it needs none: occupancy and readiness have both been
+        /// table-public roster facts since milestone 8.35a, which is exactly why readiness was put
+        /// on the roster rather than computed locally.</para>
+        /// <para>An empty roster is not open. That is not a special case but the same rule: a table
+        /// with no seats has no seat that is taken and ready.</para>
+        /// </remarks>
+        public static bool IsPickPhaseOpen(IReadOnlyList<SeatRosterEntry> roster)
+        {
+            if (roster == null || roster.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var entry in roster)
+            {
+                if (entry.Occupancy != SeatOccupancyState.Claimed || !entry.IsReady)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// The lobby stands aside exactly while a started match is being played, and returns the
         /// moment the session is in a state the player has to answer.
         /// </summary>
@@ -778,6 +940,18 @@ namespace GuardsDigital.Application
             var controls = new List<PrivateLobbyControl>();
             switch (client.State)
             {
+                // 8.35z54. In the session, no seat yet: the whole of what this player may
+                // do is take one of the seats the roster shows Open. Readiness is not offered
+                // because there is nothing to be ready WITH, and the hero list is not offered
+                // because a hero belongs to a seat.
+                case PrivateSessionClientState.Admitted:
+                    if (!client.HasMatchStarted)
+                    {
+                        controls.Add(PrivateLobbyControl.ClaimSeat);
+                    }
+
+                    break;
+
                 case PrivateSessionClientState.Seated:
                     if (!client.HasMatchStarted)
                     {
@@ -790,9 +964,17 @@ namespace GuardsDigital.Application
                             controls.Add(PrivateLobbyControl.ChooseHero);
                         }
 
-                        controls.Add(client.IsReady
-                            ? PrivateLobbyControl.Unready
-                            : PrivateLobbyControl.Ready);
+                        // 8.35z54. Readiness stops being offered once the picking has
+                        // opened. Un-readying mid-selection would close the pick phase under five
+                        // other people who are in the middle of it, and the control that exists for
+                        // getting a wedged lobby out of a corner is the HOST's undo rather than any
+                        // one seat's own switch.
+                        if (!selection.IsRunning)
+                        {
+                            controls.Add(client.IsReady
+                                ? PrivateLobbyControl.Unready
+                                : PrivateLobbyControl.Ready);
+                        }
                     }
 
                     break;

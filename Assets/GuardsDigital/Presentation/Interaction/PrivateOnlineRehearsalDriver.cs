@@ -536,6 +536,12 @@ namespace GuardsDigital.Presentation.Interaction
                 if (!readinessPressed &&
                     lobby.Presenter.Model?.Offers(PrivateLobbyControl.Ready) == true)
                     readinessPressed = lobby.Presenter.Press(PrivateLobbyControl.Ready, null);
+                // 8.35z54. The picks run after readiness now and EVERY seat takes one, so a
+                // cohort that only pressed READY would wait at an open selection forever. It picks
+                // the way a player does - out of the options its own model offers, while the order
+                // is on this seat - which also means the rehearsal exercises the shipped pick path
+                // on every run instead of leaving it to the one tier nobody re-ran.
+                PickHeroWhenOffered();
                 return;
             }
 
@@ -1202,6 +1208,29 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (record.Kind == PrivateSessionEventKind.MatchStarted)
                 PrivateOnlineMarkers.Log("REHEARSAL_TOPOLOGY host=1 clients=6");
+        }
+
+        /// <summary>
+        /// 8.35z54. Takes this seat's hero when rulebook p.22's order reaches it, out of the
+        /// options this seat's own lobby model offers - the same rule
+        /// <c>PrivateSeatDriver.PickHeroWhenOffered</c> follows, and the same reason: a driver
+        /// choosing from what it can NAME rather than from what it is OFFERED is milestone 8.35c's
+        /// first live-found defect.
+        /// </summary>
+        private void PickHeroWhenOffered()
+        {
+            var model = lobby.Presenter.Model;
+            if (model == null || !model.Offers(PrivateLobbyControl.ChooseHero))
+                return;
+            foreach (var option in model.Selection.Heroes)
+            {
+                if (!option.IsAvailable)
+                    continue;
+                lobby.Presenter.SelectedHeroIdValue = option.HeroIdValue;
+                if (lobby.Presenter.Press(PrivateLobbyControl.ChooseHero, null))
+                    ClientMarker("hero-picked-" + option.HeroIdValue, -1);
+                return;
+            }
         }
 
         private void ClientMarker(string eventName, long version)

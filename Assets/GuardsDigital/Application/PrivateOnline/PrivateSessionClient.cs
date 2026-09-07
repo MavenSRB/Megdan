@@ -64,7 +64,27 @@ namespace GuardsDigital.Application
         /// .BeginReconnect"/> starts a complete admission handshake again, and what comes back is
         /// a whole freshly encoded projection rather than any part of what was held here.</para>
         /// </remarks>
-        HostLost = 9
+        HostLost = 9,
+
+        /// <summary>
+        /// 8.35z54. Admitted with no seat named yet: the connection is established, the
+        /// build was accepted, and the roster is arriving - but which seat this player will hold is
+        /// still theirs to choose.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>This is the state the user's flow spec is made of.</b> "They join the server,
+        /// see open seats, they pick a seat" is only expressible if being IN the session and
+        /// HOLDING a seat are two different things. Before this, a client was constructed around
+        /// one seat and claimed it inside its own handshake, so the seat had to be chosen on the
+        /// entry form - by a player who could not yet see which seats were free, which is the
+        /// surface the spec removes.</para>
+        /// <para>It costs no wire change at all. The host has always sent the full roster on the
+        /// Welcome and has always broadcast roster updates to every connection past
+        /// <c>AwaitingHello</c> rather than only to seated ones, so an admitted-but-unclaimed
+        /// connection can already see every seat and its occupancy. What was missing was a client
+        /// willing to WAIT there instead of claiming immediately.</para>
+        /// </remarks>
+        Admitted = 10
     }
 
     /// <summary>
@@ -85,7 +105,10 @@ namespace GuardsDigital.Application
         public const long DelayedHostResponseThresholdTicks = 2L * TimeSpan.TicksPerSecond;
 
         private readonly PrivateSessionIdentity identity;
-        private readonly SeatId targetSeat;
+        // 8.35z54. No longer readonly: a client may arrive seatless and name its seat once
+        // it can see the table. It is written exactly once, by `TryClaimSeat`, and only from
+        // `Admitted` - so a seated client's seat is as fixed as it has ever been.
+        private SeatId targetSeat;
         private readonly string sessionKey;
         private readonly IPrivateSessionClientOutbox outbox;
         private readonly IPrivateSessionNonceSource nonceSource;
@@ -145,11 +168,12 @@ namespace GuardsDigital.Application
             this.retainedCapabilities =
                 retainedCapabilities ?? new InMemoryRetainedSeatCapabilityStore();
             this.identity = identity ?? throw new ArgumentNullException(nameof(identity));
-            if (!targetSeat.IsDefined)
-            {
-                throw new ArgumentException("A client claims one configured seat.", nameof(targetSeat));
-            }
 
+            // 8.35z54. An UNDEFINED seat is now legitimate and means "admit me, I will
+            // pick when I can see the table" - the user's flow spec. Every existing caller passes a
+            // defined seat and behaves exactly as before, claiming inside its own handshake; only a
+            // client that deliberately arrives seatless waits in
+            // `PrivateSessionClientState.Admitted` for `TryClaimSeat`.
             this.targetSeat = targetSeat;
             this.sessionKey = sessionKey ?? string.Empty;
             this.outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
@@ -447,7 +471,11 @@ namespace GuardsDigital.Application
 
             if (frame.Kind == SessionMessageKind.RosterUpdate)
             {
-                if (State != PrivateSessionClientState.AwaitingSeat &&
+                // 8.35z54. `Admitted` belongs on this list and belongs FIRST: a connection
+                // waiting to be shown the open seats is precisely the one that most needs the
+                // roster, and the host has always broadcast to every connection past AwaitingHello.
+                if (State != PrivateSessionClientState.Admitted &&
+                    State != PrivateSessionClientState.AwaitingSeat &&
                     State != PrivateSessionClientState.Seated &&
                     State != PrivateSessionClientState.Resynchronizing)
                 {
@@ -529,6 +557,16 @@ namespace GuardsDigital.Application
                     // Milestone 8.35a. The admission answer says which phase the session is in, so
                     // a returning player knows before it claims anything that the lobby is over.
                     HasMatchStarted = welcome.MatchStarted;
+                    // 8.35z54. A client that arrived without naming a seat stops HERE, with
+                    // the roster this very message carried, and waits for the player to pick one of
+                    // the seats they can now see. Everything below is the seat-claiming handshake and
+                    // has nothing to answer for a connection that is not claiming anything yet.
+                    if (!targetSeat.IsDefined)
+                    {
+                        State = PrivateSessionClientState.Admitted;
+                        return;
+                    }
+
                     // Milestone 8.34. A client that already held this seat asks for it back by
                     // presenting the capability, because an ordinary claim of a reserved seat is
                     // refused - and must stay refused, or a reservation would be anybody's.
@@ -1196,6 +1234,48 @@ namespace GuardsDigital.Application
             }
 
             Send(PrivateSessionFrameCodec.SetReadinessFrame(new SeatReadinessMessage(isReady)));
+            return true;
+        }
+
+        /// <summary>
+        /// 8.35z54. Claims one of the seats this admitted connection can now see, which is
+        /// the user's flow spec: join the server, look at the table, take a chair.
+        /// </summary>
+        /// <remarks>
+        /// <para>Offered only from <see cref="PrivateSessionClientState.Admitted"/> - a connection
+        /// that arrived without naming a seat and has not asked for one yet. A seat is fixed for the
+        /// session once granted, which is milestone 8.31's rule and is unchanged: this is the FIRST
+        /// claim, not a change of seat, and the host refuses a second one by name exactly as before.
+        /// </para>
+        /// <para>It sends an ordinary <c>ClaimSeat</c> - the same frame the handshake has always
+        /// sent, at the same point in the same state machine, merely later - so there is no new
+        /// message, no new refusal and no wire movement. Whether the seat is actually granted is the
+        /// host's answer arriving as <c>SeatGranted</c> or as a refusal; a surface that marked the
+        /// seat taken on this return value would be showing one process's hope, exactly as
+        /// <see cref="TrySetReadiness"/> and <see cref="TryChooseHero"/> record.</para>
+        /// <para>A seat the roster already shows Claimed or Reserved is refused HERE as well as at
+        /// the host, and that is not a second implementation of the rule: the host's answer remains
+        /// authoritative and is what a player is told. This only spares the wire a frame whose
+        /// answer the client already holds - the roster it is looking at.</para>
+        /// </remarks>
+        public bool TryClaimSeat(SeatId seat)
+        {
+            if (State != PrivateSessionClientState.Admitted || !seat.IsDefined || HasMatchStarted)
+            {
+                return false;
+            }
+
+            foreach (var entry in roster)
+            {
+                if (entry.Seat.Equals(seat) && entry.Occupancy != SeatOccupancyState.Open)
+                {
+                    return false;
+                }
+            }
+
+            targetSeat = seat;
+            Send(PrivateSessionFrameCodec.ClaimSeatFrame(new SeatClaimMessage(seat)));
+            State = PrivateSessionClientState.AwaitingSeat;
             return true;
         }
 

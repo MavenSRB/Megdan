@@ -256,6 +256,43 @@ namespace GuardsDigital.Tests.EditMode
         /// own admission identity - the compatibility cases present each mismatched tuple through
         /// exactly this door - and the default is the host's own, which is admitted.
         /// </summary>
+        /// <summary>
+        /// 8.35z54. Connects a client that names NO seat - the user's flow spec, where a
+        /// player joins the server first and takes a chair once they can see which are free.
+        /// </summary>
+        /// <remarks>
+        /// It runs the same admission handshake and stops at
+        /// <see cref="PrivateSessionClientState.Admitted"/>; the seat is recorded on this link when
+        /// <see cref="PrivateSessionClient.TryClaimSeat"/> is answered, so
+        /// <see cref="SeatOf"/> reads "(unseated)" until then.
+        /// </remarks>
+        public PrivateSessionClient ConnectSeatless(int ordinal)
+        {
+            var link = new ClientLink { Seat = string.Empty, Ordinal = ordinal };
+            link.Machine = new PrivateSessionClient(
+                Identity,
+                default,
+                sessionKey,
+                new ClientOutbox(this, link),
+                new CountingNonceSource((byte)ordinal),
+                null,
+                new InMemoryRetainedSeatCapabilityStore());
+            links[ordinal] = link;
+            nextOrdinal = Math.Max(nextOrdinal, ordinal + 1);
+            link.Machine.OnConnected();
+            Session.OnConnected(ordinal, 0);
+            return link.Machine;
+        }
+
+        /// <summary>
+        /// 8.35z54. Records the seat a seatless client has since claimed, so the harness's
+        /// own per-seat lookups keep working after a late claim.
+        /// </summary>
+        public void NoteSeatClaimed(int ordinal) =>
+            links[ordinal].Seat = links[ordinal].Machine.TargetSeat.IsDefined
+                ? links[ordinal].Machine.TargetSeat.Value
+                : string.Empty;
+
         public PrivateSessionClient Connect(
             int ordinal,
             string seat,
@@ -371,6 +408,65 @@ namespace GuardsDigital.Tests.EditMode
                     "Seat " + seats[index] + " did not seat over the wire.");
                 Assert.That(Client(index + 1).LatestProjection, Is.Not.Null);
             }
+        }
+
+        /// <summary>
+        /// 8.35z54. A composer that composes nothing, which milestone 8.35z43 documents as
+        /// the legitimate answer for "a scene that has already composed what was asked for".
+        /// </summary>
+        private sealed class NoRecompositionComposer : IDeferredMatchComposition
+        {
+            public IMatchHost ComposeForLineup(GuardsDigital.Core.Setup.HeroLineup lineup) => null;
+        }
+
+        /// <summary>
+        /// 8.35z54. Readies every seat and then runs rulebook p.22's picking to completion,
+        /// which is what the lobby takes to reach a match now: readiness OPENS the selection and the
+        /// last pick ends it.
+        /// </summary>
+        /// <remarks>
+        /// Each seat takes the first hero its OWN lobby model still offers, so the pick order and
+        /// the one-copy rule reach it as the greying the model already computes rather than as
+        /// something this helper re-derives - milestone 8.35c's finding that an automated seat must
+        /// choose from what it is offered rather than from what it can name.
+        /// <para>It attaches the no-op composer unless one is already set, because a completed
+        /// selection with nowhere to send it is thrown on by name.</para>
+        /// </remarks>
+        public void ReadyAndPickEverySeat()
+        {
+            if (Session.Composition == null)
+            {
+                Session.Composition = new NoRecompositionComposer();
+            }
+
+            foreach (var ordinal in Ordinals)
+            {
+                Assert.That(Client(ordinal).TrySetReadiness(true), Is.True);
+                Pump();
+            }
+
+            Assert.That(Session.IsPickPhaseOpen, Is.True,
+                "Every seat is taken and ready, so rulebook p.22's picking is open.");
+
+            var guard = 0;
+            while (!Session.HasMatchStarted && guard++ <= links.Count)
+            {
+                var picking = Session.Selection.PickingSeat;
+                if (!picking.IsDefined)
+                {
+                    break;
+                }
+
+                var ordinal = Ordinals.First(candidate => SeatOf(candidate) == picking.Value);
+                var client = Client(ordinal);
+                var offered = PrivateLobbyModel.ForClient(client).Selection.Heroes
+                    .First(option => option.IsAvailable);
+                Assert.That(client.TryChooseHero(offered.HeroIdValue), Is.True);
+                Pump();
+            }
+
+            Assert.That(Session.HasMatchStarted, Is.True,
+                "Every seat picked, so the lobby is over.");
         }
 
         /// <summary>Delivers everything in flight, in order, until the wire is quiet.</summary>

@@ -1147,6 +1147,30 @@ namespace GuardsDigital.Presentation.Interaction
             hud.PlayfieldLayoutChanged -= mapView.ConfigureCameraViewport;
             hud.PlayfieldLayoutChanged += mapView.ConfigureCameraViewport;
 
+            // 8.35z54, the fifth playtest finding ("map sizing broke a bit somehow on
+            // player side"). SUBSCRIBING IS NOT THE SAME AS BEING TOLD, and the difference only
+            // shows on a SECOND composition.
+            //
+            // `PlayfieldLayoutChanged` fires when the HUD RECOMPUTES its layout, and the HUD is one
+            // of the components a re-composition deliberately keeps (`GetComponent ?? AddComponent`,
+            // then rebind). On a first composition the order is kind: the board is built at Awake
+            // and the HUD lays out on its first frame, so the event arrives and sizes the board. On
+            // a RE-composition the HUD has already laid out and has no reason to lay out again, so
+            // the freshly rebound board would wait for an event that never comes and keep the
+            // viewport it was constructed with.
+            //
+            // Only a client reaches this: a joiner recomposes at the transition to field the chosen
+            // line-up, which is exactly the "player side" the finding names, while a host that
+            // changes format recomposes from the entry form where no layout has been published yet
+            // and is therefore unaffected. Pushing the layout the HUD is ALREADY holding closes it -
+            // the same value the next event would carry, delivered now instead of never - and the
+            // validity guard is what keeps a composition that genuinely precedes any layout on the
+            // event it is still correctly waiting for.
+            if (hud.CameraSafeLayout.IsValid)
+            {
+                mapView.ConfigureCameraViewport(hud.CameraSafeLayout);
+            }
+
             runtime = new ConfiguredMatchSceneRuntime(
                 map,
                 setup,

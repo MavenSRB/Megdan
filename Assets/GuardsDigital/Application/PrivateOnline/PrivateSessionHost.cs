@@ -1052,6 +1052,22 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            // 8.35z54. The picks run AFTER readiness. Refused by name and WITHOUT closing,
+            // exactly as an out-of-turn pick is: a pick that arrived before the table filled is a
+            // mistake, not an attack. The condition is the roster's own - every seat taken and every
+            // seat ready - so this refusal and the surface that greys the control are reading the
+            // same two facts rather than two implementations of one rule.
+            if (!IsPickPhaseOpen)
+            {
+                outbox.Send(record.Ordinal, PrivateSessionFrameCodec.RejectFrame(
+                    new SessionRejectMessage(
+                        SessionRejectionReason.HeroSelectionRefused,
+                        "Every seat must be taken and ready before the heroes are picked.")));
+                Record(PrivateSessionEventKind.Rejected, record.Ordinal, record.Seat,
+                    default, TeamSide.None, SessionRejectionReason.HeroSelectionRefused);
+                return;
+            }
+
             if (!selection.TryChoose(record.Seat, choice.HeroIdValue, out var refusal))
             {
                 outbox.Send(record.Ordinal, PrivateSessionFrameCodec.RejectFrame(
@@ -1069,6 +1085,80 @@ namespace GuardsDigital.Application
                 picked == null ? default : picked.HeroId,
                 picked == null ? TeamSide.None : picked.TeamSide,
                 SessionRejectionReason.None);
+            // 8.35z54. The LAST pick is what starts the match now, not the last readiness.
+            EvaluateMatchStart();
+        }
+
+        /// <summary>
+        /// 8.35z54. Whether rulebook p.22's picking has opened: every seat claimed by a live
+        /// connection and every one of them ready.
+        /// </summary>
+        /// <remarks>
+        /// The authority's half of the ordering the user's spec states. It asks the SAME two
+        /// questions of the SAME roster that <c>PrivateLobbyModel.IsPickPhaseOpen</c> asks, which is
+        /// how the host's refusal and every surface's greying stay one rule; the model cannot call
+        /// this because a client has no host, and this cannot call the model because the model reads
+        /// a published roster while the host holds the seats themselves.
+        /// </remarks>
+        public bool IsPickPhaseOpen =>
+            !matchStarted && IsComplete && ReadySeatCount == TotalSeats;
+
+        /// <summary>Whether any seat has chosen a hero, which is what distinguishes a session
+        /// USING rulebook p.22's picking from one that never touched it.</summary>
+        private bool AnySeatHasPicked()
+        {
+            foreach (var seat in matchHost.Seats.Seats)
+            {
+                if (selection.TryGetChoice(seat.Id, out _))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// 8.35z54. Whether the host has a lobby step it could take back.
+        /// </summary>
+        /// <remarks>
+        /// True while the picking is open and at least one pick has been made. Once the match has
+        /// begun there is nothing here to undo - the transition is one-way by milestone 8.35a's
+        /// rule - and before the picking opens the only "step" would be somebody's readiness, which
+        /// is that player's own switch to flip rather than the host's.
+        /// </remarks>
+        public bool CanUndoLobbyStep => IsPickPhaseOpen && selection.LastPickedSeat.IsDefined;
+
+        /// <summary>
+        /// 8.35z54. The host's stuck-state escape hatch: steps the lobby back by one pick.
+        /// </summary>
+        /// <remarks>
+        /// <para>The user asked for "an undo button there, which is director undo, if we get stuck
+        /// we can get out". It borrows the SHAPE of the seat-bounded undo milestone 8.35f built -
+        /// step back exactly one accepted step, refuse loudly at the bound, and republish so nobody
+        /// is left reading a state that no longer stands - and it cannot borrow that undo's LEDGER,
+        /// because a hero pick is not a <c>DirectorCommand</c> and never entered the match's
+        /// accepted-command history. There is nothing there to rewind; what a stuck lobby needs
+        /// rewound is the lobby.</para>
+        /// <para><b>The one-way transition is the bound.</b> <see cref="CanUndoLobbyStep"/> is false
+        /// the moment the match starts, so this refuses rather than reaching back across it - which
+        /// is the whole reason the pick-phase gate and this share one condition.</para>
+        /// <para>The roster is rebroadcast on success, so the seat that lost its pick is picking
+        /// again on every screen at once. That is also why nothing here has to tell the surfaces
+        /// what happened: they derive the order from the roster.</para>
+        /// </remarks>
+        /// <returns>Whether a step was taken back.</returns>
+        public bool TryUndoLobbyStep()
+        {
+            if (!CanUndoLobbyStep || !selection.TryUndoLastPick(out var seat))
+            {
+                return false;
+            }
+
+            BroadcastRoster();
+            Record(PrivateSessionEventKind.SeatHeroChosen, 0, seat,
+                default, TeamSide.None, SessionRejectionReason.None);
+            return true;
         }
 
         /// <summary>
@@ -1095,13 +1185,56 @@ namespace GuardsDigital.Application
                 return;
             }
 
+            // 8.35z54. READINESS OPENS THE PICKING; THE LAST PICK STARTS THE MATCH. Once
+            // anybody has picked, a match that began here would be fielding a line-up half the table
+            // never chose - which is the shape the user hit from the other side, where picks were
+            // accepted and then silently overwritten at the transition.
+            //
+            // EVERY seat picks, including the ones a bot is sitting in, which is the spec's own
+            // "Bots need to pick heroes as well". The safety valve that let a wholly unpicked
+            // selection start on readiness alone was tried and REMOVED: it made the picking
+            // unreachable in the very flow that asks for it, because at the instant the sixth seat
+            // readies nobody has picked yet - measured, the match started before a single hero was
+            // chosen. An automated seat now presses its own pick when the order reaches it, exactly
+            // as it presses its own readiness, so "everybody picks" is a statement about seats
+            // rather than about who is holding the mouse.
+            if (!selection.IsComplete)
+            {
+                return;
+            }
+
             matchStarted = true;
             FillUnpickedSeats();
             // The final line-up reaches every client BEFORE the transition does, because the
             // transition is what sends them to their boards and a client composes its own from this
             // roster. Broadcasting after would race the thing that reads it.
             BroadcastRoster();
-            ComposeMatchForSelection();
+            if (ComposeMatchForSelection())
+            {
+                // 8.35z54. THE RECOMPOSED MATCH IS PUBLISHED BEFORE THE TRANSITION IS
+                // ANNOUNCED, and leaving this out is what made a chosen line-up unplayable.
+                //
+                // Every seat had already been sent a projection of the PROVISIONAL match at seat
+                // grant. Replacing `matchHost` moves the host's whole authority to a different
+                // match and the wire never saw it - which is exactly the condition
+                // `RepublishProjections` was written for at milestone 8.33 ("a host-side state
+                // change the wire never saw... synchronization is the host's obligation wherever
+                // state moved, not only where a wire submission moved it"). Without it every
+                // client attached its HUD to a projection of a match nobody was playing: measured,
+                // the seat's own hero disagreed with the roster's on ALL SIX seats, and each
+                // seat's only offered command came back refused by name - "The payload claims hero
+                // hero-arien, which seat blue-player-01 does not own" - so the match could not
+                // advance one version.
+                //
+                // BEFORE the announcement, because the announcement is what sends a client to its
+                // board, and a client that arrived there first would draw the provisional one.
+                // The projections ride the ordinary gameplay sequence, so a client applies them
+                // through the same envelope discipline as any other push - no wire change, and a
+                // recomposed match at the same version is adopted because acceptance is by
+                // sequence rather than by version.
+                RepublishProjections();
+            }
+
             var frame = PrivateSessionFrameCodec.MatchStartedFrame();
             foreach (var connection in connections.Values)
             {
@@ -1141,22 +1274,7 @@ namespace GuardsDigital.Application
         /// </remarks>
         private void FillUnpickedSeats()
         {
-            if (selection.IsComplete)
-            {
-                return;
-            }
-
-            var anyChosen = false;
-            foreach (var seat in matchHost.Seats.Seats)
-            {
-                if (selection.TryGetChoice(seat.Id, out _))
-                {
-                    anyChosen = true;
-                    break;
-                }
-            }
-
-            if (!anyChosen)
+            if (selection.IsComplete || !AnySeatHasPicked())
             {
                 return;
             }
@@ -1199,7 +1317,7 @@ namespace GuardsDigital.Application
         /// composer built something other than what it was asked for, and is thrown on rather than
         /// coped with.</para>
         /// </remarks>
-        private void ComposeMatchForSelection()
+        private bool ComposeMatchForSelection()
         {
             if (!selection.IsComplete)
             {
@@ -1207,7 +1325,7 @@ namespace GuardsDigital.Application
                 // selection incomplete, and this is the guard that reading is for: the printed
                 // line-up the provisional match already deals is the right answer, and composing it
                 // again would produce the identical match for more work.
-                return;
+                return false;
             }
 
             var composer = Composition;
@@ -1257,7 +1375,7 @@ namespace GuardsDigital.Application
             var composed = composer.ComposeForLineup(selection.BuildLineup());
             if (composed == null)
             {
-                return;
+                return false;
             }
 
             var before = matchHost.Seats.Seats;
@@ -1282,6 +1400,7 @@ namespace GuardsDigital.Application
             }
 
             matchHost = composed;
+            return true;
         }
 
         /// <summary>

@@ -518,5 +518,43 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<ObstacleOccupancy>());
             return new MatchSessionInitialState(scenario, setup, new[] { map });
         }
+
+        /// <summary>
+        /// 8.35z54. Composes the match a CHOSEN line-up plays, exactly as
+        /// <c>MatchSceneCompositionRoot.ComposeForLineup</c> does - the scene half of milestone
+        /// 8.35z37's recomposition seam, without a scene.
+        /// </summary>
+        /// <remarks>
+        /// A fixture that hands the session a composer which returns null is not testing the seam:
+        /// null means "leave the session on the match it has", which is the answer that made a
+        /// chosen line-up indistinguishable from the printed one. Every lobby-flow case composes a
+        /// real second match, so the projections the seats then hold are the projections of a
+        /// DIFFERENT board and any confusion between the two is visible.
+        /// </remarks>
+        internal static IMatchHost ComposeForLineup(HeroLineup lineup)
+        {
+            var format = MatchFormat.All.Single(
+                candidate => candidate.HeroesPerTeam == lineup.HeroesPerTeam &&
+                    candidate.Id.IndexOf("quick", StringComparison.OrdinalIgnoreCase) >= 0);
+            var printed = MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red);
+            var configuration = MatchConfiguration.CreateForLineupFromRecord(
+                format, lineup, printed.TieBreakerState, SetupRandomnessSeed.Unrecorded);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                HeroLineupComposition.Compose(format, lineup),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var scenario = new InitialScenarioDescription(
+                configuration.Participants,
+                configuration.CardDefinitions,
+                configuration.CardInstances,
+                configuration.TieBreakerState,
+                configuration.SetupSeed,
+                map.Reference,
+                setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
+                Array.Empty<ObstacleOccupancy>());
+            return MatchHost.Compose(new MatchSessionInitialState(scenario, setup, new[] { map }));
+        }
     }
 }

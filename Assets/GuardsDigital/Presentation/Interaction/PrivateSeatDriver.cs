@@ -361,6 +361,17 @@ namespace GuardsDigital.Presentation.Interaction
                     readinessPressed = lobby.Presenter.Press(PrivateLobbyControl.Ready, null);
                 }
 
+                // 8.35z54. "Bots need to pick heroes as well." A filled seat now takes its
+                // own hero WHEN THE ORDER REACHES IT, through the same presenter press a player
+                // makes, so the pick appears in rulebook p.22's sequence on every screen exactly
+                // like anybody else's rather than arriving as a silent assignment at the
+                // transition. First available is the brain, which is deterministic and therefore
+                // replayable; a seeded filler is still 8.28b's business rather than this one's.
+                //
+                // The ORDER is not decided here. The model offers ChooseHero only while the order
+                // is on this seat, and the host refuses an out-of-turn pick regardless, so a bot
+                // that presses is a bot whose turn it is.
+                PickHeroWhenOffered();
                 return;
             }
 
@@ -720,6 +731,46 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             return -1;
+        }
+
+        /// <summary>
+        /// 8.35z54. Takes this seat's hero when rulebook p.22's order reaches it.
+        /// </summary>
+        /// <remarks>
+        /// <para>Presses exactly what a player presses: it highlights one of the options the LOBBY
+        /// MODEL is offering and then presses PICK HERO, so a bot cannot pick a hero the surface
+        /// would not offer - the one-copy rule and the pick order both reach it as the greying the
+        /// model already computes. This is milestone 8.35c's reusable finding applied to the lobby:
+        /// an automated seat must choose from what its own surface authorizes rather than from
+        /// what it can name.</para>
+        /// <para>It re-presses on every frame the order is still on this seat, which costs nothing
+        /// and is what makes it robust to a refusal: if the host says no - a hero taken between
+        /// the model's render and the press - the next frame reads a fresh model and takes the
+        /// next available one.</para>
+        /// </remarks>
+        private void PickHeroWhenOffered()
+        {
+            var model = lobby.Presenter.Model;
+            if (model == null || !model.Offers(PrivateLobbyControl.ChooseHero))
+            {
+                return;
+            }
+
+            foreach (var option in model.Selection.Heroes)
+            {
+                if (!option.IsAvailable)
+                {
+                    continue;
+                }
+
+                lobby.Presenter.SelectedHeroIdValue = option.HeroIdValue;
+                if (lobby.Presenter.Press(PrivateLobbyControl.ChooseHero, null))
+                {
+                    Marker("hero-picked " + option.HeroIdValue);
+                }
+
+                return;
+            }
         }
 
         private void Marker(string detail) =>

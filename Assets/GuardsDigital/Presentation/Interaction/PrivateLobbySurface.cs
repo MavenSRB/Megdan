@@ -108,6 +108,24 @@ namespace GuardsDigital.Presentation.Interaction
         public event Action MatchFormatChangeRequested;
 
         /// <summary>
+        /// 8.35z54. Raised on the entry form when the host named a printed setup DIRECTLY -
+        /// the team size or the game length - rather than stepping to the next one.
+        /// </summary>
+        /// <remarks>
+        /// The control that was pressed rides the event, because the driver is what owns the four
+        /// printed setups and their composition; the presenter's job is to say which named choice a
+        /// player made. Composing a match is scene work, which is why this is an event at all - the
+        /// same reason <see cref="MatchFormatChangeRequested"/> is one.
+        /// </remarks>
+        public event Action<PrivateLobbyControl> MatchSetupChoiceRequested;
+
+        /// <summary>
+        /// 8.35z54. Raised when this admitted connection asked for one of the seats it can
+        /// see. The seat rides the entry the view built, exactly as an invitation's address does.
+        /// </summary>
+        public event Action<SeatId> SeatClaimRequested;
+
+        /// <summary>
         /// Milestone 8.35z37. The hero the surface offers on the next
         /// <see cref="PrivateLobbyControl.ChooseHero"/> press. A view sets it from whichever option
         /// the player clicked; the presenter never chooses one.
@@ -211,15 +229,47 @@ namespace GuardsDigital.Presentation.Interaction
                     HostRequested?.Invoke(entry);
                     return true;
 
+                // 8.35z54. JOINING NAMES NO SEAT. The spec is "they join the server, see open
+                // seats, they pick a seat", so the seat is chosen from the roster once this player
+                // is in the session and can see which chairs are free - the refusal that used to
+                // stand here asked a player to choose blind from a table they had not been shown.
                 case PrivateLobbyControl.Join:
+                    JoinRequested?.Invoke(entry);
+                    return true;
+
+                case PrivateLobbyControl.ClaimSeat:
                     if (entry == null || !entry.Seat.IsDefined)
                     {
-                        feedback = "Pick the seat you will play before joining.";
+                        feedback = "Press the seat you want to take.";
                         Refresh();
                         return true;
                     }
 
-                    JoinRequested?.Invoke(entry);
+                    if (client == null || !client.TryClaimSeat(entry.Seat))
+                    {
+                        feedback = "That seat is not free.";
+                        Refresh();
+                        return true;
+                    }
+
+                    SeatClaimRequested?.Invoke(entry.Seat);
+                    Refresh();
+                    return true;
+
+                case PrivateLobbyControl.HostUndo:
+                    if (host == null || !host.TryUndoLobbyStep())
+                    {
+                        feedback = "There is no lobby step left to take back.";
+                    }
+
+                    Refresh();
+                    return true;
+
+                case PrivateLobbyControl.ChooseTwoVsTwo:
+                case PrivateLobbyControl.ChooseThreeVsThree:
+                case PrivateLobbyControl.ChooseShortGame:
+                case PrivateLobbyControl.ChooseLongGame:
+                    MatchSetupChoiceRequested?.Invoke(control);
                     return true;
 
                 case PrivateLobbyControl.Ready:

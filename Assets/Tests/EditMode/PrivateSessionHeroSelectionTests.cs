@@ -50,13 +50,36 @@ namespace GuardsDigital.Tests.EditMode
             "red-player-01", "red-player-02", "red-player-03"
         };
 
+        /// <summary>
+        /// 8.35z54. Brings a session to the point where rulebook p.22's picking is OPEN:
+        /// every seat taken and every seat ready.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Every case below that picks a hero begins here now, and that is the milestone's
+        /// ordering rather than fixture housekeeping.</b> The user's spec is "they pick a seat, click
+        /// ready. Once they are ready, everyone picks their heroes" - so a pick sent before the table
+        /// is full and ready is refused by name, and a fixture that seated one connection and picked
+        /// was testing a sequence the lobby no longer offers.</para>
+        /// <para>It readies WITHOUT starting the match, because readiness now opens the selection
+        /// instead of ending the lobby: the transition waits for the last pick.</para>
+        /// </remarks>
+        private static void OpenPicking(PrivateSessionTestDriver driver)
+        {
+            SeatEveryone(driver);
+            ReadyEveryone(driver);
+            Assert.That(driver.Session.IsPickPhaseOpen, Is.True,
+                "Every seat is taken and ready, so the picking is open.");
+            Assert.That(driver.Session.HasMatchStarted, Is.False,
+                "...and readiness alone no longer starts the match.");
+        }
+
         [Test]
         public void AnAcceptedPick_ShowsInTheRosterAsChosen()
         {
             var driver = PrivateSessionTestDriver.Compose();
-            driver.Seat(1, "red-player-01");
+            OpenPicking(driver);
 
-            Choose(driver, 1, "hero-sabina");
+            Choose(driver, 4, "hero-sabina");
 
             var row = driver.Session.Roster.Single(entry => entry.Seat.Value == "red-player-01");
             Assert.That(row.Hero.Value, Is.EqualTo("hero-sabina"),
@@ -74,7 +97,7 @@ namespace GuardsDigital.Tests.EditMode
         public void AnUnpickedSeat_ShowsItsProvisionalHeroAndSaysItWasNotChosen()
         {
             var driver = PrivateSessionTestDriver.Compose();
-            driver.Seat(1, "red-player-01");
+            OpenPicking(driver);
 
             var row = driver.Session.Roster.Single(entry => entry.Seat.Value == "red-player-02");
             Assert.That(row.Hero.Value, Is.EqualTo("hero-xargatha"));
@@ -85,8 +108,7 @@ namespace GuardsDigital.Tests.EditMode
         public void AnOutOfTurnPick_IsRefusedByNameAndKeepsTheConnection()
         {
             var driver = PrivateSessionTestDriver.Compose();
-            driver.Seat(1, "red-player-01");
-            driver.Seat(2, "red-player-02");
+            OpenPicking(driver);
 
             // p.22's order opens on the coin's team - Red, per the test driver's composition - and
             // on that team's FIRST seat. red-player-02 is not it.
@@ -105,7 +127,7 @@ namespace GuardsDigital.Tests.EditMode
         public void ATakenHero_IsRefusedForEveryOtherSeatIncludingTheOtherTeam()
         {
             var driver = PrivateSessionTestDriver.Compose();
-            SeatEveryone(driver);
+            OpenPicking(driver);
 
             Choose(driver, 4, "hero-sabina");                // red-player-01, the coin's first seat
             Choose(driver, 1, "hero-sabina");                // blue-player-01, the other team
@@ -122,13 +144,13 @@ namespace GuardsDigital.Tests.EditMode
         public void AnUnregisteredHero_IsRefusedWithoutClosingTheConnection()
         {
             var driver = PrivateSessionTestDriver.Compose();
-            driver.Seat(1, "red-player-01");
+            OpenPicking(driver);
 
-            Choose(driver, 1, "hero-nobody");
+            Choose(driver, 4, "hero-nobody");
 
-            Assert.That(driver.Outbox.RejectFor(1).Reason,
+            Assert.That(driver.Outbox.RejectFor(4).Reason,
                 Is.EqualTo(SessionRejectionReason.HeroSelectionRefused));
-            Assert.That(driver.Outbox.WasClosed(1), Is.False);
+            Assert.That(driver.Outbox.WasClosed(4), Is.False);
         }
 
         /// <summary>
@@ -244,9 +266,8 @@ namespace GuardsDigital.Tests.EditMode
             var driver = PrivateSessionTestDriver.Compose();
             var composer = new RecordingComposer();
             driver.Session.Composition = composer;
-            SeatEveryone(driver);
+            OpenPicking(driver);
             PickInPrintedOrder(driver);
-            ReadyEveryone(driver);
 
             Assert.That(driver.Session.HasMatchStarted, Is.True);
             Assert.That(composer.Calls, Is.EqualTo(1), "Composed once, at the one-way transition.");
@@ -265,14 +286,27 @@ namespace GuardsDigital.Tests.EditMode
         /// backward-compatibility guarantee, and it is why every fixture predating this milestone
         /// needed no edit.
         /// </summary>
+        /// <remarks>
+        /// 8.35z54 REWROTE THIS CASE, because its premise stopped existing. It used to
+        /// assert that readiness alone transitions a session in which nobody picked; the user's flow
+        /// spec makes the picking a step of every lobby, so readiness now OPENS the selection and
+        /// the last pick ends it. What survives of the original claim - and is what it was really
+        /// protecting - is that a session which reaches the transition with an untouched selection
+        /// composes nothing, which is now asserted where it can still be reached: the host holds no
+        /// selection at all until the picking opens.
+        /// </remarks>
         [Test]
-        public void ASessionWithNoComposer_TransitionsUnchanged()
+        public void ASessionThatHasNotPicked_ComposesNothingAndDoesNotTransition()
         {
             var driver = PrivateSessionTestDriver.Compose();
-            SeatEveryone(driver);
-            ReadyEveryone(driver);
+            var composer = new RecordingComposer();
+            driver.Session.Composition = composer;
+            OpenPicking(driver);
 
-            Assert.That(driver.Session.HasMatchStarted, Is.True);
+            Assert.That(driver.Session.HasMatchStarted, Is.False,
+                "Every seat is ready and nobody has picked, so the lobby is IN the selection " +
+                "rather than past it.");
+            Assert.That(composer.Calls, Is.EqualTo(0));
             Assert.That(driver.Session.Roster.All(row => !row.HasChosenHero), Is.True);
         }
 
@@ -299,10 +333,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             var driver = PrivateSessionTestDriver.Compose();
             SeatEveryone(driver);
-            PickInPrintedOrder(driver);
+            ReadyEveryone(driver);
 
+            // 8.35z54: the LAST pick is what transitions now, so that is what throws.
             var failure = Assert.Throws<System.InvalidOperationException>(
-                () => ReadyEveryone(driver),
+                () => PickInPrintedOrder(driver),
                 "A host that accepted every pick and has nowhere to send them must not transition " +
                 "quietly onto the printed board.");
 
@@ -322,42 +357,33 @@ namespace GuardsDigital.Tests.EditMode
         /// are ordered by player identity, which puts blue-player-01 first, so an empty selection
         /// filled in order would hand Blue the Red team's printed heroes.
         /// </remarks>
+        /// <remarks>
+        /// 8.35z54 RETIRED THE ORIGINAL FORM of this case rather than keeping a dead
+        /// assertion. It asserted that a session where NOBODY picked still transitioned, on the
+        /// printed line-up; the flow spec makes the picking a step of every lobby, so a table that
+        /// reaches readiness with no picks stays in the selection and never transitions at all. The
+        /// statement that survives - the printed line-up is what an untouched selection composes -
+        /// is asserted by <see cref="ASessionThatHasNotPicked_ComposesNothingAndDoesNotTransition"/>
+        /// and by the composition seam's own byte-identity fixtures, which compare a match composed
+        /// late from the printed line-up against one composed at load.
+        /// </remarks>
         [Test]
-        public void WhenNobodyPicked_TheComposerIsNeverCalled()
+        public void APartialSelection_CannotReachTheTransition_BecauseEverySeatPicks()
         {
             var driver = PrivateSessionTestDriver.Compose();
             var composer = new RecordingComposer();
             driver.Session.Composition = composer;
-            SeatEveryone(driver);
-            ReadyEveryone(driver);
-
-            Assert.That(driver.Session.HasMatchStarted, Is.True);
-            Assert.That(composer.Calls, Is.EqualTo(0),
-                "A session where no hero was chosen deals setup step 7's printed line-up.");
-        }
-
-        /// <summary>
-        /// A PARTIAL selection is completed deterministically rather than discarded, so the composed
-        /// board cannot contradict the roster the players were reading.
-        /// </summary>
-        [Test]
-        public void APartialSelection_IsFilledDeterministicallyRatherThanDiscarded()
-        {
-            var driver = PrivateSessionTestDriver.Compose();
-            var composer = new RecordingComposer();
-            driver.Session.Composition = composer;
-            SeatEveryone(driver);
+            OpenPicking(driver);
             Choose(driver, 4, "hero-sabina");   // red-player-01 alone picks
-            ReadyEveryone(driver);
 
-            Assert.That(composer.Calls, Is.EqualTo(1));
-            Assert.That(composer.Requested.Red.First().HeroIdValue, Is.EqualTo("hero-sabina"),
-                "The one real pick survives.");
-            Assert.That(
-                composer.Requested.Red.Concat(composer.Requested.Blue)
-                    .Select(hero => hero.HeroIdValue).Distinct().Count(),
-                Is.EqualTo(6),
-                "...and every filled seat obeys the one-copy rule the stage enforces.");
+            Assert.That(driver.Session.HasMatchStarted, Is.False,
+                "One pick is not six, and the transition waits for the last one.");
+            Assert.That(composer.Calls, Is.EqualTo(0));
+            Assert.That(driver.Session.Selection.PickingSeat.IsDefined, Is.True,
+                "The order has simply moved on to the next seat, which is what every screen is " +
+                "showing. A partial selection used to be FILLED first-available at the " +
+                "transition - which is how a seat could be handed a hero nobody at the table " +
+                "chose - and it is now unreachable rather than repaired.");
         }
 
         /// <summary>
@@ -368,10 +394,13 @@ namespace GuardsDigital.Tests.EditMode
         public void APickAfterTheTransition_IsRefusedByName()
         {
             var driver = PrivateSessionTestDriver.Compose();
-            SeatEveryone(driver);
-            ReadyEveryone(driver);
+            var composer = new RecordingComposer();
+            driver.Session.Composition = composer;
+            OpenPicking(driver);
+            PickInPrintedOrder(driver);
+            Assert.That(driver.Session.HasMatchStarted, Is.True);
 
-            Choose(driver, 4, "hero-sabina");
+            Choose(driver, 4, "hero-wasp");
 
             Assert.That(driver.Outbox.RejectFor(4).Reason,
                 Is.EqualTo(SessionRejectionReason.UnexpectedMessage));
@@ -390,10 +419,10 @@ namespace GuardsDigital.Tests.EditMode
             // guard exists to catch - and cannot arise from a line-up, only from a broken composer.
             var fourSeat = MatchHost.Compose(FourSeatInitialState());
             driver.Session.Composition = new SwappingComposer(fourSeat);
-            SeatEveryone(driver);
-            PickInPrintedOrder(driver);
+            OpenPicking(driver);
 
-            Assert.Throws<System.InvalidOperationException>(() => ReadyEveryone(driver));
+            // 8.35z54: the composition happens at the LAST pick now, so that is what throws.
+            Assert.Throws<System.InvalidOperationException>(() => PickInPrintedOrder(driver));
         }
 
         // ---- helpers ----

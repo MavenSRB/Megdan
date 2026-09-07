@@ -220,10 +220,18 @@ namespace GuardsDigital.Presentation.Interaction
             var isEntry = model.Role == PrivateLobbyRole.None;
             entry.style.display = isEntry ? DisplayStyle.Flex : DisplayStyle.None;
 
+            // 8.35z54. THE PRE-JOIN SEAT PICKER IS GONE. "We lose the whole seat/hero select
+            // thing, we connect to the host, see available seats and pick one": the entry form's
+            // seat table is now a plain listing of the seats this format fields, and the button that
+            // TAKES a seat appears only once this player is in the session and the roster it is
+            // reading is the host's rather than a local guess at one.
+            var offerClaim = model.Offers(PrivateLobbyControl.ClaimSeat);
             seats.Clear();
             foreach (var row in model.Seats)
             {
-                seats.Add(BuildSeatRow(row, isEntry));
+                seats.Add(BuildSeatRow(
+                    row, offerClaim && row.OccupancyLabel == PrivateLobbyLabels.Occupancy(
+                        SeatOccupancyState.Open)));
             }
 
             RenderSelection(model.Selection);
@@ -324,13 +332,19 @@ namespace GuardsDigital.Presentation.Interaction
             element.Add(Cell(row.IsOwnSeat ? "YOU" : string.Empty, 90f, "gd-lobby-seat-own"));
             if (offerPick)
             {
+                // 8.35z54. One press takes the seat: it names the row and sends the claim,
+                // where the old entry-form button only remembered a seat for a JOIN that had not
+                // happened yet. The press goes through the presenter like every other control, so
+                // the host's answer - granted, or "that seat is not free" - is what the player is
+                // told.
                 var pick = new Button(() =>
                 {
                     PickSeat(row.Seat);
+                    ControlPressed?.Invoke(PrivateLobbyControl.ClaimSeat, CurrentEntry());
                 })
                 {
                     name = SeatPickName,
-                    text = "PICK"
+                    text = PrivateLobbyLabels.Control(PrivateLobbyControl.ClaimSeat)
                 };
                 pick.style.minWidth = 120f;
                 pick.style.height = 40f;
@@ -714,6 +728,8 @@ namespace GuardsDigital.Presentation.Interaction
             presenter.ReconnectRequested += Redial;
             presenter.FillWithTestDriversRequested += FillEmptySeatsWithTestDrivers;
             presenter.MatchFormatChangeRequested += CycleMatchFormat;
+            // 8.35z54. The four printed setups as named buttons.
+            presenter.MatchSetupChoiceRequested += ChooseMatchSetup;
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
             PrivateOnlineMarkers.Log("LOBBY_BEGIN");
         }
@@ -928,17 +944,27 @@ namespace GuardsDigital.Presentation.Interaction
                     .Append(machine.ProjectionRevision).Append(':')
                     .Append(machine.LastSubmissionResult?.SubmissionId ?? string.Empty).Append(':')
                     .Append(machine.LastAgreementResult?.SubmissionId ?? string.Empty);
-                foreach (var entry in machine.Roster)
-                {
-                    builder.Append('|').Append(entry.Seat.Value).Append(entry.Occupancy)
-                        .Append(entry.IsReady ? '1' : '0');
-                }
+                // 8.35z54. THE HERO AND THE CHOSEN FLAG BELONG IN THIS STRING, and leaving
+                // them out is why an accepted pick "didnt do nothing" on the user's screen. It is
+                // the whole redraw condition - the lobby rebuilds when it moves and at no other
+                // time - and it used to name a row's seat, occupancy and readiness only, while a
+                // pick moves exactly the two it did not name. Measured on the shipped build: the
+                // string was character-for-character identical either side of an accepted pick, on
+                // the picker's own client and on the host.
+                //
+                // It is now `PrivateLobbyModel.RosterSignature`, stated once beside the rows
+                // themselves, so the same blindness cannot come back on one of the two branches
+                // and so it is provable without a running scene.
+                builder.Append(PrivateLobbyModel.RosterSignature(machine.Roster));
             }
             else if (session != null)
             {
                 builder.Append("host:").Append(session.ClaimedSeatCount).Append(':')
                     .Append(session.ReadySeatCount).Append(':')
-                    .Append(session.HasMatchStarted ? '1' : '0');
+                    .Append(session.HasMatchStarted ? '1' : '0')
+                    // The host's own screen had the same blindness for the same reason, and it
+                    // draws the selection too - so it watches the roster rather than three counts.
+                    .Append(PrivateLobbyModel.RosterSignature(session.Roster));
             }
             else
             {
@@ -1065,6 +1091,65 @@ namespace GuardsDigital.Presentation.Interaction
             PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + next.Id);
             presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
         }
+
+        /// <summary>
+        /// 8.35z54. Composes the printed setup the host NAMED, by changing one half of it -
+        /// the team size or the game length - and keeping the other.
+        /// </summary>
+        /// <remarks>
+        /// <para>The four printed setups of pp.5-6 are two crossed pairs, so a named choice is a
+        /// move along one axis rather than a jump to one of four ids: pressing 2V2 while the LONG
+        /// game is composed gives the long 2v2, which is what a player who pressed one button
+        /// expects and what a cycle could never promise.</para>
+        /// <para>The guard is the one <see cref="CycleMatchFormat"/> already carries and for the
+        /// same structural reason: a listener means seats somebody may hold, and the seats are
+        /// counted from the format. Recomposing is what makes the choice real - it rebuilds the
+        /// board, the runtime and the admission tuple, so the seats this form then lists and the
+        /// tuple a client checks both describe the match that will actually be played.</para>
+        /// </remarks>
+        private void ChooseMatchSetup(PrivateLobbyControl control)
+        {
+            if (listener != null || session != null || machine != null ||
+                compositionRoot?.ComposedPlan == null)
+            {
+                return;
+            }
+
+            var current = compositionRoot.ComposedPlan.Format;
+            var wantsHeroesPerTeam = control == PrivateLobbyControl.ChooseTwoVsTwo ? 2
+                : control == PrivateLobbyControl.ChooseThreeVsThree ? 3
+                : current.HeroesPerTeam;
+            var wantsLong = control == PrivateLobbyControl.ChooseLongGame ||
+                (control != PrivateLobbyControl.ChooseShortGame && IsLongGame(current));
+
+            MatchFormat chosen = null;
+            foreach (var candidate in MatchFormat.All)
+            {
+                if (candidate.HeroesPerTeam == wantsHeroesPerTeam &&
+                    IsLongGame(candidate) == wantsLong)
+                {
+                    chosen = candidate;
+                    break;
+                }
+            }
+
+            if (chosen == null || string.Equals(chosen.Id, current.Id, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            compositionRoot.Recompose(MatchCompositionPlan.Printed(chosen));
+            PrivateOnlineMarkers.Log("LOBBY_FORMAT format=" + chosen.Id);
+            presenter.ShowEntry(LocalSeats(), string.Empty, ComposedFormatLabel());
+        }
+
+        /// <summary>
+        /// Which half of a printed setup's id names the LONG game. The four ids are the two team
+        /// sizes crossed with the two lengths, so the length is read off the id rather than kept as
+        /// a second field this surface would have to hold in step with it.
+        /// </summary>
+        private static bool IsLongGame(MatchFormat format) =>
+            format.Id.IndexOf("long", StringComparison.OrdinalIgnoreCase) >= 0;
 
         private IReadOnlyList<SeatRosterEntry> LocalSeats()
         {
@@ -1380,7 +1465,8 @@ namespace GuardsDigital.Presentation.Interaction
                 // feedback line; before this fix that was the ONLY place it went - invisible to
                 // any log reader and to a spawned driver, which has no feedback line of its own
                 // anyone is watching. A named seat makes this readable out of context.
-                LastJoinFailure = "seat=" + joinedSeat.Value + " could not reach the host at " + dialled;
+                LastJoinFailure = "seat=" + SeatLabelForLog() +
+                    " could not reach the host at " + dialled;
                 PrivateOnlineMarkers.Fail("lobby-join " + LastJoinFailure);
                 machine = null;
                 return;
@@ -1388,8 +1474,17 @@ namespace GuardsDigital.Presentation.Interaction
 
             signature = string.Empty;
             presenter.AttachClient(machine);
-            PrivateOnlineMarkers.Log("LOBBY_JOINING seat=" + joinedSeat.Value);
+            PrivateOnlineMarkers.Log("LOBBY_JOINING seat=" + SeatLabelForLog());
         }
+
+        /// <summary>
+        /// 8.35z54. The seat a log line names. A player who has joined the server but not
+        /// yet taken a chair genuinely has none, and saying so is better than printing an empty
+        /// value into a returned playtest log - which is the diagnostic gap milestone 8.35k paid a
+        /// day for.
+        /// </summary>
+        private string SeatLabelForLog() =>
+            joinedSeat.IsDefined ? joinedSeat.Value : "(unseated)";
 
         /// <summary>
         /// Dials the host that was typed, for a first join or for an armed return. A refused or

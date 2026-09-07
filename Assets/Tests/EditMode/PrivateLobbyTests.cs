@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Rules.Victory;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Network;
@@ -256,22 +257,36 @@ namespace GuardsDigital.Tests.EditMode
 
         // --- The transition out of the lobby -----------------------------------------------------
 
+        /// <remarks>
+        /// 8.35z54 moved what the sixth readiness DOES. It used to end the lobby; the user's
+        /// flow spec puts the hero picks after readiness - "they pick a seat, click ready. Once they
+        /// are ready, everyone picks their heroes" - so the sixth readiness now OPENS the selection
+        /// and the last pick ends the lobby. The half of the original claim that is about readiness
+        /// is kept exactly: not one seat before the sixth changes anything.
+        /// </remarks>
         [Test]
-        public void TheMatchBegins_WhenTheSixthSeatIsReady_AndNotOneSeatBefore()
+        public void TheSelectionOpens_WhenTheSixthSeatIsReady_AndNotOneSeatBefore()
         {
             var driver = SeatEveryone(out var seats);
 
             for (var index = 0; index < seats.Count - 1; index++)
             {
                 SetReadiness(driver, index + 1, true);
-                Assert.That(driver.Session.HasMatchStarted, Is.False,
-                    "The lobby ended with " + (index + 1) + " of " + seats.Count + " seats ready.");
+                Assert.That(driver.Session.IsPickPhaseOpen, Is.False,
+                    "The picking opened with " + (index + 1) + " of " + seats.Count +
+                    " seats ready.");
+                Assert.That(driver.Session.HasMatchStarted, Is.False);
             }
 
             SetReadiness(driver, seats.Count, true);
 
-            Assert.That(driver.Session.HasMatchStarted, Is.True);
+            Assert.That(driver.Session.IsPickPhaseOpen, Is.True);
             Assert.That(driver.Session.ReadySeatCount, Is.EqualTo(driver.Session.TotalSeats));
+            Assert.That(driver.Session.HasMatchStarted, Is.False,
+                "Readiness opens the picking; the match begins on the last pick.");
+
+            PickEveryHero(driver, seats);
+            Assert.That(driver.Session.HasMatchStarted, Is.True);
         }
 
         [Test]
@@ -283,6 +298,9 @@ namespace GuardsDigital.Tests.EditMode
             {
                 SetReadiness(driver, index + 1, true);
             }
+
+            // 8.35z54: the announcement follows the last PICK now, not the last readiness.
+            PickEveryHero(driver, seats);
 
             for (var index = 0; index < seats.Count; index++)
             {
@@ -306,11 +324,15 @@ namespace GuardsDigital.Tests.EditMode
             SetReadiness(driver, 1, false);
             SetReadiness(driver, seats.Count, true);
 
-            Assert.That(driver.Session.HasMatchStarted, Is.False,
+            Assert.That(driver.Session.IsPickPhaseOpen, Is.False,
                 "Five ready seats and one that stood down is not six ready seats.");
+            Assert.That(driver.Session.HasMatchStarted, Is.False);
 
             SetReadiness(driver, 1, true);
 
+            // 8.35z54: the sixth readiness opens the picking, and the picks end the lobby.
+            Assert.That(driver.Session.IsPickPhaseOpen, Is.True);
+            PickEveryHero(driver, seats);
             Assert.That(driver.Session.HasMatchStarted, Is.True);
         }
 
@@ -406,6 +428,7 @@ namespace GuardsDigital.Tests.EditMode
         public void OnAKeyedSession_ReadinessAndTheAnnouncement_TravelSealed()
         {
             var driver = PrivateSessionTestDriver.Compose("invitation-key");
+            driver.Session.Composition = new NoRecompositionComposer();
             var seats = SeatsOf(driver);
             for (var index = 0; index < seats.Count; index++)
             {
@@ -418,6 +441,8 @@ namespace GuardsDigital.Tests.EditMode
                 SetReadiness(driver, index + 1, true);
             }
 
+            // 8.35z54: the announcement follows the last PICK now.
+            PickEveryHero(driver, seats);
             Assert.That(driver.Session.HasMatchStarted, Is.True);
             Assert.That(driver.Outbox.SealedFrameCounts[1], Is.GreaterThan(before),
                 "Every post-proof frame on a keyed session is sealed, the two new kinds included.");
@@ -440,9 +465,11 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var ordinal in ordinals)
             {
                 Assert.That(harness.Client(ordinal).HasMatchStarted, Is.False);
-                Assert.That(harness.Client(ordinal).TrySetReadiness(true), Is.True);
-                harness.Pump();
             }
+
+            // 8.35z54: readiness opens rulebook p.22's picking and the last pick ends the
+            // lobby, so reaching the announcement now takes both halves.
+            harness.ReadyAndPickEverySeat();
 
             Assert.That(harness.Session.HasMatchStarted, Is.True);
             foreach (var ordinal in ordinals)
@@ -619,11 +646,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var harness = PrivateOnlineWireHarness.Compose();
             harness.SeatAll();
-            foreach (var ordinal in harness.Ordinals)
-            {
-                harness.Client(ordinal).TrySetReadiness(true);
-                harness.Pump();
-            }
+            harness.ReadyAndPickEverySeat();
 
             var model = PrivateLobbyModel.ForClient(harness.Client(harness.Ordinals[0]));
 
@@ -1262,9 +1285,27 @@ namespace GuardsDigital.Tests.EditMode
             driver.Submit(ordinal, PrivateSessionFrameCodec.SetReadinessFrame(
                 new SeatReadinessMessage(ready)));
 
+        /// <summary>
+        /// 8.35z54. The composer these lobby cases need, and it is the one milestone
+        /// 8.35z43 documents as legitimate: a scene that has already composed exactly what was
+        /// asked for returns <c>null</c> and the session stays on the match it serves.
+        /// </summary>
+        /// <remarks>
+        /// It became necessary the moment every seat picks: a completed selection with NO composer
+        /// is a wiring defect and is thrown on by name, which is z43's guard working exactly as
+        /// written. These cases are about readiness, the announcement and the one-way transition
+        /// rather than about what gets composed, so the honest composer for them is the one that
+        /// composes nothing.
+        /// </remarks>
+        private sealed class NoRecompositionComposer : IDeferredMatchComposition
+        {
+            public IMatchHost ComposeForLineup(HeroLineup lineup) => null;
+        }
+
         private static PrivateSessionTestDriver SeatEveryone(out IReadOnlyList<string> seats)
         {
             var driver = PrivateSessionTestDriver.Compose();
+            driver.Session.Composition = new NoRecompositionComposer();
             seats = SeatsOf(driver);
             for (var index = 0; index < seats.Count; index++)
             {
@@ -1274,6 +1315,17 @@ namespace GuardsDigital.Tests.EditMode
             return driver;
         }
 
+        /// <summary>
+        /// Brings a session all the way out of the lobby: every seat taken, every seat ready, and
+        /// then - 8.35z54 - every seat's hero picked, because readiness OPENS rulebook
+        /// p.22's selection and the last pick is what ends the lobby.
+        /// </summary>
+        /// <remarks>
+        /// The helper carries the extra step rather than every case repeating it, which is what kept
+        /// this file's edit for the flow change to one method: the nine cases that go through here
+        /// are about the ANNOUNCEMENT, the one-way transition and the seat states around them, and
+        /// none of them is about how the table got there.
+        /// </remarks>
         private static PrivateSessionTestDriver ReadyEveryone(out IReadOnlyList<string> seats)
         {
             var driver = SeatEveryone(out seats);
@@ -1282,8 +1334,45 @@ namespace GuardsDigital.Tests.EditMode
                 SetReadiness(driver, index + 1, true);
             }
 
+            Assert.That(driver.Session.IsPickPhaseOpen, Is.True,
+                "Readiness opens the picking rather than ending the lobby.");
+            PickEveryHero(driver, seats);
             Assert.That(driver.Session.HasMatchStarted, Is.True);
             return driver;
+        }
+
+        /// <summary>
+        /// 8.35z54. Runs p.22's order to completion, each seat taking the first hero the
+        /// stage still has available for it.
+        /// </summary>
+        private static void PickEveryHero(
+            PrivateSessionTestDriver driver, IReadOnlyList<string> seats)
+        {
+            var guard = 0;
+            while (!driver.Session.HasMatchStarted && guard++ <= seats.Count)
+            {
+                var picking = driver.Session.Selection.PickingSeat;
+                if (!picking.IsDefined)
+                {
+                    break;
+                }
+
+                var ordinal = 0;
+                for (var index = 0; index < seats.Count; index++)
+                {
+                    if (seats[index] == picking.Value)
+                    {
+                        ordinal = index + 1;
+                        break;
+                    }
+                }
+
+                Assert.That(ordinal, Is.GreaterThan(0),
+                    "The seat p.22's order is on must be one of the seats this session serves.");
+                var hero = driver.Session.Selection.AvailableHeroes[0];
+                driver.Submit(ordinal, PrivateSessionFrameCodec.ChooseHeroFrame(
+                    new HeroChoiceMessage(hero.HeroIdValue)));
+            }
         }
 
         private static IReadOnlyList<SeatRosterEntry> LastRoster(

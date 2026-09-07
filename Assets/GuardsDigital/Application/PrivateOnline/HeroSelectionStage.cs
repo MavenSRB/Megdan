@@ -322,6 +322,64 @@ namespace GuardsDigital.Application
         }
 
         /// <summary>
+        /// 8.35z54. The seat whose pick would be taken back: the LAST seat in the printed
+        /// order that has chosen. Undefined when nobody has picked.
+        /// </summary>
+        /// <remarks>
+        /// Read out of <see cref="PickOrder"/> for the same reason <see cref="PickingSeat"/> is -
+        /// so the answer stays right when a seat was filled out of sequence - and it is the exact
+        /// mirror of that property: the picking seat is the earliest still owing a pick, and this is
+        /// the latest that has made one.
+        /// </remarks>
+        public SeatId LastPickedSeat
+        {
+            get
+            {
+                var last = default(SeatId);
+                foreach (var seat in PickOrder)
+                {
+                    if (choices.ContainsKey(seat.Seat))
+                    {
+                        last = seat.Seat;
+                    }
+                }
+
+                return last;
+            }
+        }
+
+        /// <summary>
+        /// 8.35z54. Takes back the most recent pick, returning the hero to the available
+        /// list and the order to the seat that made it.
+        /// </summary>
+        /// <remarks>
+        /// <para>The stage half of the host's lobby undo - the user's "if we get stuck we can get
+        /// out". It removes exactly one choice and nothing else: the seats, the coin and the order
+        /// are untouched, so the seat that just lost its pick is once again
+        /// <see cref="PickingSeat"/> and everybody's screen says so from the roster alone.</para>
+        /// <para>Refused once the stage is confirmed. A confirmed selection has already become a
+        /// composed match, and this is a lobby control rather than a way back into one.</para>
+        /// </remarks>
+        /// <returns>Whether a pick was taken back.</returns>
+        public bool TryUndoLastPick(out SeatId seat)
+        {
+            seat = default;
+            if (confirmed)
+            {
+                return false;
+            }
+
+            var last = LastPickedSeat;
+            if (!last.IsDefined || !choices.Remove(last))
+            {
+                return false;
+            }
+
+            seat = last;
+            return true;
+        }
+
+        /// <summary>
         /// p.22's All Pick order in full: the coin's team, then the other, then the coin's again -
         /// each team's seats in lobby order.
         /// </summary>
