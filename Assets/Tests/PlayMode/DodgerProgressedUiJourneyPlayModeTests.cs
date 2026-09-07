@@ -297,7 +297,6 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hud = root.Hud;
             var dodgerId = DodgerSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, dodgerId);
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
 
             CommitSoTheNamedSeatActs(runtime, dodgerId, DodgerCardContent.MiddlefingerOfDeath);
@@ -325,18 +324,32 @@ namespace GuardsDigital.Tests.PlayMode
                 "\"one OR BOTH\" leaves the other bullet standing after the first is taken, where " +
                 "\"Choose one\" would have closed the question. " + Remaining(runtime));
 
+            // AND IT IS ENDED BY THE PLAYER, which is asserted HERE rather than after the second
+            // bullet - below the ceiling, stopping at one is a real choice and the Confirm is the
+            // control that offers it. This is the observable difference from "Choose one", whose
+            // modal is already finished at this point.
+            Assert.That(
+                runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm),
+                Is.True,
+                "A modal that may take more than one option has to be endable by the player while " +
+                "an option remains untaken. " + Remaining(runtime));
+
             UiPlayer.Click(UiPlayer.Button(hud, stillOffered[0].Label));
             yield return null;
             yield return null;
 
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(confirm, Is.Not.Null,
-                "A modal that may take more than one option has to be ENDED by the player rather " +
-                "than by running out of options. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
-            yield return null;
-            yield return null;
+            // THE CEILING CONFIRMS ITSELF, and this is a UI fact the model does not show.
+            // `MatchFeaturePresenters` issues the Confirm automatically when an accepted Select takes
+            // `SelectedCandidates.Count` to `MaximumSelections` and a ConfirmInvocation exists, so
+            // taking the LAST option ends the modal without a second press - there is nothing left to
+            // decide and a player is not made to say so. The Edit Mode contract presses that Confirm
+            // itself because it drives commands rather than controls, and the first complete Play Mode
+            // run of this journey is what showed the two paths differ. A journey written from the
+            // command shape alone would look for a control the UI has already consumed.
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "Taking the last option of a modal at its ceiling ends it, because the presenter " +
+                "confirms what cannot be added to. " + Remaining(runtime));
 
             var pending = runtime.PendingAttackTargetChoice;
             Assert.That(pending, Is.Not.Null,
@@ -346,31 +359,61 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(pending.ResolutionId.Value, Does.EndWith(":seq-1"),
                 "and it runs under an identity derived from the action's, because p.13's Defeat pays " +
                 "out once per identity and two sequences may each defeat a unit.");
-            Assert.That(pending.LegalTargetHeroIds, Contains.Item(enemyId),
-                "\"Target a unit adjacent to you\" - and the enemy hero is standing beside her at the " +
-                "engaged staging. " + Remaining(runtime));
+            // THE OFFERED LIST, NOT THE GUESSED ONE. This first asked `LegalTargetHeroIds` for the
+            // enemy hero, and the first complete run of this journey returned it EMPTY: the bullet
+            // prints "target a UNIT adjacent to you", and this staging holds the two heroes two spaces
+            // apart by construction - the same fact milestone 8.35z15 recorded when three journeys
+            // turned out to have only ever declined the prompt their names claimed to drive. The
+            // adjacent unit here is a MINION, and hero and minion targets are DISJOINT lists on this
+            // choice. So the assertion is now that the bullet admitted somebody at all, and the click
+            // goes to whichever piece the rules named rather than to the one the journey assumed.
+            Assert.That(pending.LegalTargets, Is.Not.Empty,
+                "\"Target a unit adjacent to you\" - the staging has to put SOME unit beside her, or " +
+                "this bullet's own p.14 has nothing to prove. " + Remaining(runtime));
+
+            var named = pending.LegalTargets[0];
+            var namedPosition = named.Kind == AttackTargetKind.Hero
+                ? HeroView(named.HeroId).transform.position
+                : Object.FindObjectsByType<StandardMinionView>()
+                    .Single(view => view.BoundMinionId.Equals(named.MinionId))
+                    .transform.position;
 
             Assert.That(
-                UiPlayer.ClickBoard(pointerInput, hud, HeroView(enemyId).transform.position), Is.True,
+                UiPlayer.ClickBoard(pointerInput, hud, namedPosition), Is.True,
                 "The target is named by clicking the piece where they stand.");
             yield return null;
             yield return null;
 
-            // The defender answers their own window on their own visible control - each sequence has
-            // one, which is the other half of what makes a sequence a complete p.14 rather than a
-            // rider on the first. It is DECLINED because this journey's subject is the modal's
-            // controls: what the defender spends changes the Attack Total and nothing this case reads.
-            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
-                "p.14 asks the defender before it compares anything, once per sequence. " +
-                Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, "DECLINE DEFENSE"));
-            yield return null;
-            yield return null;
+            // THE DEFENCE WINDOW IS THE TARGET'S, NOT THE SEQUENCE'S, and the first complete run of
+            // this journey is what settled it. This asserted a window per sequence unconditionally;
+            // p.14 asks a DEFENDER, and the unit this bullet admitted on this staging is a MINION,
+            // which holds no hand and answers nothing. The Edit Mode contract already reads it that
+            // way - `MiddlefingerOfDeathTests.RunOneSequence` returns early when the choice is null -
+            // so asserting a window here claimed more than the rules promise. It is declined where it
+            // is opened, because what a defender spends changes the Attack Total and nothing this
+            // case reads.
+            if (runtime.PendingDefenseChoice != null)
+            {
+                Assert.That(named.Kind, Is.EqualTo(AttackTargetKind.Hero),
+                    "only a hero holds a hand to answer p.14 with. " + Remaining(runtime));
+                UiPlayer.Click(UiPlayer.Button(hud, "DECLINE DEFENSE"));
+                yield return null;
+                yield return null;
+            }
+            else
+            {
+                Assert.That(named.Kind, Is.EqualTo(AttackTargetKind.Minion),
+                    "a hero target owes a defence window, so a missing one has to mean the bullet " +
+                    "named a minion. " + Remaining(runtime));
+            }
 
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
                 "The second sequence has no subject on this board - the card prints \"(on different " +
-                "targets)\" and its printed Attack of 6 takes the only hero in range off the board - " +
-                "so the whole action is finished rather than standing open. " + Remaining(runtime));
+                "targets)\", and its second bullet admits only a hero in range holding a card in the " +
+                "discard, which this staging does not put there - so the whole action is finished " +
+                "rather than standing open. That the modal still took BOTH bullets is what this " +
+                "journey is for: the ceiling is two, and a bullet with no subject is not a bullet " +
+                "that was refused. " + Remaining(runtime));
         }
 
         /// <summary>

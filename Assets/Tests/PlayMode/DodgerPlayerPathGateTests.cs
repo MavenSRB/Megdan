@@ -276,7 +276,12 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(RangedAttackTarget, ChooseBothJourney),
                         Prove(BeforeAttackTextPause, ChooseBothJourney),
                         Prove(ModalBulletChoice, ChooseBothJourney),
-                        Prove(BoardUnitSelection, ChooseBothJourney),
+                        // NO BoardUnitSelection. This row declared one until the gate's first run on
+                        // the composed face, and the content does not introduce it: each bullet binds
+                        // its victim through p.14's OWN target prompt - the printed Attack shape
+                        // already on this row - rather than through a `choose-target` selection, which
+                        // is what her "Choose one" faces use. Declaring both would claim two controls
+                        // where a player is shown one.
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },

@@ -530,6 +530,17 @@ namespace GuardsDigital.Tests.PlayMode
                 ["gain-resource"] = Array.Empty<PlayerInteractionShape>(),
                 ["set-attack-target"] = Array.Empty<PlayerInteractionShape>(),
 
+                // Milestone 8.35z45. `attack-sequence` is a DECLARATION rather than a question: each
+                // leaf performs nothing and publishes its bullet's printed targeting sentence, and the
+                // target is then asked by p.14's own prompt, which the face already declares as its
+                // printed Attack shape. The bullet CHOICE is contributed by the enclosing `Choose` as
+                // `ModalBulletChoice`, so classifying this leaf as a shape of its own would put a
+                // second control on the row where a player is shown one - the same correction
+                // milestone 8.24 made for `around-primary-action` and milestone 8.20b for a push
+                // distance. The subject narrowing milestone 8.35z45 added changes WHICH candidates
+                // that prompt offers, never who is asked or how.
+                ["attack-sequence"] = Array.Empty<PlayerInteractionShape>(),
+
                 // Milestone 8.22. Sabina's contracts. The two multi-piece selections are the same
                 // board click the single-piece ones are, asked more than once: `choose-target-pair`
                 // takes two minions and `choose-target-set` takes up to N of them, and a player names
