@@ -94,6 +94,11 @@ param(
     [ValidateSet('None', 'Full')] [string] $FaultPlan = 'None',
     [int] $TimeoutSeconds = 0,
     [int] $Seed = 21,
+    # PLAYTEST FAILURE #2 gate. The printed format the HOST composes. Given ONLY to the host, never to
+    # the joiners: the whole point of the 2v2 gate is that a joiner boots the DEFAULT 3v3 and must
+    # INHERIT the host's format, the exact seam every shipped 2v2 join fell into. Empty leaves the
+    # host on the default 3v3, so the existing MultiClientSmoke invocation is unchanged.
+    [ValidateSet('', '2v2-quick', '2v2-long', '3v3-quick', '3v3-long')] [string] $MatchFormat = '',
     [switch] $ReuseBuild
 )
 
@@ -361,7 +366,8 @@ function Start-RehearsalPlayer {
         [Parameter(Mandatory = $true)] [int] $Port,
         [Parameter(Mandatory = $true)] [string] $Key,
         [Parameter(Mandatory = $true)] [int] $BudgetSeconds,
-        [Parameter(Mandatory = $true)] [string] $LogPath
+        [Parameter(Mandatory = $true)] [string] $LogPath,
+        [Parameter(Mandatory = $false)] [string] $MatchFormatId = ''
     )
 
     if (Test-Path -LiteralPath $LogPath) { Remove-Item -LiteralPath $LogPath -Force }
@@ -376,6 +382,11 @@ function Start-RehearsalPlayer {
     )
     if (-not [string]::IsNullOrWhiteSpace($Seat)) {
         $arguments += @('-guardsRehearsalSeat', $Seat)
+    }
+    # PLAYTEST FAILURE #2 gate. The host composes the chosen format; joiners are deliberately NOT
+    # given the flag so they boot the default and must inherit it over the wire.
+    if (-not [string]::IsNullOrWhiteSpace($MatchFormatId)) {
+        $arguments += @('-guardsMatchFormat', $MatchFormatId)
     }
     $arguments += @('-logFile', $LogPath)
 
@@ -585,8 +596,12 @@ elseif ($Topology -eq 'MultiClientSmoke') {
         Write-Output "Loopback endpoint: 127.0.0.1:$smokePort"
 
         $smokeBudget = [Math]::Max(240, $TimeoutSeconds - 120)
+        if (-not [string]::IsNullOrWhiteSpace($MatchFormat)) {
+            Write-Output "== Host composes format '$MatchFormat'; joiners and bots must INHERIT it =="
+        }
         $smokeHost = Start-RehearsalPlayer -Name 'smoke-host' -Role 'host' -Mode 'smoke' `
-            -Address '127.0.0.1' -Port $smokePort -Key $smokeKey -BudgetSeconds $smokeBudget -LogPath $smokeHostLog
+            -Address '127.0.0.1' -Port $smokePort -Key $smokeKey -BudgetSeconds $smokeBudget -LogPath $smokeHostLog `
+            -MatchFormatId $MatchFormat
         $smokePlayers += $smokeHost
         Wait-ForLogMarker -LogPath $smokeHostLog -Pattern 'GUARDS_ONLINE: LOBBY_HOSTING port=' `
             -DeadlineSeconds 180 -Description 'the smoke host to bind its lobby'
@@ -653,6 +668,29 @@ elseif ($Topology -eq 'MultiClientSmoke') {
             }
             $smokeRects += $rect.Groups[1].Value
             Write-Output ("  BOARD {0}: {1}" -f $player.Seat, $rect.Groups[1].Value)
+
+            # PLAYTEST FAILURE #2 gate. The board-vs-tray-vs-draft check. The driver already FAILS its
+            # own process (Quit 1) on any split, so a split is caught by Step 6's FAIL sweep too; this
+            # surfaces the same three tiers in the runner's own output and asserts the seat's projection
+            # fielded the hero it DRAFTED rather than the printed default - the degeneracy that hid this.
+            $split = [regex]::Match($text,
+                'REHEARSAL_SPLITCHECK seat=\S+ picked=(\S+) home=(\S+) projection=(\S+) board=(\[[^\]]*\]) tray=(\[[^\]]*\]) roster=(\[[^\]]*\])')
+            if (-not $split.Success) {
+                throw "SMOKE FAILED: $($player.Seat) never reported its board-vs-tray-vs-draft split check."
+            }
+            if ($split.Groups[1].Value -eq 'none' -or $split.Groups[1].Value -ne $split.Groups[3].Value) {
+                throw ("SPLIT-BRAIN REPRODUCED on $($player.Seat): drafted '$($split.Groups[1].Value)' " +
+                    "but its projection fields '$($split.Groups[3].Value)' - the picked line-up did not " +
+                    'reach the seat authority (board=' + $split.Groups[4].Value +
+                    ' tray=' + $split.Groups[5].Value + ' roster=' + $split.Groups[6].Value + ').')
+            }
+            if ($split.Groups[4].Value -ne $split.Groups[5].Value) {
+                throw ("SPLIT-BRAIN REPRODUCED on $($player.Seat): the MAP and the HANDS/tray disagree - " +
+                    'board=' + $split.Groups[4].Value + ' tray=' + $split.Groups[5].Value + '.')
+            }
+            Write-Output ("  DRAFT {0}: picked={1} projection={2} board={3} tray={4} roster={5}" -f `
+                $player.Seat, $split.Groups[1].Value, $split.Groups[3].Value, `
+                $split.Groups[4].Value, $split.Groups[5].Value, $split.Groups[6].Value)
         }
 
         # FINDING 2. Two joiners must hold two DIFFERENT heroes: one hero on both seats would mean a
@@ -679,8 +717,20 @@ elseif ($Topology -eq 'MultiClientSmoke') {
             throw ("FINDING 4 REPRODUCED ON THE AUTHORITY: the host composed the match at version " +
                 "$($hostReady.Groups[1].Value) in phase $($hostReady.Groups[2].Value).")
         }
+        # PLAYTEST FAILURE #2 / FILL-WITH-BOTS gate. "Bots join and draft" is a first-class pass
+        # criterion, not an afterthought: the host reaches this ready line ONLY when EVERY seat is
+        # claimed and ready, so the seat count here proves the two scripted joiners AND the
+        # fill-with-bots children all seated. The shipped z56 build failed exactly here - the bots
+        # were refused MatchFormatMismatch (a 3v3-LONG host, bots defaulting to 3v3-quick) and never
+        # claimed, so this line never came. Assert the full table for the chosen format.
+        $expectedSeats = if ($MatchFormat -like '2v2*') { 4 } else { 6 }
+        if ([int]$hostReady.Groups[3].Value -ne $expectedSeats) {
+            throw ("FILL-WITH-BOTS REPRODUCED: the host reached its commitment window with only " +
+                "$($hostReady.Groups[3].Value) of $expectedSeats seats claimed - the bots did not all " +
+                'join and draft (the shipped defect was a format the bots never inherited).')
+        }
         Write-Output ("  FINDING 4 NEGATIVE HELD: host and both joiners opened at version 0 in " +
-            "AwaitingCommitments, with $($hostReady.Groups[3].Value) seats claimed.")
+            "AwaitingCommitments, with all $($hostReady.Groups[3].Value) seats (joiners + bots) claimed.")
 
         Write-Output '== Step 5: every process exits on its own =='
         Assert-PlayerExit -Players $smokePlayers -DeadlineSeconds 240 -Description 'multi-client smoke'

@@ -280,6 +280,15 @@ namespace GuardsDigital.Presentation.Interaction
         private bool stopped;
         private bool privacyFailed;
         private long auditedRevision = -1;
+
+        /// <summary>
+        /// PLAYTEST FAILURE #2 gate. The hero THIS seat actually drafted, remembered so the smoke
+        /// assertion can prove the composed match fields the DRAFT rather than the printed default -
+        /// the degeneracy that hid the shipped bug is that "composed the draft" and "kept the default"
+        /// are the same board unless the draft is provably different, so the smoke draft is
+        /// deliberately NON-DEFAULT (last-available) and each seat asserts its own pick landed.
+        /// </summary>
+        private string smokePickedHeroId = string.Empty;
         private long reportedProgressVersion = -1;
 
         private string initiativeProposal = string.Empty;
@@ -671,6 +680,13 @@ namespace GuardsDigital.Presentation.Interaction
                 if (!smokeReported)
                 {
                     smokeReported = true;
+                    // PLAYTEST FAILURE #2 gate. AuditProjection above proved this seat's authority is
+                    // scoped to its own hero; this proves the hero it is scoped ABOUT is the one this
+                    // seat DRAFTED rather than the printed default, and that the MAP, the HANDS/tray
+                    // and the roster all field it. A failure here is the shipped bug caught, and it
+                    // fails the run (Quit 1) rather than reporting a pass.
+                    if (!AssertSmokeDraftLanded(machine))
+                        return;
                     PrivateOnlineMarkers.Log(
                         "REHEARSAL_SMOKE_PASS seat=" + options.Seat.Value +
                         " hero=" + compositionRoot.Runtime.Seat.HeroId.Value +
@@ -1430,15 +1446,125 @@ namespace GuardsDigital.Presentation.Interaction
             var model = lobby.Presenter.Model;
             if (model == null || !model.Offers(PrivateLobbyControl.ChooseHero))
                 return;
+
+            // PLAYTEST FAILURE #2 gate. In Smoke mode this seat takes the LAST available hero rather
+            // than the first, so the drafted line-up differs from the printed default and "composed
+            // the draft" is distinguishable from "kept the default" - the exact degeneracy that let
+            // the shipped bug pass every green tier. Every other cohort keeps first-available, which
+            // is deterministic and reproduces the shipped board.
+            string chosenHeroId = null;
             foreach (var option in model.Selection.Heroes)
             {
                 if (!option.IsAvailable)
                     continue;
-                lobby.Presenter.SelectedHeroIdValue = option.HeroIdValue;
-                if (lobby.Presenter.Press(PrivateLobbyControl.ChooseHero, null))
-                    ClientMarker("hero-picked-" + option.HeroIdValue, -1);
-                return;
+                chosenHeroId = option.HeroIdValue;
+                if (options.Mode != PrivateOnlineRehearsalMode.Smoke)
+                    break;
+                // Smoke: keep scanning so the LAST available option wins.
             }
+
+            if (chosenHeroId == null)
+                return;
+
+            lobby.Presenter.SelectedHeroIdValue = chosenHeroId;
+            if (lobby.Presenter.Press(PrivateLobbyControl.ChooseHero, null))
+            {
+                smokePickedHeroId = chosenHeroId;
+                ClientMarker("hero-picked-" + chosenHeroId, -1);
+            }
+        }
+
+        /// <summary>
+        /// PLAYTEST FAILURE #2 gate, the enshrined board-vs-tray-vs-draft check the shipped bug slipped
+        /// past twice. <see cref="AuditProjection"/> already proves this seat's projection is
+        /// internally consistent and its authority scoped to its own hero; what it cannot prove is
+        /// that the hero it is consistent ABOUT is the one this seat DRAFTED rather than the printed
+        /// default - "composed the draft" and "kept the default" are internally identical, the exact
+        /// degeneracy the coordinator named as why every green tier missed this. This asserts the
+        /// seat's DRAFTED hero (deliberately non-default in Smoke mode) is the hero its ONLINE
+        /// projection fields, its RECOMPOSED local board seats, and its TRAY draws - the three tiers
+        /// the user saw disagree ("heroes spawned on the map" but "hero trays did not change; can play
+        /// all six original heroes"). It fails the run rather than reporting a pass.
+        /// </summary>
+        private bool AssertSmokeDraftLanded(PrivateSessionClient machine)
+        {
+            var rt = compositionRoot.Runtime;
+            var projection = machine.LatestProjection;
+
+            // board = the recomposed local host's seats (what spawns on the MAP).
+            var board = rt?.Host == null
+                ? new List<string>()
+                : rt.Host.Seats.Seats
+                    .Select(seat => seat.TeamSide + ":" + seat.HeroId.Value)
+                    .OrderBy(value => value, StringComparer.Ordinal).ToList();
+            // tray = the online seat projection's setup heroes (what the hands / hero rail draw).
+            var tray = rt?.ReadModel?.Setup?.Heroes == null
+                ? new List<string>()
+                : rt.ReadModel.Setup.Heroes
+                    .Select(hero => hero.TeamSide + ":" + hero.HeroId.Value)
+                    .OrderBy(value => value, StringComparer.Ordinal).ToList();
+            // roster = the drafted line-up the roster names.
+            var lineup = machine.ComposedLineup();
+            var roster = lineup == null
+                ? new List<string>()
+                : lineup.Red.Select(hero => TeamSide.Red + ":" + hero.HeroIdValue)
+                    .Concat(lineup.Blue.Select(hero => TeamSide.Blue + ":" + hero.HeroIdValue))
+                    .OrderBy(value => value, StringComparer.Ordinal).ToList();
+            var home = rt?.Seat == null ? "none" : rt.Seat.HeroId.Value;
+
+            PrivateOnlineMarkers.Log(
+                "REHEARSAL_SPLITCHECK seat=" + options.Seat.Value +
+                " picked=" + (smokePickedHeroId.Length == 0 ? "none" : smokePickedHeroId) +
+                " home=" + home +
+                " projection=" + (projection == null ? "none" : projection.HeroId) +
+                " board=[" + string.Join(",", board) + "]" +
+                " tray=[" + string.Join(",", tray) + "]" +
+                " roster=[" + string.Join(",", roster) + "]");
+
+            // A Smoke client always drafts a hero; a seat that reached here without one means the
+            // pick control was never truly reachable, which is itself a finding.
+            if (smokePickedHeroId.Length == 0)
+            {
+                Fail("smoke-split-no-pick seat=" + options.Seat.Value);
+                return false;
+            }
+
+            // The ONLINE projection - the authority the hands and tray read - must field THIS seat's
+            // drafted hero. A default here is the split-brain the user hit: the board recomposed to
+            // the draft while the projection kept the printed line-up.
+            if (projection == null ||
+                !string.Equals(projection.HeroId, smokePickedHeroId, StringComparison.Ordinal))
+            {
+                Fail("smoke-split-projection-not-draft picked=" + smokePickedHeroId +
+                    " projection=" + (projection == null ? "none" : projection.HeroId));
+                return false;
+            }
+
+            // The recomposed local board (the MAP) must seat the same drafted hero for this seat.
+            if (rt?.Seat == null ||
+                !string.Equals(rt.Seat.HeroId.Value, smokePickedHeroId, StringComparison.Ordinal))
+            {
+                Fail("smoke-split-board-not-draft picked=" + smokePickedHeroId + " home=" + home);
+                return false;
+            }
+
+            // No split between the map and the hands/tray the presenters draw.
+            if (!board.SequenceEqual(tray))
+            {
+                Fail("smoke-split-board-vs-tray board=[" + string.Join(",", board) +
+                    "] tray=[" + string.Join(",", tray) + "]");
+                return false;
+            }
+
+            // And the composed board is the DRAFT itself, not merely some valid set of the right size.
+            if (roster.Count == 0 || !board.SequenceEqual(roster))
+            {
+                Fail("smoke-split-board-vs-draft board=[" + string.Join(",", board) +
+                    "] draft=[" + string.Join(",", roster) + "]");
+                return false;
+            }
+
+            return true;
         }
 
         private void ClientMarker(string eventName, long version)

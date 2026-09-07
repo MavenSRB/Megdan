@@ -357,6 +357,28 @@ Non-goals: no schema, wire or content movement; `MaximumHeldSeconds` untouched.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z56-sequence-the-attack-spotlights-zoom-a-beat-then-the-attack-cue-completion-evidence).
 
+### [x] 8.35z57 Make every joiner and spawned bot inherit the host's chosen format
+
+The 2026-09-08 playtest's third report on the rebuilt lobby: "Nothing is working, lobby has the the same issue as before, can play with all heroes. Hero trays didnt change" - and, on the same shipped z56 build, "5 test driver(s) failed to join in time" on a table the tester had set to 3v3.
+
+Observable outcome: a player who types only an address, and a bot the host spawns, both join whatever printed setup the host chose - and the line-up the table drafts is the line-up the match fields, on every seat's board, tray and authority.
+
+A joiner cannot know the host's team size and game length before it dials, so it composed `MatchFormat.Default` (3v3 Quick) at Awake and derived its admission tuple from that; any host playing anything else refused it `MatchFormatMismatch`, and FILL WITH BOTS spawned its children on the same default so they were refused identically. **The format id carries the game LENGTH as well as the team size**, which is why this was never confined to 2v2 and why "3v3 is the default, so format cannot be the cause" was wrong: the tester's own shipped-build host log reads `LOBBY_FORMAT format=3v3-long`, with 23 `MatchFormatMismatch` rejections, ONE seat ever claimed and no `SEATS_COMPLETE` at all. The "failed to join in time" banner was the secondary symptom - refused bots exit, their seats stay open, and the join grace expires - not a separate timeout defect.
+
+The host already publishes its own format id in the plaintext refusal, which is exactly the "told the fact it can act on" its reason enum intends, so a refused joiner reads it, recomposes this scene onto that format - rebuilding the runtime and, with it, the admission tuple derived from the composition - and re-dials ONCE. A bot needs no recovery at all: the host hands it `-guardsMatchFormat` with the format it actually composed, so it is never refused. No wire change and no schema change.
+
+**THE GATE THAT WOULD HAVE CAUGHT THIS IS ENSHRINED HERE.** `AuditProjection` already proved a seat's authority is scoped to its own hero; nothing proved the hero it is scoped ABOUT is the one the seat DRAFTED rather than the printed default - internally identical states, which is the degeneracy that let this pass every green tier twice. The Smoke cohort now drafts the LAST available hero, so the draft is non-default by construction, and fails the run unless that hero is what the seat's online projection fields, its recomposed board seats, and its tray draws. The runner asserts the full seat count for the chosen format is claimed, so "bots join and draft" is a first-class criterion, and `-MatchFormat` is given to the HOST ONLY so joiners and bots must inherit it over the wire.
+
+Acceptance checks:
+
+- A joiner and every spawned bot seat on a host playing a non-default format, at both `3v3-long` and `2v2-quick`, through the shipped lobby controls over real sockets.
+- The composed match equals the DRAFTED line-up - not merely a valid set of the right size - on the board, the tray and the seat's own authority, per seat.
+- Whisper resolves her own prepared token rather than the primitive prism.
+
+Non-goals: no wire, schema or content movement; the in-match bot spin and the parked placement prompts stay their own correctives.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z57-make-every-joiner-and-spawned-bot-inherit-the-hosts-chosen-format-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

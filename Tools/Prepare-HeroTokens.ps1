@@ -85,7 +85,7 @@
 param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
-        'dodger', 'misa', 'silverarrow', 'ursafar')]
+        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Check,
@@ -135,15 +135,22 @@ $declaredHeroes = @{
     # is the bare `ursafar`, which is exactly why this stays a declared table and never a rule.
     ursafar = @{ ElementId = 8629816; ElementName = 'Ursafar_The_Savage'; DisplayName = 'Ursafar' }
 
-    # RECORDED ABSENCE - Tali and Whisper. Both are heroes this project is dealing, and the corpus
-    # holds their dashboards (the shared Tabletopia placeholder names Arien, Brogan, Dodger, Min,
-    # Sabina, Tali, Trinkets, Ursafar, Wasp, Whisper and Xargatha). Neither name appears on any
-    # `VerticalTokens` element in the bundled manifest, so which element carries their standee is
-    # not something this file can state, and the whole design of this table is that it is stated
-    # rather than searched for - a name-matching rule would already have found nothing for Arien,
-    # whose element is `Arien2`. Their dealing worker read the corpus and can declare the mapping in
-    # one line each; guessing it here would crop whatever happens to sit at those coordinates, which
-    # is the failure the identity check below exists to make impossible.
+    # The lobby-recut worker (PLAYTEST FINDING, z56 build: "one hero had the old primitive token").
+    # Whisper's standee IS in the bundled manifest - it is just not named `Whisper`. The corpus names
+    # some standees by EPITHET (Ursafar's is `Ursafar_The_Savage`), and Whisper the Outcast's element
+    # is `Outcast` (id 8597952), the one `VerticalTokens` standee whose name is an unclaimed hero
+    # epithet and which the six-face manifest carries beside the other ten. Verified the same way the
+    # ten above were - the identity check below confirms the element name and type against the
+    # manifest and the team-ring measurement confirms the two 302x302 faces - rather than guessed:
+    # a name-matching rule would still find nothing, which is exactly why this stays a declared table.
+    whisper = @{ ElementId = 8597952; ElementName = 'Outcast'; DisplayName = 'Whisper' }
+
+    # RECORDED ABSENCE - Tali. She is still being dealt (the DECISION cuts the fixed build at eleven
+    # heroes, with Whisper and without Tali), and the corpus holds her dashboard under the shared
+    # Tabletopia placeholder name `Tali` but no `VerticalTokens` standee this file can state yet. Her
+    # dealing worker declares the mapping in one line when her cut arrives; guessing it here would
+    # crop whatever happens to sit at those coordinates, which is the failure the identity check below
+    # exists to make impossible.
 }
 
 $declared = $declaredHeroes[$Hero]

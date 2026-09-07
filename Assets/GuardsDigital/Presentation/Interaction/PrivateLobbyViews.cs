@@ -425,7 +425,8 @@ namespace GuardsDigital.Presentation.Interaction
     {
         public TestDriverSpawnRequest(
             SeatId seat, string address, int port, string sessionKey,
-            double? thinkSecondsOverride = null, int parentProcessId = 0)
+            double? thinkSecondsOverride = null, int parentProcessId = 0,
+            string matchFormatId = null)
         {
             Seat = seat;
             Address = address;
@@ -433,12 +434,24 @@ namespace GuardsDigital.Presentation.Interaction
             SessionKey = sessionKey;
             ThinkSecondsOverride = thinkSecondsOverride;
             ParentProcessId = parentProcessId;
+            MatchFormatId = matchFormatId ?? string.Empty;
         }
 
         public SeatId Seat { get; }
         public string Address { get; }
         public int Port { get; }
         public string SessionKey { get; }
+
+        /// <summary>
+        /// PLAYTEST FAILURE #2 fix (lobby recut). The printed format the HOST composed, so the
+        /// spawned child composes the SAME one at Awake rather than <see cref="MatchFormat.Default"/>
+        /// (3v3 Quick). Before this, FILL WITH BOTS spawned every child on the default 3v3 and a host
+        /// playing any other format refused each one <see cref="SessionRejectionReason.MatchFormatMismatch"/>
+        /// and timed it out - so "fill with bots" was silently impossible on a 2v2 table, the same
+        /// join-time format seam the human joiner hits. Empty means "let the child use the default",
+        /// kept so a host that has somehow not composed a plan spawns exactly what it did before.
+        /// </summary>
+        public string MatchFormatId { get; }
 
         /// <summary>
         /// Unset by default, so a real solo session's spawned drivers keep
@@ -503,6 +516,16 @@ namespace GuardsDigital.Presentation.Interaction
                 "-batchmode", "-nographics",
                 "-logFile", Quote(logPath)
             };
+            // PLAYTEST FAILURE #2 fix (lobby recut). Hand the child the HOST's format so it composes
+            // the same printed setup at Awake and its admission tuple matches - the flag the ELEVENTH
+            // amendment already accepts beside every role, including the lobby the child runs. Without
+            // it the child booted the default 3v3 and a 2v2 host refused it MatchFormatMismatch.
+            if (!string.IsNullOrEmpty(request.MatchFormatId))
+            {
+                arguments.Add(GuardsDigital.Network.PrivateSessionLaunchOptions.MatchFormatFlag);
+                arguments.Add(Quote(request.MatchFormatId));
+            }
+
             if (request.ThinkSecondsOverride.HasValue)
             {
                 arguments.Add(PrivateSeatDriverOptions.ThinkSecondsFlag);
@@ -587,6 +610,23 @@ namespace GuardsDigital.Presentation.Interaction
         private string sessionKey = string.Empty;
         private PrivateSessionEndpoint dialled;
         private string signature = string.Empty;
+
+        /// <summary>
+        /// PLAYTEST FAILURE #2 fix (lobby recut). Set once per join attempt, so a joiner that had to
+        /// inherit the host's format and re-dial does it EXACTLY ONCE - a second format refusal after
+        /// inheriting is a genuine mismatch (a custom board, a build difference) rather than the
+        /// default-3v3-versus-a-2v2-host case this recovers, and must be left to fail by name rather
+        /// than looped. Cleared at the top of every fresh <see cref="BeginJoining"/>.
+        /// </summary>
+        private bool formatInheritanceAttempted;
+
+        /// <summary>
+        /// PLAYTEST FAILURE #2 fix. The last lobby pick refusal already surfaced, so a REFUSED hero
+        /// pick - which leaves the client Seated rather than Rejected and was therefore logged NOWHERE
+        /// before this, the silence the diagnosis names as why this shipped twice - is written to the
+        /// log once per distinct refusal rather than every frame or never.
+        /// </summary>
+        private string lastSurfacedLobbyRefusal = string.Empty;
 
         /// <summary>
         /// 8.35t corrective. Why a spawned child never reached this host at all: the address a
@@ -807,6 +847,17 @@ namespace GuardsDigital.Presentation.Interaction
                     }
                 }
             }
+
+            // PLAYTEST FAILURE #2 fix (lobby recut). A joiner refused MatchFormatMismatch inherits
+            // the host's format and re-dials, once. This is checked before anything else reads the
+            // client's state so a joiner never lingers on a terminal Rejected the way the shipped
+            // build's every 2v2 joiner did.
+            if (TryInheritHostFormatAndRejoin())
+            {
+                return;
+            }
+
+            SurfaceLobbyPickRefusal();
 
             ReportOutcomeOnce();
 
@@ -1294,13 +1345,17 @@ namespace GuardsDigital.Presentation.Interaction
                 thinkSecondsOverride = parsedOverride;
             }
 
+            // PLAYTEST FAILURE #2 fix (lobby recut). Every spawned child inherits the format the host
+            // ACTUALLY composed, read off the composition rather than assumed, so a 2v2 (or Long, or
+            // any non-default) table fills with bots instead of refusing each one MatchFormatMismatch.
+            var hostFormatId = compositionRoot?.ComposedPlan?.Format.Id ?? string.Empty;
             var spawned = 0;
             var deadline = DateTime.UtcNow.AddSeconds(TestDriverJoinGraceSeconds);
             foreach (var seat in freshSeats)
             {
                 var request = new TestDriverSpawnRequest(
                     seat, hostDialAddress, listener.BoundPort, sessionKey, thinkSecondsOverride,
-                    System.Diagnostics.Process.GetCurrentProcess().Id);
+                    System.Diagnostics.Process.GetCurrentProcess().Id, hostFormatId);
                 try
                 {
                     var process = testDriverLauncher.Launch(request);
@@ -1438,6 +1493,10 @@ namespace GuardsDigital.Presentation.Interaction
             // succeeds must not leave a stale failure standing for a caller - a spawned
             // PrivateSeatDriver among them - that only checks this once, right after pressing.
             LastJoinFailure = null;
+            // PLAYTEST FAILURE #2 fix. A fresh join gets one fresh format-inheritance attempt, and
+            // no stale pick refusal carried over from a prior seating.
+            formatInheritanceAttempted = false;
+            lastSurfacedLobbyRefusal = string.Empty;
 
             if (!TryReadEndpoint(entry, out var endpoint, out var error))
             {
@@ -1475,6 +1534,165 @@ namespace GuardsDigital.Presentation.Interaction
             signature = string.Empty;
             presenter.AttachClient(machine);
             PrivateOnlineMarkers.Log("LOBBY_JOINING seat=" + SeatLabelForLog());
+        }
+
+        /// <summary>
+        /// PLAYTEST FAILURE #2 fix (lobby recut). The format-inheritance recovery: a joiner cannot
+        /// know the host's chosen team size and game length before it dials - it types only an
+        /// address - so it composes <see cref="MatchFormat.Default"/> (3v3 Quick) at Awake and derives
+        /// its admission tuple from that. A host playing anything else refuses it
+        /// <see cref="SessionRejectionReason.MatchFormatMismatch"/>, which is the exact flood in the
+        /// returned 2v2 host.log and the reason every 2v2 join was silently impossible in the shipped
+        /// build. The user's own spec correction is that a joiner INHERITS the host's format, and the
+        /// host's refusal already NAMES its format id in the reject detail, so this reads it,
+        /// recomposes this scene onto that format - which rebuilds the runtime and, with it, the
+        /// admission tuple <see cref="ConfiguredMatchSceneRuntime.SessionIdentity"/> derives from the
+        /// composition - and re-dials once with the corrected identity.
+        /// </summary>
+        /// <remarks>
+        /// A host never runs this: it composed the format itself and refuses nobody over it. It runs
+        /// at most once per join (<see cref="formatInheritanceAttempted"/>), so a SECOND format
+        /// refusal - a genuinely incompatible board, not the default-versus-host case - is left to
+        /// fail by name rather than looped. No wire change: the host has published its own format id
+        /// in the plaintext refusal since the ELEVENTH amendment, and reading it is exactly the
+        /// "told the fact it can act on" the reason enum's own comment intends.
+        /// </remarks>
+        private bool TryInheritHostFormatAndRejoin()
+        {
+            if (session != null || machine == null || formatInheritanceAttempted ||
+                compositionRoot?.Runtime == null)
+            {
+                return false;
+            }
+
+            if (machine.State != PrivateSessionClientState.Rejected ||
+                machine.RejectionReason != SessionRejectionReason.MatchFormatMismatch)
+            {
+                return false;
+            }
+
+            var hostFormat = HostFormatFromRefusal(machine.RejectionDetail);
+            if (hostFormat == null)
+            {
+                // The refusal named no printed id this build composes - a custom staged board, say -
+                // so there is nothing to inherit and the honest answer is the refusal that stands.
+                return false;
+            }
+
+            formatInheritanceAttempted = true;
+
+            if (compositionRoot.ComposedPlan == null ||
+                !string.Equals(
+                    compositionRoot.ComposedPlan.Format.Id, hostFormat.Id, StringComparison.Ordinal))
+            {
+                compositionRoot.Recompose(MatchCompositionPlan.Printed(hostFormat));
+                PrivateOnlineMarkers.Log("LOBBY_FORMAT_INHERITED format=" + hostFormat.Id);
+            }
+
+            // The seat a player pre-selected on the entry form may not exist in the host's format - a
+            // joiner who typed red-player-03 against a 2v2 host names a seat 2v2 does not have. Keep it
+            // only when the recomposed match actually seats it; otherwise inherit seatless, so the
+            // joiner is admitted with the roster and picks one of the seats the host's format defines,
+            // which is the spec flow ("see open seats -> pick a seat") reached the honest way.
+            if (joinedSeat.IsDefined && !SeatExistsInComposedMatch(joinedSeat))
+            {
+                joinedSeat = default;
+            }
+
+            // A fresh client, from the NOW-corrected admission tuple. The refused one is terminal and
+            // holds the wrong identity; nothing of it is reused because no seat capability has been
+            // minted yet.
+            DisposeTransport();
+            refusalReported = false;
+            machine = new PrivateSessionClient(
+                compositionRoot.Runtime.SessionIdentity, joinedSeat, sessionKey,
+                clientOutbox, new CryptoNonceSource(),
+                retainedCapabilities: RetainedCapabilities());
+            OpenTransport();
+            if (!Dial())
+            {
+                LastJoinFailure = "seat=" + SeatLabelForLog() +
+                    " could not re-reach the host at " + dialled +
+                    " after inheriting format " + hostFormat.Id;
+                PrivateOnlineMarkers.Fail("lobby-join " + LastJoinFailure);
+                machine = null;
+                return true;
+            }
+
+            signature = string.Empty;
+            presenter.AttachClient(machine);
+            PrivateOnlineMarkers.Log(
+                "LOBBY_REJOINING seat=" + SeatLabelForLog() + " format=" + hostFormat.Id);
+            return true;
+        }
+
+        /// <summary>
+        /// The printed format a <see cref="SessionRejectionReason.MatchFormatMismatch"/> refusal
+        /// names, or null when it names none this build composes. The host's own
+        /// <c>DescribeMismatch</c> writes the stable <see cref="MatchFormat.Id"/> into the plaintext
+        /// detail; this scans for whichever printed id appears rather than parsing the sentence, so a
+        /// reworded message can never silently defeat inheritance.
+        /// </summary>
+        private static MatchFormat HostFormatFromRefusal(string detail)
+        {
+            if (string.IsNullOrEmpty(detail))
+            {
+                return null;
+            }
+
+            foreach (var format in MatchFormat.All)
+            {
+                if (detail.IndexOf(format.Id, StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return format;
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>Whether the currently composed match seats a seat of that id.</summary>
+        private bool SeatExistsInComposedMatch(SeatId seat)
+        {
+            foreach (var composed in compositionRoot.Runtime.Host.Seats.Seats)
+            {
+                if (composed.Id.Equals(seat))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// PLAYTEST FAILURE #2 fix (lobby recut). Writes a REFUSED hero pick to the log once per
+        /// distinct refusal. A pick the host declines - out of turn, a hero taken a moment earlier,
+        /// the phase not open - is a NON-TERMINAL refusal: the client records the reason and stays
+        /// Seated (a refused pick must not unseat anyone), so the terminal
+        /// <c>LOBBY_REFUSED</c> path never fired for it and the returned playtest log carried no
+        /// trace at all. That silence is the diagnosis's own answer to "why did this ship twice", and
+        /// this closes it without a visible surface that could go stale after a later pick succeeds.
+        /// </summary>
+        private void SurfaceLobbyPickRefusal()
+        {
+            if (machine == null || machine.HasMatchStarted ||
+                machine.State != PrivateSessionClientState.Seated ||
+                machine.RejectionReason != SessionRejectionReason.HeroSelectionRefused)
+            {
+                return;
+            }
+
+            if (string.Equals(lastSurfacedLobbyRefusal, machine.RejectionDetail, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            lastSurfacedLobbyRefusal = machine.RejectionDetail;
+            PrivateOnlineMarkers.Log(
+                "LOBBY_PICK_REFUSED seat=" + SeatLabelForLog() +
+                " reason=" + machine.RejectionReason +
+                " detail=" + machine.RejectionDetail);
         }
 
         /// <summary>
