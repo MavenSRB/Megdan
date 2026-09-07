@@ -355,7 +355,7 @@ function Start-RehearsalPlayer {
     param(
         [Parameter(Mandatory = $true)] [string] $Name,
         [Parameter(Mandatory = $true)] [ValidateSet('host', 'client')] [string] $Role,
-        [Parameter(Mandatory = $true)] [ValidateSet('match', 'host-loss', 'rejoin', 'rejoin-return', 'solo')] [string] $Mode,
+        [Parameter(Mandatory = $true)] [ValidateSet('match', 'host-loss', 'rejoin', 'rejoin-return', 'solo', 'smoke')] [string] $Mode,
         [Parameter(Mandatory = $false)] [string] $Seat = '',
         [Parameter(Mandatory = $true)] [string] $Address,
         [Parameter(Mandatory = $true)] [int] $Port,
