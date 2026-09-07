@@ -227,21 +227,21 @@ still governs.
 
 ## Dodger deferred faces
 
-Two of her nineteen faces carry a named deferral rather than a composition, and both state their trigger in
+One of her nineteen faces carries a named deferral rather than a composition, and it states its trigger in
 the content itself rather than here.
 
 - **Rusty Razor** is p.20's Handicap card, parked under the standing 2026-08-21 user decision that no
   configuration of this build composes an odd player count. p.6 returns it to the box.
-- **Middlefinger of Death** is parked on the **attack-sequence bullet's subject narrowing**, and that
-  deferral has narrowed twice rather than being inherited. Phase one parked it on a question; the user's
-  D-06 ruling answered that. Phase two re-parked it on a seam, having measured that the only shape then
-  producing a second complete p.14 order was p.10's Repeat - which Enfeeblement is ruled to forbid, so
-  composing it as a repeat would have handed one card a restriction neither card prints. Milestone 8.35z27
-  then **built** that seam, so its first bullet would compose today. What remains is the second bullet
-  alone: "a hero in range who has one or more cards in the discard" is a predicate about the candidate,
-  and a bullet carries a printed target policy - which units, how far, whether p.19's line is excluded -
-  that cannot state one. That extension widens a type the snapshot serializer persists, so it is owed a
-  milestone in which it alone moves the schema.
+- **Middlefinger of Death** was parked on the **attack-sequence bullet's subject narrowing** through two
+  successive narrowings rather than an inherited one - phase one on a question the user's D-06 ruling
+  answered, phase two on a seam, having measured that the only shape then producing a second complete
+  p.14 order was p.10's Repeat, which Enfeeblement is ruled to forbid. Milestone 8.35z27 built that seam,
+  and **milestone 8.35z45 composed the face**. Its second bullet declares one closed enum member on
+  `AttackSequenceBullet` - "has one or more cards in the discard" - evaluated per candidate at that
+  bullet's sequence start over the set p.13's targeting already admits, so reach and p.18's immunities
+  are asked once and unchanged while the printed sentence narrows the answer. It went on the BULLET and
+  not on the printed target policy every Attack declares, which is what kept it from re-identifying every
+  dealt hero; it moved the snapshot schema alone, v38 to v40, rejecting rather than migrating.
 
 ## What makes her set differ from the six shipped heroes
 

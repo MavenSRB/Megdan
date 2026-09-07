@@ -309,7 +309,40 @@ namespace GuardsDigital.Core.Snapshots
         // cannot promise - it is exactly the state the old build could not record. A migrated payload
         // would resume a half-finished action as a finished one, dropping the sequence Ruling 5 says is
         // still owed and, with it, a whole p.14.
-        public const int CurrentSchemaVersion = 38;
+        //
+        // Milestone 8.35z45 moves it to 40, and BOTH halves of that number are deliberate.
+        //
+        // WHY IT MOVES AT ALL. Each bullet of a persisted modal Attack plan now writes a fifth enum -
+        // the predicate the bullet prints about its candidate, which is what Middlefinger of Death's
+        // "a hero in range WHO HAS one or more cards in the discard" needs and what the multi-sequence
+        // contract named as its one open extension point. The corpus does not move: no fixture in it
+        // carries a modal Attack chain, so all sixteen payloads are byte-identical in LENGTH and the
+        // only reason their digests move is this version field's own value. That measurement was taken
+        // BEFORE the decision and it is deliberately not the decision: a v38 payload that DOES carry a
+        // chain - which a shipped v38 build produces, because Whisper's Grim Reaper composes four
+        // bullets today - has one fewer integer per bullet, so a v40 reader walking it would take the
+        // next bullet's id string out of the middle of this bullet's policy. That is corruption, not a
+        // short read, and it is precisely what the version guard exists to turn into a refusal.
+        //
+        // REJECT rather than migrate, on the reasoning every bump since v25 has used. A v38 payload's
+        // missing field would have to be read as "this bullet prints no predicate about its candidate".
+        // That reading is true of every v38 capture EXCEPT one taken mid-chain on a card that prints
+        // one - which is exactly the payload a migration would have to be right about, and exactly the
+        // payload this milestone creates. A migrated capture of Middlefinger's second sequence would
+        // resume offering every enemy hero in range, including the ones whose empty discard the card
+        // says are not targets, and the player would spend a Tier III card on a unit it never admitted.
+        // Nor is the absence recoverable from the board: the pile is live state and says nothing about
+        // which sentence the paused sequence was derived from.
+        //
+        // WHY 40 AND NOT 39. v39 is spoken for. Misa's deferred EffectInterruptKind candidate claimed
+        // it, recorded in the multi-sequence worker's own hand-off ("this v38 lands first - Misa's
+        // deferred EffectInterruptKind candidate takes v39") and restated at the Dodger dealing. That
+        // claimant is an unrelated payload shape with its own migrate-or-reject decision still to make,
+        // and two milestones landing "both v39" is the collision the queue exists to prevent. Taking
+        // the next free number rather than the next number leaves the claim intact and costs nothing:
+        // the guard is an equality test, so 39 being unused is not a hole a reader can fall into - a
+        // payload claiming it is refused exactly as one claiming 38 is.
+        public const int CurrentSchemaVersion = 40;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

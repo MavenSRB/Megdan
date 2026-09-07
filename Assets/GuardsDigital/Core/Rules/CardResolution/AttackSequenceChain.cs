@@ -7,6 +7,65 @@ using GuardsDigital.Core.Cards;
 namespace GuardsDigital.Core.Rules.CardResolution
 {
     /// <summary>
+    /// Milestone 8.35z45. The predicate one bullet of a modal Attack prints about the
+    /// candidate itself, over and above which units its sentence reaches and how far.
+    ///
+    /// <para><b>Why a closed vocabulary and not the capability reference the seam was sketched as.</b>
+    /// <see cref="AttackSequenceBullet"/>'s own documentation sized this extension point as "an optional
+    /// <c>EffectCapabilityReference</c> here, resolved through the existing capability catalog". Taking
+    /// it that way was measured against the serializer's standing rule and refused. The bullet is
+    /// PERSISTED, and every writer in
+    /// <see cref="GuardsDigital.Core.Snapshots.AuthoritativeSnapshotSerializer"/> says the same thing
+    /// about what may cross: identity and content the payload NAMES, never semantics it CARRIES. A
+    /// capability id plus a version is a name the reader would have to resolve to a handler and then
+    /// trust to filter a target set - which is a payload choosing which code runs. A closed enum is
+    /// content the payload names: it is read back through
+    /// <c>SnapshotEnumReader</c> exactly as the bullet's three policy enums are, a value outside the
+    /// declared range is a rejected snapshot rather than a reconstructed one, and the meaning stays in
+    /// this build.</para>
+    ///
+    /// <para><b>The rule lives in the member's name.</b> That is the same discipline
+    /// <see cref="GuardsDigital.Core.Rules.Modifications.RuleModificationKind"/> follows and the reason
+    /// the Dodger phase-2 milestone's Ultimate passed the identity oracle on its first run: adding an
+    /// enum member is not a content-revision event, adding a public property to a type a shipped hero's
+    /// definition graph reaches is. This narrowing therefore sits on the bullet - a type derived from
+    /// node outcomes that no card definition graph reaches - rather than on
+    /// <see cref="GuardsDigital.Core.Cards.PrintedAttackTargetPolicy"/>, which every action definition in
+    /// the roster does reach and which could not be widened without moving all seven shipped heroes.
+    /// </para>
+    ///
+    /// <para><b>It is evaluated per candidate at the bullet's own sequence start</b>, never at the
+    /// modal. Ruling 19 binds each sequence's target against the board as that sequence finds it, and a
+    /// pile read one whole rulebook p.14 order early would be a different pile: the first sequence's own
+    /// Defense window puts cards into exactly the discard the second bullet reads.</para>
+    /// </summary>
+    public enum AttackSequenceSubjectNarrowing
+    {
+        /// <summary>
+        /// The bullet's printed sentence says nothing about the candidate beyond which units it reaches
+        /// and how far - which is every bullet in the build before Middlefinger of Death.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// "a hero in range <b>who has one or more cards in the discard</b>" - the second bullet of
+        /// Dodger the Warlock's Middlefinger of Death.
+        ///
+        /// <para>It is a NARROWING and not a gate, which is the grammar milestone 8.21 settled for
+        /// Brogan's "who has played an attack card this turn" and milestone 8.22 for Sabina's "adjacent
+        /// to your friendly minion": "who has" qualifies the hero being picked, so a hero with an empty
+        /// pile is not offered - rather than being offered and then refused, and rather than the whole
+        /// bullet being switched off by a board question. Dodger's own Littlefinger of Death and Finger
+        /// of Death print the identical clause on the identical bullet and already read it that way
+        /// through <c>hasCardInDiscard</c> on their printed-Range hero selection; this member is the
+        /// same sentence reaching the modal-Attack contract, and both consult
+        /// <see cref="GuardsDigital.Core.Cards.HeroDiscardPileQuery"/> so the two cannot come to
+        /// disagree.</para>
+        /// </summary>
+        HasOneOrMoreCardsInTheDiscard = 1
+    }
+
+    /// <summary>
     /// Milestone 8.35z27. One bullet of a modal Attack's "choose one, or both", and the
     /// targeting sentence printed beside it.
     ///
@@ -15,16 +74,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// target against the board <em>as it then stands</em>. A bullet that carried a unit would have
     /// chosen it at the modal, which is one board earlier than the sequence it belongs to.</para>
     ///
-    /// <para><b>The one extension point this contract leaves open.</b> A printed policy states which
-    /// units, how far, and whether p.19's straight line is excluded. It cannot state a PREDICATE
-    /// about the candidate, and one printed bullet in the unlanded roster needs one: Middlefinger of
-    /// Death's second bullet is "Target a hero in range who has one or more cards in the discard".
-    /// The seam for it is an optional <c>EffectCapabilityReference</c> here, resolved through the
-    /// existing capability catalog as a per-candidate predicate where the target set is derived. It
-    /// is deliberately not built yet - nothing in this build prints such a bullet, and inventing the
-    /// shape before a printed face names it is the deferral milestone 7.9's gate refuses. Adding it
-    /// later touches this type alone, so it moves no shared declaration struct and no hero's content
-    /// identity.</para>
+    /// <para><b>The extension point this contract left open, TAKEN at milestone
+    /// 8.35z45.</b> A printed policy states which units, how far, and whether p.19's
+    /// straight line is excluded. It cannot state a PREDICATE about the candidate, and Middlefinger of
+    /// Death's second bullet is "Target a hero in range who has one or more cards in the discard". That
+    /// predicate now travels as <see cref="SubjectNarrowing"/>, a closed printed vocabulary rather than
+    /// the capability reference the seam was sketched as - see
+    /// <see cref="AttackSequenceSubjectNarrowing"/> for why the sketch was refused. The contract's own
+    /// prediction held exactly: adding it touched this type alone, so it moved no shared declaration
+    /// struct and no shipped hero's content identity.</para>
     ///
     /// <para>The id is the effect node the card declares this bullet as. There is deliberately no
     /// printed ordinal beside it: the node already IS the bullet's identity, the order the bullets
@@ -34,7 +92,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// </summary>
     public readonly struct AttackSequenceBullet : IEquatable<AttackSequenceBullet>
     {
-        public AttackSequenceBullet(string bulletId, PrintedAttackTargetPolicy targetPolicy)
+        public AttackSequenceBullet(
+            string bulletId,
+            PrintedAttackTargetPolicy targetPolicy,
+            AttackSequenceSubjectNarrowing subjectNarrowing = AttackSequenceSubjectNarrowing.None)
         {
             if (string.IsNullOrWhiteSpace(bulletId))
             {
@@ -42,8 +103,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "A modal Attack bullet is named by the card it is printed on.", nameof(bulletId));
             }
 
+            if (!Enum.IsDefined(typeof(AttackSequenceSubjectNarrowing), subjectNarrowing))
+            {
+                throw new ArgumentException(
+                    "A modal Attack bullet states the predicate it prints about its candidate, or " +
+                    "states that it prints none.",
+                    nameof(subjectNarrowing));
+            }
+
             BulletId = bulletId;
             TargetPolicy = targetPolicy;
+            SubjectNarrowing = subjectNarrowing;
         }
 
         /// <summary>The bullet's stable content identity, so a paused chain names what it is owed.</summary>
@@ -52,11 +122,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <summary>What this bullet's own sentence lets its sequence target.</summary>
         public PrintedAttackTargetPolicy TargetPolicy { get; }
 
+        /// <summary>
+        /// Milestone 8.35z45. The predicate this bullet prints about the candidate itself,
+        /// applied to each candidate when this bullet's own sequence derives its target set.
+        ///
+        /// <para>It is deliberately NOT part of <see cref="TargetPolicy"/>. The policy is a printed
+        /// Attack's own declaration and every action definition in the roster carries one; the
+        /// narrowing belongs to one bullet of one modal, and putting it on the shared struct would have
+        /// re-identified all seven shipped heroes to say something six of them do not print.</para>
+        /// </summary>
+        public AttackSequenceSubjectNarrowing SubjectNarrowing { get; }
+
+        /// <summary>Whether this bullet prints a predicate about the candidate at all.</summary>
+        public bool NarrowsItsSubject => SubjectNarrowing != AttackSequenceSubjectNarrowing.None;
+
         public bool IsDefined => !string.IsNullOrWhiteSpace(BulletId);
 
         public bool Equals(AttackSequenceBullet other) =>
             string.Equals(BulletId, other.BulletId, StringComparison.Ordinal) &&
-            TargetPolicy.Equals(other.TargetPolicy);
+            TargetPolicy.Equals(other.TargetPolicy) &&
+            SubjectNarrowing == other.SubjectNarrowing;
 
         public override bool Equals(object obj) =>
             obj is AttackSequenceBullet other && Equals(other);
@@ -65,12 +150,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             unchecked
             {
-                return (StringComparer.Ordinal.GetHashCode(BulletId ?? string.Empty) * 397) ^
-                    TargetPolicy.GetHashCode();
+                return (((StringComparer.Ordinal.GetHashCode(BulletId ?? string.Empty) * 397) ^
+                    TargetPolicy.GetHashCode()) * 397) ^ (int)SubjectNarrowing;
             }
         }
 
-        public override string ToString() => $"{BulletId} ({TargetPolicy})";
+        public override string ToString() => NarrowsItsSubject
+            ? $"{BulletId} ({TargetPolicy}, {SubjectNarrowing})"
+            : $"{BulletId} ({TargetPolicy})";
     }
 
     /// <summary>

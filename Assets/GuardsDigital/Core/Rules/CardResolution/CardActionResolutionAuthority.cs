@@ -981,7 +981,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var declaredBullets = RequestedAttackSequenceQuery.Declared(cardText);
             if (declaredBullets.Count > 0 &&
                 !attackDefenseBackend.CanAnyDeclaredBulletFindATarget(
-                    offer, declaredBullets, materializedDefinitions, participants, modifications))
+                    offer, declaredBullets, materializedDefinitions, participants, modifications,
+                    instances))
             {
                 return false;
             }

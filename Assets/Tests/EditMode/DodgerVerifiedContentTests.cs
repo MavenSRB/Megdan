@@ -346,7 +346,7 @@ namespace GuardsDigital.Tests.EditMode
         /// do, and a face that quietly gained or lost a composition would otherwise be invisible.
         /// </summary>
         [Test]
-        public void TheParkedFaces_AreExactlyTheHandicapAndTheModalSecondSequence()
+        public void TheOneParkedFace_IsExactlyThePageTwentyHandicap()
         {
             var owed = DodgerCardContent.AllDefinitions
                 .Select(definition => new
@@ -364,22 +364,17 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(owed, Is.EqualTo(new Dictionary<string, string>
             {
-                ["dodger-rusty-razor"] = "first odd-player-count configuration",
-                ["dodger-middlefinger-of-death"] =
-                    "the attack-sequence bullet's subject narrowing - a per-candidate predicate on " +
-                    "AttackSequenceBullet, which is a snapshot schema claimant"
+                ["dodger-rusty-razor"] = "first odd-player-count configuration"
             }),
-                "Two faces owe a composition, and neither owes an answer. p.20's Handicap card is " +
-                "parked under the standing 2026-08-21 user decision. Middlefinger of Death is parked " +
-                "on a seam, and milestone 8.35z34 NARROWED that seam rather than inheriting it: " +
-                "milestone 8.35z27 built the multi-sequence contract this card's two bullets need, so " +
-                "the repeat-mislabelling defect phase two measured can no longer occur and the first " +
-                "bullet would compose today. Only the second bullet's own clause is unbuilt - 'a hero " +
-                "in range who has one or more cards in the discard' is a predicate about the " +
-                "candidate, where a bullet carries a PrintedAttackTargetPolicy that cannot state one. " +
-                "That extension widens a type the snapshot persists, and this milestone already moves " +
-                "the pinned handler list and the corpus digests by dealing her, so it is owed a " +
-                "milestone where it is the only cause moving the schema. Every other face composes.");
+                "EXACTLY ONE face owes a composition, and it owes a configuration rather than an " +
+                "answer: p.20's Handicap card, parked under the standing 2026-08-21 user decision that " +
+                "every set's Handicap carries. Milestone 8.35z45 removed the other one. " +
+                "Middlefinger of Death was parked three times over and each park was narrower than the " +
+                "last - on question D-06, then on the missing multi-sequence seam, then on the single " +
+                "field its second bullet needed - and this milestone added that field, so the face " +
+                "composes and the deferral is gone rather than reworded. If this fails with " +
+                "middlefinger back in the list, a composition was reverted; if it fails with a THIRD " +
+                "entry, a face quietly lost one.");
         }
 
         /// <summary>
@@ -412,9 +407,15 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The three modal Attacks whose bullets are the targeting sentence bind their target through
-        /// card text at p.14's step 1 - and Middlefinger of Death, which prints the same shape, does
-        /// not, because it is parked.
+        /// All FOUR modal Attacks whose bullets are the targeting sentence bind their target through
+        /// card text at p.14's step 1.
+        ///
+        /// <para>Middlefinger of Death joined this list at milestone 8.35z45, and it belongs
+        /// here for the same reason the other three do even though it reaches step 1 by a different
+        /// road: its text names the target rather than the action's start doing so. That the text then
+        /// runs TWO complete p.14 orders instead of binding one unit is the multi-sequence contract's
+        /// business and changes nothing about this declaration - which is exactly the separation
+        /// milestone 8.35z27 drew when it refused to put the plan on the policy.</para>
         /// </summary>
         [Test]
         public void TheComposedModalAttacks_BindTheirTargetAtPageFourteensStepOne()
@@ -423,7 +424,8 @@ namespace GuardsDigital.Tests.EditMode
                      {
                          DodgerCardContent.DreadRazor,
                          DodgerCardContent.LittlefingerOfDeath,
-                         DodgerCardContent.FingerOfDeath
+                         DodgerCardContent.FingerOfDeath,
+                         DodgerCardContent.MiddlefingerOfDeath
                      })
             {
                 var primary = Primary(DodgerCardContent.Definition(id));
@@ -654,12 +656,18 @@ namespace GuardsDigital.Tests.EditMode
                 DodgerCardContent.AllDefinitions
                     .Select(definition => definition.ContentRevision).Distinct(),
                 Is.EqualTo(new[] { DodgerCardContent.ContentRevision }));
-            // Re-based at milestone 8.35z34, the milestone that DEALS her - so this is the first
-            // revision of hers that any match has loaded, that the artwork catalog names, and that an
-            // identity pin measures. Both earlier strings were minted under the placeholder id
-            // `8.35x`, which is a claim rather than a milestone; nothing read them, which is what made
-            // the re-base free once and will not make it free again.
-            Assert.That(DodgerCardContent.ContentRevision, Is.EqualTo("dodger-8-35z34-rev-1"));
+            // Re-based at milestone 8.35z34, the milestone that DEALT her, and moved again at
+            // 8.35z45, which unparked her last non-Handicap face: Middlefinger of Death
+            // stopped being a deferral and became two composed attack-sequence bullets with a
+            // card-text target binding, and all three of those are content.
+            //
+            // THIS STRING NAMES A PLACEHOLDER AND ITS RENAME IS OWED AT INTEGRATION. z34's re-base was
+            // free because nothing read the old value; this one is NOT, because she is dealt now - the
+            // identity pin measures this revision and all eighteen ConfiguredCardArtworkCatalog.json
+            // rows name it literally. Renaming it to the landed milestone id therefore re-measures her
+            // digest and rewrites eighteen rows, which is a named debt rather than a discovery.
+            Assert.That(
+                DodgerCardContent.ContentRevision, Is.EqualTo("dodger-8-35z45-rev-1"));
             Assert.That(
                 DodgerCardContent.AllDefinitions
                     .Select(definition => definition.ContentAuthority).Distinct(),

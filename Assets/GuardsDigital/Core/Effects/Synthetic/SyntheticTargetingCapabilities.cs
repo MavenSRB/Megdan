@@ -1095,11 +1095,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // "who has one or more cards in the discard" - the named hero's own pile, read the
                     // same way `owned-card-present@1` reads one so a card that selects by the fact and
                     // a card that conditions on it cannot come to disagree about what it means.
+                    //
+                    // Milestone 8.35z45 made that sentence true. It was three copies of the
+                    // same two clauses; the modal-Attack bullet's narrowing would have been a fourth,
+                    // so the reading became one derivation that all of them ask.
                     if (requiresACardInDiscard &&
                         (!context.CardState.IsAvailable ||
-                            !context.CardState.Instances.Any(card =>
-                                card.OwnerId.Equals(target.HeroId) &&
-                                card.State.Location == CardLocation.DiscardPile)))
+                            !HeroDiscardPileQuery.HasAnyCard(
+                                context.CardState.Instances, target.HeroId)))
                     {
                         continue;
                     }

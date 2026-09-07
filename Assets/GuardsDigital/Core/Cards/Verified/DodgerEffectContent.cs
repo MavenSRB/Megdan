@@ -63,11 +63,12 @@ namespace GuardsDigital.Core.Cards.Verified
         /// its composition. Paired with <see cref="AttackTextTimingFor"/>, which names which of p.14's
         /// moments that is.
         ///
-        /// <para>Four of her seven Attacks compose. Two are modal targeting sentences read at step 1 -
-        /// Littlefinger of Death and Finger of Death, whose printings are identical - and Dread Razor is
-        /// the third, differing only in what its second bullet is gated on. Burning Skull and Blazing
-        /// Skull compose a step-7 rider instead. Middlefinger of Death is parked on D-06 and Rusty Razor
-        /// is the boxed Handicap.</para>
+        /// <para>Six of her seven Attacks compose. Three are "Choose one" modal targeting sentences read
+        /// at step 1 - Littlefinger of Death and Finger of Death, whose printings are identical, and
+        /// Dread Razor, differing only in what its second bullet is gated on. Middlefinger of Death is
+        /// the fourth step-1 modal and the only one printing "one <em>or both</em>", which makes it the
+        /// multi-sequence contract rather than a single bound target. Burning Skull and Blazing Skull
+        /// compose a step-7 rider instead. Rusty Razor is the boxed Handicap and composes nothing.</para>
         /// </summary>
         public static EffectDefinition AttackTextFor(CardDefinitionId cardId, string contentRevision)
         {
@@ -80,6 +81,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 cardId.Equals(DodgerCardContent.FingerOfDeath))
             {
                 return CreateDiscardPileModal(cardId, contentRevision);
+            }
+
+            if (cardId.Equals(DodgerCardContent.MiddlefingerOfDeath))
+            {
+                return CreateChooseBothDiscardModal(cardId, contentRevision);
             }
 
             if (cardId.Equals(DodgerCardContent.BurningSkull))
@@ -101,10 +107,14 @@ namespace GuardsDigital.Core.Cards.Verified
             // of its bullets name a hero where Dread Razor's name any unit, and that is on the card
             // rather than here.
             //
-            // Middlefinger of Death composes nothing for a different reason and it is not a deferral of
-            // convenience: p.10's "Choose one or both (on different targets)" is a shape no verified
-            // face had printed, and what one Attack action carrying two targets does at p.14's nine
-            // numbered steps is open question D-06.
+            // Middlefinger of Death USED to be the second face returning null here, and milestone
+            // 8.35z45 is why it no longer is. Its deferral narrowed three times and each
+            // narrowing was a real measurement rather than a re-word: from an open question (D-06, what
+            // one Attack action with two targets is), to a seam (the only shape then producing a second
+            // complete p.14 order was p.10's Repeat, which Enfeeblement forbids), to a single missing
+            // field (the second bullet's "who has one or more cards in the discard", which a printed
+            // target policy cannot state). Ruling 5 answered the first, milestone 8.35z27 built the
+            // second, and this milestone added the third.
             return null;
         }
 
@@ -121,7 +131,8 @@ namespace GuardsDigital.Core.Cards.Verified
         {
             if (cardId.Equals(DodgerCardContent.DreadRazor) ||
                 cardId.Equals(DodgerCardContent.LittlefingerOfDeath) ||
-                cardId.Equals(DodgerCardContent.FingerOfDeath))
+                cardId.Equals(DodgerCardContent.FingerOfDeath) ||
+                cardId.Equals(DodgerCardContent.MiddlefingerOfDeath))
             {
                 return CardTextTiming.BeforeTheAttack;
             }
@@ -430,6 +441,142 @@ namespace GuardsDigital.Core.Cards.Verified
                                 EffectValueKind.Minion)
                         })
                 });
+        }
+
+        /// <summary>
+        /// "Choose one or both (on different targets) — • Target a unit adjacent to you. • Target a hero
+        /// in range who has one or more cards in the discard." - Middlefinger of Death, and the last of
+        /// her nineteen faces to leave a deferral. Milestone 8.35z45.
+        ///
+        /// <para><b>Same two printed bullets as Littlefinger and Finger of Death, composed against a
+        /// different contract, and the difference is the word "both".</b> The Tier I and Tier II faces
+        /// print "Choose one", so exactly one bullet ever runs and each arm can simply bind the Attack's
+        /// single target through <c>set-attack-target@1</c> - which is what
+        /// <see cref="CreateDiscardPileModal"/> does. This face prints "one <em>or both</em>", and Ruling
+        /// 5 makes both a complete rulebook p.14 order apiece - own targeting, own Defense window, own
+        /// Attack Total, own removal - with the whole of it ONE action. That is the multi-sequence
+        /// contract, entered by declaring <c>attack-sequence@1</c> leaves, and it is deliberately not
+        /// p.10's Repeat: composing it as one would let Enfeeblement's "cannot repeat actions" forbid
+        /// this card's second bullet, a rule neither card prints.</para>
+        ///
+        /// <para><b>The maximum is two and the minimum is one.</b> "One or both" is p.10's modal
+        /// cardinality written out. A modal Attack that chose nothing would be an Attack that never
+        /// targeted anything, which p.10's mandatory step refuses.</para>
+        ///
+        /// <para><b>"(on different targets)" is the card's own clause and is declared on both bullets.</b>
+        /// Ruling 19's rider is that a card printing no such parenthetical may point both bullets at one
+        /// unit; this one prints it, so the unit the first sequence bound is gone from the second's set.
+        /// The contract reads the flag off whichever bullets were chosen, so declaring it once would make
+        /// the constraint depend on which single bullet a one-bullet answer took.</para>
+        ///
+        /// <para><b>The second bullet's "who has" is the extension point this milestone took.</b> It is a
+        /// predicate about the candidate, not about the board and not about the actor, so it is neither a
+        /// gate nor a reach: a hero with an empty pile is simply not offered. Before this milestone
+        /// <see cref="AttackSequenceBullet"/> could not say it, which is precisely why this face stayed
+        /// parked after Ruling 5 had answered everything else about it. It now travels as
+        /// <see cref="AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard"/> and is applied when
+        /// that bullet's own sequence derives its targets - which is the only correct moment, because the
+        /// FIRST sequence's Defense window puts cards into exactly the pile the second bullet reads.</para>
+        ///
+        /// <para><b>The first bullet declares no narrowing, and says so by declaring nothing.</b> "Target
+        /// a unit adjacent to you" qualifies nobody, and a card that means no should say no by printing
+        /// nothing rather than by naming a member called None - the same rule that keeps
+        /// <c>excludeAdjacent</c> off the Range arm of a printed-icon selection.</para>
+        /// </summary>
+        private static EffectDefinition CreateChooseBothDiscardModal(
+            CardDefinitionId cardId, string contentRevision)
+        {
+            var modal = new EffectNodeId("middlefinger-mode");
+            var adjacentBullet = new EffectNodeId("middlefinger-adjacent");
+            var discardBullet = new EffectNodeId("middlefinger-discard");
+
+            return new EffectDefinition(
+                AttackTextEffectId(cardId),
+                contentRevision,
+                modal,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        modal, EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { adjacentBullet, discardBullet },
+                        chooser: EffectChooserRole.Actor,
+                        minimumSelections: 1,
+                        maximumSelections: 2),
+
+                    // "Target a unit adjacent to you." - p.19's units at p.19's innermost ring.
+                    ModalBulletNode(
+                        adjacentBullet,
+                        AttackTargetableUnits.HeroesAndMinions,
+                        AttackTargetReach.AdjacentOnly,
+                        AttackSequenceSubjectNarrowing.None),
+
+                    // "Target a hero in range who has one or more cards in the discard." - the printed
+                    // Range icon, heroes only, and the pile clause as the bullet's own subject narrowing.
+                    // Heroes only is the sentence's word and not an inference from the clause: a minion
+                    // has no hand and no discard pile for "who has" to be about.
+                    ModalBulletNode(
+                        discardBullet,
+                        AttackTargetableUnits.HeroesOnly,
+                        AttackTargetReach.PrintedRange,
+                        AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard)
+                });
+        }
+
+        /// <summary>
+        /// One bullet of Middlefinger of Death's modal, as an <c>attack-sequence@1</c> leaf. Milestone
+        /// 8.35z45.
+        ///
+        /// <para>The leaf performs nothing: it publishes the bullet's printed targeting sentence and the
+        /// card's "(on different targets)" clause, and the card-action authority runs a complete p.14 per
+        /// chosen bullet against the board as that sequence finds it.</para>
+        /// </summary>
+        private static EffectNodeDefinition ModalBulletNode(
+            EffectNodeId nodeId,
+            AttackTargetableUnits targetableUnits,
+            AttackTargetReach reach,
+            AttackSequenceSubjectNarrowing subjectNarrowing)
+        {
+            var inputs = new List<EffectInputBinding>
+            {
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.TargetableUnitsParameter, targetableUnits),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.ReachParameter, reach),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.LineParameter, AttackTargetLine.AnyLine),
+
+                // "(on different targets)" - printed on the card rather than on one bullet, so both
+                // bullets carry it and a one-bullet answer says the same thing whichever it took.
+                EffectInputBinding.FromLiteral(
+                    SyntheticSequenceCapabilities.DistinctTargetsParameter,
+                    EffectValue.Boolean(true))
+            };
+
+            var outputs = new List<EffectOutputBinding>
+            {
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.TargetableUnitsOutput, EffectValueKind.Integer),
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.ReachOutput, EffectValueKind.Integer),
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.LineOutput, EffectValueKind.Integer),
+                new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.DistinctTargetsOutput, EffectValueKind.Boolean)
+            };
+
+            if (subjectNarrowing != AttackSequenceSubjectNarrowing.None)
+            {
+                inputs.Add(EffectInputBinding.FromClosedVocabulary(
+                    SyntheticSequenceCapabilities.SubjectNarrowingParameter, subjectNarrowing));
+                outputs.Add(new EffectOutputBinding(
+                    SyntheticSequenceCapabilities.SubjectNarrowingOutput, EffectValueKind.Integer));
+            }
+
+            return new EffectNodeDefinition(
+                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticSequenceCapabilities.AttackSequenceV1,
+                inputs: inputs,
+                outputs: outputs);
         }
 
         /// <summary>

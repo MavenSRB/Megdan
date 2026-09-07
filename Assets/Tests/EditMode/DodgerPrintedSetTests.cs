@@ -97,14 +97,18 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(composed, Is.EqualTo(13),
-                "Seventeen faces compose and thirteen of them attach a body: three modal Attacks, two " +
+            Assert.That(composed, Is.EqualTo(14),
+                "Eighteen faces compose and fourteen of them attach a body: FOUR modal Attacks, two " +
                 "step-7 shove riders, and eight Skills (Death Trap, the three rituals, the two " +
                 "Active-effect drains and the two Respawns). The three Blue Defense primaries compose " +
                 "without a body - their whole sentence is a value declaration, so there is no step to " +
                 "attach - and Tide of Darkness composes as an Ultimate rule rather than as an action, " +
-                "which is why seventeen composed faces carry thirteen bodies. Rusty Razor and " +
-                "Middlefinger of Death attach none.");
+                "which is why eighteen composed faces carry fourteen bodies. Only Rusty Razor, p.20's " +
+                "boxed Handicap, attaches none. The fourth modal is Middlefinger of Death, which " +
+                "milestone 8.35z45 unparked - and the half of this case that matters is the " +
+                "loop above rather than this count: its body is the first in the roster to declare an " +
+                "attack-sequence bullet's subject narrowing, and content load validates that " +
+                "declaration here the same way it validates every other.");
         }
 
         /// <summary>
@@ -144,11 +148,18 @@ namespace GuardsDigital.Tests.EditMode
                 "synthetic-respawn-friendly-minion-adjacent@1",
                 "synthetic-respawn-friendly-minion-in-radius@1",
                 "ultimate-unlocked@1",
-                "choose-target-set@1"
+                "choose-target-set@1",
+
+                // Milestone 8.35z45. The nineteenth, and the only one she names that neither
+                // of her own milestones minted: `attack-sequence@1` is milestone 8.35z27's contract,
+                // and Middlefinger of Death is the first VERIFIED face in the roster to declare it -
+                // Whisper's Grim Reaper composes it too but is not yet dealt.
+                "attack-sequence@1"
             }.OrderBy(value => value, StringComparer.Ordinal).ToArray()),
-                "Her composed set names eighteen contracts, of which her two milestones minted eight - " +
-                "phase one's two spawn-point counts, and this one's Ultimate predicate, item grant, " +
-                "two Respawns and two Active-effect raisers.");
+                "Her composed set names NINETEEN contracts, of which her own milestones minted eight - " +
+                "phase one's two spawn-point counts, and phase two's Ultimate predicate, item grant, " +
+                "two Respawns and two Active-effect raisers. The nineteenth is borrowed rather than " +
+                "minted, which is the point of a contract.");
 
             // The eight her own milestones minted resolve in the CATALOG rather than in its registered
             // list, and that split is the whole of the phase boundary. Milestone 7.9's deferral gate

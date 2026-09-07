@@ -283,6 +283,36 @@ Non-goals: no behaviour change beyond the removed clause; no renaming of ids on 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z44-sweep-the-stale-placeholder-ids-track-the-shared-compile-probe-and-drop-sabinas-phantom-clause-completion-evidence).
 
+### [x] 8.35z45 Narrow an attack sequence bullet to the subjects its own sentence names
+
+Composes Middlefinger of Death, the last of Dodger the Warlock's faces that carried a named deferral rather than a composition, and moves the snapshot schema alone.
+
+Observable outcome: a modal Attack whose bullet prints a condition about WHO it may target offers only the units that satisfy it, and offers nobody where none does - while the other bullet of the same card, on the same board and at the same instant, still offers the unit it may take.
+
+**The sketched seam was refused, and the refusal is the design.** The multi-sequence contract had sized this extension point as an optional capability reference resolved through the catalog as a per-candidate predicate. `AttackSequenceBullet` is persisted, and every writer in the snapshot serializer says the same thing about what may cross: identity, and content the payload NAMES - never semantics it CARRIES. A capability id plus a version is a name the reader would have to resolve to a handler and then trust to filter a target set, which is a payload choosing which code runs. A closed enum is content the payload names: it reads back exactly as the bullet's four existing policy enums do, and a value outside the declared range is a rejected snapshot rather than a reconstructed one. Three consequences follow, and all three are the point - the rule lives in the member's NAME, so adding a member is not a content-revision event; the complement clause another hero prints becomes one member and no schema move at all; and it went on the BULLET rather than on the printed target policy every Attack in the roster declares, which could not have been widened without re-identifying every dealt hero.
+
+**Where it is applied leaves p.13 alone.** The narrowing runs over the set the existing legal-target query already admitted, so which units, what reach and p.18's immunities are asked once and unchanged, and the card's extra sentence narrows the answer rather than replacing the question.
+
+**The absence of card state is LOUD.** A bullet declaring a predicate that reaches the derivation without card state throws, naming the bullet and the clause. The two silent answers - admit everybody, or admit nobody - are a widened offer and a card greyed for nothing, and both look exactly like an ordinary board position.
+
+**One derivation, four consumers.** The discard reading existed as THREE copies, one carrying a comment claiming they could not drift. Three copies cannot keep that promise; there is now one derivation and all four consumers ask it.
+
+**The schema moved for a payload this corpus does not contain.** The field costs the compatibility corpus zero bytes and zero digests - measured, by running the corpus with the field in place and the version left alone - so the whole digest movement is the version value itself. It moved anyway because a shipped build can already produce a payload carrying a chain, and such a payload is one integer per bullet shorter: a newer reader walking it would take the next bullet's id out of the middle of this bullet's policy. That is corruption rather than a short read, and turning it into a refusal is the entire job of the version guard. A corpus that happens to hold no example of a shape is evidence about the corpus, not about the shape.
+
+Acceptance checks:
+
+- A bullet declaring a printed subject condition offers only candidates that satisfy it, proved on a board where the card's OTHER bullet offers a unit at the same instant - so reach and immunity are established by that bullet's own offer and the narrowing is the single degree of freedom.
+- A bullet whose predicate has no satisfying candidate offers nobody, and the card's remaining bullet is unaffected.
+- A declared predicate that reaches the derivation without card state throws, naming the bullet and the clause.
+- The discard fact has exactly one derivation, and every consumer of it reads that one.
+- The snapshot schema rejects the previous version rather than migrating it, and the version guard is asserted at every site that pins it.
+- The identity oracle moves exactly one pin and leaves every other byte-identical.
+- The complete unfiltered dotnet harness, and both complete unfiltered Unity suites, pass at the final revision.
+
+Non-goals: no change to the bound-target resolve path, which is unreachable mid-chain and which milestone 8.35z27 owns; no composition of the complement clause another hero prints, which moves that hero's content revision and belongs to her dealing; and no widening of the printed target policy every Attack declares.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z45-narrow-an-attack-sequence-bullet-to-the-subjects-its-own-sentence-names-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

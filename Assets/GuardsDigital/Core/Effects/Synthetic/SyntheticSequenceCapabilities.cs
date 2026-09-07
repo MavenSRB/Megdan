@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Effects.Synthetic
@@ -61,10 +62,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>Whether the card printed "(on different targets)" across its bullets.</summary>
         public const string DistinctTargetsParameter = "distinctTargets";
 
+        /// <summary>
+        /// Milestone 8.35z45. The predicate this bullet prints about the candidate, as
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.AttackSequenceSubjectNarrowing"/>.
+        ///
+        /// <para><b>Optional, and the absence is the absence of the clause.</b> Every bullet composed
+        /// before Middlefinger of Death - Whisper's four - declares nothing here and is unchanged down
+        /// to the byte: no definition it names moved, no content revision of hers moved, and the plans
+        /// her card produces carry <see cref="AttackSequenceSubjectNarrowing.None"/> exactly as they did
+        /// when the field did not exist. That is the same shape milestone 8.35z28's two hero narrowings
+        /// take on the printed-icon selection, and it is what lets a widening of a persisted type leave
+        /// every earlier consumer alone.</para>
+        ///
+        /// <para>It is named <c>subjectNarrowing</c> rather than anything ending in a quantity word for
+        /// the reason <see cref="ReachParameter"/> is not called "reach": content load keeps a closed
+        /// list of ordinary quantities, a parameter named from it may not declare an enum domain, and
+        /// one outside it must. This is a closed vocabulary of printed clauses, so it takes a name that
+        /// says so and declares its domain.</para>
+        /// </summary>
+        public const string SubjectNarrowingParameter = "subjectNarrowing";
+
         public const string TargetableUnitsOutput = "attackSequenceUnits";
         public const string ReachOutput = "attackSequenceReach";
         public const string LineOutput = "attackSequenceLine";
         public const string DistinctTargetsOutput = "attackSequenceDistinctTargets";
+
+        /// <summary>
+        /// Milestone 8.35z45. The chosen bullet's printed predicate, published so the plan
+        /// the frame names carries it into the sequence that will apply it.
+        /// </summary>
+        public const string SubjectNarrowingOutput = "attackSequenceSubjectNarrowing";
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers()
         {
@@ -104,14 +131,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             EffectValueKind.Integer,
                             integerDomain: EffectIntegerDomain.All<AttackTargetLine>()),
                         new EffectCapabilityParameter(
-                            DistinctTargetsParameter, EffectValueKind.Boolean, true)
+                            DistinctTargetsParameter, EffectValueKind.Boolean, true),
+                        new EffectCapabilityParameter(
+                            SubjectNarrowingParameter,
+                            EffectValueKind.Integer,
+                            isRequired: false,
+                            integerDomain: EffectIntegerDomain.All<AttackSequenceSubjectNarrowing>())
                     },
                     new[]
                     {
                         new EffectOutputBinding(TargetableUnitsOutput, EffectValueKind.Integer),
                         new EffectOutputBinding(ReachOutput, EffectValueKind.Integer),
                         new EffectOutputBinding(LineOutput, EffectValueKind.Integer),
-                        new EffectOutputBinding(DistinctTargetsOutput, EffectValueKind.Boolean)
+                        new EffectOutputBinding(DistinctTargetsOutput, EffectValueKind.Boolean),
+                        new EffectOutputBinding(SubjectNarrowingOutput, EffectValueKind.Integer)
                     });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -124,7 +157,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                return EffectExecutionResult.Applied(new[]
+                var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact(
                         TargetableUnitsOutput, context.Input(TargetableUnitsParameter)),
@@ -132,7 +165,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectOutcomeFact(LineOutput, context.Input(LineParameter)),
                     new EffectOutcomeFact(
                         DistinctTargetsOutput, context.Input(DistinctTargetsParameter))
-                });
+                };
+
+                // Milestone 8.35z45. Published only by a bullet that prints the clause. A
+                // bullet declaring no narrowing emits no fact, so every outcome this capability has
+                // ever produced - and therefore every byte a snapshot writes for one - is unchanged;
+                // the reader takes the absent fact as the absent clause, exactly as it takes an
+                // unbound optional parameter.
+                var narrowing = DeclaredNarrowing(context);
+                if (narrowing != AttackSequenceSubjectNarrowing.None)
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        SubjectNarrowingOutput, EffectValue.Integer((int)narrowing)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
+            }
+
+            /// <summary>
+            /// The predicate this bullet's node declares, or
+            /// <see cref="AttackSequenceSubjectNarrowing.None"/> where it declares nothing - which is
+            /// every bullet composed before Middlefinger of Death.
+            /// </summary>
+            private static AttackSequenceSubjectNarrowing DeclaredNarrowing(
+                EffectCapabilityContext context)
+            {
+                var declared = context.Input(SubjectNarrowingParameter);
+                return declared.Kind == EffectValueKind.Integer &&
+                    Enum.IsDefined(typeof(AttackSequenceSubjectNarrowing), declared.IntegerValue)
+                        ? (AttackSequenceSubjectNarrowing)declared.IntegerValue
+                        : AttackSequenceSubjectNarrowing.None;
             }
 
             public EffectExecutionResult Resume(

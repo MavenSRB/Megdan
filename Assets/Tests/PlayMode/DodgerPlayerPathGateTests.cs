@@ -81,6 +81,21 @@ namespace GuardsDigital.Tests.PlayMode
         private const string ModalAttackJourney =
             "DreadRazor_OffersItsTwoBulletsAndTakesTheUnitTheChosenOneAdmits";
 
+        /// <summary>
+        /// Milestone 8.35z45. Middlefinger of Death does NOT share the journey above, and
+        /// the reason is content rather than coverage appetite.
+        ///
+        /// <para>Her three "Choose one" modals take exactly one bullet, close on that click, and bind
+        /// a single target through card text - so what a player answers is an effect selection and
+        /// <c>PendingAttackTargetChoice</c> stays null throughout. "Choose one <em>or both</em>" is a
+        /// different set of controls end to end: the modal stays open after the first bullet, it is
+        /// ended by a Confirm, and each chosen bullet then opens p.14's OWN target prompt. A row that
+        /// pointed at the journey above would be claiming those controls are proved when the journey
+        /// never meets them.</para>
+        /// </summary>
+        private const string ChooseBothJourney =
+            "MiddlefingerOfDeath_TakesBothBulletsAndOpensACompletePageFourteenForEach";
+
         private const string DeathTrapJourney =
             "DeathTrap_NamesAnEnemyBesideAnEmptySpawnPointAndTakesACardFromTheirHand";
 
@@ -245,16 +260,35 @@ namespace GuardsDigital.Tests.PlayMode
                         "DodgerVerifiedContentTests.TheTwoSkullRiders_ShoveAnyAdjacentMinionOutOfHerRing"
                     }),
 
-                // Her Red Tier III, parked on the attack-sequence bullet's subject narrowing. Milestone
-                // 8.35z27 built the multi-sequence contract her two bullets need, so what is left is
-                // the second bullet's own clause alone - a predicate about the candidate, on a type the
-                // snapshot persists. Unreachable, and the guard holds that claim against the content's
-                // own deferral rather than against this row.
-                UnreachableFace(DodgerCardContent.MiddlefingerOfDeath, "Middlefinger of Death",
-                    "her second bullet targets \"a hero in range who has one or more cards in the " +
-                    "discard\", which is a per-candidate predicate an AttackSequenceBullet's printed " +
-                    "target policy cannot state; that extension widens a type the snapshot " +
-                    "serializer persists, so it is owed a milestone where it alone moves the schema"),
+                // Her Red Tier III, and the LAST face of hers to become reachable. Milestone
+                // 8.35z45 added the per-candidate predicate its second bullet prints, so
+                // the row moved from UnreachableFace to a proved one.
+                //
+                // It does NOT share the modal journey the other three take, and that is content rather
+                // than thoroughness: they print "Choose one" and bind a single target through card
+                // text, so a player answers an effect selection and PendingAttackTargetChoice stays
+                // null. This one prints "one or both", so the modal stays open across the first click,
+                // ends on a Confirm, and opens p.14's OWN target prompt once per sequence. Four of its
+                // seven paths therefore need their own journey.
+                Face(DodgerCardContent.MiddlefingerOfDeath, "Middlefinger of Death", new[]
+                    {
+                        Prove(CommitAndReveal, TrayCommitAndWalk),
+                        Prove(RangedAttackTarget, ChooseBothJourney),
+                        Prove(BeforeAttackTextPause, ChooseBothJourney),
+                        Prove(ModalBulletChoice, ChooseBothJourney),
+                        Prove(BoardUnitSelection, ChooseBothJourney),
+                        Prove(SecondaryDefenseOffer, NumericDefense),
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk)
+                    },
+                    new[]
+                    {
+                        "MiddlefingerOfDeathTests" +
+                            ".TheSecondBullet_OffersNobodyWithAnEmptyDiscard_WhereTheFirstOffersThatSameHero",
+                        "MiddlefingerOfDeathTests.ChoosingBoth_RunsACompletePageFourteenPerBullet",
+                        "MiddlefingerOfDeathTests" +
+                            ".APauseMidChain_RestoresByteIdenticallyAndStillOwesItsSecondSequence",
+                        "MiddlefingerOfDeathTests.Enfeeblement_LeavesAChooseBothAttackWhole"
+                    }),
 
                 Face(DodgerCardContent.BlazingSkull, "Blazing Skull", new[]
                     {

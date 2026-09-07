@@ -212,10 +212,20 @@ namespace GuardsDigital.Core.Snapshots
         /// removal stage), and inside the second sequence's own Defense window.</para>
         ///
         /// <para><b>What crosses is identity.</b> The action that opened the modal is written with the
-        /// same writer every other pending Attack uses; each bullet writes its printed id and the three
+        /// same writer every other pending Attack uses; each bullet writes its printed id and the
         /// enums of its targeting sentence, which is content this payload names rather than semantics
         /// it carries; and the taken targets are the units, because Ruling 19's "(on different
         /// targets)" is the one fact the board stops being able to answer.</para>
+        ///
+        /// <para><b>Milestone 8.35z45, schema v40.</b> Each bullet gained a fifth enum: the
+        /// predicate it prints about its candidate. It is written unconditionally rather than behind a
+        /// presence marker, because a bullet that prints no clause writes
+        /// <see cref="AttackSequenceSubjectNarrowing.None"/> and the field is then the same four bytes
+        /// every other declared reading of the bullet costs - and a marker plus a value would be two
+        /// places for one fact. The version moved because a v38 payload carrying a chain has one fewer
+        /// integer per bullet, so a v40 reader would take the NEXT bullet's id out of the middle of
+        /// this one's policy; that is corruption rather than a short read, and the version guard exists
+        /// so it is a refusal instead.</para>
         /// </summary>
         private static void WriteAttackSequenceChain(
             BinaryWriter writer, PendingAttackSequenceChain chain)
@@ -236,6 +246,15 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write((int)bullet.TargetPolicy.Reach);
                 writer.Write((int)bullet.TargetPolicy.Line);
                 writer.Write((int)bullet.TargetPolicy.Binding);
+
+                // Milestone 8.35z45, schema v40. The predicate the bullet prints about its
+                // candidate, written beside the three enums of its targeting sentence and for the same
+                // reason they are: it is content this payload NAMES rather than semantics it carries,
+                // and a restored sequence has to narrow the set the same way the sequence that was
+                // paused would have. The alternative shape the seam was sketched as - a capability id
+                // resolved through the catalog - would have been a payload choosing which code filters
+                // a target set, which no writer in this file does.
+                writer.Write((int)bullet.SubjectNarrowing);
             }
 
             writer.Write(chain.StartedSequences);
@@ -275,8 +294,10 @@ namespace GuardsDigital.Core.Snapshots
                     reader, "modal Attack bullet line");
                 var binding = SnapshotEnumReader.Read<AttackTargetBinding>(
                     reader, "modal Attack bullet binding");
+                var narrowing = SnapshotEnumReader.Read<AttackSequenceSubjectNarrowing>(
+                    reader, "modal Attack bullet subject narrowing");
                 bullets.Add(new AttackSequenceBullet(
-                    bulletId, new PrintedAttackTargetPolicy(units, reach, line, binding)));
+                    bulletId, new PrintedAttackTargetPolicy(units, reach, line, binding), narrowing));
             }
 
             var startedSequences = reader.ReadInt32();

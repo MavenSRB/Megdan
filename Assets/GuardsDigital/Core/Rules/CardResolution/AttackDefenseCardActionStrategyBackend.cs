@@ -509,7 +509,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             plannedChoice = CreateAttackTargetChoice(
-                planned, offer.Value, materializedDefinitions, participants, modifications);
+                planned, offer.Value, materializedDefinitions, participants, modifications,
+                materializedInstances);
             return plannedChoice.LegalTargets.Count == 0
                 // p.10's repeat is offered, not owed: an instance with nobody left to take simply does
                 // not happen, and since milestone 8.25e it is not offered either.
@@ -634,7 +635,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer,
                 materializedDefinitions,
                 participants,
-                modifications);
+                modifications,
+                materializedInstances);
             pendingDefenseChoice = null;
 
             if (pendingAttackTargetChoice.LegalTargets.Count == 0)
@@ -696,7 +698,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer.Value,
                 materializedDefinitions,
                 participants,
-                modifications);
+                modifications,
+                materializedInstances);
             if (!AttackTargetChoicesMatch(authoritativeChoice, pendingAttackTargetChoice))
             {
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
@@ -1043,7 +1046,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                 pendingAttackResolution = sequence;
                 pendingAttackTargetChoice = CreateAttackTargetChoice(
-                    sequence, offer.Value, materializedDefinitions, participants, modifications);
+                    sequence, offer.Value, materializedDefinitions, participants, modifications,
+                    materializedInstances);
                 pendingDefenseChoice = null;
                 if (pendingAttackTargetChoice.LegalTargets.Count > 0)
                 {
@@ -2403,7 +2407,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer.Value,
                     materializedDefinitions,
                     participants,
-                    modifications);
+                    modifications,
+                    materializedInstances);
                 if (verifiedDefenseChoice != null ||
                     (verifiedTargetChoice != null &&
                         !AttackTargetChoicesMatch(expectedChoice, verifiedTargetChoice)))
@@ -2429,7 +2434,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 if (pendingResolution.Target.IsDefined &&
                     !backend.FindLegalAttackTargets(
                         pendingResolution.ActorId, offer.Value, materializedDefinitions, participants,
-                        modifications, backend.SequencePolicyFor(pendingResolution))
+                        modifications, backend.SequenceBulletFor(pendingResolution),
+                        materializedInstances)
                         .Contains(pendingResolution.Target))
                 {
                     throw new ArgumentException(
@@ -2600,7 +2606,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IEnumerable<CardInstance> cardInstances = null)
         {
             // Milestone 8.10. "on a different target" is the repeated instance's own narrowing, taken
             // out of the same legal set the first instance chose from rather than out of a second
@@ -2608,7 +2615,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // p.18's immunity - is decided once and the exclusion is the only difference.
             var legal = FindLegalAttackTargets(
                 resolution.ActorId, offer, definitions, participants, modifications,
-                SequencePolicyFor(resolution));
+                SequenceBulletFor(resolution), cardInstances);
             if (resolution.ExcludedTarget.IsDefined)
             {
                 legal = legal.Where(target => !target.Equals(resolution.ExcludedTarget)).ToArray();
@@ -2835,25 +2842,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
-        /// Milestone 8.35z27. The bullet sentence this resolution targets by, or
-        /// <c>null</c> where the action's own printed policy is the answer - which is every Attack in
-        /// this build outside a modal one.
+        /// Milestone 8.35z27. The bullet this resolution targets by, or an undefined one where the
+        /// action's own printed policy is the answer - which is every Attack in this build outside a
+        /// modal one.
+        ///
+        /// <para>Milestone 8.35z45 widened it from the bullet's POLICY to the whole bullet.
+        /// The two travelled together already; what forced the change is that a bullet now carries a
+        /// second printed reading - the predicate it states about its candidate - and handing the target
+        /// derivation half a bullet would have been a place for the sentence and its qualifier to come
+        /// apart.</para>
         ///
         /// <para>It is asked of the chain rather than carried on the resolution because the chain is
         /// what a snapshot persists for exactly this reason: the sentence belongs to the bullet, and
         /// the bullet is what the modal chose. A copy on the resolution would be a second place the
         /// same fact could be wrong, which is the rule every other printed reading here follows.</para>
         /// </summary>
-        private PrintedAttackTargetPolicy? SequencePolicyFor(PendingAttackResolution resolution)
+        private AttackSequenceBullet SequenceBulletFor(PendingAttackResolution resolution)
         {
             if (resolution == null || pendingSequenceChain == null ||
                 !pendingSequenceChain.Owns(resolution.ResolutionId))
             {
-                return null;
+                return default;
             }
 
-            var bullet = pendingSequenceChain.RunningBullet;
-            return bullet.IsDefined ? bullet.TargetPolicy : (PrintedAttackTargetPolicy?)null;
+            return pendingSequenceChain.RunningBullet;
         }
 
         /// <summary>
@@ -2875,7 +2887,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<AttackSequenceBullet> bullets,
             IReadOnlyList<CardDefinition> definitions,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IEnumerable<CardInstance> cardInstances)
         {
             if (bullets == null || bullets.Count == 0)
             {
@@ -2889,9 +2902,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return true;
             }
 
+            // Milestone 8.35z45. The bullet, not the bullet's policy: an Attack whose only
+            // reachable bullet prints a predicate no candidate satisfies has nothing it could legally
+            // target, and is greyed rather than offered, taken and spent on nothing. That is milestone
+            // 8.35z15's rule applied one level in - judge the offer against what the answer would
+            // actually be able to perform.
+            //
+            // The judgement stops at the ACTION and deliberately does not reach the individual bullet
+            // at the modal. Whether a given bullet's sequence will find a subject is a question about
+            // a board that does not exist yet: the first sequence's own Defense window puts cards into
+            // exactly the pile a discard-narrowed bullet reads, so greying one on a present-tense
+            // reading would be milestone 8.35p's measured mistake inverted. That is the same reasoning
+            // milestone 8.35z27 wrote into the capability's own Anticipate.
             return bullets.Any(bullet => FindLegalAttackTargets(
                 offer.ActorId, offer, definitions, participants, modifications,
-                bullet.TargetPolicy).Count > 0);
+                bullet, cardInstances).Count > 0);
         }
 
         private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
@@ -2900,7 +2925,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             MatchParticipants participants,
             RuleModificationSet modifications,
-            PrintedAttackTargetPolicy? sequencePolicy = null)
+            AttackSequenceBullet sequenceBullet = default,
+            IEnumerable<CardInstance> cardInstances = null)
         {
             // Milestone 7.2a. A Ranged Attack's Range Total decides which enemies it may target, so a
             // +1 Range item reaches one space further - the page's own example of an item that matters
@@ -2917,15 +2943,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // about the set is unchanged: the same Range Total, the same p.18 immunities, the same
             // query. Only the printed sentence differs, which is exactly the division milestone 8.5
             // drew between the classification and the card's own words.
-            if (sequencePolicy.HasValue)
+            if (sequenceBullet.IsDefined)
             {
-                return AttackTargetQuery.FindLegalEnemyTargets(
+                var admitted = AttackTargetQuery.FindLegalEnemyTargets(
                     attackerId,
-                    sequencePolicy.Value,
+                    sequenceBullet.TargetPolicy,
                     rangeTotal,
                     participants,
                     adjacentMoveAuthority,
                     modifications);
+
+                return NarrowedToTheBulletsSubject(admitted, sequenceBullet, cardInstances);
             }
 
             // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what
@@ -2940,6 +2968,71 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 participants,
                 adjacentMoveAuthority,
                 modifications);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z45. The bullet's own predicate about the candidate, applied to the
+        /// set its printed sentence already admitted.
+        ///
+        /// <para><b>Applied here rather than inside the target query, and that is the whole design.</b>
+        /// <see cref="AttackTargetQuery.FindLegalEnemyTargets"/> answers rulebook p.13's question -
+        /// which enemy units this reach and this policy admit, under p.18's immunities - and it is asked
+        /// by every Attack in the build. The predicate is one bullet of one card's own extra sentence,
+        /// so it narrows the answer rather than changing the question. That also makes the two orders
+        /// commute: nothing the predicate removes could have changed an immunity or a distance.</para>
+        ///
+        /// <para><b>Heroes only, and by the sentence rather than by convenience.</b> "a hero in range
+        /// who has one or more cards in the discard" is a hero clause; a minion owns no cards and has no
+        /// pile for it to be about. The bullet that prints it also prints
+        /// <see cref="AttackTargetableUnits.HeroesOnly"/>, so no minion reaches here in practice - but a
+        /// minion IS dropped rather than admitted, because a bullet that narrowed by a hero fact and
+        /// then let every minion through would be reading the clause as if it were not there.</para>
+        ///
+        /// <para><b>The absence of card state is loud.</b> A bullet declaring a predicate that reaches
+        /// this without cards has been asked a question it cannot answer, and the two silent answers -
+        /// admit everybody, or admit nobody - are a widened offer and a card greyed for nothing. Both
+        /// look exactly like a board position, which is the failure
+        /// <c>EffectCardState.Absent</c> exists to refuse; it is refused the same way here.</para>
+        /// </summary>
+        private static IReadOnlyList<AttackTarget> NarrowedToTheBulletsSubject(
+            IReadOnlyList<AttackTarget> admitted,
+            AttackSequenceBullet bullet,
+            IEnumerable<CardInstance> cardInstances)
+        {
+            if (!bullet.NarrowsItsSubject)
+            {
+                return admitted;
+            }
+
+            if (cardInstances == null)
+            {
+                throw new InvalidOperationException(
+                    $"The modal Attack bullet '{bullet.BulletId}' prints " +
+                    $"'{bullet.SubjectNarrowing}', which is a predicate about the candidate's own " +
+                    "cards, and this target derivation was given no card state to read. Supply the " +
+                    "match's card instances at the call site rather than letting the narrowing " +
+                    "silently admit or silently exclude every candidate.");
+            }
+
+            var instances = cardInstances as IReadOnlyList<CardInstance> ?? cardInstances.ToArray();
+            return admitted
+                .Where(target => AdmitsTheSubject(target, bullet.SubjectNarrowing, instances))
+                .ToArray();
+        }
+
+        private static bool AdmitsTheSubject(
+            AttackTarget target,
+            AttackSequenceSubjectNarrowing narrowing,
+            IReadOnlyList<CardInstance> instances)
+        {
+            switch (narrowing)
+            {
+                case AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard:
+                    return target.Kind == AttackTargetKind.Hero &&
+                        HeroDiscardPileQuery.HasAnyCard(instances, target.HeroId);
+                default:
+                    return true;
+            }
         }
 
         private static ActionOffer? FindPendingAttackOffer(

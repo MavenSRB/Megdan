@@ -207,6 +207,29 @@ namespace GuardsDigital.Tests.EditMode
                 MatchConfiguration.CreateForModalSequenceFixture(TeamSide.Red));
 
         /// <summary>
+        /// Milestone 8.35z45. Dodger at rulebook p.15's Tier III stage on the first upgrade
+        /// branch, standing beside the enemy hero - which is the one board Middlefinger of Death's two
+        /// printed bullets can both be watched on.
+        ///
+        /// <para><b>Why the first branch.</b> Middlefinger of Death is the Red card of
+        /// <see cref="DodgerUpgradeBranch.FirstSibling"/>'s Tier III trio; the second branch upgrades
+        /// Finger of Death into Blazing Skull instead and never holds this face at all.</para>
+        ///
+        /// <para><b>Why adjacent, and what the adjacency deliberately does NOT settle.</b> The first
+        /// bullet prints "a unit adjacent to you", so standing the two heroes together is what gives it
+        /// a subject and what keeps the Attack from being greyed for reasons that have nothing to do
+        /// with this milestone. The second bullet prints "a hero in range who has one or more cards in
+        /// the discard", and on a freshly set-up board NOBODY has a discard - which is not a gap in the
+        /// fixture but the measurement: the pile is empty when the modal is answered and non-empty once
+        /// a defender has spent a card, and that difference is the whole of what "evaluated at the
+        /// bullet's own sequence start" means.</para>
+        /// </summary>
+        public static MatchSession CreateEngagedStagedDodgerTierThreeSession() =>
+            CreateEngagedFixtureSession(
+                MatchConfiguration.CreateStagedDodgerTierThreeForInternalTest(
+                    TeamSide.Blue, DodgerUpgradeBranch.FirstSibling));
+
+        /// <summary>
         /// Milestone 8.35z27. The modal-Attack content on the board p.8's mid-turn Lane
         /// Push needs: Blue holds exactly one minion, it is standing in the starting Battle Zone, and
         /// both heroes are standing beside it.

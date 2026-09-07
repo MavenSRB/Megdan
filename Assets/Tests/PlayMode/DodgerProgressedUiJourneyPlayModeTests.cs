@@ -255,6 +255,125 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Middlefinger of Death: "Choose one or both (on different targets) — • Target a unit adjacent
+        /// to you. • Target a hero in range who has one or more cards in the discard."
+        /// Milestone 8.35z45, and her last face to become playable at all.
+        ///
+        /// <para><b>What a player meets here that they meet nowhere else in her set.</b> Her three
+        /// other modal Attacks print "Choose one", so answering the modal takes exactly one bullet and
+        /// closes it. This one prints "one <em>or both</em>": the first click does NOT close the modal,
+        /// the second bullet is still offered afterwards, and a Confirm control is what ends the
+        /// question. That is p.10's multi arm drawn as controls, and it is the visible half of Ruling
+        /// 5.</para>
+        ///
+        /// <para><b>The target question arrives as p.14's OWN, and that is the other visible
+        /// difference.</b> Milestone 8.35z34's first Play Mode run established that her "Choose one"
+        /// faces leave <c>PendingAttackTargetChoice</c> null - they bind their target through card text
+        /// with <c>set-attack-target@1</c>, so what a player answers is the selection the chosen bullet
+        /// opened. A choose-both Attack cannot work that way, because each bullet runs a COMPLETE p.14
+        /// against the board as that sequence finds it. So the chosen bullets publish a plan and the
+        /// ordinary attack-target prompt opens, once per sequence, under an identity ending
+        /// <c>:seq-N</c>. A journey that asserted the effect-selection shape here would be asserting
+        /// the wrong card.</para>
+        ///
+        /// <para><b>What this journey deliberately does NOT try to show.</b> The second bullet's pile
+        /// clause admits nobody on this board - nothing has been discarded when the modal is answered -
+        /// and the card's own "(on different targets)" would exclude the hero the first sequence takes
+        /// in any case. Both readings are measured offline against a real match in
+        /// <c>MiddlefingerOfDeathTests</c>, where the two bullets can be contrasted on one board at one
+        /// instant; asking a UI journey to separate two clauses that agree here would be a fixture
+        /// watching the wrong thing. What the journey is for is the CONTROLS: two bullets, a modal that
+        /// stays open across the first, a Confirm, and p.14's own target prompt behind it.</para>
+        ///
+        /// <para><b>NOT YET EXECUTED.</b> Written and compile-checked at milestone
+        /// 8.35z45; the Unity launcher was held for the whole session, so its first run is
+        /// owed at integration alongside the rest of the tier.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator MiddlefingerOfDeath_TakesBothBulletsAndOpensACompletePageFourteenForEach()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedDodger);
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var dodgerId = DodgerSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, dodgerId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+
+            CommitSoTheNamedSeatActs(runtime, dodgerId, DodgerCardContent.MiddlefingerOfDeath);
+            yield return YieldUntilTheNamedSeatActs(runtime, dodgerId);
+
+            yield return PointTrayAt(root, dodgerId);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "p.10's modal asks which bullets before p.14 asks anything. " + Remaining(runtime));
+            // The same query `TypeControls` below makes for the Respawn's type choice: the Select-kind
+            // controls a paused choice is currently offering, as opposed to its Confirm.
+            var bullets = TypeControls(runtime);
+            Assert.That(bullets, Has.Length.EqualTo(2),
+                "Both printed bullets are drawn as their own controls. " + Remaining(runtime));
+
+            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            yield return null;
+            yield return null;
+
+            // THE "OR BOTH" HALF, and it is the whole reason this face needed a contract of its own.
+            // On her three "Choose one" faces the modal is finished by this point.
+            var stillOffered = TypeControls(runtime);
+            Assert.That(stillOffered, Has.Length.EqualTo(1),
+                "\"one OR BOTH\" leaves the other bullet standing after the first is taken, where " +
+                "\"Choose one\" would have closed the question. " + Remaining(runtime));
+
+            UiPlayer.Click(UiPlayer.Button(hud, stillOffered[0].Label));
+            yield return null;
+            yield return null;
+
+            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            Assert.That(confirm, Is.Not.Null,
+                "A modal that may take more than one option has to be ENDED by the player rather " +
+                "than by running out of options. " + Remaining(runtime));
+            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            yield return null;
+            yield return null;
+
+            var pending = runtime.PendingAttackTargetChoice;
+            Assert.That(pending, Is.Not.Null,
+                "The first chosen bullet opens p.14's OWN target question - not the effect selection " +
+                "her \"Choose one\" faces open - because each bullet runs a complete p.14 against the " +
+                "board it finds. " + Remaining(runtime));
+            Assert.That(pending.ResolutionId.Value, Does.EndWith(":seq-1"),
+                "and it runs under an identity derived from the action's, because p.13's Defeat pays " +
+                "out once per identity and two sequences may each defeat a unit.");
+            Assert.That(pending.LegalTargetHeroIds, Contains.Item(enemyId),
+                "\"Target a unit adjacent to you\" - and the enemy hero is standing beside her at the " +
+                "engaged staging. " + Remaining(runtime));
+
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, HeroView(enemyId).transform.position), Is.True,
+                "The target is named by clicking the piece where they stand.");
+            yield return null;
+            yield return null;
+
+            // The defender answers their own window on their own visible control - each sequence has
+            // one, which is the other half of what makes a sequence a complete p.14 rather than a
+            // rider on the first. It is DECLINED because this journey's subject is the modal's
+            // controls: what the defender spends changes the Attack Total and nothing this case reads.
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
+                "p.14 asks the defender before it compares anything, once per sequence. " +
+                Remaining(runtime));
+            UiPlayer.Click(UiPlayer.Button(hud, "DECLINE DEFENSE"));
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                "The second sequence has no subject on this board - the card prints \"(on different " +
+                "targets)\" and its printed Attack of 6 takes the only hero in range off the board - " +
+                "so the whole action is finished rather than standing open. " + Remaining(runtime));
+        }
+
+        /// <summary>
         /// Weakness: "This turn: enemy heroes in radius have -4 Attack."
         ///
         /// <para>Her Active effect, raised from its own Skill control and then READ where a player

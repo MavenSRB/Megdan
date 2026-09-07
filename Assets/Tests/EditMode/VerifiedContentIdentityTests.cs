@@ -49,7 +49,23 @@ namespace GuardsDigital.Tests.EditMode
             // MEASURED, not predicted. The digest below was read off this oracle's own failure output
             // after the pin was added with a deliberately wrong value, on a COMPLETE unfiltered run -
             // never off a filtered pin run, on the near-miss milestone 8.35z32 recorded.
-            new IdentityPin("dodger", "dodger-8-35z34-rev-1", "c17dd5f7626150d6d2407fa3a730e201b055478e350b563cca2bd0487bbe853c"),
+            // MOVED at milestone 8.35z45, and the SHAPE of the move is the evidence the milestone
+            // exists to produce. Middlefinger of Death stopped being a deferral and became a composed
+            // modal Attack, so Dodger's content revision moved and her digest with it. Every OTHER pin
+            // did NOT move by a single byte on the same unfiltered run - which is the measured form of
+            // this milestone's central design decision: the per-candidate predicate went on
+            // AttackSequenceBullet, a type no card definition graph reaches, rather than on
+            // PrintedAttackTargetPolicy, which every Attack action in the roster declares and which
+            // could not have been widened without re-identifying every dealt hero.
+            //
+            // The worker measured this against seven pins, before milestone 8.35z38 dealt Misa; the
+            // eighth pin below was present for the complete run that landed it, and did not move
+            // either. Dodger's revision string carried a placeholder until integration; renaming it to
+            // the landed id re-pins that string and re-measures NOTHING, because the digest is
+            // computed over the content and not over the revision - measured at milestone 8.35z44 by
+            // renaming Sabina's and watching her digest stay byte-identical while a deliberately
+            // corrupted digest was still caught.
+            new IdentityPin("dodger", "dodger-8-35z45-rev-1", "0ae08679963c4ad7f9737fe935c9f9bba5128495fac283e380c5e42d9f7d0c98"),
             // Milestone 8.35z38. THE EIGHTH PIN, arriving on exactly the terms the seventh did: a pin
             // is a claim about content a configured match loads, and milestone 8.35z29 composed Misa
             // without dealing her.

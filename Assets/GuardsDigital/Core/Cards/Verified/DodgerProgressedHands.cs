@@ -44,12 +44,13 @@ namespace GuardsDigital.Core.Cards.Verified
     /// card and is already out of the box at p.6's setup, which is why
     /// <see cref="DodgerCardContent.DealtDefinitions"/> is what these hands are built from.</para>
     ///
-    /// <para><b>One Tier III card in the first branch carries no composition</b>, and that is stated
-    /// here rather than left to be discovered: Middlefinger of Death is parked on the attack-sequence
-    /// bullet's subject narrowing. A staged first-branch Tier III hand therefore holds a face a player
-    /// cannot resolve, exactly as every other hero's staged hand holds their own parked faces, and the
-    /// player-path gate records it as an unreachable face against the content's own deferral rather
-    /// than against this file's say-so.</para>
+    /// <para><b>Every card in both branches now composes.</b> That was not true when this file was
+    /// written: the first branch's Middlefinger of Death was parked on the attack-sequence bullet's
+    /// subject narrowing, so a staged first-branch Tier III hand held a face a player could not
+    /// resolve. Milestone 8.35z45 built that narrowing and composed the face, and the
+    /// player-path gate's row moved with it - from an unreachable face to one proved by its own
+    /// journey, because "one or both" is a different set of controls from the "Choose one" modals her
+    /// other Red faces print.</para>
     ///
     /// <para>`DEV-004` development affordance: fixtures and one-shot scene requests only; a launched
     /// player composes p.6's setup and reaches these positions through p.15 alone.</para>

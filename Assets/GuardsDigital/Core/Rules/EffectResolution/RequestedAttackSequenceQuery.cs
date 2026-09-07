@@ -129,9 +129,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 new PrintedAttackTargetPolicy(
                     (AttackTargetableUnits)units,
                     (AttackTargetReach)reach,
-                    (AttackTargetLine)line));
+                    (AttackTargetLine)line),
+                DeclaredNarrowing(node));
             return true;
         }
+
+        /// <summary>
+        /// Milestone 8.35z45. The predicate this bullet's node declares, read as a literal
+        /// exactly as its three policy enums are.
+        ///
+        /// <para>A node that binds nothing here prints no clause, which is every bullet composed before
+        /// Middlefinger of Death. An out-of-range literal is read as no clause rather than refused: this
+        /// query answers the offer-feasibility gate, and a bullet whose declaration is unreadable is
+        /// already refused by the capability's own <c>Anticipate</c> when the modal runs. Widening the
+        /// offer is the safe direction of the two - it offers an action the answer may then decline,
+        /// where narrowing it would grey a card for a reason nothing printed.</para>
+        /// </summary>
+        private static AttackSequenceSubjectNarrowing DeclaredNarrowing(EffectNodeDefinition node) =>
+            TryReadLiteralInteger(
+                node, SyntheticSequenceCapabilities.SubjectNarrowingParameter, out var narrowing) &&
+            Enum.IsDefined(typeof(AttackSequenceSubjectNarrowing), narrowing)
+                ? (AttackSequenceSubjectNarrowing)narrowing
+                : AttackSequenceSubjectNarrowing.None;
 
         private static bool TryReadLiteralInteger(
             EffectNodeDefinition node, string parameterName, out int value)
@@ -166,6 +185,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             var reach = -1;
             var line = -1;
             var sawDistinct = false;
+
+            // Milestone 8.35z45. Absent unless the bullet prints the clause, so a plan
+            // named by a frame that ran before this field existed reads exactly as it did.
+            var narrowing = AttackSequenceSubjectNarrowing.None;
             foreach (var fact in outcome.Outputs)
             {
                 if (string.Equals(
@@ -197,6 +220,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     sawDistinct = true;
                     distinctTargets = fact.Value.BooleanValue;
                 }
+                else if (string.Equals(
+                        fact.OutputName, SyntheticSequenceCapabilities.SubjectNarrowingOutput,
+                        StringComparison.Ordinal) &&
+                    fact.Value.Kind == EffectValueKind.Integer &&
+                    Enum.IsDefined(
+                        typeof(AttackSequenceSubjectNarrowing), fact.Value.IntegerValue))
+                {
+                    narrowing = (AttackSequenceSubjectNarrowing)fact.Value.IntegerValue;
+                }
             }
 
             if (!sawDistinct ||
@@ -213,7 +245,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 new PrintedAttackTargetPolicy(
                     (AttackTargetableUnits)units,
                     (AttackTargetReach)reach,
-                    (AttackTargetLine)line));
+                    (AttackTargetLine)line),
+                narrowing);
             return true;
         }
     }

@@ -4320,9 +4320,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.ImmunityOverrides))
                     .ToArray();
 
+            // Milestone 8.35z45: one derivation rather than this file's own copy of it, so
+            // a card that swaps by the fact, a card that selects by it and a modal Attack bullet that
+            // narrows by it cannot come to disagree about what "in the discard" means.
             private static bool HoldsADiscard(EffectCapabilityContext context, HeroId heroId) =>
-                context.CardState.Instances.Any(card =>
-                    card.OwnerId.Equals(heroId) && card.State.Location == CardLocation.DiscardPile);
+                HeroDiscardPileQuery.HasAnyCard(context.CardState.Instances, heroId);
         }
 
         private static bool IsStraightRoute(
