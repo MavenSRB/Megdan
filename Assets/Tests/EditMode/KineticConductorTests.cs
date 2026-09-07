@@ -514,34 +514,128 @@ namespace GuardsDigital.Tests.EditMode
         /// have to play in, framed, with both faces up. Gating on it kept the smack queued until the
         /// spotlight had CLOSED, moving it out of the shot it exists for.
         ///
-        /// <para>The gate is <c>DefersOtherScenes</c> now, which is the same phase set the cue
-        /// layer's own deferral uses - so the conductor and the deferral answer ONE question rather
-        /// than two that happen to agree. This asserts they are still the same set.</para>
+        /// <para>The gate is <c>DefersOtherScenes</c> now, which is the same (phase, elapsed) answer
+        /// the cue layer's own deferral uses - so the conductor and the deferral answer ONE question
+        /// rather than two that happen to agree. This asserts they are still the same predicate,
+        /// including milestone 8.35z56's addition: HELD defers for its own opening
+        /// <see cref="AttackSpotlightTiming.PostZoomBeatSeconds"/> and stops deferring after.</para>
         /// </summary>
         [Test]
-        public void TheConductorsGateAndTheCueDeferral_AreTheSamePhaseSet()
+        public void TheConductorsGateAndTheCueDeferral_AreTheSamePhaseAndElapsedAnswer()
         {
             var stage = new AttackSpotlightStage { AutoGrantsStage = false };
             var phases = (AttackSpotlightPhase[])Enum.GetValues(typeof(AttackSpotlightPhase));
+            var beat = AttackSpotlightTiming.PostZoomBeatSeconds;
+            var samples = new[] { 0f, beat * 0.5f, beat - 0.001f, beat, beat + 0.001f, beat * 4f };
 
             Assert.That(stage.DefersOtherScenes, Is.False,
                 "A stage doing nothing defers nothing.");
 
             foreach (var phase in phases)
             {
-                var travelling =
-                    phase == AttackSpotlightPhase.Requested ||
-                    phase == AttackSpotlightPhase.Entering ||
-                    phase == AttackSpotlightPhase.Exiting;
-                Assert.That(
-                    AttackSpotlightPresenter.DefersCuesInPhase(phase), Is.EqualTo(travelling),
-                    "The cue deferral covers exactly the travelling phases: " + phase);
+                foreach (var elapsed in samples)
+                {
+                    var expected =
+                        phase == AttackSpotlightPhase.Requested ||
+                        phase == AttackSpotlightPhase.Entering ||
+                        phase == AttackSpotlightPhase.Exiting ||
+                        (phase == AttackSpotlightPhase.Held && elapsed < beat);
+                    Assert.That(
+                        AttackSpotlightPresenter.DefersCuesInPhase(phase, elapsed), Is.EqualTo(expected),
+                        "phase=" + phase + " elapsed=" + elapsed);
+                }
             }
 
             Assert.That(
-                AttackSpotlightPresenter.DefersCuesInPhase(AttackSpotlightPhase.Held), Is.False,
-                "HELD is not a deferring phase - it is where the framed smack plays, and that is " +
-                "the whole reason this pair of predicates is not HoldsStage.");
+                AttackSpotlightPresenter.DefersCuesInPhase(AttackSpotlightPhase.Held, 0f), Is.True,
+                "The instant HELD begins, the beat has not passed yet, so it still defers.");
+            Assert.That(
+                AttackSpotlightPresenter.DefersCuesInPhase(AttackSpotlightPhase.Held, beat), Is.False,
+                "Once the beat has fully elapsed HELD stops deferring - that is where the framed " +
+                "smack plays, and the whole reason this pair of predicates is not HoldsStage.");
+        }
+
+        /// <summary>
+        /// THE 2026-09-08 CAMERA-TIMING DIRECTIVE, reproduced as numbers before being fixed: "wait
+        /// for the camera to zoom in on the attack, before doing the animation", refined the same day
+        /// to "Zoom in, a small pause, then smack."
+        ///
+        /// <para>This drives the REAL <see cref="AttackSpotlightStage"/> (not a fake) through its own
+        /// <see cref="AttackSpotlightStage.Advance"/> clock beside the conductor's, in PRODUCTION
+        /// ORDER: <c>MatchSceneCompositionRoot</c> attaches <c>KineticCueDriver</c> (which ticks the
+        /// conductor) to the composition root's GameObject BEFORE <c>AttackSpotlightDriver</c> (which
+        /// ticks the stage), so on any one frame the conductor's own <see cref="KineticConductor.Advance"/>
+        /// always runs first - reproduced here rather than assumed, because the order is exactly what
+        /// makes the gate's staleness benign (see the method's own remarks).</para>
+        ///
+        /// <para>Before milestone 8.35z56 this measured a near-zero gap - the attack cue
+        /// started on the very frame the zoom finished, which read as the animation stepping on the
+        /// camera's own landing rather than waiting for it. The fix inserts
+        /// <see cref="AttackSpotlightTiming.PostZoomBeatSeconds"/> of held-but-not-yet-releasing time
+        /// between the two, asserted here as the ordinal the user asked for: attack start
+        /// &gt;= zoom-complete + beat.</para>
+        /// </summary>
+        [Test]
+        public void TheAttackCueWaitsForTheZoomToCompleteAndForThePostZoomBeat()
+        {
+            var conductor = new KineticConductor();
+            var stage = new AttackSpotlightStage { AutoGrantsStage = false };
+            conductor.ConductedScene = stage;
+
+            stage.Offer(new AttackSpotlightScene(
+                1,
+                KineticSubject.ForHero(Hero),
+                KineticSubject.ForHero(Other),
+                GuardsDigital.Core.Diagnostics.MatchLogOutcome.AttackSuccessful));
+
+            // The attack's own Lunge/Flash cue. Enqueued up front rather than the instant the beat
+            // lifts, deliberately: AConductedSceneIsGrantedTheStage_AndNoCueSceneStartsWhileItHoldsIt
+            // already established that the conductor's own DefersOtherScenes gate controls START
+            // regardless of when a scene entered the queue, so enqueuing early asks the harder
+            // question and the production KineticCuePresenter timing cannot make this test pass by
+            // accident.
+            conductor.Enqueue(new[] { Scene(1, label: "attack-cue") });
+
+            const float frame = 1f / 120f;
+            var clock = 0f;
+            var zoomCompleteAt = -1f;
+            var attackStartAt = -1f;
+
+            while (attackStartAt < 0f && clock < 10f)
+            {
+                // Production order: the conductor's driver ticks before the spotlight's own.
+                var result = conductor.Advance(frame);
+                var wasHeld = stage.Phase == AttackSpotlightPhase.Held;
+                stage.Advance(frame);
+                clock += frame;
+
+                if (zoomCompleteAt < 0f && !wasHeld && stage.Phase == AttackSpotlightPhase.Held)
+                {
+                    zoomCompleteAt = clock;
+                }
+
+                if (attackStartAt < 0f && result != null)
+                {
+                    attackStartAt = clock;
+                }
+            }
+
+            Assert.That(zoomCompleteAt, Is.GreaterThan(0f).And.LessThan(10f),
+                "The zoom must actually complete during this run for the measurement to mean anything.");
+            Assert.That(attackStartAt, Is.GreaterThan(0f).And.LessThan(10f),
+                "The attack cue must eventually start.");
+
+            var gap = attackStartAt - zoomCompleteAt;
+            TestContext.WriteLine(string.Format(
+                "zoom-complete={0:0.0000}s attack-start={1:0.0000}s measured-gap={2:0.0000}s " +
+                "required-beat={3:0.0000}s",
+                zoomCompleteAt, attackStartAt, gap, AttackSpotlightTiming.PostZoomBeatSeconds));
+            Assert.That(gap, Is.GreaterThanOrEqualTo(AttackSpotlightTiming.PostZoomBeatSeconds - frame),
+                string.Format(
+                    "The attack animation must not start until the post-zoom beat has passed. " +
+                    "zoom-complete={0:0.0000}s attack-start={1:0.0000}s measured-gap={2:0.0000}s " +
+                    "required-beat={3:0.0000}s",
+                    zoomCompleteAt, attackStartAt, gap, AttackSpotlightTiming.PostZoomBeatSeconds));
         }
 
         /// <summary>

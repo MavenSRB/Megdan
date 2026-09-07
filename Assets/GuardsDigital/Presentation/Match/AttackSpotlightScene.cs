@@ -249,6 +249,24 @@ namespace GuardsDigital.Presentation.Match
         public const float MaximumHeldSeconds = 6f;
 
         /// <summary>
+        /// Milestone 8.35z56 (the camera-timing directive, refined same day: "Zoom in, a
+        /// small pause, then smack"). The beat held between the camera FINISHING its zoom and the
+        /// attack's own cues being allowed to start.
+        ///
+        /// <para><b>Why a beat and not an instant release.</b> Releasing the deferred cues the
+        /// instant <see cref="AttackSpotlightPhase.Held"/> begins landed them on literally the same
+        /// tick the camera stopped moving - correct by the letter of "wait for the zoom to complete",
+        /// but with nothing to make the two events read as two events, which is
+        /// <see cref="KineticStaging.SceneStaggerSeconds"/>'s own justification applied to this seam.
+        /// The user's own words name the shape directly: zoom, THEN a pause, THEN the smack.</para>
+        ///
+        /// <para>Chosen from the user's own 0.2-0.4s band, at its midpoint: long enough to read as a
+        /// deliberate beat, short enough that the whole spotlight - already capped by
+        /// <see cref="EnterSeconds"/> and <see cref="ExitSeconds"/> - does not start to drag.</para>
+        /// </summary>
+        public const float PostZoomBeatSeconds = 0.3f;
+
+        /// <summary>
         /// How many scenes may wait behind the one on screen.
         ///
         /// <para>The amendment asks that the cue queue buffer subsequent events until the viewer

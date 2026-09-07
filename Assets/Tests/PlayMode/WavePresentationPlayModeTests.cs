@@ -221,10 +221,22 @@ namespace GuardsDigital.Tests.PlayMode
                 "short one - see KineticStaging.ChromeHiddenHoldSeconds.");
             Assert.That(spotlight.IsDrivingCamera, Is.True, "The rig owns the board camera.");
 
+            // THE 2026-09-08 CAMERA-TIMING DIRECTIVE ("zoom in, a small pause, then smack"),
+            // milestone 8.35z56: the camera has arrived, but the beat has not passed yet, so
+            // the smack must not land on the very tick the zoom does.
+            Assert.That(presenter.DefersCues, Is.True,
+                "Held has just begun - the post-zoom beat has not elapsed, so the smack still waits.");
+
+            TickBy(presenter, AttackSpotlightTiming.PostZoomBeatSeconds + 0.05f);
+            Assert.That(presenter.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held),
+                "Still framed - the beat is far short of MaximumHeldSeconds.");
+
             // The deferral's whole point, on the real surface: cues were held while the camera
-            // travelled and are released HERE, framed, with both faces up.
+            // travelled AND for one beat after it arrived, and are released HERE, framed, with both
+            // faces up.
             Assert.That(presenter.DefersCues, Is.False,
-                "Held is deliberately not a deferring phase - the smack belongs at the END, framed.");
+                "One beat after the camera settles, Held stops deferring - the smack belongs at the " +
+                "END, framed.");
 
             // ---- CONTINUE gives the board back. ----
             presenter.Continue();

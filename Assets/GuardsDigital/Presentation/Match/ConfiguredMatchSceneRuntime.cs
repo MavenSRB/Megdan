@@ -210,12 +210,14 @@ namespace GuardsDigital.Presentation.Match
             //
             //   AttackSpotlightStage.HoldsStage       = Entering | Held | Exiting   (the conductor's)
             //   AttackSpotlightPresenter.DefersCues   = Requested | Entering | Exiting
+            //                                            | (Held, for its opening PostZoomBeatSeconds)
             //
-            // They differ at exactly one phase, HELD, and that phase is the point of the feature. The
+            // They differ across most of HELD, and that phase is the point of the feature. The
             // conductor's hold covers Held, so relying on it alone would keep the attack's own lunge
             // and flash queued until the spotlight had CLOSED - and the ranged smack is built on those
-            // cues being released mid-hold, framed, with both faces up ("lose the UI, zoom in, show
-            // the cards, show the smack"). The deferral is what lands them there. So the conductor
+            // cues being released mid-hold, framed, with both faces up, one beat after the camera
+            // settles ("zoom in, a small pause, then smack" - the 2026-09-08 camera-timing directive,
+            // milestone 8.35z56). The deferral is what lands them there. So the conductor
             // owns WHICH scene plays and the deferral owns WHEN within a granted spotlight its cues
             // fire; they are two jobs, and only the first was ever done twice.
             KineticPresenter.DeferWhile(() => SpotlightPresenter.DefersCues);

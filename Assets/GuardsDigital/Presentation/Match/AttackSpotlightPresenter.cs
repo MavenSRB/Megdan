@@ -22,7 +22,8 @@ namespace GuardsDigital.Presentation.Match
             float framingWeight,
             bool isContinueArmed,
             int queuedSceneCount,
-            bool snapToAuthoritative = false)
+            bool snapToAuthoritative = false,
+            float elapsedInPhase = 0f)
         {
             Phase = phase;
             Scene = scene;
@@ -30,9 +31,28 @@ namespace GuardsDigital.Presentation.Match
             IsContinueArmed = isContinueArmed;
             QueuedSceneCount = queuedSceneCount;
             SnapToAuthoritative = snapToAuthoritative;
+            ElapsedInPhase = elapsedInPhase;
         }
 
         public AttackSpotlightPhase Phase { get; }
+
+        /// <summary>
+        /// How long <see cref="Phase"/> has been running, in seconds. Milestone <c>8.35z56</c> added
+        /// it for ONE reason: the surface cannot answer "should a cue be showing yet?" from the phase
+        /// alone any more, because HELD now defers for its own opening
+        /// <see cref="AttackSpotlightTiming.PostZoomBeatSeconds"/>. A view that gates on the bare phase
+        /// would start its own motion a beat before the cue layer starts the attacker's jab - two
+        /// events where the beat exists to produce one. Carrying the elapsed time lets every consumer
+        /// call <see cref="AttackSpotlightPresenter.DefersCuesInPhase"/> instead of approximating it.
+        /// </summary>
+        public float ElapsedInPhase { get; }
+
+        /// <summary>
+        /// Whether the surface's own motion must still hold - the one gate, shared with the cue layer
+        /// and the conductor, rather than a fourth reading of the same question.
+        /// </summary>
+        public bool DefersOwnMotion =>
+            AttackSpotlightPresenter.DefersCuesInPhase(Phase, ElapsedInPhase);
 
         /// <summary>The attack being shown, or <c>null</c> when nothing is.</summary>
         public AttackSpotlightScene Scene { get; }
@@ -101,6 +121,7 @@ namespace GuardsDigital.Presentation.Match
         private bool pendingSnap;
         private AttackSpotlightPhase lastRenderedPhase = AttackSpotlightPhase.None;
         private float lastRenderedWeight = -1f;
+        private bool lastRenderedDeferral;
 
         private const int NeverObserved = -1;
 
@@ -137,27 +158,34 @@ namespace GuardsDigital.Presentation.Match
         /// Whether a cue layer should hold its cues rather than play them - the amendment's "the cue
         /// queue buffers subsequent events".
         ///
-        /// <para><b>Held is deliberately NOT a deferring phase, and that is the whole point.</b> The
-        /// user's own sequence is "lose the UI, zoom in, show the cards, show the smack": the smack
-        /// belongs at the END, framed, with both faces up. Deferring only while the camera is TRAVELLING
-        /// - and again while it travels home - lands the lunge and the flash exactly when the viewer is
-        /// looking at the two pieces, instead of half of it playing off-centre during a 450ms move. A
-        /// cue that arrives during the hold or the exit waits for the next release, which is the
-        /// buffering the amendment asks for.</para>
+        /// <para><b>Held is not a fully non-deferring phase any more.</b> The user's own sequence is
+        /// "lose the UI, zoom in, show the cards, show the smack" - refined, same day, to "zoom in, a
+        /// small pause, then smack". Deferring while the camera is TRAVELLING - and again while it
+        /// travels home - is unchanged; what milestone 8.35z56 added is that the first
+        /// <see cref="AttackSpotlightTiming.PostZoomBeatSeconds"/> of HELD ALSO defer, so the framed
+        /// smack lands one deliberate beat after the camera settles rather than on the very tick it
+        /// stops moving. A cue that arrives during the hold, the beat, or the exit waits for the next
+        /// release, which is the buffering the amendment asks for.</para>
         /// </summary>
-        public bool DefersCues => DefersCuesInPhase(stage.Phase);
+        public bool DefersCues => DefersCuesInPhase(stage.Phase, stage.ElapsedInPhase);
 
         /// <summary>
-        /// The deferral as a pure function of the phase - ONE definition, so the cue layer's hold and
-        /// the conductor's `IConductedScene.DefersOtherScenes` gate cannot drift apart. The wave-one
-        /// integration's first complete Play Mode run is why that matters: the conductor was gating on
-        /// `HoldsStage`, which also covers HELD, and that kept the framed smack queued until the
-        /// spotlight had closed.
+        /// The deferral as a pure function of the phase AND how long it has run - ONE definition, so
+        /// the cue layer's hold and the conductor's `IConductedScene.DefersOtherScenes` gate cannot
+        /// drift apart. The wave-one integration's first complete Play Mode run is why that matters: the
+        /// conductor was gating on `HoldsStage`, which also covers HELD, and that kept the framed smack
+        /// queued until the spotlight had closed. Milestone 8.35z56 added the
+        /// <paramref name="elapsedInPhase"/> parameter for the same reason: a HELD phase that has just
+        /// begun (elapsed under <see cref="AttackSpotlightTiming.PostZoomBeatSeconds"/>) still defers,
+        /// so the two consumers of this method stay in lockstep on the beat as they always have on the
+        /// phase.
         /// </summary>
-        public static bool DefersCuesInPhase(AttackSpotlightPhase phase) =>
+        public static bool DefersCuesInPhase(AttackSpotlightPhase phase, float elapsedInPhase) =>
             phase == AttackSpotlightPhase.Requested ||
             phase == AttackSpotlightPhase.Entering ||
-            phase == AttackSpotlightPhase.Exiting;
+            phase == AttackSpotlightPhase.Exiting ||
+            (phase == AttackSpotlightPhase.Held &&
+             elapsedInPhase < AttackSpotlightTiming.PostZoomBeatSeconds);
 
         /// <summary>The highest match-log sequence already turned into scenes.</summary>
         public int ObservedSequence => observedSequence;
@@ -212,9 +240,19 @@ namespace GuardsDigital.Presentation.Match
             stage.Advance(deltaSeconds);
 
             // Only when something a surface could see has changed. A spotlight that is doing nothing
-            // costs one comparison per frame, which is what keeps this off the Phase 4 frame budget.
+            // costs a few comparisons per frame, which is what keeps this off the Phase 4 frame budget.
+            //
+            // Milestone 8.35z56 added the third clause, and a fixture caught its absence. Phase and
+            // weight are BOTH constant across the post-zoom beat - HELD the whole way, weight pinned at
+            // 1 - so with only the first two clauses no render happens between the zoom landing and the
+            // beat expiring. That was survivable while the surface gated its own motion on the bare
+            // phase; it stopped being survivable the moment the surface began reading
+            // `ElapsedInPhase`, because the model it holds would have kept saying "still deferring"
+            // forever and the ranged tracer would never have drawn at all. The deferral answer is now
+            // part of "what a surface could see", which is what it became.
             if (stage.Phase != lastRenderedPhase ||
-                Math.Abs(stage.FramingWeight - lastRenderedWeight) >= 0.0005f)
+                Math.Abs(stage.FramingWeight - lastRenderedWeight) >= 0.0005f ||
+                DefersCues != lastRenderedDeferral)
             {
                 RenderCurrent();
             }
@@ -589,13 +627,15 @@ namespace GuardsDigital.Presentation.Match
         {
             lastRenderedPhase = stage.Phase;
             lastRenderedWeight = stage.FramingWeight;
+            lastRenderedDeferral = DefersCues;
             view.Render(new AttackSpotlightViewModel(
                 stage.Phase,
                 stage.Current,
                 stage.FramingWeight,
                 stage.IsContinueArmed,
                 stage.QueuedSceneCount,
-                snap));
+                snap,
+                stage.ElapsedInPhase));
         }
     }
 }

@@ -572,12 +572,16 @@ namespace GuardsDigital.Tests.EditMode
         // ---- The pairing with the kinetic panel: the amendment's buffered cue queue.
 
         /// <summary>
-        /// The user's stated order is "zoom in, show the cards, show the smack". This is that order as
-        /// a property: the lunge does not play while the camera travels, nothing is lost while it
-        /// waits, and it plays in full the moment the camera arrives.
+        /// The user's stated order, refined by the 2026-09-08 camera-timing directive, is "zoom in, a
+        /// small pause, then smack". This is that order as a property: the lunge does not play while
+        /// the camera travels, nothing is lost while it waits, it does NOT play on the very tick the
+        /// camera arrives either (milestone 8.35z56's fix for the directive - before it, this
+        /// assertion is the one the live playtest's "they overlap" report reproduces), and it plays in
+        /// full one <see cref="AttackSpotlightTiming.PostZoomBeatSeconds"/> beat after the camera
+        /// settles.
         /// </summary>
         [Test]
-        public void TheSmack_WaitsForTheCameraAndThenPlaysInFull()
+        public void TheSmack_WaitsForTheCameraAndTheBeatAndThenPlaysInFull()
         {
             var spotlightView = new CapturingSpotlightView();
             var kineticView = new CapturingKineticView();
@@ -606,12 +610,77 @@ namespace GuardsDigital.Tests.EditMode
 
             TickBy(spotlight, AttackSpotlightTiming.EnterSeconds + 0.02f);
 
-            Assert.That(spotlight.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held));
+            Assert.That(spotlight.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held),
+                "The camera has arrived.");
+            Assert.That(spotlight.DefersCues, Is.True,
+                "THE DIRECTIVE'S FIX: the beat has not passed yet, so the smack must not land on the " +
+                "very tick the zoom does - reproducing this as False here is the overlap the user saw.");
+            Assert.That(kineticView.Model.Cues, Is.Empty,
+                "Framed, but still one beat early - the lunge keeps waiting.");
+            Assert.That(kinetics.ObservedSequence, Is.LessThan(5),
+                "and the row is still unobserved, so the beat costs nothing either.");
+
+            TickBy(spotlight, AttackSpotlightTiming.PostZoomBeatSeconds + 0.02f);
+
+            Assert.That(spotlight.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held),
+                "Still framed - the beat is far short of MaximumHeldSeconds, so nobody's screen locks up.");
             Assert.That(spotlight.DefersCues, Is.False);
             Assert.That(kineticView.Model.Cues.Select(cue => cue.Kind),
                 Contains.Item(KineticCueKind.Lunge),
-                "The smack lands with both faces up and the two pieces framed.");
+                "The smack lands with both faces up and the two pieces framed, one beat after landing.");
             Assert.That(kinetics.ObservedSequence, Is.EqualTo(5));
+        }
+
+        /// <summary>
+        /// Milestone <c>8.35z56</c>. The ranged tracer used to gate on the bare HELD phase, so the beat
+        /// that held the attacker's jab did NOT hold the dash crossing the ground between the pieces -
+        /// on a ranged pair the tracer went first and the jab followed a beat later, which is two
+        /// events where the directive asks for one. The fix gives the view model the elapsed time and
+        /// one shared predicate; this is that gate as a property, at the two moments that matter.
+        ///
+        /// <para>It is asserted on the RENDERED view model rather than inside
+        /// <c>AttackSpotlightUnityView</c>, which is the point of moving the decision there: the raw
+        /// view is UI Toolkit plus camera math with no offline coverage, while the answer it now reads
+        /// is a pure property this fixture can pin exactly.</para>
+        /// </summary>
+        [Test]
+        public void TheRangedTracer_HoldsForTheSameBeatTheLungeDoes()
+        {
+            var spotlightView = new CapturingSpotlightView();
+            var client = new SpotlightClient(new SpotlightReadModel(new[] { Round(1) }));
+            var spotlight = new AttackSpotlightPresenter(client, spotlightView);
+            spotlight.Refresh();
+
+            client.Projection = new SpotlightReadModel(
+                new[] { Round(1), Attack(5, Attacker, Defender, AttackCard) },
+                new[] { Card(AttackCard, Attacker) });
+            spotlight.Refresh();
+
+            Assert.That(spotlightView.Model.Phase, Is.EqualTo(AttackSpotlightPhase.Entering));
+            Assert.That(spotlightView.Model.DefersOwnMotion, Is.True,
+                "While the camera travels the tracer must not draw - it never did.");
+
+            TickBy(spotlight, AttackSpotlightTiming.EnterSeconds + 0.02f);
+
+            Assert.That(spotlightView.Model.Phase, Is.EqualTo(AttackSpotlightPhase.Held),
+                "The camera has arrived.");
+            Assert.That(spotlightView.Model.ElapsedInPhase,
+                Is.LessThan(AttackSpotlightTiming.PostZoomBeatSeconds),
+                "The view model carries the elapsed time the gate needs; without it the surface " +
+                "cannot tell this moment from the one after the beat.");
+            Assert.That(spotlightView.Model.DefersOwnMotion, Is.True,
+                "THE FIX: on the tick the zoom lands, the tracer holds exactly as the lunge does. " +
+                "Reproducing this as False is the asymmetry the beat opened.");
+            Assert.That(spotlightView.Model.DefersOwnMotion, Is.EqualTo(spotlight.DefersCues),
+                "One gate, two consumers - the surface's answer and the cue layer's are the same " +
+                "call, not two readings that agree today.");
+
+            TickBy(spotlight, AttackSpotlightTiming.PostZoomBeatSeconds + 0.02f);
+
+            Assert.That(spotlightView.Model.DefersOwnMotion, Is.False,
+                "The beat has passed: the dash crosses the ground with the jab, not before it.");
+            Assert.That(spotlightView.Model.DefersOwnMotion, Is.EqualTo(spotlight.DefersCues),
+                "and the two consumers still answer together.");
         }
 
         [Test]

@@ -221,6 +221,21 @@ namespace GuardsDigital.Presentation.Match
         /// and both faces up, in the order the user asked for. A melee pair gets none of this: at
         /// that separation nothing crosses any ground, and the jab and flash already say
         /// everything.</para>
+        ///
+        /// <para><b>THE ASYMMETRY THE BEAT OPENED IS CLOSED HERE (milestone <c>8.35z56</c>).</b> The
+        /// gate used to be <c>model.Phase == Held</c> alone, which stopped being the same question the
+        /// cue layer asks the moment HELD began deferring for its own opening
+        /// <see cref="AttackSpotlightTiming.PostZoomBeatSeconds"/>. On a RANGED attack that let this
+        /// tracer cross the ground a beat BEFORE the attacker's jab - the other half of the very same
+        /// cue - which is precisely the "two events" the beat was added to collapse into one, and the
+        /// asymmetry was visible only on ranged pairs because a melee pair draws no tracer at all.
+        ///
+        /// <para>It now reads <see cref="AttackSpotlightViewModel.DefersOwnMotion"/>, which is
+        /// <see cref="AttackSpotlightPresenter.DefersCuesInPhase"/> - the ONE definition the cue hold
+        /// and the conductor's <c>DefersOtherScenes</c> gate already share. Approximating the beat with
+        /// a second literal here is exactly the drift the one-source rule exists to prevent; the
+        /// smack clock is left at zero while the gate holds, so the tracer starts its travel from the
+        /// beginning when the beat ends rather than arriving already part-way across.</para>
         /// </summary>
         private void ApplyRangedSmack(
             Camera camera, Vector3 attackerWorld, Vector3 defenderWorld, float deltaSeconds)
@@ -230,7 +245,7 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            var held = model.Phase == AttackSpotlightPhase.Held;
+            var held = model.Phase == AttackSpotlightPhase.Held && !model.DefersOwnMotion;
             if (!held)
             {
                 smackRunning = false;
