@@ -444,6 +444,7 @@ namespace GuardsDigital.Application
             SelectedActor = source.SelectedActor;
             IsTurnActive = source.IsTurnActive;
             TeamLifeCounters = source.TeamLifeCounters;
+            RemainingWaveCounters = source.RemainingWaveCounters;
             HeroProgression = source.HeroProgression;
             Outcome = source.Outcome;
             OwnCards = ownCards;
@@ -497,6 +498,13 @@ namespace GuardsDigital.Application
         public SelectedInitiativeActor SelectedActor { get; }
         public bool IsTurnActive { get; }
         public IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters { get; }
+
+        /// <summary>
+        /// Milestone 8.35z60. p.8's live Wave-counter pool, taken from the source's own
+        /// read rather than re-derived - it is public and un-scoped, so a seat's copy is byte-for-byte
+        /// the Director's.
+        /// </summary>
+        public int RemainingWaveCounters { get; }
         public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
         public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome { get; }
 

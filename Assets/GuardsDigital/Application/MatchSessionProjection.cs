@@ -922,7 +922,8 @@ namespace GuardsDigital.Application
             IEnumerable<MarkerAttachment> heldMarkers = null,
             IEnumerable<AttackTargetDefensePreviewProjection>
                 pendingAttackTargetDefensePreviews = null,
-            GuardsDigital.Core.Cards.PendingTurnRelease pendingTurnRelease = null)
+            GuardsDigital.Core.Cards.PendingTurnRelease pendingTurnRelease = null,
+            int? remainingWaveCounters = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -1038,6 +1039,12 @@ namespace GuardsDigital.Application
             // round authority behind it rather than a substituted full pile.
             TeamLifeCounters = Array.AsReadOnly((teamLifeCounters ??
                 Enumerable.Empty<KeyValuePair<TeamId, int>>()).ToArray());
+
+            // Milestone 8.35z60. p.8's live Wave-counter pool, mirroring TeamLifeCounters'
+            // own reasoning just above: a composition built with no round authority behind it has
+            // never pushed anything off the pool, so the setup's own starting total is the honest
+            // reading rather than a substituted zero.
+            RemainingWaveCounters = remainingWaveCounters ?? Setup.WaveCount;
             Outcome = outcome;
             HeroProgression = Array.AsReadOnly((heroProgression ??
                 Enumerable.Empty<HeroProgressionProjection>()).ToArray());
@@ -1388,6 +1395,13 @@ namespace GuardsDigital.Application
         /// composition that has no round authority to read them from.
         /// </summary>
         public IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters { get; }
+
+        /// <summary>
+        /// Milestone 8.35z60: rulebook p.8's ONE SHARED Wave-counter pool as it now stands,
+        /// read straight off the round authority's <c>LanePushTransitionAuthority.RemainingWaveCounters</c>
+        /// rather than <see cref="Setup"/>'s starting total. See <see cref="IMatchReadModel.RemainingWaveCounters"/>.
+        /// </summary>
+        public int RemainingWaveCounters { get; }
 
         /// <summary>
         /// Milestone 7.7: who won this match and which of the rulebook's three victory sentences ended

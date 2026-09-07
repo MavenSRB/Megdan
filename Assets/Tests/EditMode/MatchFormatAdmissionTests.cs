@@ -149,7 +149,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(10),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(11),
+                "Milestone 8.35z60's integration pass took it to 11 to carry rulebook p.8's shared " +
+                "Wave-counter pool on the seat projection, so a remote seat's top strip reads the " +
+                "host's live number instead of its own frozen starting total. A version 10 peer " +
+                "would read that new Int32 as the hero-row count that follows it and mis-decode the " +
+                "whole remainder of the frame, so it is refused from the bounded header. " +
                 "A version 8 peer reads the format string as the content digest and then finds the " +
                 "key proof missing, so the old version is refused from the bounded header instead. " +
                 "Milestone 8.35z37 took it to 10 for the ChooseHero kind that carries a " +

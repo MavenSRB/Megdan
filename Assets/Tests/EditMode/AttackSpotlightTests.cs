@@ -911,6 +911,10 @@ namespace GuardsDigital.Tests.EditMode
             public IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters =>
                 Array.Empty<KeyValuePair<TeamId, int>>();
 
+            // Milestone 8.35z60. This stub answers a spotlight/kinetic-stream read, neither
+            // of which reads the Wave pool; a fixed value keeps the "narrowest projection" shape.
+            public int RemainingWaveCounters => 0;
+
             public IReadOnlyList<HeroProgressionProjection> HeroProgression =>
                 Array.Empty<HeroProgressionProjection>();
 

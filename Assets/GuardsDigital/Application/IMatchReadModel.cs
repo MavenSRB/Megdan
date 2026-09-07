@@ -81,6 +81,34 @@ namespace GuardsDigital.Application
         SelectedInitiativeActor SelectedActor { get; }
         bool IsTurnActive { get; }
         IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters { get; }
+
+        /// <summary>
+        /// Milestone 8.35z60. Rulebook p.8's ONE SHARED Wave-counter pool, as it now stands -
+        /// how many pushes remain before the last one ends the game - rather than
+        /// <see cref="Setup"/>'s starting total, which never moves. The top status strip binds this
+        /// member directly, by the same 2026-09-08 user directive: "Waves up top should show waves
+        /// remaining until the end of the game."
+        /// </summary>
+        /// <remarks>
+        /// <para><b>In process, this costs no wire bytes at all.</b>
+        /// <see cref="MatchSessionProjection"/> and the <see cref="SeatProjection"/> it scopes both
+        /// read the live pool straight off <c>LanePushTransitionAuthority.RemainingWaveCounters</c>
+        /// in the same process - the authority already computed the number, and only the read-model
+        /// contract was missing it, exactly as <see cref="DecisionOwner"/> was before it.</para>
+        ///
+        /// <para><b>A networked seat reads the host's number, not its own.</b> This milestone's
+        /// worktree was held to a "zero wire" constraint and left a recorded bound here: a remote
+        /// seat would report its locally composed match's frozen starting total once any push
+        /// happened at the table. The wave's integration pass paid that debt rather than shipping
+        /// it, because every real playtest of this project is networked and a host-only readout
+        /// would have made this milestone correct for exactly one seat. Protocol version 11 carries
+        /// the pool as a plain <c>Int32</c> on <c>NetworkSeatProjectionRecord</c>, beside the
+        /// per-team Life counters it is the table-wide counterpart of, so
+        /// <c>NetworkMatchClient</c> now decodes it like any other frame fact and falls back to the
+        /// composed total only before the first frame arrives.</para>
+        /// </remarks>
+        int RemainingWaveCounters { get; }
+
         IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
         GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome { get; }
         IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds { get; }

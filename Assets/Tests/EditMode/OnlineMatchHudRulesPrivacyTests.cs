@@ -263,9 +263,15 @@ namespace GuardsDigital.Tests.EditMode
         /// one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolTen_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolEleven_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(10),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(11),
+                "Milestone 8.35z60's integration pass took it to 11: the seat projection now carries " +
+                "rulebook p.8's shared Wave-counter pool as a plain Int32 beside the per-team Life " +
+                "counters, so a remote seat's top strip reads the host's live count rather than the " +
+                "frozen starting total of its own local composition. A version 10 peer would take " +
+                "that integer as the hero-row count following it and mis-decode the rest of the " +
+                "frame, so it is refused from the bounded header before any payload is interpreted. " +
                 "Milestone 8.35z37 wired rulebook p.22's hero selection to the host with " +
                 "ONE new client-to-host kind, ChooseHero, carrying a bounded hero id and no seat - " +
                 "the connection says whose pick it is. A protocol nine peer has no case for kind 21 " +

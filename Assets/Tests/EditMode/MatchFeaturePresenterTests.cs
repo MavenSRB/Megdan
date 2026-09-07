@@ -4573,6 +4573,11 @@ namespace GuardsDigital.Tests.EditMode
             public virtual bool IsTurnActive => inner.IsTurnActive;
             public virtual IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters =>
                 inner.TeamLifeCounters;
+
+            // Milestone 8.35z60. Virtual and delegating like the rest, so a case about the
+            // wave label the same growth-forces-a-decision way every other member here does.
+            public virtual int RemainingWaveCounters => inner.RemainingWaveCounters;
+
             public virtual IReadOnlyList<HeroProgressionProjection> HeroProgression =>
                 inner.HeroProgression;
             public virtual GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome => inner.Outcome;

@@ -167,7 +167,37 @@ namespace GuardsDigital.Application
         /// version 1 when milestone 8.35b gave SelectedActor its Tie Breaker meaning. Every
         /// superseded version is refused from the bounded header rather than reinterpreted.</para>
         /// </remarks>
-        public const int Version = 10;
+        /// <remarks>
+        /// <para>Protocol version 11: milestone 8.35z60 carries rulebook p.8's shared Wave-counter
+        /// pool to every seat. ONE new <c>Int32</c> on <c>NetworkSeatProjectionRecord</c>, written
+        /// beside the per-team Life counters it is the table-wide counterpart of. A version 10 peer's
+        /// reader would take that integer as the following hero-row count and mis-decode the entire
+        /// remainder of the frame - a silent structural drift rather than a dropped tail - which is
+        /// exactly what the bounded header exists to refuse: version 10 is rejected before either
+        /// side interprets a payload.</para>
+        ///
+        /// <para><b>Why carried rather than derived, and why not optional.</b> A seat holds no rule
+        /// material that can say how many pushes a match has spent, so a client-side count would be a
+        /// second reading of the host's rules, free to disagree with it - the same call milestone
+        /// 8.35z14's blocker channel records. It is a plain integer rather than an optional pair
+        /// because the host always knows the number: it reads off
+        /// <c>LanePushTransitionAuthority.RemainingWaveCounters</c>, which exists for the whole life
+        /// of a composed match, so an "absent" branch would be one no run can reach.</para>
+        ///
+        /// <para><b>This closes a debt the milestone's own worktree recorded rather than hid.</b>
+        /// 8.35z60 was authored under a "zero wire" constraint and therefore took an exclusion slot
+        /// in <c>PrivateOnlineSynchronizationTests</c>'s carrier map, raising that suite's exclusion
+        /// floor from 7 to 8 with the note "tracked as integration-owed". The integration pass paid
+        /// it: the exclusion entry is gone, the floor is back at 7, and the member is carried for
+        /// real. Every real playtest of this project is networked, so a host-only readout would have
+        /// left the milestone correct for exactly one seat at the table.</para>
+        ///
+        /// <para><b>Schema is UNMOVED at v36.</b> The Wave total has been an ordinary <c>Int32</c> in
+        /// the snapshot's round section since long before this milestone; what moved is which number
+        /// a REMOTE READ MODEL reports, not what an <c>AuthoritativeSnapshotSerializer</c> payload
+        /// contains. No corpus digest, pinned constant or bare version assertion moves.</para>
+        /// </remarks>
+        public const int Version = 11;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

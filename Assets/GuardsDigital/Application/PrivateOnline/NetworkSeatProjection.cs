@@ -47,6 +47,7 @@ namespace GuardsDigital.Application
             NetworkSelectedActorRecord selectedActor,
             NetworkOutcomeRecord outcome,
             IReadOnlyList<NetworkLifeCounterRow> teamLifeCounters,
+            int remainingWaveCounters,
             IReadOnlyList<NetworkHeroRow> heroes,
             IReadOnlyList<NetworkMinionRow> minions,
             IReadOnlyList<NetworkObstacleRow> obstacles,
@@ -80,6 +81,7 @@ namespace GuardsDigital.Application
             SelectedActor = selectedActor;
             Outcome = outcome;
             TeamLifeCounters = teamLifeCounters;
+            RemainingWaveCounters = remainingWaveCounters;
             Heroes = heroes;
             Minions = minions;
             Obstacles = obstacles;
@@ -116,6 +118,22 @@ namespace GuardsDigital.Application
         public NetworkSelectedActorRecord SelectedActor { get; }
         public NetworkOutcomeRecord Outcome { get; }
         public IReadOnlyList<NetworkLifeCounterRow> TeamLifeCounters { get; }
+
+        /// <summary>
+        /// Milestone 8.35z60, protocol version 11. Rulebook p.8's ONE SHARED Wave-counter pool as it
+        /// currently stands, so a remote seat's top strip reads the same live number the host's does
+        /// rather than the frozen starting total its own locally composed match still holds.
+        ///
+        /// <para><b>Carried, not derived, and not optional.</b> Derivation was available and refused
+        /// for the reason milestone 8.35z14 records for the blocker channel: a seat holds no rule
+        /// material that can say how many pushes a match has spent, so a client-side count would be a
+        /// second reading of the host's rules, free to disagree with it. It is a plain
+        /// <c>Int32</c> rather than an optional pair because the host ALWAYS knows this number - it
+        /// reads straight off <c>LanePushTransitionAuthority.RemainingWaveCounters</c>, which exists
+        /// for the whole life of a composed match - so an absent branch would be one that can never
+        /// be taken, and this codebase does not ship a branch it cannot reach.</para>
+        /// </summary>
+        public int RemainingWaveCounters { get; }
         public IReadOnlyList<NetworkHeroRow> Heroes { get; }
         public IReadOnlyList<NetworkMinionRow> Minions { get; }
         public IReadOnlyList<NetworkObstacleRow> Obstacles { get; }
@@ -520,6 +538,13 @@ namespace GuardsDigital.Application
                     writer.Write(counter.Value);
                 }
 
+                // Milestone 8.35z60, protocol version 11. p.8's shared Wave pool rides here, beside
+                // the per-team Life counters it is the table-wide counterpart of, rather than being
+                // appended at the end: version 10 is refused from the bounded header before either
+                // side interprets a payload, so placement is a readability choice and the two
+                // counter facts belong together.
+                writer.Write(projection.RemainingWaveCounters);
+
                 writer.Write(projection.Heroes.Count);
                 foreach (var hero in projection.Heroes)
                 {
@@ -749,6 +774,16 @@ namespace GuardsDigital.Application
                         }
 
                         counters.Add(new NetworkLifeCounterRow(teamId, count));
+                    }
+
+                    // Milestone 8.35z60. Validated on the same rule as every other counted value
+                    // here: a pool cannot be negative, and a frame claiming one is refused whole
+                    // rather than clamped, because a clamp would hand the strip a number no host
+                    // ever sent.
+                    var remainingWaveCounters = reader.ReadInt32();
+                    if (remainingWaveCounters < 0)
+                    {
+                        return false;
                     }
 
                     if (!TryReadCount(reader, out var heroCount))
@@ -1050,6 +1085,7 @@ namespace GuardsDigital.Application
                         isTurnActive, isSeatUndoAvailable, endOfRoundStage, tieBreakerSide,
                         selectedActor, outcome,
                         Array.AsReadOnly(counters.ToArray()),
+                        remainingWaveCounters,
                         Array.AsReadOnly(heroes.ToArray()),
                         Array.AsReadOnly(minions.ToArray()),
                         Array.AsReadOnly(obstacles.ToArray()),

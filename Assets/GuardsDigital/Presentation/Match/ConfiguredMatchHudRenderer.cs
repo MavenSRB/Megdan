@@ -19,6 +19,9 @@ namespace GuardsDigital.Presentation.Match
     /// <see cref="Text"/> is unchanged and still carries every one of those facts as one line, which is
     /// what the chip's own assistive reading uses: relocating the indicator must not lose anything the
     /// old surface guaranteed.
+    ///
+    /// Milestone 8.35z60: the Wave counter reads as REMAINING, not the printed starting total.
+    /// See <see cref="IMatchReadModel.RemainingWaveCounters"/> for where the number comes from.
     /// </summary>
     public sealed class MatchHudHeaderViewModel
     {
@@ -29,18 +32,27 @@ namespace GuardsDigital.Presentation.Match
         /// An empty or absent list falls back to the setup's count, which is what a composition with no
         /// round authority behind it honestly knows.
         /// </param>
+        /// <param name="remainingWaveCounters">
+        /// Milestone 8.35z60, the 2026-09-08 user directive: "Waves up top should show waves
+        /// remaining until the end of the game." Rulebook p.8's ONE SHARED Wave-counter pool as it now
+        /// stands, rather than <paramref name="setup"/>'s starting total, which never moves. Absent
+        /// falls back to the setup's total, the same "no round authority behind it" honesty
+        /// <paramref name="teamLifeCounters"/> already gives.
+        /// </param>
         public MatchHudHeaderViewModel(
             TieBreakerState tieBreaker,
             QuickGameSetupState setup,
             IReadOnlyList<KeyValuePair<TeamId, int>> teamLifeCounters = null,
             int roundIndex = 0,
             int turnIndex = 0,
-            bool isAwaitingViewerInput = false)
+            bool isAwaitingViewerInput = false,
+            int? remainingWaveCounters = null)
         {
             IsAwaitingViewerInput = isAwaitingViewerInput;
             TieBreaker = tieBreaker;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
-            Text = Format(tieBreaker, setup, teamLifeCounters);
+            var waveCount = remainingWaveCounters ?? setup.WaveCount;
+            Text = Format(tieBreaker, setup, teamLifeCounters, waveCount);
             Color = tieBreaker.IsDefined
                 ? tieBreaker.RevealedSide == TeamSide.Red
                     ? new Color(0.72f, 0.16f, 0.12f)
@@ -55,8 +67,12 @@ namespace GuardsDigital.Presentation.Match
                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
             BlueLifeLabel = "BLUE " + Counters(setup, teamLifeCounters, TeamSide.Blue)
                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
-            WaveLabel = "WAVES " +
-                setup.WaveCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // Milestone 8.35z60. "WAVES 3" read as a fixed printed total and never moved as
+            // the pool spent down; the label now says REMAINING explicitly, matching the strip's own
+            // compact "LABEL VALUE" convention (RedLifeLabel, BlueLifeLabel) rather than inventing a
+            // colon this strip has never used.
+            WaveLabel = "WAVES REMAINING " +
+                waveCount.ToString(System.Globalization.CultureInfo.InvariantCulture);
             TieBreakerLabel = "TIEBREAKER";
         }
 
@@ -106,7 +122,8 @@ namespace GuardsDigital.Presentation.Match
         private static string Format(
             TieBreakerState state,
             QuickGameSetupState setup,
-            IReadOnlyList<KeyValuePair<TeamId, int>> counters)
+            IReadOnlyList<KeyValuePair<TeamId, int>> counters,
+            int waveCount)
         {
             var redLives = Counters(setup, counters, TeamSide.Red);
             var blueLives = Counters(setup, counters, TeamSide.Blue);
@@ -115,7 +132,7 @@ namespace GuardsDigital.Presentation.Match
                 : state.RevealedSide == TeamSide.Red
                     ? "TIE BREAKER  [R] RED"
                     : "TIE BREAKER  [B] BLUE";
-            return $"QUICK GAME  WAVES {setup.WaveCount}\nLIVES  [R] {redLives}  [B] {blueLives}\n{tieBreaker}";
+            return $"QUICK GAME  WAVES REMAINING {waveCount}\nLIVES  [R] {redLives}  [B] {blueLives}\n{tieBreaker}";
         }
     }
 

@@ -128,7 +128,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(header.TieBreaker, Is.EqualTo(root.Runtime.Setup.TieBreakerState));
             Assert.That(header.Text, Does.Contain(side == TeamSide.Red ? "[R] RED" : "[B] BLUE"));
-            Assert.That(header.Text, Does.Contain("WAVES 3"));
+            // Milestone 8.35z60: the strip's Wave indicator now reads as remaining, not the
+            // printed starting total - "WAVES 3" and "WAVES REMAINING 3" agree at a fresh match's
+            // full pool, but only the new wording says what the number means.
+            Assert.That(header.Text, Does.Contain("WAVES REMAINING 3"));
             Assert.That(header.Text, Does.Contain("LIVES  [R] 4  [B] 4"));
             // Milestone 8.25c: every rectangle the HUD reports is in the panel's reference units, so
             // the margin is measured off the panel's own width and a point on it is turned into the

@@ -454,6 +454,16 @@ namespace GuardsDigital.Tests.EditMode
                 { "IsSeatUndoAvailable",
                     nameof(NetworkSeatProjectionRecord.IsSeatUndoAvailable) },
                 { "TeamLifeCounters", nameof(NetworkSeatProjectionRecord.TeamLifeCounters) },
+                // Milestone 8.35z60, CARRIED at protocol version 11. The worktree that built this
+                // milestone was held to a "zero wire" constraint, so it recorded an exclusion here
+                // and raised the floor below from 7 to 8, with the note "tracked as
+                // integration-owed". The wave's integration pass paid that debt instead of shipping
+                // it: NetworkSeatProjectionRecord.RemainingWaveCounters is a real Int32 on the wire,
+                // written beside the per-team Life counters, so a remote seat's strip shows the
+                // host's live pool rather than its own frozen starting total. The exclusion entry is
+                // therefore deleted rather than reworded, and the floor is back at 7.
+                { "RemainingWaveCounters",
+                    nameof(NetworkSeatProjectionRecord.RemainingWaveCounters) },
                 { "HeroProgression", nameof(NetworkSeatProjectionRecord.HeroProgression) },
                 { "Outcome", nameof(NetworkSeatProjectionRecord.Outcome) },
                 { "ActiveEffectSourceCardInstanceIds",
@@ -535,6 +545,11 @@ namespace GuardsDigital.Tests.EditMode
                 "record, or record why it is excluded, before extending this map.");
 
             // The floor that keeps the map honest: most members are carried, not excused.
+            // Milestone 8.35z60's worktree raised this from 7 to 8 to admit a RemainingWaveCounters
+            // exclusion under a "zero wire" constraint. The wave's integration pass carried the
+            // member for real at protocol version 11, so the floor is RESTORED to 7 rather than left
+            // at the raised value - a ceiling that stays up after the reason for raising it is gone
+            // is a ceiling that silently admits the next exclusion for free.
             var excluded = carriers.Values.Count(value =>
                 value.StartsWith("excluded", StringComparison.Ordinal) ||
                 value.StartsWith("derived", StringComparison.Ordinal));

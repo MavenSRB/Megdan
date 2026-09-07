@@ -385,7 +385,8 @@ namespace GuardsDigital.Presentation.Match
                     projection.TeamLifeCounters,
                     projection.RoundIndex,
                     projection.TurnIndex,
-                    AwaitedInputQuery.IsWaitingOnViewer(projection, Seat?.HeroId ?? default))),
+                    AwaitedInputQuery.IsWaitingOnViewer(projection, Seat?.HeroId ?? default),
+                    projection.RemainingWaveCounters)),
                 HeroOverviewsPresenter,
                 // Milestone 8.35h. One panel's throw stops that panel and nothing else, and it is
                 // said out loud where the playtest logs already look: a marker naming the panel, and
@@ -755,7 +756,8 @@ namespace GuardsDigital.Presentation.Match
                 client.Projection.TeamLifeCounters,
                 client.Projection.RoundIndex,
                 client.Projection.TurnIndex,
-                AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default)));
+                AwaitedInputQuery.IsWaitingOnViewer(client.Projection, Seat?.HeroId ?? default),
+                client.Projection.RemainingWaveCounters));
             coordinator.RefreshAll();
             FizzleNoticePresenter.Refresh();
             hud.ApplyExclusiveContext();

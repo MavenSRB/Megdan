@@ -451,6 +451,24 @@ namespace GuardsDigital.Application
         public MatchParticipants Participants => trusted.Participants;
         public IReadOnlyList<CardDefinition> Definitions => trusted.Definitions;
 
+        /// <summary>
+        /// Milestone 8.35z60. Reads the host's live count off the decoded frame, exactly as
+        /// <see cref="TeamLifeCounters"/> does, and falls back to the locally composed match's own
+        /// starting total only before the first frame has arrived - the same shape every other
+        /// member of this class already has.
+        /// </summary>
+        /// <remarks>
+        /// This member was authored in the worktree as an unconditional <c>trusted</c> fall-through,
+        /// with the honest note that nothing on the wire carried a live pool and a remote seat would
+        /// therefore read the frozen starting total after the first push anywhere at the table. The
+        /// wave's integration pass paid that debt rather than shipping it: protocol version 11 adds
+        /// the field, so this is now a real decoded read and the branch above is the ordinary
+        /// pre-first-frame one. Every real playtest of this project is networked, so leaving the
+        /// fall-through in place would have made milestone 8.35z60 correct only for the host.
+        /// </remarks>
+        public int RemainingWaveCounters =>
+            wire == null ? trusted.RemainingWaveCounters : wire.RemainingWaveCounters;
+
         public IReadOnlyList<HeroOccupancy> Heroes => wire == null ? trusted.Heroes :
             Array.AsReadOnly(wire.Heroes.Select(row =>
                 new HeroOccupancy(new HeroId(row.HeroId), new HexCoordinate(row.Q, row.R))).ToArray());

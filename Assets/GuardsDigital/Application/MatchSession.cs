@@ -972,7 +972,11 @@ namespace GuardsDigital.Application
                 attackTargetDefensePreviews,
                 // Milestone 8.35g. The finished turn waiting for its own player's release, read
                 // from the turn authority that holds it beside every other pause it publishes.
-                turn?.PendingTurnRelease);
+                turn?.PendingTurnRelease,
+                // Milestone 8.35z60. p.8's live Wave-counter pool, read off the same
+                // Lane-Push authority that flips it - the top status strip's WAVES indicator binds
+                // this rather than the setup's starting total, which never moves.
+                round.LanePush?.LanePush.RemainingWaveCounters);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

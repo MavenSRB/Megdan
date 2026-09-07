@@ -467,6 +467,9 @@ namespace GuardsDigital.Tests.EditMode
             public bool IsTurnActive => false;
             public IReadOnlyList<KeyValuePair<TeamId, int>> TeamLifeCounters { get; set; } =
                 Array.Empty<KeyValuePair<TeamId, int>>();
+            // Milestone 8.35z60. None of the four sub-selectors under test read the Wave
+            // pool, so a fixed default keeps this stub's "safe, cheap default" shape.
+            public int RemainingWaveCounters => 0;
             public IReadOnlyList<HeroProgressionProjection> HeroProgression =>
                 Array.Empty<HeroProgressionProjection>();
             public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome => default;

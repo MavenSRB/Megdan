@@ -732,6 +732,110 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35z60. "WAVES 3" became "WAVES REMAINING 3" in the identity row the
+        /// narration bar hosts (<see cref="UiToolkitMatchHudViews"/>'s <c>content</c> row: the build
+        /// name, the round/turn label, both team chips and the Wave label, gapped 18 units apart) - a
+        /// genuinely longer string, and that row wraps rather than clips when it overruns
+        /// (<c>HudElements.Row</c> sets <c>Wrap.Wrap</c>), which would silently drop whatever wraps
+        /// past the narration lane's fixed height off screen. Swept at the same viewport list
+        /// <see cref="TheConnectionBanner_ClearsTheNarrationBarAndTheLogDropdown_AtEveryViewport"/>
+        /// (8.35z55) uses, rather than eyeballed at one.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why this is an estimate, and why the estimate is deliberately generous.</b> No
+        /// live Unity text layout is reachable to this worker (no Unity launch for this corrective -
+        /// the visual confirmation is flagged for the next integration's pass). The row's font
+        /// (Liberation Sans, UI Toolkit's built-in default when no font asset is assigned - this HUD
+        /// assigns none) was measured offline instead, with Arial as a metrically comparable
+        /// Helvetica-derived stand-in, via <c>Graphics.MeasureString</c> at the row's own 12/13-unit
+        /// sizes: characters ran 6.5-8.0 units wide across every sample string tried. <c>CharWidth</c>
+        /// below rounds that up to 8.5 - an over-estimate on purpose, so a pass here is conservative
+        /// rather than optimistic: real rendered text is narrower than this test assumes.</para>
+        /// <para><b>Why a relative claim ("no newly-broken viewport") rather than an absolute one.</b>
+        /// A handful of the sweep's deliberately degenerate panels (778x300 down to 300x100) are
+        /// already too narrow to seat the OLD short "WAVES 3" row - the z55 test above holds no fit
+        /// claim there either. Asserting only that a viewport which already fit keeps fitting states
+        /// exactly the guarantee this change owns, at every viewport, without inventing a promise for
+        /// panels nothing here has ever claimed to serve.</para>
+        /// </remarks>
+        [Test]
+        public void TheWaveRemainingLabel_FitsTheNarrationBarWhereverTheOldLabelDid()
+        {
+            const float CharWidth = 8.5f;
+            const float RowGap = 18f; // HudElements.Row(18f), the `content` row's own child gap.
+            const float TeamChipTrim = 16f; // 10-unit swatch + 6-unit Row(6f) gap, before the label.
+
+            // Round/turn and both Life counters padded to two digits, and the Wave count too - the
+            // point of the estimate is a safe ceiling, not the common case.
+            const string RoundTurnSample = "ROUND 99 · TURN 2/2";
+            const string RedSample = "RED 12";
+            const string BlueSample = "BLUE 12";
+            const int WaveDigits = 2;
+
+            float RowContentWidth(string waveLabel) =>
+                (Title.Length * CharWidth) +
+                (RoundTurnSample.Length * CharWidth) +
+                (TeamChipTrim + RedSample.Length * CharWidth) +
+                (waveLabel.Length * CharWidth) +
+                (TeamChipTrim + BlueSample.Length * CharWidth) +
+                (RowGap * 4f);
+
+            var oldWidth = RowContentWidth("WAVES " + new string('9', WaveDigits));
+            var newWidth = RowContentWidth("WAVES REMAINING " + new string('9', WaveDigits));
+            Assert.That(newWidth, Is.GreaterThan(oldWidth),
+                "The estimate itself must show growth, or it is not exercising anything.");
+
+            var panels = new List<Vector2>();
+            foreach (var device in ReferenceShapedResolutions)
+            {
+                panels.Add(MatchHudPanelScaling.ReferenceViewport(device.x, device.y));
+            }
+
+            panels.Add(new Vector2(2560f, 1440f));
+            panels.Add(new Vector2(3440f, 1440f));
+            panels.Add(new Vector2(1280f, 1024f));
+            panels.Add(new Vector2(1280f, 800f));
+            panels.Add(new Vector2(778f, 300f));
+            panels.Add(new Vector2(640f, 200f));
+            panels.Add(new Vector2(400f, 140f));
+            panels.Add(new Vector2(300f, 100f));
+
+            var referenceChecked = false;
+            foreach (var panel in panels)
+            {
+                var available = ConfiguredMatchHudRenderer.CalculateNarrationBarRect(
+                    panel.x, panel.y).width;
+                var oldFit = oldWidth <= available;
+
+                if (Mathf.Approximately(panel.x, MatchHudPanelScaling.ReferenceWidth) &&
+                    Mathf.Approximately(panel.y, MatchHudPanelScaling.ReferenceHeight))
+                {
+                    referenceChecked = true;
+                    Assert.That(oldFit, Is.True,
+                        "The reference viewport is the one every player's screen resolves to for a " +
+                        "16:9-shaped device, and the old label fit it - this estimate must agree.");
+                    Assert.That(newWidth, Is.LessThanOrEqualTo(available),
+                        $"{panel}: the new label must fit the reference viewport, where the real " +
+                        $"game is actually played (estimated {newWidth:F1} of {available:F1} units).");
+                }
+
+                if (oldFit)
+                {
+                    Assert.That(newWidth, Is.LessThanOrEqualTo(available),
+                        $"{panel}: the old label fit ({oldWidth:F1} of {available:F1}) and the new " +
+                        $"one no longer does ({newWidth:F1}) - a viewport this HUD used to serve " +
+                        "would now silently wrap a chip off the narration lane.");
+                }
+            }
+
+            Assert.That(referenceChecked, Is.True,
+                "The reference viewport must be one of the swept panels for the assertion above to " +
+                "have run at all.");
+        }
+
+        private const string Title = "GUARDS DIGITAL";
+
         private static Dictionary<string, Rect> Regions(float panelWidth, float panelHeight) =>
             new Dictionary<string, Rect>
             {

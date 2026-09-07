@@ -585,9 +585,11 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(10),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(11),
                 "This case pins the CURRENT version rather than the one the event channel moved to, " +
-                "so a later move is accounted for here rather than passing unread. Milestone 8.35u " +
+                "so a later move is accounted for here rather than passing unread. Milestone " +
+                "8.35z60's integration pass took it to 11 for the shared Wave-counter pool the seat " +
+                "projection now carries. Milestone 8.35u " +
                 "took it to 7 for the repeated awaited-hero group p.15's simultaneous leveling made " +
                 "necessary, milestone 8.35z14-blockerid to 8 for the match log's own blocker-" +
                 "identity fields, the ELEVENTH amendment's match formats to 9 for the format " +
