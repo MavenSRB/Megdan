@@ -353,11 +353,23 @@ namespace GuardsDigital.Tests.EditMode
             // hangs FLUSH from the strip's own bottom edge and reads as the band unrolling rather
             // than as a separate box under it; item 3 puts the connection banner beneath the tray's
             // whole open extent, which is what makes it clear of the drop-down open AND closed.
+            //
+            // The 2026-09-08 width directive ("make it as wide as naration part on the top is") then
+            // retired the tray's own fixed 640-wide literal: the tray's width AND x are now read
+            // directly off the narration bar's rect, so it is exactly as wide (900) and exactly as
+            // far left (830) as the bar above it - re-pinned here, and asserted against the bar's own
+            // rect below rather than against a second copy of its numbers.
+            var narrationBar = ConfiguredMatchHudRenderer.CalculateNarrationBarRect(width, height);
             var dropdown = ConfiguredMatchHudRenderer.CalculateMatchLogDropdownRect(width, height);
             var banner = ConfiguredMatchHudRenderer.CalculateConnectionBannerRect(width, height);
-            Assert.That(dropdown, Is.EqualTo(new Rect(960f, 96f, 640f, 320f)));
+            Assert.That(dropdown, Is.EqualTo(new Rect(830f, 96f, 900f, 320f)));
+            Assert.That(dropdown.width, Is.EqualTo(narrationBar.width),
+                "The 2026-09-08 directive: as wide as the narration bar, not a second literal that " +
+                "happens to agree with it today.");
+            Assert.That(dropdown.xMin, Is.EqualTo(narrationBar.xMin),
+                "Same horizontal alignment as the narration bar - both read from the one rect.");
             Assert.That(dropdown.yMin,
-                Is.EqualTo(ConfiguredMatchHudRenderer.CalculateNarrationBarRect(width, height).yMax),
+                Is.EqualTo(narrationBar.yMax),
                 "Item 1: flush with the bar it hangs from, with no gap for a floating box to read in.");
             Assert.That(dropdown.yMin, Is.EqualTo(ConfiguredMatchHudRenderer.StatusBarHeight),
                 "Which is also the strip's own bottom edge - the two are the same line.");
@@ -429,7 +441,12 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// Item 3 of the 2026-09-06 log drop-down refinements, proved offline at every viewport
         /// rather than eyeballed at one: the connection banner is clear of the narration bar and of
-        /// the match-log drop-down, "verified against both open and closed states".
+        /// the match-log drop-down, "verified against both open and closed states". Extended for the
+        /// Milestone 8.35z55, the 2026-09-08 width directive: the drop-down now reads its width and x off the narration bar
+        /// at every one of these viewports (not only the reference one), and being as wide as the bar
+        /// - clear of both hero rails BY CONSTRUCTION at the reference - is re-verified structurally
+        /// here rather than assumed, since a fixed-width tray growing to match a variable-width bar is
+        /// exactly the kind of change that could newly reach a rail at a viewport nobody eyeballed.
         /// </summary>
         /// <remarks>
         /// <para><b>Why one rectangle answers both states.</b> A closed drop-down draws nothing, so
@@ -479,6 +496,26 @@ namespace GuardsDigital.Tests.EditMode
                     $"{panel}: the banner sits beneath the whole drop-down, not beside part of it.");
                 Assert.That(banner.xMin, Is.GreaterThanOrEqualTo(0f), $"{panel}: on-panel left edge.");
                 Assert.That(banner.xMax, Is.LessThanOrEqualTo(panel.x), $"{panel}: on-panel right edge.");
+
+                // The 2026-09-08 width directive, swept rather than pinned at one viewport: the
+                // drop-down is exactly as wide, and exactly as far left, as the narration bar it hangs
+                // from - at every panel here, not only the reference one.
+                Assert.That(dropdown.width, Is.EqualTo(narration.width).Within(0.01f),
+                    $"{panel}: the drop-down is as wide as the narration bar above it.");
+                Assert.That(dropdown.xMin, Is.EqualTo(narration.xMin).Within(0.01f),
+                    $"{panel}: and shares its horizontal alignment.");
+
+                // Growing the tray to the bar's own (wider) width must not newly reach a hero rail -
+                // the guarantee CalculateNarrationBarRect gives the bar, which the tray now inherits by
+                // reading the bar's rect directly rather than re-deriving its own margin-based clamp.
+                var railLeft = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                    panel.x, panel.y, TeamSide.Red);
+                var railRight = ConfiguredMatchHudRenderer.CalculateHeroRailRect(
+                    panel.x, panel.y, TeamSide.Blue);
+                Assert.That(dropdown.Overlaps(railLeft), Is.False,
+                    $"{panel}: the widened drop-down {dropdown} reaches the left rail {railLeft}.");
+                Assert.That(dropdown.Overlaps(railRight), Is.False,
+                    $"{panel}: the widened drop-down {dropdown} reaches the right rail {railRight}.");
 
                 // Staying ON the panel vertically is asserted from the shortest panel any fixture
                 // here uses (778x300) upward. Below roughly 172 units the strip alone is taller than

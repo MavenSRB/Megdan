@@ -216,14 +216,20 @@ namespace GuardsDigital.Presentation.Match
         private const float EventLogPreferredHeight = 360f;
 
         /// <summary>
-        /// Milestone 8.35z7. The match-log drop-down's own size, in reference units. It is deliberately
-        /// bounded well short of the hero rails' own vertical reach, per the TENTH amendment's revised
-        /// placement: a temporary overlay beneath the top strip that "never blocks an owed input" -
-        /// which this satisfies structurally, by never covering the rails or the tray it would
-        /// otherwise sit above.
+        /// Milestone 8.35z7. The match-log drop-down's own HEIGHT, in reference units. It is
+        /// deliberately bounded well short of the hero rails' own vertical reach, per the TENTH
+        /// amendment's revised placement: a temporary overlay beneath the top strip that "never
+        /// blocks an owed input" - which this satisfies structurally, by never covering the rails or
+        /// the tray it would otherwise sit above.
+        ///
+        /// <para>There is no matching <c>MatchLogDropdownWidth</c> constant. Milestone
+        /// <c>8.35z55</c>'s 2026-09-08 width
+        /// directive ("make it as wide as naration part on the top is") retired the tray's own fixed
+        /// width literal: <see cref="CalculateMatchLogDropdownRect"/> now reads its width AND its x
+        /// straight off <see cref="CalculateNarrationBarRect"/>'s own rect, the same one-source
+        /// pattern the chrome unification (item 1) and the tone pass already used elsewhere in this
+        /// file, so the two can never drift apart again.</para>
         /// </summary>
-        private const float MatchLogDropdownWidth = 640f;
-
         private const float MatchLogDropdownHeight = 320f;
 
         /// <summary>
@@ -1991,15 +1997,22 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// Milestone 8.35z7, re-anchored by item 2 of the post-8.35z9 top-strip redesign: where the
-        /// match-log drop-down unrolls, CENTRED beneath the narration bar it hangs from - the
-        /// TENTH amendment's "opens up as a drop down of a naration bar" read literally now that
-        /// the bar itself is centred rather than full-width. Clamped to the viewport's own margins
-        /// so a preferred width wider than a narrow bar still centres on the SCREEN rather than
-        /// overflowing it; clear of both hero rail columns by construction, the same guarantee
-        /// <see cref="CalculateNarrationBarRect"/> gives the bar itself.
+        /// match-log drop-down unrolls, beneath the narration bar it hangs from - the TENTH
+        /// amendment's "opens up as a drop down of a naration bar" read literally now that the bar
+        /// itself is centred rather than full-width.
+        ///
+        /// <para><b>Milestone <c>8.35z55</c>, the 2026-09-08 width directive, user, with screenshot
+        /// ("make it as wide as
+        /// naration part on the top is"): the tray's WIDTH AND X BOTH READ DIRECTLY OFF
+        /// <see cref="CalculateNarrationBarRect"/>'s own rect</b> - not a second literal sized to
+        /// agree with the bar today, which is exactly how the two disagreed before (900 wide at
+        /// x=830 above a fixed 640 wide at x=960). One source means the pair cannot drift apart
+        /// again, at any viewport the bar itself is defined at - including the hero-rail clearance
+        /// <see cref="CalculateNarrationBarRect"/> already guarantees BY CONSTRUCTION, which the tray
+        /// now inherits for free rather than re-deriving its own margin-based clamp.</para>
         ///
         /// <para><b>Item 1 of the 2026-09-06 log drop-down refinements ("make the dropdown match the
-        /// top, not to be different like this") took the 4-unit gap out.</b> The tray now hangs
+        /// top, not to be different like this") took the 4-unit gap out.</b> The tray still hangs
         /// FLUSH from <c>narrationBar.yMax</c>, which is exactly the strip's own bottom edge, so the
         /// panel reads as the band unrolling rather than as a separate box floating below it - and
         /// the squared top corners <see cref="MatchLogUnityView"/> now draws only read as a seam
@@ -2013,17 +2026,12 @@ namespace GuardsDigital.Presentation.Match
         public static Rect CalculateMatchLogDropdownRect(float panelWidth, float panelHeight)
         {
             var narrationBar = CalculateNarrationBarRect(panelWidth, panelHeight);
-            var width = Mathf.Min(MatchLogDropdownWidth, Mathf.Max(0f, panelWidth - (Margin * 2f)));
             var height = Mathf.Min(
                 MatchLogDropdownHeight,
                 Mathf.Max(
                     0f,
                     panelHeight - narrationBar.yMax - (Margin * 2f) - ConnectionBannerReservedBand));
-            var left = Mathf.Clamp(
-                narrationBar.center.x - (width * 0.5f),
-                Margin,
-                Mathf.Max(Margin, panelWidth - Margin - width));
-            return new Rect(left, narrationBar.yMax, width, height);
+            return new Rect(narrationBar.xMin, narrationBar.yMax, narrationBar.width, height);
         }
 
         /// <summary>
