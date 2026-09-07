@@ -274,15 +274,29 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// The sixth ready seat begins the match, and the lobby stands aside without leaving one
-        /// control a player could still press.
+        /// Milestone <c>8.35z54</c> SPLIT WHAT THIS CASE USED TO ASSERT IN ONE STEP, and the split is
+        /// the user's own flow spec: "once players are full, everyone is ready... Once they are ready,
+        /// everyone picks their heroes, and game goes on." So the sixth READINESS no longer begins the
+        /// match - it OPENS THE PICKING - and the match begins on the LAST PICK. Both halves are
+        /// asserted here through the real panel, in that order, because a build that started the match
+        /// on readiness would compose a line-up nobody chose, which is the shape one rejected design
+        /// attempt actually produced and got measured out.
+        ///
+        /// <para>The lobby standing aside without leaving a pressable control is unchanged, and is
+        /// asserted at its new moment.</para>
         /// </summary>
         [UnityTest]
-        public IEnumerator ReadyingTheSixthSeat_BeginsTheMatchAndStandsTheLobbyAside()
+        public IEnumerator ReadyingTheSixthSeat_OpensThePicking_AndTheLastPickBeginsTheMatch()
         {
             yield return LoadTheLobby();
             var driver = Driver();
             var wire = SeatEveryone(out var seats);
+            // Milestone 8.35z54. THE PICKS NOW REACH A COMPOSITION, so this fixture must supply one.
+            // A host that admits hero picks and holds no `IDeferredMatchComposition` refuses the
+            // transition loudly rather than silently fielding the provisional line-up - which is the
+            // debt item "null Composition made loud", and it caught this fixture on the first run
+            // after readiness stopped being the thing that started the match.
+            wire.Session.Composition = Root();
             var mine = wire.Client(1);
             driver.Presenter.AttachClient(mine);
             yield return null;
@@ -295,7 +309,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             driver.Presenter.Refresh();
             yield return null;
-            Assert.That(wire.Session.HasMatchStarted, Is.False,
+            Assert.That(wire.Session.IsPickPhaseOpen, Is.False,
                 "Five ready seats is not six, and the sixth is the one being pressed.");
 
             UiPlayer.Click(Control(driver, "READY"));
@@ -306,7 +320,23 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(mine.IsReady, Is.True,
                 "The pressed control reached the host and came back in the roster.");
-            Assert.That(wire.Session.HasMatchStarted, Is.True);
+            Assert.That(wire.Session.IsPickPhaseOpen, Is.True,
+                "THE SIXTH READINESS OPENS THE PICKING.");
+            Assert.That(wire.Session.HasMatchStarted, Is.False,
+                "...and it does NOT start the match. A match started here would be a match on a " +
+                "line-up nobody had chosen yet, because at this instant nobody has picked.");
+            Assert.That(UiPlayer.IsShown(driver.View.Root), Is.True,
+                "The lobby is still the surface a player is looking at - it has picking to draw.");
+
+            var picks = PickEverySeat(wire, seats);
+            Assert.That(picks, Is.EqualTo(seats.Count),
+                "One pick per seat, in p.22's printed order.");
+
+            driver.Presenter.Refresh();
+            yield return null;
+            yield return null;
+
+            Assert.That(wire.Session.HasMatchStarted, Is.True, "THE LAST PICK BEGINS THE MATCH.");
             Assert.That(mine.HasMatchStarted, Is.True);
             Assert.That(UiPlayer.IsShown(driver.View.Root), Is.False,
                 "The lobby hands off to the match surface rather than sitting over it.");
@@ -399,8 +429,11 @@ namespace GuardsDigital.Tests.PlayMode
                     "The whole invitation - address, port and key - is typed into this form.");
             }
 
-            Assert.That(Named(driver, PrivateLobbyUnityView.SeatPickName).Count(), Is.EqualTo(6),
-                "Every stable seat is offered as a pick before a host has answered.");
+            Assert.That(Named(driver, PrivateLobbyUnityView.SeatPickName), Is.Empty,
+                "Milestone 8.35z54 REMOVED the pre-join seat picker, and this is the assertion that " +
+                "keeps it removed. A seat is taken from inside the session against the host's own " +
+                "roster; before a host has answered there is no roster to take a seat from, and the " +
+                "old surface let a player choose one anyway and then discover it was gone.");
         }
 
         /// <summary>
@@ -423,10 +456,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             Field(driver, PrivateLobbyUnityView.PortFieldName).value =
                 port.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            UiPlayer.Click(Named(driver, PrivateLobbyUnityView.SeatPickName).First());
+            // Milestone 8.35z54: a join names NO seat. There is no pre-join picker to press any
+            // more, and the entry form says as much rather than implying a choice was made.
             yield return null;
             Assert.That(Text(driver, PrivateLobbyUnityView.PickedSeatName),
-                Does.StartWith("SEAT: "));
+                Is.EqualTo("SEAT: NONE PICKED"),
+                "You join the server first and take a chair from inside it, so at the moment of " +
+                "dialling there is genuinely no seat to name.");
 
             // 8.35t corrective. BeginJoining's own failed Dial() now logs the host-console-side
             // diagnostic PrivateOnlineMarkers.Fail writes - the exact fix for this test's own
@@ -636,6 +672,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadTheLobby();
             var driver = Driver();
             var wire = SeatEveryone(out var seats);
+            // Milestone 8.35z54: readiness is what opens the picking, so it comes first now.
+            ReadyEverySeat(wire, seats);
 
             // The coin's team picks first, so the pick opens on that team's first seat rather than
             // on the roster's first row - which is p.22's alternation, not lobby order.
@@ -680,6 +718,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadTheLobby();
             var driver = Driver();
             var wire = SeatEveryone(out var seats);
+            // Milestone 8.35z54: readiness is what opens the picking, so it comes first now.
+            ReadyEverySeat(wire, seats);
 
             var picking = wire.Session.Selection.PickingSeat.Value;
             var waitingOrdinal = seats.ToList().FindIndex(seat => seat != picking) + 1;
@@ -721,6 +761,14 @@ namespace GuardsDigital.Tests.PlayMode
             driver.Presenter.AttachClient(wire.Client(1));
             yield return null;
 
+            // Milestone 8.35z54 MOVED READINESS IN FRONT OF THE PICKS. It used to follow them, and the
+            // sixth readiness is what started the match; now the sixth readiness OPENS the picking and
+            // the LAST PICK starts the match. The order below is the user's spec read literally.
+            ReadyEverySeat(wire, seats);
+            Assert.That(wire.Session.HasMatchStarted, Is.False,
+                "Readiness alone must not compose anything - at this instant nobody has picked, so a " +
+                "match started here would be a match on a line-up nobody chose.");
+
             // Each side deliberately takes the OTHER side's printed heroes, so a board that ignored
             // the selection is indistinguishable from nothing at every assertion below.
             var chosen = new List<string>();
@@ -743,12 +791,6 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             Assert.That(wire.Session.Selection.IsComplete, Is.True);
-
-            for (var ordinal = 1; ordinal <= seats.Count; ordinal++)
-            {
-                Assert.That(wire.Client(ordinal).TrySetReadiness(true), Is.True);
-                wire.Pump();
-            }
 
             driver.Presenter.Refresh();
             yield return null;
@@ -779,7 +821,15 @@ namespace GuardsDigital.Tests.PlayMode
         /// The format picker, which is the seam's other half: pressing it on the entry form
         /// recomposes the scene onto a different printed setup, seats and all.
         /// </summary>
-        /// <remarks>INTEGRATION-OWED: written and compile-checked only.</remarks>
+        /// <remarks>
+        /// Milestone <c>8.35z54</c> REPLACED THE CONTROL THIS DRIVES, on measured evidence rather than
+        /// taste. The old single SETUP button CYCLED through pp.5-6's four printed setups, and the
+        /// user's own host log from the failed z51 session is six LOBBY_FORMAT presses and no
+        /// LOBBY_HOST at all - they pressed it six times trying to reach 2v2, never got there, and
+        /// gave up. Their words were "i dont need setup button, i need 2v2 and 3v3 buttons". So the
+        /// cycle is now four NAMED controls, and this case presses one by name and asserts it lands
+        /// on the format it names rather than merely on a different one.
+        /// </remarks>
         [UnityTest]
         public IEnumerator TheFormatPicker_RecomposesTheSceneBeforeAnybodyIsSeated()
         {
@@ -789,15 +839,24 @@ namespace GuardsDigital.Tests.PlayMode
 
             var before = Root().ComposedPlan.Format.Id;
             var seatsBefore = Runtime().Host.Seats.Seats.Count;
-            Assert.That(ControlLabels(driver), Contains.Item("SETUP"),
-                "The format control stands on the entry form, where changing it can move no seat.");
+            foreach (var named in new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME" })
+            {
+                Assert.That(ControlLabels(driver), Contains.Item(named),
+                    "The format controls stand on the entry form, where changing one can move no " +
+                    "seat - and each says what it DOES. Drawn: " +
+                    string.Join(", ", ControlLabels(driver)) + ".");
+            }
 
-            UiPlayer.Click(Control(driver, "SETUP"));
+            UiPlayer.Click(Control(driver, "2V2"));
             yield return null;
             yield return null;
 
             Assert.That(Root().ComposedPlan.Format.Id, Is.Not.EqualTo(before),
-                "Pressing it steps to the next of pp.5-6's four printed setups.");
+                "Pressing a named format recomposes onto that printed setup.");
+            Assert.That(Root().ComposedPlan.Format.PlayerCount, Is.EqualTo(4),
+                "2V2 IS FOUR SEATS, and this is the assertion the cycling button could not make: " +
+                "a named control lands on the format it names, in one press, from any starting " +
+                "format. Reached: " + Root().ComposedPlan.Format.Id + ".");
             Assert.That(Runtime(), Is.Not.Null,
                 "...and the scene is composed again rather than left without a match.");
             Assert.That(
@@ -828,6 +887,71 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             return wire;
+        }
+
+        /// <summary>
+        /// Milestone <c>8.35z54</c>. Readies every seated client, which is now what OPENS the picking.
+        /// </summary>
+        /// <remarks>
+        /// Before this milestone the selection was open from the moment everyone was seated, so a case
+        /// that wanted to pick could read <c>Selection.PickingSeat</c> straight after seating. The
+        /// user's flow spec put readiness in front of it ("Once they are ready, everyone picks their
+        /// heroes"), so every picking case now goes through here first; without it the selection is
+        /// closed, no seat is picking, and the surface correctly says nothing at all.
+        /// </remarks>
+        private static void ReadyEverySeat(LobbyWire wire, IReadOnlyList<string> seats)
+        {
+            for (var ordinal = 1; ordinal <= seats.Count; ordinal++)
+            {
+                Assert.That(wire.Client(ordinal).TrySetReadiness(true), Is.True,
+                    "Seat " + seats[ordinal - 1] + " could not ready.");
+                wire.Pump();
+            }
+
+            Assert.That(wire.Session.IsPickPhaseOpen, Is.True,
+                "Every seat is ready, so p.22's picking is open.");
+        }
+
+        /// <summary>
+        /// Milestone <c>8.35z54</c>. Runs rulebook p.22's picking to its end and answers with how many
+        /// picks it took, so a caller asserts the count rather than trusting the loop.
+        /// </summary>
+        /// <remarks>
+        /// It picks the way the shipped drivers do and for the same reason (milestone 8.35c's reusable
+        /// finding): out of the options THIS seat's own model offers, never out of a list the test
+        /// happens to know. The picking seat is read from the session between picks because the order
+        /// alternates by team and is opened by a coin this fixture does not fix.
+        /// </remarks>
+        private static int PickEverySeat(LobbyWire wire, IReadOnlyList<string> seats)
+        {
+            var picked = 0;
+            while (!wire.Session.HasMatchStarted && picked < seats.Count)
+            {
+                var picking = wire.Session.Selection.PickingSeat;
+                var ordinal = -1;
+                for (var index = 0; index < seats.Count; index++)
+                {
+                    if (string.Equals(seats[index], picking.Value, System.StringComparison.Ordinal))
+                    {
+                        ordinal = index + 1;
+                        break;
+                    }
+                }
+
+                Assert.That(ordinal, Is.GreaterThan(0),
+                    "The seat the order is on must be one of the seats this wire connected: " +
+                    picking.Value + ".");
+                var client = wire.Client(ordinal);
+                var offered = PrivateLobbyModel.ForClient(client).Selection.Heroes
+                    .First(option => option.IsAvailable);
+                Assert.That(client.TryChooseHero(offered.HeroIdValue), Is.True,
+                    "Seat " + picking.Value + " was offered " + offered.HeroIdValue +
+                    " and the press must reach the host.");
+                wire.Pump();
+                picked++;
+            }
+
+            return picked;
         }
 
         private static bool IsUnder(VisualElement candidate, VisualElement ancestor)

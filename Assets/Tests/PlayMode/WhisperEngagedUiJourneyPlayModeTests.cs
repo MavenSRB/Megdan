@@ -359,28 +359,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// would be asserting a surface this build has deliberately not built.</para>
         /// </summary>
         [UnityTest]
-        [Explicit("MEASURED AT MILESTONE 8.35z53's FIRST PLAY MODE RUN, AND IT IS A RULES FORK RATHER " +
-            "THAN A FIXTURE FAULT. This journey asserts RULING 42's premise - that Death Seeker is " +
-            "UNOFFERABLE on the first turn of round one, because its whole body sits under " +
-            "`enemy-hero-with-discard-present@1` and p.6 deals every card to a hand or a deck, so no " +
-            "pile in the match holds anything. The build OFFERS it: the run reports 'Offered actions: " +
-            "PRIMARY SKILL' with a live TypedInvocationViewModel where this asserts an empty set. " +
-            "WHAT IS ELIMINATED: this is not the staging - the assertion about the board is correct " +
-            "and every pile really is empty, which the journey's own preceding assertion proves. " +
-            "WHAT STANDS is a genuine conflict between three recorded positions, and choosing between " +
-            "them is a roster-wide offer-feasibility change rather than a hero's dealing. DEV-007 and " +
-            "rule 14 say this build refuses an action it can prove will do nothing, which is RULING " +
-            "42's own reasoning. Ledger row 21 says an 'If X, do Y' clause whose condition is false " +
-            "simply SKIPS and the card carries on - which makes the action performable-but-empty " +
-            "rather than impossible. RULING 17's two-tier rule then says a PERFORMABLE BUT WOULD DO " +
-            "NOTHING option is OFFERED, and ledger row 23 says being able to apply nothing is not a " +
-            "reason to refuse. So the build's offer may be right and RULING 42's premise stale, or " +
-            "the offer-feasibility walk may simply not prove a false Conditional empty for a whole " +
-            "ACTION the way it does for a modal OPTION. Deciding it moves what every hero in the " +
-            "build offers and carries an identity re-pin behind it, so it is left NAMED rather than " +
-            "settled inside a dealing - the same brake milestone 8.35z52 applied to its own two " +
-            "survivors. Her content is green on the other two tiers.")]
-        public IEnumerator DeathSeeker_IsUnstartableOnTheFirstTurnOfRoundOne_NoPileHoldingAnythingYet()
+        public IEnumerator DeathSeeker_IsOfferedOnTheFirstTurnOfRoundOne_AndResolvesAsALegalDoNothingPlay()
         {
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedWhisper);
             var root = Root();
@@ -392,41 +371,60 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(whisperId),
                 "The journey needs her turn open on Death Seeker. " + Remaining(runtime));
 
+            var deathSeeker = runtime.Cards.Single(card =>
+                card.OwnerId.Equals(whisperId) &&
+                card.DefinitionReference.DefinitionId.Equals(WhisperCardContent.DeathSeeker));
+
             yield return PointTrayAt(root, whisperId);
             yield return null;
 
             Assert.That(DiscardedDefinitionIds(runtime), Is.Empty,
                 "This is the cause and it is asserted before the consequence: on the first turn of " +
-                "round 1 nobody has defended, so no pile in the match holds anything. " +
+                "round 1 nobody has defended, so no pile in the match holds anything, and every one " +
+                "of this card's bullets sits under `enemy-hero-with-discard-present@1`. " +
                 Remaining(runtime));
 
             var model = runtime.RoundView.Model;
             var startable = model.Actions
                 .Where(value => KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Skill)
                 .ToArray();
-            Assert.That(startable, Is.Empty,
-                "Rule 14 refuses an action whose effect can be proven empty, and this card's whole " +
-                "body sits under a condition that is false for every seat. Offered actions: " +
+            Assert.That(startable, Is.Not.Empty,
+                "RULING 53: a play whose only \"If\" gate is false is OFFERED as a legal do-nothing " +
+                "play - \"it's a Hold\". Offered actions: " +
                 string.Join(", ", model.Actions.Select(value => value.Label)) + ". " +
                 Remaining(runtime));
 
-            // IT IS GREYED RATHER THAN ABSENT, which is the half that matters to a player: the card
-            // exists, its Skill exists, and a control they can see says it cannot be taken.
-            Assert.That(model.UnavailableActions, Is.Not.Empty,
-                "A refused printed action is DRAWN rather than dropped - milestone 6.5af's treatment, " +
-                "so a player reads that the action exists and cannot be started. " + Remaining(runtime));
             Assert.That(
-                model.UnavailableActions.Any(value =>
-                    value.ActionDefinitionId.Equals(WhisperCardContent.PrimarySkill)),
+                model.UnavailableActions.All(value =>
+                    !value.ActionDefinitionId.Equals(WhisperCardContent.PrimarySkill)),
                 Is.True,
-                "and the greyed control is Death Seeker's own primary Skill. Greyed: " +
+                "and it is NOT greyed. RULING 53 narrows rule 14's whole-action greying to the " +
+                "CANNOT-START class only; a card that can be started and would simply apply nothing " +
+                "is a player's choice to spend, not the build's to refuse. Greyed: " +
                 string.Join(", ", model.UnavailableActions.Select(value => value.Label)) + ". " +
                 Remaining(runtime));
 
-            // Her secondary Defense is untouched by any of this, which is what keeps the card worth
-            // holding on a turn its Skill cannot be started - and it is the route by which HER pile
-            // fills, so it is the other half of the same rule.
-            Assert.That(model.UnavailableActions.All(value =>
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+
+            // THE OTHER HALF OF THE RULING, and the half that makes the offer honest rather than a
+            // trap: taking it does nothing at all. The gate is false, so ledger row 21's skip carries
+            // the card straight past both bullets - there is no "choose one" to answer, because a
+            // modal whose every option sits under the same false condition has nothing to offer.
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "A false gate SKIPS rather than asking. " + Remaining(runtime));
+
+            yield return YieldUntilNobodyIsActing(runtime);
+
+            Assert.That(runtime.IsActiveEffectSource(deathSeeker.Id), Is.False,
+                "THE NO-OP, MEASURED: the immunity bullet never landed, so the card is the source of " +
+                "no p.17 Active effect. This is the same predicate the armed journey asserts as True " +
+                "once an enemy has actually discarded - one measurement, both sides of the gate. " +
+                Remaining(runtime));
+
+            // Her secondary Defense was never in question and stays offerable, which is what keeps the
+            // card worth holding - and it is the route by which the ENEMY's pile fills, so it is the
+            // other half of the same rule.
+            Assert.That(runtime.RoundView.Model.UnavailableActions.All(value =>
                     !value.ActionDefinitionId.Equals(WhisperCardContent.SecondaryDefense)),
                 Is.True,
                 "The printed shield answers somebody else's Attack and reads no condition at all. " +

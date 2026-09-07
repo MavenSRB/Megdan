@@ -185,6 +185,34 @@ namespace GuardsDigital.Presentation.Board
         }
 
         /// <summary>
+        /// Milestone <c>8.35z54</c>. What this view has actually done to the camera, exposed so a
+        /// running process can SAY it rather than a screenshot having to show it.
+        ///
+        /// <para>It exists for the fifth playtest finding - "map sizing broke a bit somehow on player
+        /// side". The defect was that a joiner's board never received the HUD's layout at all, because
+        /// only a joiner re-composes and <c>PlayfieldLayoutChanged</c> does not fire a second time. The
+        /// distinguishing fact is therefore <see cref="HasConfiguredCameraViewport"/> plus the framing
+        /// that followed it: a board still wearing its Awake-time framing reports
+        /// <c>configured=False</c>, and two clients that disagree report different sizes. Both are
+        /// readable from a log line, which is what lets the six-client rehearsal assert the finding's
+        /// direct negative on real processes instead of asking somebody to look at six windows.</para>
+        /// </summary>
+        public bool HasConfiguredCameraViewport => hasConfiguredCameraViewport;
+
+        /// <summary>The safe layout this view last accepted; default when it has accepted none.</summary>
+        public BoardCameraSafeLayout ConfiguredCameraLayout => configuredCameraLayout;
+
+        /// <summary>
+        /// The orthographic half-height the board is framed at, which is the number a player reads as
+        /// "the map is the wrong size". Zero when no camera is bound.
+        /// </summary>
+        public float CameraOrthographicSize =>
+            sceneCamera == null ? 0f : sceneCamera.orthographicSize;
+
+        /// <summary>The camera's own pixel rect, so a viewport difference is separable from a framing one.</summary>
+        public Rect CameraPixelRect => sceneCamera == null ? default : sceneCamera.pixelRect;
+
+        /// <summary>
         /// Milestone 8.35z12. Writes this view's own board framing onto the camera again.
         ///
         /// <para>The spotlight borrows the camera and gives it back by restoring the pose it captured.

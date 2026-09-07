@@ -90,7 +90,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('LoopbackSmoke', 'SixClient', 'Solo')] [string] $Topology = 'LoopbackSmoke',
+    [ValidateSet('LoopbackSmoke', 'SixClient', 'Solo', 'MultiClientSmoke')] [string] $Topology = 'LoopbackSmoke',
     [ValidateSet('None', 'Full')] [string] $FaultPlan = 'None',
     [int] $TimeoutSeconds = 0,
     [int] $Seed = 21,
@@ -115,8 +115,19 @@ if ($Topology -eq 'Solo' -and $FaultPlan -ne 'None') {
     Write-Error "REHEARSAL REFUSED: -Topology Solo carries no fault plan; use -FaultPlan None."
     exit 1
 }
+# Milestone 8.35z54. The package ceremony's required multi-client step carries no fault plan
+# either: it is a REACHABILITY gate, not a resilience one, and SixClient/Full remains the only
+# combination that proves the matrix row.
+if ($Topology -eq 'MultiClientSmoke' -and $FaultPlan -ne 'None') {
+    Write-Error ("REHEARSAL REFUSED: -Topology MultiClientSmoke carries no fault plan; use " +
+        "-FaultPlan None. The fault matrix belongs to -Topology SixClient -FaultPlan Full.")
+    exit 1
+}
 if ($TimeoutSeconds -le 0) {
     if ($Topology -eq 'SixClient') { $TimeoutSeconds = 2400 }
+    # It stops at the first commitment window and plays no match at all, so its whole budget is a
+    # build, three process starts, a lobby flow and one composition.
+    elseif ($Topology -eq 'MultiClientSmoke') { $TimeoutSeconds = 600 }
     # A truly random-legal match - no strategy, by the amendment's own rule - has no reason to
     # converge quickly: measured at ~1.7 accepted commands/second even at the fast regression
     # pace, and a full six-player 3-Wave Quick Game under aimless play can run into the low
@@ -532,6 +543,177 @@ if ($Topology -eq 'LoopbackSmoke') {
         }
     }
 }
+elseif ($Topology -eq 'MultiClientSmoke') {
+    # ---------------------------------------------------------------------------------------------
+    # MILESTONE 8.35z54 - THE PACKAGE CEREMONY'S REQUIRED MULTI-CLIENT STEP.
+    #
+    # WHY IT EXISTS. The 8.35z51 package shipped a lobby whose picked-line-up match was unplayable on
+    # all six seats, and every automated tier was green when it shipped, because every lobby journey
+    # drives the HOST's own view. Only real processes disagreeing about a seat can see that class of
+    # defect. This is the cheapest topology that can: one host, TWO real joiners, the rest of the
+    # table filled by the host's own control, stopping at the first commitment window.
+    #
+    # WHAT IT ASSERTS - the direct negatives of the five 2026-09-08 playtest findings:
+    #   1  per-seat authorization  each client's own AuditProjection passes (it fails the process if
+    #                              any offered command is not held by that seat) and REHEARSAL_SMOKE_PASS
+    #                              reports a non-empty authorized set per seat
+    #   2  a pick visibly lands    the two joiners field two DIFFERENT chosen heroes
+    #   3  the flow                seatless join -> TAKE SEAT -> READY -> pick -> match, walked through
+    #                              the shipped controls, with FILL WITH BOTS supplying the rest
+    #   4  nothing acts early      REHEARSAL_PRECOMMIT is version 0 in AwaitingCommitments on every seat
+    #                              AND on the host
+    #   5  one board               REHEARSAL_BOARDRECT is configured=True and identical across processes
+    #
+    # WHAT IT DOES NOT DO, so it is never mistaken for the bigger gate: it plays no match, injects no
+    # fault, exercises no reconnect and no host loss. Those are -Topology SixClient -FaultPlan Full.
+    # ---------------------------------------------------------------------------------------------
+    $smokeHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-smoke-host.log')
+    $smokeSeats = @($seats[0], $seats[3])
+    $smokePlayers = @()
+    $smokeClients = @()
+
+    try {
+        if (-not $ReuseBuild) { Build-DisposablePlayer -UnityPath $unityPath }
+        elseif (-not (Test-Path -LiteralPath $executablePath)) {
+            throw "-ReuseBuild was given but no player exists at $executablePath."
+        }
+
+        Write-Output '== Step 2: one seatless host and TWO real joiners on loopback =='
+        $smokePort = Get-FreeLoopbackPort
+        $smokeKey = [System.Guid]::NewGuid().ToString('N')
+        $rehearsalKeys += $smokeKey
+        Write-Output "Loopback endpoint: 127.0.0.1:$smokePort"
+
+        $smokeBudget = [Math]::Max(240, $TimeoutSeconds - 120)
+        $smokeHost = Start-RehearsalPlayer -Name 'smoke-host' -Role 'host' -Mode 'smoke' `
+            -Address '127.0.0.1' -Port $smokePort -Key $smokeKey -BudgetSeconds $smokeBudget -LogPath $smokeHostLog
+        $smokePlayers += $smokeHost
+        Wait-ForLogMarker -LogPath $smokeHostLog -Pattern 'GUARDS_ONLINE: LOBBY_HOSTING port=' `
+            -DeadlineSeconds 180 -Description 'the smoke host to bind its lobby'
+
+        foreach ($seat in $smokeSeats) {
+            $log = [System.IO.Path]::Combine($tmpRoot, "private-online-smoke-$seat.log")
+            $player = Start-RehearsalPlayer -Name "smoke-$seat" -Role 'client' -Mode 'smoke' -Seat $seat `
+                -Address '127.0.0.1' -Port $smokePort -Key $smokeKey -BudgetSeconds $smokeBudget -LogPath $log
+            $smokePlayers += $player
+            $smokeClients += $player
+            $watched = @($smokeHostLog) + @($smokeClients | ForEach-Object { $_.Log })
+            # Each joiner must actually TAKE its chair from inside the session before the next one is
+            # started: the claim is the flow half this topology exists to walk, and serialising the two
+            # keeps the assertion about WHICH seat each process holds exact.
+            Wait-ForCohortMarkers -Requirements @(
+                    [pscustomobject]@{ Log = $log; Pattern = ('REHEARSAL_CLIENT event=seat-claimed-' + [regex]::Escape($seat)) }
+                ) -WatchLogs $watched -DeadlineSeconds 180 `
+                -Description ("the joiner for $seat to take its seat from inside the session")
+        }
+
+        $smokeLogs = @($smokeHostLog) + @($smokeClients | ForEach-Object { $_.Log })
+
+        Write-Output '== Step 3: the host fills the rest of the table with bots, and the picks run =='
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $smokeHostLog; Pattern = 'REHEARSAL_SMOKE_FILLED claimed=' }
+            ) -WatchLogs $smokeLogs -DeadlineSeconds 180 -Description 'the host to press FILL WITH BOTS'
+
+        $reached = @()
+        foreach ($player in $smokeClients) {
+            $reached += [pscustomobject]@{ Log = $player.Log; Pattern = 'REHEARSAL_SMOKE_PASS seat=' }
+        }
+        $reached += [pscustomobject]@{ Log = $smokeHostLog; Pattern = 'REHEARSAL_SMOKE_HOST_READY version=' }
+        Wait-ForCohortMarkers -Requirements $reached -WatchLogs $smokeLogs `
+            -DeadlineSeconds ([Math]::Max(300, $TimeoutSeconds - 180)) `
+            -Description 'every process to reach the first commitment window on the chosen line-up'
+
+        Write-Output '== Step 4: the five findings, asserted on the logs =='
+        $smokeRects = @()
+        foreach ($player in $smokeClients) {
+            $text = Get-Content -LiteralPath $player.Log -Raw
+
+            $pass = [regex]::Match($text, 'REHEARSAL_SMOKE_PASS seat=(\S+) hero=(\S+) authorized=(\d+) version=(\d+)')
+            if (-not $pass.Success) { throw "SMOKE FAILED: $($player.Seat) never reported its pass line." }
+            if ([int]$pass.Groups[3].Value -le 0) {
+                throw ("FINDING 1 REPRODUCED: $($player.Seat) was offered NO commands of its own - " +
+                    'a seat that cannot act is the z51 defect exactly.')
+            }
+            Write-Output ("  SEAT {0}: hero={1} authorized={2}" -f `
+                $pass.Groups[1].Value, $pass.Groups[2].Value, $pass.Groups[3].Value)
+
+            $pre = [regex]::Match($text, 'REHEARSAL_PRECOMMIT seat=\S+ version=(\d+) phase=(\S+)')
+            if (-not $pre.Success) { throw "SMOKE FAILED: $($player.Seat) never reported its first match state." }
+            if ([int]$pre.Groups[1].Value -ne 0 -or $pre.Groups[2].Value -ne 'AwaitingCommitments') {
+                throw ("FINDING 4 REPRODUCED: $($player.Seat) opened at version $($pre.Groups[1].Value) " +
+                    "in phase $($pre.Groups[2].Value); nothing may be accepted before the first " +
+                    'commitment window.')
+            }
+
+            $rect = [regex]::Match($text, 'REHEARSAL_BOARDRECT seat=\S+ (configured=\S+ ortho=\S+ panel=\S+ upper=\S+ px=\S+)')
+            if (-not $rect.Success) { throw "SMOKE FAILED: $($player.Seat) never reported its board framing." }
+            if ($rect.Groups[1].Value -match 'configured=False') {
+                throw ("FINDING 5 REPRODUCED: $($player.Seat) never received the HUD's layout; its " +
+                    'board still wears the framing it was constructed with.')
+            }
+            $smokeRects += $rect.Groups[1].Value
+            Write-Output ("  BOARD {0}: {1}" -f $player.Seat, $rect.Groups[1].Value)
+        }
+
+        # FINDING 2. Two joiners must hold two DIFFERENT heroes: one hero on both seats would mean a
+        # pick that was accepted and then discarded, which is the shape of the z51 report.
+        $heroes = @($smokeClients | ForEach-Object {
+            [regex]::Match((Get-Content -LiteralPath $_.Log -Raw),
+                'REHEARSAL_SMOKE_PASS seat=\S+ hero=(\S+)').Groups[1].Value })
+        if (@($heroes | Sort-Object -Unique).Count -ne $heroes.Count) {
+            throw ('FINDING 2 REPRODUCED: two seats are fielding the same hero (' +
+                ($heroes -join ', ') + '), so at least one accepted pick did not reach the match.')
+        }
+        Write-Output ("  FINDING 2 NEGATIVE HELD: each joiner fields its own chosen hero (" + ($heroes -join ', ') + ").")
+
+        if (@($smokeRects | Sort-Object -Unique).Count -ne 1) {
+            throw ('FINDING 5 REPRODUCED: the joiners do not agree on the board framing: ' +
+                ((@($smokeRects | Sort-Object -Unique)) -join ' | '))
+        }
+        Write-Output '  FINDING 5 NEGATIVE HELD: every client framed the board identically.'
+
+        $hostText = Get-Content -LiteralPath $smokeHostLog -Raw
+        $hostReady = [regex]::Match($hostText, 'REHEARSAL_SMOKE_HOST_READY version=(\d+) phase=(\S+) seats=(\d+)')
+        if (-not $hostReady.Success) { throw 'SMOKE FAILED: the host never reported its ready line.' }
+        if ([int]$hostReady.Groups[1].Value -ne 0 -or $hostReady.Groups[2].Value -ne 'AwaitingCommitments') {
+            throw ("FINDING 4 REPRODUCED ON THE AUTHORITY: the host composed the match at version " +
+                "$($hostReady.Groups[1].Value) in phase $($hostReady.Groups[2].Value).")
+        }
+        Write-Output ("  FINDING 4 NEGATIVE HELD: host and both joiners opened at version 0 in " +
+            "AwaitingCommitments, with $($hostReady.Groups[3].Value) seats claimed.")
+
+        Write-Output '== Step 5: every process exits on its own =='
+        Assert-PlayerExit -Players $smokePlayers -DeadlineSeconds 240 -Description 'multi-client smoke'
+
+        Write-Output '== Step 6: read every log; exit codes alone are never evidence =='
+        foreach ($player in $smokePlayers) {
+            $output = Get-Content -LiteralPath $player.Log -Raw
+            if ($output -match 'GUARDS_ONLINE: FAIL') {
+                $line = ($output -split "`r?`n" | Where-Object { $_ -match 'GUARDS_ONLINE: FAIL' })[0]
+                Write-Output "FAIL $($player.Name): $line"
+                $rehearsalFailed = $true
+            }
+            if ($output -notmatch 'GUARDS_ONLINE: EXIT 0') {
+                Write-Output "FAIL $($player.Name): did not report a clean exit."
+                $rehearsalFailed = $true
+            }
+        }
+
+        $identityLine = ([regex]::Match($hostText, 'GUARDS_ONLINE: IDENTITY [^\r\n]*')).Value
+        if ($identityLine) { Write-Output $identityLine }
+        $allLogs += @($smokePlayers | ForEach-Object { $_.Log })
+    }
+    catch {
+        Write-Output "FAIL: $($_.Exception.Message)"
+        $rehearsalFailed = $true
+        $allLogs += @($smokePlayers | ForEach-Object { $_.Log })
+    }
+    finally {
+        foreach ($process in $processes) {
+            try { if (-not $process.HasExited) { $process.Kill() } } catch { }
+        }
+    }
+}
 elseif ($Topology -eq 'SixClient') {
     $matchHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-sixclient-match-host.log')
     $lossHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-sixclient-hostloss-host.log')
@@ -610,7 +792,64 @@ elseif ($Topology -eq 'SixClient') {
         Wait-ForCohortMarkers -Requirements $outcomes -WatchLogs $matchLogs -DeadlineSeconds ([Math]::Max(600, $TimeoutSeconds - 300)) `
             -Description 'the complete match to reach one authoritative outcome on every process'
 
-        Write-Output '== Step 3: every match-cohort process exits on its own =='
+        # ---- Milestone 8.35z54: the eleven-hero acceptance's two live findings, asserted here.
+        #
+        # These read lines every seat wrote at the FIRST FRAME it held a match HUD, which is the only
+        # moment either question is still about a fresh match. They are asserted after the cohort has
+        # finished rather than waited on, because both lines are already in the logs by the time the
+        # first agreement marker appears and a wait would only re-prove that.
+        Write-Output '== Step 3: the two live playtest findings, on real processes =='
+        $precommit = @()
+        $boardRects = @()
+        foreach ($player in $matchClients) {
+            $text = Get-Content -LiteralPath $player.Log -Raw
+            $pre = [regex]::Match($text, 'REHEARSAL_PRECOMMIT seat=\S+ version=(\d+) phase=(\S+) wireversion=(\d+)')
+            if (-not $pre.Success) {
+                throw "FINDING 4 UNPROVEN: $($player.Seat) never reported its first match state."
+            }
+            $precommit += [pscustomobject]@{
+                Seat = $player.Seat; Version = [int]$pre.Groups[1].Value; Phase = $pre.Groups[2].Value }
+
+            $rect = [regex]::Match($text, 'REHEARSAL_BOARDRECT seat=\S+ (configured=\S+ ortho=\S+ panel=\S+ upper=\S+ px=\S+)')
+            if (-not $rect.Success) {
+                throw "FINDING 5 UNPROVEN: $($player.Seat) never reported its board framing."
+            }
+            $boardRects += [pscustomobject]@{ Seat = $player.Seat; Rect = $rect.Groups[1].Value }
+        }
+
+        # FINDING 4's DIRECT NEGATIVE. A match that has accepted nothing stands at version 0 in
+        # AwaitingCommitments. A hero that moved before the commitment window would have advanced the
+        # projection past 0, and the phase names which window the seat is actually in.
+        foreach ($entry in $precommit) {
+            Write-Output ("  PRECOMMIT {0}: version={1} phase={2}" -f $entry.Seat, $entry.Version, $entry.Phase)
+            if ($entry.Version -ne 0) {
+                throw ("FINDING 4 REPRODUCED: $($entry.Seat) held a match HUD at projection version " +
+                    "$($entry.Version) - something was accepted before the first commitment window.")
+            }
+            if ($entry.Phase -ne 'AwaitingCommitments') {
+                throw ("FINDING 4 REPRODUCED: $($entry.Seat) opened in phase $($entry.Phase) rather " +
+                    'than AwaitingCommitments.')
+            }
+        }
+        Write-Output '  FINDING 4 NEGATIVE HELD: every seat opened at version 0 in AwaitingCommitments.'
+
+        # FINDING 5's DIRECT NEGATIVE. Every seat configured its viewport, and every seat agrees on
+        # the framing - one distinct value across the whole cohort.
+        foreach ($entry in $boardRects) {
+            Write-Output ("  BOARDRECT {0}: {1}" -f $entry.Seat, $entry.Rect)
+            if ($entry.Rect -match 'configured=False') {
+                throw ("FINDING 5 REPRODUCED: $($entry.Seat) never received the HUD's layout - its " +
+                    'board is still wearing the framing it was constructed with.')
+            }
+        }
+        $distinctRects = @($boardRects | Select-Object -ExpandProperty Rect | Sort-Object -Unique)
+        if ($distinctRects.Count -ne 1) {
+            throw ("FINDING 5 REPRODUCED: the cohort does not agree on the board framing; " +
+                "$($distinctRects.Count) distinct values: " + ($distinctRects -join ' | '))
+        }
+        Write-Output "  FINDING 5 NEGATIVE HELD: all six seats framed the board identically ($($distinctRects[0]))."
+
+        Write-Output '== Step 3b: every match-cohort process exits on its own =='
         Assert-PlayerExit -Players $matchPlayers -DeadlineSeconds 240 -Description 'match cohort'
 
         # ------------------------------------------------------------------ host-loss cohort
@@ -1308,6 +1547,16 @@ if ($rehearsalFailed) {
 
 if ($Topology -eq 'LoopbackSmoke') {
     Write-Output 'REHEARSAL PASSED: one seatless host, six distinct seats, and three named refusals on loopback.'
+}
+elseif ($Topology -eq 'MultiClientSmoke') {
+    Write-Output ('SMOKE PASSED: one seatless host and TWO real joiners walked the shipped lobby flow - ' +
+        'seatless join, TAKE SEAT, READY, FILL WITH BOTS, and p.22 hero picks - and reached the first ' +
+        'commitment window on the line-up they chose. Every seat was offered its own decisions and no ' +
+        "other seat's, each joiner fields the hero it picked, nothing was accepted before the " +
+        'commitment window on any process including the host, and every client framed the board ' +
+        'identically.')
+    Write-Output ('This is a reachability gate, not a resilience one: no match was played and no fault, ' +
+        'reconnect or host loss was exercised. Those belong to -Topology SixClient -FaultPlan Full.')
 }
 elseif ($Topology -eq 'SixClient') {
     Write-Output ('REHEARSAL PASSED: one seatless host and six seated clients completed a full match with the ' +

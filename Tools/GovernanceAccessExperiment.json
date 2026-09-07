@@ -5,8 +5,8 @@
     "notice":  "Off-path measurement only. This artifact is not a router, canonical authority, migration decision, or publication permission.",
     "input":  {
                   "provenanceMilestone":  "8.25e6a",
-                  "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
-                  "manifestSha256":  "f08dd630b4d0490d20b28b1723509ac3280c41188fc3e5512ea7293a32435cd2"
+                  "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
+                  "manifestSha256":  "b73bf4c83cf1621417a18a710c4174d970e29ed1da2df5c45a8acbcab835a880"
               },
     "expiry":  {
                    "state":  "FreshUntilSourceDrift",
@@ -16,8 +16,8 @@
                              "sessionBrief":  {
                                                   "maxWords":  1200,
                                                   "maxBytes":  10240,
-                                                  "measuredWords":  1857,
-                                                  "measuredBytes":  13935,
+                                                  "measuredWords":  1917,
+                                                  "measuredBytes":  14328,
                                                   "state":  "ExceedsHypothesis"
                                               },
                              "ordinary":  {
@@ -93,12 +93,12 @@
                                                                   "Docs/AI/SESSION_BRIEF.md"
                                                               ],
                                               "metrics":  {
-                                                              "words":  14377,
-                                                              "bytes":  110809,
+                                                              "words":  14437,
+                                                              "bytes":  111202,
                                                               "units":  4,
                                                               "routingHops":  3,
                                                               "missingAuthorityBodies":  0,
-                                                              "unnecessaryBytes":  86106,
+                                                              "unnecessaryBytes":  86410,
                                                               "duplicateOwnership":  0,
                                                               "updateCostOwners":  4,
                                                               "budgetState":  "WithinHypothesis"
@@ -112,7 +112,7 @@
                                                             {
                                                                 "claimGroupId":  "task:authorization:AGENTS.md",
                                                                 "canonicalOwner":  "AGENTS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "946e6b4b8bcac2394c59ff4d50ec9d9c2ba43013e9e6af245eb144497bdd9b01",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -137,7 +137,7 @@
                                                             {
                                                                 "claimGroupId":  "task:authorization:Docs/AI/ROADMAP.md",
                                                                 "canonicalOwner":  "Docs/AI/ROADMAP.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "57a4bdbc098035c96d2d691025dd48a1f89f24a0fca340996cc51dc1221d2702",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -154,7 +154,7 @@
                                                             {
                                                                 "claimGroupId":  "task:authorization:Docs/AI/Roadmap/PHASE_8_STABILIZATION.md",
                                                                 "canonicalOwner":  "Docs/AI/Roadmap/PHASE_8_STABILIZATION.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "b7bc921fc208f67e6ee9d0798e135ef605392674e717482bb6f6c989cff3711b",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -171,8 +171,8 @@
                                                             {
                                                                 "claimGroupId":  "task:authorization:Docs/AI/SESSION_BRIEF.md",
                                                                 "canonicalOwner":  "Docs/AI/SESSION_BRIEF.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
-                                                                "sourceSha256":  "ee49a17981ed7e9ad0ff57971b1def6aa7abf6f53af61f3d36082e5e398e4607",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
+                                                                "sourceSha256":  "5302a8e64de8702aba58ba608f945d0e3bf5dba19c0d8b88f829cff730fee4a0",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
                                                                 "operativeClaimIds":  [
@@ -185,7 +185,7 @@
                                                                                },
                                                                                {
                                                                                    "bodyId":  "body:Docs/AI/SESSION_BRIEF.md:4",
-                                                                                   "bodySha256":  "86a621e545ec7cbf7258ef844f5aa82d3bdb923057545d5b4dc3f55a1d14e2d3"
+                                                                                   "bodySha256":  "89adb25e24b824a2ed45c3b45b3c8b473ee9f46f9ec9588cf92538b793c5be0d"
                                                                                },
                                                                                {
                                                                                    "bodyId":  "body:Docs/AI/SESSION_BRIEF.md:5",
@@ -195,8 +195,8 @@
                                                             }
                                                         ],
                                              "metrics":  {
-                                                             "words":  3437,
-                                                             "bytes":  24703,
+                                                             "words":  3445,
+                                                             "bytes":  24792,
                                                              "units":  4,
                                                              "routingHops":  1,
                                                              "missingAuthorityBodies":  0,
@@ -240,12 +240,12 @@
                                                                   "Docs/AI/SESSION_BRIEF.md"
                                                               ],
                                               "metrics":  {
-                                                              "words":  12905,
-                                                              "bytes":  90584,
+                                                              "words":  12965,
+                                                              "bytes":  90977,
                                                               "units":  4,
                                                               "routingHops":  3,
                                                               "missingAuthorityBodies":  0,
-                                                              "unnecessaryBytes":  21468,
+                                                              "unnecessaryBytes":  21861,
                                                               "duplicateOwnership":  0,
                                                               "updateCostOwners":  4,
                                                               "budgetState":  "WithinHypothesis"
@@ -259,7 +259,7 @@
                                                             {
                                                                 "claimGroupId":  "task:rule-authority:AGENTS.md",
                                                                 "canonicalOwner":  "AGENTS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "946e6b4b8bcac2394c59ff4d50ec9d9c2ba43013e9e6af245eb144497bdd9b01",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -280,7 +280,7 @@
                                                             {
                                                                 "claimGroupId":  "task:rule-authority:Docs/AI/RULES_LEDGER.md",
                                                                 "canonicalOwner":  "Docs/AI/RULES_LEDGER.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "06e7a41c06e02170c69b912e1fa374896cdc5ab2a9ccf7b3926cec21d4f8d5a9",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -321,7 +321,7 @@
                                                             {
                                                                 "claimGroupId":  "task:rule-authority:Docs/AI/Rules/RULE_SYSTEMS.md",
                                                                 "canonicalOwner":  "Docs/AI/Rules/RULE_SYSTEMS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "57ae5c5922a2ef14e86b46cf15483d80593e1f70ee1f3d6fb0231057328db07a",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -338,8 +338,8 @@
                                                             {
                                                                 "claimGroupId":  "task:rule-authority:Docs/AI/SESSION_BRIEF.md",
                                                                 "canonicalOwner":  "Docs/AI/SESSION_BRIEF.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
-                                                                "sourceSha256":  "ee49a17981ed7e9ad0ff57971b1def6aa7abf6f53af61f3d36082e5e398e4607",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
+                                                                "sourceSha256":  "5302a8e64de8702aba58ba608f945d0e3bf5dba19c0d8b88f829cff730fee4a0",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
                                                                 "operativeClaimIds":  [
@@ -429,12 +429,12 @@
                                                                   "Docs/AI/SESSION_BRIEF.md"
                                                               ],
                                               "metrics":  {
-                                                              "words":  22359,
-                                                              "bytes":  154965,
+                                                              "words":  22419,
+                                                              "bytes":  155358,
                                                               "units":  7,
                                                               "routingHops":  3,
                                                               "missingAuthorityBodies":  0,
-                                                              "unnecessaryBytes":  47043,
+                                                              "unnecessaryBytes":  47436,
                                                               "duplicateOwnership":  0,
                                                               "updateCostOwners":  7,
                                                               "budgetState":  "ExceedsHypothesis"
@@ -448,7 +448,7 @@
                                                             {
                                                                 "claimGroupId":  "task:card-effect:AGENTS.md",
                                                                 "canonicalOwner":  "AGENTS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "946e6b4b8bcac2394c59ff4d50ec9d9c2ba43013e9e6af245eb144497bdd9b01",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -469,7 +469,7 @@
                                                             {
                                                                 "claimGroupId":  "task:card-effect:Docs/AI/CARD_EFFECT_CAPABILITIES.md",
                                                                 "canonicalOwner":  "Docs/AI/CARD_EFFECT_CAPABILITIES.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "e66c09647838753aa5e3d383a448648da75e50de1b4e209b1eee38e903d5c176",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -510,7 +510,7 @@
                                                             {
                                                                 "claimGroupId":  "task:card-effect:Docs/AI/CARD_SYSTEM_ARCHITECTURE.md",
                                                                 "canonicalOwner":  "Docs/AI/CARD_SYSTEM_ARCHITECTURE.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "88d5186c832964e3f3717df4e405d435d0d676d73b4e5a69fa66627eedd41e01",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -527,7 +527,7 @@
                                                             {
                                                                 "claimGroupId":  "task:card-effect:Docs/AI/Card-System/CORE_MODEL.md",
                                                                 "canonicalOwner":  "Docs/AI/Card-System/CORE_MODEL.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "02235db43d798ed92b191023256972360853e8c3a3f914bca465b640d4b33d88",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -560,7 +560,7 @@
                                                             {
                                                                 "claimGroupId":  "task:card-effect:Docs/AI/Card-System/RESOLUTION_AND_EFFECTS.md",
                                                                 "canonicalOwner":  "Docs/AI/Card-System/RESOLUTION_AND_EFFECTS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "18f9425c7b027c1b15a6bbe37334e23a6f0f0b1b25d15acea18599da9a879453",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -621,7 +621,7 @@
                                                             {
                                                                 "claimGroupId":  "task:card-effect:Docs/AI/Card-System/VALIDATION_AND_EXTENSION.md",
                                                                 "canonicalOwner":  "Docs/AI/Card-System/VALIDATION_AND_EXTENSION.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "68053f34a6de5e020d713c49b0efb4e46ad590bdf6a7a65b641fea70242646b2",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -658,8 +658,8 @@
                                                             {
                                                                 "claimGroupId":  "task:card-effect:Docs/AI/SESSION_BRIEF.md",
                                                                 "canonicalOwner":  "Docs/AI/SESSION_BRIEF.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
-                                                                "sourceSha256":  "ee49a17981ed7e9ad0ff57971b1def6aa7abf6f53af61f3d36082e5e398e4607",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
+                                                                "sourceSha256":  "5302a8e64de8702aba58ba608f945d0e3bf5dba19c0d8b88f829cff730fee4a0",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
                                                                 "operativeClaimIds":  [
@@ -743,12 +743,12 @@
                                                                   "Docs/AI/SESSION_BRIEF.md"
                                                               ],
                                               "metrics":  {
-                                                              "words":  15258,
-                                                              "bytes":  103180,
+                                                              "words":  15318,
+                                                              "bytes":  103573,
                                                               "units":  6,
                                                               "routingHops":  3,
                                                               "missingAuthorityBodies":  0,
-                                                              "unnecessaryBytes":  11320,
+                                                              "unnecessaryBytes":  11713,
                                                               "duplicateOwnership":  0,
                                                               "updateCostOwners":  6,
                                                               "budgetState":  "ExceedsHypothesis"
@@ -762,7 +762,7 @@
                                                             {
                                                                 "claimGroupId":  "task:configured-presentation:AGENTS.md",
                                                                 "canonicalOwner":  "AGENTS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "946e6b4b8bcac2394c59ff4d50ec9d9c2ba43013e9e6af245eb144497bdd9b01",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -783,7 +783,7 @@
                                                             {
                                                                 "claimGroupId":  "task:configured-presentation:Docs/AI/PROJECT_CONTEXT.md",
                                                                 "canonicalOwner":  "Docs/AI/PROJECT_CONTEXT.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "662c730c453896f5f8d3841d892b8cd3766acbf82bab97bd094cfd59e1cfa020",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -812,7 +812,7 @@
                                                             {
                                                                 "claimGroupId":  "task:configured-presentation:Docs/AI/Project/CONFIGURED_PRESENTATION.md",
                                                                 "canonicalOwner":  "Docs/AI/Project/CONFIGURED_PRESENTATION.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "597f92eb75193ad13cbbe99835b665a347271b8cccf00476cd27c82bd5ea69cb",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -841,7 +841,7 @@
                                                             {
                                                                 "claimGroupId":  "task:configured-presentation:Docs/AI/Project/MATCH_HUD.md",
                                                                 "canonicalOwner":  "Docs/AI/Project/MATCH_HUD.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "f4d8cf20a7e80d10366dcacea90b47e0b666db385457c76cea63f4439937f361",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -894,7 +894,7 @@
                                                             {
                                                                 "claimGroupId":  "task:configured-presentation:Docs/AI/Project/PRESENTATION.md",
                                                                 "canonicalOwner":  "Docs/AI/Project/PRESENTATION.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "25b1f2e550c78ceefda4422ab6239a178f4f6f00608241212470f30351b5eabf",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -939,8 +939,8 @@
                                                             {
                                                                 "claimGroupId":  "task:configured-presentation:Docs/AI/SESSION_BRIEF.md",
                                                                 "canonicalOwner":  "Docs/AI/SESSION_BRIEF.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
-                                                                "sourceSha256":  "ee49a17981ed7e9ad0ff57971b1def6aa7abf6f53af61f3d36082e5e398e4607",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
+                                                                "sourceSha256":  "5302a8e64de8702aba58ba608f945d0e3bf5dba19c0d8b88f829cff730fee4a0",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
                                                                 "operativeClaimIds":  [
@@ -1005,12 +1005,12 @@
                                                                   "Docs/AI/Testing/POLICY.md"
                                                               ],
                                               "metrics":  {
-                                                              "words":  8761,
-                                                              "bytes":  64193,
+                                                              "words":  8821,
+                                                              "bytes":  64586,
                                                               "units":  4,
                                                               "routingHops":  3,
                                                               "missingAuthorityBodies":  0,
-                                                              "unnecessaryBytes":  29524,
+                                                              "unnecessaryBytes":  29917,
                                                               "duplicateOwnership":  0,
                                                               "updateCostOwners":  4,
                                                               "budgetState":  "WithinHypothesis"
@@ -1024,7 +1024,7 @@
                                                             {
                                                                 "claimGroupId":  "task:testing:AGENTS.md",
                                                                 "canonicalOwner":  "AGENTS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "946e6b4b8bcac2394c59ff4d50ec9d9c2ba43013e9e6af245eb144497bdd9b01",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1049,8 +1049,8 @@
                                                             {
                                                                 "claimGroupId":  "task:testing:Docs/AI/SESSION_BRIEF.md",
                                                                 "canonicalOwner":  "Docs/AI/SESSION_BRIEF.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
-                                                                "sourceSha256":  "ee49a17981ed7e9ad0ff57971b1def6aa7abf6f53af61f3d36082e5e398e4607",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
+                                                                "sourceSha256":  "5302a8e64de8702aba58ba608f945d0e3bf5dba19c0d8b88f829cff730fee4a0",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
                                                                 "operativeClaimIds":  [
@@ -1066,7 +1066,7 @@
                                                             {
                                                                 "claimGroupId":  "task:testing:Docs/AI/TESTING.md",
                                                                 "canonicalOwner":  "Docs/AI/TESTING.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "b647a875a9cb4010593a14b0ac7f5e9f52b5c2b23e0b73a1301c4c2859d5ae96",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1087,7 +1087,7 @@
                                                             {
                                                                 "claimGroupId":  "task:testing:Docs/AI/Testing/POLICY.md",
                                                                 "canonicalOwner":  "Docs/AI/Testing/POLICY.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "b2c103cf525a273be9f95bc60618460ffdaf6a5c5015630ee9e54f75217ddb2f",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1261,12 +1261,12 @@
                                                                   "Docs/AI/Testing/RECIPES_TURNS.md"
                                                               ],
                                               "metrics":  {
-                                                              "words":  374206,
-                                                              "bytes":  2639105,
+                                                              "words":  375928,
+                                                              "bytes":  2650403,
                                                               "units":  82,
                                                               "routingHops":  4,
                                                               "missingAuthorityBodies":  0,
-                                                              "unnecessaryBytes":  2565818,
+                                                              "unnecessaryBytes":  2577027,
                                                               "duplicateOwnership":  0,
                                                               "updateCostOwners":  82,
                                                               "budgetState":  "ExceedsHypothesis"
@@ -1280,7 +1280,7 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:AGENTS.md",
                                                                 "canonicalOwner":  "AGENTS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "946e6b4b8bcac2394c59ff4d50ec9d9c2ba43013e9e6af245eb144497bdd9b01",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1309,7 +1309,7 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:Docs/AI/DOCUMENTATION_GOVERNANCE.md",
                                                                 "canonicalOwner":  "Docs/AI/DOCUMENTATION_GOVERNANCE.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "8e099eb7de6da45ff4f3319bfd0f1ef68f82a21356f64694e79982984171ae7f",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1338,7 +1338,7 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:Docs/AI/Project/PRODUCT.md",
                                                                 "canonicalOwner":  "Docs/AI/Project/PRODUCT.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "dfe55dcfb4661ecea726cb416a90cdebfa0b20a34fe2f1a2e1d352d4d2107c82",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1367,7 +1367,7 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:Docs/AI/ROADMAP.md",
                                                                 "canonicalOwner":  "Docs/AI/ROADMAP.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "57a4bdbc098035c96d2d691025dd48a1f89f24a0fca340996cc51dc1221d2702",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1384,7 +1384,7 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:Docs/AI/RULES_LEDGER.md",
                                                                 "canonicalOwner":  "Docs/AI/RULES_LEDGER.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "06e7a41c06e02170c69b912e1fa374896cdc5ab2a9ccf7b3926cec21d4f8d5a9",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1405,8 +1405,8 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:Docs/AI/SESSION_BRIEF.md",
                                                                 "canonicalOwner":  "Docs/AI/SESSION_BRIEF.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
-                                                                "sourceSha256":  "ee49a17981ed7e9ad0ff57971b1def6aa7abf6f53af61f3d36082e5e398e4607",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
+                                                                "sourceSha256":  "5302a8e64de8702aba58ba608f945d0e3bf5dba19c0d8b88f829cff730fee4a0",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
                                                                 "operativeClaimIds":  [
@@ -1419,7 +1419,7 @@
                                                                                },
                                                                                {
                                                                                    "bodyId":  "body:Docs/AI/SESSION_BRIEF.md:4",
-                                                                                   "bodySha256":  "86a621e545ec7cbf7258ef844f5aa82d3bdb923057545d5b4dc3f55a1d14e2d3"
+                                                                                   "bodySha256":  "89adb25e24b824a2ed45c3b45b3c8b473ee9f46f9ec9588cf92538b793c5be0d"
                                                                                },
                                                                                {
                                                                                    "bodyId":  "body:Docs/AI/SESSION_BRIEF.md:5",
@@ -1434,7 +1434,7 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:Docs/AI/TECHNICAL_RISKS.md",
                                                                 "canonicalOwner":  "Docs/AI/TECHNICAL_RISKS.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "dd7265e6266df5ddc8f193fc30e15c775f7810b06d5ddbec89ac9fc5bfd3e813",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1451,7 +1451,7 @@
                                                             {
                                                                 "claimGroupId":  "task:cross-cutting-privacy:Docs/AI/Testing/POLICY.md",
                                                                 "canonicalOwner":  "Docs/AI/Testing/POLICY.md",
-                                                                "sourceRevision":  "sha256:d5a114ecbea0c83590da742aaa5dd70f9945010479ccce594bb82c1ed76d6045",
+                                                                "sourceRevision":  "sha256:ae24011aada23e5d48b9f0141080e70264328e65b87aefb5ddd1380d9908b7a7",
                                                                 "sourceSha256":  "b2c103cf525a273be9f95bc60618460ffdaf6a5c5015630ee9e54f75217ddb2f",
                                                                 "expiryState":  "FreshUntilSourceOrEvidenceDrift",
                                                                 "expiresWhen":  "Any referenced source/body/evidence hash changes or the registered reassessment trigger fires.",
@@ -1475,8 +1475,8 @@
                                                             }
                                                         ],
                                              "metrics":  {
-                                                             "words":  9931,
-                                                             "bytes":  73287,
+                                                             "words":  9939,
+                                                             "bytes":  73376,
                                                              "units":  8,
                                                              "routingHops":  1,
                                                              "missingAuthorityBodies":  0,

@@ -767,6 +767,17 @@ namespace GuardsDigital.Presentation.Interaction
         public ConfiguredMatchSceneRuntime Runtime => runtime;
         public IMatchSession Session => runtime?.Session;
         public ConfiguredMatchHudRenderer Hud => hud;
+
+        /// <summary>
+        /// Milestone <c>8.35z54</c>. The board view this root composed, handed out beside
+        /// <see cref="Hud"/> for the same reason that one is: a component that needs it must be GIVEN
+        /// it rather than go looking. The rehearsal driver reports the board's framing for the fifth
+        /// playtest finding's direct negative, and reaching it through
+        /// <c>FindAnyObjectByType</c> is exactly the global discovery
+        /// <c>Phase4ArchitectureConformanceTests</c> confines to this class - which it caught on the
+        /// first run after that reporting was written.
+        /// </summary>
+        public PlaceholderTestGridView MapView => mapView;
         public bool OwnsGeneratedHighlightMaterial => false;
 
         /// <summary>

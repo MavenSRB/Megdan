@@ -230,11 +230,27 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone <c>8.35z54</c> MOVED THIS TEST'S SUBJECT, and the button treatment itself is
+        /// unchanged. The seat picker used to live on the ENTRY FORM, where a player chose a seat
+        /// before joining and the button only remembered that choice for a JOIN that had not happened
+        /// yet. The user's flow spec removed that surface: you join naming no seat, and the button
+        /// that TAKES a seat appears once you are admitted and reading the host's own roster. So the
+        /// entry form now correctly draws no seat picks at all, and rendering it here asserted the
+        /// chrome of buttons that are no longer supposed to exist.
+        ///
+        /// <para>It renders the ADMITTED state instead - a real seatless client on the real wire
+        /// harness, which is where a player meets these controls now - and asserts exactly what it
+        /// always asserted about them.</para>
+        /// </summary>
         [Test]
         public void LobbySeatPick_DrawsTheSharedChromeAndWiresMotion()
         {
-            var driver = PrivateSessionTestDriver.Compose();
-            var model = PrivateLobbyModel.Entry(driver.Session.Roster, string.Empty);
+            var harness = PrivateOnlineWireHarness.Compose();
+            var joiner = harness.ConnectSeatless(1);
+            harness.Pump();
+
+            var model = PrivateLobbyModel.ForClient(joiner);
             var view = new PrivateLobbyUnityView();
 
             view.Render(model);
@@ -243,12 +259,37 @@ namespace GuardsDigital.Tests.EditMode
                 .OfType<Button>()
                 .Where(button => button.name == PrivateLobbyUnityView.SeatPickName)
                 .ToArray();
-            Assert.That(picks, Is.Not.Empty);
+            Assert.That(picks, Is.Not.Empty,
+                "An admitted player is offered a TAKE SEAT control on every open seat - the state " +
+                "the entry form used to carry. Status: " + model.StatusLabel + ".");
             foreach (var pick in picks)
             {
                 Assert.That(pick.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
                 AssertScaleMotionIsWired(pick, "PICK");
             }
+        }
+
+        /// <summary>
+        /// The other half of the move, asserted rather than assumed: the entry form draws NO seat
+        /// picks. Without this, deleting the seat-pick control entirely would still leave the test
+        /// above green on some other state, and the removed surface would have no proof it is gone.
+        /// </summary>
+        [Test]
+        public void TheEntryForm_DrawsNoSeatPicksAtAll()
+        {
+            var driver = PrivateSessionTestDriver.Compose();
+            var model = PrivateLobbyModel.Entry(driver.Session.Roster, string.Empty);
+            var view = new PrivateLobbyUnityView();
+
+            view.Render(model);
+
+            Assert.That(
+                Descendants(view.Root)
+                    .OfType<Button>()
+                    .Where(button => button.name == PrivateLobbyUnityView.SeatPickName),
+                Is.Empty,
+                "Milestone 8.35z54 removed the pre-join seat picker: a seat is taken from inside " +
+                "the session, against the host's roster, never guessed at before joining.");
         }
 
         /// <summary>

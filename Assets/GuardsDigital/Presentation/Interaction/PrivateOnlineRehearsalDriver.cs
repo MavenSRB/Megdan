@@ -8,6 +8,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Match;
 using UnityEngine;
 
@@ -48,7 +49,28 @@ namespace GuardsDigital.Presentation.Interaction
         /// spawned <see cref="PrivateSeatDriver"/> processes. Proves the shipped feature end to end
         /// through its real control, not a shortcut.
         /// </summary>
-        Solo = 4
+        Solo = 4,
+
+        /// <summary>
+        /// Milestone <c>8.35z54</c>. THE PACKAGE CEREMONY'S REQUIRED MULTI-CLIENT STEP, and the
+        /// distillation of the eleven-hero six-client acceptance into something cheap enough to run on
+        /// every cut.
+        ///
+        /// <para>It is the acceptance's shape with the match removed: a host and two real joiner
+        /// processes walk the user's own flow - join naming no seat, take a seat, READY, pick a hero
+        /// in p.22's order, the remaining seats filled by the host's own FILL WITH BOTS control - and
+        /// every process stops at the FIRST COMMITMENT WINDOW, which is exactly where all three
+        /// questions this exists to ask are already answerable. It plays no match, forces no fault and
+        /// injects no disconnect, because <see cref="Match"/> already owns those and a gate nobody can
+        /// afford to run is a gate that gets skipped.</para>
+        ///
+        /// <para>WHY THIS TIER AT ALL, stated so it is not "cheaper is better": the z51 package
+        /// shipped a lobby whose picked-line-up match was unplayable on all six seats, and every
+        /// journey was green because every journey drives the HOST's own view. Only two real
+        /// processes disagreeing about a seat can catch that class, so the package ceremony now owes
+        /// at least two.</para>
+        /// </summary>
+        Smoke = 5
     }
 
     /// <summary>
@@ -134,9 +156,11 @@ namespace GuardsDigital.Presentation.Interaction
                 parsedMode = PrivateOnlineRehearsalMode.RejoinReturn;
             else if (string.Equals(mode, "solo", StringComparison.OrdinalIgnoreCase))
                 parsedMode = PrivateOnlineRehearsalMode.Solo;
+            else if (string.Equals(mode, "smoke", StringComparison.OrdinalIgnoreCase))
+                parsedMode = PrivateOnlineRehearsalMode.Smoke;
             else
             {
-                error = "the rehearsal mode must be match, host-loss, rejoin, rejoin-return or solo";
+                error = "the rehearsal mode must be match, host-loss, rejoin, rejoin-return, solo or smoke";
                 return false;
             }
 
@@ -247,6 +271,12 @@ namespace GuardsDigital.Presentation.Interaction
         private bool testDriversFillAttempted;
         private bool testDriversRefillAttempted;
         private bool hudReported;
+
+        /// <summary>
+        /// Milestone <c>8.35z54</c>. One-shot, because <c>Quit</c> does not stop the frame it is called
+        /// on and this block would otherwise log its pass line again on the way out.
+        /// </summary>
+        private bool smokeReported;
         private bool stopped;
         private bool privacyFailed;
         private long auditedRevision = -1;
@@ -381,11 +411,21 @@ namespace GuardsDigital.Presentation.Interaction
             if (lobby.Presenter?.Model == null)
                 return;
 
+            // Milestone 8.35z54. THE SMOKE COHORT JOINS NAMING NO SEAT, which is the user's flow spec
+            // read literally - "they join the server, see open seats, they pick a seat" - and it is a
+            // different code path from the one every other cohort takes. The older cohorts carry their
+            // seat in the entry, which the host still accepts and which is what lets them be
+            // deterministic about who sits where; that path cannot observe the seatless join at all,
+            // and the seatless join is exactly what the z51 playtest was doing when it broke. So this
+            // one arrives as a stranger and takes a chair from inside the session, through the same
+            // control a player presses.
+            var joinsSeatless = options.Mode == PrivateOnlineRehearsalMode.Smoke &&
+                options.Role == PrivateOnlineRehearsalRole.Client;
             var entry = new PrivateLobbyEntry(
                 options.Address,
                 options.Port.ToString(CultureInfo.InvariantCulture),
                 options.SessionKey,
-                options.Seat);
+                joinsSeatless ? default : options.Seat);
             var control = options.Role == PrivateOnlineRehearsalRole.Host
                 ? PrivateLobbyControl.Host
                 : PrivateLobbyControl.Join;
@@ -432,6 +472,27 @@ namespace GuardsDigital.Presentation.Interaction
             // client got there first" precisely because nothing else can claim a seat before this
             // control is pressed - the bots this control itself spawns are the only other claimants
             // that will ever exist in this cohort.
+            // Milestone 8.35z54's smoke host fills for the same reason and with the same one-shot
+            // discipline, but waits for BOTH scripted joiners to be seated rather than one: this
+            // cohort's whole point is that two real processes are in the session at once, and filling
+            // while only the first has arrived would take the second one's chair.
+            if (options.Mode == PrivateOnlineRehearsalMode.Smoke && !testDriversFillAttempted &&
+                !host.HasMatchStarted && host.ClaimedSeatCount >= 2)
+            {
+                if (lobby.Presenter.Model?.Offers(PrivateLobbyControl.FillWithTestDrivers) == true)
+                {
+                    testDriversFillAttempted = true;
+                    if (!lobby.Presenter.Press(PrivateLobbyControl.FillWithTestDrivers, null))
+                    {
+                        Fail("smoke-fill-control-refused");
+                        return;
+                    }
+
+                    PrivateOnlineMarkers.Log("REHEARSAL_SMOKE_FILLED claimed=" +
+                        host.ClaimedSeatCount.ToString(CultureInfo.InvariantCulture));
+                }
+            }
+
             if (options.Mode == PrivateOnlineRehearsalMode.Solo && !testDriversFillAttempted &&
                 !host.HasMatchStarted && host.ClaimedSeatCount >= 1)
             {
@@ -485,6 +546,29 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            // Milestone 8.35z54. The smoke host's whole job ends at the first commitment window: the
+            // match it just composed from a chosen line-up is the thing under test, and the state of
+            // it that answers every question this cohort asks is the state before anybody acts. The
+            // version is reported rather than assumed so the runner asserts it is 0 - a host that had
+            // already accepted a command would be the fourth playtest finding, seen from the
+            // authority's own side.
+            if (options.Mode == PrivateOnlineRehearsalMode.Smoke)
+            {
+                if (!hudReported)
+                {
+                    hudReported = true;
+                    PrivateOnlineMarkers.Log(
+                        "REHEARSAL_SMOKE_HOST_READY version=" +
+                        projection.Version.ToString(CultureInfo.InvariantCulture) +
+                        " phase=" + compositionRoot.Runtime.Phase +
+                        " seats=" + host.ClaimedSeatCount.ToString(CultureInfo.InvariantCulture));
+                    lobby.Presenter.Press(PrivateLobbyControl.Leave, null);
+                    Quit(0);
+                }
+
+                return;
+            }
+
             if (!projection.Outcome.HasEnded)
                 return;
             if (!outcomeSeenUtc.HasValue)
@@ -531,6 +615,17 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
+            // Milestone 8.35z54. A smoke client arrived naming no seat, so it is ADMITTED rather than
+            // Seated and its first job is to take the chair the runner assigned it - through the same
+            // TAKE SEAT control a player presses, against the host's own roster. It re-presses on
+            // every frame the control is still offered, which costs nothing and is what makes it
+            // robust to the one real race here: two joiners reaching for chairs at the same instant.
+            if (machine.State == PrivateSessionClientState.Admitted)
+            {
+                ClaimOwnSeatWhenOffered();
+                return;
+            }
+
             if (machine.State == PrivateSessionClientState.Seated && !machine.HasMatchStarted)
             {
                 if (!readinessPressed &&
@@ -551,6 +646,7 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 hudReported = true;
                 ClientMarker("hud", machine.LatestProjection.Version);
+                ReportFirstMatchState(machine);
                 if (options.Mode == PrivateOnlineRehearsalMode.HostLoss)
                     ClientMarker("host-loss-ready", machine.LatestProjection.Version);
                 // Milestone 8.35k. The relaunched process is back in the seat it left, holding an
@@ -564,6 +660,30 @@ namespace GuardsDigital.Presentation.Interaction
             AuditProjection(machine);
             if (privacyFailed)
                 return;
+
+            // Milestone 8.35z54. The smoke cohort stops HERE, one line after the audit rather than one
+            // line before it: `AuditProjection` is the per-seat authorization proof - it fails the run
+            // if any offered command is not held by this seat - and it is the first playtest finding's
+            // direct negative, so passing through it is the point of coming this far. Everything below
+            // is the full match's business.
+            if (options.Mode == PrivateOnlineRehearsalMode.Smoke)
+            {
+                if (!smokeReported)
+                {
+                    smokeReported = true;
+                    PrivateOnlineMarkers.Log(
+                        "REHEARSAL_SMOKE_PASS seat=" + options.Seat.Value +
+                        " hero=" + compositionRoot.Runtime.Seat.HeroId.Value +
+                        " authorized=" + machine.LatestProjection.AuthorizedCommands.Count
+                            .ToString(CultureInfo.InvariantCulture) +
+                        " version=" + machine.LatestProjection.Version
+                            .ToString(CultureInfo.InvariantCulture));
+                    Quit(0);
+                }
+
+                return;
+            }
+
             ObserveCompletedAgreements();
 
             if (options.Mode == PrivateOnlineRehearsalMode.HostLoss)
@@ -1211,6 +1331,94 @@ namespace GuardsDigital.Presentation.Interaction
         }
 
         /// <summary>
+        /// Milestone <c>8.35z54</c>. Takes THIS process's assigned seat from inside the session, which
+        /// is the half of the user's flow spec no other cohort walks.
+        /// </summary>
+        /// <remarks>
+        /// The seat is named on the command line as before - the runner still decides who sits where,
+        /// because a smoke whose seats varied run to run could not assert anything about them - but it
+        /// is claimed through <see cref="PrivateLobbyControl.ClaimSeat"/> rather than carried in the
+        /// join. If the roster does not offer this seat the driver says so by name instead of silently
+        /// taking a different chair: a smoke that quietly reseats itself would pass while proving the
+        /// wrong thing.
+        /// </remarks>
+        private void ClaimOwnSeatWhenOffered()
+        {
+            var model = lobby.Presenter.Model;
+            if (model == null || !model.Offers(PrivateLobbyControl.ClaimSeat))
+                return;
+
+            var mine = model.Seats.FirstOrDefault(row =>
+                string.Equals(row.Seat.Value, options.Seat.Value, StringComparison.Ordinal));
+            if (mine == null)
+            {
+                Fail("smoke-seat-not-on-roster-" + options.Seat.Value);
+                return;
+            }
+
+            // The seat rides the entry exactly as the view's own seat-row button sends it: that button
+            // picks the row and then presses ClaimSeat with the current entry, and this is that pair
+            // written out, so the press the host receives is byte-for-byte a player's.
+            var claim = new PrivateLobbyEntry(
+                options.Address,
+                options.Port.ToString(CultureInfo.InvariantCulture),
+                options.SessionKey,
+                mine.Seat);
+            if (lobby.Presenter.Press(PrivateLobbyControl.ClaimSeat, claim))
+                ClientMarker("seat-claimed-" + options.Seat.Value, -1);
+        }
+
+        /// <summary>
+        /// Milestone <c>8.35z54</c>. The two lines the eleven-hero acceptance reads, written ONCE at
+        /// the first frame this seat holds a match HUD - which is the earliest moment either question
+        /// can be asked and the latest at which the answer is still about a fresh match.
+        ///
+        /// <para><b>PRECOMMIT is the fourth playtest finding's direct negative</b> ("wasp made a move
+        /// before even selecting cards"). A match that has accepted no command stands at projection
+        /// version 0 in <c>AwaitingCommitments</c>; anything else means something acted before the
+        /// commitment window, and the version says how much. Reporting BOTH the version and the phase
+        /// is deliberate - a wrong phase at version 0 and a right phase at version 3 are different
+        /// defects, and a single boolean would hide which one happened.</para>
+        ///
+        /// <para><b>BOARDRECT is the fifth finding's direct negative</b> ("map sizing broke a bit
+        /// somehow on player side"). <c>configured=False</c> is the defect itself - a board still
+        /// wearing the framing it was built with, because the layout event never fired a second time
+        /// for a client that re-composed. The size and viewport let the runner compare every process
+        /// against every other rather than merely check a flag, so a future regression that configures
+        /// the viewport WRONG is caught by the same line that catches one that never configures it.</para>
+        /// </summary>
+        private void ReportFirstMatchState(PrivateSessionClient machine)
+        {
+            var runtime = compositionRoot.Runtime;
+            PrivateOnlineMarkers.Log(
+                "REHEARSAL_PRECOMMIT seat=" + options.Seat.Value +
+                " version=" + runtime.ReadModel.Version.ToString(CultureInfo.InvariantCulture) +
+                " phase=" + runtime.Phase +
+                " wireversion=" + machine.LatestProjection.Version.ToString(CultureInfo.InvariantCulture));
+
+            var board = compositionRoot.MapView;
+            if (board == null)
+            {
+                PrivateOnlineMarkers.Log("REHEARSAL_BOARDRECT seat=" + options.Seat.Value + " board=none");
+                return;
+            }
+
+            var layout = board.ConfiguredCameraLayout;
+            PrivateOnlineMarkers.Log(
+                "REHEARSAL_BOARDRECT seat=" + options.Seat.Value +
+                " configured=" + board.HasConfiguredCameraViewport +
+                " ortho=" + board.CameraOrthographicSize.ToString("F3", CultureInfo.InvariantCulture) +
+                " panel=" + layout.PanelViewport.x.ToString("F0", CultureInfo.InvariantCulture) +
+                "x" + layout.PanelViewport.y.ToString("F0", CultureInfo.InvariantCulture) +
+                " upper=" + layout.UpperRegion.x.ToString("F0", CultureInfo.InvariantCulture) +
+                "," + layout.UpperRegion.y.ToString("F0", CultureInfo.InvariantCulture) +
+                "," + layout.UpperRegion.width.ToString("F0", CultureInfo.InvariantCulture) +
+                "," + layout.UpperRegion.height.ToString("F0", CultureInfo.InvariantCulture) +
+                " px=" + board.CameraPixelRect.width.ToString("F0", CultureInfo.InvariantCulture) +
+                "x" + board.CameraPixelRect.height.ToString("F0", CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
         /// 8.35z54. Takes this seat's hero when rulebook p.22's order reaches it, out of the
         /// options this seat's own lobby model offers - the same rule
         /// <c>PrivateSeatDriver.PickHeroWhenOffered</c> follows, and the same reason: a driver
@@ -1269,6 +1477,7 @@ namespace GuardsDigital.Presentation.Interaction
                 case PrivateOnlineRehearsalMode.Rejoin: return "rejoin";
                 case PrivateOnlineRehearsalMode.RejoinReturn: return "rejoin-return";
                 case PrivateOnlineRehearsalMode.Solo: return "solo";
+                case PrivateOnlineRehearsalMode.Smoke: return "smoke";
                 default: return "match";
             }
         }

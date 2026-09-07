@@ -61,13 +61,19 @@ namespace GuardsDigital.Tests.PlayMode
 
             public static Wire Compose(
                 ConfiguredMatchSceneRuntime runtime,
-                System.Func<long> timeSource = null)
+                System.Func<long> timeSource = null,
+                IDeferredMatchComposition composition = null)
             {
                 Wire wire = null;
                 wire = new Wire();
                 wire.Host = new PrivateSessionHost(
                     runtime.Host, runtime.SessionIdentity, string.Empty,
                     new HostOutbox(() => wire), new NonceSource(1));
+                // Milestone 8.35z54. The picks below reach a composition, and a host that admits hero
+                // picks while holding none refuses the transition loudly rather than quietly fielding
+                // the provisional line-up. Callers that care which heroes are composed pass the
+                // scene's own root; the rest pass nothing and get the printed assignment.
+                wire.Host.Composition = composition;
                 var ordinal = 0;
                 foreach (var seat in runtime.Host.Seats.Seats)
                 {
@@ -86,6 +92,23 @@ namespace GuardsDigital.Tests.PlayMode
                 foreach (var link in wire.links.Values)
                 {
                     Assert.That(link.Client.TrySetReadiness(true), Is.True);
+                    wire.Pump();
+                }
+
+                // Milestone 8.35z54. Readiness OPENS the picking; the LAST PICK starts the match.
+                // This harness exists to reach a started network seat, so it now walks the picks the
+                // way the shipped drivers do - out of the options each seat's own model offers, in
+                // p.22's printed order - rather than expecting readiness alone to compose anything.
+                var guard = 0;
+                while (!wire.Host.HasMatchStarted && guard++ < wire.links.Count + 1)
+                {
+                    var picking = wire.Host.Selection.PickingSeat;
+                    var picker = wire.links.Values.Single(value =>
+                        value.Client.TargetSeat.Equals(picking));
+                    var offered = PrivateLobbyModel.ForClient(picker.Client).Selection.Heroes
+                        .First(option => option.IsAvailable);
+                    Assert.That(picker.Client.TryChooseHero(offered.HeroIdValue), Is.True,
+                        "Seat " + picking.Value + " could not take " + offered.HeroIdValue + ".");
                     wire.Pump();
                 }
 
@@ -140,7 +163,7 @@ namespace GuardsDigital.Tests.PlayMode
             var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
             Assert.That(root?.Runtime, Is.Not.Null);
             var now = 10 * System.TimeSpan.TicksPerSecond;
-            var wire = Wire.Compose(root.Runtime, () => now);
+            var wire = Wire.Compose(root.Runtime, () => now, root);
             var client = wire.Client(1);
             var lobby = root.gameObject.AddComponent<PrivateLobbyDriver>();
             lobby.Configure(root);
@@ -240,7 +263,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(status.style.display.value, Is.EqualTo(DisplayStyle.None));
             Assert.That(status.text, Is.Empty);
 
-            var replacementWire = Wire.Compose(root.Runtime);
+            var replacementWire = Wire.Compose(root.Runtime, null, root);
             var replacement = replacementWire.Client(2);
             typeof(PrivateLobbyDriver).GetField(
                     "machine", System.Reflection.BindingFlags.Instance |

@@ -293,6 +293,70 @@ Non-goals: no schema or wire movement; no Tali work; no second playtest package.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z53-deal-register-and-player-path-gate-whisper-the-outcast-as-the-eleventh-hero-completion-evidence).
 
+### [x] 8.35z54 Repair the private lobby the live playtest broke, and rebuild its flow to the user's spec
+
+The 8.35z51 ten-hero package failed in a real multiplayer session, and every automated tier was green when it shipped. Three of the user's five findings are root-caused and fixed here; the other two are answered by the acceptance this milestone's own instrumentation made possible.
+
+Observable outcome: a player joins a host naming no seat, sees the open seats, takes one, readies, picks a hero in rulebook p.22's alternating order, and plays the match that line-up composed - offered their own seat's decisions and nobody else's.
+
+**THE HEADLINE DEFECT WAS ONE UNCALLED METHOD.** `EvaluateMatchStart` recomposed the match for the chosen line-up and never published it, so every seat kept the projection of the PROVISIONAL match issued at seat grant and every command each of the six offered came back refused by name, with the host version stuck at 0. `RepublishProjections()` has existed since 8.33 for exactly this class. The control run - nobody picks, provisional match stands - was correct throughout, which is why `SeatProjection` and `AuthorizedCommands` were never the culprits: the seat IDENTITY was.
+
+**THE SECOND DEFECT IS WHY THE FIRST WAS INVISIBLE FROM THE SURFACE.** `PrivateLobbyDriver.Signature()` was the whole redraw condition and named each roster row's seat, occupancy and readiness - not the hero and not the chosen flag, which are exactly the two fields a pick moves. An accepted, broadcast, applied pick left the string character-identical and nothing redrew. It is now `PrivateLobbyModel.RosterSignature`, stated once beside the rows it draws.
+
+**THE THIRD IS THE REUSE FAMILY IN A NEW PLACE.** `Compose` subscribes the board to the HUD's `PlayfieldLayoutChanged` and waits, but the HUD is deliberately kept across a re-composition, so on a second composition it has already laid out and the rebound board waits for an event that never comes. Only a joiner recomposes at the transition, which is precisely the "player side" the finding named.
+
+**THE FLOW IS THE USER'S SPEC READ LITERALLY.** The pre-join seat picker is removed; the cycling SETUP button - which their own host log shows them pressing six times without ever reaching 2v2 - is replaced by named 2V2 / 3V3 / SHORT GAME / LONG GAME controls; FILL WITH BOTS makes its bots PICK, in turn, through the same presenter press a player makes; and the host gets a lobby UNDO bounded by the one-way transition. Readiness OPENS the picking and the LAST PICK starts the match, which is the split this milestone owes: one rejected design attempt let an untouched selection start on readiness, and it composed a match before anyone had picked.
+
+Acceptance checks:
+
+- A picked line-up composes, publishes, and every seat's own commitment is accepted.
+- A joiner's accepted pick redraws on the picker's client and on the host.
+- A joiner's board receives the HUD's layout at the transition composition.
+- Wire `guards-private-online/10` and schema v40 do not move: everything the flow needed was already published.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: no schema or wire movement; no matchmaking, accounts or public service.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z54-repair-the-private-lobby-the-live-playtest-broke-and-rebuild-its-flow-to-the-users-spec-completion-evidence).
+
+### [x] 8.35z55 Derive the match-log tray's width and x from the narration bar
+
+The 2026-09-08 user directive, with a screenshot: "make it as wide as naration part on the top is."
+
+Observable outcome: the match-log drop-down is exactly the narration bar's width and horizontal position, at every viewport the bar is defined at.
+
+`CalculateMatchLogDropdownRect` no longer carries its own width literal centred by an independent clamp; it reads the bar's own `xMin` and `width`, so the two cannot drift. The tray inherits the hero-rail clearance the bar already guarantees by construction rather than re-deriving a margin clamp of its own. Re-pinned at 2560x1440: `(830, 96, 900, 320)`, was `(960, 96, 640, 320)`.
+
+Acceptance checks:
+
+- The reference-viewport rect is re-pinned and asserted equal to the bar's x and width.
+- The existing eight-viewport sweep additionally asserts the alignment and hero-rail non-overlap, because a fixed 640 becoming a viewport-dependent width could newly reach a rail at a size nobody eyeballed.
+
+Non-goals: no state-bearing change; height and vertical placement unmoved.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z55-derive-the-match-log-trays-width-and-x-from-the-narration-bar-completion-evidence).
+
+### [x] 8.35z56 Sequence the attack spotlight's zoom, a beat, then the attack cue
+
+The 2026-09-08 user directive: "wait for the camera to zoom in on the attack, before doing the animation... Zoom in, a small pause, then smack."
+
+Observable outcome: the camera lands, a beat passes, and then the attack plays - rather than the animation stepping on the camera's own arrival.
+
+The attack cue used to release the instant the zoom crossed from Entering into Held, a measured gap of one simulation frame. The one shared deferral predicate becomes a function of (phase, elapsed-in-phase): HELD defers for its own opening `PostZoomBeatSeconds` (0.3s, the midpoint of the user's stated band). No second driver, no coroutine, no new phase - the one-conductor law is unbroken.
+
+**THE RANGED ASYMMETRY THE BEAT OPENED IS CLOSED IN THE SAME MILESTONE.** The ranged tracer gated on the bare HELD phase, so on a ranged pair the dash crossed the ground a beat BEFORE the attacker's jab - the same cue's other half, and precisely the two events the beat exists to collapse into one. The view model now carries `ElapsedInPhase` and answers with the same predicate the cue layer and the conductor read.
+
+**AND THE DEFECT THAT FIX WOULD HAVE SHIPPED, CAUGHT BY ITS OWN NEW FIXTURE.** `Tick` re-rendered only when phase or framing weight changed, and both are constant across the beat - so the surface would have held a model saying "still deferring" forever and the ranged tracer would never have drawn at all. The deferral answer is now part of what counts as a visible change.
+
+Acceptance checks:
+
+- The cue does not play while the camera travels, does not play on the tick it arrives, and plays one beat after.
+- The surface's gate and the cue layer's gate are the same call, asserted equal at both moments.
+
+Non-goals: no schema, wire or content movement; `MaximumHeldSeconds` untouched.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z56-sequence-the-attack-spotlights-zoom-a-beat-then-the-attack-cue-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

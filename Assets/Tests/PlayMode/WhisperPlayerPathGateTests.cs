@@ -118,9 +118,14 @@ namespace GuardsDigital.Tests.PlayMode
         private const string ForcedMoveJourney =
             "SwiftJustice_LetsTheDefendersOwnSeatSteerTheForcedMoveItsFirstBulletPrints";
 
-        /// <summary>RULING 42, on the turn where it is unavoidable.</summary>
+        /// <summary>
+        /// RULING 53, on the turn where it is unavoidable. It superseded RULING 42 on 2026-09-08:
+        /// a play whose only "If" gate is false is OFFERED as a legal do-nothing play - "it's a
+        /// Hold" - so the shipped behaviour milestone 8.35z53 parked this journey over is the RULED
+        /// behaviour, and the journey now asserts the offer AND the no-op resolution instead.
+        /// </summary>
         private const string DeathSeekerTurnOne =
-            "DeathSeeker_IsUnstartableOnTheFirstTurnOfRoundOne_NoPileHoldingAnythingYet";
+            "DeathSeeker_IsOfferedOnTheFirstTurnOfRoundOne_AndResolvesAsALegalDoNothingPlay";
 
         /// <summary>RULING 33's actor-scoped immunity, driven from both sides.</summary>
         private const string ImmunityJourney =
