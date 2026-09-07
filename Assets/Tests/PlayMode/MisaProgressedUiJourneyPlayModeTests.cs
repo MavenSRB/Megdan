@@ -270,41 +270,60 @@ namespace GuardsDigital.Tests.PlayMode
                 "three. Offered: " +
                 string.Join(", ", ends.Select(space => $"({space.Q},{space.R})")));
 
-            // THE WALK IS NOT DRIVEN HERE, AND THAT IS RECORDED RATHER THAN PAPERED OVER. Milestone
-            // 8.35z38 spent SEVEN complete Play Mode runs trying to travel this line and the hero
-            // never left her staged space. What the runs narrowed, in order: it is not the reach (a
-            // two-space end fails here and the identical two-space end at (-5, 3) succeeds in Sudden
-            // Breeze's journey, on the same two contracts); it is not the driver (a projected command
-            // and a camera-ray board click behave the same, and the click is what works at Tier I);
-            // and it is not the offer (the end is offered, which is what the assertion above holds).
-            // The one difference left standing is the STAGING: every space-clicking journey that
-            // works loads the Tier I engaged arm, and both that do not load a progressed arm.
+            // UN-PARKED AT MILESTONE 8.35z51, AND THE CAUSE WAS NEVER THE ONE THE PARKING SUSPECTED.
+            // Milestone 8.35z38 spent SEVEN complete Play Mode runs trying to travel this line and
+            // the hero never left her staged space; the runs correctly cleared the reach, the driver
+            // and the offer, and were left pointing at the STAGING, because every space-clicking
+            // journey that worked loaded the Tier I engaged arm and both that did not loaded a
+            // progressed arm. Milestone 8.35z48 then cleared the pointer chain too, by measurement
+            // rather than by argument: `UiPlayer.DescribeBoardRay` reported that the ray passes
+            // through no hero's pick volume at all, so nothing was ever absorbing the click.
             //
-            // MILESTONE 8.35z48 DOES NOT UNPARK THIS ONE EITHER, and it is now clear that the two
-            // parked clicks on this staging share one cause and it is not the pointer. That milestone
-            // removed a real defect in the shared pointer chain - a hero's pick volume swallowing
-            // grazing board clicks - but this journey had already recorded that a PROJECTED COMMAND
-            // behaves the same here, and a projected command never touches the pointer chain at all.
+            // What actually stood in the way was model-side, and the same one defect stopped both of
+            // this staging's parked walks: `synthetic-discard-chosen-card` built its card criteria
+            // from a `hero` input that an `IfAble` selection is allowed to leave unbound, and
+            // `CardCharacteristicCriteria` refuses an undefined owner by construction - so the
+            // capability THREW. A throw is not a failure result, so the node's own `IfAble` policy
+            // could not absorb it: it escaped the resolution, faulted the command at the aggregate's
+            // commit boundary, and the match rolled back to a state byte-identical to the one already
+            // on screen. Same prompt, same offered ends, piece unmoved - indistinguishable at the
+            // surface from a click that never landed, which is exactly why eight runs read it as an
+            // input problem. Milestone 8.35z51 makes `Execute` decline an unnamed subject before it
+            // builds the criteria, and the walk below now completes.
             //
-            // Power Overwhelming's parked placement, driven to its end under 8.35z48, printed the
-            // matching measurement from the live scene: the ray passes through NO hero's pick volume,
-            // the click IS accepted (the offered ring narrows to the clicked space), and the Confirm
-            // the prompt then offers does nothing at all when pressed four times running. Both are
-            // model-side, in effect resolution rather than in input. See that journey's note for the
-            // full reproduction; the cheap discriminator is `UiPlayer.DescribeBoardRay`, whose empty
-            // answer rules absorption out in one run.
-            //
-            // That is a well-isolated observation and not a diagnosis, so it is a NAMED FOLLOW-UP
-            // rather than a fix smuggled into a dealing milestone - and this journey asserts what it
-            // genuinely proves rather than asserting an outcome it cannot reach. RULING 29 is a claim
-            // about which ends are ADMITTED, and both assertions above hold it: the four-space line
-            // through a water space and two units is offered, and so is the two-space line through a
-            // unit. The rider behind the walk is proved on the same contracts by Sudden Breeze's
-            // journey, and the discard half offline by MisaPrintedSetTests.
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The line's own question is still the standing one, which is what this journey " +
-                "reached and what it reports. " + Remaining(runtime));
+            // The staging correlation the parking recorded was real and is now explained rather than
+            // dismissed: it is the progressed arms that reach the rider whose selection can leave its
+            // subject unbound, which is why only they faulted.
+            var chosenEnd = chosen;
 
+            // A card-text straight-line Move is p.11's own movement session - the hero TRAVELS it -
+            // so the named end may take more than one click to reach, exactly as Sudden Breeze's
+            // journey measured. Bounded by the printed four.
+            for (var step = 0;
+                step < 6 &&
+                !runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate.Equals(chosenEnd);
+                step++)
+            {
+                var remaining = LitDestinations(runtime);
+                if (remaining.Length == 0)
+                {
+                    break;
+                }
+
+                var tile = Object.FindObjectsByType<HexTileView>()
+                    .Single(value => value.Coordinate.Equals(
+                        remaining.Contains(chosenEnd) ? chosenEnd : remaining[0]));
+                Assert.That(
+                    UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True);
+                yield return null;
+                yield return null;
+            }
+
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate,
+                Is.EqualTo(chosenEnd),
+                "The Move walks her to the end of the line she named - which is the assertion this " +
+                "journey could not reach while the discard rider faulted the whole command. " +
+                Remaining(runtime));
         }
 
         /// <summary>
@@ -520,8 +539,9 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
-            // THE PLACEMENT STAYS PARKED - AND MILESTONE 8.35z48 NARROWED IT FROM A MYSTERY TO A
-            // LOCATED DEFECT, WHICH IS WHY THIS NOTE IS WORTH ITS LENGTH.
+            // THE PLACEMENT IS UN-PARKED AT MILESTONE 8.35z51. This note keeps its full length,
+            // because the sequence of eliminations below is what MADE the fix findable and each step
+            // of it was paid for in complete Play Mode runs.
             //
             // Milestone 8.35z38 spent seven complete Play Mode runs here: the board click is accepted
             // and the piece does not move, where the identical click on the Tier I arm - Watch How I
@@ -549,18 +569,41 @@ namespace GuardsDigital.Tests.PlayMode
             // place - that a PROJECTED COMMAND behaved identically here, which no pointer change can
             // explain. Dash and Slash's parked walk on this same staging carries the same signature.
             //
-            // NOT FIXED HERE, and deliberately: 8.35z48 is a presentation-input corrective, an
-            // offered-control-that-does-nothing in effect resolution is a rules-side defect with its
-            // own measurement to do, and the two are not the same milestone. Recorded as a NAMED
-            // FOLLOW-UP with a reproduction that now costs one filtered run rather than eight full
-            // ones. What this journey is FOR is RULING 28, and that is proved above independently of
-            // the placement: one chosen bullet left the modal STANDING, the other was still offered,
-            // and it was taken. RULING 30's arming is proved offline by
-            // MisaPrintedSetTests.Ruling30_HangsTheUltimatesSecondClauseOnHerOwnSelfPlacements.
+            // AND THE CAUSE, FOUND BY MILESTONE 8.35z51 EXACTLY WHERE THAT MEASUREMENT POINTED:
+            // `synthetic-discard-chosen-card` built its card criteria from a `hero` input an `IfAble`
+            // selection may leave unbound, and `CardCharacteristicCriteria` refuses an undefined owner
+            // by construction - so the capability THREW. A throw is not a failure result, so the
+            // node's own `IfAble` could not absorb it; it escaped the resolution, faulted the command
+            // at the aggregate's commit boundary, and the match rolled back to a state byte-identical
+            // to the one on screen. That is precisely the four observations above, and it explains the
+            // one thing no pointer change ever could: a PROJECTED COMMAND behaves identically,
+            // because the fault is downstream of every input path.
+            //
+            // Her own Power Overwhelming is what leaves the input unbound: RULING 30 composes as an
+            // `IfAble` selection of an adjacent enemy hero feeding a discard that reads its output,
+            // so placing herself into open ground names nobody. `AnticipateCandidates` has stated the
+            // same rule since milestone 8.21, which is why every OFFER was already correct and only
+            // the executing path faulted - the same class as milestone 8.35z15's unwired probe.
+            // `Execute` now declines an unnamed subject before building the criteria, publishing no
+            // fact, and the placement below completes.
             Assert.That(ring, Has.Length.GreaterThan(1),
                 "The Place bullet RULING 28 let her take offers its own ring, which is what makes " +
                 "the second selection a real bullet rather than a control that does nothing. " +
                 Remaining(runtime));
+
+            // The click NAMES the space and the Confirm COMMITS it - which is what the parked runs
+            // were pressing when nothing happened. Both halves are driven the way a player drives
+            // them, and the press is conditional because a selection that has already committed
+            // offers no Confirm to press.
+            yield return BroganEngagedUiJourneyPlayModeTests.ConfirmIfStillStanding(root);
+            yield return null;
+
+            Assert.That(
+                runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate,
+                Is.EqualTo(landing),
+                "The Place bullet puts her on the space she clicked - the assertion eight complete " +
+                "Play Mode runs could not reach while the discard rider faulted the whole command " +
+                "and rolled the match back onto her staged space. " + Remaining(runtime));
 
             // RULING 30's half: the trigger is armed against HER OWN self-placements and no others.
             // What a journey can hold it to is that the Ultimate is the source of a rule the match

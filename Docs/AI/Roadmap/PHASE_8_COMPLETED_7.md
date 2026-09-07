@@ -59,3 +59,57 @@ Acceptance checks:
 Non-goals: no change to what the log may say - the entry vocabulary, the privacy predicate, the wire and the schema are untouched; no new log content, filter or search; and no permanent connection indicator, which is left as a question for the user rather than answered by this milestone.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z40-unroll-the-match-log-from-the-top-strip-newest-first-and-stop-announcing-a-healthy-connection-completion-evidence).
+### [x] 8.35z43 Roll a refused restore back with the graphs it displaced, not by re-reading them
+
+Discharges the corrective debt milestone 8.35z23 recorded against `RISK-STATE-002`, and carries four smaller structural hardenings that were queued behind it.
+
+Observable outcome: a restore the reader refuses leaves the session refused-and-unchanged rather than half-restored, on the undo and restart paths as well as the restore path; a practice-bot seat driver that is asked to drive a seat it does not own refuses; and a completed hero selection with no composer fails loudly instead of quietly composing nothing.
+
+**The rollback ran the deserializer on the failure path, which is where it is least safe.** `MatchSession.RestoreSnapshot` caught a failed restore and rolled back by RE-DESERIALIZING the pre-image - and a failed restore is exactly the situation where the state being described may be one this build cannot read. The second throw escaped uncaught, after the graphs had already been replaced, leaving a live session holding a half-finished restore where its own contract promises "refused, unchanged".
+
+**The fix needed no new type, and the reason it is available here is structural.** The aggregate already carried the capture/adopt pair the replay path uses, and that pair IS a rollback that cannot fail: a restore REPLACES the graphs and never mutates the ones it displaces, so the old graphs are still intact and reinstalling them is an assignment. A command, by contrast, mutates its graphs in place, and for that a serialized pre-image really is all that is left - which is why the aggregate's own rollback stays exactly as it was for command execution. The same two lines extend to reconstruction (undo and restart), whose catch had the identical fragility; hardening one and leaving its twin would have been half a fix. A second property fell out unlooked for: the old rollback replaced the live authorities with deserialized copies even on a REFUSAL, so "refused, unchanged" silently swapped every authority object. It is now literally untouched.
+
+**The recorded batch-push finding was WRONG, and the gap was coverage rather than behaviour.** Milestone 8.35z34's site note claimed a batched push could re-enter execution without consulting the answers already given. It has consulted them since milestone 8.8, blamed to the commit that introduced it; what was missing was a test saying so. Three cases now say it, and the stale note is corrected rather than left to mislead the next reader.
+
+**The bot evaluation screening retuned nothing, and that is the honest result.** Three signals measure as inert and one is live with the incumbent weight already jointly best; the one apparent outlier is one match in forty, which is noise. A wrinkle is recorded rather than smoothed over: the default configuration no longer reproduces the recorded phase-A invariance figure, so the standing suite pins the MECHANISM - the decision-change counts - rather than a replay of a number that has moved.
+
+Acceptance checks:
+
+- A restore whose pre-image cannot be read is refused with a typed refusal, leaves the published projection instance and the full transaction state untouched, and a subsequent restore of a readable snapshot succeeds - which a damaged session would fail.
+- The seam that produces an unreadable pre-image is proved still to defeat a deserializing rollback, so the case above cannot pass vacuously.
+- The undo and restart reconstruction path is hardened by the same pair and asserted on the same terms.
+- A practice-bot seat driver refuses a seat it does not own, drives one it does, is absent by default, and does not throw on a per-frame update in any of its three states.
+- A completed hero selection with no composer throws naming the discarded line-up seat by seat.
+- The complete unfiltered dotnet harness passes at the final revision.
+
+Non-goals: no bot weight is retuned and no evaluation signal is added or removed; no change to the aggregate's command-execution rollback, which is a different mechanism; and no reassessment of `RISK-STATE-002` itself, which needs the register's own ownership review.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z43-roll-a-refused-restore-back-with-the-graphs-it-displaced-not-by-re-reading-them-completion-evidence).
+
+### [x] 8.35z44 Sweep the stale placeholder ids, track the shared compile probe, and drop Sabina's phantom clause
+
+The pre-package housekeeping batch: three items the user approved together before the twelve-hero build.
+
+Observable outcome: no shipped comment names a milestone id that was never assigned; the compile probe every worker had been copying privately is a tracked repo artefact that works from any worktree; and the one card clause the roster carried that no printed face supports is gone.
+
+**Blame names the AUTHOR of a comment, not its REFERENT, and five tokens turned on it.** Fifty-eight placeholder tokens were found, of which fifty-five are renamed to the ids their work actually landed under and three are deliberately left. Renaming by authorship alone would have filed five of them under the wrong milestone: four sit in a motion-language file but read "the button pass milestone 8.35x already animates" and name the button system, and one blames to the milestone that merely re-anchored the line while its own sentence says which milestone introduced the rectangle. The discriminator is mechanical and worth reusing - read the sentence, not the blame; where the token is followed by a self-description, the referent is whatever that description names.
+
+**The three left alone are the token quoted AS DATA, and renaming them would make them false.** Each justifies why a hero's content revision was re-based rather than incremented, on the grounds that the placeholder is a claim rather than a milestone and no milestone existed to inherit. The token is the subject of the sentence rather than a provenance prefix. There is an objective discriminator that holds across all fifty-eight: the three quoted ones are marked up as code, and all fifty-five others appear bare.
+
+**The probe is tracked because tracking is what makes it correct.** Seven private copies of it existed across worktrees, and the one the notes called shared no longer worked on any current tree. Its repository root now derives from the probe file's own location rather than from a relative path that silently resolved to the main tree wherever it was copied - so a worktree worker can no longer compile someone else's sources and believe the answer. That fix only works because every worktree inherits its own copy of a tracked file.
+
+**Sabina's phantom sat on a SHARED helper, so it was three cards and not one.** The clause was declared once on the helper that builds Troop Movement, Marching Orders and Path to Victory, and none of the three prints it; the helper's own documentation already contradicted the declaration. Inertness was measured rather than argued: with the declaration restored the live offer surface is unchanged while both structural guards fail. The behavioural case added here therefore guards the ENGINE against growing the route that would give the clause teeth - it would not catch the clause coming back, and saying so plainly is part of the record.
+
+Acceptance checks:
+
+- Every renamed token is verified byte-identical apart from the token itself by reverse substitution, and no executable line moves.
+- The three tokens quoted as data are left, and the reason is recorded where a later sweep will read it.
+- The tracked compile probe runs clean from a worktree and from the main checkout, compiles the whole production and test surface, and is proved able to fail by a negative control.
+- Sabina's repeat offers every legal minion again, including the one it just moved, on a board staging more than one - the smallest board on which the question has a visible answer.
+- The identity oracle reports exactly one moved pin and the other seven byte-identical.
+- The complete unfiltered dotnet harness passes at the final revision.
+
+Non-goals: no behaviour change beyond the removed clause; no renaming of ids on branches not yet landed; and no reassessment of the roster's other repeat bindings, which the ledger row this milestone answers already measured.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z44-sweep-the-stale-placeholder-ids-track-the-shared-compile-probe-and-drop-sabinas-phantom-clause-completion-evidence).
+

@@ -246,13 +246,18 @@ namespace GuardsDigital.Tests.PlayMode
             "'YOUR TURN - RELEASE TO CONTINUE' - the after-attack Fast Travel rider never pauses, " +
             "which is consistent with p.11's own 'if able' silently skipping a May node the engine " +
             "correctly proves infeasible (see the Trailblazer parking above for the trace that clears " +
-            "the Sequence walker of the general case). What is unconfirmed is whether the compact " +
-            "EngagedMirrorStaging arena this journey shares with every other hero's Engaged test " +
-            "actually contains a second Zone at all - if it does not, Fast Travel is legitimately " +
-            "infeasible here and this assertion was written assuming a geometry the staging never " +
-            "promised, which is a fixture question rather than a content one. Confirming either " +
-            "reading needs a direct read of the staged board's Zone membership, deferred to the " +
-            "coordinator. See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 entry.")]
+            "the Sequence walker of the general case). " +
+            "MILESTONE 8.35z52's BURN-DOWN ELIMINATED THE FIXTURE-GEOMETRY READING, which is the half " +
+            "this parking could not decide: the official map declares SEVEN zones (two thrones, three " +
+            "lane zones, two jungles), and EngagedMirrorStaging places both heroes mid-board in the " +
+            "60-space starting battle zone, which the map's own ordered lane makes ADJACENT to both " +
+            "approach zones. So a second Zone exists, SameOrAdjacentZone has a large eligible " +
+            "destination set from the staged space, and the assertion was NOT written against a " +
+            "geometry the staging never promised. What remains is therefore a content or feasibility " +
+            "question rather than a fixture one - why the rider does not pause when its zone scope is " +
+            "satisfiable - and it is left NAMED rather than guessed at, because diagnosing it wants a " +
+            "Play Mode run with a feasibility diagnostic rather than a fixture edit. " +
+            "See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 and 8.35z52 entries.")]
         public IEnumerator ShootAndScoot_ReachesExactlyItsPrintedRangeAndThenOffersHerTheAdjacentZone()
         {
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedSilverarrow);

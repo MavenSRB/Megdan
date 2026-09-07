@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
@@ -342,12 +343,15 @@ namespace GuardsDigital.Presentation.Match
 
                 case MatchLogEntryKind.Move:
                     lines.Add(Line(entry,
-                        $"{HeroName(projection, entry.SubjectHeroId)} MOVED{Route(entry)}"));
+                        $"{HeroName(projection, entry.SubjectHeroId)} MOVED{SpacesPhrase(entry)}"));
                     return;
 
                 case MatchLogEntryKind.FastTravel:
+                    // USER DIRECTIVE (2026-09-08): the directive's own second example is exactly
+                    // this line with no distance at all - see SpacesPhrase's remarks for why a
+                    // zone teleport never states one.
                     lines.Add(Line(entry,
-                        $"{HeroName(projection, entry.SubjectHeroId)} FAST TRAVELED{Route(entry)}"));
+                        $"{HeroName(projection, entry.SubjectHeroId)} FAST TRAVELED"));
                     return;
 
                 case MatchLogEntryKind.Attack:
@@ -440,7 +444,8 @@ namespace GuardsDigital.Presentation.Match
 
                 case MatchLogEntryKind.DisplacedMinionCorrected:
                     lines.Add(Line(entry,
-                        $"{MinionName(projection, entry.SubjectMinionId)}'S DISPLACEMENT WAS CORRECTED{Route(entry)}"));
+                        $"{MinionName(projection, entry.SubjectMinionId)}'S DISPLACEMENT WAS " +
+                        $"CORRECTED{SpacesPhrase(entry)}"));
                     return;
 
                 case MatchLogEntryKind.MinionBattleMinionRemoved:
@@ -510,12 +515,35 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
-        private static string Route(MatchLogEntry entry) =>
-            entry.HasOrigin && entry.HasDestination
-                ? $" {entry.Origin} → {entry.Destination}"
-                : entry.HasDestination
-                    ? $" TO {entry.Destination}"
-                    : string.Empty;
+        /// <summary>
+        /// USER DIRECTIVE (2026-09-08, verbatim): "in the history log tray thing. Can you lose the
+        /// coordinates; they dont mean shit to player. Just say Hero-name moved 5 spaces, or hero
+        /// fast traveled." A raw <see cref="HexCoordinate"/> is never player vocabulary; a hex
+        /// distance in spaces is. This reads <see cref="MatchLogEntry.Origin"/> and
+        /// <see cref="MatchLogEntry.Destination"/> ONLY to hand them to the board's own
+        /// <see cref="HexDistanceQuery.Calculate"/> - the exact function the reach/radius machinery
+        /// already measures attack range and push distance with - and then discards the coordinates
+        /// themselves. Neither value is ever interpolated into a line anywhere in this file.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why <see cref="MatchLogEntryKind.FastTravel"/> never calls this.</b> The
+        /// directive's own second example is a Fast Travel line with NO number at all - a zone
+        /// teleport has no hex-by-hex distance a player would recognise as "spaces travelled", so
+        /// the action name alone is the whole player-meaningful fact for that kind.</para>
+        /// <para><b>Only Origin/Destination are read, and only when both are stated.</b> A route
+        /// with just one end stated derives no distance, so this returns nothing - the action name
+        /// alone (e.g. plain "MOVED") is the fact, never a half-invented number.</para>
+        /// </remarks>
+        private static string SpacesPhrase(MatchLogEntry entry)
+        {
+            if (!entry.HasOrigin || !entry.HasDestination)
+            {
+                return string.Empty;
+            }
+
+            var spaces = HexDistanceQuery.Calculate(entry.Origin, entry.Destination);
+            return $" {spaces} {(spaces == 1 ? "SPACE" : "SPACES")}";
+        }
 
         private static string AttackOutcomeWord(MatchLogOutcome outcome)
         {

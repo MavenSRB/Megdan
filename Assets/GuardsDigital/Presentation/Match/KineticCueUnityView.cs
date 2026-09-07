@@ -37,10 +37,28 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>
         /// The most awaited outlines lit at once. The amendment gates this pass on the recorded perf
-        /// thresholds and asks for "few animated elements at once"; a hand of five cards plus a tray
-        /// is the realistic worst case, and this is the hard stop above it.
+        /// thresholds and asks for "few animated elements at once".
+        ///
+        /// <para><b>Milestone 8.35x-allcardsbreath raised this from 8, the LIVE ACCEPTANCE VERDICT
+        /// corrective.</b> The user reported "Not all cards are being animated when waiting for
+        /// submission" - a screenshot with one gold-framed breathing card and the rest static - and
+        /// the cause was this cap. It was sized on "a hand of five cards plus A TRAY" - singular -
+        /// which was the realistic worst case before milestone 8.25 made the shipped match the
+        /// official six-player line-up. Rulebook p.7's commitment is public and simultaneous, so
+        /// every hero's own outstanding commitment shines that hero's rail at once
+        /// (<see cref="AwaitedInputQuery.IsHeroAwaited"/>): six rails, plus the viewed hero's own
+        /// five-card hand, is ELEVEN elements sharing this one budget on the very first round of
+        /// every match a player actually gets - not the rare case, the opening frame. Because
+        /// <see cref="FindAwaitedShineHosts"/> collects hosts in document order and stops at this
+        /// cap, and hero rails are mounted before the hand tray in
+        /// <c>ConfiguredMatchHudRenderer.Build</c>, the six rails filled the old budget first and
+        /// the viewer's own hand cards arriving after them in the query were silently never handed
+        /// to <see cref="Light"/> at all - left at the full resting gold painted once and never
+        /// touched again, which is indistinguishable from "static" beside the few cards that fit.
+        /// Sixteen is the true eleven-element worst case with the same two-element headroom the
+        /// original 8 kept above its own six-element estimate.</para>
         /// </summary>
-        public const int MaxBreathingShineElements = 8;
+        public const int MaxBreathingShineElements = 16;
 
         private const string OverlayName = "gd-kinetic-overlay";
         // Milestone 8.35z9 retired `ShineElementName = "gd-card-shine"` from here: that name belongs

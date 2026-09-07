@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -1142,6 +1143,187 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(line.IsHeader, Is.EqualTo(expected.IsHeader),
                     $"Case {index} ({expected.Entry.Kind})'s header styling.");
                 Assert.That(line.Sequence, Is.EqualTo(expected.Entry.Sequence));
+            }
+        }
+
+        // -------------------------------------------------------------------------------------
+        // USER DIRECTIVE (2026-09-08, log-tray wording, verbatim): "in the history log tray
+        // thing. Can you lose the coordinates; they dont mean shit to player. Just say
+        // Hero-name moved 5 spaces, or hero fast traveled." The six cases below pin the new
+        // wording for every MatchLogEntryKind that used to interpolate a raw HexCoordinate
+        // (Move, FastTravel, DisplacedMinionCorrected - the audited full set, see
+        // MatchLogFormatter.SpacesPhrase's remarks) and the regex guard is the durable
+        // regression: it fails if ANY kind, present or future, ever prints the "(Q, R)" shape
+        // HexCoordinate.ToString states.
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The directive's own first example, reproduced as a fixture: the two endpoints are
+        /// exactly 3 spaces apart under the board's own <see cref="HexDistanceQuery"/>, and the
+        /// rendered line states that number and the hero's name - never the two coordinates the
+        /// entry actually carries.
+        /// </summary>
+        [Test]
+        public void Move_RendersHeroNameAndHexDistanceInSpaces_NeverStatesRawCoordinates()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First();
+            var origin = new HexCoordinate(0, 0);
+            var destination = new HexCoordinate(0, 3);
+            Assert.That(HexDistanceQuery.Calculate(origin, destination), Is.EqualTo(3),
+                "The fixture's own two endpoints, pinned so the expected string below is legible.");
+
+            var entry = new MatchLogEntry(
+                1, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero.HeroId,
+                origin: origin, destination: destination, hasOrigin: true, hasDestination: true);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { entry }, MatchUndoMarker.None);
+
+            var lines = MatchLogFormatter.ComposeOldestFirst(projection);
+
+            Assert.That(lines, Has.Count.EqualTo(1));
+            Assert.That(lines[0].Text,
+                Is.EqualTo($"{hero.DisplayName.ToUpperInvariant()} MOVED 3 SPACES"));
+        }
+
+        /// <summary>A one-space move states the singular noun, not "1 SPACES".</summary>
+        [Test]
+        public void Move_OneSpace_UsesTheSingularNoun()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First();
+            var origin = new HexCoordinate(0, 0);
+            var destination = new HexCoordinate(1, 0);
+            Assert.That(HexDistanceQuery.Calculate(origin, destination), Is.EqualTo(1));
+
+            var entry = new MatchLogEntry(
+                1, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero.HeroId,
+                origin: origin, destination: destination, hasOrigin: true, hasDestination: true);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { entry }, MatchUndoMarker.None);
+
+            var lines = MatchLogFormatter.ComposeOldestFirst(projection);
+
+            Assert.That(lines[0].Text,
+                Is.EqualTo($"{hero.DisplayName.ToUpperInvariant()} MOVED 1 SPACE"));
+        }
+
+        /// <summary>
+        /// A Move entry with no stated route (the defensive shape the constructor still allows,
+        /// even though today's projection never produces it - see MatchLogProjection.MoveFold)
+        /// derives no distance, so the action name alone is the whole fact: never a half-invented
+        /// number standing in for a route that was never recorded.
+        /// </summary>
+        [Test]
+        public void Move_WithNoStatedRoute_RendersTheActionNameAlone()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First();
+            var entry = new MatchLogEntry(1, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero.HeroId);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { entry }, MatchUndoMarker.None);
+
+            var lines = MatchLogFormatter.ComposeOldestFirst(projection);
+
+            Assert.That(lines[0].Text, Is.EqualTo($"{hero.DisplayName.ToUpperInvariant()} MOVED"));
+        }
+
+        /// <summary>
+        /// The directive's own second example: "hero fast traveled", with NO number - a zone
+        /// teleport has no hex-by-hex distance a player would recognise as spaces travelled. This
+        /// holds even when the entry's own two endpoints ARE five spaces apart, proving the kind
+        /// itself (not merely an absent route) is what suppresses the phrase.
+        /// </summary>
+        [Test]
+        public void FastTravel_NeverStatesASpacesCount_RegardlessOfWhetherARouteWasRecorded()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First();
+            var withRoute = new MatchLogEntry(
+                1, MatchLogEntryKind.FastTravel, 1, 1, subjectHeroId: hero.HeroId,
+                origin: new HexCoordinate(0, 0), destination: new HexCoordinate(5, 5),
+                hasOrigin: true, hasDestination: true);
+            var withoutRoute = new MatchLogEntry(
+                2, MatchLogEntryKind.FastTravel, 1, 1, subjectHeroId: hero.HeroId);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { withRoute, withoutRoute }, MatchUndoMarker.None);
+
+            var lines = MatchLogFormatter.ComposeOldestFirst(projection);
+
+            var expected = $"{hero.DisplayName.ToUpperInvariant()} FAST TRAVELED";
+            Assert.That(lines[0].Text, Is.EqualTo(expected),
+                "Five stated spaces apart, and still no number - a teleport is never measured in " +
+                "spaces.");
+            Assert.That(lines[1].Text, Is.EqualTo(expected));
+        }
+
+        /// <summary>
+        /// The one other kind that used to interpolate a route (rulebook p.18's correction of a
+        /// minion displaced off a legal space) gets the identical spaces treatment as Move.
+        /// </summary>
+        [Test]
+        public void DisplacedMinionCorrected_RendersHexDistanceInSpaces_NeverStatesRawCoordinates()
+        {
+            var session = CreateSession();
+            var minion = new MinionId("probe-minion-log-wording");
+            var origin = new HexCoordinate(0, 0);
+            var destination = new HexCoordinate(2, -1);
+            Assert.That(HexDistanceQuery.Calculate(origin, destination), Is.EqualTo(2));
+
+            var entry = new MatchLogEntry(
+                1, MatchLogEntryKind.DisplacedMinionCorrected, 1, 1, subjectMinionId: minion,
+                origin: origin, destination: destination, hasOrigin: true, hasDestination: true);
+            var projection = new MatchLogReadModel(
+                session.Projection, new[] { entry }, MatchUndoMarker.None);
+
+            var lines = MatchLogFormatter.ComposeOldestFirst(projection);
+
+            Assert.That(lines[0].Text, Is.EqualTo("A MINION'S DISPLACEMENT WAS CORRECTED 2 SPACES"));
+        }
+
+        /// <summary>
+        /// THE DURABLE REGRESSION. No rendered match-log line may ever match the "(Q, R)" shape
+        /// <see cref="HexCoordinate.ToString"/> prints, on any of the three coordinate-carrying
+        /// kinds, stated route or not, plus the standing undo marker line alongside them. A future
+        /// kind - or a reverted call site - that reintroduces the printed shape fails this
+        /// regardless of which line it appears on.
+        /// </summary>
+        [Test]
+        public void NoRenderedMatchLogLine_EverMatchesARawCoordinatePattern()
+        {
+            var session = CreateSession();
+            var hero = session.Projection.Setup.Heroes.First().HeroId;
+            var minion = new MinionId("probe-minion-log-wording");
+            var farOrigin = new HexCoordinate(-3, 4);
+            var farDestination = new HexCoordinate(2, -6);
+            var sequence = 1;
+
+            var entries = new[]
+            {
+                new MatchLogEntry(
+                    sequence++, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero,
+                    origin: farOrigin, destination: farDestination,
+                    hasOrigin: true, hasDestination: true),
+                new MatchLogEntry(sequence++, MatchLogEntryKind.Move, 1, 1, subjectHeroId: hero),
+                new MatchLogEntry(
+                    sequence++, MatchLogEntryKind.FastTravel, 1, 1, subjectHeroId: hero,
+                    origin: farOrigin, destination: farDestination,
+                    hasOrigin: true, hasDestination: true),
+                new MatchLogEntry(
+                    sequence++, MatchLogEntryKind.DisplacedMinionCorrected, 1, 1,
+                    subjectMinionId: minion, origin: farOrigin, destination: farDestination,
+                    hasOrigin: true, hasDestination: true),
+            };
+            var projection = new MatchLogReadModel(session.Projection, entries, MatchUndoMarker.Of(hero, 1));
+
+            var viewModel = MatchLogFormatter.CreateViewModel(projection, isOpen: true);
+            var coordinatePattern = new Regex(@"\(\s*-?\d+\s*,\s*-?\d+\s*\)");
+
+            Assert.That(viewModel.Lines, Is.Not.Empty);
+            foreach (var line in viewModel.Lines)
+            {
+                Assert.That(coordinatePattern.IsMatch(line.Text), Is.False,
+                    $"'{line.Text}' reads like it still carries a raw hex coordinate.");
             }
         }
 

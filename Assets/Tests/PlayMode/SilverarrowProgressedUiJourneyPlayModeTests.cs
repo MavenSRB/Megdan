@@ -218,12 +218,19 @@ namespace GuardsDigital.Tests.PlayMode
             "PARKED at milestone 8.35z46's dealing. The Radius 4 disk candidate count reads 1 where " +
             "RULING 8 (any hero in the disk, self included) predicts 2 - the enemy and Silverarrow " +
             "herself. The sibling journey below (FaeHealing_RetrievesACardForSilverarrowHerself) shares " +
-            "this staging and fails at Commit before reaching the same disk, so the two share one " +
-            "unconfirmed root: either the staged distance between the two heroes exceeds Radius 4 on " +
-            "this particular Tier II staging (a fixture-geometry question), or the candidate query is " +
-            "narrower than RULING 8 states for a NEWLY-DEALT hero's own disk (a content question). " +
-            "Distinguishing the two needs a direct board-distance read the checklist reserves for the " +
-            "coordinator. See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 entry.")]
+            "this staging and fails at Commit before reaching the same disk. " +
+            "MILESTONE 8.35z52's BURN-DOWN SETTLED THE FORK, and it is NOT the fixture: every staged " +
+            "Silverarrow scene - this Tier II arm included - is restaged by EngagedMirrorStaging, " +
+            "which by CONSTRUCTION returns only a board where the two heroes stand EXACTLY TWO SPACES " +
+            "apart (it iterates free neighbours and returns on the first pair whose HexDistanceQuery " +
+            "reads 2, and throws rather than staging anything else). Two is well inside Radius 4, so " +
+            "both heroes are in the disk and the staged-distance reading is false by construction. " +
+            "What stands is therefore the CONTENT question this parking named as the alternative: the " +
+            "candidate query admits one hero where RULING 8 (any hero in the disk, self included) " +
+            "predicts two, so the disk is excluding a subject the ruling admits. That is a rules-side " +
+            "correction with an identity re-pin behind it rather than a fixture edit, so it is left " +
+            "NAMED rather than smuggled into a package cut. " +
+            "See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 and 8.35z52 entries.")]
         public IEnumerator FaeHealing_RetrievesACardForTheEnemyHeroItNamed()
         {
             yield return LoadStagedScene(

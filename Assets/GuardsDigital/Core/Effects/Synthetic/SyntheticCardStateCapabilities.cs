@@ -110,6 +110,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var chooser = Chooser(context);
+
+                // A SENTENCE WHOSE SUBJECT WAS NEVER NAMED HAS NOTHING TO DO, AND IT HAS TO SAY SO
+                // RATHER THAN THROW. This capability's hero is routinely bound to the output of a
+                // preceding selection - Misa's Power Overwhelming composes "an enemy hero adjacent to
+                // you discards a card, if able" as exactly that - and such a selection is written
+                // `EffectFailurePolicy.IfAble` precisely because it may name nobody. When it does, this
+                // input arrives unbound, and <see cref="Criteria"/> refuses an undefined owner by
+                // construction.
+                //
+                // A THROW IS NOT A FAILURE RESULT, so the node's own failure policy cannot absorb one.
+                // It escapes the whole resolution, faults the command at the aggregate's commit
+                // boundary, and the match is rolled back to a state byte-identical to the one the
+                // player was already looking at - which is indistinguishable, at the surface, from an
+                // offered control that simply does nothing when pressed. The answer was legal and had
+                // already resolved; only the trigger that ran after it faulted.
+                //
+                // <see cref="AnticipateCandidates"/> has stated this same rule since milestone 8.21,
+                // which is why every OFFER derived from an unnamed subject was already correct and only
+                // the executing path faulted. This is that rule stated on the path that resolves, and
+                // it is the whole of the fix.
+                //
+                // DeclinedOptional rather than the empty-hand arm below, and the difference is the
+                // point: an empty hand is a real hero who was unable, which revision 2 reports through
+                // UnableToDiscardOutput; no hero at all is nobody to report anything about, so this
+                // publishes no fact and a reader binding that output reads the absence it already reads
+                // as false.
+                if (!chooser.IsDefined)
+                {
+                    return EffectExecutionResult.DeclinedOptional();
+                }
+
                 var offer = ColorRestrictedDiscard.Offer(
                     Criteria(chooser),
                     EffectChooserRole.None,
@@ -152,11 +183,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                // The same unnamed subject, refused rather than thrown. This path is only reached when
+                // Execute opened a choice, which now requires a defined chooser - so an answer arriving
+                // against an unbound frame is a stale or tampered one, and it is refused loudly instead
+                // of faulting the command that carries it.
+                var chooser = Chooser(context);
+                if (!chooser.IsDefined)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
                 // Re-derived, not trusted. The answer is checked against the hand as it stands now, so
                 // a card discarded, played, or otherwise moved between the offer and the answer is
                 // refused rather than discarded a second time. Nothing is mutated on that path.
                 var result = ColorRestrictedDiscard.Resolve(
-                    Criteria(Chooser(context)),
+                    Criteria(chooser),
                     selected[0].CardInstanceId,
                     context.CardState.Definitions,
                     context.CardState.Instances);
