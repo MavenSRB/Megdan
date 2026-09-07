@@ -90,7 +90,26 @@ namespace GuardsDigital.Core.Diagnostics
         GameEnded = 28,
 
         /// <summary>A commitment was revealed. Only ever the revealed form.</summary>
-        CardRevealed = 29
+        CardRevealed = 29,
+
+        /// <summary>
+        /// Milestone 8.35z61. Rulebook p.13's second line: "If the defeated hero had an
+        /// unresolved card, it is resolved, without performing an action."
+        ///
+        /// <para>THE WHOLE POINT OF THIS ROW IS THAT NOTHING ELSE SAYS IT. The engine has applied
+        /// that line since milestone 7.4 and publishes
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEventKind.HeroUnresolvedCardResolved"/>
+        /// when it does - but no log kind carried it, so the card silently changed to Resolved,
+        /// Initiative never selected its owner, and the player was never asked for anything. From
+        /// that player's chair the game passed them over and the log said nothing at all, which is
+        /// exactly what the 2026-09-06 six-player playtest reported and could not explain
+        /// afterwards.</para>
+        ///
+        /// <para>It is a hero row rather than a card row: the event names the defeated hero, and
+        /// which card was eaten is private commitment content this channel does not carry - the
+        /// same line <see cref="CardRevealed"/> draws.</para>
+        /// </summary>
+        HeroCardResolvedWithoutAction = 30
     }
 
     /// <summary>

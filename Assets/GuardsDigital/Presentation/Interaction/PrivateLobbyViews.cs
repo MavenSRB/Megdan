@@ -1290,6 +1290,14 @@ namespace GuardsDigital.Presentation.Interaction
             session = new PrivateSessionHost(
                 compositionRoot.Runtime.Host, compositionRoot.Runtime.SessionIdentity,
                 sessionKey, listener, new CryptoNonceSource());
+
+            // Milestone 8.35z61. The gameplay narration, on the lobby host too. The
+            // 2026-09-06 playtest was hosted through THIS path, and a narration attached only to
+            // the smoke driver would have been missing from exactly the session that needed it.
+            session.AttachGameplayNarration(
+                GameplayNarrationFile.TryOpen(),
+                compositionRoot.Runtime.SessionIdentity.BuildIdentity,
+                compositionRoot.Runtime.SessionIdentity.MapId);
             // Milestone 8.35z37. The seam, attached at the one moment it can be: the host
             // exists, so the selection stage its seats are built from exists, and nothing has been
             // admitted yet. From here the session owns WHEN the match is composed, and this scene

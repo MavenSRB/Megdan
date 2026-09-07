@@ -426,6 +426,16 @@ namespace GuardsDigital.Presentation.Match
                     lines.Add(Line(entry, $"{HeroName(projection, entry.SubjectHeroId)} RESPAWNED"));
                     return;
 
+                // Milestone 8.35z61. p.13's second line, said out loud. The sentence names
+                // the CAUSE as well as the fact, because the fact alone is what the playtest could
+                // not explain: a player whose card resolved without them being asked for anything
+                // needs to read why, and "was defeated" is the whole of the why.
+                case MatchLogEntryKind.HeroCardResolvedWithoutAction:
+                    lines.Add(Line(entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)}'S CARD RESOLVED WITH NO " +
+                        "ACTION - DEFEATED BEFORE ITS TURN"));
+                    return;
+
                 case MatchLogEntryKind.TeamLifeSpent:
                 {
                     var hero = HeroNameOrNull(projection, entry.SubjectHeroId);

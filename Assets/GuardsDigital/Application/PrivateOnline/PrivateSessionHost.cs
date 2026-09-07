@@ -292,6 +292,12 @@ namespace GuardsDigital.Application
         /// connection is still correctly attached to.
         /// </remarks>
         private IMatchHost matchHost;
+
+        /// <summary>
+        /// Milestone 8.35z61. The on-disk gameplay narration, or null when none is
+        /// attached. See <see cref="AttachGameplayNarration"/>.
+        /// </summary>
+        private GameplayNarrationRecorder narration;
         private readonly PrivateSessionIdentity identity;
         private readonly string sessionKey;
         private readonly IPrivateSessionOutbox outbox;
@@ -1910,6 +1916,11 @@ namespace GuardsDigital.Application
                         ReferenceEquals(record, initiatingRecord) ? initiatingCorrelation : 0);
                 }
             }
+
+            // Milestone 8.35z61. Every publish is a point the authoritative state moved, so
+            // it is the honest place to ask the narration what is new. Written after the seats are
+            // served: the file records what the table was actually shown.
+            NarrateProgress();
         }
 
         /// <summary>
@@ -1919,6 +1930,75 @@ namespace GuardsDigital.Application
         /// wherever state moved, not only where a wire submission moved it.
         /// </summary>
         public void RepublishProjections() => PublishProjections();
+
+        /// <summary>
+        /// Milestone 8.35z61. Attaches the on-disk gameplay narration, writing its header
+        /// immediately and every row the match has already produced.
+        /// </summary>
+        /// <remarks>
+        /// <para>Optional, and null by default, so a host composed without one behaves exactly as it
+        /// did. It is attached HERE rather than in the Unity drivers because both host paths - the
+        /// smoke driver and the real lobby - go through this class, and a narration wired into one
+        /// of them would be missing from the other. That is how the 2026-09-06 playtest came to have
+        /// a host log with no game in it.</para>
+        /// <para>The recorder is a reader of the authoritative projection and never a second source
+        /// of events, so nothing here can make the file and the in-game log disagree.</para>
+        /// </remarks>
+        public void AttachGameplayNarration(
+            GameplayNarrationRecorder recorder,
+            string buildIdentity = null,
+            string mapIdentity = null)
+        {
+            narration = recorder;
+            if (narration == null)
+            {
+                return;
+            }
+
+            // Who is sitting where, as the host knows it at this moment. "Held" means a connection
+            // holds the seat now - which is the only occupancy fact this layer owns; a seat filled
+            // by a local test driver holds its seat exactly as a person does, so the header states
+            // occupancy rather than claiming to know a human from a bot.
+            var introductions =
+                new List<GameplaySeatIntroduction>();
+            foreach (var seat in matchHost.Seats.Seats)
+            {
+                if (!seat.HeroId.IsDefined)
+                {
+                    continue;
+                }
+
+                var held = holds.TryGetValue(seat.Id, out var hold) &&
+                    hold.State == SeatOccupancyState.Claimed;
+                introductions.Add(
+                    new GameplaySeatIntroduction(
+                        seat.Id.Value, seat.HeroId.Value, held));
+            }
+
+            narration.WriteHeader(
+                buildIdentity ?? identity.BuildIdentity,
+                mapIdentity ?? identity.MapId,
+                introductions);
+            NarrateProgress();
+        }
+
+        /// <summary>
+        /// Writes whatever the match has narrated since the last time this was asked. Called after
+        /// every publish, which is every point the authoritative state moved.
+        /// </summary>
+        private void NarrateProgress()
+        {
+            if (narration == null || matchHost == null)
+            {
+                return;
+            }
+
+            var projection = matchHost.Projection;
+            if (projection != null)
+            {
+                narration.Observe(projection.Version, projection.MatchLog);
+            }
+        }
 
         private NetworkEnvelope NextEnvelope(ConnectionRecord record, long correlation)
         {
@@ -2165,6 +2245,27 @@ namespace GuardsDigital.Application
             events.Add(new PrivateSessionEventRecord(
                 kind, ordinal, seat, hero, teamSide, reason, ClaimedSeatCount, TotalSeats,
                 submissionRejection, agreementRejection, matchHost.Version, submissionId));
+
+            // Milestone 8.35z61. The session layer's own events - refusals, resyncs,
+            // reconnects - written INLINE among the gameplay rows. A refused submission produces no
+            // gameplay row at all, so on the evidence of the narration alone a seat whose input was
+            // rejected would look identical to a seat that was never asked. These lines are what
+            // tell those two apart, and the 2026-09-06 playtest is the case that needed them.
+            narration?.WriteSessionEvent(
+                matchHost.Version,
+                kind.ToString(),
+                "seat=" + (seat.IsDefined ? seat.Value : "(none)") +
+                " hero=" + (hero.IsDefined ? hero.Value : "(none)") +
+                " ordinal=" + ordinal.ToString(CultureInfo.InvariantCulture) +
+                (reason == SessionRejectionReason.None
+                    ? string.Empty
+                    : " reason=" + reason) +
+                (submissionRejection == SeatSubmissionRejectionReason.None
+                    ? string.Empty
+                    : " submissionRefused=" + submissionRejection) +
+                (agreementRejection == TeamAgreementSubmissionRejectionReason.None
+                    ? string.Empty
+                    : " agreementRefused=" + agreementRejection));
         }
     }
 }

@@ -88,6 +88,11 @@ namespace GuardsDigital.Core.Diagnostics
             ActionPrefix + nameof(CardActionResolutionEventKind.HeroRemovalCompleted);
         private static readonly string HeroRemovalPrevented =
             ActionPrefix + nameof(CardActionResolutionEventKind.HeroRemovalPrevented);
+
+        // Milestone 8.35z61. p.13's second line, which the engine has been publishing since
+        // milestone 7.4 with nothing reading it. See MatchLogEntryKind.HeroCardResolvedWithoutAction.
+        private static readonly string HeroUnresolvedCardResolved =
+            ActionPrefix + nameof(CardActionResolutionEventKind.HeroUnresolvedCardResolved);
         private static readonly string TeamLifeSpent =
             ActionPrefix + nameof(CardActionResolutionEventKind.TeamLifeSpent);
         private static readonly string TeamEliminated =
@@ -458,6 +463,21 @@ namespace GuardsDigital.Core.Diagnostics
                         subjectHeroId: Hero(references, entry),
                         subjectCardInstanceId: Card(references));
 
+                // Milestone 8.35z61. THE SUBJECT IS THE TARGET, NOT THE ACTOR. On every
+                // card-action event `hero` is the acting hero and `target` is the hero the action was
+                // about, and this row is about the hero who was defeated and thereby passed over -
+                // the attacker is already named by the Defeat's own rows. Reading `hero` here would
+                // have printed the attacker's name beside "their card resolved with no action",
+                // which is the one sentence in this log that has to name the right player.
+                //
+                // `card` is deliberately NOT read: on this event it is the ATTACKER's source card,
+                // not the card that was eaten. The eaten card rides the event as its own field and
+                // is commitment content this channel does not carry - the line CardRevealed draws.
+                case MatchLogEntryKind.HeroCardResolvedWithoutAction:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(references, "target", value => new HeroId(value)));
+
                 case MatchLogEntryKind.RoundStarted:
                 case MatchLogEntryKind.RoundCompleted:
                 case MatchLogEntryKind.TurnStarted:
@@ -489,6 +509,11 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == HeroDefeatRecorded) return MatchLogEntryKind.HeroDefeated;
             if (type == HeroRemovalCompleted) return MatchLogEntryKind.HeroRemoved;
             if (type == HeroRemovalPrevented) return MatchLogEntryKind.HeroRemovalPrevented;
+            if (type == HeroUnresolvedCardResolved)
+            {
+                return MatchLogEntryKind.HeroCardResolvedWithoutAction;
+            }
+
             if (type == HeroRespawned) return MatchLogEntryKind.HeroRespawned;
             if (type == TeamLifeSpent) return MatchLogEntryKind.TeamLifeSpent;
             if (type == TeamEliminated) return MatchLogEntryKind.TeamEliminated;

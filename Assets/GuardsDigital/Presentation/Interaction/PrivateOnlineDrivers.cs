@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.IO;
 using GuardsDigital.Application;
 using GuardsDigital.Network;
 using UnityEngine;
@@ -16,6 +17,62 @@ namespace GuardsDigital.Presentation.Interaction
     /// ordinals and seats by their ids, which is the whole diagnostic identity the amended
     /// architecture record allows.
     /// </remarks>
+    /// <summary>
+    /// Milestone 8.35z61. Opens the host's gameplay narration file, beside the player log
+    /// the host already writes.
+    /// </summary>
+    /// <remarks>
+    /// <para>The path decision lives here rather than in the session layer because it is the only
+    /// engine-specific part of the narration: everything about WHAT is written is
+    /// <see cref="GameplayNarrationLog"/>'s, and this only decides where the bytes land.</para>
+    /// <para><b>It never stops a match from being hosted.</b> A read-only directory or a locked file
+    /// costs the session its narration and nothing else - the host says so with a marker and carries
+    /// on, because a game that refused to start over its own logging would be a worse failure than
+    /// the one this closes.</para>
+    /// </remarks>
+    internal static class GameplayNarrationFile
+    {
+        public static GameplayNarrationRecorder TryOpen()
+        {
+            try
+            {
+                var directory = DirectoryBesideThePlayerLog();
+                var path = Path.Combine(
+                    directory,
+                    "match-" + DateTime.UtcNow.ToString(
+                        "yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) + ".log");
+
+                // FileShare.ReadWrite so the file can be tailed, and copied off, while the match
+                // that is writing it is still being played.
+                var stream = new FileStream(
+                    path, FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
+                PrivateOnlineMarkers.Log("GAMEPLAY_LOG path=" + path);
+                return new GameplayNarrationRecorder(new StreamWriter(stream));
+            }
+            catch (Exception exception)
+            {
+                PrivateOnlineMarkers.Log(
+                    "GAMEPLAY_LOG_UNAVAILABLE reason=" + exception.GetType().Name);
+                return null;
+            }
+        }
+
+        private static string DirectoryBesideThePlayerLog()
+        {
+            var consoleLog = UnityEngine.Application.consoleLogPath;
+            if (!string.IsNullOrEmpty(consoleLog))
+            {
+                var directory = Path.GetDirectoryName(consoleLog);
+                if (!string.IsNullOrEmpty(directory) && Directory.Exists(directory))
+                {
+                    return directory;
+                }
+            }
+
+            return UnityEngine.Application.persistentDataPath;
+        }
+    }
+
     internal static class PrivateOnlineMarkers
     {
         public const string Prefix = "GUARDS_ONLINE:";
@@ -218,6 +275,11 @@ namespace GuardsDigital.Presentation.Interaction
             session = new PrivateSessionHost(
                 compositionRoot.Runtime.Host, identity, options.SessionKey, listener,
                 new CryptoNonceSource());
+
+            // Milestone 8.35z61. The gameplay narration, on both host paths. Attached
+            // before any connection is admitted so the file opens with the match's own first row.
+            session.AttachGameplayNarration(
+                GameplayNarrationFile.TryOpen(), identity.BuildIdentity, identity.MapId);
             // Milestone 8.35o. The dedicated host's one typed command, "release <seat>" - the
             // escape hatch milestone 8.35k built but left with no way for a human to reach it. The
             // reader owns its own background thread, so polling it every frame below never blocks
