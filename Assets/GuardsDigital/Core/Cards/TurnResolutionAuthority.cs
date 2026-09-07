@@ -1278,6 +1278,38 @@ namespace GuardsDigital.Core.Cards
         /// this call - one that opened no question - also returns <c>null</c>, because the turn is then
         /// exactly where it would have been.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.35z50. Starts the borrowed primary a completed card text asked for, at the same
+        /// boundary an owed repeat is started and for the same reason: the frame that asked has
+        /// finished, so the instance it asked for can begin without nesting one resolution inside
+        /// another.
+        ///
+        /// <para><b>The turn spends one action in total.</b> Nothing here touches the turn's action
+        /// budget, which was spent committing the card whose text asked - exactly as p.14's step-1 move
+        /// inside an Attack is part of the Attack rather than an action of its own. That is the
+        /// borrow contract's fifth invariant, and it holds because this hook adds a resolution and
+        /// never a commitment.</para>
+        /// </summary>
+        private TurnResolutionResult? TryStartOwedBorrowedAction(List<TurnResolutionEvent> events)
+        {
+            if (cardActions == null || !cardActions.HasOwedBorrowedAction)
+            {
+                return null;
+            }
+
+            var borrowed = cardActions.StartOwedBorrowedAction(
+                definitions, instances, participants, timing, CurrentModifications(),
+                TieBreakerState, roundIndex, turnIndex);
+            events.AddRange(MaterializeSteps(borrowed.Steps, TurnResolutionEvent.FromSkillAction));
+
+            // Read from what actually stands once the steps have applied, on milestone 8.25e's own
+            // reasoning above: a borrowed instance whose mandatory step the board leaves nothing for
+            // was performed and is over, and reporting it as still standing would strand the actor.
+            return cardActions.HasPendingResolution || cardActions.IsCardTextPageStopped
+                ? TurnResolutionResult.Accept(events)
+                : (TurnResolutionResult?)null;
+        }
+
         private TurnResolutionResult? TryStartOwedAfterActionRepeat(List<TurnResolutionEvent> events)
         {
             if (cardActions == null || !cardActions.HasOwedAfterActionRepeat)
@@ -1410,6 +1442,15 @@ namespace GuardsDigital.Core.Cards
             // is where that instance starts - inside the same command, while the hero it belongs to is
             // still the one Initiative selected and their card is still unresolved. An instance that
             // opens a question of its own leaves the turn exactly where the first one left it.
+            // Milestone 8.35z50. The borrow is offered its boundary BEFORE the repeat, because a
+            // borrowed primary is part of resolving the text that asked for it, where an owed repeat
+            // is a second instance of an action that has already finished.
+            var borrowed = TryStartOwedBorrowedAction(triggerEvents);
+            if (borrowed.HasValue)
+            {
+                return borrowed.Value;
+            }
+
             var repeated = TryStartOwedAfterActionRepeat(triggerEvents);
             if (repeated.HasValue)
             {
@@ -1502,6 +1543,15 @@ namespace GuardsDigital.Core.Cards
             if (pushed.HasValue)
             {
                 return pushed.Value;
+            }
+
+            // Milestone 8.35z50. The borrow is offered its boundary BEFORE the repeat, because a
+            // borrowed primary is part of resolving the text that asked for it, where an owed repeat
+            // is a second instance of an action that has already finished.
+            var borrowed = TryStartOwedBorrowedAction(events);
+            if (borrowed.HasValue)
+            {
+                return borrowed.Value;
             }
 
             var repeated = TryStartOwedAfterActionRepeat(events);

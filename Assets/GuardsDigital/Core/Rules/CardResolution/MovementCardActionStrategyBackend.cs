@@ -263,10 +263,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             // Milestone 8.23. A null offer list is a repeated instance, which p.10 creates by rule and
             // never offers; the two printed contexts still come through the offers that produced them.
+            // Milestone 8.35z50 admits `TextGranted`, the stamp a borrowed primary carries, so that
+            // borrowing a card whose printed primary is a Movement performs that Movement rather than
+            // being refused at the door. It is admitted BESIDE the two printed contexts rather than
+            // through the repeated-instance arm above, because a borrow arrives with a real offer -
+            // one naming the borrowed card - where a p.10 repeat arrives with none.
             var isRepeatedInstance = authoritativeOffers == null;
             if (!isRepeatedInstance &&
                 offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
-                offer.InvocationContext != ActionInvocationContext.PrintedSecondary)
+                offer.InvocationContext != ActionInvocationContext.PrintedSecondary &&
+                offer.InvocationContext != ActionInvocationContext.TextGranted)
             {
                 return CardActionResolutionResult.Reject(
                     CardActionResolutionRejectionReason.UnsupportedInvocationContext,

@@ -655,6 +655,124 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        // -----------------------------------------------------------------------------------------
+        // Milestone 8.35z50. EnclosingAttackFacts.TargetWasRemoved and the capability
+        // that publishes its negation for Ursafar's three removal Reds - "and the target was not
+        // removed". Both are read live off board occupancy rather than stored, so a desk test can
+        // put a target on or off the board and read the answer without any hero being dealt.
+        // -----------------------------------------------------------------------------------------
+
+        [Test]
+        public void EnclosingAttackOf_HeroTarget_ReadsSurvivalLiveFromBoardOccupancy()
+        {
+            var board = Board(new HexCoordinate(0, 0), new HexCoordinate(1, 0));
+            var survivingTarget = HeroPendingAttack(Other);
+            var removedTarget = HeroPendingAttack(new HeroId("off-board-hero"));
+
+            Assert.That(
+                CardActionResolutionAuthority.EnclosingAttackOf(
+                    survivingTarget, Array.Empty<CardDefinition>(), board).TargetWasRemoved,
+                Is.False,
+                "Other still occupies the board, so this Attack's target was not removed.");
+            Assert.That(
+                CardActionResolutionAuthority.EnclosingAttackOf(
+                    removedTarget, Array.Empty<CardDefinition>(), board).TargetWasRemoved,
+                Is.True,
+                "A hero this board does not occupy is exactly what step 6's Defeat leaves behind.");
+        }
+
+        [Test]
+        public void EnclosingAttackOf_MinionTarget_ReadsSurvivalLiveFromBoardOccupancy()
+        {
+            var standing = Minion(
+                "still-standing", TeamSide.Blue, StandardMinionType.Melee, new HexCoordinate(1, 0));
+            var board = Board(
+                new HexCoordinate(0, 0), new HexCoordinate(2, 0), new[] { standing });
+            var survivingTarget = MinionPendingAttack(standing.MinionId);
+            var removedTarget = MinionPendingAttack(new MinionId("removed-minion"));
+
+            Assert.That(
+                CardActionResolutionAuthority.EnclosingAttackOf(
+                    survivingTarget, Array.Empty<CardDefinition>(), board).TargetWasRemoved,
+                Is.False);
+            Assert.That(
+                CardActionResolutionAuthority.EnclosingAttackOf(
+                    removedTarget, Array.Empty<CardDefinition>(), board).TargetWasRemoved,
+                Is.True,
+                "A minion no longer present among the board's minions is what step 6's removal " +
+                "leaves behind - Prey Drive's, Prey Abundance's and Feeding Frenzy's own case.");
+        }
+
+        [Test]
+        public void EnclosingAttackOf_WithNoBoardSupplied_DefaultsToNotRemoved_TheSafeDirection()
+        {
+            var target = HeroPendingAttack(Other);
+
+            var facts = CardActionResolutionAuthority.EnclosingAttackOf(
+                target, Array.Empty<CardDefinition>());
+
+            Assert.That(facts.TargetWasRemoved, Is.False,
+                "No board to ask means the removal clause reports the safe answer and composes " +
+                "less rather than more - TargetSurvivedFactIsOwed's own stated direction.");
+        }
+
+        [Test]
+        public void AttackTargetSurvivedCapability_PublishesTheNegationOfTargetWasRemoved()
+        {
+            var board = Board(new HexCoordinate(0, 0), new HexCoordinate(1, 0));
+            var survived = new EnclosingAttackFacts(
+                Actor, Other, default, AttackRangeKind.NonRanged, new HexCoordinate(1, 0),
+                targetWasRemoved: false);
+            var removed = new EnclosingAttackFacts(
+                Actor, Other, default, AttackRangeKind.NonRanged, new HexCoordinate(1, 0),
+                targetWasRemoved: true);
+            var handler = new EffectCapabilityCatalog(
+                SyntheticAttackTargetSurvivalCapabilities.RegisteredHandlers())
+                .Load(SyntheticAttackTargetSurvivalCapabilities.AttackTargetSurvivedV1);
+
+            var survivedResult = handler.Execute(
+                Context(board, new Dictionary<string, EffectValue>(), enclosingAttack: survived));
+            var removedResult = handler.Execute(
+                Context(board, new Dictionary<string, EffectValue>(), enclosingAttack: removed));
+
+            Assert.That(
+                survivedResult.Outcomes.Single(fact =>
+                    fact.OutputName == SyntheticAttackTargetSurvivalCapabilities.TargetSurvivedOutput)
+                    .Value.BooleanValue,
+                Is.True);
+            Assert.That(
+                removedResult.Outcomes.Single(fact =>
+                    fact.OutputName == SyntheticAttackTargetSurvivalCapabilities.TargetSurvivedOutput)
+                    .Value.BooleanValue,
+                Is.False);
+        }
+
+        private static PendingAttackResolution HeroPendingAttack(HeroId targetHeroId) =>
+            new PendingAttackResolution(
+                new ActionResolutionId("z50-survival-resolution"),
+                new CardInstanceId("z50-survival-card"),
+                new CardDefinitionReference(new CardDefinitionId("z50-survival-definition"), "rev-1"),
+                new ActionDefinitionId("z50-survival-action"),
+                Actor,
+                ActionInvocationContext.PrintedPrimary,
+                new ActionResolutionStepId("attack-outcome-comparison"),
+                AttackResolutionPhase.CompareOutcome,
+                AttackTarget.Hero(targetHeroId),
+                new ValueResult(PrintedValueChannel.Attack, Array.Empty<ValueContribution>()));
+
+        private static PendingAttackResolution MinionPendingAttack(MinionId targetMinionId) =>
+            new PendingAttackResolution(
+                new ActionResolutionId("z50-survival-resolution"),
+                new CardInstanceId("z50-survival-card"),
+                new CardDefinitionReference(new CardDefinitionId("z50-survival-definition"), "rev-1"),
+                new ActionDefinitionId("z50-survival-action"),
+                Actor,
+                ActionInvocationContext.PrintedPrimary,
+                new ActionResolutionStepId("minion-defeat"),
+                AttackResolutionPhase.ResolveMinionDefeat,
+                AttackTarget.Minion(targetMinionId),
+                null);
+
         private static HexCoordinate HeroAt(AdjacentMoveAuthority board, HeroId id) =>
             board.Occupancies.Single(value => value.HeroId.Equals(id)).Coordinate;
 

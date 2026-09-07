@@ -124,6 +124,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // join the one registration list a snapshot compares, and the rest keep waiting for
                 // the hero whose face names them.
                 .Concat(SyntheticRosterCapabilities.RegisteredHandlers())
+                // Milestone 8.35z50, the milestone that deals Ursafar the Savage. Three files whose
+                // whole contents waited for him, joining on the same half of the rule the lines above
+                // state: `hero-condition@1` is the enraged predicate twelve of his faces read,
+                // `borrow-primary-action@1` is the contract Angry Roar and his two borrowing Greens
+                // start, and `attack-target-survived@1` is the reading his three removal Reds gate on.
+                // Each is `RegisteredHandlers` rather than a bare `Handlers()`, which is what keeps the
+                // first two from registering Tali's half of their shared vocabulary before she is
+                // dealt - the distinction milestone 8.35z33's comment above exists to protect.
+                .Concat(SyntheticConditionCapabilities.RegisteredHandlers())
+                .Concat(SyntheticBorrowedActionCapabilities.RegisteredHandlers())
+                .Concat(SyntheticAttackTargetSurvivalCapabilities.RegisteredHandlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

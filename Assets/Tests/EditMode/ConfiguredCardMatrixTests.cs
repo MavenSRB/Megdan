@@ -394,7 +394,20 @@ namespace GuardsDigital.Tests.EditMode
                     // `fast-travel@1`. `choose-line-destination@1`, her other new-to-her contract, is
                     // already registered and already proved above by Misa's Windrunner - it is not a
                     // second registration, so it owes no second showcase card.
-                    SyntheticShowcaseHand.CreateRedWithFastTravelSkill(owner)
+                    SyntheticShowcaseHand.CreateRedWithFastTravelSkill(owner),
+                    // Milestone 8.35z50's three, the largest set any dealing has needed, on the same
+                    // division every pair above draws: Ursafar's dealing registers three new handler
+                    // TYPES, and the showcase half of this gate is asked of the type. The Berserker
+                    // reaches `hero-condition@1` - the enraged predicate twelve of his faces read - and
+                    // the Scavenger reaches `borrow-primary-action@1`, the contract Angry Roar and his
+                    // two borrowing Greens start. The Tracker's Attack text reaches
+                    // `attack-target-survived@1`, which needs an enclosing Attack to be about and
+                    // therefore cannot live on a Skill. His fifteen Active-effect creations run on
+                    // ActiveEffectCreationHandler and are admitted by the concat below, which is
+                    // exactly the division this gate draws.
+                    SyntheticShowcaseHand.CreateRedWithHeroConditionSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithBorrowedActionSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithTargetSurvivedRiderText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -470,6 +483,16 @@ namespace GuardsDigital.Tests.EditMode
                 // triggered-effect concat below rather than through a card node, which is what that
                 // concat is there for.
                 .Concat(SilverarrowCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.35z50. Ursafar's printed set is the TENTH, admitted on the same half of
+                // the rule: a capability named by a card a configured match deals is not a deferral.
+                // The other half did the most work it has done for any dealing so far - THREE of his
+                // contracts are new HANDLER TYPES (`hero-condition@1`, `borrow-primary-action@1` and
+                // `attack-target-survived@1`), each proved on its own showcase card above before this
+                // concat admits the faces that name it. His fifteen Active-effect creations owe no
+                // showcase card - they run on ActiveEffectCreationHandler, the type the showcase has
+                // reached since milestone 6.8 - and he contributes no triggered definition at all,
+                // because Unbound Fury prints a permanent ability and declares none.
+                .Concat(UrsafarCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

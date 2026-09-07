@@ -38,7 +38,12 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// The validated 144-card presentation catalog used by both local preparation and runtime lookup.
+    /// The validated presentation catalog used by both local preparation and runtime lookup. It holds
+    /// one entry per dealt definition of every hero this build deals - 180 across ten heroes since
+    /// milestone 8.35z50. The count is stated here without being pinned here: the pin lives in
+    /// `ConfiguredCardArtworkCatalogTests`, and a second copy of it would be a second place to be
+    /// wrong. (This line read 144 for two dealings after it stopped being true, which is why it now
+    /// says where the authority is.)
     /// </summary>
     public sealed class CardArtworkCatalog
     {
@@ -58,7 +63,15 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.35z46. The extraction directory spells her name in camel case,
                 // `SilverArrow` - that extraction's identity, not this project's (SL-10 records that
                 // both printed faces spell it `Silverarrow`, one word, single capital).
-                { "silverarrow", "SilverArrow" }
+                { "silverarrow", "SilverArrow" },
+                // Milestone 8.35z50. His extraction directory spells the name plainly, unlike
+                // Silverarrow's above. THE OMISSION OF THIS ONE LINE IS WORTH RECORDING: his dealing
+                // appended all eighteen artwork rows to the catalog JSON and validated that file, and
+                // every offline tier stayed green, because this map lives in PRESENTATION - which the
+                // Unity-free harness does not compile at all and the one-assembly compile probe can
+                // only compile, never run. The first Unity Edit Mode run failed sixteen cases on it.
+                // A dealing owes BOTH halves: the rows, and the hero this map can address them to.
+                { "ursafar", "Ursafar" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -295,7 +308,7 @@ namespace GuardsDigital.Presentation.Match
 
     /// <summary>
     /// Loads and pins the one tracked catalog against every dealt definition of every hero this build
-    /// deals - nine heroes and 162 cards since milestone 8.35z46 dealt Silverarrow the Pathfinder.
+    /// deals - TEN heroes and 180 cards since milestone 8.35z50 dealt Ursafar the Savage.
     /// </summary>
     public static class ConfiguredCardArtworkCatalog
     {
@@ -325,6 +338,11 @@ namespace GuardsDigital.Presentation.Match
                 // DealtDefinitions, exactly as Dodger's Rusty Razor and Misa's Leaf on the Wind are not
                 // among theirs.
                 .Concat(SilverarrowCardContent.DealtDefinitions)
+                // Milestone 8.35z50. Ursafar's eighteen, on exactly the terms the three rows above
+                // state. Jaws That Bite is p.20's Handicap card and is not among his DealtDefinitions,
+                // exactly as Dodger's Rusty Razor, Misa's Leaf on the Wind and Silverarrow's Keep the
+                // Distance are not among theirs.
+                .Concat(UrsafarCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

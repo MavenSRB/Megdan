@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Cards.Verified
@@ -35,13 +36,15 @@ namespace GuardsDigital.Core.Cards.Verified
     /// step cannot complete, p.14 never reaches step 7 and the grant never lands. The rule is the
     /// engine's own, not a special case written here.</para>
     ///
-    /// <para><b>One shortfall, named rather than hidden.</b> Three Red faces print "and the target was
-    /// not removed" and this build has no fact that answers it - nothing anywhere derives whether an
-    /// Attack's target survived, and a capability handler cannot reach the board to find out. Their
-    /// removal clause is therefore <b>not composed</b>, and
-    /// <see cref="TargetSurvivedFactIsOwed"/> says so out loud so it cannot be mistaken for finished
-    /// work. The direction of the shortfall is the safe one: those cards do less than they print,
-    /// never more.</para>
+    /// <para><b>The former shortfall, now composed - milestone 8.35z50.</b> Three Red faces
+    /// print "and the target was not removed", which phase 1 of this hero left uncomposed because
+    /// nothing anywhere derived whether an Attack's target survived and a capability handler cannot
+    /// reach the board to find out. It can ask now:
+    /// <see cref="GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts.TargetWasRemoved"/> is
+    /// read live off board occupancy at the exact moment "After the attack:" text runs - the same
+    /// answer rulebook p.14 step 6 reached, re-derived rather than stored, so it costs no snapshot
+    /// bytes and moves no schema. <see cref="RemovalGatedOnTargetSurvival"/> names the three faces this
+    /// unlocked.</para>
     /// </summary>
     public static class UrsafarEffectContent
     {
@@ -56,27 +59,30 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string UnboundFuryRuleKind = "UrsafarUnboundFury";
 
         /// <summary>
-        /// The three faces whose "and the target was not removed" clause this build cannot compose, and
-        /// the reason, stated as content so a reader of the definitions finds it without reading a note.
+        /// The three faces whose "and the target was not removed" clause reads whether their own
+        /// Attack's target survived, stated as content so a reader of the definitions finds it without
+        /// reading a note.
         ///
-        /// <para><b>What is missing.</b> Rulebook p.14 step 6 removes the defender if the attack
-        /// succeeded, and step 7 is where these cards ask about it. No fact in this engine records
-        /// whether that happened: <c>EnclosingAttackFacts</c> carries the target's identity, its range
-        /// and the space it stood on before consequences, and nothing else, and a capability handler is
-        /// given no board to look at. <c>attack-took-a-hero@1</c> is the nearest thing and answers a
-        /// different question - whether the target was a hero at all.</para>
-        ///
-        /// <para><b>The costed design, four pieces.</b> (1) A survival fact on
-        /// <c>EnclosingAttackFacts</c> - it is a runtime struct that no card definition reaches, so it
-        /// is outside the content-identity oracle, and it is re-derived rather than serialized, so it
-        /// moves no schema. (2) Its production where step 6 already knows the answer, in the attack
-        /// backend. (3) Its re-derivation in <c>CardActionResolutionAuthority.EnclosingAttackOf</c>, so
-        /// a restored pause reads what live execution read - the discipline this milestone already
-        /// extended once, in the snapshot's candidate re-derivation. (4) A predicate capability over it,
-        /// which then gates the removal exactly as <c>is-flagged@1</c> gates every other branch here.
-        /// </para>
+        /// <para><b>What phase 1 found missing, and what closes it - milestone
+        /// 8.35z50.</b> Rulebook p.14 step 6 removes the defender if the attack succeeded,
+        /// and step 7 is where these cards ask about it. <c>attack-took-a-hero@1</c> answers a
+        /// different question - whether the target was a hero at all - and nothing else in the engine
+        /// recorded the removal itself. The fix is three pieces rather than the four phase 1 costed,
+        /// because the design changed shape under verification: (1)
+        /// <see cref="GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts.TargetWasRemoved"/>
+        /// - a runtime struct field no card definition reaches, so it is outside the content-identity
+        /// oracle. (2) <c>CardActionResolutionAuthority.EnclosingAttackOf</c> computes it live, from
+        /// board occupancy, rather than reading it off a stored field - a hero no longer occupying any
+        /// space, or a minion no longer standing on the board, is exactly what step 6 just decided, and
+        /// nothing else touches the board between step 6 and step 7. That is what phase 1's original
+        /// plan - persisting the fact on <c>PendingAttackResolution</c> and re-deriving it from there -
+        /// would have cost that this does not: a new serialized field is a schema-version move, and a
+        /// live board read is not. (3) <c>attack-target-survived@1</c>
+        /// (<see cref="GuardsDigital.Core.Effects.Synthetic.SyntheticAttackTargetSurvivalCapabilities"/>),
+        /// a predicate over it, gating the removal exactly as <c>is-flagged@1</c> gates every other
+        /// branch here.</para>
         /// </summary>
-        public static IReadOnlyList<CardDefinitionId> TargetSurvivedFactIsOwed { get; } =
+        public static IReadOnlyList<CardDefinitionId> RemovalGatedOnTargetSurvival { get; } =
             Array.AsReadOnly(new[]
             {
                 UrsafarCardContent.PreyDrive,
@@ -106,11 +112,15 @@ namespace GuardsDigital.Core.Cards.Verified
                 return CreateAfterAttackRider(cardId, contentRevision, coins: 1);
             }
 
-            if (TargetSurvivedFactIsOwed.Contains(cardId))
+            if (cardId.Equals(UrsafarCardContent.PreyDrive) ||
+                cardId.Equals(UrsafarCardContent.PreyAbundance))
             {
-                // Prey Drive, Prey Abundance and Feeding Frenzy. Their step-7 root is the grant alone;
-                // see TargetSurvivedFactIsOwed for the clause that is missing and what it would take.
-                return CreateGrantOnly(cardId, contentRevision, AttackTextEffectId(cardId));
+                return CreateRemovalRider(cardId, contentRevision, maximumRemoved: 1);
+            }
+
+            if (cardId.Equals(UrsafarCardContent.FeedingFrenzy))
+            {
+                return CreateRemovalRider(cardId, contentRevision, maximumRemoved: 2);
             }
 
             return null;
@@ -821,8 +831,166 @@ namespace GuardsDigital.Core.Cards.Verified
         }
 
         /// <summary>
-        /// A root whose whole content is the card's <c>This round: You are enraged.</c> - what the three
-        /// removal Reds compose today, and what Claws That Catch's step-7 root is.
+        /// Prey Drive's and Prey Abundance's "After the attack: If enraged, and the target was not
+        /// removed, remove up to 1 enemy minion in radius." and Feeding Frenzy's "up to 2" - milestone
+        /// 8.35z50, closing the shortfall <see cref="RemovalGatedOnTargetSurvival"/>
+        /// documents.
+        ///
+        /// <para><b>A compound condition, nested rather than combined.</b> The clause reads "if enraged,
+        /// AND the target was not removed" - two conjuncts, and this codebase's <c>Conditional</c> node
+        /// takes one flag. Nesting one inside the other's then-child is the same AND a single node with
+        /// two inputs would give: the outer gate is <see cref="EnragedGate"/> unchanged, and its child
+        /// is a second gate over <c>attack-target-survived@1</c>, published as "survived" so the
+        /// content never has to invert "not removed" itself.</para>
+        ///
+        /// <para><b>Reach is the card's own printed Radius</b> - <c>synthetic-card-radius@1</c> - not a
+        /// literal the way Sabina's "adjacent to you" is. Everything past that is her
+        /// <c>CreateFollowUpRemoval</c> shape verbatim: <c>choose-target-set@1</c> with
+        /// <c>minimum</c>/<c>maximum</c> publishing up to two spaces, then one <c>synthetic-remove@2</c>
+        /// per published space, each <c>if able</c> so naming fewer than the card allows is the answer
+        /// given rather than a failed step. The grant stays the card's own unconditional sibling, as
+        /// every other face here has it - Ruling 2's build-up is a property of where the grant sits,
+        /// not of this clause.</para>
+        /// </summary>
+        private static EffectDefinition CreateRemovalRider(
+            CardDefinitionId cardId, string contentRevision, int maximumRemoved)
+        {
+            var root = new EffectNodeId("removal-root");
+            var gate = new EffectNodeId("removal-gate");
+            var survivedCheck = new EffectNodeId("removal-survived-check");
+            var survivedFact = new EffectNodeId("removal-survived-fact");
+            var survivedGate = new EffectNodeId("removal-survived-gate");
+            var sequence = new EffectNodeId("removal-sequence");
+            var radius = new EffectNodeId("removal-radius");
+            var select = new EffectNodeId("removal-targets");
+            var removeFirst = new EffectNodeId("removal-remove");
+            var removeSecond = new EffectNodeId("removal-remove-second");
+            var grant = new EffectNodeId("removal-grant");
+
+            var removals = maximumRemoved > 1
+                ? new[] { radius, select, removeFirst, removeSecond }
+                : new[] { radius, select, removeFirst };
+
+            var nodes = new List<EffectNodeDefinition>
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { gate, grant }),
+                EnragedGate(gate, survivedCheck),
+                new EffectNodeDefinition(
+                    survivedCheck, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { survivedFact, survivedGate }),
+                new EffectNodeDefinition(
+                    survivedFact, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticAttackTargetSurvivalCapabilities.AttackTargetSurvivedV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticAttackTargetSurvivalCapabilities.TargetSurvivedOutput,
+                            EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    survivedGate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticEffectCapabilities.IsFlaggedV1,
+                    childNodeIds: new[] { sequence },
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "flag", survivedFact,
+                            SyntheticAttackTargetSurvivalCapabilities.TargetSurvivedOutput,
+                            EffectValueKind.Boolean)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("value", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: removals),
+                new EffectNodeDefinition(
+                    radius, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticValueCapabilities.CardRadiusV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticValueCapabilities.RadiusOutput, EffectValueKind.Integer)
+                    }),
+                new EffectNodeDefinition(
+                    select, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                    SyntheticRosterCapabilities.ChooseTargetSetV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.OriginParameter, RosterQueryOrigin.Actor),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticRosterCapabilities.DistanceParameter, radius,
+                            SyntheticValueCapabilities.RadiusOutput, EffectValueKind.Integer),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Minion),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.RelationParameter,
+                            SourceTeamRelation.OpposingSource),
+                        // A card-text rider applied inside an Attack: p.18 asks immunity about this
+                        // action's own activity, exactly as Sabina's equivalent selection does.
+                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Attack),
+                        EffectInputBinding.FromLiteral("minimum", EffectValue.Integer(0)),
+                        EffectInputBinding.FromLiteral("maximum", EffectValue.Integer(maximumRemoved))
+                    },
+                    outputs: maximumRemoved > 1
+                        ? new[]
+                        {
+                            new EffectOutputBinding("selectedCount", EffectValueKind.Integer),
+                            new EffectOutputBinding("firstSpace", EffectValueKind.Coordinate),
+                            new EffectOutputBinding("secondSpace", EffectValueKind.Coordinate)
+                        }
+                        : new[]
+                        {
+                            new EffectOutputBinding("selectedCount", EffectValueKind.Integer),
+                            new EffectOutputBinding("firstSpace", EffectValueKind.Coordinate)
+                        }),
+                RemovalNode(removeFirst, select, "firstSpace"),
+                GrantNode(grant, cardId)
+            };
+
+            if (maximumRemoved > 1)
+            {
+                nodes.Add(RemovalNode(removeSecond, select, "secondSpace"));
+            }
+
+            return new EffectDefinition(AttackTextEffectId(cardId), contentRevision, root, nodes);
+        }
+
+        /// <summary>
+        /// One of the removals the selection above named, by the space it published - Sabina's
+        /// <c>RemoveNode</c> shape verbatim, over "enemy minion" rather than her "friendly minion".
+        /// <c>if able</c> rather than mandatory: a chooser who named fewer minions than the card allowed
+        /// leaves the later node with nothing bound, which is the answer they gave rather than a failed
+        /// step.
+        /// </summary>
+        private static EffectNodeDefinition RemovalNode(
+            EffectNodeId nodeId, EffectNodeId selectionNodeId, string spaceOutput) =>
+            new EffectNodeDefinition(
+                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                SyntheticExchangeCapabilities.RemoveV2,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromNodeOutput(
+                        "subject", selectionNodeId, spaceOutput, EffectValueKind.Coordinate),
+                    EffectInputBinding.FromClosedVocabulary(
+                        SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                        RemoveEligiblePieceKind.MinionMiniature)
+                },
+                outputs: new[]
+                {
+                    new EffectOutputBinding("removed", EffectValueKind.Coordinate),
+                    new EffectOutputBinding(
+                        RecordedLanePushQuery.OutcomeFactName, EffectValueKind.Boolean)
+                });
+
+        /// <summary>
+        /// A root whose whole content is the card's <c>This round: You are enraged.</c> - Claws That
+        /// Catch's step-7 root, its only remaining use now the three removal Reds compose their full
+        /// clause.
         /// </summary>
         private static EffectDefinition CreateGrantOnly(
             CardDefinitionId cardId, string contentRevision, EffectDefinitionId effectId)

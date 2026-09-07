@@ -1025,6 +1025,88 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 fastTravelSkillProfile: RedFastTravelSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.35z50: the three handler types Ursafar the Savage's dealing registers, proved
+        // here on cards that are nobody's. It is the largest such set any dealing has needed, and the
+        // division between the three is the one every dealing since 8.35z34 has drawn: two of them are
+        // questions a Skill can ask, and the third needs an enclosing Attack to be about.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.35z50's condition-reading Skill, sitting outside its team's ordinary Initiative
+        /// band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedHeroConditionSkillProfile { get; } =
+            new SyntheticSkillProfile("red-berserker", "Red Berserker", 30);
+
+        /// <summary>Milestone 8.35z50's borrowing Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedBorrowedActionSkillProfile { get; } =
+            new SyntheticSkillProfile("red-scavenger", "Red Scavenger", 31);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z50's condition-reading Skill, which is how
+        /// <c>hero-condition@1</c> becomes reachable from showcase content rather than arriving for the
+        /// first time inside Ursafar's own slice.
+        ///
+        /// <para>The gate is the shape nineteen printed readings share and the one
+        /// <c>UrsafarEffectContent.EnragedGate</c> composes: a Conditional naming the capability
+        /// directly, with a then-child and no else-child, because a condition that does not hold skips
+        /// its clause and the card continues. The clause it governs here is the ordinary optional
+        /// one-space move every fixture rider uses, so what this card proves is the PREDICATE and not
+        /// some second thing standing behind it.</para>
+        ///
+        /// <para>It is also the one showcase card that reads a condition on a Skill rather than inside
+        /// an Attack, which is what makes the contract's independence from p.14 measurable: the
+        /// capability asks the match about the actor and needs no enclosing action at all.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithHeroConditionSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                heroConditionSkillProfile: RedHeroConditionSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z50's borrowing Skill, which is how
+        /// <c>borrow-primary-action@1</c> becomes reachable on the same terms.
+        ///
+        /// <para><b>Why the borrow sits under an Optional here and under a condition on his cards.</b>
+        /// The capability itself is mandatory by its own printed reading - none of the four faces that
+        /// print the clause prints "you may" on this step - and it reports an empty pool as impossible
+        /// rather than as a decline. On Ursafar's faces the enclosing "If enraged" is what makes the
+        /// whole clause skippable; a fixture hand has no such condition to lean on and must stay
+        /// playable on any board, so the declinable wrapper is the fixture's equivalent of that gate
+        /// and the borrow node underneath it is unchanged. <see cref="CreateRedWithHeroConditionSkill"/>
+        /// is where the condition itself is proved, which is why this card does not repeat it.</para>
+        ///
+        /// <para>The pool is the discarded one and the colour narrows nothing, which is the widest
+        /// reading of the two inputs: a fixture that narrowed would prove the narrowing and leave the
+        /// contract's own reach unproved.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithBorrowedActionSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                borrowedActionSkillProfile: RedBorrowedActionSkillProfile);
+
+        /// <summary>
+        /// Ursafar's Prey Drive shape: "After the attack:" text that asks whether rulebook p.14's step 6
+        /// removed the Attack's own target, and acts only when it did not.
+        /// </summary>
+        private static SyntheticAttackTextProfile RedTargetSurvivedProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-tracker", "Red Tracker", 12, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false, continuation: SyntheticContinuationShape.AfterAttackTargetSurvivedRider);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.35z50's survival-rider Attack, which is how
+        /// <c>attack-target-survived@1</c> becomes reachable from showcase content rather than waiting
+        /// for the hero whose three removal Reds print it. It needs an enclosing Attack to be about -
+        /// the fact it publishes is a fact about that Attack's own target - which is why it is here
+        /// rather than on a Skill beside the two above.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithTargetSurvivedRiderText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedTargetSurvivedProfile });
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1130,6 +1212,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile lineTravelSkillProfile = null,
             SyntheticSkillProfile unitPairSkillProfile = null,
             SyntheticSkillProfile fastTravelSkillProfile = null,
+            SyntheticSkillProfile heroConditionSkillProfile = null,
+            SyntheticSkillProfile borrowedActionSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1335,6 +1419,22 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateFastTravelSkillDefinition(fastTravelSkillProfile),
                     fastTravelSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (heroConditionSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateHeroConditionSkillDefinition(heroConditionSkillProfile),
+                    heroConditionSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (borrowedActionSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateBorrowedActionSkillDefinition(borrowedActionSkillProfile),
+                    borrowedActionSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -3118,6 +3218,157 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 });
         }
 
+        /// <summary>
+        /// Milestone 8.35z50's condition-reading Skill: "If enraged, you may move a unit within 1 space
+        /// one space."
+        ///
+        /// <para>The Conditional names <c>hero-condition@1</c> directly and binds the condition as a
+        /// closed vocabulary, which is the whole of what this fixture proves - the effect definition
+        /// validator admits any capability with a Boolean output as a predicate, so no adapter stands
+        /// between the question and the branch. The governed clause is
+        /// <see cref="MayMoveAnotherUnitNodes"/>, the same sub-tree three earlier fixture riders use,
+        /// deliberately: a clause that is already proved elsewhere cannot be what makes this card pass.
+        /// </para>
+        ///
+        /// <para>No else-child, because a condition that does not hold skips its clause and the card
+        /// continues - the user's general conditional ruling, and the shape every one of Ursafar's
+        /// nineteen printed readings has.</para>
+        /// </summary>
+        private static CardDefinition CreateHeroConditionSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("hero-condition-root");
+            var gate = new EffectNodeId("hero-condition-gate");
+            const string clause = "hero-condition-clause";
+
+            var nodes = new List<EffectNodeDefinition>
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { gate }),
+                new EffectNodeDefinition(
+                    gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticConditionCapabilities.HeroConditionV1,
+                    childNodeIds: new[] { new EffectNodeId(clause) },
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticConditionCapabilities.ConditionParameter,
+                            GuardsDigital.Core.Rules.CardResolution.HeroConditionKind.Enraged)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticConditionCapabilities.PresentOutput, EffectValueKind.Boolean)
+                    })
+            };
+            nodes.AddRange(MayMoveAnotherUnitNodes(clause, includeSelf: true));
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z50-rev-1",
+                root,
+                nodes);
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z50-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-hero-condition-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.35z50's borrowing Skill: "You may perform the primary action on one of your
+        /// discarded cards."
+        ///
+        /// <para>The borrow node itself is <see cref="EffectFailurePolicy.Mandatory"/> and reports an
+        /// empty pool as impossible, which is the capability's own printed reading; the declinable
+        /// <see cref="EffectNodeKind.Optional"/> above it is this fixture's stand-in for the "If
+        /// enraged" that makes the clause skippable on every printed face. The node underneath is
+        /// therefore identical to <c>UrsafarEffectContent.BorrowNode</c>, which is the point - what has
+        /// to be reachable from showcase content is the handler, not a weakened copy of it.</para>
+        ///
+        /// <para>It records a request and starts nothing, exactly as milestone 6.7's RepeatAction node
+        /// does: <c>BorrowedActionQuery</c> is what the card-action dispatcher reads it back through,
+        /// and a fixture card that named the capability without publishing its output would prove the
+        /// handler reachable while leaving that seam unexercised.</para>
+        /// </summary>
+        private static CardDefinition CreateBorrowedActionSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("borrowed-action-root");
+            var optional = new EffectNodeId("borrowed-action-optional");
+            var sequence = new EffectNodeId("borrowed-action-sequence");
+            var borrow = new EffectNodeId("borrowed-action-borrow");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z50-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { optional }),
+                    new EffectNodeDefinition(
+                        optional, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { sequence },
+                        chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(
+                        sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { borrow }),
+                    new EffectNodeDefinition(
+                        borrow, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticBorrowedActionCapabilities.PoolParameter,
+                                BorrowedActionPool.OwnedDiscardedCards),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticBorrowedActionCapabilities.ColorParameter, CardColor.None)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticBorrowedActionCapabilities.BorrowedCardOutput,
+                                EffectValueKind.CardInstance)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z50-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-borrowed-action-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
         private static CardDefinition CreateRosterCommandSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("roster-command-root");
@@ -3645,7 +3896,27 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// prints and what milestone 8.35z29 added
             /// <c>DirectMoveDestinationPolicy.AwayFromActor</c> for.</para>
             /// </summary>
-            AfterAttackRangeTenseRiders = 13
+            AfterAttackRangeTenseRiders = 13,
+
+            /// <summary>
+            /// Milestone 8.35z50. Ursafar's Prey Drive shape: "After the attack:" text that asks
+            /// whether rulebook p.14's step 6 removed the Attack's own target, and acts only when it
+            /// did not.
+            ///
+            /// <para>It is the one question in this enum that can only be asked at p.14's step 7 and
+            /// can only be answered by the Attack that is still resolving - the fact is read live off
+            /// board occupancy at the moment card text is allowed to ask, so a Skill has nothing to
+            /// ask it about. That is why <c>attack-target-survived@1</c> reaches showcase content
+            /// through an Attack while its two siblings in the same dealing reach it through
+            /// Skills.</para>
+            ///
+            /// <para>Its published fact is the affirmative one - "survived" rather than "was removed" -
+            /// so the Conditional below it is the ordinary <c>synthetic-is-flagged@1</c> gate every
+            /// other rider uses and no node anywhere has to invert a Boolean. The clause it governs is
+            /// the same one-space displacement <see cref="AfterAttackRangeTenseRiders"/> performs,
+            /// because what this card exists to prove is the READING and not the consequence.</para>
+            /// </summary>
+            AfterAttackTargetSurvivedRider = 14
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -4173,6 +4444,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new EffectNodeId("range-tense-root"),
                         RangeTenseRiderNodes());
 
+                case SyntheticContinuationShape.AfterAttackTargetSurvivedRider:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-35z50-rev-1",
+                        new EffectNodeId("target-survived-root"),
+                        TargetSurvivedRiderNodes());
+
                 case SyntheticContinuationShape.AroundTheMovement:
                     return new EffectDefinition(
                         new EffectDefinitionId($"placeholder-{id}-text"),
@@ -4536,6 +4814,86 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     {
                         EffectInputBinding.FromNodeOutput(
                             "flag", isNotAdjacent, "notAdjacent", EffectValueKind.Boolean)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("value", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    moveSequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { targetSpace, move }),
+                new EffectNodeDefinition(
+                    targetSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.FormerTargetSpaceV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                    }),
+                new EffectNodeDefinition(
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "mover", targetSpace, "space", EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                            GuardsDigital.Core.Rules.Displacement.DirectMoveDestinationPolicy
+                                .AwayFromActor)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                    })
+            };
+        }
+
+        /// <summary>
+        /// Milestone 8.35z50's survival rider: read whether the Attack's own target is still on the
+        /// board, and when it is, move it one space away.
+        ///
+        /// <para>The reading and the gate are two nodes rather than one because that is the shape
+        /// <c>UrsafarEffectContent.CreateRemovalRider</c> composes and the shape this codebase's
+        /// Conditional has: the capability publishes a Boolean and
+        /// <c>synthetic-is-flagged@1</c> presents it to the branch. The tail is
+        /// <see cref="RangeTenseRiderNodes"/>'s verbatim - the former target's space and a declinable
+        /// one-space push away from the attacker - so that nothing in the consequence is new and the
+        /// only thing this fixture introduces is the question.</para>
+        /// </summary>
+        private static EffectNodeDefinition[] TargetSurvivedRiderNodes()
+        {
+            var root = new EffectNodeId("target-survived-root");
+            var survived = new EffectNodeId("target-survived-fact");
+            var gate = new EffectNodeId("target-survived-gate");
+            var moveSequence = new EffectNodeId("target-survived-move-sequence");
+            var targetSpace = new EffectNodeId("target-survived-space");
+            var move = new EffectNodeId("target-survived-move");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { survived, gate }),
+                new EffectNodeDefinition(
+                    survived, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticAttackTargetSurvivalCapabilities.AttackTargetSurvivedV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticAttackTargetSurvivalCapabilities.TargetSurvivedOutput,
+                            EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticEffectCapabilities.IsFlaggedV1,
+                    childNodeIds: new[] { moveSequence },
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "flag", survived,
+                            SyntheticAttackTargetSurvivalCapabilities.TargetSurvivedOutput,
+                            EffectValueKind.Boolean)
                     },
                     outputs: new[]
                     {

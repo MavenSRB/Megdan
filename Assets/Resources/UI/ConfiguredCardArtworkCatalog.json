@@ -167,6 +167,24 @@
     { "definitionId": "silverarrow-fae-healing", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow15__7506057__front.png" },
     { "definitionId": "silverarrow-lead-astray", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow16__7506052__front.png" },
     { "definitionId": "silverarrow-natures-blessing", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow17__7506066__front.png" },
-    { "definitionId": "silverarrow-wild-hunt", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow18__7506067__front.png" }
+    { "definitionId": "silverarrow-wild-hunt", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow18__7506067__front.png" },
+    { "definitionId": "ursafar-claws-that-catch", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar__7384259__front.png" },
+    { "definitionId": "ursafar-angry-roar", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar2__7384250__front.png" },
+    { "definitionId": "ursafar-prey-drive", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar3__7721463__front.png" },
+    { "definitionId": "ursafar-prey-abundance", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar4__7721464__front.png" },
+    { "definitionId": "ursafar-rip", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar5__8436588__front.png" },
+    { "definitionId": "ursafar-feeding-frenzy", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar6__7721466__front.png" },
+    { "definitionId": "ursafar-tear", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar7__8436589__front.png" },
+    { "definitionId": "ursafar-prowling-brute", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar8__7733766__front.png" },
+    { "definitionId": "ursafar-rampaging-beast", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar9__7733767__front.png" },
+    { "definitionId": "ursafar-cold-ire", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar10__7384245__front.png" },
+    { "definitionId": "ursafar-unstoppable-force", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar11__7734786__front.png" },
+    { "definitionId": "ursafar-eyes-of-flame", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar12__7762573__front.png" },
+    { "definitionId": "ursafar-sniff-out", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar13__7384256__front.png" },
+    { "definitionId": "ursafar-eyes-on-the-prey", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar14__7384255__front.png" },
+    { "definitionId": "ursafar-instinctive-reaction", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar15__7715502__front.png" },
+    { "definitionId": "ursafar-apex-predator", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar16__7384251__front.png" },
+    { "definitionId": "ursafar-evolutionary-response", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar17__7715503__front.png" },
+    { "definitionId": "ursafar-unbound-fury", "contentRevision": "ursafar-8-35z50-rev-1", "sourcePath": "active-hero-cards/Ursafar/ursafar18__7618899__front.png" }
   ]
 }

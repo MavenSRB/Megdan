@@ -30,10 +30,10 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HeroId Ally = new HeroId("ally-1");
 
         private static EffectCapabilityCatalog Catalog() =>
+            // Milestone 8.35z50: the borrow and condition families are in the GENERIC catalog now that
+            // Ursafar is dealt, so passing them again would register duplicates.
             SyntheticEffectCapabilities.CreateCatalog(
-                UrsafarActiveEffectContent.DeferredHandlers()
-                    .Concat(SyntheticConditionCapabilities.DeferredHandlers())
-                    .Concat(SyntheticBorrowedActionCapabilities.DeferredHandlers()));
+                UrsafarActiveEffectContent.RegisteredHandlers());
 
         private static CardInstance CardFor(HeroId owner, CardDefinitionId definitionId) =>
             CardInstance.CreateInHand(

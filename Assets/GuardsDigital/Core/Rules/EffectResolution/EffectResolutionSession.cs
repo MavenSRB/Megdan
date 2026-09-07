@@ -94,8 +94,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null,
             GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
                 null,
-            bool placedActingHero = false)
+            bool placedActingHero = false,
+            BorrowRequest borrowRequested = default)
         {
+            BorrowRequested = borrowRequested;
             AppliedPushes =
                 new ReadOnlyCollection<GuardsDigital.Core.Rules.Modifications.RuleObject>(
                     (appliedPushes ??
@@ -143,6 +145,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// target`, which target it inherits.
         /// </summary>
         public RepeatRequest RepeatRequested { get; }
+
+        /// <summary>
+        /// Milestone 8.35z50: whether this completed instance's card text asked to perform a borrowed
+        /// card's printed primary, and which card it named. Meaningful only alongside
+        /// <see cref="IsComplete"/>, for the reason <see cref="RepeatRequested"/> is - the completing
+        /// frame is the last thing that carries the outcome the request lives on.
+        ///
+        /// <para>It is a SECOND property beside the repeat rather than a widening of it, and that
+        /// separation is the rule rather than a style choice: a borrowed primary is not a rulebook p.10
+        /// repeat (RULING 22), and the whole repeat mechanism keys on
+        /// <see cref="ActionInvocationContext.Repeated"/> while a borrowed instance is stamped
+        /// <see cref="ActionInvocationContext.TextGranted"/>. Keeping the two answers apart is what
+        /// makes a borrow invisible to every repeat reader without any of them being touched.</para>
+        /// </summary>
+        public BorrowRequest BorrowRequested { get; }
 
         /// <summary>
         /// Milestone 6.9: which of rulebook p.8's two sentences this completed instance answered, or
@@ -247,12 +264,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> appliedPushes = null,
             GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
                 null,
-            bool placedActingHero = false) =>
+            bool placedActingHero = false,
+            BorrowRequest borrowRequested = default) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
                 boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences,
-                placedActingHero);
+                placedActingHero, borrowRequested);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -709,7 +727,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
-                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes));
+                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes),
+
+                        // Milestone 8.35z50. The borrow reads the same completed outcomes every other
+
+                        // request above reads, and is carried beside the repeat rather than inside it.
+
+                        borrowRequested: BorrowedActionQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -875,7 +899,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
-                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes));
+                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes),
+
+                        // Milestone 8.35z50. The borrow reads the same completed outcomes every other
+
+                        // request above reads, and is carried beside the repeat rather than inside it.
+
+                        borrowRequested: BorrowedActionQuery.Requested(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -1297,7 +1327,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
                         requestedAttackSequences: RequestedAttackSequenceQuery.Requested(
                             context.Definition, outcomes),
-                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes));
+                        placedActingHero: SelfPlacementQuery.Placed(context.Definition, outcomes),
+
+                        // Milestone 8.35z50. The borrow reads the same completed outcomes every other
+
+                        // request above reads, and is carried beside the repeat rather than inside it.
+
+                        borrowRequested: BorrowedActionQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

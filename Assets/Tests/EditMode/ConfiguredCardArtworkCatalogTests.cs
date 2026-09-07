@@ -13,7 +13,7 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ConfiguredCardArtworkCatalogTests
     {
         [Test]
-        public void ConfiguredCatalog_IsA162EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA180EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -34,15 +34,26 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 8.35z46 takes it 144 to 162: dealing Silverarrow the Pathfinder adds her
             // eighteen dealt definitions, on the same terms - Keep the Distance is p.20's Handicap
             // card, excluded exactly as Dodger's Rusty Razor and Misa's Leaf on the Wind are.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(162));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(162));
+            //
+            // MILESTONE 8.35z50 TAKES IT 162 TO 180 AND WAS CAUGHT A THIRD TIME - and the third catch
+            // was a WIDER failure than this pin, which is why it is worth its own sentence. Ursafar's
+            // dealing appended all eighteen rows to the catalog JSON and validated that file, but
+            // never added his folder to `ConfiguredCardArtworkCatalog.HeroFolders`, so the catalog
+            // could not address a single one of them and SIXTEEN Edit Mode cases failed at load -
+            // this fixture's ten and six of MatchHudPresentationTests'. Both halves of the omission
+            // are invisible offline for the same reason: the map lives in Presentation, which the
+            // Unity-free harness does not compile and the one-assembly probe can only compile rather
+            // than run. Three consecutive dealings, three identical catches, and the first Edit Mode
+            // launch is still the only thing in the build that can make them.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(180));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(180));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(162),
+                Is.EqualTo(180),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -51,8 +62,8 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     ("arien", 18), ("brogan", 18), ("dodger", 18), ("misa", 18),
-                    ("sabina", 18), ("silverarrow", 18), ("tigerclaw", 18), ("wasp", 18),
-                    ("xargatha", 18)
+                    ("sabina", 18), ("silverarrow", 18), ("tigerclaw", 18), ("ursafar", 18),
+                    ("wasp", 18), ("xargatha", 18)
                 }));
 
             foreach (var entry in catalog.Entries)

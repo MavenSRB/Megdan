@@ -167,12 +167,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // 8.24's `on a different enemy hero` narrowing were both already written against a
             // repeated Attack resolution; this guard is what neither of them could get past, and the
             // 8.23 arm threw here the first time a match reached it.
+            // Milestone 8.35z50 admits the fourth, and it is a widening rather than a relaxation: a
+            // borrowed primary IS a printed Attack, performed off a card the actor's own text named.
+            // `TextGranted` is the stamp `BorrowedPrimaryActionDeclaration.InvocationContext` states,
+            // and what matters as much is what it is NOT - it is not `Repeated`, so every repeat reader
+            // in this engine goes on ignoring it and RULING 22's "a borrow is not a p.10 repeat" holds
+            // by construction rather than by a check.
             if (invocationContext != ActionInvocationContext.PrintedPrimary &&
                 invocationContext != ActionInvocationContext.PrintedSecondary &&
-                invocationContext != ActionInvocationContext.Repeated)
+                invocationContext != ActionInvocationContext.Repeated &&
+                invocationContext != ActionInvocationContext.TextGranted)
             {
                 throw new ArgumentException(
-                    "Pending Attack resolution requires a printed or repeated invocation context.",
+                    "Pending Attack resolution requires a printed, repeated or text-granted " +
+                    "invocation context.",
                     nameof(invocationContext));
             }
 

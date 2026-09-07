@@ -82,6 +82,22 @@ namespace GuardsDigital.Tests.PlayMode
         BeforeMovementTextPause,
 
         /// <summary>
+        /// Milestone 8.35z50. p.11's "unless it says otherwise" moment for a Movement
+        /// card's own text, after the walk - Ursafar's three swap faces, "after movement, you may
+        /// swap...".
+        ///
+        /// <para>It is a separate shape from <see cref="BeforeMovementTextPause"/> for the same reason
+        /// <see cref="AfterAttackTextPause"/> is separate from <see cref="BeforeAttackTextPause"/>: the
+        /// two sides of one primary action are two different moments a player meets, holding different
+        /// board state each time - p.14's consequences have or have not happened yet for an Attack, and
+        /// the walk has or has not happened yet for a Movement. It is not
+        /// <see cref="ActionTextPlacementChoice"/> either, because the page decides this side rather
+        /// than the player: Ursafar's Blue text carries no choice of which side to run on, only
+        /// Xargatha's three Green Movements do.</para>
+        /// </summary>
+        AfterMovementTextPause,
+
+        /// <summary>
         /// Milestone 8.24. The player choosing which side of their own primary action the card's text
         /// runs on - Xargatha's Charm, Control and Dominate, "before or after movement".
         ///
@@ -719,7 +735,41 @@ namespace GuardsDigital.Tests.PlayMode
                 // A reading of the instance that just resolved - "If you target a hero" - which gates
                 // a step and shows a player no control. Wasp's content minted it and Silverarrow's
                 // Rain of Arrows is the first face to name it from a hero's own set.
-                ["synthetic-attack-took-a-hero"] = Array.Empty<PlayerInteractionShape>()
+                ["synthetic-attack-took-a-hero"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.35z50. Ursafar the Savage's four.
+                //
+                // Whether the acting hero is currently in a named condition, asked of the match rather
+                // than of the frame. A reading and never a question: twelve of his faces gate a clause
+                // on it and the player is shown no control for the gate itself - what they are asked
+                // comes from the clause it governs, which declares its own shape. Its absence from
+                // this table was the first Play Mode run's own find.
+                ["hero-condition"] = Array.Empty<PlayerInteractionShape>(),
+                //
+                // The borrow names a card by its whole face, wherever it currently sits - discarded or
+                // resolved beside the dashboard, never the hand - which is the same "a card chosen on
+                // its whole face" question `retrieve-card@1` asks of the discard pile. A shape is the
+                // input a player supplies, and both are the same click on the same kind of surface;
+                // which pile is a difference in the candidate set, not in what is asked.
+                ["borrow-primary-action"] = new[] { PlayerInteractionShape.HandCardSelection },
+
+                // Milestone 8.19b's targeting family under `SyntheticTargetingCapabilities` carries
+                // its own `synthetic-` prefixed id, distinct from the roster family's bare
+                // `choose-target` above despite the shared method-name root - Ursafar's three Blue
+                // swap riders (`ChooseTargetV3`) are the first dealt content to reach it. Same input
+                // either way: a unit or a token, clicked where it stands.
+                ["synthetic-choose-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // The card's own printed Radius, published as a value with no player input of its own -
+                // the same grammar `presence-count@1` and `pre-consequence-adjacency@1` carry. What a
+                // player is asked comes from the selection it feeds, which declares its own shape.
+                ["synthetic-card-radius"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Whether this Attack's own target survived p.14's step 6, read live off board
+                // occupancy. A reading, not a question: the player sees only what the removal rider
+                // does afterwards, on the same terms `pre-consequence-adjacency@1` and
+                // `target-is-adjacent@1` already carry for the Attack's other captured facts.
+                ["attack-target-survived"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -897,6 +947,9 @@ namespace GuardsDigital.Tests.PlayMode
                     break;
                 case CardTextTiming.BeforeTheMovement:
                     shapes.Add(PlayerInteractionShape.BeforeMovementTextPause);
+                    break;
+                case CardTextTiming.AfterTheMovement:
+                    shapes.Add(PlayerInteractionShape.AfterMovementTextPause);
                     break;
                 case CardTextTiming.DefenseAction:
                     shapes.Add(PlayerInteractionShape.DefenseTextApplication);

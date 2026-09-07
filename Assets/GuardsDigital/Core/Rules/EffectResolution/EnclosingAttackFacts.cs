@@ -44,9 +44,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             AttackRangeKind range,
             HexCoordinate? targetSpaceBeforeConsequences,
             HexCoordinate? actorSpaceAtActionStart = null,
-            CardInstanceId defenseCardInstanceId = default)
+            CardInstanceId defenseCardInstanceId = default,
+            bool targetWasRemoved = false)
         {
             DefenseCardInstanceId = defenseCardInstanceId;
+            TargetWasRemoved = targetWasRemoved;
             if (!Enum.IsDefined(typeof(AttackRangeKind), range))
             {
                 throw new ArgumentException(
@@ -142,6 +144,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public CardInstanceId DefenseCardInstanceId { get; }
 
+        /// <summary>
+        /// Milestone 8.35z50. Whether rulebook p.14 step 6 removed this Attack's target -
+        /// a defeated hero sent to respawn, or a defeated minion taken off the board - or
+        /// <c>false</c> where there is no target, the Attack has not reached step 6 yet, or a removal
+        /// was prevented. It is what Ursafar's Prey Drive, Prey Abundance and Feeding Frenzy ask with
+        /// "and the target was not removed".
+        ///
+        /// <para><b>Re-derived from live board occupancy, never stored.</b> Nothing on
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.PendingAttackResolution"/> carries this -
+        /// it costs no snapshot bytes and moves no schema, the same reason
+        /// <see cref="DefenseCardInstanceId"/> is a projection rather than a field. By the moment
+        /// "After the attack:" text can ask the question, step 6's removal (if any) has already run
+        /// and nothing else has touched the board since, so reading current occupancy for the target's
+        /// own identity gives the exact answer step 6 reached - live, on the first pass, and
+        /// identically after a restored pause, because the board a restore rebuilds already reflects
+        /// whatever step 6 did.</para>
+        /// </summary>
+        public bool TargetWasRemoved { get; }
+
         /// <summary>Whether there is an enclosing Attack to ask about at all.</summary>
         public bool IsDefined => ActorId.IsDefined;
 
@@ -150,7 +171,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HeroTargetId.Equals(other.HeroTargetId) &&
             MinionTargetId.Equals(other.MinionTargetId) &&
             Range == other.Range &&
-            Nullable.Equals(TargetSpaceBeforeConsequences, other.TargetSpaceBeforeConsequences);
+            Nullable.Equals(TargetSpaceBeforeConsequences, other.TargetSpaceBeforeConsequences) &&
+            TargetWasRemoved == other.TargetWasRemoved;
 
         public override bool Equals(object obj) => obj is EnclosingAttackFacts other && Equals(other);
 
@@ -161,7 +183,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 var hash = (ActorId.GetHashCode() * 397) ^ HeroTargetId.GetHashCode();
                 hash = (hash * 397) ^ MinionTargetId.GetHashCode();
                 hash = (hash * 397) ^ (int)Range;
-                return (hash * 397) ^ (TargetSpaceBeforeConsequences?.GetHashCode() ?? 0);
+                hash = (hash * 397) ^ (TargetSpaceBeforeConsequences?.GetHashCode() ?? 0);
+                return (hash * 397) ^ TargetWasRemoved.GetHashCode();
             }
         }
 

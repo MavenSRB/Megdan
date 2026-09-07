@@ -116,9 +116,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out PendingRepeatedAction repeat,
             out LanePushCauseKind lanePushCause,
             out IReadOnlyList<RuleObject> appliedPushes,
-            out IReadOnlyList<HeroId> requestedHeroDefeats)
+            out IReadOnlyList<HeroId> requestedHeroDefeats,
+            // Milestone 8.35z50. A borrow this Skill's own text asked for, surfaced beside the repeat
+            // and never inside it: a borrowed primary is not a p.10 repeat (RULING 22).
+            out GuardsDigital.Core.Rules.EffectResolution.BorrowRequest borrowRequested)
         {
             repeat = null;
+            borrowRequested = default;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
             requestedHeroDefeats = Array.Empty<HeroId>();
@@ -164,6 +168,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     step.RepeatRequested.Continuation);
             }
 
+            borrowRequested = step.BorrowRequested;
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
             requestedHeroDefeats = step.RequestedHeroDefeats;
@@ -201,9 +206,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out PendingRepeatedAction furtherRepeat,
             out LanePushCauseKind lanePushCause,
             out IReadOnlyList<RuleObject> appliedPushes,
-            out IReadOnlyList<HeroId> requestedHeroDefeats)
+            out IReadOnlyList<HeroId> requestedHeroDefeats,
+            // Milestone 8.35z50. A borrow this Skill's own text asked for, surfaced beside the repeat
+            // and never inside it: a borrowed primary is not a p.10 repeat (RULING 22).
+            out GuardsDigital.Core.Rules.EffectResolution.BorrowRequest borrowRequested)
         {
             furtherRepeat = null;
+            borrowRequested = default;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
             requestedHeroDefeats = Array.Empty<HeroId>();
@@ -255,6 +264,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     repeat.ControllerId, step.RepeatRequested.Continuation);
             }
 
+            borrowRequested = step.BorrowRequested;
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
             requestedHeroDefeats = step.RequestedHeroDefeats;
@@ -358,9 +368,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out PendingRepeatedAction repeat,
             out LanePushCauseKind lanePushCause,
             out IReadOnlyList<RuleObject> appliedPushes,
-            out IReadOnlyList<HeroId> requestedHeroDefeats)
+            out IReadOnlyList<HeroId> requestedHeroDefeats,
+            // Milestone 8.35z50. A borrow this Skill's own text asked for, surfaced beside the repeat
+            // and never inside it: a borrowed primary is not a p.10 repeat (RULING 22).
+            out GuardsDigital.Core.Rules.EffectResolution.BorrowRequest borrowRequested)
         {
             repeat = null;
+            borrowRequested = default;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
             requestedHeroDefeats = Array.Empty<HeroId>();
@@ -411,6 +425,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     step.RepeatRequested.Continuation);
             }
 
+            borrowRequested = step.BorrowRequested;
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
             requestedHeroDefeats = step.RequestedHeroDefeats;
@@ -439,9 +454,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out PendingRepeatedAction repeat,
             out LanePushCauseKind lanePushCause,
             out IReadOnlyList<RuleObject> appliedPushes,
-            out IReadOnlyList<HeroId> requestedHeroDefeats)
+            out IReadOnlyList<HeroId> requestedHeroDefeats,
+            // Milestone 8.35z50. A borrow this Skill's own text asked for, surfaced beside the repeat
+            // and never inside it: a borrowed primary is not a p.10 repeat (RULING 22).
+            out GuardsDigital.Core.Rules.EffectResolution.BorrowRequest borrowRequested)
         {
             repeat = null;
+            borrowRequested = default;
             lanePushCause = LanePushCauseKind.None;
             appliedPushes = Array.Empty<RuleObject>();
             requestedHeroDefeats = Array.Empty<HeroId>();
@@ -483,6 +502,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     step.RepeatRequested.Continuation);
             }
 
+            borrowRequested = step.BorrowRequested;
             lanePushCause = step.LanePushCause;
             appliedPushes = step.AppliedPushes;
             requestedHeroDefeats = step.RequestedHeroDefeats;

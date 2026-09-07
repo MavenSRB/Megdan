@@ -110,6 +110,16 @@ namespace GuardsDigital.Tests.EditMode
                 // this list: it is a roster capability registered in
                 // SyntheticRosterCapabilities.RegisteredHandlers, not a hero-owned Active-effect
                 // creation, and this mirror is of VerifiedCapabilityHandlers alone.
-                .Concat(SilverarrowActiveEffectContent.Handlers());
+                .Concat(SilverarrowActiveEffectContent.Handlers())
+                // Milestone 8.35z50. Ursafar's fifteen - twelve "This round: You are enraged." grants,
+                // two Movement raises and Tear's additional-defeat-cost declaration - joining the moment
+                // his dealing milestone put them into MatchContentCatalogs, and mirrored BY HAND here
+                // for the reason Dodger's pair records: a mirror that called the production composer
+                // would agree with it by construction and prove nothing. His three genuinely new
+                // contracts are NOT in this list - `hero-condition@1`, `borrow-primary-action@1` and
+                // `attack-target-survived@1` are generic capabilities registered from their own
+                // Synthetic files, and this mirror is of VerifiedCapabilityHandlers alone, exactly as
+                // Silverarrow's CardTextFastTravelHandler is excluded above.
+                .Concat(UrsafarActiveEffectContent.RegisteredHandlers());
     }
 }

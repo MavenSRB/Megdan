@@ -133,6 +133,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private PendingAttackResolution owedAttackRepeat;
         private AttackTarget owedAttackRepeatExclusion;
 
+        // Milestone 8.35z50. The card a completed card text asked to borrow a primary action from, and
+        // the hero who will perform it. Ephemeral by design and deliberately NOT persisted: a borrow is
+        // owed only across the boundary between the frame that asked and the instance that answers,
+        // which is the same window `owedAttackRepeat` above lives in.
+        private CardInstanceId owedBorrowedActionCardId;
+        private HeroId owedBorrowedActionActorId;
+
         /// <summary>
         /// Milestone 8.19a's outer pre-action continuation, or null. It is held beside the card-action
         /// continuation rather than as one of its kinds because the two genuinely coexist: work the
@@ -859,7 +866,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var result = skillBackend.StartTurnSkill(
                 resolutionId, offer, prepared.Definitions, prepared.Instances, participants,
                 timing, modifications, components, roundIndex, turnIndex, out var repeat,
-                out var lanePushCause, out var appliedPushes, out var requestedDefeats);
+                out var lanePushCause, out var appliedPushes, out var requestedDefeats,
+                out var borrowRequested);
+            RecordOwedBorrowedAction(borrowRequested, offer.ActorId);
             result = WithSkillRequestedHeroDefeats(
                 result, requestedDefeats, resolutionId, offer.SourceCardInstanceId,
                 offer.ActionDefinitionId, offer.ActorId, boundary);
@@ -1038,11 +1047,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var result = skillBackend.AnswerEffectChoice(
                 command, materializedDefinitions, materializedInstances, participants, timing,
                 modifications, components, roundIndex, turnIndex, out var repeat, out var lanePushCause,
-                out var appliedPushes, out var requestedDefeats);
+                out var appliedPushes, out var requestedDefeats, out var skillBorrow);
             if (frame == null)
             {
                 return result;
             }
+
+            // Milestone 8.35z50. Angry Roar and his two borrowing Greens all pause HERE - the borrow
+            // node asks which card, and this is where that answer arrives - so this is the site that
+            // actually produces a borrow for every face in this build that prints one.
+            RecordOwedBorrowedAction(skillBorrow, frame.ActorId);
 
             var boundary = new ActionBoundaryContext(
                 materializedDefinitions, materializedInstances, participants, timing, tieBreaker,
@@ -1266,7 +1280,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 out var furtherRepeat,
                 out var repeatedLanePushCause,
                 out var repeatedPushes,
-                out var repeatedDefeats);
+                out var repeatedDefeats,
+                out _);
             if (!repeated.Accepted)
             {
                 throw new InvalidOperationException(
@@ -2030,14 +2045,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // and a text about the target reaches it through the enclosing facts instead.
                 opposingHeroId: step.CardTextTiming == CardTextTiming.DefenseAction
                     ? EnclosingAttackOf(
-                        step.CardTextRemainderResolution, materializedDefinitions).ActorId
+                        step.CardTextRemainderResolution, materializedDefinitions, board).ActorId
                     : default,
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 // Milestone 8.10, widened at 8.11. What this text may ask about the Attack it is
                 // printed inside: who is attacking, what the Attack took, and p.13.s subtype. Every
                 // field is undefined at p.14.s step 1, because the page has not chosen a target yet.
-                enclosingAttack: EnclosingAttackOf(step.CardTextRemainderResolution, materializedDefinitions),
+                enclosingAttack: EnclosingAttackOf(
+                    step.CardTextRemainderResolution, materializedDefinitions, board),
                 rosterState: rosterState,
                 // Milestone 8.22, finding `F-ATK-02`. p.14's card text can displace a unit - Sabina's
                 // Point Blank Shot pushes what its Attack targeted - and a source watching p.18's
@@ -2121,6 +2137,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 result, step.CardTextRemainderResolution, materializedDefinitions, instances,
                 participants, modifications, steps);
             RecordOwedAttackRepeat(result, step.CardTextRemainderResolution);
+            // Milestone 8.35z50. A borrow asked for by card text is recorded at the same moment a
+            // card-text repeat is, and read from the same completed result. The actor is the hero whose
+            // text asked - the borrowing hero performs the borrowed primary, never its owner.
+            RecordOwedBorrowedAction(result, step.CardTextActorId);
 
             // Milestone 8.22, finding `F-ATK-02`. The two things this altitude used to drop, both of
             // which the Skill altitude has carried since 6.9 and 8.19c1: rulebook p.8's recorded cause,
@@ -2267,10 +2287,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// stored on the resolution, for the reason every other printed reading is: the definition is
         /// the content the match was configured with, and a copy on a continuation would be a second
         /// place the same fact could be wrong.</para>
+        ///
+        /// <para><b>Milestone 8.35z50 made it `public`, and the widening is deliberately the SMALL
+        /// one.</b> That milestone's `attack-target-survived@1` reads `TargetWasRemoved` live off
+        /// board occupancy, and the cases that pin that reading live in the Edit Mode test assembly -
+        /// which is a separate assembly under Unity, where `internal` is invisible and the one-assembly
+        /// dotnet harness and compile probe both report a false green. Core grants no
+        /// `InternalsVisibleTo` to that assembly and deliberately should not: that would open every
+        /// internal in the layer to reach one pure query. This method is a pure derivation over
+        /// trusted inputs - it stores nothing, mutates nothing, and returns a value type computed from
+        /// the definition set and the board - so exposing it exposes a reading rather than a seam.
+        /// The alternative considered and rejected was moving the cases to the harness-only tree,
+        /// which would have kept the evidence but hidden it from the tier that actually compiles the
+        /// way the shipped game does.</para>
         /// </summary>
-        internal static GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts EnclosingAttackOf(
+        public static GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts EnclosingAttackOf(
             PendingAttackResolution attack,
-            IReadOnlyList<CardDefinition> definitions)
+            IReadOnlyList<CardDefinition> definitions,
+            AdjacentMoveAuthority board = null)
         {
             if (attack == null)
             {
@@ -2299,7 +2333,39 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action?.AttackRange ?? AttackRangeKind.None,
                 attack.TargetSpaceBeforeConsequences,
                 attack.ActorSpaceAtActionStart,
-                attack.DefenseOffer?.SourceCardInstanceId ?? default);
+                attack.DefenseOffer?.SourceCardInstanceId ?? default,
+                TargetWasRemoved(attack, board));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z50. Whether this Attack's own target is currently off the board -
+        /// rulebook p.14 step 6's answer, read live rather than stored. See
+        /// <see cref="GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts.TargetWasRemoved"/>
+        /// for why a live read is exact here and costs nothing to restore.
+        /// </summary>
+        private static bool TargetWasRemoved(PendingAttackResolution attack, AdjacentMoveAuthority board)
+        {
+            if (board == null)
+            {
+                // Safe direction: an Attack backend under test with no board wired reports "not
+                // removed", which is the reading that composes less rather than more - exactly
+                // TargetSurvivedFactIsOwed's own stated direction for the shortfall this replaces.
+                return false;
+            }
+
+            if (attack.TargetHeroId.IsDefined)
+            {
+                return !board.Occupancies.Any(
+                    occupancy => occupancy.HeroId.Equals(attack.TargetHeroId));
+            }
+
+            if (attack.TargetMinionId.IsDefined)
+            {
+                return !board.Minions.Any(
+                    minion => minion.MinionId.Equals(attack.TargetMinionId));
+            }
+
+            return false;
         }
 
         private void RecordOwedAttackRepeat(
@@ -2315,6 +2381,47 @@ namespace GuardsDigital.Core.Rules.CardResolution
             owedAttackRepeatExclusion =
                 CardTextRepeatExclusionFor(result.RepeatRequested.Binding, attack);
         }
+
+        /// <summary>
+        /// Milestone 8.35z50. Whether a completed card text asked to perform a borrowed card's printed
+        /// primary, and which card - held here until the caller starts it, on exactly the terms
+        /// <see cref="RecordOwedAttackRepeat"/> holds a card-text repeat.
+        ///
+        /// <para>It is recorded rather than started inline for the reason
+        /// <c>SyntheticBorrowedActionCapabilities</c> states about its own handler: a borrowed primary
+        /// is a whole action instance with its own resolution, its own pauses and its own card-text
+        /// seams, and starting one from inside the frame that asked for it would nest a resolution
+        /// inside a resolution. The frame finishes; then the borrow begins.</para>
+        /// </summary>
+        private void RecordOwedBorrowedAction(EffectResolutionStepResult result, HeroId actorId)
+        {
+            if (result == null || !result.IsComplete)
+            {
+                return;
+            }
+
+            RecordOwedBorrowedAction(result.BorrowRequested, actorId);
+        }
+
+        /// <summary>
+        /// The same recording, from a request a backend surfaced through an out-parameter rather than
+        /// from a whole step result - which is how the SKILL path reports one, and the path that
+        /// matters: every face in this build that prints a borrow prints it on a Skill, so a producer
+        /// wired only to the Attack card-text path would be a mechanism with no live caller.
+        /// </summary>
+        private void RecordOwedBorrowedAction(BorrowRequest borrowRequested, HeroId actorId)
+        {
+            if (!borrowRequested.IsRequested || !actorId.IsDefined)
+            {
+                return;
+            }
+
+            owedBorrowedActionCardId = borrowRequested.BorrowedCardId;
+            owedBorrowedActionActorId = actorId;
+        }
+
+        /// <summary>Whether a card text has asked for a borrowed primary that has not started.</summary>
+        public bool HasOwedBorrowedAction => owedBorrowedActionCardId.IsDefined;
 
         /// <summary>
         /// The unit a card-text repeat of this Attack may not take, read off the binding the asking
@@ -2542,6 +2649,143 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 started.PendingResolution == null, null, null, started.Steps);
         }
 
+        /// <summary>
+        /// Milestone 8.35z50. Starts the borrowed card's printed primary action once
+        /// <c>borrow-primary-action@1</c>'s card choice has been answered - the authority
+        /// <see cref="GuardsDigital.Core.Rules.EffectResolution.BorrowedActionQuery"/>'s doc comment
+        /// names as the missing half, and the direct twin of
+        /// <see cref="StartOwedAfterActionRepeat"/>.
+        ///
+        /// <para><b>Everything the contract promises falls out of ONE decision</b> - that the offer
+        /// built here names the BORROWED card as its source. Its values, Range, Radius and printed text
+        /// are the borrowed card's because every value query and every card-text seam in this engine
+        /// reads them off the offer's own source definition; its supertype is the borrowed card's
+        /// because `PerformedBasicAction` resolves that same definition, so borrowing a basic card's
+        /// primary is a basic action performed and feeds every trigger that reads one (RULING 36).
+        /// Nothing is copied, so nothing can be copied wrongly.</para>
+        ///
+        /// <para><b>The borrowed card does not change state</b>, and that is structural rather than
+        /// guarded: a printed primary declares no <c>SourceCardStateTransition</c> - only a secondary
+        /// Defense does - and this path never enters the turn's commitment path, which is the only
+        /// other thing that moves a card. <see cref="BorrowedPrimaryActionDeclaration.Refuses"/> states
+        /// it as a rule, and is asked here before the offer is built rather than after.</para>
+        ///
+        /// <para><b>The instance is stamped <see cref="ActionInvocationContext.TextGranted"/></b>, which
+        /// is what makes it invisible to every repeat reader in the engine without any of them being
+        /// touched: the whole repeat mechanism keys on <see cref="ActionInvocationContext.Repeated"/>
+        /// and this is not that (RULING 22). The turn still spends one action in total, because this is
+        /// started from inside the borrowing card's own effect resolution - the turn's action was spent
+        /// committing that card, exactly as p.14's step-1 move inside an Attack is part of the
+        /// Attack.</para>
+        /// </summary>
+        public CardActionResolutionResult StartOwedBorrowedAction(
+            IEnumerable<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex)
+        {
+            var borrowedCardId = owedBorrowedActionCardId;
+            var actorId = owedBorrowedActionActorId;
+            owedBorrowedActionCardId = default;
+            owedBorrowedActionActorId = default;
+
+            var nothingHappened = CardActionResolutionResult.Accept(
+                true, null, null, Array.Empty<ResolutionStep>());
+            if (!borrowedCardId.IsDefined || !actorId.IsDefined)
+            {
+                return nothingHappened;
+            }
+
+            var materializedDefinitions = definitions?.ToArray() ??
+                throw new ArgumentNullException(nameof(definitions));
+            var materializedInstances = instances?.ToArray() ??
+                throw new ArgumentNullException(nameof(instances));
+
+            var card = materializedInstances.FirstOrDefault(
+                candidate => candidate.Id.Equals(borrowedCardId));
+            var definition = card == null
+                ? null
+                : materializedDefinitions.FirstOrDefault(
+                    candidate => candidate.Reference.Equals(card.DefinitionReference));
+            if (definition == null)
+            {
+                // A payload naming a card this build does not supply performs nothing rather than a
+                // reconstructed action - the same refusal every other continuation here makes against a
+                // tampered or stale record.
+                return nothingHappened;
+            }
+
+            // The contract's own refusal set, asked before an offer exists rather than after one is
+            // built: no printed primary (p.16's Ultimate), text transcribed but not composed (p.20's
+            // Handicap cards), or an action that would move its own card.
+            if (BorrowedPrimaryActionDeclaration.Refuses(definition) != BorrowRefusal.None)
+            {
+                return nothingHappened;
+            }
+
+            var primary = definition.ActionDefinitions.First(
+                action => action.Origin == ActionDefinitionOrigin.PrintedPrimary);
+            var borrowedOffer = new ActionOffer(
+                borrowedCardId,
+                definition.Reference,
+                primary.Id,
+                actorId,
+                BorrowedPrimaryActionDeclaration.InvocationContext,
+                true,
+                primary.AttackRange,
+                primary.SourceCardStateTransition);
+
+            // Each kind is started through THIS authority's own public entry point rather than through
+            // a backend directly, so a borrowed instance passes the identical `PrepareStart` funnel a
+            // printed one does - the same availability, pending-resolution and invocation-context
+            // checks, in the same order. That is what makes "a borrowed primary is an ordinary action
+            // instance" true of the code and not only of the doc comment.
+            var borrowedResolutionId = BorrowedResolutionIdFor(borrowedCardId, actorId);
+            switch (primary.Kind)
+            {
+                case ActionKind.Attack:
+                    var borrowedAttack = StartAttackResolution(
+                        borrowedResolutionId, borrowedOffer, materializedDefinitions,
+                        materializedInstances, participants, modifications);
+                    return borrowedAttack.Accepted
+                        ? CardActionResolutionResult.Accept(false, null, null, borrowedAttack.Steps)
+                        : nothingHappened;
+
+                case ActionKind.Movement:
+                    return StartMovementResolution(
+                        borrowedResolutionId, borrowedOffer, materializedDefinitions,
+                        materializedInstances, modifications);
+
+                case ActionKind.Skill:
+                    return StartTurnSkill(
+                        borrowedResolutionId, borrowedOffer, materializedDefinitions,
+                        materializedInstances, participants, timing, modifications, tieBreaker,
+                        roundIndex, turnIndex);
+
+                default:
+                    // p.11's Fast Travel, p.12's Hold and p.13's Clear are not printed primaries a card
+                    // carries, so no borrow can name one; a kind arriving here means the contract's own
+                    // refusal set was bypassed.
+                    return nothingHappened;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z50. The identity a borrowed instance resolves under.
+        ///
+        /// <para>It is minted from the borrowed card and the borrowing hero rather than inherited from
+        /// the frame that asked, because the borrowed action is a DIFFERENT action instance - rulebook
+        /// p.13's Defeat outcome pays once per identity, and sharing one with the borrowing card's own
+        /// resolution is exactly the collision milestone 8.25d recorded for two repeat instances.</para>
+        /// </summary>
+        private static ActionResolutionId BorrowedResolutionIdFor(
+            CardInstanceId borrowedCardId, HeroId actorId) =>
+            new ActionResolutionId($"borrowed:{actorId.Value}:{borrowedCardId.Value}");
+
         public CardActionResolutionResult StartOwedAttackRepeat(
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
@@ -2701,6 +2945,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         components,
                         roundIndex,
                         turnIndex,
+                        out _,
                         out _,
                         out _,
                         out _,
@@ -2864,11 +3109,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // back, so Parry and Riposte opened their discard and then refused every answer to
                 // it - the question was askable and unanswerable.
                 opposingHeroId: pendingCardText.Moment == CardTextTiming.DefenseAction
-                    ? EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions).ActorId
+                    ? EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions, board).ActorId
                     : default,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions),
+                enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions, board),
                 rosterState: rosterState,
                 // Milestone 8.25d, the resume half of the same bound the start half states: a frame
                 // that comes back to a `RepeatAction` node after answering an earlier question is
@@ -3488,7 +3733,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         boundary.Timing, CurrentModificationsFor(boundary, interrupted.ActorId),
                         components, boundary.RoundIndex, boundary.TurnIndex,
                         out var furtherRepeat, out var furtherCause, out var furtherPushes,
-                        out var furtherDefeats);
+                        out var furtherDefeats, out _);
                     if (!continued.Accepted)
                     {
                         return continued;
@@ -3773,7 +4018,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 boundary.Definitions, boundary.Instances, boundary.Participants, boundary.Timing,
                 CurrentModificationsFor(boundary, interrupted.ActorId), components,
                 boundary.RoundIndex, boundary.TurnIndex,
-                out repeat, out lanePushCause, out var furtherPushes, out var furtherDefeats);
+                out repeat, out lanePushCause, out var furtherPushes, out var furtherDefeats, out _);
             if (!continued.Accepted)
             {
                 return continued;
@@ -4274,8 +4519,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedInstances);
             }
 
+            // Milestone 8.35z50 admits `TextGranted` here too, and this is the SHARED funnel every
+            // Attack, Movement and Skill start passes through - so widening it is what lets a borrowed
+            // primary of any kind begin. The offer names the borrowed card, which is what makes the
+            // borrowed action the borrowed card's own in every respect (RULING 36).
             if (offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
-                offer.InvocationContext != ActionInvocationContext.PrintedSecondary)
+                offer.InvocationContext != ActionInvocationContext.PrintedSecondary &&
+                offer.InvocationContext != ActionInvocationContext.TextGranted)
             {
                 return PreparedStart.Reject(
                     CardActionResolutionRejectionReason.UnsupportedInvocationContext,

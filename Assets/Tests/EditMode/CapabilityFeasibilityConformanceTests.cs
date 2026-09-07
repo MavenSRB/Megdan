@@ -239,7 +239,14 @@ namespace GuardsDigital.Tests.EditMode
             // Active-effect creations move it by nothing either, on the same sentence three heroes
             // running now have written: ActiveEffectCreationHandler is a type this build has had since
             // milestone 6.8.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(62),
+            // Milestone 8.35z50 moves it 62 -> 65, and the arithmetic is the dealing's own: Ursafar's
+            // registration crosses THREE new handler TYPES - `HeroConditionHandler` (the enraged
+            // predicate twelve of his faces read), `BorrowPrimaryActionHandler` (the contract Angry Roar
+            // and his two borrowing Greens start) and `AttackTargetSurvivedHandler` (the reading his
+            // three removal Reds gate on). His FIFTEEN Active-effect creations move it by nothing, on
+            // the sentence four dealings have now written: `ActiveEffectCreationHandler` is a type this
+            // build has had since milestone 6.8, and this rule counts TYPES.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(65),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

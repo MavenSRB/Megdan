@@ -51,11 +51,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The card whose printed primary the borrowing hero is about to perform.</summary>
         public const string BorrowedCardOutput = "borrowedCard";
 
+        /// <summary>
+        /// Milestone 8.35z50 registered this handler beside the hero whose dealt cards start it.
+        /// Shared with Tali on ledger row 25's rule - deferred only until the FIRST of its sharers is
+        /// dealt - so it crosses with Ursafar and her own dealing finds it already here.
+        /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[] { new BorrowPrimaryActionHandler() };
+
+        /// <summary>
+        /// Nothing is deferred here any longer; the member survives for the offline content tests that
+        /// compose catalogs of their own from the deferred lists.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// The candidate set one borrow node would offer right now, as a function of state alone.

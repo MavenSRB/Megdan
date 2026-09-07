@@ -170,6 +170,19 @@ namespace GuardsDigital.Core.Cards
                 // CardTextFastTravelHandler, is registered separately in
                 // `SyntheticRosterCapabilities.RegisteredHandlers` and reaches this build's generic
                 // handler set from there, not from here.
-                .Concat(SilverarrowActiveEffectContent.Handlers());
+                .Concat(SilverarrowActiveEffectContent.Handlers())
+                // Milestone 8.35z50. Ursafar's fifteen creations - twelve "This round: You are
+                // enraged." grants, two Movement raises and Tear's additional-defeat-cost declaration -
+                // joining at the milestone that deals him. Like the three groups above they owe no
+                // showcase consumer: every one runs on ActiveEffectCreationHandler, the type Arien's
+                // five persistent texts proved, and milestone 7.9's deferral gate asks its second half
+                // of the handler TYPE rather than of a capability id. His three genuinely new
+                // contracts - `hero-condition@1`, `borrow-primary-action@1` and
+                // `attack-target-survived@1` - register from their own Synthetic files rather than from
+                // here, because they are generic capabilities this build now owns rather than content
+                // of his. He contributes no triggered definition at all: Unbound Fury prints a
+                // permanent ability and declares no TriggeredEffect, which is an explicit empty
+                // contribution rather than a missing registration.
+                .Concat(UrsafarActiveEffectContent.RegisteredHandlers());
     }
 }

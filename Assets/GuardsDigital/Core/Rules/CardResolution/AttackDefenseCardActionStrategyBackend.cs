@@ -542,8 +542,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.ResolutionAlreadyPending);
             }
 
+            // Milestone 8.35z50 admits `TextGranted`, the stamp a borrowed primary carries. The offer
+            // reaching here names the BORROWED card as its source, so every value, Range, Radius and
+            // printed-text seam below reads that card's own definition and nothing had to be copied.
             if (offer.InvocationContext != ActionInvocationContext.PrintedPrimary &&
-                offer.InvocationContext != ActionInvocationContext.PrintedSecondary)
+                offer.InvocationContext != ActionInvocationContext.PrintedSecondary &&
+                offer.InvocationContext != ActionInvocationContext.TextGranted)
             {
                 return RejectAttack(CardActionResolutionRejectionReason.UnsupportedInvocationContext);
             }

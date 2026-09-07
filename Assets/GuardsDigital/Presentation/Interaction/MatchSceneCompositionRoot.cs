@@ -488,7 +488,65 @@ namespace GuardsDigital.Presentation.Interaction
         /// mandatory chain is reachable through a player's own input - three Attack instances from one
         /// card, each narrowed to what its own printed clause admits.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedSilverarrow = 49
+        VerifiedTierThreeAlternateEngagedStagedSilverarrow = 49,
+
+        /// <summary>
+        /// Milestone 8.35z50. The staged Wasp-versus-Ursafar hands with both heroes
+        /// restaged already engaged, exactly as <see cref="VerifiedEngagedStagedMisa"/> stages its two.
+        /// He is the TENTH hero this build deals.
+        ///
+        /// <para><b>These five members are numbered 50-54 rather than the 45-49 this hero's prep branch
+        /// drafted.</b> That branch was cut before milestone 8.35z46 dealt Silverarrow, who holds 45-49
+        /// on main; the Whisper dealing-prep branch independently drafted the same five numbers, so
+        /// three separate claims to one range existed at once. The collision was found by reading the
+        /// enum before the merge rather than by a red run, and it is recorded here because the same
+        /// shape has now bitten twice - milestone 8.35z46 renumbered Misa's 40-44 for the identical
+        /// reason. A prep branch cut before a dealing cannot know which members that dealing took.</para>
+        ///
+        /// <para>Ursafar takes the Blue seat rather than joining it, for the reason the arms before his
+        /// record: milestone 8.25 owns the official six-player configuration. He needs no ally seat -
+        /// no face of his names a friendly hero at all.</para>
+        ///
+        /// <para><b>What his arms need is a target to attack and enemy minions to remove</b> - both of
+        /// which the engaged position and p.8's ordinary waves supply, exactly as they do for Sabina's
+        /// and Wasp's own minion-reading faces.</para>
+        /// </summary>
+        VerifiedEngagedStagedUrsafar = 50,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Ursafar holding the first sibling
+        /// of each colour: Prey Abundance, Rampaging Beast and Eyes on the Prey.
+        ///
+        /// <para>See <see cref="Cards.Verified.UrsafarProgressedHands"/>, which records the whole
+        /// split: this branch carries the first-arm faces (no borrow, no Life-counter spend).</para>
+        /// </summary>
+        VerifiedTierTwoEngagedStagedUrsafar = 51,
+
+        /// <summary>
+        /// The Tier II staging with Ursafar holding the <em>second</em> sibling of each colour - Rip,
+        /// Cold Ire and Instinctive Reaction - which is the half of p.15's upgrade the row above does
+        /// not deal. It is the only Tier II arm of his that carries a borrow-bearing face at all, so
+        /// THE UNIVERSAL BORROW RULE is reachable here and nowhere else at this Tier.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedUrsafar = 52,
+
+        /// <summary>
+        /// The engaged staging at p.15's Tier III stage, with p.16's Ultimate unlocked on both seats -
+        /// High Voltage in Wasp's area and Unbound Fury in Ursafar's - and Ursafar holding the first
+        /// sibling of each colour: Feeding Frenzy, Unstoppable Force and Apex Predator.
+        ///
+        /// <para>This is the one arm in which the two-minion arm of the target-survived removal is
+        /// reachable through a player's own input, with his Ultimate up.</para>
+        /// </summary>
+        VerifiedTierThreeEngagedStagedUrsafar = 53,
+
+        /// <summary>
+        /// The Tier III staging with Ursafar holding the second sibling of each colour: Tear, Eyes of
+        /// Flame and Evolutionary Response. This is the one arm in which RULING 35's Life-counter spend
+        /// and the borrow's post-Ultimate widening (RULING 43) are both reachable through a player's
+        /// own input, with his Ultimate up.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedUrsafar = 54
     }
 
     [ExecuteAlways]
@@ -885,6 +943,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedSilverarrowTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.SilverarrowUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedUrsafar =>
+                    MatchConfiguration.CreateStagedUrsafarForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedUrsafar =>
+                    MatchConfiguration.CreateStagedUrsafarTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.UrsafarUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedUrsafar =>
+                    MatchConfiguration.CreateStagedUrsafarTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.UrsafarUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedUrsafar =>
+                    MatchConfiguration.CreateStagedUrsafarTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.UrsafarUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedUrsafar =>
+                    MatchConfiguration.CreateStagedUrsafarTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.UrsafarUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -927,7 +1004,8 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedXargatha(content) ||
                 IsStagedDodger(content) ||
                 IsStagedMisa(content) ||
-                IsStagedSilverarrow(content))
+                IsStagedSilverarrow(content) ||
+                IsStagedUrsafar(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1321,6 +1399,11 @@ namespace GuardsDigital.Presentation.Interaction
                             .CreateStagedWaspVersusSilverarrowOneVsOne();
                     }
 
+                    if (IsStagedUrsafar(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusUrsafarOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -1414,6 +1497,18 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSilverarrow ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedSilverarrow ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSilverarrow;
+        /// Whether this content puts Ursafar the Savage on the Blue seat. Milestone
+        /// 8.35z50's five arms, on the one-hero-per-team setup and the ordinary engaged
+        /// restaging: no face of his names a friendly hero at all, so an ally seat would widen nothing -
+        /// what his set needs is a target within reach and enemy minions in radius, which the engaged
+        /// position and p.8's waves supply.
+        /// </summary>
+        private static bool IsStagedUrsafar(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedUrsafar ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedUrsafar ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedUrsafar ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedUrsafar ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedUrsafar;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

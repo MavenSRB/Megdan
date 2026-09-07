@@ -205,17 +205,16 @@ namespace GuardsDigital.Core.Cards.Verified
                 new[] { RuleModification.ForAdditionalDefeatLifeCost() });
 
         /// <summary>
-        /// What this file contributes to the build's registered set today: nothing, on the standing
-        /// rule about eager registration. See the type remarks.
+        /// Milestone 8.35z50, the dealing: this file's Active-effect creations crossed into the
+        /// build's registered set beside the hero whose dealt cards start them.
+        ///
+        /// <para>They move the pinned handler COUNT by nothing, on the sentence four dealings now
+        /// share: `ActiveEffectCreationHandler` is a handler TYPE this build has had since milestone
+        /// 6.8, and milestone 7.9's gate asks its second half of a TYPE rather than of a capability id.
+        /// Every one of these is another instance of a type already registered and already showcased.
+        /// What this dealing's registration actually moves is recorded in its completion evidence.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>
-        /// The twelve handlers the milestone that deals Ursafar registers, and that this milestone's
-        /// offline tests compose a catalog of their own to prove.
-        /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             ComposedGrants
                 .Select(cardId => (IEffectCapabilityHandler)new ActiveEffectCreationHandler(
                     GrantFor(cardId), DefinitionFor(cardId)))
@@ -227,6 +226,14 @@ namespace GuardsDigital.Core.Cards.Verified
                     new ActiveEffectCreationHandler(
                         AdditionalDefeatLifeCostV1, AdditionalDefeatLifeCostDefinition)
                 });
+
+        /// <summary>
+        /// Nothing of his is deferred any longer - milestone 8.35z50 moved every one of these across.
+        /// The member survives because the offline content tests compose catalogs of their own from the
+        /// deferred lists, and the heroes composed but not yet dealt still need that seam.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         private static EffectCapabilityId GrantCapabilityId(CardDefinitionId cardId) =>
             new EffectCapabilityId(cardId.Value + "-enraged");

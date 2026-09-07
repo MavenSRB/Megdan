@@ -476,6 +476,19 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.DodgerCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.MisaHeroIdValue:
                     return Cards.Verified.MisaCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.35z50 adds Ursafar's arm at his own dealing, and SILVERARROW'S WITH IT.
+                // Hers is a gap milestone 8.35z46 left rather than a decision it made: that milestone
+                // dealt, registered and gated her, and 8.35z41's own rule is that a dealing adds its
+                // row to the offerable roster and its arm to this switch in the same commit. It did
+                // neither, so the ninth dealt hero has been unpickable in the selector ever since -
+                // the exact defect 8.35z41 was written to fix, recurring one dealing later because
+                // the convention lives in a doc comment and not in a check. It is corrected here
+                // rather than left for her, because the fixture below asserts both directions over
+                // every offerable hero and would otherwise pass while she stayed invisible.
+                case Setup.QuickGameSetupConfiguration.SilverarrowHeroIdValue:
+                    return Cards.Verified.SilverarrowCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.UrsafarHeroIdValue:
+                    return Cards.Verified.UrsafarCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1055,6 +1068,86 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.35z50. The staged Wasp-versus-Ursafar match, on the same `DEV-005`
+        /// terms the eight staged matches before it are on. This is the configuration that makes
+        /// Ursafar the TENTH dealt hero.
+        ///
+        /// <para>Ursafar takes the Blue seat though the roster-expansion amendment has not yet placed
+        /// him in an official line-up at all, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals rulebook p.5's six.</para>
+        ///
+        /// <para>He needs no ally seat and no special terrain: his three removal Reds read "enemy
+        /// minion in radius", which p.8's ordinary waves already supply on every configuration this
+        /// build has, exactly as Sabina's and Wasp's own minion-reading faces read them.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedUrsafarForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedUrsafarHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z50. The staged Wasp-versus-Ursafar match at rulebook p.15's Tier
+        /// II stage, with Ursafar holding one Tier II card of each colour on the branch the caller
+        /// names - the same pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        ///
+        /// <para>Which branch a staged hand took decides which of the user's Ursafar rulings this match
+        /// can observe at all, and the division is stated in full on
+        /// <see cref="Cards.Verified.UrsafarProgressedHands"/>: the first branch carries the two-minion
+        /// arm of the target-survived removal and the discard-or-defeat escalation; the second reaches
+        /// RULING 35's Life-counter spend, the Movement raise, and Instinctive Reaction's borrow
+        /// modal.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedUrsafarTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.UrsafarUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedUrsafarHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z50. The staged Wasp-versus-Ursafar match at rulebook p.15's Tier
+        /// III stage with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate
+        /// area and Unbound Fury in Ursafar's.
+        ///
+        /// <para><b>His is the only unlocked Ultimate in this build that widens a BORROW's own pool.</b>
+        /// Unbound Fury's second clause makes every one of his resolved cards count as active, so this
+        /// is the only configuration in which Angry Roar can reach a resolved card whose Active effect
+        /// has already expired - THE UNIVERSAL BORROW RULE's post-Ultimate case, and the reading RULING
+        /// 43 settled.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedUrsafarTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.UrsafarUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedUrsafarHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.UrsafarCardContent.UnboundFury)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -1419,6 +1512,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.SilverarrowProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.SilverarrowProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.35z50. One seat's verified Ursafar hand, prefixed by the seat's team
+        /// side for the reason the nine earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedUrsafarHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.UrsafarCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedUrsafarHand(
+            bool tierThree, Cards.Verified.UrsafarUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.UrsafarProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.UrsafarProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

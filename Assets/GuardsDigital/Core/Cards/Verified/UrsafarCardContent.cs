@@ -46,7 +46,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="TigerclawCardContent.ContentRevision"/> has: it moves when Ursafar's content does.
         /// </summary>
-        public const string ContentRevision = "ursafar-8-35x-ursafar1-rev-1";
+        public const string ContentRevision = "ursafar-8-35z50-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

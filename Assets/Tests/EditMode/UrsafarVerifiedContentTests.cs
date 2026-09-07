@@ -33,10 +33,12 @@ namespace GuardsDigital.Tests.EditMode
         /// not move a pinned snapshot.
         /// </summary>
         private static EffectCapabilityCatalog Catalog() =>
+            // Milestone 8.35z50: the three Synthetic families are part of the GENERIC catalog now that
+            // he is dealt, so passing them again as content handlers would register each twice and the
+            // catalog refuses duplicates by design. His Active-effect creations are the only content
+            // half left to supply.
             SyntheticEffectCapabilities.CreateCatalog(
-                UrsafarActiveEffectContent.DeferredHandlers()
-                    .Concat(SyntheticConditionCapabilities.DeferredHandlers())
-                    .Concat(SyntheticBorrowedActionCapabilities.DeferredHandlers()));
+                UrsafarActiveEffectContent.RegisteredHandlers());
 
         // -----------------------------------------------------------------------------------------
         // The printed set.
@@ -434,57 +436,128 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The shortfall, asserted by name. Three Red faces print "and the target was not removed" and
-        /// nothing in this build can answer it; their removal clause is not composed. This test fails
-        /// the day the fact arrives without the clause being composed with it, which is the only way to
-        /// keep a named gap from becoming a forgotten one.
+        /// The former shortfall, now closed. Three Red faces print "and the target was not removed"
+        /// and this milestone built the fact that answers it - see
+        /// <see cref="UrsafarEffectContent.RemovalGatedOnTargetSurvival"/>. This asserts the composed
+        /// shape: the compound "if enraged, and the target was not removed" gate nested two deep, the
+        /// removal selection reading the card's own printed Radius rather than a literal, and the
+        /// grant remaining the unconditional sibling Ruling 2 requires.
         /// </summary>
         [Test]
-        public void TheThreeRemovalReds_ComposeTheirGrantAndNotTheirRemoval()
+        public void TheThreeRemovalReds_ComposeTheCompoundGateAndTheRemoval()
         {
-            Assert.That(UrsafarEffectContent.TargetSurvivedFactIsOwed, Has.Count.EqualTo(3));
+            Assert.That(UrsafarEffectContent.RemovalGatedOnTargetSurvival, Has.Count.EqualTo(3));
 
-            foreach (var cardId in UrsafarEffectContent.TargetSurvivedFactIsOwed)
+            foreach (var cardId in UrsafarEffectContent.RemovalGatedOnTargetSurvival)
             {
                 var primary = UrsafarCardContent.Definition(cardId).ActionDefinitions
                     .Single(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary);
                 Assert.That(primary.CardTextTiming, Is.EqualTo(CardTextTiming.AfterTheAttack));
-                Assert.That(primary.EffectRoot.Nodes, Has.Count.EqualTo(1), cardId.Value);
+
+                var root = primary.EffectRoot;
+                var rootNode = root.Nodes.Single(node => node.Id.Equals(root.RootNodeId));
+                Assert.That(rootNode.ChildNodeIds, Has.Count.EqualTo(2), cardId.Value);
+
+                var enragedGate = root.Nodes.Single(node => node.Id.Equals(rootNode.ChildNodeIds[0]));
+                Assert.That(enragedGate.Kind, Is.EqualTo(EffectNodeKind.Conditional));
                 Assert.That(
-                    primary.EffectRoot.Nodes.Single().Capability,
-                    Is.EqualTo(UrsafarActiveEffectContent.GrantFor(cardId)));
+                    enragedGate.Capability, Is.EqualTo(SyntheticConditionCapabilities.HeroConditionV1));
+
+                var survivedCheck = root.Nodes.Single(
+                    node => node.Id.Equals(enragedGate.ChildNodeIds.Single()));
+                Assert.That(survivedCheck.Kind, Is.EqualTo(EffectNodeKind.Sequence));
+                var survivedFact = root.Nodes.Single(
+                    node => node.Id.Equals(survivedCheck.ChildNodeIds[0]));
+                Assert.That(survivedFact.Kind, Is.EqualTo(EffectNodeKind.Capability));
+                Assert.That(
+                    survivedFact.Capability,
+                    Is.EqualTo(SyntheticAttackTargetSurvivalCapabilities.AttackTargetSurvivedV1));
+                var survivedGate = root.Nodes.Single(
+                    node => node.Id.Equals(survivedCheck.ChildNodeIds[1]));
+                Assert.That(survivedGate.Kind, Is.EqualTo(EffectNodeKind.Conditional));
+                Assert.That(
+                    survivedGate.Capability, Is.EqualTo(SyntheticEffectCapabilities.IsFlaggedV1));
+
+                var removalSequence = root.Nodes.Single(
+                    node => node.Id.Equals(survivedGate.ChildNodeIds.Single()));
+                var radius = root.Nodes.Single(
+                    node => node.Id.Equals(removalSequence.ChildNodeIds[0]));
+                Assert.That(radius.Capability, Is.EqualTo(SyntheticValueCapabilities.CardRadiusV1),
+                    "Reach is the card's own printed Radius, never a literal.");
+                var select = root.Nodes.Single(
+                    node => node.Id.Equals(removalSequence.ChildNodeIds[1]));
+                Assert.That(select.Capability, Is.EqualTo(SyntheticRosterCapabilities.ChooseTargetSetV1));
+                var expectedMaximum = cardId.Equals(UrsafarCardContent.FeedingFrenzy) ? 2 : 1;
+                Assert.That(
+                    select.Inputs.Single(input => input.ParameterName == "maximum")
+                        .Literal.IntegerValue,
+                    Is.EqualTo(expectedMaximum));
+                Assert.That(removalSequence.ChildNodeIds, Has.Count.EqualTo(expectedMaximum + 2),
+                    "One radius node, one selection, and one Remove per space the card allows.");
+                foreach (var removeNodeId in removalSequence.ChildNodeIds.Skip(2))
+                {
+                    var removeNode = root.Nodes.Single(node => node.Id.Equals(removeNodeId));
+                    Assert.That(
+                        removeNode.Capability, Is.EqualTo(SyntheticExchangeCapabilities.RemoveV2));
+                    Assert.That(removeNode.FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble));
+                }
+
+                var grant = root.Nodes.Single(node => node.Id.Equals(rootNode.ChildNodeIds[1]));
+                Assert.That(
+                    grant.Capability, Is.EqualTo(UrsafarActiveEffectContent.GrantFor(cardId)),
+                    "The grant stays the card's own unconditional sibling - Ruling 2's build-up.");
                 Assert.That(
                     UrsafarCardContent.Definition(cardId).SourceContent.PrintedText,
-                    Does.Contain("the target was not removed"),
-                    "The clause is printed and transcribed; only its composition is owed.");
+                    Does.Contain("the target was not removed"));
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35z50 INVERTED this case, and the inversion is the dealing stated as an
+        /// assertion. It read `NothingOfHisIsRegisteredYet_BecauseThisBuildDoesNotDealHim` and asserted
+        /// four empty lists and four `IsRegistered ... Is.False`; every one of those is now the opposite,
+        /// because this build deals him. Inverting rather than deleting is deliberate: the registered
+        /// list is serialized, so the direction that matters is still pinned - what changed is which
+        /// side of the line his contracts sit on, and a future edit that quietly de-registered them
+        /// would fail here rather than only in a digest whose movement needs interpreting.
+        /// </summary>
         [Test]
-        public void NothingOfHisIsRegisteredYet_BecauseThisBuildDoesNotDealHim()
+        public void EverythingOfHisIsRegisteredNow_BecauseThisBuildDealsHim()
         {
-            Assert.That(UrsafarActiveEffectContent.RegisteredHandlers(), Is.Empty);
-            Assert.That(SyntheticConditionCapabilities.RegisteredHandlers(), Is.Empty);
-            Assert.That(SyntheticBorrowedActionCapabilities.RegisteredHandlers(), Is.Empty);
+            Assert.That(UrsafarActiveEffectContent.RegisteredHandlers(), Is.Not.Empty);
+            Assert.That(SyntheticConditionCapabilities.RegisteredHandlers(), Is.Not.Empty);
+            Assert.That(SyntheticBorrowedActionCapabilities.RegisteredHandlers(), Is.Not.Empty);
+            Assert.That(SyntheticAttackTargetSurvivalCapabilities.RegisteredHandlers(), Is.Not.Empty);
+
+            // Nothing of his is deferred any longer, which is the other half of the same statement.
+            Assert.That(UrsafarActiveEffectContent.DeferredHandlers(), Is.Empty);
+            Assert.That(SyntheticConditionCapabilities.DeferredHandlers(), Is.Empty);
+            Assert.That(SyntheticBorrowedActionCapabilities.DeferredHandlers(), Is.Empty);
+            Assert.That(SyntheticAttackTargetSurvivalCapabilities.DeferredHandlers(), Is.Empty);
 
             var build = MatchContentCatalogs.ForThisBuild().Capabilities;
             Assert.That(
-                build.IsRegistered(SyntheticConditionCapabilities.HeroConditionV1), Is.False);
+                build.IsRegistered(SyntheticConditionCapabilities.HeroConditionV1), Is.True);
             Assert.That(
                 build.IsRegistered(SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1),
-                Is.False);
+                Is.True);
+            Assert.That(
+                build.IsRegistered(
+                    SyntheticAttackTargetSurvivalCapabilities.AttackTargetSurvivedV1),
+                Is.True);
             Assert.That(
                 build.IsRegistered(
                     UrsafarActiveEffectContent.GrantFor(UrsafarCardContent.AngryRoar)),
-                Is.False,
-                "The registered list is serialized; registering before he is dealt would move pinned " +
-                "snapshot bytes and read at the far end as a serialization defect.");
+                Is.True,
+                "The registered list is serialized, so this milestone's dealing is what makes these " +
+                "contracts part of every snapshot's pinned set - which is why its corpus and scenario " +
+                "digests all moved and its schema version did not.");
         }
 
         [Test]
-        public void DeferredHandlers_AreFifteen_AndAllRegisterCleanlyTogether()
+        public void RegisteredHandlers_AreFifteen_AndAllRegisterCleanlyTogether()
         {
-            var handlers = UrsafarActiveEffectContent.DeferredHandlers().ToArray();
+            var handlers = UrsafarActiveEffectContent.RegisteredHandlers().ToArray();
             Assert.That(handlers, Has.Length.EqualTo(15),
                 "Twelve enrage grants, two Movement raises, and Tear's defeat-cost declaration.");
             Assert.That(

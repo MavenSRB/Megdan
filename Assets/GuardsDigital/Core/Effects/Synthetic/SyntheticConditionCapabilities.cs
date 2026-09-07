@@ -51,18 +51,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string PresentOutput = "present";
 
         /// <summary>
-        /// What this file contributes to the build's registered set today: nothing, and on purpose.
-        /// See the type remarks.
+        /// Milestone 8.35z50 registered this file's one handler, beside the hero whose dealt cards
+        /// start it.
+        ///
+        /// <para><b>It is shared with Tali and registers here anyway</b>, which is ledger row 25's rule
+        /// rather than an exception to it: milestone 7.9's gate asks whether a DEALT card starts a
+        /// contract, so a contract two heroes name is deferred only until the FIRST of its sharers is
+        /// dealt. Ursafar is dealt and Tali is not, so `hero-condition@1` crosses with him; her own
+        /// dealing finds it already registered and adds nothing, exactly as Silverarrow's dealing found
+        /// `choose-line-destination@1` already registered by Misa's.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[] { new HeroConditionHandler() };
 
         /// <summary>
-        /// The handlers this file owns, for the milestone that deals Ursafar to register beside his
-        /// content - and for the offline tests that compose a catalog of their own to prove them.
+        /// Nothing is deferred here any longer - milestone 8.35z50 moved this file's one handler across.
+        /// The member survives because the offline content tests compose catalogs of their own from the
+        /// deferred lists, and a hero composed but not yet dealt still needs that seam.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[] { new HeroConditionHandler() };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// A pure predicate over the match's own timing state: it mutates nothing, asks nobody, and

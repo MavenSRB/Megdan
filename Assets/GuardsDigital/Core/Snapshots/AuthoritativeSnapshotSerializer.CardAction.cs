@@ -947,7 +947,7 @@ namespace GuardsDigital.Core.Snapshots
                             : default);
                     var pausedAttack = ReadAttackResolution(reader);
                     var frame = frameAwaitingItsAttack(
-                        CardActionResolutionAuthority.EnclosingAttackOf(pausedAttack, definitions));
+                        CardActionResolutionAuthority.EnclosingAttackOf(pausedAttack, definitions, board));
                     var moment = SnapshotEnumReader.Read<CardTextTiming>(
                         reader, "paused card-text moment");
                     var pausedOutcome = SnapshotEnumReader.Read<AttackResolutionOutcome>(

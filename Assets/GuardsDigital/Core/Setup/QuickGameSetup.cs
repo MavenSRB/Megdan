@@ -321,13 +321,32 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Milestone 8.35z41. Misa's own hero id, on the same terms.</summary>
         public const string MisaHeroIdValue = "hero-misa";
 
+        /// <summary>
+        /// Milestone 8.35z50. Silverarrow's own hero id, minted late: milestone 8.35z46 dealt her and
+        /// did not add her here, so she has been dealt, registered and gated but unpickable ever since.
+        /// </summary>
+        public const string SilverarrowHeroIdValue = "hero-silverarrow";
+
+        /// <summary>Milestone 8.35z50. Ursafar's own hero id, minted at his own dealing.</summary>
+        public const string UrsafarHeroIdValue = "hero-ursafar";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
                 // Milestone 8.35z34 dealt her; 8.35z41 makes her pickable.
                 (DodgerHeroIdValue, "dodger", "Dodger the Warlock"),
                 // Milestone 8.35z38 dealt her; 8.35z41 makes her pickable.
-                (MisaHeroIdValue, "misa", "Misa the Samurai")
+                (MisaHeroIdValue, "misa", "Misa the Samurai"),
+                // Milestone 8.35z46 dealt her and MISSED THIS ROW; 8.35z50 corrects it. The omission is
+                // recorded rather than quietly fixed because it is the second instance of one class:
+                // the rule that a dealing adds its row here lives in this file's own doc comment and in
+                // no check, so a dealing that simply does not read it leaves its hero invisible to the
+                // selector while every other tier passes. She was fully dealt, registered, gated and
+                // journeyed at 8.35z46 - only unpickable.
+                (SilverarrowHeroIdValue, "silverarrow", "Silverarrow the Pathfinder"),
+                // Milestone 8.35z50 deals him and makes him pickable in the same commit, which is what
+                // the rule above asks for.
+                (UrsafarHeroIdValue, "ursafar", "Ursafar the Savage")
             };
 
         /// <summary>
@@ -600,6 +619,17 @@ namespace GuardsDigital.Core.Setup
         public static QuickGameSetupConfiguration CreateStagedWaspVersusSilverarrowOneVsOne() =>
             CreateOneVsOne(new HeroContentId("silverarrow"), "Silverarrow the Pathfinder");
 
+
+        /// <summary>
+        /// Milestone 8.35z50. Wasp on Red against Ursafar the Savage on Blue, the TENTH
+        /// hero this build deals.
+        ///
+        /// <para>He needs no ally seat: none of his nineteen faces names a friendly hero at all. What
+        /// his set asks for is his own state - whether he is enraged - and enemy minions in radius for
+        /// his three removal Reds, both of which the one-vs-one board with p.8's waves supplies.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusUrsafarOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("ursafar"), "Ursafar the Savage");
         /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master

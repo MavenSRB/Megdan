@@ -93,6 +93,10 @@ namespace GuardsDigital.Tests.EditMode
         /// afterwards. It stood in for Dodger until milestone 8.35z41, which made the prediction
         /// come true for real: she is in the live roster now, so the stand-in moved to the next
         /// undealt hero rather than being retired, because what this case pins is the MECHANISM.</para>
+        /// <para>Milestone 8.35z50 moved the stand-in again, for the third time and for the same
+        /// reason: Silverarrow became real here when that milestone corrected the roster row her own
+        /// dealing had missed, so the placeholder is now Tali. That this case had been USING her
+        /// absence as a fixture is itself what makes the omission it corrected undeniable.</para>
         /// <para>This is the case that would fail if anything in the stage counted the roster,
         /// cached it at construction, or hard-coded six or twelve.</para>
         /// </remarks>
@@ -103,7 +107,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(new[]
                 {
                     new RegisteredHero(
-                        "hero-silverarrow", new HeroContentId("silverarrow"), "Silverarrow the Ranger")
+                        "hero-tali", new HeroContentId("tali"), "Tali the Oracle")
                 })
                 .ToArray();
 
@@ -111,15 +115,15 @@ namespace GuardsDigital.Tests.EditMode
                 SixSeats(), TeamSide.Red, HeroSelectionMethod.AllPick, tomorrow);
 
             Assert.That(
-                stage.AvailableHeroes.Any(hero => hero.HeroIdValue == "hero-silverarrow"), Is.True,
+                stage.AvailableHeroes.Any(hero => hero.HeroIdValue == "hero-tali"), Is.True,
                 "A newly dealt hero is offered the moment the registration names it.");
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-red-1"), "hero-silverarrow", out var refusal), Is.True,
+                stage.TryChoose(new SeatId("seat-red-1"), "hero-tali", out var refusal), Is.True,
                 $"... and is pickable: {refusal}.");
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-blue-1"), "hero-silverarrow", out refusal), Is.False,
+                stage.TryChoose(new SeatId("seat-blue-1"), "hero-tali", out refusal), Is.False,
                 "... and the one-copy rule applies to him exactly as to the shipped six.");
             Assert.That(refusal, Is.EqualTo(HeroSelectionRefusal.HeroAlreadyTaken));
 
@@ -204,6 +208,67 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z50. THE OTHER DIRECTION, and the one whose absence let a dealt hero go
+        /// unpickable for four milestones: every hero this build can STAGE a dealing configuration
+        /// for must be a hero the selector offers.
+        /// </summary>
+        /// <remarks>
+        /// <para>The case above asks "what the picker offers, the composer can deal", and it is
+        /// satisfiable by a build that offers nothing at all. Silverarrow was dealt, registered,
+        /// gated and journeyed at milestone 8.35z46 with a staged configuration of her own and a
+        /// <c>CreateVerifiedHand</c> arm, and was still invisible to every selector, because the
+        /// convention that a dealing adds its roster row lived in a doc comment and in no check.
+        /// Both halves are needed and neither is redundant: one alone is satisfiable by a lie.</para>
+        /// <para>The staged factories are the honest source of "this build deals him". A dealing
+        /// milestone adds exactly one <c>CreateStaged&lt;Hero&gt;ForInternalTest</c>, so this check
+        /// extends itself and the next dealing that forgets its roster row fails HERE, in the
+        /// cross-platform harness in seconds, rather than in a playtest. Wasp is the one dealt hero
+        /// with no staged configuration - the printed line-up seats her - and she is covered by the
+        /// opposite direction above.</para>
+        /// <para>Reflection is the instrument rather than a hand-kept list for the same reason: a
+        /// list would have to be edited by every dealing, and an assertion that must be edited to
+        /// stay true protects nothing. The Tier II and Tier III variants are excluded by name
+        /// because they stage the same hero at a later rulebook p.15 stage.</para>
+        /// </remarks>
+        [Test]
+        public void EveryHeroThisBuildStagesADealingFor_IsOfferedByTheSelector()
+        {
+            var staged = typeof(MatchConfiguration)
+                .GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                .Select(method => method.Name)
+                .Where(name =>
+                    name.StartsWith("CreateStaged", StringComparison.Ordinal) &&
+                    name.EndsWith("ForInternalTest", StringComparison.Ordinal))
+                .Select(name => name.Substring(
+                    "CreateStaged".Length,
+                    name.Length - "CreateStaged".Length - "ForInternalTest".Length))
+                .Where(hero =>
+                    !hero.EndsWith("TierTwo", StringComparison.Ordinal) &&
+                    !hero.EndsWith("TierThree", StringComparison.Ordinal) &&
+                    !hero.EndsWith("WithAlly", StringComparison.Ordinal))
+                .Select(hero => hero.ToLowerInvariant())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(hero => hero, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(staged, Is.Not.Empty,
+                "The staged dealing factories are this check's source of truth; finding none means " +
+                "the naming convention moved and this assertion stopped asking anything.");
+
+            var roster = RegisteredHeroRoster.ForThisBuild;
+            foreach (var hero in staged)
+            {
+                Assert.That(
+                    roster.Any(offered => string.Equals(
+                        offered.ContentId.Value, hero, StringComparison.Ordinal)),
+                    Is.True,
+                    $"'{hero}' has a staged dealing configuration, so this build deals him - and a " +
+                    "hero this build deals must be one a selector offers. A missing " +
+                    "StagedDealtHeroRows row leaves every other tier green and the hero unpickable.");
+            }
+        }
+
+        /// <summary>
         /// A hero the build cannot deal is refused, so a selection screen can never seat one.
         /// </summary>
         [Test]
@@ -212,7 +277,7 @@ namespace GuardsDigital.Tests.EditMode
             var stage = new HeroSelectionStage(SixSeats(), TeamSide.Red);
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-red-1"), "hero-silverarrow", out var refusal),
+                stage.TryChoose(new SeatId("seat-red-1"), "hero-tali", out var refusal),
                 Is.False);
             Assert.That(refusal, Is.EqualTo(HeroSelectionRefusal.UnregisteredHero));
         }

@@ -81,7 +81,17 @@ namespace GuardsDigital.Tests.EditMode
             //
             // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
             // deliberately wrong value and the digest read off this oracle's own failure output.
-            new IdentityPin("silverarrow", "silverarrow-8-35z46-rev-1", "738e726343ff3837ac2871c0f3c450d320a4cfa894561b3e5456d2958913c67c")
+            new IdentityPin("silverarrow", "silverarrow-8-35z46-rev-1", "738e726343ff3837ac2871c0f3c450d320a4cfa894561b3e5456d2958913c67c"),
+            // Milestone 8.35z50. THE TENTH PIN, arriving on exactly the terms the seventh through
+            // ninth did: a pin is a claim about content a configured match loads, and milestone
+            // 8.35z31 composed Ursafar without dealing him.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
+            // deliberately wrong value and the digest read off this oracle's own failure output, with
+            // the nine pins above confirmed byte-identical in that same run. A filtered pin run has
+            // been green while digests moved, which is why the rule is the complete run rather than
+            // the cheap one.
+            new IdentityPin("ursafar", "ursafar-8-35z50-rev-1", "7197e73ba0c224c32b7463bcf943e96fa43d40bfc6ba1daa5eb79ad1251d9be1")
         };
 
         [Test]
@@ -177,6 +187,13 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.35z46. Silverarrow's staged configuration joins on the same terms: no
                 // official line-up deals her either.
                 .Concat(MatchConfiguration.CreateStagedSilverarrowForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.35z50. Ursafar's staged configuration joins on the same terms, and the
+                // omission is worth a line rather than a silent append: adding his pin without adding
+                // this row measured him as contributing ZERO definitions, which is what the run that
+                // minted the pin actually reported. The append is not optional bookkeeping - it is
+                // half of what a pin means.
+                .Concat(MatchConfiguration.CreateStagedUrsafarForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())
