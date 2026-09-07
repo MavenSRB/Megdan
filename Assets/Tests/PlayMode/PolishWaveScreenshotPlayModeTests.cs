@@ -177,11 +177,29 @@ namespace GuardsDigital.Tests.PlayMode
         public IEnumerator TheHud_IsPhotographedAtAnUltrawideViewport()
         {
             EnsureShotFolder();
-            yield return LoadTheMatch();
 
+            // THE VIEWPORT IS SET BEFORE THE SCENE COMPOSES, and that ordering is the honest one
+            // rather than a convenience. A first attempt resized an already-composed match and
+            // photographed a 2560-wide frame padded into a 3440 image - the HUD had laid out for the
+            // old viewport and does not re-lay-out on a mid-session resolution change, so the shot
+            // showed a black band that reads as "the panel does not fill an ultrawide" when it is
+            // really "this HUD was composed for a narrower screen". A shipped build takes its
+            // resolution at launch and composes once inside it, so composing INSIDE the ultrawide is
+            // what a player actually gets, and is what this photographs.
             UiPlayer.SetPlayerViewport(3440, 1440, "8.35z59 ultrawide evidence");
-            yield return null;
-            yield return null;
+            var settled = false;
+            for (var frame = 0; frame < 120 && !settled; frame++)
+            {
+                yield return null;
+                settled = Screen.width >= 3400;
+            }
+
+            Assert.That(settled, Is.True,
+                "The play view never reported the 3440-wide viewport this shot is about; it stopped " +
+                "at " + Screen.width + "x" + Screen.height + ".");
+
+            yield return LoadTheMatch();
+            yield return new WaitForEndOfFrame();
             yield return null;
 
             var hud = Root().Hud;

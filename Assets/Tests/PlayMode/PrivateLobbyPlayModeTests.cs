@@ -1065,6 +1065,56 @@ namespace GuardsDigital.Tests.PlayMode
                 "milestone 8.35z4's fan-out exists to make unreachable.");
         }
 
+        /// <summary>
+        /// Milestone 8.35z58's owed DISABLED-state evidence, photographed on the one lobby control
+        /// that genuinely draws one: p.22's already-taken hero option, dim and carrying the reason.
+        /// </summary>
+        /// <remarks>
+        /// It lives here rather than beside the wave's other captures because reaching a greyed
+        /// option needs this file's own seating, readiness and pick helpers - the entry form draws no
+        /// unavailable control at all before anybody is seated, which is correct and is why the
+        /// standalone capture case could not photograph one.
+        /// </remarks>
+        [UnityTest]
+        public IEnumerator TheTakenHeroOption_IsPhotographedInItsDisabledTreatment()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+
+            var picking = wire.Session.Selection.PickingSeat.Value;
+            var pickingOrdinal = seats.ToList().IndexOf(picking) + 1;
+            driver.Presenter.AttachClient(wire.Client(pickingOrdinal));
+            yield return null;
+
+            const string Shot =
+                "8-35d-8-35e-multiplayer-corrections/integration-screenshots/polish-wave";
+            yield return UiPlayer.CaptureGameView(Shot, "lobby-hero-options-idle");
+
+            var taken = RegisteredHeroRoster.ForThisBuild[0];
+            Assert.That(wire.Client(pickingOrdinal).TryChooseHero(taken.HeroIdValue), Is.True);
+            wire.Pump();
+            driver.Presenter.Refresh();
+            yield return null;
+            yield return null;
+
+            var greyed = HeroOptions(driver)
+                .Single(button => button.text.StartsWith(taken.DisplayName));
+            Assert.That(greyed.enabledSelf, Is.False,
+                "The shot is only evidence of the disabled treatment if the control is disabled.");
+            UiPlayer.EnsureVisible(greyed);
+            yield return null;
+            yield return UiPlayer.CaptureGameView(Shot, "lobby-button-disabled");
+
+            // And the hover treatment ON the disabled control, which is where 8.35z58's cursor
+            // tooltip naming the unavailable reason is drawn.
+            UiPlayer.PointAt(greyed);
+            yield return null;
+            yield return UiPlayer.CaptureGameView(Shot, "lobby-button-disabled-hover");
+            UiPlayer.PointAway(greyed);
+        }
+
         /// <summary>Every registered hero's option button on the selection panel.</summary>
         private static IReadOnlyList<Button> HeroOptions(PrivateLobbyDriver driver) =>
             Named(driver, PrivateLobbyUnityView.HeroOptionName)
