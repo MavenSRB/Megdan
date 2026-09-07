@@ -31,6 +31,7 @@ namespace GuardsDigital.Presentation.Match
         private Func<HeroId, bool> heroIntentHandler;
         private Func<MinionId, bool> minionIntentHandler;
         private Func<GuardsDigital.Core.Board.HexCoordinate, bool> destinationIntentHandler;
+        private Func<HeroId, bool> heroViewIntentHandler;
 
         // Milestone 8.35z6 (the SIXTEENTH amendment's Defeat shrink-and-fade, delivered
         // pooling-safely). Keyed by the piece's OWN view instance rather than its identity value: a
@@ -104,15 +105,26 @@ namespace GuardsDigital.Presentation.Match
         public event Action<MinionId> MinionSubmitted;
         public event Action<GuardsDigital.Core.Board.HexCoordinate> DestinationSubmitted;
 
+        /// <summary>
+        /// Binds what a click on each thing the board draws MEANS.
+        ///
+        /// <para>Milestone 8.35z48 adds <paramref name="viewHero"/>, and the split is the point of it:
+        /// the first three are AUTHORITY-BACKED - each one either answers something the match is
+        /// asking or declines - while the fourth answers nothing and only points the tray at a hero.
+        /// Leaving the fourth unbound is legal and means "this board has no tray to point"; it is not
+        /// a degraded state.</para>
+        /// </summary>
         public void BindIntentHandlers(
             Func<HeroId, bool> submitHero,
             Func<MinionId, bool> submitMinion,
-            Func<GuardsDigital.Core.Board.HexCoordinate, bool> submitDestination)
+            Func<GuardsDigital.Core.Board.HexCoordinate, bool> submitDestination,
+            Func<HeroId, bool> viewHero = null)
         {
             heroIntentHandler = submitHero ?? throw new ArgumentNullException(nameof(submitHero));
             minionIntentHandler = submitMinion ?? throw new ArgumentNullException(nameof(submitMinion));
             destinationIntentHandler = submitDestination ??
                 throw new ArgumentNullException(nameof(submitDestination));
+            heroViewIntentHandler = viewHero;
         }
 
         public void Render(BoardInteractionViewModel model) => Render(model, false);
@@ -572,6 +584,15 @@ namespace GuardsDigital.Presentation.Match
             HeroSubmitted.Invoke(heroId);
             return true;
         }
+
+        /// <summary>
+        /// Milestone 8.35z48. Points the tray at a hero and nothing else: it submits no command,
+        /// changes no authoritative state, and is asked only after every authority-backed question on
+        /// the same ray has declined. A board with no handler bound answers false, which is the
+        /// honest answer to "can this click at least show me something".
+        /// </summary>
+        public bool TryForwardHeroViewIntent(HeroId heroId) =>
+            heroViewIntentHandler != null && heroViewIntentHandler(heroId);
 
         public bool TryForwardMinionIntent(MinionId minionId)
         {

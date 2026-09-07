@@ -153,6 +153,43 @@ namespace GuardsDigital.Presentation.Interaction
             return TryHandlePointerRay(pointerRay);
         }
 
+        /// <summary>
+        /// Resolves one click against everything the ray touches, by WHAT THE CLICK CAN LEGALLY DO.
+        ///
+        /// <para><b>Two passes, and the split is the whole milestone (8.35z48).</b> The first pass
+        /// asks every authority-backed question on the ray in turn - is this hero an answer, is this
+        /// minion an answer, is this space an answer - and the first that says yes wins. Only if the
+        /// entire pass declines does the second pass ask the one question that answers nothing and
+        /// merely points the tray at a hero.</para>
+        ///
+        /// <para><b>What it was, and the defect that composed.</b> Milestone 8.11a stated the intent
+        /// exactly right at the binding site: <i>"Each click is offered to the authority-backed
+        /// handlers in turn and the first that recognises it wins; only a click nothing claims falls
+        /// through to pointing the tray at a hero."</i> The fallback was then built INSIDE the hero
+        /// arm of a first-match-wins chain, so it ran before the board was ever consulted rather than
+        /// after. Because pointing the tray succeeds for any hero that is not already the viewed one,
+        /// a hero's pick volume became an ABSORBING SURFACE: a ray aimed at a space but grazing a
+        /// piece was consumed, the destination question was never asked, and the click still reported
+        /// success. The two hit models make that easy to graze - a piece is picked by a capsule whose
+        /// radius (<c>HeroTokenArtwork.TokenOuterRadius</c>, 0.81) exceeds half its height, so it is
+        /// effectively a sphere standing above the board nearly as wide as a hex, while a tile is
+        /// picked by intersecting the flat y=0 plane.</para>
+        ///
+        /// <para>It even flipped on WHICH hero was grazed, because pointing the tray returns false for
+        /// the hero already being viewed: the same click at the same coordinate moved the acting hero
+        /// on a staging where she was the viewed piece and did nothing on one where a different piece
+        /// stood in the ray. That is the anomaly milestone 8.35z38 recorded across eight Play Mode
+        /// runs and correctly could not pin on reach, offer or driver - all three are model-side, and
+        /// the click never reached the model.</para>
+        ///
+        /// <para><b>What is deliberately NOT done: depth.</b> Comparing the capsule hit against the
+        /// tile hit and preferring the nearer surface is the geometrically stronger rule, and it is
+        /// not taken here. Under this project's tilted board camera the y=0 intersection of a ray
+        /// through the TOP of a token lands systematically beyond the token's own tile, so a
+        /// containment or nearest-surface test would reject honest clicks on a piece. Legality is
+        /// both the safer and the more honest arbiter: the match is asked what the click could mean
+        /// before geometry is asked what it touched.</para>
+        /// </summary>
         public bool TryHandlePointerRay(Ray pointerRay)
         {
             EnsureBindings();
@@ -176,7 +213,23 @@ namespace GuardsDigital.Presentation.Interaction
             if (boardView != null)
             {
                 var tile = FindTileUnderPointer(pointerRay);
-                return tile != null && boardView.TryForwardDestinationIntent(tile.Coordinate);
+                if (tile != null && boardView.TryForwardDestinationIntent(tile.Coordinate))
+                {
+                    return true;
+                }
+            }
+
+            // Nothing on this ray answers anything the match is asking. NOW the click may mean the
+            // one thing it can always mean - show me that hero's tray - which is the feature 7.8a
+            // added and this milestone keeps: a player who just wants to look at a hero still clicks
+            // the hero. Pointing the tray at the hero already being viewed changes nothing visible
+            // and reports false, so a click that does nothing says so instead of claiming success.
+            foreach (var selector in selectors)
+            {
+                if (selector != null && selector.TryViewFromPointerRay(pointerRay))
+                {
+                    return true;
+                }
             }
 
             return false;

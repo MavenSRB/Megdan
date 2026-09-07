@@ -280,6 +280,20 @@ namespace GuardsDigital.Tests.PlayMode
             // The one difference left standing is the STAGING: every space-clicking journey that
             // works loads the Tier I engaged arm, and both that do not load a progressed arm.
             //
+            // MILESTONE 8.35z48 DOES NOT UNPARK THIS ONE EITHER, and it is now clear that the two
+            // parked clicks on this staging share one cause and it is not the pointer. That milestone
+            // removed a real defect in the shared pointer chain - a hero's pick volume swallowing
+            // grazing board clicks - but this journey had already recorded that a PROJECTED COMMAND
+            // behaves the same here, and a projected command never touches the pointer chain at all.
+            //
+            // Power Overwhelming's parked placement, driven to its end under 8.35z48, printed the
+            // matching measurement from the live scene: the ray passes through NO hero's pick volume,
+            // the click IS accepted (the offered ring narrows to the clicked space), and the Confirm
+            // the prompt then offers does nothing at all when pressed four times running. Both are
+            // model-side, in effect resolution rather than in input. See that journey's note for the
+            // full reproduction; the cheap discriminator is `UiPlayer.DescribeBoardRay`, whose empty
+            // answer rules absorption out in one run.
+            //
             // That is a well-isolated observation and not a diagnosis, so it is a NAMED FOLLOW-UP
             // rather than a fix smuggled into a dealing milestone - and this journey asserts what it
             // genuinely proves rather than asserting an outcome it cannot reach. RULING 29 is a claim
@@ -499,21 +513,49 @@ namespace GuardsDigital.Tests.PlayMode
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(landing));
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, tile.transform.position), Is.True,
-                "The destination is chosen by clicking the space on the board.");
+                "The destination is chosen by clicking the space on the board. " +
+                UiPlayer.DescribeBoardRay(pointerInput, tile.transform.position) +
+                " - which is the first thing to read if this ever stops being claimed, because a " +
+                "piece on the ray and no piece on the ray are different defects entirely.");
             yield return null;
             yield return null;
 
-            // THE PLACEMENT IS NOT DRIVEN TO ITS END HERE, on the same recorded follow-up Dash and
-            // Slash's journey names. On a PROGRESSED staging a board click at a space is accepted and
-            // the piece does not move, where the identical click on the Tier I arm - Watch How I
-            // Soar's own journey, on this same ring and this same contract - moves her. Milestone
-            // 8.35z38 spent seven complete Play Mode runs narrowing it that far and no further, and a
-            // dealing milestone is not where a presentation-input difference gets diagnosed.
+            // THE PLACEMENT STAYS PARKED - AND MILESTONE 8.35z48 NARROWED IT FROM A MYSTERY TO A
+            // LOCATED DEFECT, WHICH IS WHY THIS NOTE IS WORTH ITS LENGTH.
             //
-            // What this journey is FOR is RULING 28, and that is proved above without the placement:
-            // one chosen bullet left the modal STANDING, the other was still offered, and it was
-            // taken. That is the raised ceiling, and it is the whole observable difference from the
-            // printed card. RULING 30's arming is proved offline by
+            // Milestone 8.35z38 spent seven complete Play Mode runs here: the board click is accepted
+            // and the piece does not move, where the identical click on the Tier I arm - Watch How I
+            // Soar's own journey, same ring, same contract - moves her. Integration batch B then
+            // diagnosed a real defect in the shared pointer chain (a hero's pick volume swallowing
+            // grazing board clicks, fixed by 8.35z48) which produces EXACTLY that symptom, so this
+            // was the obvious place to prove that fix on the live surface.
+            //
+            // IT IS NOT THAT, AND THAT IS NOW MEASURED RATHER THAN SUSPECTED. Driving the placement
+            // to its end across three runs printed all of the following from the live scene:
+            //
+            //   * `UiPlayer.DescribeBoardRay` reports "the ray passes through no hero's pick volume"
+            //     - so no piece was ever absorbing THIS click, before 8.35z48 or after it;
+            //   * the click IS accepted: the offered destination list narrows from the whole lit ring
+            //     to exactly the one space that was clicked, `[(-7, 1)]`;
+            //   * the prompt then stands, reading `YOUR SPACE CHOICE - Choose 1 of 22 spaces`, with a
+            //     Confirm control labelled DONE offered;
+            //   * and pressing that DONE control - the way a player presses it, through
+            //     `UiPlayer.Button` on the shown control - FOUR TIMES IN A ROW changes nothing at
+            //     all: same status, same single offered destination, same Confirm still offered, and
+            //     she is still on her staged space.
+            //
+            // So the click reaches the model and the model accepts it; what does not happen is the
+            // confirm. That is model-side, and it fits the one other thing z38 recorded and could not
+            // place - that a PROJECTED COMMAND behaved identically here, which no pointer change can
+            // explain. Dash and Slash's parked walk on this same staging carries the same signature.
+            //
+            // NOT FIXED HERE, and deliberately: 8.35z48 is a presentation-input corrective, an
+            // offered-control-that-does-nothing in effect resolution is a rules-side defect with its
+            // own measurement to do, and the two are not the same milestone. Recorded as a NAMED
+            // FOLLOW-UP with a reproduction that now costs one filtered run rather than eight full
+            // ones. What this journey is FOR is RULING 28, and that is proved above independently of
+            // the placement: one chosen bullet left the modal STANDING, the other was still offered,
+            // and it was taken. RULING 30's arming is proved offline by
             // MisaPrintedSetTests.Ruling30_HangsTheUltimatesSecondClauseOnHerOwnSelfPlacements.
             Assert.That(ring, Has.Length.GreaterThan(1),
                 "The Place bullet RULING 28 let her take offers its own ring, which is what makes " +

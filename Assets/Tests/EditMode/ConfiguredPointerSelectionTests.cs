@@ -177,6 +177,283 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.35z48. THE CASE THAT FAILS ON SHIPPED: a click that touches a hero's pick
+        /// volume and lands on a space the match is asking about is answered by the SPACE.
+        ///
+        /// <para><b>The recorded symptom.</b> Milestone 8.35z38 spent eight Play Mode runs on a board
+        /// click that was accepted and moved nothing, at a coordinate where the identical click moved
+        /// the hero on a different staging. Reach, the offer and the projected command were ruled out
+        /// correctly - all three are model-side, and the click never reached the model. It was
+        /// swallowed here: the tray-pointing fallback lived inside the hero arm of a first-match-wins
+        /// chain and succeeds for any hero that is not already the viewed one, so any ray grazing a
+        /// piece was consumed before the board was consulted, and reported success while nothing
+        /// moved.</para>
+        ///
+        /// <para><b>The ray is built to be exactly that click</b> - through the hero's own capsule
+        /// centre and on down to a neighbouring space's centre - because that is the geometry the
+        /// scene produces: pieces are picked by a capsule wider than half its height (so, a sphere
+        /// standing above the board nearly as wide as a hex) while spaces are picked on the flat y=0
+        /// plane, and the camera looks down at an angle.</para>
+        /// </summary>
+        [Test]
+        public void ConfiguredPointerInput_AnswersTheSpaceWhenTheRayGrazesAHeroWhoAnswersNothing()
+        {
+            var objects = new List<GameObject>();
+            var material = new Material(Shader.Find("Standard"));
+
+            try
+            {
+                var destination = new HexCoordinate(1, 0);
+                var occupancy = new HeroOccupancy(new HeroId("red-hero"), new HexCoordinate(0, 0));
+                var hero = CreateHero(objects, occupancy);
+                var tiles = new[]
+                {
+                    CreateTile(objects, occupancy.Coordinate),
+                    CreateTile(objects, destination)
+                };
+                var view = new BoardInteractionUnityView(new[] { hero }, tiles, material);
+
+                var forwarded = new List<HexCoordinate>();
+                var pointedAt = new List<HeroId>();
+                view.BindIntentHandlers(
+                    // The authority has no use for this hero right now: no target is being chosen,
+                    // no unit is being named. It declines, which is the ordinary case.
+                    _ => false,
+                    _ => false,
+                    coordinate =>
+                    {
+                        forwarded.Add(coordinate);
+                        return true;
+                    },
+                    heroId =>
+                    {
+                        pointedAt.Add(heroId);
+                        return true;
+                    });
+
+                var pointerInput = CreatePointerInput(objects, view, hero, tiles);
+                var grazing = RayThroughPieceOnto(hero, tiles[1]);
+
+                var handled = pointerInput.TryHandlePointerRay(grazing);
+
+                Assert.That(handled, Is.True);
+                Assert.That(forwarded, Is.EqualTo(new[] { destination }),
+                    "The space under the pointer is the answer, and it was asked. Before this " +
+                    "milestone the hero's capsule consumed the click and this list was empty.");
+                Assert.That(pointedAt, Is.Empty,
+                    "and the cosmetic tray-pointing never ran, because something on the ray was a " +
+                    "real answer. That is the ordering the binding site has claimed since 8.11a.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                DestroyAll(objects);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z48, the other half of the same rule and the reason the fix could not simply
+        /// delete the fallback: when NOTHING on the ray answers anything, clicking a hero still points
+        /// the tray at that hero. Looking around the board is a feature (milestone 7.8a), and it is
+        /// unchanged - it has only stopped pre-empting the questions the match is actually asking.
+        /// </summary>
+        [Test]
+        public void ConfiguredPointerInput_StillPointsTheTrayWhenNothingOnTheRayIsAnAnswer()
+        {
+            var objects = new List<GameObject>();
+            var material = new Material(Shader.Find("Standard"));
+
+            try
+            {
+                var occupancy = new HeroOccupancy(new HeroId("red-hero"), new HexCoordinate(0, 0));
+                var hero = CreateHero(objects, occupancy);
+                var tiles = new[]
+                {
+                    CreateTile(objects, occupancy.Coordinate),
+                    CreateTile(objects, new HexCoordinate(1, 0))
+                };
+                var view = new BoardInteractionUnityView(new[] { hero }, tiles, material);
+
+                var pointedAt = new List<HeroId>();
+                var refusedDestinations = new List<HexCoordinate>();
+                view.BindIntentHandlers(
+                    _ => false,
+                    _ => false,
+                    coordinate =>
+                    {
+                        refusedDestinations.Add(coordinate);
+                        return false;
+                    },
+                    heroId =>
+                    {
+                        pointedAt.Add(heroId);
+                        return true;
+                    });
+
+                var pointerInput = CreatePointerInput(objects, view, hero, tiles);
+
+                var handled = pointerInput.TryHandlePointerRay(RayThroughPieceOnto(hero, tiles[1]));
+
+                Assert.That(handled, Is.True);
+                Assert.That(refusedDestinations, Is.Not.Empty,
+                    "The board was asked FIRST and declined, which is what makes the tray the last " +
+                    "resort rather than the first.");
+                Assert.That(pointedAt, Is.EqualTo(new[] { occupancy.HeroId }),
+                    "and then the click means the only thing left that it can mean.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                DestroyAll(objects);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z48. When the HERO is a legal answer - the match is choosing an Attack target
+        /// and this piece is one of them - the hero wins, and the space under the pointer is never
+        /// asked. The arbitration is by what the click can legally DO, and a hero that answers
+        /// something outranks a space in the one order the chain has always used.
+        /// </summary>
+        [Test]
+        public void ConfiguredPointerInput_PrefersTheHeroWhenTheHeroItselfIsALegalAnswer()
+        {
+            var objects = new List<GameObject>();
+            var material = new Material(Shader.Find("Standard"));
+
+            try
+            {
+                var occupancy = new HeroOccupancy(new HeroId("red-hero"), new HexCoordinate(0, 0));
+                var hero = CreateHero(objects, occupancy);
+                var tiles = new[]
+                {
+                    CreateTile(objects, occupancy.Coordinate),
+                    CreateTile(objects, new HexCoordinate(1, 0))
+                };
+                var view = new BoardInteractionUnityView(new[] { hero }, tiles, material);
+
+                var submittedHeroes = new List<HeroId>();
+                var forwarded = new List<HexCoordinate>();
+                var pointedAt = new List<HeroId>();
+                view.BindIntentHandlers(
+                    heroId =>
+                    {
+                        submittedHeroes.Add(heroId);
+                        return true;
+                    },
+                    _ => false,
+                    coordinate =>
+                    {
+                        forwarded.Add(coordinate);
+                        return true;
+                    },
+                    heroId =>
+                    {
+                        pointedAt.Add(heroId);
+                        return true;
+                    });
+
+                var pointerInput = CreatePointerInput(objects, view, hero, tiles);
+
+                Assert.That(pointerInput.TryHandlePointerRay(RayThroughPieceOnto(hero, tiles[1])),
+                    Is.True);
+                Assert.That(submittedHeroes, Is.EqualTo(new[] { occupancy.HeroId }));
+                Assert.That(forwarded, Is.Empty,
+                    "A hero that answers the standing question ends the click there; the space is " +
+                    "not also submitted.");
+                Assert.That(pointedAt, Is.Empty);
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                DestroyAll(objects);
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z48. A click that does nothing REPORTS that it did nothing.
+        ///
+        /// <para>This is the property the absorbing fallback destroyed and the one an automated driver
+        /// depends on: <c>UiPlayer.ClickBoard</c> asserts the returned bool, so a chain that answers
+        /// true while nothing visible happens makes every journey that clicks the board unable to
+        /// fail. Pointing the tray at the hero already being viewed is exactly that case - it changes
+        /// nothing a player can see - and it answers false, so the whole chain does.</para>
+        /// </summary>
+        [Test]
+        public void ConfiguredPointerInput_ReportsFailureWhenNothingItCanDoIsVisible()
+        {
+            var objects = new List<GameObject>();
+            var material = new Material(Shader.Find("Standard"));
+
+            try
+            {
+                var occupancy = new HeroOccupancy(new HeroId("red-hero"), new HexCoordinate(0, 0));
+                var hero = CreateHero(objects, occupancy);
+                var tiles = new[]
+                {
+                    CreateTile(objects, occupancy.Coordinate),
+                    CreateTile(objects, new HexCoordinate(1, 0))
+                };
+                var view = new BoardInteractionUnityView(new[] { hero }, tiles, material);
+
+                view.BindIntentHandlers(
+                    _ => false,
+                    _ => false,
+                    _ => false,
+                    // What the shipped tray-pointing does for the hero it is ALREADY showing.
+                    _ => false);
+
+                var pointerInput = CreatePointerInput(objects, view, hero, tiles);
+
+                Assert.That(pointerInput.TryHandlePointerRay(RayThroughPieceOnto(hero, tiles[1])),
+                    Is.False,
+                    "Nothing was submitted and nothing on screen changed, so the click must not " +
+                    "claim to have been handled.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                DestroyAll(objects);
+            }
+        }
+
+        /// <summary>
+        /// The ray the anomaly is made of: it passes through the hero's own pick volume and lands on
+        /// another space's centre, which is what a downward-angled camera produces whenever a piece
+        /// stands between the viewer and the space being aimed at.
+        /// </summary>
+        private static Ray RayThroughPieceOnto(PrimitiveHeroView hero, HexTileView tile)
+        {
+            var pickCentre = hero.transform.position +
+                (Vector3.up * (PrimitiveHeroView.DefaultHeight * 0.5f));
+            var direction = (tile.transform.position - pickCentre).normalized;
+            return new Ray(pickCentre - (direction * 10f), direction);
+        }
+
+        private static PrimitiveHeroPointerInput CreatePointerInput(
+            ICollection<GameObject> objects,
+            BoardInteractionUnityView view,
+            PrimitiveHeroView hero,
+            IReadOnlyList<HexTileView> tiles)
+        {
+            var selector = hero.gameObject.AddComponent<PrimitiveHeroPointerSelector>();
+            selector.Configure(view);
+            var cameraObject = new GameObject("Pointer Camera");
+            objects.Add(cameraObject);
+            var camera = cameraObject.AddComponent<Camera>();
+            var inputObject = new GameObject("Pointer Input");
+            objects.Add(inputObject);
+            var pointerInput = inputObject.AddComponent<PrimitiveHeroPointerInput>();
+            pointerInput.Configure(
+                camera,
+                new[] { selector },
+                Array.Empty<StandardMinionPointerSelector>(),
+                view,
+                tiles,
+                null);
+            return pointerInput;
+        }
+
         [Test]
         public void PassiveBoardView_HidesAnAbsentHeroAndReactivatesItAtReturnedOccupancy()
         {

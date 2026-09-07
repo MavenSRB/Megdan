@@ -404,6 +404,44 @@ namespace GuardsDigital.Tests.PlayMode
             return pointerInput.TryHandlePointerRay(camera.ScreenPointToRay(screenPosition));
         }
 
+        /// <summary>
+        /// Milestone 8.35z48. Names every hero piece whose pick volume the board-click ray passes
+        /// through, submitting nothing.
+        ///
+        /// <para>It exists because of what that list used to MEAN. Before 8.35z48 the first hero on
+        /// this list swallowed the click - the tray-pointing fallback lived inside the hero arm of a
+        /// first-match-wins chain and succeeds for any hero that is not already the viewed one - so a
+        /// board click that reported success could have moved nothing, and the journeys that hit it
+        /// spent eight Play Mode runs looking model-side for a cause that was here. It is now the
+        /// first thing a failing board click should print: if the ray passes through a piece and the
+        /// space still did not answer, that is a DIFFERENT defect, and this says so in one line
+        /// rather than in another eight runs.</para>
+        /// </summary>
+        public static string DescribeBoardRay(
+            PrimitiveHeroPointerInput pointerInput, Vector3 worldPosition)
+        {
+            var camera = pointerInput?.EventCamera;
+            if (camera == null)
+            {
+                return "no event camera, so no ray to describe";
+            }
+
+            var screen = camera.WorldToScreenPoint(worldPosition);
+            var ray = camera.ScreenPointToRay(new Vector2(screen.x, screen.y));
+            var pieces = new List<string>();
+            foreach (var selector in pointerInput.Selectors)
+            {
+                if (selector != null && selector.TryGetHeroFromPointerRay(ray, out var heroId))
+                {
+                    pieces.Add(heroId.Value);
+                }
+            }
+
+            return pieces.Count == 0
+                ? "the ray passes through no hero's pick volume"
+                : "the ray passes through the pick volume of: " + string.Join(", ", pieces);
+        }
+
         private static bool IsSelfOrDescendantOf(VisualElement candidate, VisualElement ancestor)
         {
             for (var current = candidate; current != null; current = current.hierarchy.parent)

@@ -233,11 +233,19 @@ namespace GuardsDigital.Presentation.Match
                 // through to pointing the tray at a hero, which submits no command and changes no
                 // authoritative state. The order is a route rather than a priority - the pending
                 // choices below are mutually exclusive, because the authority pauses on one at a time.
+                //
+                // MILESTONE 8.35z48 MOVED THE TRAY-POINTING FALLBACK OUT OF THIS ARM, and the
+                // sentence above is why it had to move: "only a click nothing claims" means nothing
+                // in the WHOLE chain claims it, and while the fallback sat here it ran after only the
+                // first third of the chain. Since it succeeds for any hero that is not already the
+                // viewed one, it made a hero's pick volume swallow board clicks that grazed it - the
+                // recorded anomaly where a space accepted a click and the piece did not move. The
+                // three arms below are now purely authority-backed, each free to decline, and the
+                // fallback is bound as the fourth handler that runs only when all of them have.
                 heroId =>
                     BoardPresenter.SubmitHero(heroId) ||
                     MinionChoicePresenter.SubmitUnit(
-                        GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(heroId)) ||
-                    SelectViewedHero(heroId),
+                        GuardsDigital.Core.Rules.Modifications.RuleObject.ForHero(heroId)),
                 minionId =>
                     BoardPresenter.SubmitMinion(minionId) ||
                     MinionChoicePresenter.SubmitUnit(
@@ -248,7 +256,12 @@ namespace GuardsDigital.Presentation.Match
                     // Milestone 8.15a: an offered Clear token is toggled where it stands. The toggle
                     // is local presentation state, so nothing authoritative redraws the surfaces -
                     // the refresh here is what the removed prompt control's handler used to do.
-                    Refreshed(RoundPresenter.ToggleClearTokenAtSpace(coordinate)));
+                    Refreshed(RoundPresenter.ToggleClearTokenAtSpace(coordinate)),
+                // The cosmetic last resort of the whole chain: no command, no authoritative state,
+                // and it stays a first-class feature - clicking a hero to read their tray is how a
+                // player looks around, and nothing about that is changed by no longer letting it
+                // pre-empt the board.
+                heroId => SelectViewedHero(heroId));
             HandsView.CardSelected += cardId => HandsPresenter.SelectCommitmentCard(cardId);
             HandsView.ConfirmRequested += () => HandsPresenter.ConfirmSelectedCard();
             HandsView.CardDroppedOnMap += cardId => HandsPresenter.CommitCardImmediately(cardId);

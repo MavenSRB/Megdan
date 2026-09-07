@@ -18,7 +18,45 @@ namespace GuardsDigital.Presentation.Interaction
             EnsureColliderShape();
         }
 
+        /// <summary>
+        /// Whether this hero is an ANSWER to something the match is currently asking, and if so,
+        /// answers it. A ray that hits the piece but that the authority has no use for returns false
+        /// here, so the chain this sits in keeps looking.
+        /// </summary>
         public bool TrySelectFromPointerRay(Ray pointerRay, float maxDistance = 500f)
+        {
+            if (!IsUnderPointer(pointerRay, maxDistance))
+            {
+                return false;
+            }
+
+            var hero = GetComponent<PrimitiveHeroView>();
+            return boardView.TryForwardHeroIntent(hero.Occupancy.HeroId);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z48. The same pick, asked as the OTHER question: nothing on this ray is an
+        /// answer to anything, so does clicking this hero at least mean "show me that hero's tray"?
+        ///
+        /// <para>It is deliberately a second method rather than a fallback inside
+        /// <see cref="TrySelectFromPointerRay"/> above. Pointing the tray succeeds for almost any
+        /// hero, so a chain that asks one selector both questions at once can never get past its
+        /// first hit - which is the whole of the defect this milestone removes. Splitting them lets
+        /// <see cref="PrimitiveHeroPointerInput"/> ask every authority-backed question on the ray
+        /// first and only then come back for this one.</para>
+        /// </summary>
+        public bool TryViewFromPointerRay(Ray pointerRay, float maxDistance = 500f)
+        {
+            if (!IsUnderPointer(pointerRay, maxDistance))
+            {
+                return false;
+            }
+
+            var hero = GetComponent<PrimitiveHeroView>();
+            return boardView.TryForwardHeroViewIntent(hero.Occupancy.HeroId);
+        }
+
+        private bool IsUnderPointer(Ray pointerRay, float maxDistance)
         {
             if (boardView == null)
             {
@@ -26,13 +64,7 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             var capsule = GetComponent<CapsuleCollider>();
-            if (!capsule.Raycast(pointerRay, out _, maxDistance))
-            {
-                return false;
-            }
-
-            var hero = GetComponent<PrimitiveHeroView>();
-            return boardView.TryForwardHeroIntent(hero.Occupancy.HeroId);
+            return capsule.Raycast(pointerRay, out _, maxDistance);
         }
 
         public bool TryGetHeroFromPointerRay(
