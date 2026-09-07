@@ -469,6 +469,13 @@ namespace GuardsDigital.Tests.PlayMode
                 // capabilities milestone 8.19b added carry no `synthetic-` prefix and the general
                 // ones do; both spellings are the capability's own identity and neither is guessed.
                 ["choose-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Milestone 8.35z46. The `synthetic-` sibling of the roster capability above: the same
+                // board-click question, asked with the distance as a literal a definition writes rather
+                // than a total the roster reads off state. Silverarrow's Disorient, Divert Attention and
+                // Lead Astray are the first dealt content to name it - "adjacent" is card text, and the
+                // printed-icon selections below cannot express a distance no icon prints.
+                ["synthetic-choose-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
                 ["behind-target-line"] = new[] { PlayerInteractionShape.BoardUnitSelection },
                 ["synthetic-range-minion-target"] = new[] { PlayerInteractionShape.BoardUnitSelection },
                 ["synthetic-swap-actor"] = Array.Empty<PlayerInteractionShape>(),
@@ -682,7 +689,26 @@ namespace GuardsDigital.Tests.PlayMode
                 // `target-is-adjacent@1` two dozen lines above - which is the point: RULING 32 makes
                 // the two MOMENTS differ and leaves the player's part in them identical.
                 ["target-was-at-maximum-range"] = Array.Empty<PlayerInteractionShape>(),
-                ["target-is-not-adjacent"] = Array.Empty<PlayerInteractionShape>()
+                ["target-is-not-adjacent"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.35z46. Silverarrow the Pathfinder's two NEW entries.
+                // `choose-line-destination` is not repeated here - Misa's dealing already classifies
+                // it above, and it is the same contract her own three straight-line faces name
+                // (`choose-line-destination@1` is the wave's shared declaration; see
+                // SyntheticRosterCapabilities.ChooseLineDestinationV1). Adding the key a second time
+                // would collide on the same dictionary this classification is.
+                //
+                // `fast-travel@1` is p.11's Fast Travel reached from card text rather than from the
+                // secondary-action row, and what it offers is the set of spaces the printed scope
+                // admits - an adjacent Zone's for both Gold basics, p.11's own for Trailblazer. It is
+                // NOT the iconless Fast Travel every card already carries, which is an action rather
+                // than a node, so it earns its own classification instead of inheriting one.
+                ["fast-travel"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // A reading of the instance that just resolved - "If you target a hero" - which gates
+                // a step and shows a player no control. Wasp's content minted it and Silverarrow's
+                // Rain of Arrows is the first face to name it from a hero's own set.
+                ["synthetic-attack-took-a-hero"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

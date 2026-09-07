@@ -819,11 +819,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // are cards a configured match puts in a hand, and the gate that held them here is
             // satisfied on both halves at once.
             //
-            // `choose-line-destination@1` is the wave's shared declaration and Silverarrow's three
-            // straight-line faces name it too. Registering it is not a registration on her behalf: the
-            // gate asks whether a DEALT card starts the contract, and Misa's five Blues do. What stays
-            // here is Silverarrow's own `fast-travel@1`, which no dealt card names.
-            yield return new CardTextFastTravelHandler();
+            // MILESTONE 8.35z46's ONE HAS ALSO LEFT THIS LIST - see `RegisteredHandlers` below.
+            // Silverarrow the Pathfinder is dealt, so her two Gold basics and Trailblazer, which name
+            // `fast-travel@1`, are cards a configured match puts in a hand. `choose-line-destination@1`
+            // left this list already, at Misa's dealing: registering it there was not a registration on
+            // Silverarrow's behalf, but her three straight-line faces reach the same registered
+            // contract now that it is one, which is the ordinary case of two heroes sharing one rule.
             yield return new ChooseTargetTrioHandler();
             yield return new DefendedCardForcedMoveHandler();
             yield return new EnemyHeroWithDiscardPresentHandler();
@@ -946,6 +947,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 ChooseUnitPairAtMaximumRadiusV1, onTheMaximumRingOnly: true);
             yield return new UnitPairHandler(
                 ChooseUnitPairAtEqualDistanceInRadiusV1, onTheMaximumRingOnly: false);
+
+            // Milestone 8.35z46 is the third dealing milestone, and this is the edit it makes.
+            // Silverarrow the Pathfinder's one roster contract moves across because that milestone
+            // deals her: her two Gold basics' "you may fast travel to an adjacent zone" and
+            // Trailblazer's "you may fast travel, if able" all start `fast-travel@1`. It is a handler
+            // TYPE this build had never registered, so the gate's second half is satisfied by the
+            // showcase card milestone 8.35z46 added beside dealing her.
+            //
+            // `choose-line-destination@1` moved across already, at Misa's dealing (8.35z38) - her three
+            // straight-line faces reach the same registered contract Misa's five Blue Skills do, which
+            // is the ordinary case of two heroes sharing one rule and not a second registration.
+            yield return new CardTextFastTravelHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>

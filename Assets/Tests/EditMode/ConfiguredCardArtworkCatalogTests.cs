@@ -13,7 +13,7 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class ConfiguredCardArtworkCatalogTests
     {
         [Test]
-        public void ConfiguredCatalog_IsA144EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA162EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -30,15 +30,19 @@ namespace GuardsDigital.Tests.EditMode
             // harness cannot see this file at all, so the FIRST complete Edit Mode launch is the only
             // thing in the build that can, and a dealing milestone that skips that tier ships a catalog
             // whose own count is wrong. Two consecutive dealings, two identical catches.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(144));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(144));
+            //
+            // Milestone 8.35z46 takes it 144 to 162: dealing Silverarrow the Pathfinder adds her
+            // eighteen dealt definitions, on the same terms - Keep the Distance is p.20's Handicap
+            // card, excluded exactly as Dodger's Rusty Razor and Misa's Leaf on the Wind are.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(162));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(162));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(144),
+                Is.EqualTo(162),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -47,7 +51,8 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     ("arien", 18), ("brogan", 18), ("dodger", 18), ("misa", 18),
-                    ("sabina", 18), ("tigerclaw", 18), ("wasp", 18), ("xargatha", 18)
+                    ("sabina", 18), ("silverarrow", 18), ("tigerclaw", 18), ("wasp", 18),
+                    ("xargatha", 18)
                 }));
 
             foreach (var entry in catalog.Entries)

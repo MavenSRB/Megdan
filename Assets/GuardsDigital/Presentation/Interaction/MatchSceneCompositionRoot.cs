@@ -439,7 +439,56 @@ namespace GuardsDigital.Presentation.Interaction
         /// and RULING 1's equal-distance pair are both reachable through a player's own input, with her
         /// Ultimate up.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedMisa = 44
+        VerifiedTierThreeAlternateEngagedStagedMisa = 44,
+
+        /// <summary>
+        /// Milestone 8.35z46. The engaged staging with Silverarrow the Pathfinder on the
+        /// Blue seat, the ninth hero this build deals.
+        ///
+        /// <para>She takes the Blue seat rather than joining it, for the reason the six arms before
+        /// hers record: milestone 8.25 owns the official six-player configuration. She needs no ally
+        /// arm - seventeen of her nineteen faces name an enemy or nobody, and the two that print "a
+        /// hero in radius" already admit two classes on this board because RULING 8 includes
+        /// herself.</para>
+        ///
+        /// <para><b>What her arms need that no earlier hero's did is DISTANCE, and the engaged staging
+        /// is what supplies it.</b> RULING 1 makes six of her seven Attacks reach a BAND rather than a
+        /// ceiling - a unit one space too near is not a legal target at all - so an unrestaged board
+        /// fifteen spaces wide puts every one of them out of reach, and the engagement is what brings
+        /// the two heroes to a distance her printed Ranges can name. The measured consequence is that
+        /// her Attack journeys live here and nowhere else.</para>
+        /// </summary>
+        VerifiedEngagedStagedSilverarrow = 45,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Silverarrow holding the first
+        /// sibling of each colour: Opportunity Shot, Entangling Vines and Divert Attention. This is the
+        /// arm RULING 37's realised-distance self-move is reachable on.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedSilverarrow = 46,
+
+        /// <summary>
+        /// The Tier II staging with Silverarrow holding the <em>second</em> sibling of each colour -
+        /// Long Shot, Warning Shot and Fae Healing. It is the only Tier II arm carrying an "End of
+        /// turn:" face or a retrieval, which is what makes SL-06 and RULING 8 reachable at all.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedSilverarrow = 47,
+
+        /// <summary>
+        /// The Tier III staging with Silverarrow holding the first sibling of each colour - Clear Shot,
+        /// Grappling Branches and Lead Astray - and p.16's Ultimate unlocked on both seats. Clear
+        /// Shot's Range 4 is the longest printed reach in the roster and its modal is where RULING 39
+        /// is read.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedSilverarrow = 48,
+
+        /// <summary>
+        /// The Tier III staging with Silverarrow holding the second sibling of each colour: Rain of
+        /// Arrows, Treetop Sentinel and Nature's Blessing. This is the one arm on which RULING 38's
+        /// mandatory chain is reachable through a player's own input - three Attack instances from one
+        /// card, each narrowed to what its own printed clause admits.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedSilverarrow = 49
     }
 
     [ExecuteAlways]
@@ -817,6 +866,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedMisaTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.MisaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedSilverarrow =>
+                    MatchConfiguration.CreateStagedSilverarrowForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedSilverarrow =>
+                    MatchConfiguration.CreateStagedSilverarrowTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SilverarrowUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSilverarrow =>
+                    MatchConfiguration.CreateStagedSilverarrowTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SilverarrowUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedSilverarrow =>
+                    MatchConfiguration.CreateStagedSilverarrowTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SilverarrowUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSilverarrow =>
+                    MatchConfiguration.CreateStagedSilverarrowTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SilverarrowUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -858,7 +926,8 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedTigerclaw(content) ||
                 IsStagedXargatha(content) ||
                 IsStagedDodger(content) ||
-                IsStagedMisa(content))
+                IsStagedMisa(content) ||
+                IsStagedSilverarrow(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1246,6 +1315,12 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusMisaOneVsOne();
                     }
 
+                    if (IsStagedSilverarrow(content))
+                    {
+                        return QuickGameSetupConfiguration
+                            .CreateStagedWaspVersusSilverarrowOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -1325,6 +1400,20 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedMisa ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedMisa ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedMisa;
+
+        /// <summary>
+        /// Whether this content puts Silverarrow the Pathfinder on the Blue seat. Milestone
+        /// 8.35z46's five arms, on the one-hero-per-team setup and the ordinary engaged
+        /// restaging - and for her the restaging is not a convenience but the only thing that puts an
+        /// enemy inside a printed Range at all, because RULING 1 makes six of her seven Attacks reach
+        /// exactly their printed number and nothing nearer.
+        /// </summary>
+        private static bool IsStagedSilverarrow(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedSilverarrow ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedSilverarrow ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSilverarrow ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedSilverarrow ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSilverarrow;
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

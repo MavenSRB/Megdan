@@ -102,6 +102,14 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.35z38. Misa's six - three "This turn" Defense guards and three "Next
                 // turn" step-moves - joining the moment her dealing milestone put them into
                 // MatchContentCatalogs, and mirrored by hand here for the same reason Dodger's pair is.
-                .Concat(MisaActiveEffectContent.Handlers());
+                .Concat(MisaActiveEffectContent.Handlers())
+                // Milestone 8.35z46. Silverarrow's six - three "This turn" fast-travel/movement
+                // restrictions and three "End of turn:"/round-long permissions - joining the moment
+                // her dealing milestone put them into MatchContentCatalogs, mirrored by hand here for
+                // the same reason. Her own new handler type, CardTextFastTravelHandler, is not part of
+                // this list: it is a roster capability registered in
+                // SyntheticRosterCapabilities.RegisteredHandlers, not a hero-owned Active-effect
+                // creation, and this mirror is of VerifiedCapabilityHandlers alone.
+                .Concat(SilverarrowActiveEffectContent.Handlers());
     }
 }

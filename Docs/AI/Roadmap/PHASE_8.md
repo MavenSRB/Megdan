@@ -313,6 +313,35 @@ Non-goals: no change to the bound-target resolve path, which is unreachable mid-
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z45-narrow-an-attack-sequence-bullet-to-the-subjects-its-own-sentence-names-completion-evidence).
 
+### [x] 8.35z46 Deal, register and player-path gate Silverarrow the Pathfinder as the ninth hero
+
+The third of the six dealing milestones the content wave owes, on exactly the ceremony milestones 8.35z34 and 8.35z38 proved: register, deal, gate, journey, govern, verify.
+
+Observable outcome: a player loads a staged match, is dealt Silverarrow's eighteen cards, and can reach every face of hers a printed sentence allows - with her contract in the build's registered set, her identity pinned, her artwork addressed, and her player-path gate passing beside the eight that came before it.
+
+**Rain of Arrows' second repeat clause is composed, and the costed design for it was wrong in a way that would have shipped silently.** Milestone 8.35z30 parked "if you do, repeat once on a minion" on a measured seam limit. The wall it named is real: a repeated Attack derives its admitted unit kind from its own CARD's declaration - milestone 8.24 chose that so the clause moves no snapshot field - and a derivation that asks the card cannot tell two clauses apart. The wall it missed was found by probe before a line was written: rulebook p.10's "You cannot repeat a repeated action!" is enforced for card text by milestone 8.25d as ONE BOOLEAN about the enclosing attack, so a second clause would have been skipped in silence inside the very instance it exists to fire in. Both have one cause and one answer that costs nothing: card text is always started with no completed repeats, so the bounded-chain counter every Skill repeat uses reads zero in every Attack instance, and the chain already mints each instance's identity by appending to the last one's - which is already restorable state. `CardTextRepeatChain` reads it; no schema version moves, and a card printing one clause keeps the exact walk it had, which is every face in this build but this one. Recorded as [rules-ledger row 26](../RULES_LEDGER.md#open-source-and-rules-questions) because the next face to print a chain inherits it.
+
+**The registration is what moves the numbers, and this time the move is exactly ONE contract.** `fast-travel@1` is a handler TYPE this build had never registered, so it owed a `SyntheticShowcaseHand` consumer, which this milestone added. Her other new-to-her contract, `choose-line-destination@1`, registered already at Misa's dealing (8.35z38) and needed nothing here - her three straight-line faces reach the same registered contract Misa's five Blue Skills do, which is the ordinary case of two heroes sharing one rule rather than a second registration. Her six Active-effect creations move the count by nothing either, on the sentence three heroes running now have written: `ActiveEffectCreationHandler` is a type this build has had since milestone 6.8. So the pinned handler count moved 61 to **62** rather than by two. Every corpus digest and both scenario-digest families moved on the same cause, schema **unmoved at v40**, and the arithmetic was measured rather than assumed: the failing digests read off a complete unfiltered run are what this milestone's re-pins carry forward.
+
+**The gate table was written from a derivation rather than checked against one, and needed no new interaction shape at all.** An offline probe printed what `HeroPlayerPathMatrix` derives for each of her nineteen faces before a row existed, and all nine gate cases passed on their first run. Three capability classifications were added and no shape - `fast-travel`, `choose-line-destination` and `synthetic-attack-took-a-hero` - which is the healthiest outcome this gate has had: nineteen new faces and the surface already had a name for every input they ask for.
+
+**The staging fact that decides where her journeys live was measured before any was written.** The unrestaged staged board holds the two heroes fifteen spaces apart, and RULING 1 makes six of her seven Attacks reach a BAND rather than a ceiling - so on that board every Attack she prints has no legal target at all. The engaged restaging holds them exactly two apart, which is her Gold basic's printed Range. For every earlier hero the restaging was a convenience; for her it is what makes her set reachable.
+
+**Her hero-token art had never been prepared**, on exactly the shape Misa's dealing found: declared at composition time but never written, which the piece journey would otherwise have caught as a hero wearing the generated prism fallback. `Tools/Prepare-HeroTokens.ps1 -Hero silverarrow -Check` named the gap before a journey had to; running it without `-Check` wrote both team fronts, verified against the same shared reference-ring measurement every other hero's token passes.
+
+Acceptance checks:
+
+- Silverarrow is dealt by a configured match, her one remaining contract is registered, and both halves of milestone 7.9's gate are asserted against each other so neither can move alone.
+- The registered-handler count is 61 to 62, her identity pin is measured on a complete unfiltered run, and the other eight pins are byte-identical in that same run.
+- Her eighteen artwork rows exist and the catalog's bijection holds at 162 dealt definitions across nine heroes.
+- Her player-path gate passes, every row's shapes match the derivation exactly, and the eight earlier heroes' derived rows are unmoved.
+- Rain of Arrows' three-instance chain is proved on a purpose-built board, and its containment - no other composed hero's card reaches more than one clause - is asserted rather than assumed.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: Keep the Distance stays parked on the standing p.20 Handicap deferral; the three other composed heroes (Ursafar, Tali, Whisper) are not dealt; and no official six-player line-up changes, which milestone 8.25 owns.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z46-deal-register-and-player-path-gate-silverarrow-the-pathfinder-as-the-ninth-hero-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.

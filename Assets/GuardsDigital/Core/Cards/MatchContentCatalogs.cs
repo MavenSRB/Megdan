@@ -121,6 +121,14 @@ namespace GuardsDigital.Core.Cards
                     // milestone 8.35z29's `BeforePrimaryAction` checkpoint, which is a window this
                     // build had a producer for and no content behind until now.
                     MisaEffectContent.TriggeredDefinitions(MisaCardContent.ContentRevision))
+                .Concat(
+                    // Milestone 8.35z46. Silverarrow's three, joining at the milestone that deals her
+                    // rather than at the one that composed them, for the same reason. Wild Hunt's
+                    // before-action move runs at the window Wasp's High Voltage and Arien's Living
+                    // Tsunami both already reach, and her two "End of turn:" discards are the first
+                    // verified content to reach the `TimingCheckpoint.TurnEnded` window a card-text
+                    // trigger, rather than an Ultimate's or an Active effect's own expiry, fires from.
+                    SilverarrowEffectContent.TriggeredEffects(SilverarrowCardContent.ContentRevision))
                 .ToArray()));
 
         /// <summary>
@@ -154,6 +162,14 @@ namespace GuardsDigital.Core.Cards
                 // milestone that deals her. Like Dodger's pair they owe no showcase consumer: all six
                 // run on ActiveEffectCreationHandler, the type Arien's five persistent texts proved,
                 // and the deferral gate's second half is asked of the handler type.
-                .Concat(MisaActiveEffectContent.Handlers());
+                .Concat(MisaActiveEffectContent.Handlers())
+                // Milestone 8.35z46. Silverarrow's six creations - three "This turn:" fast-travel and
+                // movement restrictions and three "End of turn:"/round-long permissions - joining at
+                // the milestone that deals her. They owe no showcase consumer either: all six run on
+                // ActiveEffectCreationHandler, the same proved type. Her own new handler type,
+                // CardTextFastTravelHandler, is registered separately in
+                // `SyntheticRosterCapabilities.RegisteredHandlers` and reaches this build's generic
+                // handler set from there, not from here.
+                .Concat(SilverarrowActiveEffectContent.Handlers());
     }
 }

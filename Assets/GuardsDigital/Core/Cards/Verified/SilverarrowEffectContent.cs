@@ -210,24 +210,37 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <c>attack-took-a-hero@1</c>, because "If you target a hero" is a question about the instance
         /// that just resolved.</para>
         ///
-        /// <para><b>The third clause is deliberately not composed, and the reason is a measured seam
-        /// limit rather than an open question.</b> "if you do, repeat once on a minion" needs a second
-        /// repeat, bound to a different unit kind, that fires only in the instance the first repeat
-        /// produced. A repeated Attack learns which kind it may take by reading its own card's
-        /// declaration - <c>RepeatAdmitsEnemyHeroesOnly</c>, deliberately derived rather than carried on
-        /// the resolution so that the clause moves no snapshot field - and that derivation asks the
-        /// card, not the instance. It therefore cannot tell two repeat clauses apart on one card, and
-        /// Rain of Arrows is the first face in the roster to print two. Composing the minion clause
-        /// under the existing shape would narrow <em>both</em> repeats to one kind. The engine item is
-        /// named in this milestone's notes with its costed design; the printed text ships transcribed
-        /// in full so the face's inventory is complete, and nothing here silently does half of
-        /// it.</para>
+        /// <para><b>The third clause is composed at milestone 8.35z46, and what it took
+        /// was not what the seam limit's costed design predicted.</b> "if you do, repeat once on a
+        /// minion" needs a second repeat bound to a different unit kind, firing only in the instance
+        /// the first repeat produced. Two walls stood in front of it, and only one had been measured.
+        /// The known one: a repeated Attack learns which kind it may take by reading its own card's
+        /// declaration, deliberately derived rather than carried, so it cannot tell two clauses apart
+        /// on one card. The unmeasured one, which a probe found: rulebook p.10's "You cannot repeat a
+        /// repeated action!" is enforced for card text as a single boolean about the enclosing attack,
+        /// so the minion clause would have been skipped in silence inside the very instance it exists
+        /// to fire in - whatever it declared. Both are answered by
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.CardTextRepeatChain"/>, which reads an
+        /// instance's position in the chain out of the identity the chain itself mints.</para>
+        ///
+        /// <para><b>"if you do" needed no condition of its own, and that is the composition's neatest
+        /// consequence.</b> The minion clause is printed second, so a chain reaches it only at position
+        /// one - and position one exists only because the hero repeat happened. The printed condition
+        /// is therefore the chain's own shape rather than a predicate, exactly as RULING 37's "if you
+        /// do" turned out to be the bound of a move that did not happen.</para>
+        ///
+        /// <para><b>The chain terminates in exactly three instances, and the reason is printed rather
+        /// than counted.</b> The printed instance may ask clause one and does so when it took a hero;
+        /// the instance that produces may ask clause two; the instance THAT produces finds no third
+        /// clause printed and the chain ends. Nothing bounds it but the card's own two sentences.</para>
         /// </summary>
         private static EffectDefinition CreateArrowStorm(
             CardDefinitionId cardId, string contentRevision)
         {
             var root = new EffectNodeId("arrow-storm-root");
-            var repeat = new EffectNodeId("arrow-storm-repeat");
+            var heroClause = new EffectNodeId("arrow-storm-hero-clause");
+            var heroRepeat = new EffectNodeId("arrow-storm-repeat");
+            var minionRepeat = new EffectNodeId("arrow-storm-minion-repeat");
 
             return new EffectDefinition(
                 AttackTextEffectId(cardId),
@@ -235,10 +248,15 @@ namespace GuardsDigital.Core.Cards.Verified
                 root,
                 new[]
                 {
+                    // The two clauses in printed reading order, which is the order the chain advances
+                    // along. Nothing else about this graph decides which instance may ask which.
                     new EffectNodeDefinition(
-                        root, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { heroClause, minionRepeat }),
+                    new EffectNodeDefinition(
+                        heroClause, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
                         SyntheticConsequenceCapabilities.AttackTookAHeroV1,
-                        childNodeIds: new[] { repeat },
+                        childNodeIds: new[] { heroRepeat },
                         outputs: new[]
                         {
                             new EffectOutputBinding(
@@ -246,9 +264,13 @@ namespace GuardsDigital.Core.Cards.Verified
                                 EffectValueKind.Boolean)
                         }),
                     new EffectNodeDefinition(
-                        repeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
+                        heroRepeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
                         maximumRepeats: 1,
-                        repeatTargetBinding: RepeatTargetBinding.DifferentEnemyHero)
+                        repeatTargetBinding: RepeatTargetBinding.DifferentEnemyHero),
+                    new EffectNodeDefinition(
+                        minionRepeat, EffectNodeKind.RepeatAction, EffectFailurePolicy.IfAble,
+                        maximumRepeats: 1,
+                        repeatTargetBinding: RepeatTargetBinding.DifferentEnemyMinion)
                 });
         }
 
@@ -885,14 +907,28 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <para>Where Wasp's five telekinetic Skills read "a unit, or a token", these read "an enemy
         /// unit" only. The token class never appears anywhere in Silverarrow's set, and the absence is
         /// recorded rather than filled in.</para>
+        ///
+        /// <para><b>Milestone 8.35z46's corrective: distance one is card text, not a printed icon.</b>
+        /// All three faces this feeds print no Radius icon at all (the printed-value table's row for
+        /// each shows Skill with every one of Radius, Range and Item-bonus dashed), which is exactly
+        /// right - "adjacent" is a fixed distance the sentence states, and p.16 never raises a card's
+        /// own written number the way it raises a printed icon. A first build read "adjacent" through
+        /// <c>RadiusTargetV1</c> anyway, whose own handler is explicit that a card with no printed icon
+        /// of that channel gets no bound at all - "the selection is therefore impossible rather than
+        /// adjacent-by-default" - so all three faces offered no target on any board, in a real match
+        /// exactly as in this journey. <see cref="SyntheticTargetingCapabilities.ChooseTargetV4"/> is
+        /// the seam built for exactly this shape: Red Needle's Push and Blue Sentinel's Swap already
+        /// name their adjacent object through it, with the distance as a literal the definition writes
+        /// rather than a total the card would have to print.</para>
         /// </summary>
         private static EffectNodeDefinition AdjacentEnemyUnitNode(
             EffectNodeId nodeId, EffectNodeId consumerNodeId) =>
             new EffectNodeDefinition(
                 nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                SyntheticTargetingCapabilities.RadiusTargetV1,
+                SyntheticTargetingCapabilities.ChooseTargetV4,
                 inputs: new[]
                 {
+                    EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
                     EffectInputBinding.FromLiteral("includeSelf", EffectValue.Boolean(false)),
                     EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
                     EffectInputBinding.FromLiteral(

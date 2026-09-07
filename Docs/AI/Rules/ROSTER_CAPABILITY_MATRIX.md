@@ -5,8 +5,8 @@
 Canonical planning map for milestone 8.19. Return to [CARD_COVERAGE.md](CARD_COVERAGE.md). Source truth and
 exact face text remain in the hero shards; this file owns only capability classification, effect-node
 contracts, dependency order, and source-linked scenario IDs for every hero added after Wasp - the five
-milestone 8.19 planned, and Dodger and Misa, added at milestones 8.35z34 and 8.35z38 from outside that
-line-up.
+milestone 8.19 planned, and Dodger, Misa and Silverarrow, added at milestones 8.35z34, 8.35z38 and
+8.35z46 from outside that line-up.
 
 ## Reading the matrix
 
@@ -35,7 +35,7 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `synthetic-range-target@1`, `synthetic-radius-target@1`, `synthetic-choose-target@1`, and
 `repeat-action@1`. New or refined identities must be introduced by an approved dependency slice and registered before verified content can use them.
 
-Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete; milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34 - and milestone 8.35z38 an EIGHTH on the same terms, Misa, composed at 8.35z29 and dealt at 8.35z38. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v38 and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Four further heroes are composed and NOT dealt** - Silverarrow, Ursafar, Tali and Whisper, from the six-hero content wave - and their contracts stay in the deferred lists until each hero's own dealing milestone, which is milestone 7.9's gate working rather than an omission. Milestone 8.35z38 recorded the one way that rule reads differently for a SHARED declaration: `choose-line-destination@1` is Misa's and Silverarrow's both, so dealing Misa registered it and Silverarrow's phase-one claim to it expired - a shared contract is deferred only until the FIRST of its sharers is dealt.
+Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete; milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34 - milestone 8.35z38 an EIGHTH on the same terms, Misa, composed at 8.35z29 and dealt at 8.35z38 - and milestone 8.35z46 a NINTH, Silverarrow, composed at 8.35z30 and dealt at 8.35z46. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v40 and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Three further heroes are composed and NOT dealt** - Ursafar, Tali and Whisper, from the six-hero content wave - and their contracts stay in the deferred lists until each hero's own dealing milestone, which is milestone 7.9's gate working rather than an omission. Milestone 8.35z38 recorded the one way that rule reads differently for a SHARED declaration: `choose-line-destination@1` is Misa's and Silverarrow's both, so dealing Misa registered it and Silverarrow's phase-one claim to it expired - a shared contract is deferred only until the FIRST of its sharers is dealt. Milestone 8.35z46 moved her own remaining contract, `fast-travel@1`, across on the ordinary half of the rule: a card a configured match now deals starts it.
 
 **The block's own prerequisite claim needs qualifying, and this is now three heroes running:** each of
 8.20, 8.20a and 8.21 found printed sentences needing vocabulary no 8.19 slice built - a restriction
@@ -192,6 +192,33 @@ shape from the reference it carries.
 | Living Tornado / Storm Spirit | R, N | `choose-unit-pair-at-maximum-radius@1` / `choose-unit-pair-at-equal-distance-in-radius@1` then `synthetic-swap@1`. Two ids over ONE handler again; the second is the build's **first relational pair constraint** - the admissible second member depends on the first `[misa/swaps]`. |
 | Power Overwhelming | R, N | p.16 permanent ability declaring `RuleModificationKind.ChoiceCardinality` - the ninth member and the first that modifies a CONTROL-FLOW node rather than a fact about a piece - plus `UltimateTriggerCondition.AfterControllerPlacesSelf` feeding a `choose-target@2` on an adjacent enemy hero and `discard-owned-card@1 (IfAble)`. Watch How I Soar is the raiser's only trigger in her whole set, and in a handicapped game it has none `[misa/ultimate]`. |
 | Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/misa, team slot, deck, profile/dashboard references; validation-only)` `[misa/components]`. No rules component supply. |
+
+## Silverarrow
+
+Source: [HERO_SILVERARROW.md](HERO_SILVERARROW.md). Silverarrow owns no token, marker, alternate form,
+or statue - and no face of hers moves one either, where Wasp's telekinetic Skills read "a unit, or a
+token". She was added at milestone 8.35z46 and is the third hero here from outside milestone 8.17's
+line-up.
+
+**Six of her seven Attacks read ONE printed narrowing**, and the rows below name it once rather than
+per face: RULING 1's `AttackTargetReach.ExactlyPrintedRange` is a BAND, so a unit nearer than the
+printed Range Total is not a legal target of that Attack at all. It is a target-policy declaration and
+not an effect, which is what makes it one answer for the offer, the choice and the resolution.
+
+| Faces / component | Class | Effect nodes and exact contract |
+| --- | --- | --- |
+| Shoot and Scoot / Keep the Distance | R, N | Band-narrowed Gold basic Attack, then p.14 step 7 `fast-travel@1 (scope=AdjacentZone; May)`. Keep the Distance additionally narrows to heroes and carries the standing p.20 deferral `[silverarrow/gold-basics]`. |
+| Trailblazer | R, N | `fast-travel@1 (scope=Anywhere p.11 admits; May)` then `create-active-effect@1 (ThisRound, ControllerAndHeroesInRadius, AlliedWithSource)` declaring `ForPermission(MoveThroughObstacles, whilePerforming: Movement)`. RULING 47 is the `whilePerforming` and SL-07 the live membership `[silverarrow/trailblazer]`. |
+| Snap Shot / Opportunity Shot / Clear Shot | R, N | ONE candidate set, `AttackTargetableUnits.IsolatedUnitsOrUnitsAdjacentToYou`, not a p.10 modal: the two printed bullets name the same set under every reading of "any other unit", proved on a purpose-built board. RULING 39 falls out - there is no arm to carry a type `[silverarrow/red-modals]`. |
+| Long Shot | R | Band only, no effect root - the plainest Attack in her set `[silverarrow/long-shot]`. |
+| Rain of Arrows | R, N | Band, then `Sequence[ Conditional(synthetic-attack-took-a-hero@1) -> RepeatAction(DifferentEnemyHero, IfAble), RepeatAction(DifferentEnemyMinion, IfAble) ]`. TWO repeat clauses on one card, the first in the roster; the chain is bounded by printed clause position rather than by a counter, in `CardTextRepeatChain` `[silverarrow/rain]`. |
+| Grasping Roots / Entangling Vines / Grappling Branches | R, N | `create-active-effect@1 (ThisTurn, HeroesInRadius, OpposingSource)` declaring `ForRestriction(RuleActivity.FastTravel)` and `ForActivityLimit(RuleActivity.Movement, 1)`. Arien's Deluge word for word; the three differ only in the printed Radius `[silverarrow/restriction-blues]`. |
+| Warning Shot / Treetop Sentinel | R, N | `create-active-effect@1 (EndOfTurn, ControllerHero)` triggering AND expiring at `TimingCheckpoint.TurnEnded`, whose triggered effect is `synthetic-radius-hero-target@1 (OpposingSource)` then `synthetic-discard-chosen-card@1` - `IfAble` for the first, escalating to `synthetic-defeat-hero` for the second. SL-06 is that the disk is derived at FIRING time `[silverarrow/end-of-turn]`. |
+| Disorient | R, N | `synthetic-object-push@3 (adjacent enemy unit, exactly 1, Mandatory)` then `synthetic-direct-move@3 (actor, 1, May)` with NO line. Its two printed differences from its siblings are both here `[silverarrow/disorient]`. |
+| Divert Attention / Lead Astray | R, N | `synthetic-object-push@3 (adjacent enemy unit, UpTo 2/3)` publishing its REALISED `distance`, bound into `choose-line-destination@1`'s `maximumDistance` and thence into a straight-line `synthetic-direct-move@3`. RULING 37 is that binding `[silverarrow/straight-lines]`. |
+| Fae Healing / Nature's Blessing | R, N | Printed-Radius hero selection with `includeSelf` and no team narrowing - RULING 8 - then `retrieve-card@1 (owner AND chooser = the named hero; May)` publishing `retrievedBy` on success, bound into `gain-resource@1 (1/2 coins)`. The "if they do" is that binding being undefined on a decline `[silverarrow/retrievals]`. |
+| Wild Hunt | R, N | p.16 permanent ability declaring `BeforeActionTrigger(ActionKind.None, BeforeActionTriggerFrequency.EveryAction)`, whose effect is `choose-line-destination@1 (maximumDistance 2)` then a straight-line `synthetic-direct-move@3`. The first Ultimate in this build that fires before EVERY action, and the first printing neither Range nor Radius `[silverarrow/wild-hunt]`. |
+| Profile, dashboard, standee | R | `hero-content-definition@1 (hero-content/silverarrow, team slot, deck, profile/dashboard references; validation-only)` `[silverarrow/components]`. No rules component supply. |
 
 ## Delta register and dependency order
 

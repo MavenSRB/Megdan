@@ -67,7 +67,34 @@ namespace GuardsDigital.Core.Effects
         /// moves no snapshot field and no schema version, and a tampered payload cannot widen the set
         /// back.</para>
         /// </summary>
-        DifferentEnemyHero = 3
+        DifferentEnemyHero = 3,
+
+        /// <summary>
+        /// Milestone 8.35z46. `on a minion`: <see cref="DifferentEnemyHero"/>'s twin at
+        /// the other end of p.19's unit kinds, and the second clause of the only face in the roster
+        /// that prints two.
+        ///
+        /// <para>Silverarrow's Rain of Arrows prints "Target a unit at maximum range. If you target a
+        /// hero, repeat once on a different hero; if you do, repeat once on a minion." RULING 38
+        /// settles it: the repeats are mandatory where a legal target exists, the minion clause fires
+        /// only if the hero repeat happened, every instance inherits the action's own targeting
+        /// sentence, and the minion must be a different unit. So this member narrows the repeated
+        /// instance to minions and excludes the target the asking instance took, which is exactly the
+        /// two halves <see cref="DifferentEnemyHero"/> has - the exclusion is vacuous in the one chain
+        /// that reaches it, because the instance before it took a hero, and it is carried anyway
+        /// because the ruling says the minion is a different unit rather than because a board makes
+        /// it matter.</para>
+        ///
+        /// <para><b>What this member could not do on its own, and what had to be built beside it.</b>
+        /// The narrowing is derived from the card when a repeated instance builds its candidates, and a
+        /// card that prints two clauses cannot be told apart that way - which is the seam limit
+        /// milestone 8.35z30 measured and wrote up. It is answered by
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.CardTextRepeatChain"/>, which reads the
+        /// instance's position in the chain out of the identity the chain itself mints. Nothing is
+        /// stored: this member moves no snapshot field and no schema version, exactly as
+        /// <see cref="DifferentEnemyHero"/> does not.</para>
+        /// </summary>
+        DifferentEnemyMinion = 4
     }
 
     /// <summary>

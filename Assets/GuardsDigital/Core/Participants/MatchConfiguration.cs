@@ -955,6 +955,106 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.35z46. The staged Wasp-versus-Silverarrow match, on the same
+        /// `DEV-005` terms the staged Arien, Brogan, Sabina, Tigerclaw, Xargatha, Dodger and Misa
+        /// matches are on. This is the configuration that makes Silverarrow the ninth dealt hero.
+        ///
+        /// <para>Silverarrow takes the Blue seat though the roster-expansion amendment has not yet
+        /// placed her in an official line-up at all, for the reason
+        /// <see cref="CreateStagedBroganForInternalTest"/> records: milestone 8.25 owns the official
+        /// six-player configuration and every hero spawn it assigns. <see cref="Create"/> - the scene a
+        /// player loads - is untouched and still deals rulebook p.5's six.</para>
+        ///
+        /// <para><b>She needs no ally seat, and the reason is Xargatha's rather than Tigerclaw's for
+        /// eight of her nine other-unit clauses and neither for the ninth.</b> Her Attacks, her three
+        /// restriction Blues, her two "End of turn:" discards and her three Green displacement Skills
+        /// all name an <em>enemy</em>, so a friendly hero would widen no candidate set. Fae Healing and
+        /// Nature's Blessing are the exception and they need no seat either: RULING 8 makes "a hero in
+        /// radius" admit enemies <em>and herself</em>, so both faces already have two candidate classes
+        /// on a one-seat-per-team board. What a second Blue seat would add is the <em>friendly other
+        /// hero</em> arm alone, and that arm is recorded as unreached rather than composed away.</para>
+        ///
+        /// <para><b>What this staging must supply that no earlier hero's did is DISTANCE, and it
+        /// supplies none.</b> RULING 1 makes six of her seven Attacks reach a band rather than a
+        /// ceiling, so a target one space too near is not a legal target at all - and the two heroes
+        /// stand fifteen spaces apart here, which is outside every printed Range she has. That is the
+        /// staged board every earlier hero also uses and it is not changed for her; the consequence is
+        /// recorded because it is what decides where a journey can live. A journey whose subject is a
+        /// target has to be driven from an engaged staging, and the definition-tier fixtures measure
+        /// the band on purpose-built boards instead.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedSilverarrowForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedSilverarrowHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z46. The staged Wasp-versus-Silverarrow match at rulebook p.15's
+        /// Tier II stage, with Silverarrow holding one Tier II card of each colour on the branch the
+        /// caller names - the same pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/>
+        /// records.
+        ///
+        /// <para>Which branch a staged hand took decides which half of her surface this match contains
+        /// at all: <see cref="Cards.Verified.SilverarrowUpgradeBranch.SecondSibling"/> is the only one
+        /// carrying an "End of turn:" face or a retrieval, and the first is the only one carrying a
+        /// realised-distance self-move. See <see cref="Cards.Verified.SilverarrowProgressedHands"/>.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedSilverarrowTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.SilverarrowUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedSilverarrowHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z46. The staged Wasp-versus-Silverarrow match at rulebook p.15's
+        /// Tier III stage with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's
+        /// Ultimate area and Wild Hunt in Silverarrow's.
+        ///
+        /// <para><b>Hers is the first unlocked Ultimate in this build that fires before every action
+        /// rather than before one kind.</b> "Each time before you perform an action you may move 2
+        /// spaces in a straight line" is <c>BeforeActionTriggerFrequency.EveryAction</c>, where Arien's
+        /// Living Tsunami fires once a turn and Tigerclaw's Cloak and Daggers fires after a basic
+        /// action rather than before any. So a Tier III Silverarrow opens a decision in front of every
+        /// action she performs, which is what makes this configuration the one a journey drives that
+        /// clause from.</para>
+        ///
+        /// <para>It is also the arm on which RULING 1's band is at its most reachable, because the free
+        /// straight-line move happens <em>before</em> the action and can therefore put her at exactly
+        /// the printed Range her own Attack demands. That is her whole play pattern in one
+        /// configuration, and it is content rather than a fixture convenience.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedSilverarrowTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.SilverarrowUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedSilverarrowHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.SilverarrowCardContent.WildHunt)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -1303,6 +1403,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.MisaProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.MisaProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.35z46. One seat's verified Silverarrow hand, prefixed by the
+        /// seat's team side for the reason the seven earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedSilverarrowHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.SilverarrowCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedSilverarrowHand(
+            bool tierThree, Cards.Verified.SilverarrowUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.SilverarrowProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.SilverarrowProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

@@ -228,7 +228,18 @@ namespace GuardsDigital.Tests.EditMode
             // constraint in the build - two units at the same distance from the actor - and it is
             // still one handler under these rules because the relation is derived from the same live
             // board each candidate is drawn from.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(61),
+            //
+            // MILESTONE 8.35z46 IS THE THIRD DEALING MILESTONE, and it moves this count by exactly
+            // ONE - from 61 to 62 - because only one of Silverarrow's two new-to-her roster contracts
+            // is a new handler TYPE. `fast-travel@1` is CardTextFastTravelHandler, a type this build
+            // had never registered, so it owed the showcase consumer milestone 8.35z46 added.
+            // `choose-line-destination@1` registered already at Misa's dealing, and her three
+            // straight-line faces reach that same handler now - which moves this count by nothing,
+            // exactly as the rule ledger row 25 above predicts for a shared declaration. Her six
+            // Active-effect creations move it by nothing either, on the same sentence three heroes
+            // running now have written: ActiveEffectCreationHandler is a type this build has had since
+            // milestone 6.8.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(62),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

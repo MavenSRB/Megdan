@@ -453,12 +453,19 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The Rain of Arrows shortfall, asserted rather than left to a note: the hero repeat is
-        /// composed and the minion repeat is not. A test that says so is what stops the gap being
-        /// mistaken for a completed composition by whoever picks the card up next.
+        /// Rain of Arrows' whole sentence, composed. Milestone 8.35z30 shipped the hero clause and
+        /// parked the minion clause on a measured seam limit, and asserted the shortfall here so it
+        /// could not be mistaken for a finished composition; milestone 8.35z46 closed it,
+        /// and this case is the same assertion turned round - what was proved absent is now proved
+        /// present, in the printed order that decides which instance may ask which.
+        ///
+        /// <para>Both clauses are `if able` and name no chooser, which is RULING 38's "no printed may"
+        /// and the observable difference from Wasp's Thunder Boomerang. The chain itself - three
+        /// instances, each narrowed to its own clause - is driven on a board in
+        /// <c>SilverarrowRepeatChainTests</c>; this is the composition it is driven from.</para>
         /// </summary>
         [Test]
-        public void RainOfArrows_ComposesItsHeroRepeatAndNotYetItsMinionRepeat()
+        public void RainOfArrows_ComposesBothOfItsPrintedRepeatClauses()
         {
             var attack = SilverarrowCardContent
                 .Definition(SilverarrowCardContent.RainOfArrows)
@@ -467,82 +474,99 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Kind == EffectNodeKind.RepeatAction)
                 .ToArray();
 
-            Assert.That(repeats, Has.Length.EqualTo(1));
             Assert.That(
-                repeats[0].RepeatTargetBinding,
-                Is.EqualTo(RepeatTargetBinding.DifferentEnemyHero));
-            Assert.That(
-                repeats[0].FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble),
-                "RULING 38: no printed \"may\", so nobody is asked - it happens where it can and is " +
-                "skipped where it cannot.");
-            Assert.That(repeats[0].Chooser, Is.EqualTo(EffectChooserRole.None),
-                "Which is the observable difference from Wasp's Thunder Boomerang, whose face does " +
-                "print a may.");
+                repeats.Select(node => node.RepeatTargetBinding).ToArray(),
+                Is.EqualTo(new[]
+                {
+                    RepeatTargetBinding.DifferentEnemyHero,
+                    RepeatTargetBinding.DifferentEnemyMinion
+                }),
+                "\"repeat once on a different hero; if you do, repeat once on a minion\", in the " +
+                "order the card prints them - which is the order the chain advances along.");
+
+            foreach (var repeat in repeats)
+            {
+                Assert.That(
+                    repeat.FailurePolicy, Is.EqualTo(EffectFailurePolicy.IfAble),
+                    "RULING 38: no printed \"may\", so nobody is asked - it happens where it can and " +
+                    "is skipped where it cannot.");
+                Assert.That(repeat.Chooser, Is.EqualTo(EffectChooserRole.None),
+                    "Which is the observable difference from Wasp's Thunder Boomerang, whose face " +
+                    "does print a may.");
+            }
 
             Assert.That(
                 attack.EffectRoot.Nodes.Any(node =>
-                    node.Kind == EffectNodeKind.RepeatAction &&
-                    node.RepeatTargetBinding != RepeatTargetBinding.DifferentEnemyHero),
-                Is.False,
-                "The minion clause is a named engine item, not a silent half-composition.");
+                    node.Kind == EffectNodeKind.Conditional &&
+                    node.Capability.Equals(SyntheticConsequenceCapabilities.AttackTookAHeroV1)),
+                Is.True,
+                "\"If you target a hero\" gates the whole chain and is the only predicate it needs: " +
+                "\"if you do\" is the chain's own shape, because the minion clause is printed second " +
+                "and a chain reaches a second clause only from an instance the first one produced.");
         }
 
         /// <summary>
-        /// Every capability her content names is one this build can load, and the ONE she mints alone
-        /// is deliberately not registered until she is dealt - which is the law milestone 8.35z29
-        /// recorded, because the registered list is serialized and eager registration moves pinned
-        /// snapshot bytes.
+        /// Milestone 8.35z46 deals her, which is the change that moves her one remaining minted
+        /// contract from <c>DeferredHandlers</c> to <c>RegisteredHandlers</c>: milestone 7.9's gate
+        /// refuses a registration no printed card a match deals can start, and a configured match now
+        /// deals her.
         ///
-        /// <para><b>MILESTONE 8.35z38 NARROWED THIS CASE FROM TWO CONTRACTS TO ONE, and the reason is
-        /// worth carrying to every hero still waiting.</b> As written it claimed both
-        /// <c>choose-line-destination@1</c> and <c>fast-travel@1</c> were deferred. The first is the
-        /// content wave's SHARED declaration - milestone 8.35z30 and 8.35z29 both minted it against the
-        /// same output and the wave kept one superset - and Misa's five Blue Skills name it too. So
-        /// dealing Misa registered it, and this case failed in the dealing milestone's own first
-        /// complete run.</para>
+        /// <para>This case replaces <c>HerMintedCapabilities_AreDeferredUntilSheIsDealt</c>, on exactly
+        /// the correction <c>MisaPrintedSetTests.TheNewContracts_AreRegisteredNowSheIsDealt</c>
+        /// records for the same reason: the deferral gate asks whether a contract is reachable from a
+        /// card a match DEALS, and the day the hero is dealt the old assertion is backwards rather than
+        /// merely stale.</para>
         ///
-        /// <para><b>That failure was correct and the assertion was wrong, which is the finding.</b> The
-        /// deferral gate asks whether a contract is reachable from a card a match DEALS - not from
-        /// whose content minted it. A shared declaration is therefore deferred only until the FIRST of
-        /// its sharers is dealt, and a phase-1 hero's claim to it silently expires at that moment. What
-        /// this case can honestly own is her own <c>fast-travel@1</c>, which no dealt card names; the
-        /// shared one is asserted from the other side, in <c>MisaPrintedSetTests</c>, by the hero whose
-        /// dealing earned it.</para>
-        ///
-        /// <para>Silverarrow's own faces reaching a registered contract when she is dealt is the
-        /// ordinary case of two heroes sharing one rule, and needs nothing from her milestone.</para>
+        /// <para><b>The gate's second half did real work once.</b> <c>fast-travel@1</c> is a handler
+        /// TYPE this build had never registered, so it owed a <c>SyntheticShowcaseHand</c> consumer
+        /// before it could register - milestone 8.35z46 added one. Her other new-to-her contract,
+        /// <c>choose-line-destination@1</c>, registered already at Misa's dealing and owes nothing
+        /// here: her three straight-line faces reach the same registered contract Misa's five Blue
+        /// Skills do, which is the ordinary case of two heroes sharing one rule.</para>
         /// </summary>
         [Test]
-        public void HerMintedCapabilities_AreDeferredUntilSheIsDealt()
+        public void TheNewContract_IsRegisteredNowSheIsDealt()
         {
-            var registered = SyntheticRosterCapabilities.RegisteredHandlers()
-                .Select(handler => handler.Reference)
-                .ToArray();
-            var deferred = SyntheticRosterCapabilities.DeferredHandlers()
-                .Select(handler => handler.Reference)
+            var registered = MatchContentCatalogs.ForThisBuild().Capabilities.Registered
+                .Select(value => value.ToString())
                 .ToArray();
 
-            // Stated as "hers is among the deferred" rather than as the whole deferred list: the
-            // six-hero content wave puts other undealt heroes' contracts into this same list, so an
-            // exhaustive assertion here would be an assertion about them. The claim this case owns is
-            // that her OWN contract is deferred and not registered, and the intersection check below
-            // is what makes the second half exact.
-            Assert.That(deferred, Is.SupersetOf(new[]
+            Assert.That(registered, Has.Member("fast-travel@1"));
+            Assert.That(registered, Has.Member("choose-line-destination@1"));
+
+            foreach (var handler in SilverarrowActiveEffectContent.Handlers())
             {
-                SyntheticRosterCapabilities.FastTravelV1
-            }));
+                Assert.That(registered, Has.Member(handler.Reference.ToString()),
+                    "Her Active-effect creations register with the rest of her contracts, in the " +
+                    "same change, because they are reached by the same dealt cards.");
+            }
 
-            // The shared declaration, asserted in the direction that is true: milestone 8.35z38 dealt
-            // Misa, whose five Blue Skills name it, so it is registered and no longer deferred. Stated
-            // here rather than deleted, because a reader of this file needs to know WHY her other
-            // contract is not beside it - and because the day Silverarrow is dealt, this line is
-            // already correct and needs no edit.
-            Assert.That(registered, Has.Member(
-                SyntheticRosterCapabilities.ChooseLineDestinationV1));
-            Assert.That(deferred, Has.No.Member(
-                SyntheticRosterCapabilities.ChooseLineDestinationV1));
+            // And the other side of the move: her own contract is no longer declared as deferred.
+            // `choose-line-destination@1` was never hers to claim here in the first place - it left
+            // this list at Misa's dealing, and MisaPrintedSetTests asserts that side.
+            var deferred = SyntheticRosterCapabilities.DeferredHandlers()
+                .Select(handler => handler.Reference.ToString())
+                .ToArray();
 
-            Assert.That(registered.Intersect(deferred), Is.Empty);
+            Assert.That(deferred, Has.No.Member("fast-travel@1"));
+        }
+
+        /// <summary>
+        /// A configured match deals her eighteen cards, which is the half of milestone 7.9's gate the
+        /// registration above rests on. Asserted through the configuration rather than through the
+        /// content, because "she is dealt" is a statement about a match and not about a card file.
+        /// </summary>
+        [Test]
+        public void SheIsDealtByAConfiguredMatch()
+        {
+            var configuration = MatchConfiguration.CreateStagedSilverarrowForInternalTest(TeamSide.Red);
+
+            var hers = configuration.CardInstances
+                .Where(card => card.DefinitionReference.DefinitionId.Value
+                    .StartsWith(SilverarrowCardContent.ContentSetId + "-", StringComparison.Ordinal))
+                .ToArray();
+
+            Assert.That(hers, Has.Length.EqualTo(SilverarrowCardContent.DealtDefinitions.Count));
         }
 
         private static IReadOnlyList<string> FacesWhere(Func<PrintedAttackTargetPolicy, bool> predicate) =>

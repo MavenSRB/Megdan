@@ -74,7 +74,14 @@ namespace GuardsDigital.Tests.EditMode
             // deliberately wrong value and the digest read off this oracle's own failure output. A
             // filtered pin run has been green while digests moved, which is why the rule is the
             // complete run rather than the cheap one.
-            new IdentityPin("misa", "misa-8-35z38-rev-1", "4472b5aa57a237ca7f9ff955ce5107bfa054ca2f890505db8921ad2f21eee5d6")
+            new IdentityPin("misa", "misa-8-35z38-rev-1", "4472b5aa57a237ca7f9ff955ce5107bfa054ca2f890505db8921ad2f21eee5d6"),
+            // Milestone 8.35z46. THE NINTH PIN, arriving on exactly the terms the seventh and eighth
+            // did: a pin is a claim about content a configured match loads, and milestone 8.35z30
+            // composed Silverarrow without dealing her.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
+            // deliberately wrong value and the digest read off this oracle's own failure output.
+            new IdentityPin("silverarrow", "silverarrow-8-35z46-rev-1", "738e726343ff3837ac2871c0f3c450d320a4cfa894561b3e5456d2958913c67c")
         };
 
         [Test]
@@ -166,6 +173,10 @@ namespace GuardsDigital.Tests.EditMode
                 // a special case for one hero: no official line-up deals either of them, so an
                 // official-only read would measure both as absent.
                 .Concat(MatchConfiguration.CreateStagedMisaForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.35z46. Silverarrow's staged configuration joins on the same terms: no
+                // official line-up deals her either.
+                .Concat(MatchConfiguration.CreateStagedSilverarrowForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

@@ -1001,6 +1001,30 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedRangeTenseRidersProfile });
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.35z46: the one handler type Silverarrow the Pathfinder's dealing registers,
+        // proved here on a card that is nobody's. `choose-line-destination@1` needs no card of its
+        // own - it moved across already at Misa's dealing, and her Windrunner above already proves it.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.35z46's card-text Fast Travel Skill, sitting outside its team's ordinary
+        /// Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedFastTravelSkillProfile { get; } =
+            new SyntheticSkillProfile("red-pathfinder", "Red Pathfinder", 29);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.35z46's card-text Fast Travel Skill, which is how
+        /// <c>fast-travel@1</c> becomes reachable from showcase content rather than arriving for the
+        /// first time inside Silverarrow's own slice - the second half of the rule
+        /// <c>ConfiguredCardMatrixTests</c> asks, asked of the handler TYPE.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithFastTravelSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                fastTravelSkillProfile: RedFastTravelSkillProfile);
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1105,6 +1129,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile boxItemSkillProfile = null,
             SyntheticSkillProfile lineTravelSkillProfile = null,
             SyntheticSkillProfile unitPairSkillProfile = null,
+            SyntheticSkillProfile fastTravelSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1302,6 +1327,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateUnitPairSkillDefinition(unitPairSkillProfile),
                     unitPairSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (fastTravelSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateFastTravelSkillDefinition(fastTravelSkillProfile),
+                    fastTravelSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -3012,6 +3045,72 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         {
                             new PrintedValueDefinition(PrintedValueChannel.Radius, 3)
                         },
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+        }
+
+        /// <summary>
+        /// Milestone 8.35z46. A Skill that asks the one contract Silverarrow's dealing registers:
+        /// rulebook p.11's Fast Travel, invoked from card text rather than from the secondary-action
+        /// row.
+        ///
+        /// <para>It binds <c>FastTravelZoneScope.SameOrAdjacentZone</c> rather than the narrower scope
+        /// her two Gold basics print, so the fixture exercises p.11's own reach and not only the
+        /// narrowing - both are declared by the <c>ZoneScopeParameter</c> the handler reads, and the
+        /// narrower arm is what Shoot and Scoot, Keep the Distance and Trailblazer's own faces
+        /// prove.</para>
+        ///
+        /// <para><c>May</c>, exactly as every printed "you may fast travel" is: a hero with no eligible
+        /// Zone at all is an ordinary board state under p.11 and p.18 both, and a mandatory node here
+        /// would make the card unplayable on the very boards it exists to be played on.</para>
+        /// </summary>
+        private static CardDefinition CreateFastTravelSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("fast-travel-root");
+            var travel = new EffectNodeId("fast-travel-travel");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-35z46-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { travel }),
+                    new EffectNodeDefinition(
+                        travel, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        SyntheticRosterCapabilities.FastTravelV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.ZoneScopeParameter,
+                                GuardsDigital.Core.Rules.CardResolution.FastTravelZoneScope
+                                    .SameOrAdjacentZone)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("destination", EffectValueKind.Coordinate)
+                        })
+                });
+
+            return new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-35z46-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId("primary-fast-travel-skill"),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
                         default,

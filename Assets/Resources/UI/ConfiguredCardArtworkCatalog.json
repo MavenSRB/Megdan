@@ -149,6 +149,24 @@
     { "definitionId": "misa-living-tornado", "contentRevision": "misa-8-35z38-rev-1", "sourcePath": "active-hero-cards/Misa/misa15__7445649__front.png" },
     { "definitionId": "misa-mastery", "contentRevision": "misa-8-35z38-rev-1", "sourcePath": "active-hero-cards/Misa/misa16__7445644__front.png" },
     { "definitionId": "misa-storm-spirit", "contentRevision": "misa-8-35z38-rev-1", "sourcePath": "active-hero-cards/Misa/misa17__7537015__front.png" },
-    { "definitionId": "misa-power-overwhelming", "contentRevision": "misa-8-35z38-rev-1", "sourcePath": "active-hero-cards/Misa/misa18__7537954__front.png" }
+    { "definitionId": "misa-power-overwhelming", "contentRevision": "misa-8-35z38-rev-1", "sourcePath": "active-hero-cards/Misa/misa18__7537954__front.png" },
+    { "definitionId": "silverarrow-shoot-and-scoot", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow__7522565__front.png" },
+    { "definitionId": "silverarrow-trailblazer", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow2__7525566__front.png" },
+    { "definitionId": "silverarrow-snap-shot", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow3__7506058__front.png" },
+    { "definitionId": "silverarrow-opportunity-shot", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow4__7506062__front.png" },
+    { "definitionId": "silverarrow-long-shot", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow5__7506051__front.png" },
+    { "definitionId": "silverarrow-clear-shot", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow6__7506063__front.png" },
+    { "definitionId": "silverarrow-rain-of-arrows", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow7__7506055__front.png" },
+    { "definitionId": "silverarrow-grasping-roots", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow8__7510563__front.png" },
+    { "definitionId": "silverarrow-entangling-vines", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow9__7510561__front.png" },
+    { "definitionId": "silverarrow-warning-shot", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow10__7512603__front.png" },
+    { "definitionId": "silverarrow-grappling-branches", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow11__7510560__front.png" },
+    { "definitionId": "silverarrow-treetop-sentinel", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow12__7512602__front.png" },
+    { "definitionId": "silverarrow-disorient", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow13__7506050__front.png" },
+    { "definitionId": "silverarrow-divert-attention", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow14__7506060__front.png" },
+    { "definitionId": "silverarrow-fae-healing", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow15__7506057__front.png" },
+    { "definitionId": "silverarrow-lead-astray", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow16__7506052__front.png" },
+    { "definitionId": "silverarrow-natures-blessing", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow17__7506066__front.png" },
+    { "definitionId": "silverarrow-wild-hunt", "contentRevision": "silverarrow-8-35z46-rev-1", "sourcePath": "active-hero-cards/SilverArrow/silverarrow18__7506067__front.png" }
   ]
 }

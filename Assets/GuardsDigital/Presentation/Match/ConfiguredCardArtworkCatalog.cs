@@ -54,7 +54,11 @@ namespace GuardsDigital.Presentation.Match
                 { "brogan", "Brogan" },
                 { "sabina", "Sabina" },
                 { "dodger", "Dodger" },
-                { "misa", "Misa" }
+                { "misa", "Misa" },
+                // Milestone 8.35z46. The extraction directory spells her name in camel case,
+                // `SilverArrow` - that extraction's identity, not this project's (SL-10 records that
+                // both printed faces spell it `Silverarrow`, one word, single capital).
+                { "silverarrow", "SilverArrow" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -291,7 +295,7 @@ namespace GuardsDigital.Presentation.Match
 
     /// <summary>
     /// Loads and pins the one tracked catalog against every dealt definition of every hero this build
-    /// deals - eight heroes and 144 cards since milestone 8.35z38 dealt Misa the Samurai.
+    /// deals - nine heroes and 162 cards since milestone 8.35z46 dealt Silverarrow the Pathfinder.
     /// </summary>
     public static class ConfiguredCardArtworkCatalog
     {
@@ -316,6 +320,11 @@ namespace GuardsDigital.Presentation.Match
                 // been a revision MISMATCH rather than an absence - the loud half of milestone 8.35l's
                 // trap rather than the silent half.
                 .Concat(MisaCardContent.DealtDefinitions)
+                // Milestone 8.35z46. Silverarrow's eighteen, on exactly the terms Dodger's and Misa's
+                // rows above state. Keep the Distance is p.20's Handicap card and is not among her
+                // DealtDefinitions, exactly as Dodger's Rusty Razor and Misa's Leaf on the Wind are not
+                // among theirs.
+                .Concat(SilverarrowCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

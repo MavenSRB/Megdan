@@ -577,6 +577,30 @@ namespace GuardsDigital.Core.Setup
             CreateOneVsOne(new HeroContentId("misa"), "Misa the Samurai");
 
         /// <summary>
+        /// Milestone 8.35z46. Wasp on Red against Silverarrow the Pathfinder on Blue, the
+        /// ninth hero this build deals and the third from outside the mapped pitch roster.
+        ///
+        /// <para>She needs no ally seat. Seventeen of her nineteen faces name an <em>enemy</em> or
+        /// nobody at all - every Attack, the three movement-restriction Blues, the two "End of turn:"
+        /// discards and the three Green displacement Skills - and the two that do not, Fae Healing and
+        /// Nature's Blessing, print "a hero in radius", which RULING 8 reads as any hero including
+        /// herself. So on this board both retrieval faces already offer two candidate classes, the
+        /// enemy across the map and Silverarrow herself, and the only arm a second Blue seat would add
+        /// is a friendly hero who is not her. That arm is recorded as unreached by this staging rather
+        /// than composed away, exactly as Tigerclaw's friendly arm is.</para>
+        ///
+        /// <para><b>What this staging cannot supply is the thing RULING 1 makes her whole set turn
+        /// on.</b> Six of her seven Attacks target at exactly the printed Range, and the two heroes
+        /// stand fifteen spaces apart here, which is outside Clear Shot's Range 4 by eleven. No board
+        /// is staged specially for her - this is the same one-versus-one board six earlier heroes
+        /// use - but the consequence decides where her journeys live: every face whose subject is a
+        /// target is driven from an engaged staging, and this one carries the faces that ask nothing of
+        /// distance.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusSilverarrowOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("silverarrow"), "Silverarrow the Pathfinder");
+
+        /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master
         /// Skald print and the reason two of Brogan's nineteen faces would otherwise be unreachable.

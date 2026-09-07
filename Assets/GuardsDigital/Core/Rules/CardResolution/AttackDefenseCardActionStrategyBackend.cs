@@ -2642,10 +2642,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // instance already knows it is one and which action it repeats, so the card can be asked
             // again - which is why the clause moves no snapshot field, and why a payload naming a
             // minion cannot put one back into the set.
-            if (resolution.InvocationContext == ActionInvocationContext.Repeated &&
-                RepeatAdmitsEnemyHeroesOnly(resolution, definitions))
+            // Milestone 8.35z46 widens the derivation to a card that prints a CHAIN of
+            // clauses, where the card alone cannot say which one produced this instance. Nothing about
+            // a single-clause card changes: RepeatAdmitsOnly returns exactly what
+            // RepeatAdmitsEnemyHeroesOnly returned for every face in this build but Rain of Arrows.
+            if (resolution.InvocationContext == ActionInvocationContext.Repeated)
             {
-                legal = legal.Where(target => target.Kind == AttackTargetKind.Hero).ToArray();
+                var admitted = RepeatAdmitsOnly(resolution, definitions);
+                if (admitted.HasValue)
+                {
+                    legal = legal.Where(target => target.Kind == admitted.Value).ToArray();
+                }
             }
 
             return new PendingAttackTargetChoice(
@@ -2667,10 +2674,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private static bool RepeatAdmitsEnemyHeroesOnly(
             PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)
         {
-            var card = definitions?.FirstOrDefault(candidate =>
-                candidate.Id.Equals(resolution.SourceDefinitionReference.DefinitionId));
-            var action = card?.ActionDefinitions?.FirstOrDefault(candidate =>
-                candidate.Id.Equals(resolution.ActionDefinitionId));
+            var action = RepeatedActionDefinition(resolution, definitions);
             if (action == null)
             {
                 return false;
@@ -2678,6 +2682,62 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             return DeclaresEnemyHeroRepeat(action.EffectRoot) ||
                 DeclaresEnemyHeroRepeat(action.SecondCardTextRoot);
+        }
+
+        /// <summary>
+        /// Milestone 8.35z46. The single unit kind a repeated instance may take, or
+        /// <c>null</c> where its card narrows nothing and p.19's ordinary set stands.
+        ///
+        /// <para><b>Why this is not <see cref="RepeatAdmitsEnemyHeroesOnly"/> with a second arm.</b>
+        /// That method asks the card, which is deliberate - the clause moves no snapshot field and a
+        /// tampered payload cannot widen the set back - and it is exactly why it cannot tell two
+        /// clauses on one card apart. Silverarrow's Rain of Arrows prints two, narrowed to different
+        /// kinds, so which one produced THIS instance decides what it may take. That is answered by
+        /// the instance's own position in the chain, read from the identity the chain minted - see
+        /// <see cref="CardTextRepeatChain"/> - which is restorable state and moves no schema
+        /// version.</para>
+        ///
+        /// <para>A card printing one clause never reaches the chain branch, so its narrowing is the
+        /// one it had before this milestone, computed by the same method.</para>
+        ///
+        /// <para><b>One case falls through deliberately.</b> Milestone 8.23's after-action ability
+        /// mints its instance's identity with a <c>after-action-repeat:</c> PREFIX rather than the
+        /// chain's suffix, so a chain card repeated that way reports position nought and no producing
+        /// clause. It then takes the same card-derived answer every single-clause card takes, which is
+        /// the behaviour that path already had - p.10's "perform the entire action again" inheriting a
+        /// card-text clause's narrowing is a question this milestone does not open, because changing
+        /// it would move Xargatha's Cleave as well.</para>
+        /// </summary>
+        private static AttackTargetKind? RepeatAdmitsOnly(
+            PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)
+        {
+            var action = RepeatedActionDefinition(resolution, definitions);
+            var producing = CardTextRepeatChain.ProducingClause(action, resolution.ResolutionId);
+            if (producing != null)
+            {
+                switch (producing.RepeatTargetBinding)
+                {
+                    case RepeatTargetBinding.DifferentEnemyHero:
+                        return AttackTargetKind.Hero;
+                    case RepeatTargetBinding.DifferentEnemyMinion:
+                        return AttackTargetKind.Minion;
+                    default:
+                        return null;
+                }
+            }
+
+            return RepeatAdmitsEnemyHeroesOnly(resolution, definitions)
+                ? AttackTargetKind.Hero
+                : (AttackTargetKind?)null;
+        }
+
+        private static ActionDefinition RepeatedActionDefinition(
+            PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)
+        {
+            var card = definitions?.FirstOrDefault(candidate =>
+                candidate.Id.Equals(resolution.SourceDefinitionReference.DefinitionId));
+            return card?.ActionDefinitions?.FirstOrDefault(candidate =>
+                candidate.Id.Equals(resolution.ActionDefinitionId));
         }
 
         private static bool DeclaresEnemyHeroRepeat(EffectDefinition effect) =>

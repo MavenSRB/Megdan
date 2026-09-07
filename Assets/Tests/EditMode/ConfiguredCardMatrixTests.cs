@@ -387,7 +387,14 @@ namespace GuardsDigital.Tests.EditMode
                     // admitted by the concat below.
                     SyntheticShowcaseHand.CreateRedWithLineTravelSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithUnitPairSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithRangeTenseRiderText(owner)
+                    SyntheticShowcaseHand.CreateRedWithRangeTenseRiderText(owner),
+                    // Milestone 8.35z46's one, on the same division the pairs above draw:
+                    // Silverarrow's dealing registers ONE capability id across ONE handler type, and
+                    // the showcase half of this gate is asked of the type. The Pathfinder reaches
+                    // `fast-travel@1`. `choose-line-destination@1`, her other new-to-her contract, is
+                    // already registered and already proved above by Misa's Windrunner - it is not a
+                    // second registration, so it owes no second showcase card.
+                    SyntheticShowcaseHand.CreateRedWithFastTravelSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -448,6 +455,21 @@ namespace GuardsDigital.Tests.EditMode
                 // Her three Green step-moves reach their effects through the triggered-effect concat
                 // below rather than through a card node, which is what that concat is there for.
                 .Concat(MisaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.35z46. Silverarrow's printed set is the NINTH, admitted on the same half
+                // of the rule: a capability named by a card a configured match deals is not a
+                // deferral. The other half did real work once more - one of her two new roster
+                // contracts is a new HANDLER TYPE, proved on the showcase card above before this
+                // concat admits the faces that name it. Her other new contract,
+                // `choose-line-destination@1`, is the exception and says why: it registered already at
+                // Misa's dealing, and her three straight-line faces reach the same registered contract
+                // Misa's five Blue Skills do. Her six Active-effect creations owe no showcase card
+                // either - they run on ActiveEffectCreationHandler, the type the showcase has reached
+                // since milestone 6.8.
+                //
+                // Her three "End of turn:" and permanent-ability effects reach theirs through the
+                // triggered-effect concat below rather than through a card node, which is what that
+                // concat is there for.
+                .Concat(SilverarrowCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

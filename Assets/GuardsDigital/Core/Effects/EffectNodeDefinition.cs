@@ -344,8 +344,11 @@ namespace GuardsDigital.Core.Effects
                     // and not a node's published output.
                     // Milestone 8.24. A repeat narrowed to a different enemy hero excludes the same
                     // thing and narrows what is left, so it names no selection node either.
+                    // Milestone 8.35z46. A repeat narrowed to a minion excludes the same
+                    // thing and narrows what is left, so it names no selection node either.
                     if ((RepeatTargetBinding == RepeatTargetBinding.DifferentTarget ||
-                            RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyHero) &&
+                            RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyHero ||
+                            RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyMinion) &&
                         BoundSelectionNodeId.IsDefined)
                         throw new ArgumentException(
                             "A different-target repeat excludes the action's own target, so it names " +

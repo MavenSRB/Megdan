@@ -563,7 +563,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private static AttackTarget ExclusionFor(
             RepeatTargetBinding binding, PendingAfterActionRepeat subject) =>
             (binding == RepeatTargetBinding.DifferentTarget ||
-                binding == RepeatTargetBinding.DifferentEnemyHero) &&
+                binding == RepeatTargetBinding.DifferentEnemyHero ||
+                binding == RepeatTargetBinding.DifferentEnemyMinion) &&
             subject.Kind == ActionKind.Attack
                 ? subject.CompletedAttackTarget
                 : default;
@@ -2055,9 +2056,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // milestone the enclosing attack could not say it was a repeat at all: the second
                 // instance copied the first's printed context, so Cleave's step 7 asked again inside
                 // its own second instance and a third instance started - measured, not assumed.
-                repeatIsUnavailable: RepeatedActionQuery.IsRepeatedInstance(
-                    step.CardTextRemainderResolution?.InvocationContext ??
-                    ActionInvocationContext.PrintedPrimary),
+                //
+                // Milestone 8.35z46 makes the bar per clause where the card prints a
+                // chain, and leaves this sentence exactly as it was where it prints one - see
+                // CardTextRepeatIsBarredByPageTen.
+                repeatIsUnavailable: CardTextRepeatIsBarredByPageTen(
+                    step.CardTextRemainderResolution, materializedDefinitions),
                 // Milestone 8.35z15. The other half of the same gate, and the half this path never
                 // had: p.10's repeat is an offer, so the node asks whether the instance it would
                 // offer can start at all - with the binding it declares, against the board this
@@ -2330,7 +2334,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private static AttackTarget CardTextRepeatExclusionFor(
             RepeatTargetBinding binding, PendingAttackResolution attack) =>
             binding == RepeatTargetBinding.DifferentTarget ||
-            binding == RepeatTargetBinding.DifferentEnemyHero
+            binding == RepeatTargetBinding.DifferentEnemyHero ||
+            // Milestone 8.35z46. RULING 38 says the minion is a different unit, so the
+            // clause excludes what its asking instance took exactly as the two above do. In the one
+            // chain that reaches it the exclusion is vacuous - the instance before it took a hero -
+            // and it is carried because the ruling says so rather than because a board makes it show.
+            binding == RepeatTargetBinding.DifferentEnemyMinion
                 ? attack.Target
                 : default;
 
@@ -2383,6 +2392,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
+            // Milestone 8.35z46. On a card that prints a CHAIN of repeat clauses, p.10's
+            // bar is answered per clause rather than per instance, and this is where that answer is
+            // given: an instance may ask the clause its own chain position names, and no other. A card
+            // printing one clause answers true here and keeps the walk it had.
+            if (!CardTextRepeatChain.ClauseIsReachable(
+                    ActionOf(enclosing, definitions),
+                    enclosing?.ResolutionId ?? default,
+                    binding))
+            {
+                return false;
+            }
+
             if (enclosing == null || !enclosing.Target.IsDefined)
             {
                 return true;
@@ -2426,7 +2447,39 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private static ActionResolutionId CardTextRepeatResolutionIdFor(
             PendingAttackResolution completed) =>
-            new ActionResolutionId($"{completed.ResolutionId.Value}:repeat");
+            CardTextRepeatChain.Mint(completed.ResolutionId);
+
+        /// <summary>
+        /// Milestone 8.35z46. Rulebook p.10's "You cannot repeat a repeated action!" for
+        /// card text, asked of the card rather than of the instance alone.
+        ///
+        /// <para>Milestone 8.25d stated it as a single boolean about the enclosing attack, and for
+        /// every face in this build but one that is the whole answer. Silverarrow's Rain of Arrows
+        /// prints a CHAIN - "repeat once on a different hero; if you do, repeat once on a minion" -
+        /// and a boolean cannot let its second clause run while barring its first. So a chain answers
+        /// the bar per clause, in <see cref="CardTextRepeatChain.ClauseIsReachable"/>, and a
+        /// single-clause card keeps this exact sentence.</para>
+        /// </summary>
+        private static bool CardTextRepeatIsBarredByPageTen(
+            PendingAttackResolution enclosing, IReadOnlyList<CardDefinition> definitions) =>
+            RepeatedActionQuery.IsRepeatedInstance(
+                enclosing?.InvocationContext ?? ActionInvocationContext.PrintedPrimary) &&
+            !CardTextRepeatChain.PrintsAChain(ActionOf(enclosing, definitions));
+
+        /// <summary>
+        /// The action definition one pending attack is performing, or <c>null</c> outside an attack.
+        /// It is the same two-step lookup <see cref="EnclosingAttackOf"/> makes, named once because the
+        /// chain gate and the narrowing both need it.
+        /// </summary>
+        private static ActionDefinition ActionOf(
+            PendingAttackResolution attack, IReadOnlyList<CardDefinition> definitions) =>
+            attack == null || definitions == null
+                ? null
+                : definitions
+                    .FirstOrDefault(definition =>
+                        definition.Reference.Equals(attack.SourceDefinitionReference))
+                    ?.ActionDefinitions
+                    .FirstOrDefault(candidate => candidate.Id.Equals(attack.ActionDefinitionId));
 
         /// <summary>
         /// Milestone 8.10. Starts the Attack instance the finished one asked for, once that instance's
@@ -2821,9 +2874,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // that comes back to a `RepeatAction` node after answering an earlier question is
                 // still running inside the same attack, and p.10 bars a repeat of a repeat wherever
                 // the node is reached from.
-                repeatIsUnavailable: RepeatedActionQuery.IsRepeatedInstance(
-                    pendingCardText.Attack?.InvocationContext ??
-                    ActionInvocationContext.PrintedPrimary),
+                // Milestone 8.35z46, the resume half of the per-clause bar.
+                repeatIsUnavailable: CardTextRepeatIsBarredByPageTen(
+                    pendingCardText.Attack, materializedDefinitions),
                 // Milestone 8.35z15, the resume half of the same question the start half asks: a
                 // frame that comes back to a `RepeatAction` node after answering an earlier question
                 // is offered that repeat here, so it is judged here too - and from the board as it
