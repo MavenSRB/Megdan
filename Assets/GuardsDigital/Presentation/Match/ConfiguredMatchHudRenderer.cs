@@ -1426,7 +1426,21 @@ namespace GuardsDigital.Presentation.Match
             var red = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red, tray.yMin);
             var blue = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue, tray.yMin);
             var right = Mathf.Max(0f, blue.xMin - Margin);
-            var availableWidth = Mathf.Max(0f, right - red.xMax - Margin);
+            // Milestone 8.35z59, second finding. The board is RIGHT-anchored and its width is
+            // derived from its height, so its LEFT edge is whatever is left over - the horizontal twin
+            // of the rail column's vertical elasticity, and unbounded in exactly the same way. Bounding
+            // it against the Red rail alone was not enough: the round dock stands between that rail and
+            // the board, and at a panel narrower than about 2064 units (or taller than the reference,
+            // which buys the board height and therefore width) the board's left edge crossed the dock
+            // and the two action rows beside the hand. This is the same "bound it against the neighbour
+            // it would collide with" rule milestone 8.35z2 applied to the optional-step and agreement
+            // panels. At the reference the HEIGHT is the binding constraint (870 against the 1273 this
+            // width would allow), so the board's rectangle is unmoved - see the aspect-ratio gate's
+            // 16:9 baseline case.
+            var leftBound = Mathf.Max(
+                red.xMax + Margin,
+                CalculateStatusDockRightEdge(panelWidth) + Margin);
+            var availableWidth = Mathf.Max(0f, right - leftBound);
             var height = Mathf.Min(availableHeight, availableWidth / BoardViewportAspect);
             var width = height * BoardViewportAspect;
             return new Rect(
@@ -1454,17 +1468,34 @@ namespace GuardsDigital.Presentation.Match
             Rect tray,
             Rect playfield)
         {
-            var red = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red, tray.yMin);
-            var left = Mathf.Min(Mathf.Max(0f, panelWidth), red.xMin);
-            var right = Mathf.Min(
-                Mathf.Max(left, panelWidth - Margin),
-                left + StatusDockWidth);
+            var left = CalculateStatusDockLeftEdge(panelWidth);
+            var right = CalculateStatusDockRightEdge(panelWidth);
             var height = Mathf.Min(StatusDockHeight, playfield.height);
             return new Rect(
                 left,
                 Mathf.Max(playfield.yMin, playfield.yMax - height),
                 Mathf.Max(0f, right - left),
                 height);
+        }
+
+        /// <summary>
+        /// The round dock's own left edge. It is the Red rail's left edge - the dock and the rail
+        /// share an outside margin - and depends on the panel WIDTH alone, which is what lets
+        /// <see cref="CalculatePlayfieldRect(float,float,Rect)"/> bound the board against this dock
+        /// without either one having to resolve the other first.
+        /// </summary>
+        private static float CalculateStatusDockLeftEdge(float panelWidth) =>
+            Mathf.Min(Mathf.Max(0f, panelWidth), Margin);
+
+        /// <summary>
+        /// The round dock's own right edge, and therefore the leftmost line the board may reach.
+        /// </summary>
+        private static float CalculateStatusDockRightEdge(float panelWidth)
+        {
+            var left = CalculateStatusDockLeftEdge(panelWidth);
+            return Mathf.Min(
+                Mathf.Max(left, panelWidth - Margin),
+                left + StatusDockWidth);
         }
 
         /// <summary>

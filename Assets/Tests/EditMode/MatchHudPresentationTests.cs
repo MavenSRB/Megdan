@@ -2997,10 +2997,19 @@ namespace GuardsDigital.Tests.EditMode
             // Milestone 8.25c: both are PANEL rectangles in reference units. The reference is what a
             // 16:9 window of any pixel count resolves to, so the window that reaches the short case is
             // one whose SHAPE is short rather than one whose pixel count is - a 2560x540 window on a
-            // wide monitor, which resolves to a panel about 3724 by 785.
+            // wide monitor, which used to resolve to a panel about 3724 by 785.
+            //
+            // Milestone 8.35z59 states that panel DIRECTLY rather than resolving it from that
+            // window, the way this suite's other degenerate-panel sweeps already do. Under the
+            // corrected PanelScreenMatchMode.Expand no device resolution can produce a panel shorter
+            // than the reference at all - 2560x540 now resolves to 6827x1440 - so resolving it from a
+            // window would have left every assertion below passing against a panel that is not short,
+            // silently testing nothing. The literal is exactly what 2560x540 resolved to before, so
+            // the coverage here is unchanged; what changed is that it no longer depends on a window
+            // shape the scaler can no longer produce.
             var referencePanel = new Vector2(
                 MatchHudPanelScaling.ReferenceWidth, MatchHudPanelScaling.ReferenceHeight);
-            var shortPanel = MatchHudPanelScaling.ReferenceViewport(2560f, 540f);
+            var shortPanel = new Vector2(3723.64f, 785.45f);
 
             var tray = ConfiguredMatchHudRenderer.CalculateCardPanelRect(
                 referencePanel.x, referencePanel.y);
