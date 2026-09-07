@@ -674,6 +674,36 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public const float BorderWidth = 1f;
 
+        /// <summary>
+        /// The band's ground while nothing is being asked of the viewer - the near-black the strip
+        /// rests at. Milestone 8.35z47 names it here, beside the strip's other published band values,
+        /// rather than leaving each host to reach for the theme colour itself.
+        /// </summary>
+        public static Color RestingBandGround => MatchHudTheme.TopBarBackground;
+
+        /// <summary>
+        /// The band's ground while the match is waiting on the viewer - the warm olive the whole
+        /// strip turns, at the user's own requirement ("on players turn, the whole top bar needs to
+        /// be gold, not just naration bar").
+        /// </summary>
+        public static Color AwaitedBandGround => MatchHudTheme.NarrationWarmBackground;
+
+        /// <summary>
+        /// The ground this strip most recently PAINTED, published so anything that hangs off the
+        /// band can wear the same one.
+        ///
+        /// <para><b>Why the painted colour and not the rule.</b> Item 1 of the 2026-09-06 refinements
+        /// already made the tray read the strip's insets, radius and weight from this class rather
+        /// than restate them; what it could not read was the ground, because the ground is not a
+        /// constant - it changes with <see cref="MatchHudHeaderViewModel.IsAwaitingViewerInput"/>.
+        /// So the tray took the resting colour once, at construction, and stayed near-black while the
+        /// strip above it went warm. The user saw exactly that and ruled on it (2026-09-07, visual
+        /// acceptance decisions, item 3): "MATCH THE WARM TONE". Publishing the value this view just
+        /// wrote - rather than a second copy of the condition that chooses it - is what makes the two
+        /// unable to drift again, in the same spirit as the shared insets above.</para>
+        /// </summary>
+        public Color BandGround { get; private set; } = RestingBandGround;
+
         private readonly VisualElement content;
         private readonly VisualElement identityRow;
         private readonly VisualElement narrationLane;
@@ -809,11 +839,12 @@ namespace GuardsDigital.Presentation.Match
             // painted by Root showing through, so it mirrors the same two colours explicitly instead
             // of inheriting them.
             var background = model.IsAwaitingViewerInput
-                ? MatchHudTheme.NarrationWarmBackground
-                : MatchHudTheme.TopBarBackground;
+                ? AwaitedBandGround
+                : RestingBandGround;
             var borderColor = model.IsAwaitingViewerInput
                 ? MatchHudTheme.ShineGlow
                 : MatchHudTheme.PanelBorder;
+            BandGround = background;
             Root.style.backgroundColor = background;
             Root.style.borderBottomColor = borderColor;
             narrationLane.style.backgroundColor = background;
@@ -1229,31 +1260,33 @@ namespace GuardsDigital.Presentation.Match
                 ? Color.Lerp(MatchHudTheme.NarrationWarmBackground, accent, 0.14f)
                 : Color.Lerp(MatchHudTheme.PanelBackground, accent, 0.055f);
             body.a = 0.97f;
-            if (hero.IsAwaited)
-            {
-                // Milestone 8.35z39. THE RAIL ITSELF wears the marker now, and the inset
-                // child element that used to wear it is gone with the treatment that needed it.
-                //
-                // Milestone 8.35z9 added `gd-rail-awaited-shine` for one reason it stated plainly:
-                // the rail wears its gold as its own border, with no child element to find, so the
-                // CIRCLING SWEEP needed something here to travel - and it needed that something inset,
-                // because a 10px mark centred on the rail's own border put half of itself outside the
-                // rail's column and the complete Play Mode run caught it at 280.0 against a 276.5
-                // bound. Both the element and its inset existed to carry a travelling dot.
-                //
-                // The user retired the travelling dot ("i dont like the little light that goes
-                // around"), and the breath that replaced it lights an element's OWN outline in place.
-                // The rail's own outline is exactly the gold `frame` written just above, so the marker
-                // belongs on the rail; a child that draws nothing would be a host with no outline to
-                // light. Nothing overflows any column any more either, because nothing is centred on a
-                // border - which is why the guard that caught the sweep has nothing left to catch.
-                //
-                // Only the edges actually painted with the awaited gold breathe. The reserved top edge
-                // and the team accent on the screen-edge side are written after this and are never
-                // gold, so the hero's own identity keeps its colour while the frame breathes - the
-                // same division of labour milestone 8.35m set up here.
-                rail.AddToClassList(MatchHudTheme.AwaitedShineClass);
-            }
+            // Milestone 8.35z39. THE RAIL ITSELF wore the marker, and the inset child element
+            // that used to wear it went with the treatment that needed it.
+            //
+            // Milestone 8.35z9 added `gd-rail-awaited-shine` for one reason it stated plainly: the
+            // rail wears its gold as its own border, with no child element to find, so the CIRCLING
+            // SWEEP needed something here to travel - and it needed that something inset, because a
+            // 10px mark centred on the rail's own border put half of itself outside the rail's column
+            // and the complete Play Mode run caught it at 280.0 against a 276.5 bound. Both the
+            // element and its inset existed to carry a travelling dot.
+            //
+            // The user retired the travelling dot ("i dont like the little light that goes around"),
+            // and the breath that replaced it lights an element's OWN outline in place. The rail's own
+            // outline is exactly the gold `frame` written just below, so z39 put the marker on the
+            // rail; a child that draws nothing would be a host with no outline to light.
+            //
+            // Only the edges actually painted with the awaited gold breathe. The reserved top edge and
+            // the team accent on the screen-edge side are written after this and are never gold, so
+            // the hero's own identity keeps its colour while the frame breathes - the same division of
+            // labour milestone 8.35m set up here.
+            //
+            // Milestone 8.35z47 MOVED THE MARKER OFF THE RAIL, and the paragraph directly
+            // above is why it had to move. Counting what that division of labour actually leaves gold:
+            // the screen-edge side is the five-unit team accent, the top is the reserved identity
+            // edge, and the rail's own border is ONE unit wide - so the breath's whole carrier on a
+            // hero tray was a single-unit bottom edge, half a pixel on a real screen. The class now
+            // rides `gd-rail-awaited-glow` (see AwaitedGlowBand), a band with enough surface to show a
+            // light. The rail still paints its own gold border at rest, unchanged.
 
             rail.style.backgroundColor = body;
             rail.style.overflow = Overflow.Hidden;
@@ -1620,8 +1653,71 @@ namespace GuardsDigital.Presentation.Match
                 discard.Add(pile);
             }
             rail.Add(discard);
+
+            // Milestone 8.35z47. THE TRAY'S BREATH NEEDS A SURFACE, and until now it had a
+            // sub-pixel one. Added LAST so it draws over the rail's own content rather than under it.
+            if (hero.IsAwaited)
+            {
+                rail.Add(AwaitedGlowBand());
+            }
+
             return rail;
         }
+
+        /// <summary>
+        /// Milestone 8.35z47. The awaited hero tray's breathing light: a gold band drawn
+        /// just inside the rail's own edge, which the one conductor lights and dims exactly as it
+        /// lights a card's ring.
+        ///
+        /// <para><b>Why this element exists when milestone 8.35z39 deliberately removed one.</b> z39
+        /// retired <c>gd-rail-awaited-shine</c> and put the marker class on the RAIL, reasoning that
+        /// the rail already wears its gold as its own border so a child that draws nothing would be a
+        /// host with no outline to light. That reasoning is sound and the code did exactly what it
+        /// said. What it did not account for is HOW MUCH of that outline is left to light: the rail's
+        /// border is ONE reference unit, the team accent overwrites the whole screen-edge side at five
+        /// units, and the reserved identity edge takes the top - so the breath's entire carrier on a
+        /// hero tray was a single-unit bottom edge. A reference unit is one pixel at 2560x1440, so
+        /// live that is 0.75 real pixels at 1920x1080 and 0.5 in a typical Editor Game View.
+        ///
+        /// <para>The breath itself was never broken. Its clock advances every frame, its curve is
+        /// right, and its 2.22x luminance swing is real and was measured live. It was simply being
+        /// written across half a pixel, which is why the user looked at a lit tray and reported
+        /// "Saw no breathing, just solid colors" - a correct report of a treatment with no surface.</para>
+        ///
+        /// <para><b>It costs no host budget and no layout.</b> The marker class moves here from the
+        /// rail rather than being added alongside it, so the number of elements the breath lights at
+        /// once is exactly what it was and <see cref="KineticCueUnityView.MaxBreathingShineElements"/>
+        /// still bounds the same set. The band is absolutely positioned and ignores picking, so it
+        /// takes part in no layout, changes no rail measurement, and can never intercept a click meant
+        /// for the tray. The rail keeps its own gold border painted at rest, so a tray that this never
+        /// touches looks exactly as it always has.</para>
+        /// </summary>
+        private static VisualElement AwaitedGlowBand()
+        {
+            var glow = new VisualElement
+            {
+                name = "gd-rail-awaited-glow",
+                pickingMode = PickingMode.Ignore,
+                focusable = false
+            };
+            glow.AddToClassList(MatchHudTheme.AwaitedShineClass);
+            glow.style.position = Position.Absolute;
+            glow.style.left = 0f;
+            glow.style.top = 0f;
+            glow.style.right = 0f;
+            glow.style.bottom = 0f;
+            glow.style.backgroundColor = Color.clear;
+            HudElements.Border(glow, MatchHudTheme.ShineGlow, AwaitedGlowBandWidth, 12f);
+            return glow;
+        }
+
+        /// <summary>
+        /// How wide the awaited tray's breathing band is drawn, in reference units. Wide enough that
+        /// the breath's swing is carried on pixels a player can actually see at every viewport this
+        /// build supports, and narrow enough to sit inside the rail's own nine-unit padding rather
+        /// than over its portrait, its name or its counters.
+        /// </summary>
+        internal const float AwaitedGlowBandWidth = 7f;
 
         /// <summary>
         /// One item bonus: the established printed symbol and signed projected amount, optically centred
@@ -6732,7 +6828,15 @@ namespace GuardsDigital.Presentation.Match
             // background (this drew MatchHudTheme.PanelBackground - a lighter, different dark - which
             // is the "foreign dark box floating under the bar" the item reports, in one line), the
             // strip's border colour and weight, its corner radius and its two horizontal insets.
-            PanelRoot = HudElements.Panel(MatchHudTheme.TopBarBackground);
+            //
+            // Milestone 8.35z47 extends that reading to the one value item 1 could NOT share: the
+            // ground. The strip's ground is not a constant - it turns warm olive whenever the match
+            // is waiting on the viewer - so a tray that took the resting colour once, here, went on
+            // drawing near-black under a warm band. The user looked at that and ruled (2026-09-07,
+            // item 3): "MATCH THE WARM TONE". The tray now names NO ground of its own: it opens at
+            // the strip's published resting one and follows the strip's own painted value through
+            // `SetBandGround`.
+            PanelRoot = HudElements.Panel(MatchStatusBarUnityView.RestingBandGround);
             PanelRoot.name = "gd-match-log";
             PanelRoot.style.position = Position.Absolute;
             PanelRoot.style.display = DisplayStyle.None;
@@ -6795,6 +6899,26 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Raised by a click-away, or by anything else that wants the drop-down CLOSED.</summary>
         public event Action DismissRequested;
+
+        /// <summary>
+        /// Milestone 8.35z47. Wears the ground the top strip just painted, so the tray that unrolls
+        /// from the band is the same colour as the band.
+        ///
+        /// <para>Called from <see cref="ConfiguredMatchHudRenderer.RenderHeader"/> - the one place the
+        /// strip renders - with <see cref="MatchStatusBarUnityView.BandGround"/>, which is the colour
+        /// the strip WROTE rather than a second evaluation of the condition that chooses it. That is
+        /// deliberate: the defect this closes is two independent styles that agreed until one of them
+        /// moved, and copying the rule would have recreated it one level up.</para>
+        ///
+        /// <para>The tray's own border stays the panel hairline. The strip's border turning gold is
+        /// the strip's awaited signal, and the user's ruling moved the GROUND ("tint the tray's
+        /// ground to the top strip's olive warmth"); a second gold edge would repeat a signal nobody
+        /// asked to move, on a surface that hangs flush beneath the one already carrying it.</para>
+        /// </summary>
+        public void SetBandGround(Color ground)
+        {
+            PanelRoot.style.backgroundColor = ground;
+        }
 
         /// <summary>What the chevron does, for a driver that has no pointer.</summary>
         public void ForwardToggle() => ToggleRequested?.Invoke();

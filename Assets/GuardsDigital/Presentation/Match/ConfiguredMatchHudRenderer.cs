@@ -534,6 +534,16 @@ namespace GuardsDigital.Presentation.Match
         {
             header = model ?? throw new ArgumentNullException(nameof(model));
             statusBar?.Render(header);
+            // Milestone 8.35z47 (user visual decision, 2026-09-07 item 3: "MATCH THE WARM TONE").
+            // The tray that unrolls from the band takes the ground the band just painted. This is
+            // the only place the strip renders, so it is the only place the two can be handed the
+            // same colour - and the tray is given the PAINTED value rather than the rule, so no
+            // second copy of "is the viewer being waited on" exists to fall out of step.
+            if (statusBar != null)
+            {
+                matchLog?.SetBandGround(statusBar.BandGround);
+            }
+
             Layout();
         }
 

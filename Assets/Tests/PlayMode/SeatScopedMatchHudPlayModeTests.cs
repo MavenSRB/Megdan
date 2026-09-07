@@ -227,6 +227,63 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.35z47 (user visual decision 2026-09-07, item 3: "MATCH THE WARM TONE"). On the
+        /// LIVE HUD, the match-log tray is painted the ground the top strip is painted - including the
+        /// warm olive the strip turns while the match is waiting on the viewer.
+        ///
+        /// <para><b>Why this needs the live panel and not only the Edit Mode pair.</b> The Edit Mode
+        /// case proves the strip publishes what it paints and that a tray told that value wears it.
+        /// What it cannot see is whether anything on the shipped path ever tells the tray - the two
+        /// views are built separately and the hand-off lives in
+        /// <see cref="ConfiguredMatchHudRenderer.RenderHeader"/>. Before this milestone nothing did,
+        /// and that is exactly the defect the user reported by looking at the screen.</para>
+        ///
+        /// <para><b>Why the header is rebuilt here.</b> The awaited state is driven through the HUD's
+        /// own public entry point rather than waited for, so the case proves the warm branch on every
+        /// staging rather than only on one where the viewer happens to be awaited. The life counters
+        /// are consumed into labels and not re-exposed by the model, so the rebuilt header falls back
+        /// to the setup's counts; this case reads GROUNDS only, and the tray element is queried out of
+        /// the live panel by name rather than held as a reference.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator SeatScene_TheMatchLogTrayIsPaintedTheSameGroundAsTheStripItHangsFrom()
+        {
+            UiPlayer.EnsurePlayerViewport();
+            yield return LoadSeatScene(0);
+            var root = Root();
+            root.Runtime.RefreshAll();
+            yield return null;
+
+            var strip = Named(root.Hud.RootElement, "gd-topbar");
+            var tray = Named(root.Hud.RootElement, "gd-match-log");
+            Assert.That(tray, Is.Not.Null,
+                "The seat HUD composes a match-log tray, or there is nothing here to tint.");
+            Assert.That(root.Hud.Header, Is.Not.Null);
+
+            foreach (var awaited in new[] { true, false })
+            {
+                root.Hud.RenderHeader(new MatchHudHeaderViewModel(
+                    root.Hud.Header.TieBreaker,
+                    root.Hud.Header.Setup,
+                    null,
+                    root.Hud.Header.RoundIndex,
+                    root.Hud.Header.TurnIndex,
+                    awaited));
+                yield return null;
+
+                var expected = awaited
+                    ? MatchStatusBarUnityView.AwaitedBandGround
+                    : MatchStatusBarUnityView.RestingBandGround;
+                Assert.That(strip.resolvedStyle.backgroundColor, Is.EqualTo(expected),
+                    "The strip paints its published ground for this state.");
+                Assert.That(tray.resolvedStyle.backgroundColor,
+                    Is.EqualTo(strip.resolvedStyle.backgroundColor),
+                    "and the tray that unrolls from the band is the band's own colour. A near-black " +
+                    "box under a warm olive bar is what the user looked at and ruled on.");
+            }
+        }
+
+        /// <summary>
         /// Milestone 8.30f: selecting a card keeps the existing click-then-confirm path, but the one
         /// confirmation banner now stands below DIRECTOR at both supported desktop viewports and a
         /// tall/narrow live window, and submits exactly once through the seat client.

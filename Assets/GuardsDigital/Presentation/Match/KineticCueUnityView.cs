@@ -707,7 +707,7 @@ namespace GuardsDigital.Presentation.Match
         /// colour handling. It is small enough that the nearest foreign colour is still many times
         /// further away, which the offline probe measures rather than assumes.</para>
         /// </summary>
-        internal static bool IsAwaitedGold(Color color)
+        public static bool IsAwaitedGold(Color color)
         {
             if (color.a < 0.5f)
             {
@@ -718,14 +718,42 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>How far off the breath's own segment a colour may sit and still be claimed.</summary>
-        internal const float AwaitedGoldTolerance = 0.04f;
+        public const float AwaitedGoldTolerance = 0.04f;
+
+        /// <summary>
+        /// Milestone 8.35z47. The narrowest band, in reference units, that this treatment may
+        /// be written across and still be a light a player can see.
+        ///
+        /// <para><b>Why a width belongs beside a colour.</b> The breath writes border colours, so the
+        /// whole of its visible effect is (the swing) x (the pixels the border covers). 8.35z39
+        /// measured the first factor carefully - it caught and rejected a version whose swing was
+        /// 3.44% - and never measured the second at all, and the second is where it went wrong: the
+        /// hero tray's gold was its rail's ONE-unit border, so a correct 2.22x swing was being written
+        /// across half a real pixel and read, accurately, as a solid colour.</para>
+        ///
+        /// <para>A reference unit is one pixel at the 2560x1440 the HUD's coordinate space is stated
+        /// in, and the smallest viewport this build supports halves that. Four units is therefore two
+        /// real pixels at the worst case - the floor at which a brightness change reads as a change at
+        /// all rather than as edge antialiasing. The bands this HUD actually draws stand well clear of
+        /// it; this is the line under them, not the target.</para>
+        /// </summary>
+        internal const float MinimumBreathBandWidth = 4f;
 
         /// <summary>
         /// The distance from a colour to the nearest point of the dimmed-to-lit segment, in RGB.
         /// Exposed for the probe that measures the margin against every other colour this HUD paints
         /// on a border.
+        ///
+        /// <para>Milestone 8.35z47 widened this and the three members around it from
+        /// <c>internal</c> to <c>public</c>, for one reason worth stating: this assembly's
+        /// <c>InternalsVisibleTo</c> deliberately stops at the EDIT MODE test assembly, and the case
+        /// that samples this breath on consecutive REAL frames can only exist in PLAY MODE. Reading
+        /// these four from a Play Mode fixture is what lets that case measure the SHIPPED predicate
+        /// instead of a copy of it - and a copy is precisely what would let the production formula
+        /// drift away from its own acceptance test. They are pure, side-effect-free queries over a
+        /// colour, so publishing them widens no state and grants no writer.</para>
         /// </summary>
-        internal static float DistanceToBreathSegment(Color color)
+        public static float DistanceToBreathSegment(Color color)
         {
             var from = DimmedOutline();
             var to = MatchHudTheme.ShineGlow;
@@ -763,11 +791,14 @@ namespace GuardsDigital.Presentation.Match
         /// name AND wrong type. It returned an empty list, the caller returned early, and nothing
         /// ever swept - silently, because an empty HUD is a legitimate state for this to find.</para>
         ///
-        /// <para>Exposed <c>internal static</c> rather than kept private so the guard case can assert
-        /// on THIS code rather than on a copy of it: "a composed HUD with a lit tray and a shining
-        /// card yields a non-empty host set" is the claim that had no test.</para>
+        /// <para>Exposed rather than kept private so the guard case can assert on THIS code rather
+        /// than on a copy of it: "a composed HUD with a lit tray and a shining card yields a
+        /// non-empty host set" is the claim that had no test. Milestone 8.35z47 took it from
+        /// <c>internal</c> to <c>public</c> so the Play Mode assembly - which this assembly's
+        /// <c>InternalsVisibleTo</c> deliberately does not name - can ask the same question on the
+        /// live panel; see <see cref="DistanceToBreathSegment"/> for the full reasoning.</para>
         /// </summary>
-        internal static List<VisualElement> FindAwaitedShineHosts(VisualElement root)
+        public static List<VisualElement> FindAwaitedShineHosts(VisualElement root)
         {
             var found = new List<VisualElement>();
             if (root == null)

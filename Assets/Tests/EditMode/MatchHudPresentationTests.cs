@@ -4556,6 +4556,71 @@ namespace GuardsDigital.Tests.EditMode
                 "One hairline on the seam, not the strip's plus the tray's stacked on it.");
         }
 
+        /// <summary>
+        /// Milestone 8.35z47, the user's visual-acceptance decision of 2026-09-07, item 3: "history
+        /// tray: MATCH THE WARM TONE". Looking at the live HUD they saw a warm olive band with a
+        /// near-black box hanging under it, and the two were both correct by their own lights.
+        ///
+        /// <para><b>What item 1's shared reading could not reach.</b> The 2026-09-06 refinement made
+        /// the tray take its insets, radius, weight and hairline from
+        /// <see cref="MatchStatusBarUnityView"/> instead of restating them, and the case directly
+        /// above pins all of it. The ground was the one value it could not share, because the ground
+        /// is not a constant: the strip turns warm whenever the match is waiting on the viewer, and
+        /// the tray had read the resting colour ONCE, in its constructor, so it could never follow.
+        /// The strip was right, the tray was right, and together they were the mismatch reported.</para>
+        ///
+        /// <para><b>Why the strip publishes the colour it painted rather than the rule.</b> The tray
+        /// could have been given the same condition to evaluate. That would be a second copy of
+        /// "is the viewer being waited on" - which is precisely the shape of the defect item 1
+        /// removed, one level up: two styles that agree until one of them moves. So the strip
+        /// publishes <see cref="MatchStatusBarUnityView.BandGround"/>, the value it just wrote, and
+        /// the tray wears it.</para>
+        /// </summary>
+        [Test]
+        public void TheMatchLogTray_FollowsTheStripsOwnGround_IncludingTheWarmOneItTurnsWhenAwaited()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();
+            var strip = new MatchStatusBarUnityView();
+            var tray = new MatchLogUnityView();
+
+            Assert.That(strip.BandGround, Is.EqualTo(MatchStatusBarUnityView.RestingBandGround),
+                "A strip that has rendered nothing publishes the ground it is drawn at.");
+            Assert.That(tray.PanelRoot.style.backgroundColor.value, Is.EqualTo(strip.BandGround),
+                "and a tray that has been told nothing opens at that same published resting ground " +
+                "rather than at a colour of its own naming.");
+
+            strip.Render(Header(session, isAwaitingViewerInput: true));
+            Assert.That(strip.Root.style.backgroundColor.value,
+                Is.EqualTo(MatchStatusBarUnityView.AwaitedBandGround));
+            Assert.That(strip.BandGround, Is.EqualTo(strip.Root.style.backgroundColor.value),
+                "The published ground is the painted one, which is what makes it unable to drift.");
+
+            tray.SetBandGround(strip.BandGround);
+            Assert.That(tray.PanelRoot.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.NarrationWarmBackground),
+                "THE USER'S RULING, AS AN ASSERTION: the tray hanging off a warm band is warm. It " +
+                "read as a foreign near-black box under an olive bar because it could not follow.");
+            Assert.That(tray.PanelRoot.style.backgroundColor.value,
+                Is.Not.EqualTo(MatchStatusBarUnityView.RestingBandGround));
+
+            strip.Render(Header(session, isAwaitingViewerInput: false));
+            tray.SetBandGround(strip.BandGround);
+            Assert.That(tray.PanelRoot.style.backgroundColor.value,
+                Is.EqualTo(MatchStatusBarUnityView.RestingBandGround),
+                "and it follows the band back down, so nothing here is a one-way tint that would " +
+                "leave the tray warm through a turn that is not the viewer's.");
+        }
+
+        private static MatchHudHeaderViewModel Header(
+            MatchSession session, bool isAwaitingViewerInput) =>
+            new MatchHudHeaderViewModel(
+                session.Projection.TieBreakerState,
+                session.Projection.Setup,
+                session.Projection.TeamLifeCounters,
+                session.Projection.RoundIndex,
+                session.Projection.TurnIndex,
+                isAwaitingViewerInput);
+
 
         [Test]
         public void EndTurn_ShinesFullyExactlyWhenItIsTheOnlyOfferLeft()
@@ -5858,6 +5923,87 @@ namespace GuardsDigital.Tests.EditMode
                     "'" + host.name + "' wears the awaited-shine marker but draws no gold edge, so " +
                     "the breath would light nothing on it. The marker belongs on the element whose " +
                     "own outline IS the awaited gold.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z47. THE CASE THAT FAILS ON SHIPPED 8.35z39, and the one measurement
+        /// the light language never took: not whether the breath moves, but how many PIXELS it moves
+        /// across.
+        ///
+        /// <para><b>The user's report was "Saw no breathing, just solid colors", and the clock was
+        /// innocent.</b> The corrective's prime hypothesis was that the conductor's clock only
+        /// advances during cue playback, so an awaited element outside a cue reads a frozen clock.
+        /// That is false, and the shipped instrument's own live numbers disprove it: the integration
+        /// capture logged an awaited card's edge at RGBA(0.463,0.428,0.309) after eight settle frames,
+        /// which is <c>LitOutline(0.0236)</c> to three decimals on all three channels, which is
+        /// <c>Breath(elapsed / 2.4)</c> at elapsed = 0.118 s - eight frames at 68 fps. The clock was
+        /// advancing, the curve was right, and the 2.22x swing was real.</para>
+        ///
+        /// <para><b>What was wrong is that the swing had almost nothing to happen on.</b> A reference
+        /// unit is one pixel at 2560x1440. The breath writes BORDER COLOURS, so its carrier is exactly
+        /// the width of the gold border the host draws - and on a hero tray that was the rail's own
+        /// ONE-unit border, of which the five-unit team accent takes the screen-edge side and the
+        /// reserved identity edge takes the top. A single-unit bottom edge is 0.75 real pixels at
+        /// 1920x1080 and 0.5 in a typical Editor Game View. A 2.22x luminance swing carried on half a
+        /// pixel is not a light; it is exactly the "solid colors" that were reported, and every
+        /// existing case would have gone on passing forever.</para>
+        ///
+        /// <para><b>So the claim is stated where it can be measured</b>: every element the breath
+        /// lights draws its gold on a band wide enough to survive the smallest viewport this build
+        /// supports. It is a property of the HUD, not of the clock, which is why no amount of testing
+        /// the clock could ever have reached it.</para>
+        /// </summary>
+        [Test]
+        public void TheAwaitedBreath_IsCarriedOnABandAPlayerCanSee_NotASubPixelHairline()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var actingId = session.Projection.SelectedActor.ActorId;
+
+            var handView = new DirectorHandsUnityView();
+            var handPresenter = new DirectorHandsPresenter(session, handView);
+            handPresenter.SelectViewedHero(actingId);
+            var railView = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, railView).Refresh();
+            Assert.That(railView.Model.Heroes.Any(hero => hero.IsAwaited), Is.True,
+                "The fixture must light a tray, or the host this case exists for is not on screen.");
+
+            var root = new VisualElement();
+            root.Add(handView.Root);
+            root.Add(railView.Root);
+
+            var hosts = KineticCueUnityView.FindAwaitedShineHosts(root);
+            Assert.That(hosts, Is.Not.Empty, "and the breath must find it.");
+
+            foreach (var host in hosts)
+            {
+                var style = host.style;
+                var widest = 0f;
+                if (KineticCueUnityView.IsAwaitedGold(style.borderTopColor.value))
+                {
+                    widest = Mathf.Max(widest, style.borderTopWidth.value);
+                }
+
+                if (KineticCueUnityView.IsAwaitedGold(style.borderBottomColor.value))
+                {
+                    widest = Mathf.Max(widest, style.borderBottomWidth.value);
+                }
+
+                if (KineticCueUnityView.IsAwaitedGold(style.borderLeftColor.value))
+                {
+                    widest = Mathf.Max(widest, style.borderLeftWidth.value);
+                }
+
+                if (KineticCueUnityView.IsAwaitedGold(style.borderRightColor.value))
+                {
+                    widest = Mathf.Max(widest, style.borderRightWidth.value);
+                }
+
+                Assert.That(widest, Is.GreaterThanOrEqualTo(KineticCueUnityView.MinimumBreathBandWidth),
+                    "'" + host.name + "' is lit by the breath on a band of " + widest + " reference " +
+                    "units, which is " + (widest * 0.5f) + " real pixels at the smallest viewport " +
+                    "this build supports. That is the shape of the reported defect: the light is " +
+                    "computed correctly and then written somewhere too thin to see.");
             }
         }
 

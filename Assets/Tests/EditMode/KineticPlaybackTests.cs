@@ -270,6 +270,52 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z47. The breath's clock is FREE-RUNNING: it advances on a playback
+        /// with nothing playing, which is the only state the treatment exists to light.
+        ///
+        /// <para><b>Written to answer a specific accusation, and it acquits.</b> When the user
+        /// reported "Saw no breathing, just solid colors" the leading explanation was that the
+        /// conductor's clock only advances during cue playback - so an awaited element outside a cue
+        /// (waiting for a commitment: exactly when the breath should show) would read a frozen clock
+        /// and hold one value. Every existing proof of the breath was compatible with that, because
+        /// every one of them advanced the clock by hand while cues were irrelevant, and none of them
+        /// said out loud that an IDLE playback keeps time.</para>
+        ///
+        /// <para>It does, and this is where that is now stated: <c>Advance</c> adds to
+        /// <c>elapsedTotal</c> before it touches the running list, and the running list being empty
+        /// changes nothing about it. The real defect was that the light had almost no surface to be
+        /// drawn on - see <c>MatchHudPresentationTests</c>'s band-width guard - but a clock that
+        /// silently became cue-gated later would produce the identical symptom, and until this case
+        /// nothing would have caught it.</para>
+        /// </summary>
+        [Test]
+        public void TheBreathsClockRunsWithNothingPlaying_WhichIsTheOnlyStateItLights()
+        {
+            var playback = new KineticPlayback();
+            Assert.That(playback.IsIdle, Is.True,
+                "Nothing has been begun, which is the state an awaited element sits in.");
+
+            var dimmest = float.MaxValue;
+            var brightest = float.MinValue;
+            for (var frame = 0; frame < 150; frame++)
+            {
+                playback.Advance(1f / 60f);
+                Assert.That(playback.IsIdle, Is.True,
+                    "and nothing starts playing on its own, so every sample below is taken in the " +
+                    "idle awaited state and not during a cue.");
+                Assert.That(playback.ActiveMotionCount, Is.EqualTo(0));
+                var breath = playback.ShineBreathIntensity;
+                dimmest = Math.Min(dimmest, breath);
+                brightest = Math.Max(brightest, breath);
+            }
+
+            Assert.That(brightest - dimmest, Is.GreaterThan(0.9f),
+                "Two and a half seconds of idle frames cover a whole loop. A clock that only ran " +
+                "during cue playback would hold ONE value here for every frame of it, which is the " +
+                "'solid colors' symptom exactly.");
+        }
+
+        /// <summary>
         /// Milestone 8.35z39. The breath curve eases at BOTH turns, which is what makes it
         /// breathing rather than blinking - and it is the property a hand-written sine can lose by a
         /// quarter turn without any other assertion noticing.

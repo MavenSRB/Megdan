@@ -239,10 +239,24 @@ namespace GuardsDigital.Presentation.Match
             shine.style.right = inset;
             shine.style.bottom = inset;
             shine.style.backgroundColor = Color.clear;
+            // Milestone 8.35z47. THE BAND FILLS THE SPACE IT ALREADY RESERVED, and that is
+            // the whole change: the ring's box has always stood `-inset` units clear of the card
+            // surface, and it drew a 3-unit line inside that space and left the rest empty.
+            //
+            // A reference unit is one pixel at 2560x1440, so that line was 2.25 real pixels at
+            // 1920x1080 and 1.5 in a typical Editor Game View. The breath moves its brightness by
+            // 2.22x - correctly, and measurably - but a 2.22x swing carried on one-and-a-half pixels
+            // is not a light a player can see, which is exactly what the user reported looking at:
+            // "Saw no breathing, just solid colors." Nothing about the clock or the curve was wrong.
+            //
+            // Drawing the band at the full width of its own reserve costs no geometry: the element is
+            // absolutely positioned and its box does not move, so the hand's overlap, the card's own
+            // footprint and every bound measured on either are untouched. Only the number of pixels
+            // the breath is written across changes.
             HudElements.Border(
                 shine,
                 MatchHudTheme.ShineGlow,
-                3f,
+                -inset,
                 CornerRadius(CardFootprint.Width) + CardFootprint.ExteriorOutlineWidth + 3f);
             surface.Add(shine);
         }

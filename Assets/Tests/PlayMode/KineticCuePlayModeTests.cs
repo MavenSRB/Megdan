@@ -13,6 +13,7 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Tests.PlayMode
 {
@@ -330,6 +331,125 @@ namespace GuardsDigital.Tests.PlayMode
                     value.Reference.Equals(offer.SourceDefinitionReference))
                 .ActionDefinitions.Single(value => value.Id.Equals(actionId)).Kind;
         }
+
+        /// <summary>
+        /// Milestone 8.35z47. THE CASE THAT DID NOT EXIST WHEN THE USER REPORTED "Saw no
+        /// breathing, just solid colors": the awaited breath sampled on CONSECUTIVE REAL FRAMES,
+        /// with nothing in this method touching the clock.
+        ///
+        /// <para><b>Why every proof the breath already had was the wrong shape.</b> Milestone
+        /// 8.35z39 shipped eight cases and the integration batch shipped a screenshot instrument, and
+        /// between them they established, correctly, that brightness is a function of time:
+        /// <c>KineticPlaybackTests</c> advances a <c>KineticPlayback</c> by hand and watches the
+        /// number move, and <c>MatchHudPresentationTests</c> pins the colours the function produces.
+        /// Not one of them asserted that TIME ITSELF ADVANCES on the shipped surface while a player
+        /// sits looking at an awaited element - which is the only condition the treatment exists
+        /// for. A frozen clock and a correct curve are indistinguishable to every one of those
+        /// cases, and would have been indistinguishable here too.</para>
+        ///
+        /// <para><b>What this asserts, and deliberately does not.</b> It reads the host's own
+        /// <c>resolvedStyle</c> - what the panel actually resolved for painting, not what the view
+        /// intended - once per real frame, with only <c>yield return null</c> between reads. The
+        /// scene's own <see cref="KineticCueDriver"/> is the only thing advancing anything. It then
+        /// asserts the sampled colour actually MOVED and stayed on the breath's own segment (the hue
+        /// is held constant by construction, so a colour that leaves the segment is a different
+        /// defect than a colour that does not move).</para>
+        ///
+        /// <para><b>It passes on shipped 8.35z39, and that is the finding.</b> The prime hypothesis
+        /// behind this corrective was a cue-gated clock; it is false, and this case is what says so
+        /// on the real surface. The user's report was accurate and its cause was the CARRIER, not the
+        /// clock - see <c>MatchHudPresentationTests</c>'s band-width guard, which is the case that
+        /// does fail on shipped. This one is here so that a future change CAN break the clock and be
+        /// caught, which until now nothing could.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TheAwaitedBreath_ActuallyMovesAcrossConsecutiveRealFrames()
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var driver = Object.FindAnyObjectByType<KineticCueDriver>();
+            Assert.That(driver, Is.Not.Null,
+                "Without the scene's own driver nothing below measures the shipped path.");
+
+            // Settle, so the HUD has composed and the awaited treatments are on screen.
+            for (var frame = 0; frame < 8; frame++)
+            {
+                yield return null;
+            }
+
+            var hosts = KineticCueUnityView.FindAwaitedShineHosts(root.Hud.RootElement);
+            Assert.That(hosts, Is.Not.Empty,
+                "The engaged staging must show an awaited element, or there is no breath to sample " +
+                "and this case would pass by measuring nothing.");
+
+            // The edge actually being lit is measured rather than named: a rail carries several
+            // meanings on its borders at once and only the awaited gold is the breath's to move.
+            var host = hosts[0];
+            var edges = new System.Func<VisualElement, Color>[]
+            {
+                element => element.resolvedStyle.borderTopColor,
+                element => element.resolvedStyle.borderBottomColor,
+                element => element.resolvedStyle.borderLeftColor,
+                element => element.resolvedStyle.borderRightColor
+            };
+            System.Func<VisualElement, Color> read = null;
+            foreach (var candidate in hosts)
+            {
+                foreach (var edge in edges)
+                {
+                    if (KineticCueUnityView.IsAwaitedGold(edge(candidate)))
+                    {
+                        host = candidate;
+                        read = edge;
+                        break;
+                    }
+                }
+
+                if (read != null)
+                {
+                    break;
+                }
+            }
+
+            Assert.That(read, Is.Not.Null,
+                "No awaited host draws an edge on the breath's own segment, so nothing on screen is " +
+                "being lit - the silent zero-host failure in its newest form.");
+
+            // One full loop's worth of REAL frames. Nothing here ticks anything.
+            var lowest = float.MaxValue;
+            var highest = float.MinValue;
+            var elapsed = 0f;
+            while (elapsed < KineticTiming.ShineBreatheLoopSeconds * 1.2f)
+            {
+                var sampled = read(host);
+                Assert.That(KineticCueUnityView.DistanceToBreathSegment(sampled),
+                    Is.LessThanOrEqualTo(KineticCueUnityView.AwaitedGoldTolerance),
+                    "The breath moves brightness along its own segment and holds the hue exactly " +
+                    "constant, so a sample off that segment is a hue drift rather than a dim.");
+                var luminance = (0.2126f * sampled.r) + (0.7152f * sampled.g) + (0.0722f * sampled.b);
+                lowest = Mathf.Min(lowest, luminance);
+                highest = Mathf.Max(highest, luminance);
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            Debug.Log($"[breathfix] sampled luminance over real frames: {lowest:F4} to {highest:F4}, " +
+                $"ratio {highest / Mathf.Max(lowest, 0.0001f):F2}x on {Describe(host)}");
+
+            Assert.That(highest - lowest, Is.GreaterThan(0.05f),
+                "THE USER'S REPORT, AS AN ASSERTION: an awaited element whose luminance never moves " +
+                "across a whole loop of real frames is 'no breathing, just solid colors'. A frozen " +
+                "clock, a driver that disabled itself, or a treatment nothing ticks all land here.");
+            Assert.That(highest / Mathf.Max(lowest, 0.0001f), Is.GreaterThan(1.8f),
+                "and the recorded swing is a kindle, not a shimmer - 8.35z39 measured 2.22x and the " +
+                "first version of it measured 3.44%, which read as the static gold it replaced.");
+            Assert.That(driver.FailureCount, Is.EqualTo(0),
+                "A driver that threw its way to disabled would have frozen the light silently, which " +
+                "is one of the two ways the reported symptom can be produced.");
+        }
+
+        private static string Describe(VisualElement element) =>
+            $"{element.GetType().Name}#{element.name}";
 
         private static IEnumerator LoadEngagedScene()
         {
