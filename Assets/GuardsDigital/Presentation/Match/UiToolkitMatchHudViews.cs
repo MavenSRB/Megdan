@@ -189,15 +189,16 @@ namespace GuardsDigital.Presentation.Match
             button.style.fontSize = 12f;
             button.style.color = MatchHudTheme.PrimaryText;
             button.style.backgroundColor = MatchHudTheme.ButtonIdleBackground;
-            Border(button, MatchHudTheme.PanelBorder, 1f, MatchHudTheme.ButtonCornerRadius);
+            Border(button, MatchHudTheme.ButtonBorder, 1f, MatchHudTheme.ButtonCornerRadius);
             ApplyButtonMotion(button, tintBackground: true);
             return button;
         }
 
         /// <summary>
-        /// Milestone 8.35z8 (the EIGHTEENTH amendment, the button-system pass). One shared press/
-        /// hover feel for every clickable HUD or lobby control - idle, a slight hover lift, a
-        /// quick ~80ms press dip, and disabled (left untouched here: <see cref="MarkUnavailable"/>
+        /// Milestone 8.35z8 (the EIGHTEENTH amendment, the button-system pass), redesigned by
+        /// 8.35z58. One shared press/hover feel for every clickable HUD or lobby
+        /// control - idle, a slight hover lift, a quick ~100ms press dip, and disabled (left
+        /// untouched here: <see cref="MarkUnavailable"/>
         /// already states that state through opacity and <c>SetEnabled(false)</c>, and this method
         /// itself never reacts to a pointer over a disabled control).
         /// </summary>
@@ -246,9 +247,9 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 element.style.backgroundColor = pressed
-                    ? MatchHudTheme.Darken(idleBackground.Value, 0.16f)
+                    ? MatchHudTheme.Darken(idleBackground.Value, MatchHudTheme.ButtonPressDarkenAmount)
                     : hovered
-                        ? MatchHudTheme.Lighten(idleBackground.Value, 0.12f)
+                        ? MatchHudTheme.Lighten(idleBackground.Value, MatchHudTheme.ButtonHoverLightenAmount)
                         : idleBackground.Value;
             }
 
@@ -658,9 +659,12 @@ namespace GuardsDigital.Presentation.Match
         /// dropdown match the top, not to be different like this"). The match-log drop-down reads
         /// THIS rather than repeating the number, so "the tray matches the strip" is one shared
         /// source instead of two literals that happen to agree today - which is the whole failure
-        /// the item reports, in the small.
+        /// the item reports, in the small. Milestone 8.35z58 reads it the OTHER
+        /// direction too: this now forwards to <see cref="MatchHudTheme.BandCornerRadius"/>, the
+        /// same one number the whole push-button family reuses, so the strip stays the single
+        /// place this radius is chosen rather than becoming a second competing source.
         /// </remarks>
-        public const float CornerRadius = 14f;
+        public const float CornerRadius = MatchHudTheme.BandCornerRadius;
 
         /// <summary>The strip's own left inset, shared with the drop-down that hangs from it.</summary>
         public const float PaddingLeft = 14f;
@@ -4357,6 +4361,16 @@ namespace GuardsDigital.Presentation.Match
         /// covers only that conflicting symbol and remains wholly inside the standard face.
         /// </summary>
         private const float UpgradeItemOverlayHeight = 46f;
+
+        /// <summary>
+        /// Milestone 8.35z58, the level-up hand preview. How far a full standard face
+        /// scales down to sit above the offer without pushing the six-card comparison band off the
+        /// reference viewport - small enough to read as a reminder rather than a second decision
+        /// surface, large enough that colour and printed name are still legible.
+        /// </summary>
+        private const float LevelUpHandPreviewScale = 0.4f;
+
+        private const float LevelUpHandPreviewGap = 6f;
         private const float UpgradeItemOverlayTop =
             CardFootprint.Height - UpgradeItemOverlayHeight;
         private static readonly Color UpgradeItemOverlayBackground =
@@ -5085,6 +5099,20 @@ namespace GuardsDigital.Presentation.Match
             {
                 status.Add(HudElements.Text(
                     prompt.SectionLabel, 10f, MatchHudTheme.MutedText, FontStyle.Bold));
+                // User directive (2026-09-07): "when leveling. Show current hand (all 5 cards)
+                // above the offer." Strictly the LEVEL-UP kind - a card-valued transition of a
+                // future kind does not inherit this by coincidence of also satisfying the
+                // all-Card check above.
+                if (prompt.Kind == GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind
+                        .LevelUpUpgrade)
+                {
+                    var handPreview = BuildLevelUpHandPreviewRow();
+                    if (handPreview != null)
+                    {
+                        rows.Add(handPreview);
+                    }
+                }
+
                 var upgradeGrid = HudElements.Column(6f);
                 upgradeGrid.style.flexGrow = 1f;
                 rows.Add(upgradeGrid);
@@ -5127,6 +5155,65 @@ namespace GuardsDigital.Presentation.Match
             section.style.alignItems = Align.FlexStart;
             rows.Add(section);
             return section;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z58. User directive (2026-09-07): "when leveling. Show current
+        /// hand (all 5 cards) above the offer." A read-only reminder of what this seat currently
+        /// holds while it decides which upgrade to take, drawn through the SAME standalone
+        /// card-face builder an upgrade candidate and a Defense offer already use
+        /// (<see cref="DirectorHandsUnityView.BuildStandaloneCard"/>) - a card here is never a
+        /// second, invented look - at a reduced scale so it sits above the six-card comparison
+        /// band without pushing it, or the standing rects the fit/overlap sweep checks, off the
+        /// reference viewport.
+        /// </summary>
+        /// <remarks>
+        /// Read-only by construction, not merely by omission: <see cref="DirectorHandsUnityView.BuildStandaloneCard"/>
+        /// returns a plain <see cref="VisualElement"/> with no click handler at all (unlike the hand
+        /// tray's own interactive card, which wraps a <see cref="Button"/>), and every element this
+        /// method builds additionally sets <c>pickingMode = PickingMode.Ignore</c>, so the preview
+        /// can never intercept or compete with the offer's own controls beneath it.
+        /// </remarks>
+        private VisualElement BuildLevelUpHandPreviewRow()
+        {
+            var cards = Model.LevelUpHandPreview;
+            if (cards.Count == 0)
+            {
+                return null;
+            }
+
+            var row = HudElements.Row(LevelUpHandPreviewGap);
+            row.name = "gd-levelup-hand-preview";
+            row.style.flexWrap = Wrap.NoWrap;
+            row.style.alignItems = Align.FlexStart;
+            row.style.marginBottom = 6f;
+            row.pickingMode = PickingMode.Ignore;
+            foreach (var card in cards)
+            {
+                var slot = new VisualElement { name = "gd-levelup-hand-preview-card" };
+                slot.style.width = CardFootprint.Width * LevelUpHandPreviewScale;
+                slot.style.height = CardFootprint.Height * LevelUpHandPreviewScale;
+                slot.style.flexShrink = 0f;
+                slot.style.overflow = Overflow.Hidden;
+                slot.pickingMode = PickingMode.Ignore;
+
+                var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+                face.style.position = Position.Absolute;
+                face.style.left = 0f;
+                face.style.top = 0f;
+                face.style.width = CardFootprint.Width;
+                face.style.height = CardFootprint.Height;
+                face.style.scale = new Scale(
+                    new Vector3(LevelUpHandPreviewScale, LevelUpHandPreviewScale, 1f));
+                face.style.transformOrigin = new TransformOrigin(new Length(0f), new Length(0f));
+                face.pickingMode = PickingMode.Ignore;
+                face.focusable = false;
+
+                slot.Add(face);
+                row.Add(slot);
+            }
+
+            return row;
         }
 
         /// <summary>

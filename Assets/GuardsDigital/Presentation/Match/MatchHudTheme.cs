@@ -116,22 +116,42 @@ namespace GuardsDigital.Presentation.Match
         public static readonly Color EmptySlot = new Color(0.188f, 0.212f, 0.227f, 1f);
 
         /// <summary>
-        /// Milestone 8.35z8 (the EIGHTEENTH amendment: "make these buttons nicer... they look
-        /// pasted over"). The one push-button chrome and press/hover feel every HUD and lobby
-        /// control shares - <see cref="Presentation.Match.HudElements.ApplyButtonMotion"/> reads
-        /// these rather than each control inventing its own dip and lift, and a flat control's
-        /// background is drawn from <see cref="ButtonIdleBackground"/> rather than a literal so
-        /// it reads as the same family everywhere it appears, from the seat HUD to the lobby.
+        /// Milestone 8.35z58, correcting 8.35z8 (the EIGHTEENTH amendment: "make these
+        /// buttons nicer... they look pasted over"). 8.35z8's own chip (RGB ~37/43/47) sat only a
+        /// shade brighter than the panels it stood on (RGB ~14-24) - runtime-traced and measured
+        /// live evidence (the user, on the shipped build the pass had already reached: "i saw the
+        /// buttons in the latest build, they were the old Buttons") - not a wiring failure, a
+        /// contrast failure: the chip was there, reading as nothing. This chip is roughly 50%
+        /// brighter against the same panels, so a button reads as a raised control at a glance
+        /// rather than blending into its own tray.
         /// </summary>
-        public static readonly Color ButtonIdleBackground = new Color(0.145f, 0.169f, 0.184f, 1f);
+        public static readonly Color ButtonIdleBackground = new Color(0.22f, 0.25f, 0.28f, 1f);
 
         /// <summary>
-        /// The corner radius every ordinary push-button shares with the panel it sits in - the
-        /// value most of this HUD's own panels already draw at (the printed-action ring, the
-        /// event log panel, the round-action panel border), so a button integrates with its host
-        /// rather than reading as a second, disagreeing shape pasted on top of it.
+        /// Milestone 8.35z58. The one border colour the whole button family shares
+        /// with the panel edges around it - the same washed slate-blue the lobby panel's own
+        /// frame already drew (previously a private literal duplicated there), now the ONE source
+        /// both the lobby panel's edge and every push-button's border read. Visibly a border
+        /// rather than a hairline that can wash out at typical viewing distance.
         /// </summary>
-        public const float ButtonCornerRadius = 4f;
+        public static readonly Color ButtonBorder = new Color(0.45f, 0.48f, 0.55f, 1f);
+
+        /// <summary>
+        /// Milestone 8.35z58. The corner radius the top strip's narration band and the
+        /// match-log tray already share (<c>MatchStatusBarUnityView.CornerRadius</c>) - the
+        /// user's own accepted visual language (2026-09-07 visual acceptance decisions: "MATCH
+        /// THE WARM TONE" ruled the tray must read as the SAME band family as the strip). The
+        /// button family reuses this ONE value rather than the small 4px radius 8.35z8 invented
+        /// for itself, so a button now integrates with the band language already on screen
+        /// instead of standing as a third, smaller-radius shape beside it.
+        /// </summary>
+        public const float BandCornerRadius = 14f;
+
+        /// <summary>
+        /// The corner radius every ordinary push-button shares with the panel it sits in. See
+        /// <see cref="BandCornerRadius"/> for what it reuses and why.
+        /// </summary>
+        public const float ButtonCornerRadius = BandCornerRadius;
 
         /// <summary>The scale a control eases toward while the pointer rests on it.</summary>
         public const float ButtonHoverScale = 1.035f;
@@ -146,8 +166,25 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The hover ease's own duration, in milliseconds.</summary>
         public const int ButtonHoverTransitionMs = 120;
 
-        /// <summary>The press dip's own duration, in milliseconds - roughly the ~100ms the user asked for.</summary>
-        public const int ButtonPressTransitionMs = 80;
+        /// <summary>
+        /// The press dip's own duration, in milliseconds - the ~100ms the user asked for,
+        /// literally (8.35z8 had shipped 80ms).
+        /// </summary>
+        public const int ButtonPressTransitionMs = 100;
+
+        /// <summary>
+        /// Milestone 8.35z58. How far a button's own background eases toward white on
+        /// hover - bumped from 8.35z8's 0.12 alongside the brighter idle chip, so the hover lift
+        /// stays clearly readable rather than shrinking in proportion to the new higher baseline.
+        /// </summary>
+        public const float ButtonHoverLightenAmount = 0.20f;
+
+        /// <summary>
+        /// Milestone 8.35z58. How far a button's own background eases toward black on
+        /// press - bumped from 8.35z8's 0.16, for the same reason as
+        /// <see cref="ButtonHoverLightenAmount"/>.
+        /// </summary>
+        public const float ButtonPressDarkenAmount = 0.26f;
 
         /// <summary>
         /// A control's own idle background, eased brighter for the pointer resting on it. A

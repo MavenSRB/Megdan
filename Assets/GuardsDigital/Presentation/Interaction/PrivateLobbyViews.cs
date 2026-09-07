@@ -58,7 +58,15 @@ namespace GuardsDigital.Presentation.Interaction
 
         private static readonly Color PanelBackground = new Color(0.06f, 0.07f, 0.09f, 0.97f);
         private static readonly Color PanelText = new Color(0.93f, 0.94f, 0.96f, 1f);
-        private static readonly Color PanelEdge = new Color(0.45f, 0.48f, 0.55f, 1f);
+
+        /// <summary>
+        /// Milestone 8.35z58: this used to be its own literal, numerically identical to
+        /// the theme's button border by coincidence rather than by source. It now reads
+        /// <see cref="MatchHudTheme.ButtonBorder"/> directly, so the lobby panel's own frame and
+        /// every push-button's border are provably the one colour rather than two copies that
+        /// happen to agree today.
+        /// </summary>
+        private static readonly Color PanelEdge = MatchHudTheme.ButtonBorder;
 
         private readonly VisualElement seats;
         private readonly VisualElement controls;
@@ -299,6 +307,24 @@ namespace GuardsDigital.Presentation.Interaction
             button.style.paddingLeft = 10f;
             button.style.paddingRight = 10f;
             button.style.minHeight = 34f;
+            // Milestone 8.35z58. This control was added in 8.35z37, after the
+            // EIGHTEENTH amendment's button-system pass (8.35z8) already shipped everywhere else
+            // in this file - so it never picked up the shared chrome/motion and drew the same
+            // stock-skin-with-a-hand-rolled-border look 8.35z8 replaced for HOST/JOIN/FILL/LEAVE
+            // and the seat PICK. ApplyButtonChrome gives it the shared idle background, corner
+            // radius and press/hover motion; every line below still wins because it runs after -
+            // the dim for an unavailable hero and the highlight ring for the current pick are
+            // this control's own established meaning, not part of the four idle/hover/pressed/
+            // disabled states, and neither is touched here.
+            ApplyButtonChrome(button);
+            if (!option.IsAvailable)
+            {
+                // SIXTH amendment: nothing is greyed without saying why, at the cursor on hover.
+                // The reason already stands permanently in the label above (a taken-hero list
+                // reads better with the reason in place than hidden behind a hover), so this adds
+                // the same hover vocabulary the rest of the HUD uses without duplicating text.
+                button.tooltip = option.UnavailableReason;
+            }
             button.SetEnabled(pickable);
             button.style.color = option.IsAvailable
                 ? PanelText
@@ -380,6 +406,19 @@ namespace GuardsDigital.Presentation.Interaction
         /// control now shares, through the same <see cref="HudElements.ApplyButtonMotion"/> this
         /// file borrows rather than re-implements.
         /// </summary>
+        /// <remarks>
+        /// <para>Milestone 8.35z58 also routes <see cref="BuildHeroOption"/> through this -
+        /// that control was added in 8.35z37, after this method already existed, and was missed at
+        /// the time. It is the ONE definition every lobby control's chrome reads from; a future
+        /// control that draws its own <see cref="Button"/> should call this rather than re-stating
+        /// the background/radius/motion literals.</para>
+        /// <para>The SAME milestone also strengthened what this draws, having traced that 8.35z8's
+        /// treatment DID reach this control at runtime but read as almost nothing against the
+        /// lobby's own near-black panel: the idle chip is brighter, the corner radius now matches
+        /// the top strip/log-tray band the user has already accepted live
+        /// (<see cref="MatchHudTheme.BandCornerRadius"/>), and the border is the theme's own
+        /// <see cref="MatchHudTheme.ButtonBorder"/> rather than a private literal.</para>
+        /// </remarks>
         private static void ApplyButtonChrome(VisualElement button)
         {
             button.style.color = PanelText;

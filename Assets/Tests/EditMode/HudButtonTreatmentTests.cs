@@ -20,6 +20,13 @@ namespace GuardsDigital.Tests.EditMode
     /// control kind the amendment names: END TURN, the seat's own UNDO, the lobby's HOST/JOIN,
     /// agreement choices, a Defense option, and the DIRECTOR drawer's UNDO/RESET/EVENT LOG.
     /// </summary>
+    /// <remarks>
+    /// Milestone 8.35z58 (the re-flagged amendment, integration worktree) extends this
+    /// coverage two ways: <c>LobbyHeroOption_...</c> closes the one control 8.35z37 added after
+    /// this pass shipped and that never picked up the shared chrome, and
+    /// <c>DisabledControl_KeepsItsTooltipReasonAlongsideTheSharedChrome</c> proves the disabled
+    /// state and the SIXTH amendment's cursor-tooltip reason compose rather than fight.
+    /// </remarks>
     public sealed class HudButtonTreatmentTests
     {
         private static IEnumerable<VisualElement> Descendants(VisualElement root)
@@ -80,8 +87,54 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(button.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
             Assert.That(button.style.borderTopLeftRadius.value.value,
                 Is.EqualTo(MatchHudTheme.ButtonCornerRadius));
-            Assert.That(button.style.borderTopColor.value, Is.EqualTo(MatchHudTheme.PanelBorder));
+            // 8.35z58: the shared ButtonBorder, not the dimmer generic PanelBorder -
+            // a button's own border must be visible, not merely present (see the contrast tests
+            // below for why this distinction is pinned rather than assumed).
+            Assert.That(button.style.borderTopColor.value, Is.EqualTo(MatchHudTheme.ButtonBorder));
             AssertScaleMotionIsWired(button, "HudElements.Control");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z58. Runtime tracing found 8.35z8's own treatment DID reach
+        /// every control (composition and wiring were never the defect - confirmed by reading
+        /// PrivateLobbyDriver.Start/BuildPanel end to end), but its chip (RGB ~0.145/0.169/0.184)
+        /// sat only a shade brighter than the panels around it (RGB ~0.03-0.09), which is exactly
+        /// the "barely-different gray" failure mode: present, but reading as nothing. This pins a
+        /// concrete, meaningful contrast floor against the darkest panel in the HUD family so a
+        /// future edit cannot quietly walk the chip back toward invisibility while every
+        /// structural assertion above stays green.
+        /// </summary>
+        [Test]
+        public void ButtonIdleBackground_IsMeaningfullyBrighterThanTheDarkestHudPanel()
+        {
+            var delta = MatchHudTheme.ButtonIdleBackground.r - MatchHudTheme.TopBarBackground.r;
+
+            Assert.That(delta, Is.GreaterThan(0.1f),
+                "A button must read as a raised control against the darkest panel it can sit on, " +
+                "not merely a slightly different shade of the same near-black.");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z58. The corner radius the button family draws at is the SAME
+        /// number the top strip's narration band and the match-log tray already share
+        /// (<see cref="MatchStatusBarUnityView.CornerRadius"/>) - the user's own accepted band
+        /// language - read from one place, not two literals that happen to agree today.
+        /// </summary>
+        [Test]
+        public void ButtonCornerRadius_ReusesTheAcceptedBandLanguageFromOneSource()
+        {
+            Assert.That(MatchHudTheme.ButtonCornerRadius, Is.EqualTo(MatchHudTheme.BandCornerRadius));
+            Assert.That(MatchStatusBarUnityView.CornerRadius, Is.EqualTo(MatchHudTheme.BandCornerRadius));
+        }
+
+        /// <summary>
+        /// Milestone 8.35z58. The user asked for "~100ms" (both the original EIGHTEENTH
+        /// amendment and the corrective re-stated it); 8.35z8 had shipped 80ms.
+        /// </summary>
+        [Test]
+        public void ButtonPressTransitionMs_IsTheHundredMillisecondsAsked()
+        {
+            Assert.That(MatchHudTheme.ButtonPressTransitionMs, Is.EqualTo(100));
         }
 
         [Test]
@@ -96,6 +149,36 @@ namespace GuardsDigital.Tests.EditMode
                 "A card face or a custom-painted banner keeps its own background untouched; " +
                 "only the scale motion is added.");
             AssertScaleMotionIsWired(element, "a scale-only control (card face / banner)");
+        }
+
+        /// <summary>
+        /// Milestone 8.35z58. The SIXTH amendment's "nothing is greyed without saying
+        /// why" and the EIGHTEENTH amendment's shared button treatment are two different
+        /// amendments landing on the same control (the exact production shape inside
+        /// <c>RoundActionUnityView.BuildEffectChoiceSection</c>'s unavailable-mode loop: a
+        /// <see cref="HudElements.Control"/> carrying a tooltip, then marked unavailable). This
+        /// proves the second never silently
+        /// undoes the first: a disabled control keeps its tooltip reason, keeps the shared chrome
+        /// wiring, and stays visibly dimmed - the fourth state, still distinct from idle/hover/
+        /// pressed because the motion callbacks all gate on <c>enabledInHierarchy</c>.
+        /// </summary>
+        [Test]
+        public void DisabledControl_KeepsItsTooltipReasonAlongsideTheSharedChrome()
+        {
+            var control = HudElements.Control("AN UNAVAILABLE MODE", null);
+            control.tooltip = "NO TARGET";
+
+            HudElements.MarkUnavailable(control);
+
+            Assert.That(control.tooltip, Is.EqualTo("NO TARGET"),
+                "Marking a control unavailable must not clear the reason a hover already carries.");
+            Assert.That(control.enabledSelf, Is.False, "MarkUnavailable disables the control.");
+            Assert.That(control.style.opacity.value, Is.EqualTo(0.45f).Within(0.0001f),
+                "Unavailable is never colour alone - it is also visibly dimmed.");
+            Assert.That(control.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground),
+                "The shared chrome a Control() draws is untouched by disabling it.");
+            AssertScaleMotionIsWired(control,
+                "a disabled control (the transition stays wired; enabledInHierarchy gates it at hover time)");
         }
 
         [Test]
@@ -266,6 +349,54 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(pick.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
                 AssertScaleMotionIsWired(pick, "PICK");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.35z58. Rulebook p.22's hero-pick buttons
+        /// (<see cref="PrivateLobbyUnityView.BuildHeroOption"/>) were added in milestone 8.35z37,
+        /// AFTER 8.35z8's button-system pass had already routed every other lobby control through
+        /// the shared chrome - so this one control was missed and kept drawing Unity's stock
+        /// button skin with only a hand-rolled border, the exact defect 8.35z8 closed everywhere
+        /// else. Driven over the real six-seat wire harness (the tier the shipped lobby defects
+        /// actually lived in), through the seat/ready flow to the point rulebook p.22's pick order
+        /// is genuinely open, rather than constructing the view-model by hand.
+        /// </summary>
+        [Test]
+        public void LobbyHeroOption_DrawsTheSharedChromeAndWiresMotion()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+            for (var ordinal = 1; ordinal <= 6; ordinal++)
+            {
+                harness.Client(ordinal).TrySetReadiness(true);
+            }
+
+            harness.Pump();
+
+            var model = PrivateLobbyModel.ForClient(harness.Client(1));
+            Assert.That(model.Selection.IsRunning, Is.True,
+                "Sanity: readying every seat opens rulebook p.22's pick order.");
+            Assert.That(model.Selection.Heroes, Is.Not.Empty,
+                "Sanity: the fixture's roster names heroes to offer.");
+
+            var view = new PrivateLobbyUnityView();
+            view.Render(model);
+
+            var options = Descendants(view.Root)
+                .OfType<Button>()
+                .Where(button => button.name == PrivateLobbyUnityView.HeroOptionName)
+                .ToArray();
+            Assert.That(options, Is.Not.Empty);
+            foreach (var option in options)
+            {
+                // Pre-fix, this control carried none of this: no themed background, no shared
+                // radius, no press/hover motion - exactly what 8.35z8 fixed for HOST/JOIN/FILL/
+                // LEAVE and the seat PICK, just on a control added one milestone after that pass.
+                Assert.That(option.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
+                Assert.That(option.style.borderTopLeftRadius.value.value,
+                    Is.EqualTo(MatchHudTheme.ButtonCornerRadius));
+                AssertScaleMotionIsWired(option, "a hero-selection option");
             }
         }
 

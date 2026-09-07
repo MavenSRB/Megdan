@@ -2038,8 +2038,13 @@ namespace GuardsDigital.Presentation.Match
         /// a round reset. A card the hero owns that is in neither the hand, the turn area, nor the
         /// discard pile - a deck card, a set-aside card, an item, an unlocked Ultimate - is not part of
         /// this round's five and does not appear.
+        ///
+        /// <para>Milestone 8.35z58 widens this from <c>private</c> to <c>internal</c> so
+        /// <see cref="RoundActionPresenter"/> can reuse the SAME per-hero hand derivation for the
+        /// level-up hand preview rather than deriving a second one - one seat's hand is one
+        /// computation, read by both consumers.</para>
         /// </summary>
-        private static IReadOnlyList<TrayCardViewModel> BuildTray(
+        internal static IReadOnlyList<TrayCardViewModel> BuildTray(
             IMatchReadModel projection,
             HeroId heroId,
             CardInstanceId? selectedCardInstanceId)
@@ -2973,8 +2978,11 @@ namespace GuardsDigital.Presentation.Match
             bool isAwaitingViewerInput = false,
             string statusDetail = null,
             bool endTurnCancelsOpenAttack = false,
-            string endTurnUnavailableReason = null)
+            string endTurnUnavailableReason = null,
+            IEnumerable<TrayCardViewModel> levelUpHandPreview = null)
         {
+            LevelUpHandPreview = Array.AsReadOnly((levelUpHandPreview ??
+                Enumerable.Empty<TrayCardViewModel>()).ToArray());
             IsAwaitingViewerInput = isAwaitingViewerInput;
             StatusDetail = statusDetail;
             SeatUndoAvailable = seatUndoAvailable;
@@ -3192,6 +3200,17 @@ namespace GuardsDigital.Presentation.Match
         /// decision, because the match asks exactly one thing at a time.
         /// </summary>
         public SystemTransitionPromptViewModel SystemTransitionPrompt { get; }
+
+        /// <summary>
+        /// User directive (2026-09-07): "when leveling. Show current hand (all 5 cards) above the
+        /// offer." This seat's own current hand, read-only, populated only while
+        /// <see cref="SystemTransitionPrompt"/> is rulebook p.15's Upgrade a Card
+        /// (<see cref="GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind.LevelUpUpgrade"/>)
+        /// and only for a real seat (empty for the Director, who already sees every hand). Empty
+        /// otherwise. Never padded to five - a hand already down to fewer cards shows exactly what
+        /// stands.
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> LevelUpHandPreview { get; }
 
         /// <summary>
         /// Milestone 8.20d: the standing effect choice, or <c>null</c> when none is pending. It is
@@ -4246,6 +4265,24 @@ namespace GuardsDigital.Presentation.Match
             var endTurnUnavailableReason = endTurnInvocation != null || endTurnCancelsOpenAttack
                 ? null
                 : ResolveEndTurnUnavailableReason(projection, homeHeroId);
+            var systemTransitionPrompt = CreateSystemTransitionPrompt(projection);
+            // User directive (2026-09-07): "when leveling. Show current hand (all 5 cards) above
+            // the offer." Gated strictly to the LEVEL-UP prompt kind, not to "any card-valued
+            // system transition" - a future card-valued transition kind must opt in deliberately
+            // rather than inherit this by coincidence. Sourced from the SAME per-hero hand
+            // derivation the ordinary tray uses (DirectorHandsPresenter.BuildTray), filtered to
+            // TrayCardGroup.Available (Location == Hand) - never a second, invented reading of the
+            // projection. AUTHORIZATION FILTER != PROJECTION FILTER: only a real seat
+            // (homeHeroId.IsDefined) gets a preview; an undefined viewer is the Director, who
+            // already sees every hand in the drawer and gets nothing extra here. If the seat holds
+            // fewer than five (cards played or discarded mid-flow), exactly that many show - the
+            // printed truth, never a padded five.
+            var levelUpHandPreview = homeHeroId.IsDefined &&
+                systemTransitionPrompt?.Kind == SystemTransitionPromptKind.LevelUpUpgrade
+                ? DirectorHandsPresenter.BuildTray(projection, homeHeroId, null)
+                    .Where(card => card.Group == TrayCardGroup.Available)
+                    .ToArray()
+                : Array.Empty<TrayCardViewModel>();
             return new RoundActionViewModel(
                 projection.Version,
                 projection.RoundIndex,
@@ -4295,7 +4332,7 @@ namespace GuardsDigital.Presentation.Match
                 unavailableActions,
                 clearOffers,
                 clearSelection,
-                CreateSystemTransitionPrompt(projection),
+                systemTransitionPrompt,
                 // Milestone 8.20d: read from the same pause the controls above were built from, so
                 // the heading names the decision those controls answer and nothing else.
                 projection.PendingEffectChoice == null
@@ -4311,7 +4348,8 @@ namespace GuardsDigital.Presentation.Match
                 AwaitedInputQuery.IsWaitingOnViewer(projection, homeHeroId),
                 statusDetail,
                 endTurnCancelsOpenAttack,
-                endTurnUnavailableReason);
+                endTurnUnavailableReason,
+                levelUpHandPreview);
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(
