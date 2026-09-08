@@ -4,6 +4,8 @@ Historical files are version-controlled evidence excluded from routine startup l
 
 ## Preservation and migration
 
+- [Retired routine governance experiment](GOVERNANCE_EXPERIMENT_RETIREMENT.md)
+
 - [Startup brief before the 2026-09-08 cleanup](SESSION_BRIEF_BEFORE_CLEANUP.md)
 
 - [SHA-256 sums of the immutable pre-governance source copies (titled "Pre-Governance Preservation Inventory" inside)](Pre-Governance/SHA256SUMS.md)
@@ -35,3 +37,4 @@ Active definitions remain indexed from [ROADMAP.md](../ROADMAP.md).
 - [Superseded testing recipes](TESTING_HISTORY.md)
 - [Pre-governance project-status snapshot](PROJECT_STATUS_PRE_GOVERNANCE.md)
 - [Resolved technical risks](RESOLVED_TECHNICAL_RISKS.md)
+- [Pre-cleanup README status narrative](README_STATUS_BEFORE_CLEANUP.md).

@@ -1319,3 +1319,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z64 | Compact shared startup, bounded sequence execution, and reconciled deferred-work milestones preserve the pre-cleanup history. | `milestone/8.35z64` |
 
+## Milestone 8.35z65 Remove routine generated governance churn completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z65 | Frozen historical experiments, one current-status route, and archived README chronology remove routine regeneration while retaining live guards. | `milestone/8.35z65` |
+

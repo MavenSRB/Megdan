@@ -129,23 +129,28 @@ function Get-UndeclaredContractTypes([string] $Text, [hashtable] $DeclaredTypes)
     return $missing.ToArray()
 }
 
-# Code-truth check 2: the canonical statements of "how far are we" must name the same milestone.
-# README.md joined this set at 6.1o. It had drifted four milestones behind - it still said 6.1d after
-# 6.1h shipped - precisely because it was the one status statement no check read.
+# The brief owns status; subject documents link to it. Legacy explicit claims must still agree.
 function Test-StatusCoherence([string] $Session, [string] $Implementation, [string] $RoadmapCorpus, [string] $Readme) {
     $codes = New-Object System.Collections.Generic.List[string]
     $sessionMatch = [regex]::Match($Session, '(?m)^- Current completed milestone: \*\*([^*]+)\*\*\.$')
-    $implementationMatch = [regex]::Match($Implementation, 'completed roadmap milestones through \*\*([^*]+)\*\*')
-    if (-not $sessionMatch.Success -or -not $implementationMatch.Success) {
+    if (-not $sessionMatch.Success) {
         $codes.Add('missing-status-statement')
         return $codes.ToArray()
     }
-    if ($sessionMatch.Groups[1].Value -ne $implementationMatch.Groups[1].Value) { $codes.Add('incoherent-status') }
-    if (-not [regex]::IsMatch($RoadmapCorpus, "(?m)^### \[x\] $([regex]::Escape($implementationMatch.Groups[1].Value))(?:\s|$)")) { $codes.Add('incoherent-status') }
-    if ($PSBoundParameters.ContainsKey('Readme')) {
-        $readmeMatch = [regex]::Match($Readme, 'completed milestones through \*\*([^*]+)\*\*')
-        if (-not $readmeMatch.Success) { $codes.Add('missing-status-statement') }
-        elseif ($readmeMatch.Groups[1].Value -ne $implementationMatch.Groups[1].Value) { $codes.Add('incoherent-status') }
+    $current = $sessionMatch.Groups[1].Value
+    if (-not [regex]::IsMatch($RoadmapCorpus, "(?m)^### \[x\] $([regex]::Escape($current))(?:\s|$)")) {
+        $codes.Add('incoherent-status')
+    }
+    $summaries = @($Implementation)
+    if ($PSBoundParameters.ContainsKey('Readme')) { $summaries += $Readme }
+    foreach ($summary in $summaries) {
+        $explicit = [regex]::Match($summary, 'completed (?:roadmap )?milestones through \*\*([^*]+)\*\*')
+        if ($explicit.Success) {
+            if ($explicit.Groups[1].Value -ne $current) { $codes.Add('incoherent-status') }
+        }
+        elseif ($summary -notmatch '\]\((?:\.\./|Docs/AI/)?SESSION_BRIEF\.md(?:#[^)]*)?\)') {
+            $codes.Add('missing-status-statement')
+        }
     }
     return $codes.ToArray()
 }
@@ -787,6 +792,10 @@ function Invoke-SelfTests {
     Expect 'stale README status' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap ($coherentReadme -replace '2\.5', '2.3')) -contains 'incoherent-status')
     Expect 'README with no status statement' ((Test-StatusCoherence $coherentSession $coherentImplementation $coherentRoadmap 'No parseable statement here.') -contains 'missing-status-statement')
 
+    Expect 'subject owners link to the single current route' ((Test-StatusCoherence $coherentSession 'Status: [route](../SESSION_BRIEF.md).' $coherentRoadmap 'Status: [route](Docs/AI/SESSION_BRIEF.md).').Count -eq 0)
+    Expect 'route links do not admit an incomplete current milestone' ((Test-StatusCoherence '- Current completed milestone: **2.6**.' '[route](../SESSION_BRIEF.md)' $coherentRoadmap '[route](Docs/AI/SESSION_BRIEF.md)') -contains 'incoherent-status')
+    Expect 'an unrelated link cannot replace the current route' ((Test-StatusCoherence $coherentSession '[route](OTHER.md)' $coherentRoadmap) -contains 'missing-status-statement')
+
     $oneRow = "## Milestone 9.9 Do the thing completion evidence`n`n| ID | Outcome | Commit |`n| --- | --- | --- |`n| 9.9 | It was done. | ``abc1234`` |`n"
     $withNarrative = $oneRow + "`n### 2026-01-01 addendum: what really happened`n`nSeveral paragraphs of evidence.`n"
     $noBaseline = @{}
@@ -943,35 +952,9 @@ function Invoke-SelfTests {
 
 if (-not $SkipSelfTests) { Invoke-SelfTests }
 
-# Governance source/body balance (milestone 8.25e6a): the non-authoritative manifest pins every
-# validator-discovered active source, every indexed archive source, each raw UTF-8 preamble and
-# heading-delimited body, and every registered operative claim. Keep this as a separate focused
-# validator so its deliberate-violation probes can run without the unrelated living-document pass,
-# while the ordinary handoff command still enforces it.
-$sourceBodyManifestValidator = Join-Path $PSScriptRoot 'Validate-GovernanceSourceBodyManifest.ps1'
-if (-not (Test-Path -LiteralPath $sourceBodyManifestValidator -PathType Leaf)) {
-    Add-Issue 'ERROR' 'missing-source-body-manifest-validator' 'Tools/Validate-GovernanceSourceBodyManifest.ps1 is missing.'
-}
-else {
-    try { & $sourceBodyManifestValidator -SkipSelfTests }
-    catch {
-        Add-Issue 'ERROR' 'source-body-manifest' $_.Exception.Message
-    }
-}
-
-# Governance access experiment (milestone 8.25e6b): keep the off-path comparison revision-pinned,
-# deterministic, non-authoritative, owner-bound, complete for its declared answer bodies, and honest
-# about the measured budget outcomes. Its focused validator owns deliberate violation probes.
-$accessExperimentValidator = Join-Path $PSScriptRoot 'Validate-GovernanceAccessExperiment.ps1'
-if (-not (Test-Path -LiteralPath $accessExperimentValidator -PathType Leaf)) {
-    Add-Issue 'ERROR' 'missing-governance-access-experiment-validator' 'Tools/Validate-GovernanceAccessExperiment.ps1 is missing.'
-}
-else {
-    try { & $accessExperimentValidator -SkipSelfTests }
-    catch {
-        Add-Issue 'ERROR' 'governance-access-experiment' $_.Exception.Message
-    }
-}
+# 8.35z65: source-body/access experiments are frozen historical measurements.
+# Ordinary handoffs validate live source/route/link facts below, not byte-pinned snapshots.
+# See Docs/AI/Archive/GOVERNANCE_EXPERIMENT_RETIREMENT.md.
 
 # Active leaf thresholds. AGENTS.md is the mandatory project-root process leaf, so include it in
 # every active-corpus check rather than merely declaring an unreachable Get-Limit case.
@@ -1244,7 +1227,7 @@ else {
             Test-StatusCoherence $session (Read-Utf8 $implementationPath) $roadmapCorpus
         }
         foreach ($code in $statusCodes) {
-            Add-Issue 'ERROR' $code 'SESSION_BRIEF.md, Project/CURRENT_IMPLEMENTATION.md, README.md, and the roadmap do not name the same completed milestone.'
+            Add-Issue 'ERROR' $code 'The brief must name a completed roadmap milestone; subject summaries must link to that route or carry an agreeing legacy status.'
         }
     }
 

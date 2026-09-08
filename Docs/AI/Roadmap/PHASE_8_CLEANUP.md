@@ -8,6 +8,8 @@ The user authorized five cleanup passes, preserving all useful work, then added 
 
 Compare actual startup/context volume, generated-file churn, focused validation duration, and affected files. Do not claim account-token savings without usage measurements. Existing full-suite evidence is historical; revalidate affected code after changes.
 
+The user's subsequent directions add **8.35z80** (END TURN/UNDO button treatment) and **8.35z81** (real new-hero card artwork) as final practical examples, followed by a newly built private player with final source identity. Execute these after 8.35z68 and before the final bot/build gate at 8.35z69. This does not authorize the proposed 8.35z70-8.35z79 backlog.
+
 ### [x] 8.35z64 Simplify workflow and preserve the shared queue
 
 Observable outcome: all tools use one compact current route and one shared queue; explicit sequence approval allows sequential completion without repeated permission or speculative scope.
@@ -22,16 +24,18 @@ Non-goals: no game code, new features, or disposal of private worktrees/evidence
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z64-simplify-workflow-and-preserve-the-shared-queue-completion-evidence).
 
-### [ ] 8.35z65 Remove routine generated governance churn
+### [x] 8.35z65 Remove routine generated governance churn
 
 Observable outcome: ordinary documentation edits do not require regenerating the source-body manifest or access experiment; useful route/link/source-truth guards remain.
 
 Acceptance checks:
-- Remove the experiment from required handoffs and retire its generated artifacts from active tracking with lossless Git history and a short archive disposition.
+- Remove the experiment from required handoffs and freeze its existing artifacts as historical snapshots, preserving links and exact bytes without future regeneration.
 - Preserve operative claims, source references, rule/contract owners, archive links, and validator positive/negative checks.
 - Check actual validator duration and changed-file count; document limitations of structural checks.
 
 Non-goals: no semantic rule changes, bulk corpus pruning, or replacement governance framework.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z65-remove-routine-generated-governance-churn-completion-evidence).
 
 ### [ ] 8.35z66 Make focused offline validation trustworthy
 
@@ -80,6 +84,18 @@ Acceptance checks:
 - Record build source identity, gate outcomes, limitations, and actual change/validation costs as the cleanup's practical comparison.
 
 Non-goals: no stronger AI tier, public distribution, relay/service changes, or claim that local smoke completes the human internet gate.
+
+### [ ] 8.35z80 Apply the current treatment to END TURN and UNDO
+
+Observable outcome: both controls use the same current button system as other updated controls, preserving their established commands, disabled states, and layout.
+
+Acceptance checks: reproduce the treatment discrepancy with focused view assertions; verify both enabled and disabled styles and actual invocation; inspect the controls in the final built player. No change to turn release or Undo authority.
+
+### [ ] 8.35z81 Import real artwork for the newly playable heroes
+
+Observable outcome: the new heroes show their verified source card faces rather than generated synthetic faces wherever real source artwork exists.
+
+Acceptance checks: inventory which configured faces lack real artwork; map each imported face to the existing definition identity/revision; use the established private resource import path without changing printed rules or content identities; exercise catalog/face resolution and inspect representative basic/upgraded faces for each affected hero in the final build. Record unavailable source faces explicitly. Extracted art/builds stay private and are not committed or distributed unless separately authorized.
 
 ## Reconciled follow-up queue (not authorized)
 

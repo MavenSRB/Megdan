@@ -10,15 +10,15 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v40 persists the current state; wire protocol is `guards-private-online/11`. The latest pre-cleanup implementation is 8.35z63 (active-effect board markers); integration evidence is in commit `0847c44e`, build identity in `49dc63a1`. Those records include explicitly skipped coverage; the live internet gate is outstanding.
 
-The user reports FILL WITH BOTS timing out in the built player. Cleanup ends by diagnosing/fixing that button path and proving it in a built game. Private logs remain private evidence.
+The user reports FILL WITH BOTS timing out in the built player. Final examples also include END TURN/UNDO button treatment and real artwork for newly playable heroes (8.35z80/8.35z81). Finish with the bot path and a new private build showing these changes. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.35z64**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z65**.
+- Current completed milestone: **8.35z65**.
+- Active authorized milestone: **None**.
+- Next proposed milestone: **8.35z66**.
 
-The user's 2026-09-08 "All yours now" authorizes the five agreed cleanup passes plus the bot fix last: **8.35z64 through 8.35z69**, sequentially with local commits. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns outcomes, checks, and all carried-forward work. Further hero/content/feature work is recorded but not authorized. Previously authorized **8.36** is paused pending cleanup and human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
+The user's 2026-09-08 "All yours now" authorizes the five agreed cleanup passes plus the bot fix last: **8.35z64-8.35z68**, then the added **8.35z80-8.35z81**, and finally **8.35z69**, sequentially with local commits. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns outcomes, checks, and all carried-forward work. Further hero/content/feature work is recorded but not authorized. Previously authorized **8.36** is paused pending cleanup and human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
 
 ## Durable boundaries
 
