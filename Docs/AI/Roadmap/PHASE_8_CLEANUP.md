@@ -51,7 +51,7 @@ Non-goals: no production assembly/SDK migration, removal of regression coverage,
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z66-make-focused-offline-validation-trustworthy-completion-evidence).
 
-### [ ] 8.35z67 Give HUD features cohesive source boundaries
+### [x] 8.35z67 Give HUD features cohesive source boundaries
 
 Observable outcome: existing feature views/presenters can be found and edited independently of the other features sharing their current giant source files.
 
@@ -62,6 +62,8 @@ Acceptance checks:
 - Report the largest source-file sizes and concrete change boundary after extraction.
 
 Non-goals: no redesign, new UI behavior, new abstraction framework, or hierarchy-only cosmetic churn.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z67-give-hud-features-cohesive-source-boundaries-completion-evidence).
 
 ### [ ] 8.35z68 Remove demonstrated resolver maintenance duplication
 

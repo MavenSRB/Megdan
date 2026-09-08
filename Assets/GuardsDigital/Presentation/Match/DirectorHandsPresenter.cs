@@ -1,0 +1,604 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Diagnostics;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Displacement;
+using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Transitions;
+using GuardsDigital.Core.Rules.Victory;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
+using GuardsDigital.Presentation.Board;
+
+namespace GuardsDigital.Presentation.Match
+{
+
+    public sealed class DirectorHandViewModel
+    {
+        public DirectorHandViewModel(
+            TeamSide teamSide,
+            HeroId heroId,
+            string heroDisplayName,
+            TurnCardCommitmentStatus commitmentStatus,
+            bool canPass,
+            CardInstanceId? revealedCardInstanceId,
+            CardInstance revealedCard,
+            IEnumerable<CardInstance> cards,
+            IEnumerable<CardDefinition> definitions,
+            CardInstanceId? selectedCardInstanceId,
+            IEnumerable<TrayCardViewModel> trayCards = null)
+        {
+            TrayCards = Array.AsReadOnly((trayCards ??
+                Enumerable.Empty<TrayCardViewModel>()).ToArray());
+            PlayableTrayCards = Array.AsReadOnly(TrayCards
+                .Where(card => card.Group == TrayCardGroup.Available || card.IsResolving)
+                .ToArray());
+            UnavailableTrayCards = Array.AsReadOnly(TrayCards
+                .Where(card => card.Group != TrayCardGroup.Available && !card.IsResolving)
+                .ToArray());
+            TeamSide = teamSide;
+            HeroId = heroId;
+            HeroDisplayName = heroDisplayName ?? throw new ArgumentNullException(nameof(heroDisplayName));
+            CommitmentStatus = commitmentStatus;
+            CanPass = canPass;
+            RevealedCardInstanceId = revealedCardInstanceId;
+            RevealedCard = revealedCard;
+            Cards = Array.AsReadOnly((cards ?? throw new ArgumentNullException(nameof(cards))).ToArray());
+            Definitions = Array.AsReadOnly((definitions ?? throw new ArgumentNullException(nameof(definitions))).ToArray());
+            SelectedCardInstanceId = selectedCardInstanceId;
+            HeaderLabel = teamSide == TeamSide.Red
+                ? $"[R] RED {HeroDisplayName.ToUpperInvariant()}"
+                : $"[B] BLUE {HeroDisplayName.ToUpperInvariant()}";
+            CommitmentLabel = FormatCommitmentLabel();
+            var labels = new Dictionary<CardInstanceId, string>();
+            foreach (var card in Cards)
+            {
+                var definition = Definitions.Single(value => value.Reference.Equals(card.DefinitionReference));
+                labels.Add(card.Id, $"{definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}");
+            }
+
+            CardButtonLabels = new ReadOnlyDictionary<CardInstanceId, string>(labels);
+        }
+
+        public TeamSide TeamSide { get; }
+        public HeroId HeroId { get; }
+        public string HeroDisplayName { get; }
+        public TurnCardCommitmentStatus CommitmentStatus { get; }
+        public bool CanPass { get; }
+        public CardInstanceId? RevealedCardInstanceId { get; }
+        public CardInstance RevealedCard { get; }
+        public IReadOnlyList<CardInstance> Cards { get; }
+        public IReadOnlyList<CardDefinition> Definitions { get; }
+        public CardInstanceId? SelectedCardInstanceId { get; }
+        public string HeaderLabel { get; }
+        public string CommitmentLabel { get; }
+        public IReadOnlyDictionary<CardInstanceId, string> CardButtonLabels { get; }
+
+        /// <summary>
+        /// Milestone 7.8a: this hero's whole current round, left to right - already played cards in
+        /// ascending turn order, then the ones still available, then the discarded ones.
+        ///
+        /// It is a superset of <see cref="Cards"/>, which is the hand alone and remains what a
+        /// commitment is chosen from. The extra entries carry no command; they are how a player reads
+        /// what this hero has already spent the round on.
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> TrayCards { get; }
+
+        /// <summary>
+        /// The bottom hand's projection-driven composition: every card still in the hero's hand plus
+        /// the one card whose printed action is resolving. Temporary action-resolution exclusivity
+        /// removes commands, not cards from this stationary hand surface.
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> PlayableTrayCards { get; }
+
+        /// <summary>
+        /// Genuinely unavailable current-round cards: played or discarded cards other than the card
+        /// currently resolving. Their lifecycle, identity and relative order remain the ones
+        /// <see cref="TrayCards"/> owns; temporary command exclusivity never moves a held card here.
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> UnavailableTrayCards { get; }
+
+        private string FormatCommitmentLabel()
+        {
+            switch (CommitmentStatus)
+            {
+                case TurnCardCommitmentStatus.AwaitingResponse:
+                    return "AWAITING CARD";
+                case TurnCardCommitmentStatus.CardCommittedFacedown:
+                    return "FACEDOWN COMMITTED";
+                case TurnCardCommitmentStatus.Passed:
+                    return "PASS - NO CARD";
+                case TurnCardCommitmentStatus.Revealed:
+                    if (RevealedCard != null)
+                    {
+                        var definition = Definitions.Single(value =>
+                            value.Reference.Equals(RevealedCard.DefinitionReference));
+                        return $"REVEALED: {definition.DisplayName}\nINITIATIVE {definition.Initiative.Value}";
+                    }
+
+                    return "REVEALED";
+                default:
+                    return CommitmentStatus.ToString().ToUpperInvariant();
+            }
+        }
+    }
+
+    public sealed class DirectorHandsViewModel
+    {
+        public DirectorHandsViewModel(
+            long version,
+            IEnumerable<DirectorHandViewModel> hands,
+            HeroId viewedHeroId = default)
+        {
+            Version = version;
+            Hands = Array.AsReadOnly((hands ?? throw new ArgumentNullException(nameof(hands))).ToArray());
+            ViewedHeroId = viewedHeroId;
+            ViewedHand = Hands.FirstOrDefault(hand => hand.HeroId.Equals(viewedHeroId)) ??
+                Hands.FirstOrDefault();
+        }
+
+        public long Version { get; }
+        public IReadOnlyList<DirectorHandViewModel> Hands { get; }
+
+        /// <summary>
+        /// Milestone 7.8a: the hero whose tray is on screen. Local presentation state - it submits no
+        /// command, is not serialized, and is not part of any authoritative record.
+        /// </summary>
+        public HeroId ViewedHeroId { get; }
+
+        /// <summary>
+        /// That hero's hand, or the first one when the viewed hero names none. One tray is drawn, never
+        /// a stack of every hand at once.
+        /// </summary>
+        public DirectorHandViewModel ViewedHand { get; }
+    }
+
+    public interface IDirectorHandsView
+    {
+        void Render(DirectorHandsViewModel model);
+    }
+
+    public sealed class DirectorHandsPresenter : ISeatScopedPresenter
+    {
+        private readonly IMatchClient session;
+        private readonly IDirectorHandsView view;
+        private HeroId homeHeroId;
+        private CardInstanceId? selectedCardInstanceId;
+        private IMatchReadModel lastProjection;
+        private CardInstanceId? lastSelectedCardInstanceId;
+        private DirectorHandsViewModel lastViewModel;
+        private HeroId pinnedHeroId;
+        private HeroId pinnedAgainstAwaitedHeroId;
+        private HeroId lastViewedHeroId;
+
+
+        /// <summary>
+        /// Milestone 8.30b. The Director-shaped constructor every existing fixture and journey uses,
+        /// composing the Director's own client. A seat-scoped surface passes its client instead.
+        /// </summary>
+        public DirectorHandsPresenter(IMatchSession session, IDirectorHandsView view)
+            : this(new DirectorMatchClient(session), view)
+        {
+        }
+
+        public DirectorHandsPresenter(IMatchClient session, IDirectorHandsView view)
+            : this(session, view, default)
+        {
+        }
+
+        /// <summary>
+        /// Milestone 8.30c. A seat-scoped composition names the hero whose private tray is home for
+        /// that player. The Director leaves it undefined and keeps following the currently awaited
+        /// hero exactly as before. This is presentation-local routing only: the hero must already
+        /// belong to the supplied read model's setup, and it grants no command or card identity.
+        /// </summary>
+        public DirectorHandsPresenter(
+            IMatchClient session, IDirectorHandsView view, HeroId homeHeroId)
+        {
+            this.session = session ?? throw new ArgumentNullException(nameof(session));
+            this.view = view ?? throw new ArgumentNullException(nameof(view));
+            if (homeHeroId.IsDefined && !session.Projection.Setup.Heroes.Any(hero =>
+                    hero.HeroId.Equals(homeHeroId)))
+            {
+                throw new ArgumentException(
+                    "A home tray must name a hero in the supplied match.", nameof(homeHeroId));
+            }
+
+            this.homeHeroId = homeHeroId;
+        }
+
+        public event Action<IMatchReadModel> SessionProjectionChanged;
+
+        /// <summary>
+        /// The hero whose tray is currently drawn (milestone 7.8a).
+        ///
+        /// For the Director it defaults to the hero the match is waiting on - the one still owing a
+        /// commitment, or the one resolving a turn. For a seat it defaults to that seat's home hero,
+        /// whose private hand is the one the projection actually carries. A map selection pins another
+        /// hero, and the pin lasts exactly as long as the currently awaited hero does; when the match
+        /// moves on, the Director follows the new wait and a seat returns to its own tray.
+        ///
+        /// It is local presentation state throughout. Nothing here submits a command or reads back into
+        /// authority, which is why <see cref="SelectViewedHero"/> can be answered from a board click that
+        /// the authority itself refused.
+        /// </summary>
+        public HeroId ViewedHeroId => Resolve(session.Projection);
+
+        /// <summary>The hero the current projection is waiting on, or the first configured hero.</summary>
+        public HeroId AwaitedHeroId => Awaited(session.Projection);
+
+        /// <summary>
+        /// Points the tray at one hero. Answers false for a hero this match does not have, so a stale
+        /// board identity changes nothing.
+        /// </summary>
+        public bool SelectViewedHero(HeroId heroId)
+        {
+            var projection = session.Projection;
+            if (!heroId.IsDefined ||
+                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
+            {
+                return false;
+            }
+
+            pinnedHeroId = heroId;
+            pinnedAgainstAwaitedHeroId = Awaited(projection);
+            Refresh();
+            return true;
+        }
+
+        /// <summary>
+        /// Binds the tray's durable home after the interactive lobby assigns this runtime its
+        /// admitted online seat. Any Director-era pin or card selection is discarded before the
+        /// network projection is rendered, so a later awaited-hero change returns to this hero.
+        /// </summary>
+        public bool SetHomeHero(HeroId heroId)
+        {
+            var projection = session.Projection;
+            if (!heroId.IsDefined ||
+                !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
+            {
+                return false;
+            }
+
+            homeHeroId = heroId;
+            pinnedHeroId = default;
+            pinnedAgainstAwaitedHeroId = default;
+            selectedCardInstanceId = null;
+            lastProjection = null;
+            Refresh();
+            return true;
+        }
+
+        /// <inheritdoc />
+        public HeroId HomeHeroId => homeHeroId;
+
+        private HeroId Resolve(IMatchReadModel projection)
+        {
+            var awaited = Awaited(projection);
+            if (pinnedHeroId.IsDefined && pinnedAgainstAwaitedHeroId.Equals(awaited))
+            {
+                return pinnedHeroId;
+            }
+
+            pinnedHeroId = default;
+            pinnedAgainstAwaitedHeroId = default;
+            return homeHeroId.IsDefined ? homeHeroId : awaited;
+        }
+
+        private static HeroId Awaited(IMatchReadModel projection)
+        {
+            if (projection.Phase == RoundResolutionPhase.AwaitingCommitments)
+            {
+                var owing = projection.Setup.Heroes
+                    .OrderBy(hero => hero.TeamSide)
+                    .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                    .FirstOrDefault(hero => projection.GetCommitment(hero.HeroId).Status ==
+                        TurnCardCommitmentStatus.AwaitingResponse);
+                if (owing != null)
+                {
+                    return owing.HeroId;
+                }
+            }
+
+            if (projection.SelectedActor.IsDefined)
+            {
+                return projection.SelectedActor.ActorId;
+            }
+
+            var first = projection.Setup.Heroes
+                .OrderBy(hero => hero.TeamSide)
+                .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                .FirstOrDefault();
+            return first?.HeroId ?? default;
+        }
+
+        public void Refresh()
+        {
+            var projection = session.Projection;
+            if (!projection.IsInputEnabled ||
+                selectedCardInstanceId.HasValue && !projection.Cards.Any(card =>
+                card.Id.Equals(selectedCardInstanceId.Value) && card.State.Location == CardLocation.Hand))
+            {
+                selectedCardInstanceId = null;
+            }
+
+            var viewedHeroId = Resolve(projection);
+            if (!ReferenceEquals(projection, lastProjection) ||
+                !Nullable.Equals(selectedCardInstanceId, lastSelectedCardInstanceId) ||
+                !viewedHeroId.Equals(lastViewedHeroId) ||
+                lastViewModel == null)
+            {
+                var hands = projection.Setup.Heroes
+                    .OrderBy(hero => hero.TeamSide)
+                    .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
+                    .Select(hero =>
+                    {
+                        var commitment = projection.GetCommitment(hero.HeroId);
+                        return new DirectorHandViewModel(
+                            hero.TeamSide,
+                            hero.HeroId,
+                            hero.DisplayName,
+                            commitment.Status,
+                            projection.IsInputEnabled && commitment.CanPass,
+                            commitment.RevealedCardInstanceId,
+                            // Milestone 8.35e. `Single` here failed the whole tray refresh, and the
+                            // absence it refused is legitimate: rulebook p.8's Retrieve stage puts
+                            // each hero's revealed card back in that hero's hand, and a seat's
+                            // scoped card list withholds another hero's hand and deck together, so
+                            // from that stage until the next round every seat holds five
+                            // commitments naming a card its own projection may not carry. The
+                            // identity stays - it is public, and the label reads REVEALED from it -
+                            // and only the card's detail is missing. `HeroOverviewPresentation`
+                            // already reads the same field this way.
+                            commitment.RevealedCardInstanceId.HasValue
+                                ? projection.Cards.SingleOrDefault(card =>
+                                    card.Id.Equals(commitment.RevealedCardInstanceId.Value))
+                                : null,
+                            projection.Cards.Where(card =>
+                                card.OwnerId.Equals(hero.HeroId) && card.State.Location == CardLocation.Hand),
+                            projection.Definitions,
+                            selectedCardInstanceId,
+                            BuildTray(projection, hero.HeroId, selectedCardInstanceId));
+                    });
+                lastProjection = projection;
+                lastSelectedCardInstanceId = selectedCardInstanceId;
+                lastViewedHeroId = viewedHeroId;
+                lastViewModel = new DirectorHandsViewModel(projection.Version, hands, viewedHeroId);
+            }
+
+            view.Render(lastViewModel);
+        }
+
+        /// <summary>
+        /// Milestone 7.8a: one hero's current-round cards in the tray's own order - played in ascending
+        /// turn order, then discarded/unavailable, then available.
+        ///
+        /// The three groups are read from projected card lifecycle state and the round's own assignment
+        /// history; nothing here decides that a card was retrieved, discarded by a Defense, or cleared by
+        /// a round reset. A card the hero owns that is in neither the hand, the turn area, nor the
+        /// discard pile - a deck card, a set-aside card, an item, an unlocked Ultimate - is not part of
+        /// this round's five and does not appear.
+        ///
+        /// <para>Milestone 8.35z58 widens this from <c>private</c> to <c>internal</c> so
+        /// <see cref="RoundActionPresenter"/> can reuse the SAME per-hero hand derivation for the
+        /// level-up hand preview rather than deriving a second one - one seat's hand is one
+        /// computation, read by both consumers.</para>
+        /// </summary>
+        internal static IReadOnlyList<TrayCardViewModel> BuildTray(
+            IMatchReadModel projection,
+            HeroId heroId,
+            CardInstanceId? selectedCardInstanceId)
+        {
+            var commitment = projection.GetCommitment(heroId);
+            var canSelect = projection.IsInputEnabled &&
+                projection.Phase == RoundResolutionPhase.AwaitingCommitments &&
+                commitment.Status == TurnCardCommitmentStatus.AwaitingResponse;
+            // Milestone 8.5b's correction: the card this hero revealed for the current turn is the card
+            // in play, and it is drawn at full strength while its turn runs. It carries no commitment
+            // command - the round is past choosing - but "carries no command" and "is spent" are not the
+            // same thing, and the shared unavailable treatment said the second about the first.
+            //
+            // Milestone 8.7a adds the second half of the question. One turn is resolved hero by hero in
+            // Initiative order, so the hero who acted first has a resolved card while the turn is still
+            // running for somebody else; asking the commitment alone left that card reading as in play
+            // on the tray at the same moment the rail moved it into resolved history. The card's own
+            // resolution status is what both surfaces ask now, so one card cannot be in two states.
+            var revealedCardInstanceId =
+                commitment.Status == TurnCardCommitmentStatus.Revealed
+                    ? commitment.RevealedCardInstanceId
+                    : null;
+            var resolvingCardInstanceId = revealedCardInstanceId.HasValue &&
+                projection.Cards.Any(card => card.Id.Equals(revealedCardInstanceId.Value) &&
+                    card.State.ResolutionStatus != CardResolutionStatus.Resolved)
+                ? revealedCardInstanceId
+                : null;
+            var entries = new List<TrayCardViewModel>();
+            foreach (var card in projection.Cards.Where(card => card.OwnerId.Equals(heroId)))
+            {
+                var group = card.State.Location == CardLocation.Hand
+                    ? TrayCardGroup.Available
+                    : card.State.Location == CardLocation.DiscardPile
+                        ? TrayCardGroup.Discarded
+                        : card.State.Location == CardLocation.TurnArea
+                            ? TrayCardGroup.Played
+                            : TrayCardGroup.None;
+                if (group == TrayCardGroup.None)
+                {
+                    continue;
+                }
+
+                var playedTurnIndex = CurrentRoundCards.PlayedTurnIndex(projection, heroId, card.Id);
+                if (group == TrayCardGroup.Played && playedTurnIndex == 0)
+                {
+                    // A card in the turn area that this round's history does not name is the facedown
+                    // commitment of a turn that has not been revealed yet. It is the hero's own card and
+                    // is no longer choosable, so it reads as spent rather than as available.
+                    group = TrayCardGroup.Discarded;
+                }
+
+                var isAvailableForCommitment = group == TrayCardGroup.Available && canSelect;
+                var isResolvingThisCard = resolvingCardInstanceId.HasValue &&
+                    resolvingCardInstanceId.Value.Equals(card.Id);
+                // Milestone 8.35z9, and a defect live testing found: `isResolvingThisCard` is true
+                // from the moment this hero's card is REVEALED until it finishes resolving, which is
+                // a far wider window than "resolving now". Every hero reveals at the start of the
+                // round and turns then run one at a time in Initiative order, so between the reveal
+                // and this hero's own turn - potentially five other turns - the card was claiming the
+                // awaited gold while somebody else acted. The reported symptom was exact: during
+                // another hero's release pause, correctly narrated in the third person and with that
+                // hero's own tray correctly lit, the viewer's own committed card still wore the gold
+                // border that means "act now". The gold's whole grammar is "this is yours to answer",
+                // so a card only keeps it while the turn it belongs to is actually under way and this
+                // hero is the one acting. Both facts are public and unscoped, so this reads the same
+                // for a seat and for the Director.
+                var resolutionIsUnderWayForThisHero = projection.IsTurnActive &&
+                    projection.SelectedActor.IsDefined &&
+                    projection.SelectedActor.ActorId.Equals(heroId);
+                entries.Add(CurrentRoundCards.TrayCard(
+                    projection,
+                    card,
+                    group,
+                    group == TrayCardGroup.Played ? playedTurnIndex : 0,
+                    isAvailableForCommitment,
+                    selectedCardInstanceId.HasValue && selectedCardInstanceId.Value.Equals(card.Id),
+                    isResolvingThisCard,
+                    // Milestone 8.35m, the SEVENTH amendment's card scope and resolution focus, both
+                    // read off facts this method already computed rather than derived a second time:
+                    // a card offered for commitment right now is a legal answer, and so - for the
+                    // resolution-focus case - is the one card currently resolving, which is why it
+                    // shines exactly like a clickable candidate although it carries no click any more.
+                    isAwaitedAnswer: isAvailableForCommitment ||
+                        (isResolvingThisCard && resolutionIsUnderWayForThisHero),
+                    // Every OTHER hand card dims while one is resolving, so the eye lands on the card
+                    // whose text is running; the resolving card itself is excluded by construction
+                    // (its own group is never Available - it moved to the turn area on commitment).
+                    isDimmedByResolution: resolvingCardInstanceId.HasValue &&
+                        group == TrayCardGroup.Available && !isResolvingThisCard));
+            }
+
+            return Array.AsReadOnly(entries
+                .OrderBy(entry => entry.Group == TrayCardGroup.Played
+                    ? 0
+                    : entry.Group == TrayCardGroup.Discarded ? 1 : 2)
+                .ThenBy(entry => entry.PlayedTurnIndex)
+                .ThenBy(entry => entry.CardInstanceId.Value, StringComparer.Ordinal)
+                .ToArray());
+        }
+
+        public bool SelectCommitmentCard(CardInstanceId cardInstanceId)
+        {
+            var projection = session.Projection;
+            if (FindCommittableCard(projection, cardInstanceId) == null)
+            {
+                return false;
+            }
+
+            selectedCardInstanceId = cardInstanceId;
+            Refresh();
+            return true;
+        }
+
+        public bool ConfirmSelectedCard()
+        {
+            if (!selectedCardInstanceId.HasValue || !session.Projection.IsInputEnabled)
+            {
+                return false;
+            }
+
+            var card = session.Projection.Cards.SingleOrDefault(value => value.Id.Equals(selectedCardInstanceId.Value));
+            if (card == null)
+            {
+                return false;
+            }
+
+            var result = session.Submit(DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            if (result.Accepted)
+            {
+                selectedCardInstanceId = null;
+                SessionProjectionChanged?.Invoke(result.Projection);
+            }
+
+            return result.Accepted;
+        }
+
+        /// <summary>
+        /// Commits one currently projected hand card without first storing it as the click-selection.
+        /// Milestone 8.30g uses this for the drag-to-map path: the pointer's drop position is deliberately
+        /// absent because the map is only a presentation boundary, never a card target or rules input.
+        /// The card is re-read from the standing projection immediately before submission, so a stale,
+        /// hidden, already committed, or otherwise ineligible drag is refused without mutation.
+        /// </summary>
+        public bool CommitCardImmediately(CardInstanceId cardInstanceId)
+        {
+            var projection = session.Projection;
+            var card = FindCommittableCard(projection, cardInstanceId);
+            if (card == null)
+            {
+                return false;
+            }
+
+            var result = session.Submit(DirectorCommand.CommitCard(card.OwnerId, card.Id));
+            if (result.Accepted)
+            {
+                selectedCardInstanceId = null;
+                SessionProjectionChanged?.Invoke(result.Projection);
+            }
+
+            return result.Accepted;
+        }
+
+        private static CardInstance FindCommittableCard(
+            IMatchReadModel projection, CardInstanceId cardInstanceId)
+        {
+            if (!projection.IsInputEnabled ||
+                projection.Phase != RoundResolutionPhase.AwaitingCommitments)
+            {
+                return null;
+            }
+
+            var card = projection.Cards.SingleOrDefault(value => value.Id.Equals(cardInstanceId));
+            return card != null &&
+                card.State.Location == CardLocation.Hand &&
+                projection.GetCommitment(card.OwnerId).Status ==
+                    TurnCardCommitmentStatus.AwaitingResponse
+                ? card
+                : null;
+        }
+
+        public bool Pass(HeroId heroId)
+        {
+            var projection = session.Projection;
+            if (!projection.IsInputEnabled)
+            {
+                return false;
+            }
+
+            var commitment = projection.Commitments.SingleOrDefault(value => value.HeroId.Equals(heroId));
+            if (!commitment.HeroId.IsDefined || !commitment.CanPass)
+            {
+                return false;
+            }
+
+            var result = session.Submit(DirectorCommand.Pass(heroId));
+            if (result.Accepted)
+            {
+                selectedCardInstanceId = null;
+                SessionProjectionChanged?.Invoke(result.Projection);
+            }
+
+            return result.Accepted;
+        }
+    }
+}

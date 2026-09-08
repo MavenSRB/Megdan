@@ -1331,3 +1331,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z66 | Offline production/test assembly boundaries now match Unity; focused checks preserve coverage, and the level-up capture fixture reaches its actual prerequisite. | `milestone/8.35z66` |
 
+## Milestone 8.35z67 Give HUD features cohesive source boundaries completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z67 | Existing HUD feature views/presenters move into cohesive files while all 65 type bodies and shared styling stay unchanged. | `milestone/8.35z67` |
+
