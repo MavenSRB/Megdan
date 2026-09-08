@@ -999,8 +999,14 @@ namespace GuardsDigital.Presentation.Match
         {
             if (host == null) throw new ArgumentNullException(nameof(host));
             if (board == null) throw new ArgumentNullException(nameof(board));
-            var driver = host.GetComponent<BoardDefeatFadeDriver>() ??
-                host.AddComponent<BoardDefeatFadeDriver>();
+            // Same `??` trap HexTileView.SetActiveEffectAura records, corrected for consistency:
+            // `??` bypasses Unity's null overload, an explicit comparison does not.
+            var driver = host.GetComponent<BoardDefeatFadeDriver>();
+            if (driver == null)
+            {
+                driver = host.AddComponent<BoardDefeatFadeDriver>();
+            }
+
             driver.board = board;
             driver.failures = 0;
             driver.enabled = true;

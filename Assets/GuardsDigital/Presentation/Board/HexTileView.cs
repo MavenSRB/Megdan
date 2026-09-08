@@ -198,11 +198,29 @@ namespace GuardsDigital.Presentation.Board
             layer.localRotation = Quaternion.identity;
             auraGlide = Vector3.zero;
             layer.localScale = Vector3.one;
-            var filter = layer.GetComponent<MeshFilter>() ??
-                layer.gameObject.AddComponent<MeshFilter>();
+            // THE `??` TRAP, and it is not a style point - it threw. Unity's Object overloads `==`
+            // so a missing or destroyed component reports as null, but `??` and `?.` use the C#
+            // RUNTIME null check and bypass that overload entirely. On Unity 6 a GetComponent for a
+            // component that is not there hands back a marshalled wrapper rather than a real null,
+            // so `?? AddComponent` kept the wrapper, never added anything, and the very next line
+            // threw MissingComponentException: "There is no 'MeshFilter' attached to the 'Active
+            // Effect Aura' game object". Every one of ActiveEffectBoardTreatmentTests' ten cases
+            // failed on it the first time they were ever EXECUTED - that file is exclude-listed in
+            // Tools/DotnetTests, so the branch's own green harness could not reach them. An explicit
+            // `== null` uses the overload and is correct in both directions.
+            var filter = layer.GetComponent<MeshFilter>();
+            if (filter == null)
+            {
+                filter = layer.gameObject.AddComponent<MeshFilter>();
+            }
+
             filter.sharedMesh = sharedMesh;
-            var renderer = layer.GetComponent<MeshRenderer>() ??
-                layer.gameObject.AddComponent<MeshRenderer>();
+            var renderer = layer.GetComponent<MeshRenderer>();
+            if (renderer == null)
+            {
+                renderer = layer.gameObject.AddComponent<MeshRenderer>();
+            }
+
             renderer.sharedMaterial = sharedMaterial;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
@@ -244,8 +262,15 @@ namespace GuardsDigital.Presentation.Board
 
         public void ConfigureCornerHighlight(HexCornerHighlightTemplate template)
         {
-            var highlight = GetComponent<HexCornerHighlight>() ??
-                gameObject.AddComponent<HexCornerHighlight>();
+            // Same `??` trap as the aura layer above, corrected for consistency rather than because
+            // this one was observed to throw: the explicit comparison uses Unity's own overload and
+            // is right in both directions, so no caller can inherit the latent form from here.
+            var highlight = GetComponent<HexCornerHighlight>();
+            if (highlight == null)
+            {
+                highlight = gameObject.AddComponent<HexCornerHighlight>();
+            }
+
             highlight.Configure(template);
         }
 

@@ -873,7 +873,14 @@ namespace GuardsDigital.Presentation.Match
         {
             if (host == null) throw new ArgumentNullException(nameof(host));
             if (view == null) throw new ArgumentNullException(nameof(view));
-            var driver = host.GetComponent<KineticCueDriver>() ?? host.AddComponent<KineticCueDriver>();
+            // Same `??` trap HexTileView.SetActiveEffectAura records at 8.35z63, corrected for
+            // consistency: `??` bypasses Unity's null overload, an explicit comparison does not.
+            var driver = host.GetComponent<KineticCueDriver>();
+            if (driver == null)
+            {
+                driver = host.AddComponent<KineticCueDriver>();
+            }
+
             driver.view = view;
             driver.failures = 0;
             driver.enabled = true;

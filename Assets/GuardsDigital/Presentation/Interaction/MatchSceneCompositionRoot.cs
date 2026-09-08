@@ -1286,8 +1286,16 @@ namespace GuardsDigital.Presentation.Interaction
         {
             var currentSelectors = (minionViews ?? Array.Empty<StandardMinionView>())
                 .Where(value => value != null)
-                .Select(view => view.GetComponent<StandardMinionPointerSelector>() ??
-                    view.gameObject.AddComponent<StandardMinionPointerSelector>())
+                // Same `??` trap HexTileView.SetActiveEffectAura records at 8.35z63: `??` bypasses
+                // Unity's own null overload, so a missing component's marshalled wrapper survives it
+                // and nothing is added. Corrected for consistency rather than on an observed throw.
+                .Select(view =>
+                {
+                    var selector = view.GetComponent<StandardMinionPointerSelector>();
+                    return selector == null
+                        ? view.gameObject.AddComponent<StandardMinionPointerSelector>()
+                        : selector;
+                })
                 .ToArray();
             foreach (var selector in currentSelectors)
             {

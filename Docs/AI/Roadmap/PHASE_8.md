@@ -409,6 +409,24 @@ Non-goals: no schema or wire movement; protocol /11 is unmoved from 8.35z60.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z62-the-transition-redraws-every-surface-and-a-refused-format-press-says-so-completion-evidence).
 
+
+### [x] 8.35z63 Show a live effect on the board and let its aura travel with the hero
+
+The user's directive: "when a hero has an active effect, we need to show it. Same purple color we use in hero tray to show active cards should higlight the effect target... If it is an active effect in radius, we need to paint the hexes in that radius that same color."
+
+Observable outcome: a hero carrying an Active effect wears a violet ring on its board token, an effect with a radius tints the hexes of its disk the same violet, and the disk travels with its carrier's move rather than jumping at the end of it.
+
+ONE COLOUR, already in the theme: `MatchHudTheme.ActiveEffectAccent` - milestone 8.5b's violet, worn by a card sourcing a live Active effect in the tray ever since - is now what the board draws too, with no second purple minted and no literal promoted. The two consumers differ only in alpha and by the board's own established idioms: a thin mark is added light, a whole-hex area is a tint so the artwork reads through it. DERIVED, NOT WIDENED - `ActiveEffectVisibility` reads only what `IMatchReadModel` already carries, so there is zero schema, wire or Core movement and every seat sees the same marks. The disk is centred on its carrier's CURRENT hex every time the board rebinds, which is rulebook p.17's "an Active effect's Radius moves with its hero" for free, because nothing is stored.
+
+Acceptance checks:
+
+- All 61 registered definitions across the eleven heroes resolve to a treatment - 40 ring, 18 disk, 3 both, 0 silent - walked from the catalog so a scope this layer cannot place becomes a red test rather than a hero rendering nothing.
+- Every disk's exact hex set is proven offline against `RadiusQuery` rather than by hand, in the Unity-free harness.
+
+Non-goals: no schema, wire or content movement; nothing animates on its own and no second animation authority is introduced. Sabina ships no Active effect at all, which is her printed set rather than a gap.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z63-show-a-live-effect-on-the-board-and-let-its-aura-travel-with-the-hero-completion-evidence).
+
 ### Queued corrective debt recorded at 8.35z23
 
 Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a measured reason: that register stands at 4,491 words against a 4,500-word HARD limit, so the reassessment this finding deserves cannot be written there without an ownership review of the whole register, which is a milestone of its own and not this corrective's to spend. The finding belongs to `RISK-STATE-002`, whose reassessment chain should absorb it at that review.
