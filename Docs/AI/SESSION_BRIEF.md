@@ -14,9 +14,9 @@ The user reports FILL WITH BOTS timing out in the built player. Final examples a
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.35z67**.
+- Current completed milestone: **8.35z68**.
 - Active authorized milestone: **None**.
-- Next proposed milestone: **8.35z68**.
+- Next proposed milestone: **8.35z80**.
 
 The user's 2026-09-08 "All yours now" authorizes the five agreed cleanup passes plus the bot fix last: **8.35z64-8.35z68**, then the added **8.35z80-8.35z81**, and finally **8.35z69**, sequentially with local commits. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns outcomes, checks, and all carried-forward work. Further hero/content/feature work is recorded but not authorized. Previously authorized **8.36** is paused pending cleanup and human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
 

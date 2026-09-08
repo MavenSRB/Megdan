@@ -1337,3 +1337,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z67 | Existing HUD feature views/presenters move into cohesive files while all 65 type bodies and shared styling stay unchanged. | `milestone/8.35z67` |
 
+## Milestone 8.35z68 Remove demonstrated resolver maintenance duplication completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z68 | Six continuation-restore branches share one local backend composition while branch-specific restoration and persistence contracts stay unchanged. | `milestone/8.35z68` |
+

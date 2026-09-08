@@ -1634,28 +1634,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 : null;
             var components = CreateComponents(catalogs, adjacentMoveAuthority, markers);
 
+            CardActionResolutionAuthority Compose(
+                MovementCardActionStrategyBackend movement = null,
+                AttackDefenseCardActionStrategyBackend attack = null,
+                SkillCardActionStrategyBackend skill = null) =>
+                new CardActionResolutionAuthority(
+                    catalogs,
+                    movement ?? new MovementCardActionStrategyBackend(adjacentMoveAuthority),
+                    attack ?? new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
+                    new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
+                    new ClearCardActionStrategyBackend(adjacentMoveAuthority),
+                    skill ?? new SkillCardActionStrategyBackend(catalogs.Capabilities),
+                    components,
+                    adjacentMoveAuthority);
+
             switch (state.ContinuationKind)
             {
                 case CardActionContinuationKind.Movement:
-                    return new CardActionResolutionAuthority(
-                        catalogs,
-                        MovementCardActionStrategyBackend.Restore(
+                    return Compose(
+                        movement: MovementCardActionStrategyBackend.Restore(
                             adjacentMoveAuthority,
                             new MovementBackendRestoreState(state.PendingMovementResolution),
                             verifiedMovementChoice,
-                            modifications),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
-                        components,
-                        adjacentMoveAuthority);
+                            modifications));
 
                 case CardActionContinuationKind.Attack:
-                    return new CardActionResolutionAuthority(
-                        catalogs,
-                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        AttackDefenseCardActionStrategyBackend.RestoreAttack(
+                    return Compose(
+                        attack: AttackDefenseCardActionStrategyBackend.RestoreAttack(
                             adjacentMoveAuthority,
                             new AttackDefenseBackendRestoreState(
                                 state.PendingAttackResolution, state.AttackSequenceChain),
@@ -1668,43 +1673,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             markers,
                             modifications,
                             heroItems,
-                            rosterState),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
-                        components,
-                        adjacentMoveAuthority);
+                            rosterState));
 
                 case CardActionContinuationKind.Skill:
                     var isTriggered = catalogs.TriggeredEffects.TryGet(
                         state.PendingSkillResolution.EffectDefinitionReference, out _);
-                    var restoredEffect = new CardActionResolutionAuthority(
-                        catalogs,
-                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        isTriggered
-                            ? new SkillCardActionStrategyBackend(catalogs.Capabilities)
+                    var restoredEffect = Compose(
+                        skill: isTriggered
+                            ? null
                             : SkillCardActionStrategyBackend.Restore(
                                 catalogs.Capabilities,
-                                new SkillBackendRestoreState(state.PendingSkillResolution)),
-                        components,
-                        adjacentMoveAuthority);
+                                new SkillBackendRestoreState(state.PendingSkillResolution)));
                     if (isTriggered)
                         restoredEffect.triggeredEffects.RestorePending(state.PendingSkillResolution);
                     return restoredEffect;
 
                 case CardActionContinuationKind.Correction:
-                    var restored = new CardActionResolutionAuthority(
-                        catalogs,
-                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
-                        components,
-                        adjacentMoveAuthority);
+                    var restored = Compose();
                     restored.pendingCorrection = state.PendingCorrection;
                     restored.pendingRepeat = state.PendingRepeat;
                     return restored;
@@ -1723,12 +1708,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         state.PendingCardText.Moment == CardTextTiming.AfterTheAttack
                             ? null
                             : state.PendingCardText.Attack;
-                    var restoredCardText = new CardActionResolutionAuthority(
-                        catalogs,
-                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        attackUnderTheText == null
-                            ? new AttackDefenseCardActionStrategyBackend(
-                                adjacentMoveAuthority, coinLedger, markers)
+                    var restoredCardText = Compose(
+                        attack: attackUnderTheText == null
+                            ? null
                             : AttackDefenseCardActionStrategyBackend.RestoreAttack(
                                 adjacentMoveAuthority,
                                 new AttackDefenseBackendRestoreState(
@@ -1742,25 +1724,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                                 markers,
                                 modifications,
                                 heroItems,
-                                rosterState),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
-                        components,
-                        adjacentMoveAuthority);
+                                rosterState));
                     restoredCardText.pendingCardText = state.PendingCardText;
                     return restoredCardText;
 
                 default:
-                    return new CardActionResolutionAuthority(
-                        catalogs,
-                        new MovementCardActionStrategyBackend(adjacentMoveAuthority),
-                        new AttackDefenseCardActionStrategyBackend(adjacentMoveAuthority, coinLedger, markers),
-                        new FastTravelCardActionStrategyBackend(adjacentMoveAuthority),
-                        new ClearCardActionStrategyBackend(adjacentMoveAuthority),
-                        new SkillCardActionStrategyBackend(catalogs.Capabilities),
-                        components,
-                        adjacentMoveAuthority);
+                    return Compose();
             }
         }
 

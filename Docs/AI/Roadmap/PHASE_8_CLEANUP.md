@@ -65,7 +65,7 @@ Non-goals: no redesign, new UI behavior, new abstraction framework, or hierarchy
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z67-give-hud-features-cohesive-source-boundaries-completion-evidence).
 
-### [ ] 8.35z68 Remove demonstrated resolver maintenance duplication
+### [x] 8.35z68 Remove demonstrated resolver maintenance duplication
 
 Observable outcome: a repeated resolver construction/state-handling responsibility has one implementation with explicit callers, reducing the places a future rule extension must change.
 
@@ -75,6 +75,8 @@ Acceptance checks:
 - If inspection finds no safe useful extraction, record that evidence and the bounded assessment rather than inventing a refactor to meet a line target.
 
 Non-goals: no new hero/capability, rule interpretation, persisted-state redesign, or speculative generalization.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z68-remove-demonstrated-resolver-maintenance-duplication-completion-evidence).
 
 ### [ ] 8.35z69 Fix the built-player FILL WITH BOTS path
 
