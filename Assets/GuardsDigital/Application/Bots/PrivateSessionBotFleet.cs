@@ -174,7 +174,9 @@ namespace GuardsDigital.Application.Bots
                 command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
             if (projection.PendingMinionBattleChoice != null)
                 selected = commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.SelectMinionBattleRemoval);
-            selected = selected ?? BotPolicy.SelectGreedy(commands, projection, hero, random)
+            // The existing tuned policy scores only this owner's published choices. Deliberately
+            // omit lookahead: a lobby bot must not borrow the host's hidden hands or commitments.
+            selected = selected ?? BotPolicy.SelectTierTwo(commands, projection, hero, random)
                 ?? commands[random.Next(commands.Length)];
             if (!machine.TrySubmitCommand(selected, out var submission)) return false;
             bot.PendingCommand = selected;

@@ -130,7 +130,7 @@ namespace GuardsDigital.Tests.PlayMode
                     Object.FindAnyObjectByType<GuardsDigital.Presentation.Board.PlaceholderTestGridView>());
                 probe.CaptureAuraInspection();
                 Assert.That(root.Runtime.BoardView.Model, Is.SameAs(original));
-                foreach (var state in new[] { "none", "aura", "aura-active", "active" })
+                foreach (var state in new[] { "none", "aura", "aura-active", "aura-active-minimum", "active" })
                     Assert.That(new FileInfo("tmp/8-35z84-aura-" + state + ".png").Length, Is.GreaterThan(1000));
             }
             finally { Object.Destroy(probeObject); }

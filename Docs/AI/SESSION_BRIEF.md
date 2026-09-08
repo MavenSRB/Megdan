@@ -14,13 +14,13 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.35z84**.
-- Active authorized milestone: **8.35z85**.
-- Next proposed milestone: **8.35z85**.
+- Current completed milestone: **8.35z85**.
+- Active authorized milestone: **none**.
+- Next proposed milestone: **8.36**.
 
-The original cleanup through **8.35z82** is complete. The user's subsequent 2026-09-08 reports authorize the bounded follow-up **8.35z83-8.35z85**, sequentially: complete card highlights, transparent aura and adaptive ring order, then connect lobby bots to the existing smarter policy and produce the corrected private ZIP. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns exact outcomes, checks, and the preserved backlog. This does not authorize new AI research or unrelated backlog work. Previously authorized **8.36** remains paused for human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
+The original cleanup through **8.35z82** and the user's bounded follow-up **8.35z83-8.35z85** are complete. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns exact outcomes, checks, and the preserved backlog. No further implementation is active; new AI research and unrelated backlog work remain unauthorized. Previously authorized **8.36** remains paused for human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
 
-Card highlights and CLEAR/FAST TRAVEL placement have passed focused resource, Unity and eleven-hero visual checks. Transparent aura and adaptive ring order have passed focused Unity and rendered-state checks; exact-player confirmation and packaging follow at 8.35z85. Additional heroes remain on hold. Aura order is token, purple effect ring, active-turn ring; without an effect, the turn ring sits beside the token.
+Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Transparent aura and adaptive ring order passed exact-player rendering checks, including the turn pulse's minimum size. Lobby bots use the existing owner-scoped Tier-2 static policy. The verified local package is `Builds/Playtest-8.35z85-fixes.zip`, with Play/Host scripts; its actual lobby, Whisper selection, movement, Undo, End Turn and bot progress were checked. Additional heroes remain on hold. Aura order is token, purple effect ring, active-turn ring; without an effect, the turn ring sits beside the token.
 
 ## Durable boundaries
 

@@ -145,11 +145,13 @@ Outcome: purple radius tint leaves board artwork/hex markings visible. Per the u
 
 Dependency: 8.35z83. Closing checks: focused render/material regression fails for opaque tint and old ring order, passes for transparent board tint and both ring-presence cases; validate refresh/movement/Undo/rebuild and actual changed output. Preserve authoritative affected cells, effect lifetime, team identity, selection/picking and all rules. No new aura effects or general board redesign. T2; final exact-player repeat at 8.35z85.
 
-### [~] 8.35z85 Connect lobby bots to the existing smarter policy and package
+### [x] 8.35z85 Connect lobby bots to the existing smarter policy and package
 
 Outcome: FILL WITH BOTS consumes the existing Tier-2 decision policy instead of the old greedy baseline, with bounded host work and unchanged authorized owner projection/privacy. Use supported information only; absence of safe lookahead retains Tier-2's existing static judgment, never leaks hidden cards or grants host-state access. This integrates existing AI, not the separately parked stronger-policy research at 8.35z78.
 
 Dependency: 8.35z84. Closing checks: deterministic lobby-bot choice scenario distinguishes old greedy from the existing stronger policy (fail before/pass after), preserves round-robin pacing, refusals, readiness/draft, reserved humans, cleanup, and real human-plus-bot progress. Measure bounded decision cost; stop for direction if safe integration requires new authority or broader AI design. Run affected tests and final T3 pre-build gate, fresh build/board/multiclient smoke, actual packaged lobby checks plus card highlights and aura visuals. Produce a new local source-identified ZIP with existing Play/Host scripts, verify its contents, preserve prior ZIPs and private resources. No external distribution or claim of completing 8.36.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z85-connect-lobby-bots-to-the-existing-smarter-policy-and-package-completion-evidence).
 
 ## Reconciled follow-up queue (not authorized)
 

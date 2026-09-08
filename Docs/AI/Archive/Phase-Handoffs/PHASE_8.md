@@ -1379,3 +1379,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z84 | Aura uses the shipped transparent variant; activity expands outside an effect ring and contracts when it ends. Focused and rendered-state checks pass; exact-player repeat follows at 8.35z85. | `milestone/8.35z84` |
 
+## Milestone 8.35z85 Connect lobby bots to the existing smarter policy and package completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z85 | Owner-scoped Tier-2 lobby bots, pulse-safe aura order, final regression/build/player checks and private Play/Host ZIP verification pass. | `milestone/8.35z85` |
+

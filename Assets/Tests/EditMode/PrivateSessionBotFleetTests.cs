@@ -187,6 +187,43 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void FirstLobbyBotCommitmentUsesTheExistingTierTwoOwnerPolicy()
+        {
+            const int seed = 17;
+            var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
+            using var fleet = new PrivateSessionBotFleet(composer.Match, composer.Identity, "", new HumanWire(),
+                new CountingNonceSource(85), () => composer.Match.Projection,
+                composer.Configuration.ContentCatalogs, seed);
+            fleet.Host.Composition = composer;
+            fleet.FillOpenSeats(0, 0);
+            long tick = 0;
+            while (!fleet.Host.HasMatchStarted && tick < 100) fleet.Tick(++tick);
+            Assert.That(fleet.Host.HasMatchStarted, Is.True);
+            Assert.That(fleet.AcceptedCommands, Is.Zero);
+            var unchanged = composer.Match.CaptureSnapshot();
+            var expected = composer.Match.Seats.Seats.Select(seat =>
+            {
+                var owner = composer.Match.ProjectionForSeat(seat.Id);
+                return BotPolicy.SelectTierTwo(owner.AuthorizedCommands, owner, seat.HeroId,
+                    new DeterministicBotRandom(seed));
+            }).ToArray();
+            Assert.That(expected, Has.All.Not.Null);
+            Assert.That(expected.All(command => command.Kind == DirectorCommandKind.CommitCard), Is.True);
+            Assert.That(composer.Match.CaptureSnapshot(), Is.EqualTo(unchanged),
+                "Owner-only policy evaluation must not mutate the host.");
+            var cursor = composer.Match.ReadResults(0).NextSequence;
+            var timer = System.Diagnostics.Stopwatch.StartNew();
+            Assert.That(fleet.Tick(++tick), Is.True);
+            timer.Stop();
+            var accepted = composer.Match.ReadResults(cursor).Records.Single().Command;
+            TestContext.WriteLine("First encoded lobby decision including wire/host refresh: " +
+                timer.Elapsed.TotalMilliseconds.ToString("F2") + " ms");
+            Assert.That(fleet.AcceptedCommands, Is.EqualTo(1));
+            Assert.That(expected, Does.Contain(accepted),
+                "The real fleet must use the same tuned commitment choice as the existing owner-scoped policy.");
+        }
+
+        [Test]
         public void InvalidPacingIsRefusedBeforeAnySeatIsClaimed()
         {
             var composer = new Composer(MatchFormat.TwoVersusTwoQuick);

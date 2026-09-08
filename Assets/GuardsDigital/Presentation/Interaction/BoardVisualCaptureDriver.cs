@@ -203,7 +203,7 @@ namespace GuardsDigital.Presentation.Interaction
                 .Where(space => view.TileViews.Any(tile => tile.Coordinate.Equals(space))).ToArray();
             try
             {
-                foreach (var state in new[] { "none", "aura", "aura-active", "active" })
+                foreach (var state in new[] { "none", "aura", "aura-active", "aura-active-minimum", "active" })
                 {
                     var effect = state.Contains("aura");
                     var active = state.Contains("active");
@@ -217,7 +217,10 @@ namespace GuardsDigital.Presentation.Interaction
                     if (piece.HasActiveEffectMark != effect ||
                         (view.ActingHeroMarker != null && view.ActingHeroMarker.IsVisible) != active)
                         throw new InvalidOperationException("Aura inspection state did not render: " + state);
-                    if (active && effect && view.ActingHeroMarker.VisibleRadius *
+                    var scale = state.EndsWith("minimum", StringComparison.Ordinal)
+                        ? 1f - KineticTiming.MarkPulseAmplitude : 1f;
+                    if (active) view.ActingHeroMarker.transform.localScale = Vector3.one * scale;
+                    if (active && effect && view.ActingHeroMarker.VisibleRadius * scale *
                         (1f - ActingHeroMarker.RingWidthRatio) <= piece.ActiveEffectMarker.VisibleRadius)
                         throw new InvalidOperationException("The active ring overlaps or sits inside the aura.");
                     Texture2D frame = null;

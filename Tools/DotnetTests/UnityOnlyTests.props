@@ -24,6 +24,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/FizzleNoticeStreamTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/FlatHexMeshBuilderTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroRailPortraitTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroTokenBindingTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HexCornerHighlightTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HexWorldLayoutTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HostConsoleCommandsTests.cs" />

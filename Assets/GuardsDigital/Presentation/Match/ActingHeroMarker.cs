@@ -40,8 +40,8 @@ namespace GuardsDigital.Presentation.Match
         public const int Subdivisions = 48;
         public const float RingWidthRatio = 0.22f;
         public const float RadiusMargin = 1.18f;
-        // Its inner edge (1.54 * 0.78) clears the effect ring's outer edge (1.18).
-        public const float EffectRadiusMargin = 1.54f;
+        // Even at the pulse's minimum scale, 1.64 * 0.78 * 0.94 clears the effect's 1.18.
+        public const float EffectRadiusMargin = 1.64f;
         public const float SurfaceOffset = 0.05f;
 
         private Mesh ownedMesh;

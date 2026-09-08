@@ -202,6 +202,10 @@ namespace GuardsDigital.Tests.EditMode
                 acting.VisibleRadius * (1f - ActingHeroMarker.RingWidthRatio),
                 Is.GreaterThan(hero.ActiveEffectMarker.VisibleRadius),
                 "Token, violet aura, then gold activity; neither band overlaps.");
+            Assert.That(acting.VisibleRadius * (1f - ActingHeroMarker.RingWidthRatio) *
+                (1f - KineticTiming.MarkPulseAmplitude),
+                Is.GreaterThan(hero.ActiveEffectMarker.VisibleRadius),
+                "The active-turn pulse must clear the aura even at its smallest scale.");
             Assert.That(hero.ActiveEffectMarker.VisibleRadius / hero.SelectionRadius,
                 Is.EqualTo(1.18f).Within(0.0001f), "The effect hugs the token.");
             Assert.That(ActiveEffectHeroMarker.SurfaceOffset,
