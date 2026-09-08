@@ -758,9 +758,9 @@ namespace GuardsDigital.Presentation.Match
         public HeroContentId ContentId { get; }
 
         /// <summary>
-        /// Where this hero's portrait would be, or null when the projection names no content identity.
+        /// Candidate team-baked portrait path, or null when the projection names no content identity.
         ///
-        /// <para>It is the same resource the board's own token is drawn from - see
+        /// <para>The Unity view resolves baked/neutral availability with the board's adapter - see
         /// <see cref="HeroTokenArtwork"/> - which is what makes the rail's picture and the piece on the
         /// map the same hero rather than two artists' opinions of one. The artwork is private and a
         /// clean checkout has none, so the path resolving to nothing is an ordinary state; the rail

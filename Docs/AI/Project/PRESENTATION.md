@@ -41,6 +41,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Pitch HUD
 
+Board hero pieces and rail portraits resolve prepared artwork through the same baked-first, neutral-second, primitive/empty-last adapter. Neutral faces use the existing narrower face radius inside the unchanged team rim; neither hero names nor art pixels decide team identity. Missing private resources remain supported. The earlier pure neutral-face policy alone did not wire these two Unity consumers; both now use it.
+
 Private card fronts are prepared through `Tools/Prepare-CardArtwork.ps1`; `-Check` verifies dimensions and source-byte equality. The importer covers every configured hero and preserves existing metadata/overlays. Catalog identities and printed rules are unchanged; missing private resources still use the typed generated fallback. Extracted images stay ignored and local.
 
 END TURN and the seat's UNDO use `HudElements.Control`'s shared chip, border, radius, text colour and hover/press motion, not overpainted pewter cloth. Their corner geometry and authority paths are unchanged. END TURN retains its sole-action outline and disabled tooltip; unavailable seat Undo stays absent.

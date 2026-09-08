@@ -8,17 +8,17 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v40 persists the current state; wire protocol is `guards-private-online/11`. The latest pre-cleanup implementation is 8.35z63 (active-effect board markers); integration evidence is in commit `0847c44e`, build identity in `49dc63a1`. Those records include explicitly skipped coverage; the live internet gate is outstanding.
+Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v40 persists the current state; wire protocol is `guards-private-online/11`. The approved cleanup and final private packaging are complete; evidence is indexed in [Phase 8 handoffs](Archive/Phase-Handoffs/PHASE_8.md). Explicitly parked coverage is not passing coverage; the live internet gate remains outstanding.
 
-FILL WITH BOTS now uses host-owned in-process seats. The built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. The user then identified Whisper's primitive token and approved its correction before the final ZIP. Private logs and extracted art remain private evidence/resources.
+FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail; the packaged picker produces her matching hand and tray. The corrected ZIP with Play/Host launchers is local under Builds. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.35z69**.
+- Current completed milestone: **8.35z82**.
 - Active authorized milestone: **None**.
-- Next proposed milestone: **8.35z82**.
+- Next proposed milestone: **8.36**.
 
-The user's 2026-09-08 "All yours now" authorized **8.35z64-8.35z68**, **8.35z80-8.35z81**, and **8.35z69**, sequentially with local commits. Those outcomes are complete. The same session explicitly adds **8.35z82**, fixing Whisper's token before making the final private ZIP with Play/Host scripts. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns outcomes, checks, and the preserved backlog. Other hero/content/feature work is recorded but not authorized. Previously authorized **8.36** remains paused for human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
+The user's 2026-09-08 "All yours now" authorized **8.35z64-8.35z68**, **8.35z80-8.35z81**, and **8.35z69**, sequentially with local commits, followed by the explicit **8.35z82** token correction and private ZIP. This bounded sequence is complete. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns outcomes, checks, and the preserved backlog. Other hero/content/feature work is recorded but not authorized. Previously authorized **8.36** remains paused for human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
 
 ## Durable boundaries
 

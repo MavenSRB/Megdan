@@ -90,6 +90,20 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(whisperView.TeamSide, Is.EqualTo(TeamSide.Blue),
                 "She takes the Blue seat in this staging, exactly as the six staged heroes before " +
                 "her do: milestone 8.25 owns the official six-player configuration.");
+            HeroTokenArtwork.ResolveToken(whisperView.HeroContentId.Value,
+                whisperView.TeamSide, out var expectedFace);
+            Assert.That(whisperView.HasTokenVisual, Is.EqualTo(expectedFace != null));
+            if (expectedFace != null)
+            {
+                Assert.That(whisperView.GetComponent<MeshRenderer>().sharedMaterials[1].mainTexture,
+                    Is.SameAs(expectedFace), "The actual configured piece must consume its prepared face.");
+                var railIndex = runtime.HeroOverviewsView.Model.Heroes.ToList()
+                    .FindIndex(hero => hero.HeroId.Equals(whisperSetup.HeroId));
+                var rail = UiPlayer.Descendants(runtime.HeroOverviewsView.Root)
+                    .Where(element => element.name == "gd-hero-rail").ElementAt(railIndex);
+                var icon = UiPlayer.Descendants(rail).Single(element => element.name == "gd-hero-icon");
+                Assert.That(icon.style.backgroundImage.value.texture, Is.SameAs(expectedFace));
+            }
             Assert.That(runtime.Setup.Heroes
                     .Single(hero => hero.HeroId.Equals(whisperSetup.HeroId)).DisplayName,
                 Is.EqualTo("Whisper the Outcast"),
@@ -156,6 +170,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(rebuiltWhisper.Coordinate, Is.EqualTo(whisperSetup.Coordinate));
             Assert.That(runtime.ViewedHeroId, Is.EqualTo(whisperSetup.HeroId),
                 "The rebuilt tray still follows the hero the player pointed it at.");
+            Assert.That(rebuiltWhisper.HasTokenVisual, Is.EqualTo(expectedFace != null));
+            yield return UiPlayer.CaptureGameView("8-35z82", "whisper-token-and-rail");
         }
 
         [UnityTest]

@@ -1361,3 +1361,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z69 | Bounded in-process bots pass real built-player 2v2/3v3 human journeys; card-face and turn-control checks pass. User-added token correction/final ZIP follows at 8.35z82. | `milestone/8.35z69` |
 
+## Milestone 8.35z82 Restore neutral hero token artwork and package the corrected build completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z82 | Board and rail consume existing neutral artwork; rebuilt-player Whisper picker/hand/token checks and local Play/Host ZIP verification pass. | `milestone/8.35z82` |
+

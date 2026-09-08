@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
+using GuardsDigital.Presentation.Units.Heroes;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -997,11 +998,15 @@ namespace GuardsDigital.Presentation.Match
                 1f,
                 HeroPortraitSize / 2f);
 
-            if (!string.IsNullOrEmpty(hero.PortraitResourcePath))
+            if (hero.ContentId.IsDefined)
             {
-                var portrait = Resources.Load<Texture2D>(hero.PortraitResourcePath);
+                var token = HeroTokenArtwork.ResolveToken(hero.ContentId, hero.TeamSide, out var portrait);
                 if (portrait != null)
                 {
+                    // Match the board's baked-first/neutral-second decision and wider neutral rim.
+                    var faceSize = HeroPortraitSize * token.FaceRadius / RuntimeTeamIdentity.TeamBakedFaceRadius;
+                    icon.style.width = faceSize;
+                    icon.style.height = faceSize;
                     // Contained rather than covered, and centred: the source is a circular token
                     // inscribed in a square, so containing it fills the disc exactly while a cover
                     // would crop a face that is already as wide as it is tall. Aspect is the

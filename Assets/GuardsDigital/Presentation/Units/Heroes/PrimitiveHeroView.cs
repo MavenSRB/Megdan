@@ -365,11 +365,12 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private bool TryApplyTokenVisual()
         {
             var contentId = HeroContentId;
-            if (!contentId.HasValue ||
-                !HeroTokenArtwork.TryLoadTexture(contentId.Value, teamSide, out var face))
+            if (!contentId.HasValue)
             {
                 return false;
             }
+            var token = HeroTokenArtwork.ResolveToken(contentId.Value, teamSide, out var face);
+            if (face == null) return false;
 
             var meshFilter = GetComponent<MeshFilter>();
             if (meshFilter == null)
@@ -383,7 +384,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 meshRenderer = gameObject.AddComponent<MeshRenderer>();
             }
 
-            ReplaceOwnedMesh(CreateTokenMesh());
+            ReplaceOwnedMesh(CreateTokenMesh(token.FaceRadius));
             meshFilter.sharedMesh = ownedMesh;
 
             // The rim is lit exactly as the prism it replaces was, so this project's team colour reads
@@ -463,10 +464,9 @@ namespace GuardsDigital.Presentation.Units.Heroes
         /// ring that fits this piece is measured from the lowest vertices, which are still a full
         /// perimeter at the original radius on the original plane.</para>
         /// </summary>
-        private static Mesh CreateTokenMesh()
+        private static Mesh CreateTokenMesh(float faceRadius)
         {
             var segments = HeroTokenArtwork.Segments;
-            var faceRadius = HeroTokenArtwork.FaceRadius;
             var rimRadius = HeroTokenArtwork.TokenOuterRadius;
             var depth = BoardPieceDepth.Standard;
             var skirtStart = (segments * 2) + 1;
