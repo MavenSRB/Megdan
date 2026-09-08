@@ -68,7 +68,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 - **Action offer:** One context-specific legal use of a card or general rule, selected separately from the card itself.
 - **Effect capability:** One versioned typed mutation, query, modifier, control-flow, timing, persistent-source, or system-transition contract referenced by structured card rules.
 - **Pending choice:** Serializable authoritative input required to continue a paused action resolution.
-- **Micro-milestone:** The smallest user-approved, independently testable increment with a hard stop after acceptance.
+- **Micro-milestone:** A user-approved, independently testable outcome with its own validation and local commit. Stop after acceptance unless the next outcome is already in the explicitly approved sequence; scope changes still require approval.
 - **Rules ledger:** The traceability record connecting rule systems to sources, implementation, tests, and deviations.
 
 ## Current explicit non-goals

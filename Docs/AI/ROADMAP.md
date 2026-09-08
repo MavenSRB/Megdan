@@ -9,17 +9,17 @@
 
 ## Execution rule
 
-This roadmap is a sequence of micro-milestones, not authorization to execute them.
+This roadmap is a sequence of micro-milestones, not authorization to execute them. A user may explicitly approve a bounded sequence of outcomes in one instruction; map it to exact IDs in the owning shard before execution. Approval persists across separate commits. Execute one milestone at a time and stop at the end of the authorized sequence. Queued and parked work remains unauthorized.
 
 For every item:
 
-1. Obtain explicit user approval for that item.
+1. Confirm approval, individually or within the recorded bounded sequence.
 2. Implement only its stated observable outcome.
 3. Respect its non-goals.
 4. Run the milestone's focused tests, directly affected regressions, and highest applicable validation tier from `Docs/AI/TESTING.md`.
 5. Update the continuity documents whose subject the milestone actually changed, including the next proposed milestone.
 6. Create a local Git commit containing the completed milestone, its status change, and continuity updates. The commit message body carries the milestone's evidence record.
-7. Report the result and the next proposed milestone, then stop.
+7. Report the result and next route; stop unless that next item is already in the authorized sequence.
 
 Mark a milestone `[~]` and set the session brief's active field only when work spans tasks or is handed off mid-flight; the validator requires their exact agreement and permits at most one in-progress milestone.
 
@@ -69,6 +69,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 6 - Completed milestone definitions](Roadmap/PHASE_6_COMPLETED.md)
 - [Phase 7 - Progression, victory, and the complete synthetic core loop](Roadmap/PHASE_7.md)
 - [Phase 8 - Verified hero content, deterministic 3v3, and private online validation](Roadmap/PHASE_8.md)
+- [Phase 8 - Authorized cleanup and consolidated follow-up backlog](Roadmap/PHASE_8_CLEANUP.md)
 - [Phase 8 - Six-hero roster re-baseline and shared foundations](Roadmap/PHASE_8_ROSTER_REBASE.md)
 - [Phase 8 - Roster-complete stabilization and corrective route](Roadmap/PHASE_8_STABILIZATION.md)
 - [Phase 8 - Hands-on corrections before private online work](Roadmap/PHASE_8_HANDS_ON_CORRECTIONS.md)

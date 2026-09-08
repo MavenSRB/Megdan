@@ -60,6 +60,8 @@ At the owning milestone or phase gate, reassess the entry. A resolved risk moves
 
 ## History and archive workflow
 
+The 2026-09-08 cleanup permits an immutable local `milestone/<ID>` Git tag in the archive's Commit column. Create it on the completion commit and never move it; `git show milestone/<ID>` resolves the evidence without a second SHA-only bookkeeping commit. Existing SHA references remain unchanged. Sequence authorization follows `ROADMAP.md`.
+
 New milestone outcome and validation evidence is written **once, in the milestone's commit message body**: the validation tier, final revision, exact filters and results, each finding's named closing check and its observed failing-then-passing transition, and any material limitation. `Archive/Phase-Handoffs/PHASE_<N>.md` receives one row per milestone - ID, one-line outcome, commit SHA - which is the durable archive index to that commit-body evidence. The active milestone definition keeps only its stable `Historical evidence` backlink.
 
 This replaced the per-handoff narrative append on 2026-08-13. Evidence stays recoverable and immutable in Git, addressed by SHA, instead of growing a 100 KB file that every handoff had to edit and every threshold check had to measure. Existing archive narratives are not rewritten; they remain valid history under the append-only rule.

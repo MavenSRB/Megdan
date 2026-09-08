@@ -4,13 +4,15 @@ Historical files are version-controlled evidence excluded from routine startup l
 
 ## Preservation and migration
 
+- [Startup brief before the 2026-09-08 cleanup](SESSION_BRIEF_BEFORE_CLEANUP.md)
+
 - [SHA-256 sums of the immutable pre-governance source copies (titled "Pre-Governance Preservation Inventory" inside)](Pre-Governance/SHA256SUMS.md)
 - [Migration manifest](MIGRATION_MANIFEST.md)
 - [Frozen before/after consolidation preservation inventory](PRESERVATION_INVENTORY.md)
 
 ## Completed milestone handoffs
 
-Under the current workflow, each phase-handoff row is the durable index to that milestone's detailed evidence in the referenced Git commit body. The row carries only the milestone ID, one-line outcome, and commit SHA; active definitions link back to the row.
+Each phase-handoff row indexes detailed evidence in its Git commit body. New rows carry only ID, one-sentence outcome, and commit SHA or immutable `milestone/<ID>` tag; active definitions link back to the row. Existing historical narratives remain preserved rather than rewritten.
 
 - [Phase 0](Phase-Handoffs/PHASE_0.md)
 - [Phase 1](Phase-Handoffs/PHASE_1.md)
