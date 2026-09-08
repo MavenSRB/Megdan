@@ -41,6 +41,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Pitch HUD
 
+END TURN and the seat's UNDO use `HudElements.Control`'s shared chip, border, radius, text colour and hover/press motion, not overpainted pewter cloth. Their corner geometry and authority paths are unchanged. END TURN retains its sole-action outline and disabled tooltip; unavailable seat Undo stays absent.
+
 - The board is the primary focus.
 - Director mode exposes all six hands through clear Red/Blue team and hero grouping. Private online clients expose only the local player's hand plus authorized shared played/revealed state; both modes keep the active resolver readable without presentation owning legality.
 - The primitive player-facing HUD is proven against all six owner-scoped projections from the local transport-neutral session: every seat completes the deterministic records, every prompt family and ending is covered, and repeated seat composition retains no hidden identity, stale selection, duplicate handler surface, or monotonically growing owned resource. A development-only seat switcher may select each perspective for validation, but it remains outside match authority, cannot transfer ownership, and is unavailable from private-online client projections. This is deliberately no evidence about a network.

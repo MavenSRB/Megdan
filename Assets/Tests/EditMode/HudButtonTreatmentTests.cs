@@ -182,7 +182,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void EndTurn_DrawsWithScaleMotionOnTopOfItsOwnBannerCloth()
+        public void EndTurn_DrawsTheSharedButtonChromeAndMotion()
         {
             var view = new RoundActionUnityView();
             var invocation = new TypedInvocationViewModel(
@@ -195,11 +195,15 @@ namespace GuardsDigital.Tests.EditMode
             view.Render(model);
 
             var control = Descendants(view.Root).Single(element => element.name == "gd-end-turn-control");
+            AssertSharedCornerChrome(control);
             AssertScaleMotionIsWired(control, "END TURN");
+            var shine = control.Q("gd-end-turn-shine");
+            Assert.That(shine, Is.Not.Null, "The sole remaining action keeps its cue.");
+            Assert.That(shine.pickingMode, Is.EqualTo(PickingMode.Ignore));
         }
 
         [Test]
-        public void SeatUndo_DrawsWithScaleMotionOnTopOfItsOwnBannerCloth()
+        public void SeatUndo_DrawsTheSharedButtonChromeAndMotion()
         {
             var view = new RoundActionUnityView();
             var model = new RoundActionViewModel(
@@ -211,7 +215,39 @@ namespace GuardsDigital.Tests.EditMode
             view.Render(model);
 
             var control = Descendants(view.Root).Single(element => element.name == "gd-seat-undo-control");
+            AssertSharedCornerChrome(control);
             AssertScaleMotionIsWired(control, "the seat's own UNDO");
+        }
+
+        [Test]
+        public void DisabledEndTurn_KeepsTheSharedChromeAndItsReason()
+        {
+            var view = new RoundActionUnityView();
+            view.Render(new RoundActionViewModel(
+                1, 1, 1, RoundResolutionPhase.ResolvingTurn, string.Empty,
+                Array.Empty<TypedInvocationViewModel>(), null, null,
+                Array.Empty<TypedInvocationViewModel>(), Array.Empty<TypedInvocationViewModel>(),
+                endTurnUnavailableReason: "Finish the pending choice first."));
+
+            var control = view.EndTurnRoot.Q<Button>("gd-end-turn-control");
+            Assert.That(control, Is.Not.Null);
+            AssertSharedCornerChrome(control);
+            Assert.That(control.enabledSelf, Is.False);
+            Assert.That(control.tooltip, Is.EqualTo("Finish the pending choice first."));
+            Assert.That(control.style.opacity.value, Is.EqualTo(0.45f).Within(0.0001f));
+            Assert.That(control.Q("gd-end-turn-shine"), Is.Null);
+            AssertScaleMotionIsWired(control, "disabled END TURN");
+        }
+
+        private static void AssertSharedCornerChrome(VisualElement control)
+        {
+            Assert.That(control.style.backgroundColor.value, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
+            Assert.That(control.style.borderTopColor.value, Is.EqualTo(MatchHudTheme.ButtonBorder));
+            Assert.That(control.style.borderTopLeftRadius.value.value,
+                Is.EqualTo(MatchHudTheme.ButtonCornerRadius));
+            Assert.That(control.style.color.value, Is.EqualTo(MatchHudTheme.PrimaryText));
+            Assert.That(control.Q("gd-banner-cloth"), Is.Null,
+                "Old custom paint must not cover the shared button chrome.");
         }
 
         [Test]

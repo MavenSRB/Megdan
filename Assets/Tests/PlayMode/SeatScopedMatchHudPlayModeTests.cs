@@ -808,9 +808,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 drawn.Overlaps(root.Hud.BlueTieBreakerRailBannerRect), Is.False,
                 "The Blue rail's own TIEBREAKER banner keeps a clear gap from End Turn.");
-            Assert.That(Named(control, "gd-end-turn-label").style.left.value.value, Is.Zero,
-                "End Turn's visible label spans the complete rectangle rather than reserving " +
-                "swallowtail notches.");
+            Assert.That(control.resolvedStyle.unityTextAlign, Is.EqualTo(TextAnchor.MiddleCenter),
+                "The shared button centres its own label without an overpainted banner label.");
+            Assert.That(control.resolvedStyle.backgroundColor,
+                Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
+            Assert.That(control.Q("gd-banner-cloth"), Is.Null);
             var narrationBar = Named(root.Hud.RootElement, "gd-narration");
             var topBar = Named(root.Hud.RootElement, "gd-topbar");
             Assert.That(narrationBar.resolvedStyle.backgroundColor,
@@ -843,7 +845,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             if (!UnityEngine.Application.isBatchMode)
             {
-                yield return Capture("tmp/milestone-8-30l3-topbar-2560x1440.png");
+                yield return Capture("tmp/8-35z80-topbar-2560x1440.png");
             }
 
             UiPlayer.SetPlayerViewport(2048, 1152, "8.30l top-bar validated desktop viewport");
@@ -866,7 +868,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             if (!UnityEngine.Application.isBatchMode)
             {
-                yield return Capture("tmp/milestone-8-30l3-topbar-2048x1152.png");
+                yield return Capture("tmp/8-35z80-topbar-2048x1152.png");
             }
 
             // And pressing it ends the turn, through the seat own client. Milestone 8.35v (the
@@ -893,6 +895,57 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.SetPlayerViewport(
                 restoreWidth, restoreHeight, "8.30l restore prior viewport");
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SeatScene_SharedUndoButtonRewindsThroughThePlayerControl()
+        {
+            UiPlayer.EnsurePlayerViewport();
+            yield return LoadSeatSceneForATurnItMayEnd();
+            var root = Root();
+            var runtime = root.Runtime;
+            var host = runtime.Host;
+            yield return DriveUntilTheComposedSeatMayEndItsTurn(root);
+            var client = new SeatMatchClient(host.ClientForSeat(runtime.Seat.Id));
+            // Prepare one actual Movement. Repeated Hold commands create no rewindable action.
+            var movement = runtime.AvailableTurnActions.First(offer =>
+                runtime.Definitions.Single(definition => definition.Reference.Equals(offer.SourceDefinitionReference))
+                    .ActionDefinitions.Single(action => action.Id.Equals(offer.ActionDefinitionId)).Kind ==
+                GuardsDigital.Core.Cards.ActionKind.Movement);
+            var start = host.ProjectionForSeat(runtime.Seat.Id).AuthorizedCommands.First(command =>
+                command.Kind == DirectorCommandKind.StartAction &&
+                command.ActionDefinitionId.Equals(movement.ActionDefinitionId));
+            Assert.That(client.Submit(start).Accepted, Is.True);
+            var destination = host.ProjectionForSeat(runtime.Seat.Id).AuthorizedCommands.First(command =>
+                command.Kind == DirectorCommandKind.ChooseMovementDestination);
+            Assert.That(client.Submit(destination).Accepted, Is.True);
+            var stop = host.ProjectionForSeat(runtime.Seat.Id).AuthorizedCommands.FirstOrDefault(command =>
+                command.Kind == DirectorCommandKind.StopMovement);
+            if (stop != null) Assert.That(client.Submit(stop).Accepted, Is.True);
+            runtime.RefreshAll();
+            Assert.That(runtime.RoundView.Model.SeatUndoAvailable, Is.True);
+            yield return null;
+            yield return null;
+
+            var control = (Button)Named(root.Hud.RootElement, "gd-seat-undo-control");
+            Assert.That(UiPlayer.IsShown(control), Is.True);
+            Assert.That(control.enabledInHierarchy, Is.True);
+            Assert.That(control.resolvedStyle.backgroundColor, Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
+            Assert.That(control.resolvedStyle.borderTopLeftRadius, Is.EqualTo(MatchHudTheme.ButtonCornerRadius));
+            Assert.That(control.Q("gd-banner-cloth"), Is.Null);
+            Assert.That(control.tooltip, Is.EqualTo(RoundActionUnityView.SeatUndoTooltip));
+            if (!UnityEngine.Application.isBatchMode)
+                yield return Capture("tmp/8-35z80-seat-undo.png");
+
+            var version = host.Version;
+            var commandCount = host.Projection.AcceptedCommands.Count;
+            UiPlayer.Click(control);
+            yield return null;
+            yield return null;
+            Assert.That(host.Version, Is.GreaterThan(version));
+            Assert.That(host.Projection.AcceptedCommands.Count, Is.LessThan(commandCount),
+                "The visible control must reach the host's retained-prefix rewind, not just animate.");
+            Assert.That(control.panel, Is.Null, "Recomposition detaches the stale control.");
         }
 
         /// <summary>

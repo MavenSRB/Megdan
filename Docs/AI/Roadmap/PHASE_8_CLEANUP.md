@@ -91,11 +91,15 @@ Acceptance checks:
 
 Non-goals: no stronger AI tier, public distribution, relay/service changes, or claim that local smoke completes the human internet gate.
 
-### [ ] 8.35z80 Apply the current treatment to END TURN and UNDO
+### [x] 8.35z80 Apply the current treatment to END TURN and UNDO
 
 Observable outcome: both controls use the same current button system as other updated controls, preserving their established commands, disabled states, and layout.
 
 Acceptance checks: reproduce the treatment discrepancy with focused view assertions; verify both enabled and disabled styles and actual invocation; inspect the controls in the final built player. No change to turn release or Undo authority.
+
+Implementation/input/render checks are complete; the final-player repeat remains part of 8.35z69's combined build gate.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z80-apply-the-current-treatment-to-end-turn-and-undo-completion-evidence).
 
 ### [ ] 8.35z81 Import real artwork for the newly playable heroes
 

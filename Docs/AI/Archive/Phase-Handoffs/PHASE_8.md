@@ -1343,3 +1343,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z68 | Six continuation-restore branches share one local backend composition while branch-specific restoration and persistence contracts stay unchanged. | `milestone/8.35z68` |
 
+## Milestone 8.35z80 Apply the current treatment to END TURN and UNDO completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z80 | END TURN/seat UNDO use shared button chrome, preserve authorization/layout, and pass real-input/render checks; final-player repeat belongs to 8.35z69. | `milestone/8.35z80` |
+

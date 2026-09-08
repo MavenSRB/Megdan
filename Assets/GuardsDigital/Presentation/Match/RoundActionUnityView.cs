@@ -307,7 +307,7 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement SeatUndoRoot => seatUndoHost;
 
         /// <summary>
-        /// Whether the drawn End Turn banner is in its full-shine state - ending the turn is the
+        /// Whether the drawn End Turn control carries its sole-action outline - ending the turn is the
         /// only offer left. Milestone 8.30d, exposed as a fact a test can read rather than a colour
         /// only a screenshot carries; false whenever the control is hidden.
         /// </summary>
@@ -1678,21 +1678,10 @@ namespace GuardsDigital.Presentation.Match
             }
 
             seatUndoHost.style.display = DisplayStyle.Flex;
-            var control = new PewterBanner(
-                RequestSeatUndo, false,
-                SeatUndoGlyphFontSize, "gd-seat-undo-label", rectangular: true)
-            {
-                name = "gd-seat-undo-control",
-                text = SeatUndoGlyph
-            };
-            control.SetVisibleLabel(SeatUndoGlyph);
+            var control = CreateCornerControl(
+                SeatUndoGlyph, RequestSeatUndo, "gd-seat-undo-control",
+                ConfiguredMatchHudRenderer.SeatUndoControlSide, SeatUndoGlyphFontSize);
             control.tooltip = SeatUndoTooltip;
-            control.style.minHeight = ConfiguredMatchHudRenderer.SeatUndoControlSide;
-            control.style.fontSize = SeatUndoGlyphFontSize;
-            control.style.unityFontStyleAndWeight = FontStyle.Bold;
-            control.style.unityTextAlign = TextAnchor.MiddleCenter;
-            control.style.flexGrow = 1f;
-            control.style.flexShrink = 0f;
             seatUndoHost.Add(control);
         }
 
@@ -1729,21 +1718,10 @@ namespace GuardsDigital.Presentation.Match
             if (unavailableReason != null)
             {
                 EndTurnShinesFully = false;
-                var disabled = new PewterBanner(
-                    RequestEndTurn, false,
-                    EndTurnControlFontSize, "gd-end-turn-label", rectangular: true)
-                {
-                    name = "gd-end-turn-control",
-                    text = "END TURN",
-                    tooltip = unavailableReason
-                };
-                disabled.SetVisibleLabel("END TURN");
-                disabled.style.minHeight = ConfiguredMatchHudRenderer.EndTurnControlHeight;
-                disabled.style.fontSize = EndTurnControlFontSize;
-                disabled.style.unityFontStyleAndWeight = FontStyle.Bold;
-                disabled.style.unityTextAlign = TextAnchor.MiddleCenter;
-                disabled.style.flexGrow = 1f;
-                disabled.style.flexShrink = 0f;
+                var disabled = CreateCornerControl(
+                    "END TURN", RequestEndTurn, "gd-end-turn-control",
+                    ConfiguredMatchHudRenderer.EndTurnControlHeight, EndTurnControlFontSize);
+                disabled.tooltip = unavailableReason;
                 HudElements.MarkUnavailable(disabled);
                 endTurnHost.Add(disabled);
                 return;
@@ -1766,21 +1744,42 @@ namespace GuardsDigital.Presentation.Match
 
             EndTurnShinesFully = onlyOfferLeft;
             var label = invocation?.Label ?? "END TURN";
-            var control = new PewterBanner(
-                RequestEndTurn, onlyOfferLeft,
-                EndTurnControlFontSize, "gd-end-turn-label", rectangular: true)
+            var control = CreateCornerControl(
+                label, RequestEndTurn, "gd-end-turn-control",
+                ConfiguredMatchHudRenderer.EndTurnControlHeight, EndTurnControlFontSize);
+            if (onlyOfferLeft)
             {
-                name = "gd-end-turn-control",
-                text = label
-            };
-            control.SetVisibleLabel(label);
-            control.style.minHeight = ConfiguredMatchHudRenderer.EndTurnControlHeight;
-            control.style.fontSize = EndTurnControlFontSize;
+                // Keep the existing sole-action cue outside the shared chrome, never over its face.
+                var shine = new VisualElement
+                {
+                    name = "gd-end-turn-shine",
+                    pickingMode = PickingMode.Ignore,
+                    focusable = false
+                };
+                shine.style.position = Position.Absolute;
+                shine.style.left = -3f;
+                shine.style.right = -3f;
+                shine.style.top = -3f;
+                shine.style.bottom = -3f;
+                HudElements.Border(shine, MatchHudTheme.ShineGlow, 3f,
+                    MatchHudTheme.ButtonCornerRadius + 3f);
+                control.Add(shine);
+            }
+            endTurnHost.Add(control);
+        }
+
+        private static Button CreateCornerControl(
+            string label, Action selected, string name, float height, float fontSize)
+        {
+            var control = HudElements.Control(label, selected, height);
+            control.name = name;
+            control.style.fontSize = fontSize;
             control.style.unityFontStyleAndWeight = FontStyle.Bold;
             control.style.unityTextAlign = TextAnchor.MiddleCenter;
+            control.style.whiteSpace = WhiteSpace.NoWrap;
             control.style.flexGrow = 1f;
-            control.style.flexShrink = 0f;
-            endTurnHost.Add(control);
+            control.style.overflow = Overflow.Visible;
+            return control;
         }
 
         /// <summary>
