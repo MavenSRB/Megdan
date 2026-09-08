@@ -137,13 +137,15 @@ Dependency: 8.35z82. Closing checks: expand the existing typed-slot resource tes
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z83-complete-prepared-card-highlights-across-the-configured-roster-completion-evidence).
 
-### [~] 8.35z84 Make aura tint transparent and order token rings adaptively
+### [x] 8.35z84 Make aura tint transparent and order token rings adaptively
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z84-make-aura-tint-transparent-and-order-token-rings-adaptively-completion-evidence).
 
 Outcome: purple radius tint leaves board artwork/hex markings visible. Per the user's final correction, with an active effect the radial order is token, purple aura ring, active-turn ring. Without purple ring the active-turn ring sits directly beside the token. The user's two supplied photos are visual defect/reference evidence, not game-rule authority.
 
 Dependency: 8.35z83. Closing checks: focused render/material regression fails for opaque tint and old ring order, passes for transparent board tint and both ring-presence cases; validate refresh/movement/Undo/rebuild and actual changed output. Preserve authoritative affected cells, effect lifetime, team identity, selection/picking and all rules. No new aura effects or general board redesign. T2; final exact-player repeat at 8.35z85.
 
-### [ ] 8.35z85 Connect lobby bots to the existing smarter policy and package
+### [~] 8.35z85 Connect lobby bots to the existing smarter policy and package
 
 Outcome: FILL WITH BOTS consumes the existing Tier-2 decision policy instead of the old greedy baseline, with bounded host work and unchanged authorized owner projection/privacy. Use supported information only; absence of safe lookahead retains Tier-2's existing static judgment, never leaks hidden cards or grants host-state access. This integrates existing AI, not the separately parked stronger-policy research at 8.35z78.
 

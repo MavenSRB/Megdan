@@ -12,7 +12,7 @@ namespace GuardsDigital.Presentation.Board
     /// should higlight the effect target ... If tigerclaw has effect of his silver he should have
     /// pruple higlight."</para>
     ///
-    /// <para><b>Deliberately the same shape as <see cref="Match.ActingHeroMarker"/>, one ring wider.</b>
+    /// <para><b>The inner companion to <see cref="Match.ActingHeroMarker"/>.</b>
     /// That marker already answers "who is acting" with a gold annulus drawn as light above the board,
     /// and the two facts are orthogonal - a hero can be acting AND carrying an effect, and the FOURTH
     /// amendment's gold must not be displaced by an ongoing condition. So this is a second annulus at
@@ -38,15 +38,13 @@ namespace GuardsDigital.Presentation.Board
         public const string MarkerObjectName = "Active Effect Hero Marker";
         public const int Subdivisions = 48;
 
-        /// <summary>Thinner than the acting ring's 0.22, because it is the outer of the two.</summary>
+        /// <summary>A narrow band immediately beside the token.</summary>
         public const float RingWidthRatio = 0.15f;
 
         /// <summary>
-        /// Outside <c>ActingHeroMarker.RadiusMargin</c> (1.18) by more than that ring's own width, so
-        /// a hero who is both acting and carrying an effect wears two separate rings rather than one
-        /// muddied band.
+        /// Beside the token; the acting marker expands outside this band while an effect is present.
         /// </summary>
-        public const float RadiusMargin = 1.46f;
+        public const float RadiusMargin = 1.18f;
 
         /// <summary>
         /// Under the acting ring's own 0.05 clearance, so where both are drawn the gold stays the

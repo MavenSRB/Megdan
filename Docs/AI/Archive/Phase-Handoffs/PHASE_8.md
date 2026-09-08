@@ -1373,3 +1373,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z83 | All configured shine slots are prepared; primary replacement tabs follow per-card title geometry, with eleven-hero visual checks. Final player/package repeat follows at 8.35z85. | `milestone/8.35z83` |
 
+## Milestone 8.35z84 Make aura tint transparent and order token rings adaptively completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z84 | Aura uses the shipped transparent variant; activity expands outside an effect ring and contracts when it ends. Focused and rendered-state checks pass; exact-player repeat follows at 8.35z85. | `milestone/8.35z84` |
+

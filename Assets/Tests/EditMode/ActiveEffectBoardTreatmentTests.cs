@@ -184,24 +184,56 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The violet ring is drawn OUTSIDE the acting-hero gold and below it, so a hero who is both
+        /// The violet ring is drawn INSIDE the acting-hero gold and below it, so a hero who is both
         /// being waited on and carrying an effect wears two separate rings rather than one band that
         /// hides the other. Nothing here animates: the acting gold keeps its conductor, and a static
         /// tint needs none.
         /// </summary>
         [Test]
-        public void TheEffectRingClearsTheActingHeroRingInBothRadiusAndHeight()
+        public void TheActingRingMovesOutsideAnEffectAndReturnsBesideTheTokenWhenItEnds()
         {
-            Assert.That(ActiveEffectHeroMarker.RadiusMargin,
-                Is.GreaterThan(ActingHeroMarker.RadiusMargin),
-                "The violet ring is the outer of the two.");
+            var tile = Tile(new HexCoordinate(0, 0));
+            var hero = Hero(Carrier, tile.Coordinate);
+            Build(new[] { tile }, new[] { hero });
+            var heroes = new[] { hero.Occupancy };
+            view.Render(Model(heroes, new[] { Carrier }, Array.Empty<HexCoordinate>(), focused: Carrier));
+            var acting = view.ActingHeroMarker;
             Assert.That(
-                ActiveEffectHeroMarker.RadiusMargin * (1f - ActiveEffectHeroMarker.RingWidthRatio),
-                Is.GreaterThan(ActingHeroMarker.RadiusMargin),
-                "and its inner edge clears the gold ring's outer edge, so neither band overlaps.");
+                acting.VisibleRadius * (1f - ActingHeroMarker.RingWidthRatio),
+                Is.GreaterThan(hero.ActiveEffectMarker.VisibleRadius),
+                "Token, violet aura, then gold activity; neither band overlaps.");
+            Assert.That(hero.ActiveEffectMarker.VisibleRadius / hero.SelectionRadius,
+                Is.EqualTo(1.18f).Within(0.0001f), "The effect hugs the token.");
             Assert.That(ActiveEffectHeroMarker.SurfaceOffset,
-                Is.LessThan(ActingHeroMarker.SurfaceOffset),
-                "with the gold the upper of the two where both are drawn.");
+                Is.LessThan(ActingHeroMarker.SurfaceOffset));
+            view.Render(Model(heroes, Array.Empty<HeroId>(), Array.Empty<HexCoordinate>(), focused: Carrier));
+            Assert.That(view.ActingHeroMarker, Is.SameAs(acting));
+            Assert.That(acting.VisibleRadius / hero.SelectionRadius,
+                Is.EqualTo(ActingHeroMarker.RadiusMargin).Within(0.0001f));
+            Assert.That(hero.HasActiveEffectMark, Is.False);
+            view.Render(Model(heroes, new[] { Carrier }, Array.Empty<HexCoordinate>(), focused: Carrier));
+            Assert.That(acting.VisibleRadius * (1f - ActingHeroMarker.RingWidthRatio),
+                Is.GreaterThan(hero.ActiveEffectMarker.VisibleRadius));
+            Assert.That(acting.OwnedNativeResourceCount, Is.EqualTo(2));
+            view.Render(Model(heroes, new[] { Carrier }, Array.Empty<HexCoordinate>()));
+            Assert.That(acting.IsVisible, Is.False);
+            Assert.That(hero.HasActiveEffectMark, Is.True);
+        }
+
+        [Test]
+        public void TheAuraUsesTheShippedTransparentVariantWithoutChangingItsKeywords()
+        {
+            var tile = Tile(new HexCoordinate(0, 0));
+            Build(new[] { tile }, Array.Empty<PrimitiveHeroView>());
+            view.Render(Model(Array.Empty<HeroOccupancy>(), Array.Empty<HeroId>(), new[] { tile.Coordinate }));
+            var material = view.ActiveEffectAuraMaterial;
+            var template = Resources.Load<Material>(BoardOverlayMaterial.UnlitOverlayTemplateResourcePath);
+            Assert.That(material.shader, Is.SameAs(template.shader),
+                "Use the shipped Unlit alpha blend, not Lit's specular-preserving premultiplied variant.");
+            Assert.That(material.shaderKeywords, Is.EquivalentTo(template.shaderKeywords));
+            Assert.That(material.GetInt("_SrcBlend"), Is.EqualTo((int)UnityEngine.Rendering.BlendMode.SrcAlpha));
+            Assert.That(material.GetInt("_DstBlend"), Is.EqualTo((int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha));
+            Assert.That(material.GetInt("_ZWrite"), Is.Zero);
         }
 
         /// <summary>
@@ -503,7 +535,7 @@ namespace GuardsDigital.Tests.EditMode
             IEnumerable<HeroOccupancy> heroes,
             IEnumerable<HeroId> markedHeroes,
             IEnumerable<HexCoordinate> auraSpaces,
-            long version = 1) =>
+            long version = 1, HeroId focused = default) =>
             new BoardInteractionViewModel(
                 version,
                 heroes,
@@ -511,7 +543,7 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<HexCoordinate>(),
                 Array.Empty<HeroId>(),
                 Array.Empty<MinionId>(),
-                default,
+                focused,
                 activeEffects: new ActiveEffectVisibilityModel(markedHeroes, auraSpaces));
     }
 }

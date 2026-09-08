@@ -177,7 +177,10 @@ namespace GuardsDigital.Presentation.Match
         private Material EnsureActiveEffectAuraMaterial() =>
             activeEffectAuraMaterial != null
                 ? activeEffectAuraMaterial
-                : activeEffectAuraMaterial = BoardOverlayMaterial.Create(
+                // Lit's shipped template preserves specular via premultiplication; changing its
+                // keywords at runtime can select a stripped variant in a player. This Unlit
+                // template already ships the exact alpha-blended variant the tint uses.
+                : activeEffectAuraMaterial = BoardOverlayMaterial.CreateUnlitBlended(
                     ActiveEffectAuraMaterialName,
                     BoardOverlayMaterial.AtOverlayAlpha(MatchHudTheme.ActiveEffectAccent));
 
@@ -350,7 +353,7 @@ namespace GuardsDigital.Presentation.Match
                 hero.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
 
                 // Milestone 8.35z63: the tray's own Active violet, on the piece the effect is
-                // standing on. It is a separate, wider annulus from the acting-hero gold below, so a
+                // standing on. It is a separate, inner annulus beside the token, so a
                 // hero who is both being waited on and carrying an effect wears both marks at once.
                 hero.SetActiveEffectMark(
                     activeEffectHeroes.Contains(occupancy.HeroId),
@@ -620,7 +623,8 @@ namespace GuardsDigital.Presentation.Match
                 actingHeroMarker = ActingHeroMarker.Create();
             }
 
-            actingHeroMarker.SetVisible(actingHero.transform.position, actingHero.SelectionRadius);
+            actingHeroMarker.SetVisible(actingHero.transform.position, actingHero.SelectionRadius,
+                actingHero.HasActiveEffectMark);
         }
 
         private void ApplyHoveredHero()

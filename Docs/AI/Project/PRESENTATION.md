@@ -4,6 +4,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Presentation direction
 
+- Active-effect ring order is token, violet effect ring, then gold activity ring. Without an effect, activity contracts beside the token. The radius tint uses the shipped Unlit alpha-blended template unchanged, at the shared overlay alpha, so board markings remain visible in built players as well as the Editor.
 - The Unity scene is 3D from the beginning, with the board on the XZ plane.
 - Early implementation uses primitive meshes and a fixed camera.
 - URP 17.5 is the accepted rendering baseline: one checked-in pipeline is active globally and at all six quality levels, and retained primitive authored/runtime materials use URP Lit or URP Unlit. Built-In-only shaders, production art direction, final lighting, and post-processing remain outside the retained baseline.

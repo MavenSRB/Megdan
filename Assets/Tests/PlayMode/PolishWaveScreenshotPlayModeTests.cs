@@ -115,6 +115,29 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator AuraAndActivity_RenderAndRestoreTheConfiguredBoard()
+        {
+            yield return LoadTheMatch();
+            var root = Root();
+            var original = root.Runtime.BoardView.Model;
+            var probeObject = new GameObject("Aura visual probe");
+            probeObject.SetActive(false); // Do not run the driver's command-line Start/exit coroutine.
+            var probe = probeObject.AddComponent<BoardVisualCaptureDriver>();
+            try
+            {
+                probe.Configure(root, Path.GetFullPath("tmp/8-35z84-aura.png"),
+                    Object.FindAnyObjectByType<Camera>(),
+                    Object.FindAnyObjectByType<GuardsDigital.Presentation.Board.PlaceholderTestGridView>());
+                probe.CaptureAuraInspection();
+                Assert.That(root.Runtime.BoardView.Model, Is.SameAs(original));
+                foreach (var state in new[] { "none", "aura", "aura-active", "active" })
+                    Assert.That(new FileInfo("tmp/8-35z84-aura-" + state + ".png").Length, Is.GreaterThan(1000));
+            }
+            finally { Object.Destroy(probeObject); }
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator PreparedHighlightsAndBanners_AreVisibleAcrossEveryHero()
         {
             if (!Directory.Exists(Path.Combine(UnityEngine.Application.dataPath, "Resources", "Private", "Cards")))

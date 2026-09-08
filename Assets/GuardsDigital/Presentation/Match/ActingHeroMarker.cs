@@ -40,6 +40,8 @@ namespace GuardsDigital.Presentation.Match
         public const int Subdivisions = 48;
         public const float RingWidthRatio = 0.22f;
         public const float RadiusMargin = 1.18f;
+        // Its inner edge (1.54 * 0.78) clears the effect ring's outer edge (1.18).
+        public const float EffectRadiusMargin = 1.54f;
         public const float SurfaceOffset = 0.05f;
 
         private Mesh ownedMesh;
@@ -74,7 +76,7 @@ namespace GuardsDigital.Presentation.Match
         /// current occupancy every call, so restore, replay, Undo, and an ordinary move all redraw it
         /// with no state of the marker's own.
         /// </summary>
-        public void SetVisible(Vector3 worldPosition, float pieceRadius)
+        public void SetVisible(Vector3 worldPosition, float pieceRadius, bool hasActiveEffect = false)
         {
             EnsureResources();
             if (pieceRadius <= 0f || float.IsNaN(pieceRadius) || float.IsInfinity(pieceRadius))
@@ -89,7 +91,7 @@ namespace GuardsDigital.Presentation.Match
             transform.rotation = Quaternion.FromToRotation(
                 Vector3.forward, BoardChoiceCue.ScreenUpInWorld);
             transform.localScale = Vector3.one;
-            var radius = pieceRadius * RadiusMargin;
+            var radius = pieceRadius * (hasActiveEffect ? EffectRadiusMargin : RadiusMargin);
             if (!Mathf.Approximately(radius, builtRadius))
             {
                 BuildRing(radius);

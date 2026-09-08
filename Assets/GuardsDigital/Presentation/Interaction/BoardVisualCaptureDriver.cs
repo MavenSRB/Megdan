@@ -2,6 +2,10 @@ using System;
 using System.Collections;
 using System.Globalization;
 using System.IO;
+using System.Linq;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Presentation.Match;
 using UnityEngine;
 
 namespace GuardsDigital.Presentation.Interaction
@@ -126,6 +130,8 @@ namespace GuardsDigital.Presentation.Interaction
                     " height=" + captured.height.ToString(CultureInfo.InvariantCulture) +
                     " bytes=" + png.Length.ToString(CultureInfo.InvariantCulture));
                 Log("BOARD artwork=" + (BoardHasArtwork() ? "true" : "false"));
+                if (Environment.GetCommandLineArgs().Contains("-guardsAuraInspection"))
+                    CaptureAuraInspection();
             }
             catch (Exception exception)
             {
@@ -181,6 +187,51 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             return texture;
+        }
+
+        /// <summary>
+        /// Explicit visual-probe states, shared by the Editor check and opt-in built-player capture.
+        /// Only the passive view is staged; no rule/session state or normal play is changed.
+        /// </summary>
+        public void CaptureAuraInspection()
+        {
+            var view = compositionRoot.Runtime.BoardView;
+            var original = view.Model;
+            var hero = original.Heroes.First();
+            var piece = view.HeroViews.Single(value => value.Occupancy.HeroId.Equals(hero.HeroId));
+            var spaces = hero.Coordinate.GetNeighbors().Concat(new[] { hero.Coordinate })
+                .Where(space => view.TileViews.Any(tile => tile.Coordinate.Equals(space))).ToArray();
+            try
+            {
+                foreach (var state in new[] { "none", "aura", "aura-active", "active" })
+                {
+                    var effect = state.Contains("aura");
+                    var active = state.Contains("active");
+                    view.Render(new BoardInteractionViewModel(original.Version, original.Heroes,
+                        original.Minions, Array.Empty<HexCoordinate>(), Array.Empty<HeroId>(),
+                        Array.Empty<Core.Setup.MinionId>(), active ? hero.HeroId : default,
+                        placedTokens: original.PlacedTokens,
+                        activeEffects: new ActiveEffectVisibilityModel(
+                            effect ? new[] { hero.HeroId } : Array.Empty<HeroId>(),
+                            effect ? spaces : Array.Empty<HexCoordinate>())));
+                    if (piece.HasActiveEffectMark != effect ||
+                        (view.ActingHeroMarker != null && view.ActingHeroMarker.IsVisible) != active)
+                        throw new InvalidOperationException("Aura inspection state did not render: " + state);
+                    if (active && effect && view.ActingHeroMarker.VisibleRadius *
+                        (1f - ActingHeroMarker.RingWidthRatio) <= piece.ActiveEffectMarker.VisibleRadius)
+                        throw new InvalidOperationException("The active ring overlaps or sits inside the aura.");
+                    Texture2D frame = null;
+                    try
+                    {
+                        frame = RenderBoardCamera();
+                        File.WriteAllBytes(Path.ChangeExtension(outputPath, null) + "-" + state + ".png",
+                            frame.EncodeToPNG());
+                    }
+                    finally { if (frame != null) Destroy(frame); }
+                    Log("AURA " + state);
+                }
+            }
+            finally { view.Render(original); }
         }
 
         /// <summary>
