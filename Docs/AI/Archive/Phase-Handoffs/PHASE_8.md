@@ -1367,3 +1367,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z82 | Board and rail consume existing neutral artwork; rebuilt-player Whisper picker/hand/token checks and local Play/Host ZIP verification pass. | `milestone/8.35z82` |
 
+## Milestone 8.35z83 Complete prepared card highlights across the configured roster completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z83 | All configured shine slots are prepared; primary replacement tabs follow per-card title geometry, with eleven-hero visual checks. Final player/package repeat follows at 8.35z85. | `milestone/8.35z83` |
+

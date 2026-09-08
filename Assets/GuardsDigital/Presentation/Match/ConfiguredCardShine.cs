@@ -132,6 +132,17 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
+        /// <summary>Offline-measured print geometry; missing private data keeps the generic fallback.</summary>
+        public static bool TryGetPrimaryTitleTop(CardDefinitionReference reference, out float sourceY)
+        {
+            sourceY = 0f;
+            if (!TryGetResourcePath(reference, CardShineSlot.Primary, out var path)) return false;
+            var asset = Resources.Load<TextAsset>(path + "-title");
+            return asset != null && float.TryParse(asset.text.Trim(),
+                System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture,
+                out sourceY) && sourceY >= 260f && sourceY <= 450f;
+        }
+
         private static void ReportOnce(string key, string message)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD

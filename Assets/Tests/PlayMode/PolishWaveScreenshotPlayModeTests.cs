@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
@@ -110,6 +112,79 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(root, Is.Not.Null);
             Assert.That(root.Runtime, Is.Not.Null);
             return root;
+        }
+
+        [UnityTest]
+        public IEnumerator PreparedHighlightsAndBanners_AreVisibleAcrossEveryHero()
+        {
+            if (!Directory.Exists(Path.Combine(UnityEngine.Application.dataPath, "Resources", "Private", "Cards")))
+                yield break;
+            yield return LoadTheMatch();
+            var definitions = WaspCardContent.DealtDefinitions.Concat(XargathaCardContent.DealtDefinitions)
+                .Concat(TigerclawCardContent.DealtDefinitions).Concat(ArienCardContent.DealtDefinitions)
+                .Concat(BroganCardContent.DealtDefinitions).Concat(SabinaCardContent.DealtDefinitions)
+                .Concat(DodgerCardContent.DealtDefinitions).Concat(MisaCardContent.DealtDefinitions)
+                .Concat(SilverarrowCardContent.DealtDefinitions).Concat(UrsafarCardContent.DealtDefinitions)
+                .Concat(WhisperCardContent.DealtDefinitions).ToDictionary(card => card.Reference);
+            var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+            foreach (var hero in ConfiguredCardArtworkCatalog.Catalog.Entries.GroupBy(entry => entry.ContentSetId))
+            {
+                var cards = hero.Select(entry => definitions[entry.Reference]).Where(card => card.UltimateRule == null).ToArray();
+                var attack = cards.FirstOrDefault(card => card.ActionDefinitions.Any(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary && action.Kind == ActionKind.Attack));
+                var move = cards.First(card => card.ActionDefinitions.Any(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedSecondary && action.Kind == ActionKind.Movement));
+                var defense = cards.First(card => card.ActionDefinitions.Any(action =>
+                    action.BaseValues.Any(value => value.Channel == PrintedValueChannel.Defense)));
+                var primary = cards.FirstOrDefault(card => card.ActionDefinitions.Any(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary && action.Kind == ActionKind.Movement)) ??
+                    cards.First(card => card.ActionDefinitions.Any(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary));
+                var gallery = new VisualElement { style = { position = Position.Absolute, left = 340f,
+                    top = 180f, flexDirection = FlexDirection.Row, backgroundColor = MatchHudTheme.TopBarBackground } };
+                Root().Hud.RootElement.Add(gallery);
+                try
+                {
+                    var samples = new[] {
+                        (Card: attack ?? primary, Slot: CardShineSlot.PrimaryRing, Context: ActionInvocationContext.PrintedPrimary, Banner: attack != null ? "CLEAR" : ""),
+                        (Card: move, Slot: CardShineSlot.SecondaryMovement, Context: ActionInvocationContext.PrintedSecondary, Banner: "FAST TRAVEL"),
+                        (Card: defense, Slot: CardShineSlot.SecondaryDefense, Context: ActionInvocationContext.PrintedSecondary, Banner: ""),
+                        (Card: primary, Slot: CardShineSlot.PrimaryRing, Context: ActionInvocationContext.PrintedPrimary, Banner: primary.ActionDefinitions.Any(a => a.Origin == ActionDefinitionOrigin.PrintedPrimary && a.Kind == ActionKind.Movement) ? "FAST TRAVEL" : "")
+                    };
+                    foreach (var sample in samples)
+                    {
+                        var column = new VisualElement { style = { width = CardFootprint.Width + 20f, flexShrink = 0f } };
+                        column.Add(new Label(hero.Key + " / " + sample.Slot) { style = { color = Color.white } });
+                        var model = CurrentRoundCards.DeckCard(new CardInstanceId("shine-probe-" + sample.Slot + sample.Card.Id.Value), sample.Card);
+                        var face = DirectorHandsUnityView.BuildStandaloneCard(model);
+                        var slot = sample.Slot;
+                        if (slot == CardShineSlot.SecondaryDefense && !sample.Card.ActionDefinitions.Any(a =>
+                                a.Origin != ActionDefinitionOrigin.PrintedPrimary && a.BaseValues.Any(v => v.Channel == PrintedValueChannel.Defense)))
+                            slot = CardShineSlot.Primary;
+                        DirectorHandsUnityView.AddFaceShine(face, model, slot);
+                        Assert.That(face.Q<Image>("gd-card-shine"), Is.Not.Null, sample.Card.Id.Value);
+                        if (sample.Banner.Length > 0)
+                        {
+                            var action = sample.Card.ActionDefinitions.First(a =>
+                                a.Origin == (sample.Context == ActionInvocationContext.PrintedPrimary ? ActionDefinitionOrigin.PrintedPrimary : ActionDefinitionOrigin.PrintedSecondary) &&
+                                a.Kind == (sample.Banner == "CLEAR" ? ActionKind.Attack : ActionKind.Movement));
+                            var region = new PrintedActionRegionViewModel(new ActionOffer(model.CardInstanceId,
+                                sample.Card.Reference, action.Id, new HeroId("visual-probe"), sample.Context, true),
+                                action.Kind, action.Kind.ToString(), 0, 1, sample.Banner, null, cardColor: sample.Card.Progression.Color);
+                            var bounds = (Rect)typeof(DirectorHandsUnityView).GetMethod("PrintedActionBounds", flags)
+                                .Invoke(null, new object[] { region, true });
+                            var banner = (Button)typeof(DirectorHandsUnityView).GetMethod("BuildReplacementChip", flags)
+                                .Invoke(null, new object[] { region, sample.Banner, bounds, (System.Action)(() => { }), true, true });
+                            face.Add(banner);
+                        }
+                        column.Add(face);
+                        gallery.Add(column);
+                    }
+                    yield return null;
+                    yield return null;
+                    yield return UiPlayer.CaptureGameView("8-35z83", hero.Key + "-highlights-banners");
+                }
+                finally { gallery.RemoveFromHierarchy(); }
+            }
         }
 
         [UnityTest]

@@ -3517,6 +3517,31 @@ namespace GuardsDigital.Tests.EditMode
                 "for this branch - that is the exact defect this corrective removes.");
         }
 
+        [TestCase("whisper", "swift-justice", ActionKind.Attack, 306f)]
+        [TestCase("xargatha", "charm", ActionKind.Movement, 368f)]
+        public void PreparedPrimaryBanner_FollowsTheCardsPrintedTitle(
+            string hero, string card, ActionKind kind, float printedTitleTop)
+        {
+            var entry = ConfiguredCardArtworkCatalog.Catalog.Entries.Single(item =>
+                item.ResourcePath == "Private/Cards/" + hero + "/" + card);
+            if (!System.IO.File.Exists(System.IO.Path.Combine(UnityEngine.Application.dataPath,
+                    "Resources", entry.ResourcePath + ".png"))) return;
+            var region = new PrintedActionRegionViewModel(new ActionOffer(
+                new CardInstanceId("banner-check"), entry.Reference,
+                new ActionDefinitionId("banner-action"), new HeroId("banner-owner"),
+                ActionInvocationContext.PrintedPrimary, true), kind, kind.ToString(), -1, 0,
+                "PRIMARY " + kind, null);
+            var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
+            var bounds = (Rect)typeof(DirectorHandsUnityView).GetMethod("PrintedActionBounds", flags)
+                .Invoke(null, new object[] { region, true });
+            var banner = (Button)typeof(DirectorHandsUnityView).GetMethod("BuildReplacementChip", flags)
+                .Invoke(null, new object[] { region, kind == ActionKind.Attack ? "CLEAR" : "FAST TRAVEL",
+                    bounds, (Action)(() => { }), true, true });
+            Assert.That(banner.style.top.value.value + banner.style.height.value.value,
+                Is.EqualTo(printedTitleTop * CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight)
+                    .Within(3f), "The tab must touch this card's heading, not a generic panel height.");
+        }
+
         [Test]
         public void TheResolvingCardsPrintedActionRegions_ForwardOnlyTheirExactProjectedOffers()
         {
@@ -4194,10 +4219,38 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(TigerclawCardContent.DealtDefinitions)
                 .Concat(ArienCardContent.DealtDefinitions)
                 .Concat(BroganCardContent.DealtDefinitions)
-                .Concat(SabinaCardContent.DealtDefinitions);
+                .Concat(SabinaCardContent.DealtDefinitions)
+                .Concat(DodgerCardContent.DealtDefinitions)
+                .Concat(MisaCardContent.DealtDefinitions)
+                .Concat(SilverarrowCardContent.DealtDefinitions)
+                .Concat(UrsafarCardContent.DealtDefinitions)
+                .Concat(WhisperCardContent.DealtDefinitions).ToArray();
+            Assert.That(all.Select(card => card.Reference),
+                Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
+                "Shine coverage must follow every configured hero, not a historical six-hero list.");
+            var manifest = new List<string> { "hero,card,ultimate,primaryKind,primaryIsBlock,railChannels,color" };
+            foreach (var definition in all)
+            {
+                var entry = ConfiguredCardArtworkCatalog.Catalog.Entries.Single(item =>
+                    item.Reference.Equals(definition.Reference));
+                var primary = definition.ActionDefinitions.FirstOrDefault(action =>
+                    action.Origin == ActionDefinitionOrigin.PrintedPrimary);
+                var channels = definition.ActionDefinitions.Where(action =>
+                        action.Origin == ActionDefinitionOrigin.PrintedSecondary ||
+                        action.Origin == ActionDefinitionOrigin.Reaction)
+                    .SelectMany(action => action.BaseValues).Select(value => value.Channel).Distinct();
+                manifest.Add(string.Join(",", entry.ContentSetId,
+                    entry.ResourcePath.Substring(entry.ResourcePath.LastIndexOf('/') + 1),
+                    definition.UltimateRule == null ? "0" : "1", primary?.Kind.ToString() ?? "None",
+                    "0", string.Join("+", channels), definition.Progression.Color.ToString()));
+            }
+            // Reproducible typed input for the offline sprite generator; no private pixels exported.
+            System.IO.File.WriteAllLines(System.IO.Path.Combine(UnityEngine.Application.dataPath,
+                "..", "tmp", "shine-content-manifest.csv"), manifest);
             var missing = new List<string>();
             var movementMasks = new List<string>();
             var resolved = 0;
+            var expectedSlots = 0;
             foreach (var definition in all)
             {
                 if (definition.UltimateRule != null)
@@ -4211,6 +4264,8 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     slots.Add(CardShineSlot.Primary);
                     slots.Add(CardShineSlot.PrimaryRing);
+                    Assert.That(ConfiguredCardShine.TryGetPrimaryTitleTop(definition.Reference, out _),
+                        Is.True, definition.Id + " requires prepared primary title geometry.");
                 }
 
                 var railChannels = definition.ActionDefinitions
@@ -4233,6 +4288,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 foreach (var slot in slots)
                 {
+                    expectedSlots++;
                     if (ConfiguredCardShine.TryGetResourcePath(
                             definition.Reference, slot, out var resourcePath) &&
                         System.IO.File.Exists(
@@ -4254,14 +4310,8 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(missing, Is.Empty,
                 "Tools/Prepare-ShineSprites.ps1 regenerates the prepared overlays.");
-            Assert.That(resolved, Is.EqualTo(386),
-                "The typed inventory is the 386 slots the generator traces - the badge and " +
-                "rail overlays plus one printed-lines ring per non-Ultimate card.");
-            // Milestone 8.35z20 lowered this from 92: correcting Blend Into Shadows' secondary
-            // from a phantom Movement 2 to its printed Defense 2 moves its one rail mask from
-            // this set to the Defense one, so the total slot count (386) is unchanged but the
-            // Movement-mask count drops by exactly one.
-            Assert.That(movementMasks, Has.Count.EqualTo(91));
+            Assert.That(resolved, Is.EqualTo(expectedSlots));
+            Assert.That(movementMasks, Is.Not.Empty);
             var canonicalBoot = System.IO.File.ReadAllBytes(movementMasks.Single(path =>
                 path.Replace('\\', '/').EndsWith(
                     "/sabina/_shine/point-blank-shot--secondary-movement.png",

@@ -14,11 +14,13 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.35z82**.
-- Active authorized milestone: **None**.
-- Next proposed milestone: **8.36**.
+- Current completed milestone: **8.35z83**.
+- Active authorized milestone: **8.35z84**.
+- Next proposed milestone: **8.35z84**.
 
-The user's 2026-09-08 "All yours now" authorized **8.35z64-8.35z68**, **8.35z80-8.35z81**, and **8.35z69**, sequentially with local commits, followed by the explicit **8.35z82** token correction and private ZIP. This bounded sequence is complete. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns outcomes, checks, and the preserved backlog. Other hero/content/feature work is recorded but not authorized. Previously authorized **8.36** remains paused for human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
+The original cleanup through **8.35z82** is complete. The user's subsequent 2026-09-08 reports authorize the bounded follow-up **8.35z83-8.35z85**, sequentially: complete card highlights, transparent aura and adaptive ring order, then connect lobby bots to the existing smarter policy and produce the corrected private ZIP. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns exact outcomes, checks, and the preserved backlog. This does not authorize new AI research or unrelated backlog work. Previously authorized **8.36** remains paused for human participation; its readiness evidence and **8.36a** review remain in [Phase 8](Roadmap/PHASE_8.md).
+
+Card highlights and CLEAR/FAST TRAVEL placement have passed focused resource, Unity and eleven-hero visual checks; exact-player confirmation and packaging follow at 8.35z85. Additional heroes remain on hold. Aura order is token, purple effect ring, active-turn ring; without an effect, the turn ring sits beside the token.
 
 ## Durable boundaries
 

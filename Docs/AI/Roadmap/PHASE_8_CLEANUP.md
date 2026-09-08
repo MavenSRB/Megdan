@@ -125,6 +125,30 @@ Non-goals: no new token art, rule changes, hero content work, public distributio
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z82-restore-neutral-hero-token-artwork-and-package-the-corrected-build-completion-evidence).
 
+## Authorized post-build corrections
+
+The user subsequently approved **8.35z83-8.35z85** on 2026-09-08, in the order below, with separate validation/commits. This is a bounded correction/integration sequence, not authorization for the older queue. Final packaging follows the last correction.
+
+### [x] 8.35z83 Complete prepared card highlights across the configured roster
+
+Outcome: all configured real card fronts have their applicable primary, primary-ring, secondary Movement and Defense shine assets; new heroes no longer silently use circular/box/missing-glow fallback. Also inspect CLEAR and primary/secondary FAST TRAVEL banner placement and alignment across heroes, correcting demonstrated placement defects. Preserve the approved boot silhouette, per-card alignment, old artwork/overlays, typed legality, unavailable/hover/focus behavior, and clean-checkout fallback.
+
+Dependency: 8.35z82. Closing checks: expand the existing typed-slot resource test from six heroes to the actual configured roster and observe missing new-hero slots fail before preparation and pass after it; verify source artwork preservation and generated overlays, inspect movement/attack/skill/defense surfaces at real card size including hover/unavailable states. T2 focused Unity and visual validation; final exact-player repeat at 8.35z85. No new card rules or visual redesign.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z83-complete-prepared-card-highlights-across-the-configured-roster-completion-evidence).
+
+### [~] 8.35z84 Make aura tint transparent and order token rings adaptively
+
+Outcome: purple radius tint leaves board artwork/hex markings visible. Per the user's final correction, with an active effect the radial order is token, purple aura ring, active-turn ring. Without purple ring the active-turn ring sits directly beside the token. The user's two supplied photos are visual defect/reference evidence, not game-rule authority.
+
+Dependency: 8.35z83. Closing checks: focused render/material regression fails for opaque tint and old ring order, passes for transparent board tint and both ring-presence cases; validate refresh/movement/Undo/rebuild and actual changed output. Preserve authoritative affected cells, effect lifetime, team identity, selection/picking and all rules. No new aura effects or general board redesign. T2; final exact-player repeat at 8.35z85.
+
+### [ ] 8.35z85 Connect lobby bots to the existing smarter policy and package
+
+Outcome: FILL WITH BOTS consumes the existing Tier-2 decision policy instead of the old greedy baseline, with bounded host work and unchanged authorized owner projection/privacy. Use supported information only; absence of safe lookahead retains Tier-2's existing static judgment, never leaks hidden cards or grants host-state access. This integrates existing AI, not the separately parked stronger-policy research at 8.35z78.
+
+Dependency: 8.35z84. Closing checks: deterministic lobby-bot choice scenario distinguishes old greedy from the existing stronger policy (fail before/pass after), preserves round-robin pacing, refusals, readiness/draft, reserved humans, cleanup, and real human-plus-bot progress. Measure bounded decision cost; stop for direction if safe integration requires new authority or broader AI design. Run affected tests and final T3 pre-build gate, fresh build/board/multiclient smoke, actual packaged lobby checks plus card highlights and aura visuals. Produce a new local source-identified ZIP with existing Play/Host scripts, verify its contents, preserve prior ZIPs and private resources. No external distribution or claim of completing 8.36.
+
 ## Reconciled follow-up queue (not authorized)
 
 Reconciled from the private local `tmp/8-35d-8-35e-multiplayer-corrections/PLAN.md` post-polish queue and relevant Claude project notes. These are retrieval sources, not rule authorities. Status is based on source/commit evidence rather than the age of a note. All current instructions supersede historical agent instructions. Each proposed implementation still requires user approval.

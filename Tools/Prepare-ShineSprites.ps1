@@ -2252,6 +2252,25 @@ Get-ChildItem -Path $cardsRoot -Directory | Sort-Object Name | ForEach-Object {
         }
 
         if ($typed.primaryKind -ne 'None') {
+            # Printed title position follows this card's measured parchment-panel top.
+            # The title's upper centre edge is 32 source pixels above the body anchor
+            # on the shared 372x520 print template. Export geometry, never runtime pixels.
+            $titleTop = [GuardsDigital.Tools.ShineTracer]::FindPanelTop($rgba) - 32
+            if ($titleTop -lt 260 -or $titleTop -gt 450) {
+                throw "Invalid primary title anchor for $key`: $titleTop"
+            }
+            $titlePath = Join-Path $shineDir "$card--primary-title.txt"
+            $titleText = $titleTop.ToString([Globalization.CultureInfo]::InvariantCulture)
+            if ($Check) {
+                if (-not (Test-Path -LiteralPath $titlePath)) { $missing++; Write-Output "MISSING $titlePath" }
+                elseif ([IO.File]::ReadAllText($titlePath).Trim() -ne $titleText) {
+                    $stale++; Write-Output "STALE $titlePath"
+                }
+            }
+            else {
+                if (-not (Test-Path -LiteralPath $shineDir)) { New-Item -ItemType Directory -Path $shineDir | Out-Null }
+                [IO.File]::WriteAllText($titlePath, $titleText)
+            }
             # Typed kind + colour pick the glyph family: silver Skills print the book burst,
             # coloured Skills the fan, Movement the boot, and every Defense primary - Block or
             # valued - the same shield artwork.
@@ -2344,4 +2363,5 @@ if ($Check) {
 }
 else {
     Write-Output ("Prepared shine sprites: {0} written, {1} already present, {2} failed, {3} slots traced. Report: {4}" -f $written, $skipped, $failed, $traced, $Report)
+    if ($failed -gt 0) { throw 'Shine sprite preparation failed.' }
 }

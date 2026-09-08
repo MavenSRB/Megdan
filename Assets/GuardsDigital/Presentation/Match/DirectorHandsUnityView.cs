@@ -1069,6 +1069,9 @@ namespace GuardsDigital.Presentation.Match
             var titleBandTop = actionBounds.y +
                 ((region.ActionKind == ActionKind.Attack ? 40f : 36f) *
                     CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight);
+            if (attachedToPreparedPrimaryTitle && ConfiguredCardShine.TryGetPrimaryTitleTop(
+                    region.Offer.SourceDefinitionReference, out var sourceTitleTop))
+                titleBandTop = sourceTitleTop * CardFootprint.ArtworkHeight / CardFootprint.ArtworkSourceHeight;
             var attachmentCenterX = attachedToPreparedPrimaryTitle
                 ? CardFootprint.ArtworkWidth * 0.5f
                 : ribbonAnchorBounds.center.x;
