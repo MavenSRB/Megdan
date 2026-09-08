@@ -1385,3 +1385,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z85 | Owner-scoped Tier-2 lobby bots, pulse-safe aura order, final regression/build/player checks and private Play/Host ZIP verification pass. | `milestone/8.35z85` |
 
+## Milestone 8.36 User-accepted internet playtest gate completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36 | User accepts the reported clean, completed old-build internet 2v2 as gate closure; original six-human/reconnect checks are not claimed as passed. | `milestone/8.36` |
+

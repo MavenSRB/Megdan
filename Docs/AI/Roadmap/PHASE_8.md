@@ -433,11 +433,15 @@ Recorded here rather than in [TECHNICAL_RISKS.md](../TECHNICAL_RISKS.md) for a m
 
 - **A standing space-choice prompt can offer a Confirm that does nothing.** Recorded by milestone 8.35z48 from three instrumented Play Mode runs on `MisaProgressedUiJourneyPlayModeTests`' parked placement, and it is the true cause of the anomaly milestone 8.35z38 spent seven runs on. On that progressed staging the board click reaches the model and is accepted - the offered destination ring narrows from the whole lit set to exactly the space clicked - and the prompt then stands at `YOUR SPACE CHOICE - Choose 1 of 22 spaces` offering a Confirm labelled DONE which, pressed four times running through the shown control, changes nothing: same status, same single offered destination, same Confirm, the piece unmoved. `UiPlayer.DescribeBoardRay` rules the pointer chain out by measurement ("the ray passes through no hero's pick volume"), and a PROJECTED COMMAND behaves identically, which no input change can explain. Dash and Slash's parked walk on the same staging carries the same signature, so the two parked journeys are very likely one defect. **An offered control that does nothing is the class this project has fixed repeatedly (8.35z8's did-nothing report, 8.35z14's named blocker, 8.35z15's withheld repeat), and it belongs to effect resolution rather than to presentation input** - which is why 8.35z48, a presentation-input corrective, located it and stopped. Reproduction is now one filtered Play Mode run with the journey's own instrumentation. Proposed as its own corrective; not scheduled here.
 - **The refused-restore rollback can fail on the recovery path.** `MatchSession.RestoreSnapshot` catches a failed restore and rolls the aggregate back by RE-DESERIALIZING the pre-image. When the state that failed is one the reader refuses, the rollback throws a second time, uncaught, and the session is left damaged where the session's own contract promises "restore refused, unchanged" - which is why milestone 8.35z22's reporting run logged a throw rather than a refusal. This is a mechanism `RISK-STATE-002` does not currently name: that row records the rollback as LOSSY for unpersisted state, not as ABLE TO FAIL. Milestone 8.35z23 removed the two reachable causes rather than the mechanism, so no repro remains to drive a hardening and none was invented; the candidates are carrying the pre-image as an object, or making a rollback failure non-throwing. Proposed as its own corrective; not scheduled here. **Discharged by milestone 8.35z43**, which took the first of the two candidates named above: the pre-image is carried as an OBJECT through the aggregate's existing capture/adopt pair, so the rollback is an assignment that cannot fail, and the same two lines harden the undo and restart reconstruction path whose catch carried the identical fragility. The reassessment of `RISK-STATE-002` itself still waits on that register's ownership review.
-### [!] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
+### [x] 8.36 Validate a private six-human internet 3v3 and run the friends playtest
 
-Paused by the user's 2026-09-08 [cleanup sequence](PHASE_8_CLEANUP.md). Previous authorization/readiness evidence remains. On 2026-09-08 the user reported completing a full internet 2v2 on the old build the previous night. This is real user-reported internet match-completion evidence, not a local rehearsal. Exact build identity, human/bot composition, reconnect coverage and diagnostic bundle have not yet been reconciled with the acceptance checks below; the report does not by itself close the six-human 3v3 gate or validate the later fixes build over the internet.
+User-approved acceptance amendment (2026-09-08): close this gate on the user's report of a clean, completed internet 2v2 on the old build the previous night. This replaces the original six-human 3v3 and additional live-case requirements for this closure; it does not assert those checks passed. Exact old-build identity, participant composition, diagnostic bundle and deliberate reconnect/latency coverage remain unverified. The later fixes build has local evidence only. No rules, implementation or publication authority changes; 8.36a remains a separate review.
 
-Blocked by: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836-user-accepted-internet-playtest-gate-completion-evidence).
+
+Original gate definition retained below for traceability; the acceptance amendment above governs this closure.
+
+Original dependency: Milestone 8.35c must pass the local six-client playtest-build rehearsal.
 
 Observable outcome: Six humans on separate clients complete an invite-only full 3v3 match over the internet using a disposable private Win64 playtest build and primitive UI before production presentation begins.
 
@@ -453,9 +457,9 @@ Acceptance checks:
 
 Non-goals: No public release, dedicated production service, accounts, matchmaking, anti-cheat certification, competitive operations, or production presentation.
 
-### [!] 8.36a Independently review the private-online implementation and playtest evidence
+### [ ] 8.36a Independently review the private-online implementation and playtest evidence
 
-Blocked by: Milestone 8.36 must complete the invited six-human internet gate and record its unmodified playtest evidence.
+Dependency satisfied by the user-accepted 8.36 closure above. Proposed, not started or newly authorized. Review the available evidence and its explicit limitations; do not treat the acceptance amendment as proof of the original six-human/reconnect cases.
 
 Observable outcome: A fresh analysis-only review correlates observed playtest failures and friction with the networking, authorization, synchronization, reconnect, diagnostics, and primitive presentation implementation before production polish begins.
 

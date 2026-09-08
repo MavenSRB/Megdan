@@ -4,7 +4,7 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 ## Phase 9 - Presentation and pitch polish
 
-Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline, milestone 8.36 proves the private six-human internet flow with primitive UI, and independent reviews 8.28a and 8.36a dispose of every gate-blocking finding.
+Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline, milestone 8.36 closes under [its user-approved acceptance amendment](PHASE_8.md), and independent reviews 8.28a and 8.36a dispose of every gate-blocking finding.
 
 Milestone 8.19's designated roadmap audit recommends **keeping 9.1-9.16a unchanged**. The capability
 matrix changes which rule events and prompts presentation must consume, but 8.20-8.24 and the primitive
