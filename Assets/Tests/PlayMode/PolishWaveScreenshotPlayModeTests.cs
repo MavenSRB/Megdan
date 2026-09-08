@@ -199,7 +199,16 @@ namespace GuardsDigital.Tests.PlayMode
                 "at " + Screen.width + "x" + Screen.height + ".");
 
             yield return LoadTheMatch();
-            yield return new WaitForEndOfFrame();
+
+            // WaitForEndOfFrame THROWS in batch mode - Unity never evokes it without a display - and
+            // the complete Play Mode run is batch, so this is guarded rather than unconditional. The
+            // extra settle frame only matters for the capture, which batch mode does not take
+            // either, so the batch tier still drives every state and simply photographs nothing.
+            if (!UnityEngine.Application.isBatchMode)
+            {
+                yield return new WaitForEndOfFrame();
+            }
+
             yield return null;
 
             var hud = Root().Hud;

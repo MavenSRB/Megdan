@@ -5209,11 +5209,46 @@ namespace GuardsDigital.Presentation.Match
                 face.pickingMode = PickingMode.Ignore;
                 face.focusable = false;
 
+                // Milestone 8.35z62. THE WHOLE SUBTREE, not just the face's own root.
+                //
+                // Setting the root alone was the shape milestone 8.35z58 shipped, and it does not
+                // hold: UI Toolkit picks the DEEPEST element under the pointer, so a child of the
+                // face that kept the default PickingMode.Position is still hit-testable even though
+                // its parent is not. `LevelUpHandPreviewTests` asserts exactly that - every element
+                // under a preview slot ignores the pointer - and it failed the first time it was
+                // ever EXECUTED, on this merged tree. It could not have failed earlier: the file is
+                // exclude-listed in Tools/DotnetTests, and the worktree that wrote it was not
+                // permitted to launch Unity, so its four cases were compile-checked and never run.
+                // That is the reason this wave runs complete unfiltered Unity suites rather than
+                // trusting a worktree's own green.
+                IgnorePointerThroughout(face);
+
                 slot.Add(face);
                 row.Add(slot);
             }
 
             return row;
+        }
+
+        /// <summary>
+        /// Milestone 8.35z62. Makes an element and everything beneath it pointer-transparent, so a
+        /// decorative copy of a card can never take a click from the control it is drawn beside.
+        /// Focus is dropped with it, because a read-only face should not be reachable by keyboard
+        /// either.
+        /// </summary>
+        private static void IgnorePointerThroughout(VisualElement element)
+        {
+            if (element == null)
+            {
+                return;
+            }
+
+            element.pickingMode = PickingMode.Ignore;
+            element.focusable = false;
+            foreach (var child in element.Children())
+            {
+                IgnorePointerThroughout(child);
+            }
         }
 
         /// <summary>

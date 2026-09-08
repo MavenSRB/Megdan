@@ -451,6 +451,13 @@ namespace GuardsDigital.Presentation.Match
         private UndoRestartUnityView undoRestart;
         private DiagnosticLogUnityView diagnostics;
         private MinionChoiceUnityView minionChoice;
+        /// <summary>
+        /// Milestone 8.35z62. The root children THIS renderer composed, so a re-composition can
+        /// replace its own surfaces without disturbing another owner's on a shared root. See
+        /// <see cref="ComposeSurfaces"/> for the fixture that proved the distinction is real.
+        /// </summary>
+        private readonly List<VisualElement> composedChildren = new List<VisualElement>();
+
         private HeroOverviewsUnityView heroOverviews;
         private MatchHudHeaderViewModel header;
         private RuntimeTooltipLayer tooltipLayer;
@@ -962,7 +969,24 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private void ComposeSurfaces()
         {
+            // Milestone 8.35z62, SECOND CORRECTION - and the complete Play Mode run is what forced
+            // it. Making this method repeatable was right; clearing the WHOLE root to do it was not.
+            //
+            // `root` is the UIDocument's own root, and this renderer is not always its only owner: a
+            // `PrivateLobbyDriver` composed onto THE SAME GameObject adds its own connection banner
+            // to that same element, and `OnlineMatchHudPlayModeTests` composes exactly that
+            // arrangement. Before this milestone the second `Build()` returned early, so a blanket
+            // `root.Clear()` never ran twice and nobody noticed it was too wide a hammer; once the
+            // method became repeatable it wiped the lobby's banner and that fixture failed with a
+            // null element. A re-composition must replace THIS renderer's surfaces and leave every
+            // other owner's alone.
+            //
+            // Paint order is preserved on purpose rather than incidentally: anything another owner
+            // added arrived AFTER this renderer's first build and therefore painted above it, so it
+            // is restored last and keeps painting above it.
+            var foreign = root.Children().Where(child => !composedChildren.Contains(child)).ToList();
             root.Clear();
+            composedChildren.Clear();
             root.name = "gd-root";
             root.pickingMode = PickingMode.Ignore;
             root.style.position = Position.Absolute;
@@ -1211,6 +1235,15 @@ namespace GuardsDigital.Presentation.Match
             tooltipLayer = new RuntimeTooltipLayer();
             root.Add(tooltipLayer.Root);
             tooltipLayer.Install(root);
+
+            // Everything on the root now is this renderer's, so remember it: the next composition
+            // removes exactly this set and nothing else. Then every other owner's elements go back
+            // on top, in the order they held.
+            composedChildren.AddRange(root.Children());
+            foreach (var element in foreign)
+            {
+                root.Add(element);
+            }
 
             ApplyDirectorDrawerState();
             Layout();

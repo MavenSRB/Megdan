@@ -139,6 +139,47 @@ namespace GuardsDigital.Tests.EditMode
                 ConfiguredPendingChoiceProjectionTests.CreateConfiguredRemovalPreventionPause()));
         }
 
+        /// <summary>
+        /// Milestone 8.35z60, protocol version 11. Rulebook p.8's shared Wave-counter pool survives
+        /// the wire on EVERY seat, which is what makes the top strip's "WAVES REMAINING N" the
+        /// host's number rather than the joiner's own frozen starting total.
+        /// </summary>
+        /// <remarks>
+        /// <para>The carrier-map case above proves this member is DECLARED as carried; this one
+        /// proves the bytes actually make the trip. Both are needed, and the milestone's own history
+        /// says why: the worktree that added the read-model member shipped an unconditional
+        /// fall-through to locally composed content and recorded an exclusion, so "the client has a
+        /// RemainingWaveCounters property" was true while a remote seat still read a number the host
+        /// never sent.</para>
+        /// <para>It asserts against the SEAT'S OWN projection rather than a literal, so it cannot
+        /// pass by agreeing with a constant this fixture happens to use, and it checks the decoder's
+        /// refusal of a negative pool separately - a clamp would hand the strip a number no host
+        /// ever sent, which is exactly what the codec refuses to do.</para>
+        /// </remarks>
+        [Test]
+        public void TheRemainingWaveCounters_SurviveTheWire_OnEverySeat()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var seen = 0;
+            foreach (var seat in host.Seats.Seats)
+            {
+                var projection = host.ProjectionForSeat(seat.Id);
+                var encoded = NetworkSeatProjectionCodec.Encode(projection);
+                Assert.That(NetworkSeatProjectionCodec.TryDecode(encoded, out var record), Is.True,
+                    "Seat " + seat.Id + "'s projection did not decode.");
+                Assert.That(record.RemainingWaveCounters,
+                    Is.EqualTo(projection.RemainingWaveCounters),
+                    "Seat " + seat.Id + " decoded a different Wave pool than the host projected. " +
+                    "A remote seat that cannot read this reads its own composition's frozen " +
+                    "starting total, which is the defect milestone 8.35z60 exists to close.");
+                Assert.That(record.RemainingWaveCounters, Is.GreaterThanOrEqualTo(0));
+                seen++;
+            }
+
+            Assert.That(seen, Is.EqualTo(host.Seats.Seats.Count),
+                "Every seat is checked, not merely the first one.");
+        }
+
         private static void AssertDetailForEverySeat(IMatchHost host)
         {
             foreach (var seat in host.Seats.Seats)

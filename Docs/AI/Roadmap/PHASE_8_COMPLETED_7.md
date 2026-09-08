@@ -4,6 +4,8 @@ Canonical active roadmap shard holding additional Phase 8 milestone definitions 
 
 Created 2026-09-07 during the Ursafar dealing's required warning-threshold ownership review, and it is opened rather than cascaded into for the reason five earlier reviews each recorded and each then repeated: no existing completed shard could take a run without landing near its own line. `PHASE_8_COMPLETED_5.md` had just absorbed 8.35z41 and 8.35z42 in the same review and stands at 12,709 against its own 12,750 warning line; `PHASE_8_COMPLETED_6.md` has 674 words of room, `PHASE_8_COMPLETED_3.md` roughly 530 and `PHASE_8_COMPLETED_4.md` roughly 490, none of them enough for a contiguous run and every one of them close enough that the move would have to be made again within the day. Milestones **8.35z39** and **8.35z40** moved here verbatim: the breathing awaited outlines with the board's marks drawn as light, and the match log unrolled from the top strip newest-first with the healthy-connection announcement retired. They are kept together because they are one presentation pass - integration batch A landed them in a single wave and reconciled them against each other, and 8.35z47 later corrected both in one milestone, so a reader arriving at either needs the other beside it. The move is sized for BOTH definitions this session lands - the shared gate-derivation and offer-feasibility correctives at 8.35z49, and the tenth hero's dealing at 8.35z50 - because the immediately preceding move in this same review was sized for two, fitted one, and would otherwise have forced a second review mid-ceremony, which is the exact failure the 8.35z22 and 8.35z23 reviews both recorded. Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
+Milestones **8.35z45** and **8.35z46** followed them here on 2026-09-08 during the polish wave's own required review, **proactive** for the sixth time in this phase: `PHASE_8.md` stood at 14,234 words against its 15,000 limit with FIVE definitions due in one integration pass (8.35z58 through 8.35z62), which would have carried it to roughly 15,272 and past the limit mid-ceremony. This shard was the destination on its own opening arithmetic - at 3,246 words it takes the 1,686-word pair to 4,932, roughly a third of its line, the largest margin any completed shard has had for a run in this phase - and the pair is contiguous and self-contained: the attack-sequence bullet narrowed to the subjects its own sentence names, and the ninth hero's dealing. `PHASE_8.md` keeps 8.35z47 onward and lands the five new definitions at 13,755 words, 1,245 clear of its limit.
+
 ### [x] 8.35z39 Breathe the awaited outlines and draw the board's marks as light
 
 The user's own direction, quoted in the amendment: "i dont like the little light that goes around, i want a breathing light around the whole thing (Card(s), hero tray). But light, not just yellow color", and "if you can use light for stuff marked on the map, that would be much cooler as well".
@@ -112,4 +114,64 @@ Acceptance checks:
 Non-goals: no behaviour change beyond the removed clause; no renaming of ids on branches not yet landed; and no reassessment of the roster's other repeat bindings, which the ledger row this milestone answers already measured.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z44-sweep-the-stale-placeholder-ids-track-the-shared-compile-probe-and-drop-sabinas-phantom-clause-completion-evidence).
+
+
+### [x] 8.35z45 Narrow an attack sequence bullet to the subjects its own sentence names
+
+Composes Middlefinger of Death, the last of Dodger the Warlock's faces that carried a named deferral rather than a composition, and moves the snapshot schema alone.
+
+Observable outcome: a modal Attack whose bullet prints a condition about WHO it may target offers only the units that satisfy it, and offers nobody where none does - while the other bullet of the same card, on the same board and at the same instant, still offers the unit it may take.
+
+**The sketched seam was refused, and the refusal is the design.** The multi-sequence contract had sized this extension point as an optional capability reference resolved through the catalog as a per-candidate predicate. `AttackSequenceBullet` is persisted, and every writer in the snapshot serializer says the same thing about what may cross: identity, and content the payload NAMES - never semantics it CARRIES. A capability id plus a version is a name the reader would have to resolve to a handler and then trust to filter a target set, which is a payload choosing which code runs. A closed enum is content the payload names: it reads back exactly as the bullet's four existing policy enums do, and a value outside the declared range is a rejected snapshot rather than a reconstructed one. Three consequences follow, and all three are the point - the rule lives in the member's NAME, so adding a member is not a content-revision event; the complement clause another hero prints becomes one member and no schema move at all; and it went on the BULLET rather than on the printed target policy every Attack in the roster declares, which could not have been widened without re-identifying every dealt hero.
+
+**Where it is applied leaves p.13 alone.** The narrowing runs over the set the existing legal-target query already admitted, so which units, what reach and p.18's immunities are asked once and unchanged, and the card's extra sentence narrows the answer rather than replacing the question.
+
+**The absence of card state is LOUD.** A bullet declaring a predicate that reaches the derivation without card state throws, naming the bullet and the clause. The two silent answers - admit everybody, or admit nobody - are a widened offer and a card greyed for nothing, and both look exactly like an ordinary board position.
+
+**One derivation, four consumers.** The discard reading existed as THREE copies, one carrying a comment claiming they could not drift. Three copies cannot keep that promise; there is now one derivation and all four consumers ask it.
+
+**The schema moved for a payload this corpus does not contain.** The field costs the compatibility corpus zero bytes and zero digests - measured, by running the corpus with the field in place and the version left alone - so the whole digest movement is the version value itself. It moved anyway because a shipped build can already produce a payload carrying a chain, and such a payload is one integer per bullet shorter: a newer reader walking it would take the next bullet's id out of the middle of this bullet's policy. That is corruption rather than a short read, and turning it into a refusal is the entire job of the version guard. A corpus that happens to hold no example of a shape is evidence about the corpus, not about the shape.
+
+Acceptance checks:
+
+- A bullet declaring a printed subject condition offers only candidates that satisfy it, proved on a board where the card's OTHER bullet offers a unit at the same instant - so reach and immunity are established by that bullet's own offer and the narrowing is the single degree of freedom.
+- A bullet whose predicate has no satisfying candidate offers nobody, and the card's remaining bullet is unaffected.
+- A declared predicate that reaches the derivation without card state throws, naming the bullet and the clause.
+- The discard fact has exactly one derivation, and every consumer of it reads that one.
+- The snapshot schema rejects the previous version rather than migrating it, and the version guard is asserted at every site that pins it.
+- The identity oracle moves exactly one pin and leaves every other byte-identical.
+- The complete unfiltered dotnet harness, and both complete unfiltered Unity suites, pass at the final revision.
+
+Non-goals: no change to the bound-target resolve path, which is unreachable mid-chain and which milestone 8.35z27 owns; no composition of the complement clause another hero prints, which moves that hero's content revision and belongs to her dealing; and no widening of the printed target policy every Attack declares.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z45-narrow-an-attack-sequence-bullet-to-the-subjects-its-own-sentence-names-completion-evidence).
+
+### [x] 8.35z46 Deal, register and player-path gate Silverarrow the Pathfinder as the ninth hero
+
+The third of the six dealing milestones the content wave owes, on exactly the ceremony milestones 8.35z34 and 8.35z38 proved: register, deal, gate, journey, govern, verify.
+
+Observable outcome: a player loads a staged match, is dealt Silverarrow's eighteen cards, and can reach every face of hers a printed sentence allows - with her contract in the build's registered set, her identity pinned, her artwork addressed, and her player-path gate passing beside the eight that came before it.
+
+**Rain of Arrows' second repeat clause is composed, and the costed design for it was wrong in a way that would have shipped silently.** Milestone 8.35z30 parked "if you do, repeat once on a minion" on a measured seam limit. The wall it named is real: a repeated Attack derives its admitted unit kind from its own CARD's declaration - milestone 8.24 chose that so the clause moves no snapshot field - and a derivation that asks the card cannot tell two clauses apart. The wall it missed was found by probe before a line was written: rulebook p.10's "You cannot repeat a repeated action!" is enforced for card text by milestone 8.25d as ONE BOOLEAN about the enclosing attack, so a second clause would have been skipped in silence inside the very instance it exists to fire in. Both have one cause and one answer that costs nothing: card text is always started with no completed repeats, so the bounded-chain counter every Skill repeat uses reads zero in every Attack instance, and the chain already mints each instance's identity by appending to the last one's - which is already restorable state. `CardTextRepeatChain` reads it; no schema version moves, and a card printing one clause keeps the exact walk it had, which is every face in this build but this one. Recorded as [rules-ledger row 26](../RULES_LEDGER.md#open-source-and-rules-questions) because the next face to print a chain inherits it.
+
+**The registration is what moves the numbers, and this time the move is exactly ONE contract.** `fast-travel@1` is a handler TYPE this build had never registered, so it owed a `SyntheticShowcaseHand` consumer, which this milestone added. Her other new-to-her contract, `choose-line-destination@1`, registered already at Misa's dealing (8.35z38) and needed nothing here - her three straight-line faces reach the same registered contract Misa's five Blue Skills do, which is the ordinary case of two heroes sharing one rule rather than a second registration. Her six Active-effect creations move the count by nothing either, on the sentence three heroes running now have written: `ActiveEffectCreationHandler` is a type this build has had since milestone 6.8. So the pinned handler count moved 61 to **62** rather than by two. Every corpus digest and both scenario-digest families moved on the same cause, schema **unmoved at v40**, and the arithmetic was measured rather than assumed: the failing digests read off a complete unfiltered run are what this milestone's re-pins carry forward.
+
+**The gate table was written from a derivation rather than checked against one, and needed no new interaction shape at all.** An offline probe printed what `HeroPlayerPathMatrix` derives for each of her nineteen faces before a row existed, and all nine gate cases passed on their first run. Three capability classifications were added and no shape - `fast-travel`, `choose-line-destination` and `synthetic-attack-took-a-hero` - which is the healthiest outcome this gate has had: nineteen new faces and the surface already had a name for every input they ask for.
+
+**The staging fact that decides where her journeys live was measured before any was written.** The unrestaged staged board holds the two heroes fifteen spaces apart, and RULING 1 makes six of her seven Attacks reach a BAND rather than a ceiling - so on that board every Attack she prints has no legal target at all. The engaged restaging holds them exactly two apart, which is her Gold basic's printed Range. For every earlier hero the restaging was a convenience; for her it is what makes her set reachable.
+
+**Her hero-token art had never been prepared**, on exactly the shape Misa's dealing found: declared at composition time but never written, which the piece journey would otherwise have caught as a hero wearing the generated prism fallback. `Tools/Prepare-HeroTokens.ps1 -Hero silverarrow -Check` named the gap before a journey had to; running it without `-Check` wrote both team fronts, verified against the same shared reference-ring measurement every other hero's token passes.
+
+Acceptance checks:
+
+- Silverarrow is dealt by a configured match, her one remaining contract is registered, and both halves of milestone 7.9's gate are asserted against each other so neither can move alone.
+- The registered-handler count is 61 to 62, her identity pin is measured on a complete unfiltered run, and the other eight pins are byte-identical in that same run.
+- Her eighteen artwork rows exist and the catalog's bijection holds at 162 dealt definitions across nine heroes.
+- Her player-path gate passes, every row's shapes match the derivation exactly, and the eight earlier heroes' derived rows are unmoved.
+- Rain of Arrows' three-instance chain is proved on a purpose-built board, and its containment - no other composed hero's card reaches more than one clause - is asserted rather than assumed.
+- Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
+
+Non-goals: Keep the Distance stays parked on the standing p.20 Handicap deferral; the three other composed heroes (Ursafar, Tali, Whisper) are not dealt; and no official six-player line-up changes, which milestone 8.25 owns.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z46-deal-register-and-player-path-gate-silverarrow-the-pathfinder-as-the-ninth-hero-completion-evidence).
 

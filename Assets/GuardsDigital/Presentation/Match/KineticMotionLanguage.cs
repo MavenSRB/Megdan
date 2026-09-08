@@ -230,10 +230,22 @@ namespace GuardsDigital.Presentation.Match
         public const float LongestSeconds = 0.20f;
 
         /// <summary>A control taking or losing a hover.</summary>
-        public const float HoverSeconds = 0.12f;
+        public const float HoverSeconds = MatchHudTheme.ButtonHoverTransitionMs / 1000f;
 
-        /// <summary>A control dipping under a press.</summary>
-        public const float PressSeconds = 0.08f;
+        /// <summary>
+        /// A control dipping under a press.
+        ///
+        /// <para><b>Milestone 8.35z62 made these two DERIVED rather than restated, which is what the
+        /// audit beside them always meant.</b> They were literals - 0.12 and 0.08 - copied from the
+        /// 8.35z8 button constants, and milestone 8.35z58 raised the press to the "~100ms" the user
+        /// asked for twice without sweeping this file, so the copy said 80 while the buttons did 100
+        /// and <c>KineticMotionLanguageTests.TheInteractionBand_IsTheShippedButtonSystemsOwnNumbers</c>
+        /// failed on the merged tree exactly as it was written to. That case's own sentence is "if the
+        /// two ever disagree, the audit is auditing a copy rather than what the buttons do" - so the
+        /// fix is to stop keeping a copy. Reading <see cref="MatchHudTheme"/> const-to-const makes the
+        /// two sources one source, and the audit now proves a conversion rather than a coincidence.</para>
+        /// </summary>
+        public const float PressSeconds = MatchHudTheme.ButtonPressTransitionMs / 1000f;
 
         public static readonly IReadOnlyDictionary<string, float> All =
             new ReadOnlyDictionary<string, float>(

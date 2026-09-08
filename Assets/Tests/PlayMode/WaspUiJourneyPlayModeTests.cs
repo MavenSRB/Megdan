@@ -582,14 +582,26 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(sizes, Is.Not.Empty, "The short viewport still draws the hand.");
             foreach (var size in sizes)
             {
-                Assert.That(size.x, Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()),
+                // TWO snapped edges, not one, and milestone 8.35z59 is what exposed the difference.
+                // A world-space SIZE is the distance between two independently snapped edges, so it
+                // can drift by up to one grid unit at each of them; `PixelSnapping(1)` is the right
+                // tolerance for a single edge's POSITION, not for a box's extent. Under the old
+                // halfway match this viewport's scale happened to keep the drift under one unit, so
+                // the too-tight tolerance never showed. Under `Expand` the measured height lands at
+                // 418.666626 against a 420 declaration - one whole unit off, and it failed by four
+                // hundred-thousandths of a unit against a tolerance that was exactly one. The card is
+                // not the wrong size; the tolerance was counting one edge of a two-edge measurement.
+                Assert.That(size.x, Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping(2)),
                     "A card is the same width on a short screen as on a tall one.");
-                Assert.That(size.y, Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()),
+                Assert.That(size.y, Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping(2)),
                     "and the same height - what gives on a short screen is the region, not the card.");
             }
 
+            // Two snapped edges for the same reason the card sizes above take two: this is a box's
+            // EXTENT, not one edge's position. Measured 461.333374 against a 460 declaration, one
+            // whole grid unit out at the scale `Expand` resolves for this viewport.
             Assert.That(region.height,
-                Is.EqualTo(CardFootprint.Height + 40f).Within(UiPlayer.PixelSnapping()),
+                Is.EqualTo(CardFootprint.Height + 40f).Within(UiPlayer.PixelSnapping(2)),
                 "The reserved short-landscape band comfortably holds a whole card.");
             Assert.That(scroll.mode, Is.EqualTo(UnityEngine.UIElements.ScrollViewMode.Vertical),
                 "No horizontal scrollbar or horizontal scrolling path is present.");
@@ -684,9 +696,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "The rail is the same width on a short screen as on a tall one, which is what makes " +
                 "one measurement of what fits inside it hold at both.");
             Assert.That(shortBlue.width, Is.EqualTo(wideBlue.width).Within(railWidthSnapping));
-            Assert.That(shortRed.height, Is.EqualTo(wideRed.height).Within(railSnapping),
-                "and the same height, because nothing in the rail is sized from the viewport.");
-            Assert.That(shortBlue.height, Is.EqualTo(wideBlue.height).Within(railSnapping));
+            // MILESTONE 8.35z59 CHANGED WHAT IS TRUE HERE, and this is the honest restatement rather
+            // than a relaxation. These two used to assert the rail is the same HEIGHT at both
+            // viewports, which held under the old halfway width/height match. Under `Expand` it does
+            // not, and must not: the rail column is the only region sized from what is left over
+            // vertically (`railHeight = panelHeight - 612`), and Expand's whole guarantee is that the
+            // panel never falls BELOW the reference in either dimension - so at an aspect narrower
+            // than 16:9 the panel gains reference height and the rail gains it too. Measured here:
+            // 264 at the short viewport against 232 at the wide one.
+            //
+            // The claim that matters is therefore directional, not an equality. What milestone
+            // 8.35z59 exists to prevent is a rail that goes SHORT and buries rulebook p.6's third
+            // plaque under the tray band; a rail that grows buries nothing. So the rule is that the
+            // rail never LOSES height at the harder viewport, and the thing this journey is actually
+            // about - that every rail's coin count stands clear inside its rail - is asserted
+            // separately by `AssertTheCountStandsClear` at BOTH viewports above, which is what proves
+            // the extra height is harmless rather than merely different.
+            Assert.That(shortRed.height, Is.GreaterThanOrEqualTo(wideRed.height - railSnapping),
+                "The rail never loses height at a harder viewport - losing it is the defect " +
+                "milestone 8.35z59 fixed. Short: " + shortRed.height + ", wide: " + wideRed.height +
+                ".");
+            Assert.That(shortBlue.height, Is.GreaterThanOrEqualTo(wideBlue.height - railSnapping));
             Assert.That((uint)Screen.width, Is.EqualTo(restoreWidth),
                 "The viewport this session was running at is restored before this journey ends.");
             Assert.That((uint)Screen.height, Is.EqualTo(restoreHeight));

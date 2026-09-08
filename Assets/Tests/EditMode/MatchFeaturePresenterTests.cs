@@ -1121,6 +1121,18 @@ namespace GuardsDigital.Tests.EditMode
                 (new MatchLogEntry(
                         sequence++, MatchLogEntryKind.CardRevealed, 1, 1, subjectHeroId: hero),
                     "REVEALED", false),
+                // Milestone 8.35z61 added this kind and its rendering, and left this closed-
+                // vocabulary walk unswept - which is exactly what this case's own count assertion
+                // exists to catch, and it did, on the merged tree rather than in the worktree. The
+                // harness could not have caught it: this file is exclude-listed there, so only a
+                // complete Unity Edit Mode run reaches it.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.HeroCardResolvedWithoutAction,
+                        1,
+                        1,
+                        subjectHeroId: hero),
+                    "RESOLVED WITH NO ACTION", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),
