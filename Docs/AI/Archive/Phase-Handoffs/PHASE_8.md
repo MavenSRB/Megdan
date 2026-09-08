@@ -1391,3 +1391,8 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.36 | User accepts the reported clean, completed old-build internet 2v2 as gate closure; original six-human/reconnect checks are not claimed as passed. | `milestone/8.36` |
 
+## Milestone 8.36a Independent private-online review completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36a | Independent source/evidence review records four open findings and proposed corrective checks; accepted 8.36 closure preserved, no implementation authorized. | `milestone/8.36a` |

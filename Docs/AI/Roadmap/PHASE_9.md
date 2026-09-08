@@ -6,6 +6,8 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline, milestone 8.36 closes under [its user-approved acceptance amendment](PHASE_8.md), and independent reviews 8.28a and 8.36a dispose of every gate-blocking finding.
 
+The completed [8.36a review](PHASE_8_PRIVATE_ONLINE_REVIEW.md) proposes two blocking dispositions before this phase and keeps 9.1-9.16a unchanged. Its roadmap-fitness assessment retains the planning range below; no new asset/hero scope or Phase 9 execution is authorized. Exact proposed corrective owners and closing checks live in that review and [Phase 8](PHASE_8.md).
+
 Milestone 8.19's designated roadmap audit recommends **keeping 9.1-9.16a unchanged**. The capability
 matrix changes which rule events and prompts presentation must consume, but 8.20-8.24 and the primitive
 online HUD must prove those typed projections before production presentation is scoped. Board, hero,
