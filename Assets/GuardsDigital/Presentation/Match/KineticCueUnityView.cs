@@ -184,6 +184,13 @@ namespace GuardsDigital.Presentation.Match
             {
                 RestoreEveryPiece();
             }
+
+            // Milestone 8.35z63. Last, because it READS what the loops above just wrote: a
+            // carrier's disk is offset by the displacement its own piece is currently carrying. It
+            // starts no clock and knows no duration - see BoardInteractionUnityView.GlideActiveEffectAuras
+            // - so this remains the one place piece motion is decided, and a frame with nothing playing
+            // writes a zero offset exactly as it writes an authoritative position.
+            board.GlideActiveEffectAuras();
         }
 
         private bool ApplyHero(PrimitiveHeroView hero)

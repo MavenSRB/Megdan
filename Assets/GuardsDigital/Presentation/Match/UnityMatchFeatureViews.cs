@@ -46,6 +46,15 @@ namespace GuardsDigital.Presentation.Match
         private readonly List<DefeatFadeGhostView> freeMinionDefeatGhosts =
             new List<DefeatFadeGhostView>();
 
+        // Milestone 8.35z63. The one violet tint and the one hex mesh every Active-effect
+        // disk is painted with, generated on first use so a board with nothing running allocates
+        // nothing at all, and shared by every tinted space.
+        private Material activeEffectAuraMaterial;
+        private Mesh activeEffectAuraMesh;
+
+        // The tiles currently tinted, so the per-frame glide walks the disk rather than all 210 tiles.
+        private readonly List<HexTileView> litAuraTiles = new List<HexTileView>();
+
         public BoardInteractionUnityView(
             IEnumerable<PrimitiveHeroView> heroes,
             IEnumerable<HexTileView> tiles,
@@ -100,6 +109,158 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The tiles this board paints, so a caller can read what is currently lit.</summary>
         public IReadOnlyList<HexTileView> TileViews => tiles;
 
+        /// <summary>
+        /// The generated violet tint an Active effect's disk is painted with, or null before any disk
+        /// has needed one. Milestone 8.35z63.
+        ///
+        /// <para><b>Blended paint rather than the luminous light the six-corner marks now use, and the
+        /// difference is the whole overlap rule.</b> A mark is a thin shape that says "act here", and
+        /// milestone 8.35z39 made those ADD their colour so the board reads as lit. A disk is a large
+        /// standing area that says "this is going on", and added light over a whole hex saturates
+        /// toward white - it would wash out the artwork, and worse, it would out-shout the gold
+        /// awaited-shine family whose job is to say "waiting on you". So the aura is milestone 8.11a's
+        /// FILL instead, at <see cref="BoardOverlayMaterial.OverlayAlpha"/>: the board's own painting
+        /// reads straight through it, every corner mark and every piece is drawn above it, and gold
+        /// still wins the eye where both apply. Both are drawn; neither hides the other.</para>
+        /// </summary>
+        public Material ActiveEffectAuraMaterial => activeEffectAuraMaterial;
+
+        /// <summary>
+        /// The one hex mesh every tinted space shares, or null before any disk has needed one. A disk
+        /// of sixty-one spaces is sixty-one renderers pointing at this, not sixty-one meshes.
+        /// </summary>
+        public Mesh ActiveEffectAuraMesh => activeEffectAuraMesh;
+
+        /// <summary>The native resources this view itself generated, for the hygiene fixtures.</summary>
+        public int OwnedNativeResourceCount =>
+            (activeEffectAuraMaterial == null ? 0 : 1) + (activeEffectAuraMesh == null ? 0 : 1);
+
+        /// <summary>
+        /// Releases what this view generated. The composition root calls it where it already disposes
+        /// the shared corner construction, for the reason that type documents.
+        /// </summary>
+        public void ReleaseOwnedResources()
+        {
+            var ownedMaterial = activeEffectAuraMaterial;
+            var ownedMesh = activeEffectAuraMesh;
+            activeEffectAuraMaterial = null;
+            activeEffectAuraMesh = null;
+            foreach (var tile in tiles)
+            {
+                if (tile != null)
+                {
+                    tile.SetActiveEffectAura(false, null, null);
+                }
+            }
+
+            DestroyOwnedResource(ownedMaterial);
+            DestroyOwnedResource(ownedMesh);
+        }
+
+        private static void DestroyOwnedResource(UnityEngine.Object resource)
+        {
+            if (resource == null)
+            {
+                return;
+            }
+
+            if (UnityEngine.Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(resource);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(resource);
+            }
+        }
+
+        private Material EnsureActiveEffectAuraMaterial() =>
+            activeEffectAuraMaterial != null
+                ? activeEffectAuraMaterial
+                : activeEffectAuraMaterial = BoardOverlayMaterial.Create(
+                    ActiveEffectAuraMaterialName,
+                    BoardOverlayMaterial.AtOverlayAlpha(MatchHudTheme.ActiveEffectAccent));
+
+        private Mesh EnsureActiveEffectAuraMesh(float outerRadius)
+        {
+            if (activeEffectAuraMesh != null)
+            {
+                return activeEffectAuraMesh;
+            }
+
+            activeEffectAuraMesh = FlatHexMeshBuilder.Create(outerRadius);
+            activeEffectAuraMesh.name = ActiveEffectAuraMaterialName;
+            activeEffectAuraMesh.hideFlags = HideFlags.DontSave;
+            return activeEffectAuraMesh;
+        }
+
+        public const string ActiveEffectAuraMaterialName = "Active Effect Aura";
+
+        /// <summary>The spaces currently tinted by a live disk, in board order.</summary>
+        public IReadOnlyList<HexTileView> LitAuraTiles => litAuraTiles;
+
+        /// <summary>
+        /// Slides every tinted space by its own carrier's live kinetic displacement, so a disk travels
+        /// with the piece it is drawn around instead of arriving a hex ahead of it.
+        ///
+        /// <para><b>Milestone 8.35z63, answering the user's "Does it fly with animation?" -
+        /// and it adds no animation authority.</b> It starts no clock, reads no duration and evaluates
+        /// no easing curve. <see cref="PrimitiveHeroView.KineticDisplacement"/> is the offset the
+        /// kinetic layer has ALREADY written into the piece's transform this frame; this copies it onto
+        /// that carrier's disk and stops. When nothing is playing the displacement is exactly zero, so
+        /// this writes zero and the disk sits on its settled, hex-derived spaces.</para>
+        ///
+        /// <para><b>Why the settled set never changes while it glides.</b> The projection has already
+        /// moved the hero when the slide begins, so <see cref="ActiveEffectVisibilityModel"/> already
+        /// holds the DESTINATION disk; the displacement is negative for the whole slide and eases to
+        /// zero. Drawing the destination disk offset backwards by one hex step is geometrically the
+        /// disk at the origin - a hex lattice is translation-invariant - so the disk appears to travel
+        /// from where the piece was to where it is going, and agrees exactly with the hex-derived set
+        /// at the instant the slide ends. Nothing re-derives membership mid-slide: what the rules
+        /// consider affected is the authority's and is untouched here. These are pixels.</para>
+        /// </summary>
+        public void GlideActiveEffectAuras()
+        {
+            if (litAuraTiles.Count == 0)
+            {
+                return;
+            }
+
+            var model = Model?.ActiveEffects;
+            for (var index = 0; index < litAuraTiles.Count; index++)
+            {
+                var tile = litAuraTiles[index];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetActiveEffectAuraGlide(DisplacementFor(model, tile.Coordinate));
+            }
+        }
+
+        private Vector3 DisplacementFor(
+            ActiveEffectVisibilityModel model, GuardsDigital.Core.Board.HexCoordinate space)
+        {
+            var aura = model?.AuraCovering(space);
+            if (aura == null || !aura.Carrier.IsDefined)
+            {
+                return Vector3.zero;
+            }
+
+            for (var index = 0; index < heroes.Count; index++)
+            {
+                var hero = heroes[index];
+                if (hero != null && hero.Occupancy.HeroId.Equals(aura.Carrier))
+                {
+                    // A piece that is not drawn is not being slid either.
+                    return hero.gameObject.activeSelf ? hero.KineticDisplacement : Vector3.zero;
+                }
+            }
+
+            return Vector3.zero;
+        }
+
         public event Action<HeroId> HeroSubmitted;
         public event Action<HeroId> HeroHighlighted;
         public event Action<MinionId> MinionSubmitted;
@@ -137,6 +298,16 @@ namespace GuardsDigital.Presentation.Match
             }
 
             Model = model ?? throw new ArgumentNullException(nameof(model));
+
+            // Milestone 8.35z63. Read once for the whole pass: which pieces an Active effect
+            // is standing on, and which spaces its disk covers. Both sets are the projection's, derived
+            // by `ActiveEffectVisibility`; this view decides only how they are drawn.
+            var activeEffects = model.ActiveEffects ?? ActiveEffectVisibilityModel.Empty;
+            var activeEffectHeroes = new HashSet<HeroId>(activeEffects.MarkedHeroes);
+            var activeEffectAura = new HashSet<GuardsDigital.Core.Board.HexCoordinate>(
+                activeEffects.AuraSpaces);
+            litAuraTiles.Clear();
+
             PrimitiveHeroView actingHero = null;
             foreach (var hero in heroes)
             {
@@ -147,6 +318,10 @@ namespace GuardsDigital.Presentation.Match
                     hero.SetTargetCue(
                         BoardTargetCueState.None,
                         BoardTargetConsequenceIntent.None);
+                    // A piece that is not on the board wears no ongoing-effect ring either. p.17
+                    // cancels an Active effect on a defeated controller anyway; this makes the visual
+                    // agree with that in the frame the piece disappears rather than one later.
+                    hero.SetActiveEffectMark(false, MatchHudTheme.ActiveEffectAccent);
                     // Milestone 8.35z6. Only a piece that WAS drawn a moment ago is a genuine
                     // removal edge worth a fade - a hero this render pass finds still absent (already
                     // inactive) fires nothing a second time.
@@ -173,6 +348,13 @@ namespace GuardsDigital.Presentation.Match
                 // Every board choice is now carried by the occupied hex's six corners. The retained
                 // ring remains part of the reusable piece view, but configured play never activates it.
                 hero.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+
+                // Milestone 8.35z63: the tray's own Active violet, on the piece the effect is
+                // standing on. It is a separate, wider annulus from the acting-hero gold below, so a
+                // hero who is both being waited on and carrying an effect wears both marks at once.
+                hero.SetActiveEffectMark(
+                    activeEffectHeroes.Contains(occupancy.HeroId),
+                    MatchHudTheme.ActiveEffectAccent);
 
                 // Milestone 8.35n (the FOURTH amendment). `FocusedHeroId` is `SelectedActor`'s own
                 // hero, unscoped and public, and unrelated to `hoveredHeroId` above - a viewer
@@ -310,6 +492,20 @@ namespace GuardsDigital.Presentation.Match
                 // whole-hex fills or rims for a board choice or projected result.
                 tile.SetHighlighted(false, null, null);
 
+                // Milestone 8.35z63: a live Active effect's disk, on its OWN layer under
+                // every mark and every piece. It is not the retired choice fill and never touches
+                // `IsHighlighted` - see `HexTileView.SetActiveEffectAura` for why that separation is
+                // load-bearing rather than tidy.
+                var inAura = activeEffectAura.Contains(tile.Coordinate);
+                tile.SetActiveEffectAura(
+                    inAura,
+                    inAura ? EnsureActiveEffectAuraMesh(tile.OuterRadius) : null,
+                    inAura ? EnsureActiveEffectAuraMaterial() : null);
+                if (inAura)
+                {
+                    litAuraTiles.Add(tile);
+                }
+
                 if (cornerHighlightTemplate != null)
                 {
                     var kind = hoveredHeroCoordinate.HasValue &&
@@ -338,6 +534,13 @@ namespace GuardsDigital.Presentation.Match
                             : HexCornerHighlightKind.None);
                 }
             }
+
+            // Milestone 8.35z63. Lighting a space resets its aura to the space itself, so the
+            // live offset is re-applied before this pass returns. Without it the one render that
+            // matters most - the projection change that STARTS a slide, when the displacement is at
+            // its largest - would draw the disk already arrived for a frame and then jump backwards to
+            // meet the piece. It reads the transforms the kinetic layer last wrote and moves nothing.
+            GlideActiveEffectAuras();
         }
 
         private static bool TryResolveCoordinate(

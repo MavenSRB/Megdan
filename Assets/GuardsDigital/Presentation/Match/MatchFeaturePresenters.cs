@@ -581,8 +581,10 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<HexCoordinate> heroRespawnDestinations = null,
             IEnumerable<SystemTransitionDestinationViewModel> systemTransitionDestinations = null,
             IEnumerable<HexCoordinate> effectChoiceMovementDestinations = null,
-            IEnumerable<AttackTargetDefensePreviewProjection> attackTargetDefensePreviews = null)
+            IEnumerable<AttackTargetDefensePreviewProjection> attackTargetDefensePreviews = null,
+            ActiveEffectVisibilityModel activeEffects = null)
         {
+            ActiveEffects = activeEffects ?? ActiveEffectVisibilityModel.Empty;
             Version = version;
             Heroes = Array.AsReadOnly((heroes ?? throw new ArgumentNullException(nameof(heroes))).ToArray());
             Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
@@ -758,6 +760,20 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public HexCoordinate? EffectChoiceResultingSpace { get; }
         public HexCoordinate? HeroRespawnHighlight { get; }
+
+        /// <summary>
+        /// Milestone 8.35z63: which hero pieces an Active effect is standing on, and which
+        /// spaces its disk covers, so the board can say in the tray's own violet what the rules are
+        /// still doing.
+        ///
+        /// <para>Never null - <see cref="ActiveEffectVisibilityModel.Empty"/> is what "nothing is
+        /// running" looks like - so every existing fixture that omits it renders exactly as before.
+        /// It is table-public by construction: it is derived from
+        /// <see cref="IMatchReadModel.ActiveEffectSourceCardInstanceIds"/>, which every seat and the
+        /// Director have carried identically since milestone 8.5b, so all six seats and any spectator
+        /// see the same rings and the same disks.</para>
+        /// </summary>
+        public ActiveEffectVisibilityModel ActiveEffects { get; }
     }
 
     public interface IBoardInteractionView
@@ -849,6 +865,7 @@ namespace GuardsDigital.Presentation.Match
     {
         private readonly IMatchClient session;
         private readonly IBoardInteractionView view;
+        private readonly EffectCapabilityCatalog activeEffectCapabilities;
         private IMatchReadModel lastProjection;
         private BoardInteractionViewModel lastViewModel;
         private IMatchReadModel fastTravelSelectionProjection;
@@ -874,10 +891,22 @@ namespace GuardsDigital.Presentation.Match
         {
         }
 
-        public BoardInteractionPresenter(IMatchClient session, IBoardInteractionView view)
+        /// <summary>
+        /// Milestone 8.35z63 adds <paramref name="activeEffectCapabilities"/>, and it is
+        /// TAKEN rather than asked for: <c>EffectSeamConformanceTests</c> forbids a production type
+        /// naming <c>MatchContentCatalogs.ForThisBuild</c>, so the composition that already holds this
+        /// match's content hands its capability catalog down. Left null - which is every historical
+        /// fixture and every lower-level composition - the board simply draws no Active-effect
+        /// treatment, exactly as it did before this milestone.
+        /// </summary>
+        public BoardInteractionPresenter(
+            IMatchClient session,
+            IBoardInteractionView view,
+            EffectCapabilityCatalog activeEffectCapabilities = null)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
+            this.activeEffectCapabilities = activeEffectCapabilities;
         }
 
         public event Action<IMatchReadModel> SessionProjectionChanged;
@@ -958,7 +987,12 @@ namespace GuardsDigital.Presentation.Match
                         .Select(destination => destination.Coordinate),
                     CreateSystemTransitionDestinations(projection),
                     SelectableEffectChoiceMovementDestinations(projection),
-                    projection.PendingAttackTargetDefensePreviews);
+                    projection.PendingAttackTargetDefensePreviews,
+                    // Milestone 8.35z63. Derived once per authoritative projection, on the
+                    // same identity gate every other member here rides, so the disks are re-anchored
+                    // exactly when the board is rebuilt - which is p.17's "an Active effect's Radius
+                    // moves with its hero" for free, and no per-frame work at all.
+                    ActiveEffectVisibility.Derive(projection, activeEffectCapabilities));
             }
 
             view.Render(lastViewModel);

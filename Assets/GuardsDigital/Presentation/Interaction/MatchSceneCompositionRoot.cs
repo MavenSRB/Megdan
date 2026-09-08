@@ -784,6 +784,15 @@ namespace GuardsDigital.Presentation.Interaction
         /// The configured scene owns only the shared corner construction. Legacy destination fill
         /// owners remain nullable for source compatibility and are never allocated by composition.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.35z63's violet aura fill is deliberately NOT counted here. This
+        /// member reports the BOUNDED SET composition allocates up front - twenty, whatever happens at
+        /// the table - and the aura material is allocated on first use and only while an Active effect
+        /// with a disk is live, so folding it in would turn a fixed bound into a number that moves with
+        /// play. It is owned and audited by <c>BoardInteractionUnityView.OwnedNativeResourceCount</c>
+        /// instead, released below beside this template, and its generate-once-and-release lifecycle is
+        /// asserted by <c>ActiveEffectBoardTreatmentTests</c>.
+        /// </remarks>
         public int OwnedHighlightNativeResourceCount =>
             (cornerHighlightTemplate?.OwnedNativeResourceCount ?? 0);
 
@@ -1437,6 +1446,9 @@ namespace GuardsDigital.Presentation.Interaction
 
             generatedHeroViews.Clear();
             generatedSelectors.Clear();
+            // Milestone 8.35z63: the board view generates one violet aura fill on first use,
+            // released here beside the shared corner construction for the same reason.
+            runtime?.BoardView?.ReleaseOwnedResources();
             cornerHighlightTemplate?.Dispose();
             cornerHighlightTemplate = null;
             runtime = null;
@@ -1945,6 +1957,7 @@ namespace GuardsDigital.Presentation.Interaction
                     hud.PlayfieldLayoutChanged -= mapView.ConfigureCameraViewport;
                 }
             }
+            runtime?.BoardView?.ReleaseOwnedResources();
             runtime = null;
             cornerHighlightTemplate?.Dispose();
             cornerHighlightTemplate = null;

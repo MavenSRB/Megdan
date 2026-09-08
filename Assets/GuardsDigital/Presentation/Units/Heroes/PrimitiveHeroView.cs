@@ -71,6 +71,7 @@ namespace GuardsDigital.Presentation.Units.Heroes
         private Material ownedMaterial;
         private Material ownedRimMaterial;
         private BoardTargetRing targetRing;
+        private ActiveEffectHeroMarker activeEffectMarker;
 
         public HeroOccupancy Occupancy => new HeroOccupancy(new HeroId(heroId), Coordinate);
 
@@ -204,9 +205,35 @@ namespace GuardsDigital.Presentation.Units.Heroes
             return true;
         }
 
+        /// <summary>
+        /// Where this piece authoritatively stands, from its projected occupancy alone.
+        ///
+        /// <para>Milestone 8.35z63 lifted it out of <see cref="ApplyLayout"/> so the same
+        /// arithmetic has two readers rather than two copies: the layout that writes it, and
+        /// <see cref="KineticDisplacement"/>, which measures the motion system's offset against it.
+        /// <c>KineticCueUnityView.AuthoritativeHeroPosition</c> computes the identical value for the
+        /// same reason and by the same rule - a piece's placement is recomputed from its occupancy
+        /// every frame and never accumulated.</para>
+        /// </summary>
+        public Vector3 AuthoritativeLocalPosition =>
+            HexWorldLayout.ToWorld(Coordinate, outerRadius) + (Vector3.up * verticalOffset);
+
+        /// <summary>
+        /// How far the motion system currently has this piece displaced from where its occupancy says
+        /// it stands - zero on any frame with nothing playing.
+        ///
+        /// <para>Milestone 8.35z63, and it is a READING rather than a second clock. The
+        /// kinetic layer's whole discipline is that it writes
+        /// <c>authoritative + offset</c> into the transform every frame and never integrates; this
+        /// subtracts the authoritative half back out, so whoever asks gets exactly the offset that
+        /// layer just wrote. Nothing here knows a duration, an easing curve, or whether a slide is
+        /// playing at all - which is what keeps the conductor the only animation authority.</para>
+        /// </summary>
+        public Vector3 KineticDisplacement => transform.localPosition - AuthoritativeLocalPosition;
+
         public void ApplyLayout()
         {
-            transform.localPosition = HexWorldLayout.ToWorld(Coordinate, outerRadius) + (Vector3.up * verticalOffset);
+            transform.localPosition = AuthoritativeLocalPosition;
         }
 
         /// <summary>
@@ -226,6 +253,49 @@ namespace GuardsDigital.Presentation.Units.Heroes
                 BoardPlaneWorldY(),
                 TargetFootprintKind());
         }
+
+        /// <summary>
+        /// The violet Active-effect ring this piece is wearing, or null before one has been needed.
+        /// Milestone 8.35z63.
+        /// </summary>
+        public ActiveEffectHeroMarker ActiveEffectMarker => activeEffectMarker;
+
+        /// <summary>Whether an Active effect is currently drawn as standing on this hero.</summary>
+        public bool HasActiveEffectMark =>
+            activeEffectMarker != null && activeEffectMarker.IsVisible;
+
+        /// <summary>
+        /// Draws, or clears, the ring that says an Active effect is standing on this hero.
+        ///
+        /// <para>Milestone 8.35z63. The ring is fitted to whichever visual this piece is
+        /// currently drawn as - <see cref="SelectionRadius"/> is already the radius of the piece a
+        /// player can actually see - and is laid on the board plane rather than at the piece's own
+        /// height, exactly as the target ring is. Clearing is a distinct call rather than a colour of
+        /// its own, so "no effect stands here" can never be expressed as a stray ring.</para>
+        ///
+        /// <para>The accent is the caller's, and is <c>MatchHudTheme.ActiveEffectAccent</c> - the ONE
+        /// violet milestone 8.5b minted for the tray's <c>ACTIVE</c> card outline. This view mints
+        /// none of its own.</para>
+        /// </summary>
+        public void SetActiveEffectMark(bool marked, Color accent)
+        {
+            if (!marked)
+            {
+                if (activeEffectMarker != null)
+                {
+                    activeEffectMarker.SetHidden();
+                }
+
+                return;
+            }
+
+            EnsureActiveEffectMarker().SetVisible(SelectionRadius, -verticalOffset, accent);
+        }
+
+        private ActiveEffectHeroMarker EnsureActiveEffectMarker() =>
+            activeEffectMarker != null
+                ? activeEffectMarker
+                : activeEffectMarker = ActiveEffectHeroMarker.GetOrCreate(transform);
 
         private BoardTargetRing EnsureTargetRing() =>
             targetRing != null ? targetRing : targetRing = BoardTargetRing.GetOrCreate(transform);
@@ -606,6 +676,11 @@ namespace GuardsDigital.Presentation.Units.Heroes
             if (!ReferenceEquals(targetRing, null))
             {
                 targetRing.ReleaseOwnedResources();
+            }
+
+            if (!ReferenceEquals(activeEffectMarker, null))
+            {
+                activeEffectMarker.ReleaseOwnedResources();
             }
 
             DestroyOwnedResource(ownedMesh);

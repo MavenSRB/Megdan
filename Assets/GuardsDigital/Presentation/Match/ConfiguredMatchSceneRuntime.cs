@@ -146,7 +146,12 @@ namespace GuardsDigital.Presentation.Match
             // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
             // "the same log for everyone", so there is no scoped-out composition for it to skip.
             MatchLogView = new MatchLogUnityView();
-            BoardPresenter = new BoardInteractionPresenter(client, BoardView);
+            // Milestone 8.35z63: the board's Active-effect treatment reads the Active-effect
+            // definitions this match's own content declares, so it is handed THIS composition's
+            // capability catalog rather than asking the build for one - the rule
+            // `EffectSeamConformanceTests` states and the offline harness enforces.
+            BoardPresenter = new BoardInteractionPresenter(
+                client, BoardView, ContentCatalogs?.Capabilities);
             HandsPresenter = new DirectorHandsPresenter(
                 client, HandsView, Seat?.HeroId ?? default);
             HeroOverviewsPresenter = new HeroOverviewsPresenter(

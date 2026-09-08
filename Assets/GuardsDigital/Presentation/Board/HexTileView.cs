@@ -125,6 +125,123 @@ namespace GuardsDigital.Presentation.Board
             IsHighlighted = highlighted;
         }
 
+        /// <summary>The child layer one space's Active-effect aura is drawn on.</summary>
+        public const string ActiveEffectAuraLayerName = "Active Effect Aura";
+
+        /// <summary>
+        /// How far above the tile plane the aura lies: above the board's own surface, and BELOW
+        /// everything a player acts on.
+        ///
+        /// <para>Milestone 8.35z63, and the number is chosen against the heights already in
+        /// use rather than picked: the tile's debug perimeter sits at 0.015, the six-corner halo and
+        /// core at 0.075 and 0.085, and a hero piece at 0.03. An aura at 0.010 is therefore under every
+        /// mark and every piece on the board, which is the whole overlap rule - an ongoing effect may
+        /// never cover an affordance a player is being asked to click.</para>
+        /// </summary>
+        public const float ActiveEffectAuraSurfaceOffset = 0.010f;
+
+        /// <summary>Whether this space is currently tinted by a live Active effect's disk.</summary>
+        public bool HasActiveEffectAura
+        {
+            get
+            {
+                var layer = transform.Find(ActiveEffectAuraLayerName);
+                if (layer == null) return false;
+                var renderer = layer.GetComponent<MeshRenderer>();
+                return renderer != null && renderer.enabled;
+            }
+        }
+
+        /// <summary>
+        /// Tints, or clears, this space as part of a live Active effect's disk.
+        ///
+        /// <para><b>Its own layer, and deliberately not <see cref="SetHighlighted"/>.</b> That call
+        /// swaps the tile's own fill and <see cref="IsHighlighted"/> means one specific thing across
+        /// this project's whole fixture surface - "a whole-hex fill is standing in for a board CHOICE",
+        /// which milestone 8.30h retired and a dozen journeys assert is false on every destination they
+        /// click. An aura is not a choice and must not borrow that flag, or every one of those
+        /// assertions would start reporting a fill that is not the one they are about. So the aura is a
+        /// separate child renderer underneath the marks, and the two states can be read apart.</para>
+        ///
+        /// <para>The mesh and material are the caller's and are SHARED across every tinted space - one
+        /// hex mesh at this board's radius, one violet tint - so a disk of sixty-one spaces costs sixty
+        /// -one renderers and no extra native resources. This view owns neither and destroys
+        /// neither.</para>
+        /// </summary>
+        public void SetActiveEffectAura(bool lit, Mesh sharedMesh, Material sharedMaterial)
+        {
+            var layer = transform.Find(ActiveEffectAuraLayerName);
+            if (!lit)
+            {
+                if (layer != null)
+                {
+                    var existing = layer.GetComponent<MeshRenderer>();
+                    if (existing != null) existing.enabled = false;
+                }
+
+                return;
+            }
+
+            if (sharedMesh == null) throw new System.ArgumentNullException(nameof(sharedMesh));
+            if (sharedMaterial == null) throw new System.ArgumentNullException(nameof(sharedMaterial));
+
+            if (layer == null)
+            {
+                layer = new GameObject(ActiveEffectAuraLayerName).transform;
+                layer.SetParent(transform, false);
+                // The same layer the space it belongs to is on, exactly as `BoardTargetRing` gives its
+                // generated cue object the layer of the piece it hangs under.
+                layer.gameObject.layer = gameObject.layer;
+            }
+
+            layer.localPosition = new Vector3(0f, ActiveEffectAuraSurfaceOffset, 0f);
+            layer.localRotation = Quaternion.identity;
+            auraGlide = Vector3.zero;
+            layer.localScale = Vector3.one;
+            var filter = layer.GetComponent<MeshFilter>() ??
+                layer.gameObject.AddComponent<MeshFilter>();
+            filter.sharedMesh = sharedMesh;
+            var renderer = layer.GetComponent<MeshRenderer>() ??
+                layer.gameObject.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = sharedMaterial;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            renderer.enabled = true;
+        }
+
+        private Vector3 auraGlide;
+
+        /// <summary>How far this space's aura is currently offset from the space itself.</summary>
+        public Vector3 ActiveEffectAuraGlide => auraGlide;
+
+        /// <summary>
+        /// Slides this space's aura quad, and only it, by a world offset in the board plane.
+        ///
+        /// <para><b>Milestone 8.35z63, the user's follow-up: "Does it fly with animation?"</b>
+        /// While a carrier's token is being slid by the motion system, its whole disk is drawn offset
+        /// by the same displacement, so the aura travels with the piece instead of teleporting a hex
+        /// ahead of it. The lit SET never changes for this - it stays the settled, hex-derived one -
+        /// and the offset returns to zero when the slide ends. Because a hex disk translated by a
+        /// lattice vector IS the disk around the destination, the two agree exactly at the end and
+        /// there is no snap to hide.</para>
+        ///
+        /// <para>Only X and Z are taken. The aura's height is
+        /// <see cref="ActiveEffectAuraSurfaceOffset"/>'s to decide and a glide may never lift a tint
+        /// over the marks and pieces it is required to stay beneath.</para>
+        /// </summary>
+        public void SetActiveEffectAuraGlide(Vector3 worldOffset)
+        {
+            var layer = transform.Find(ActiveEffectAuraLayerName);
+            if (layer == null)
+            {
+                return;
+            }
+
+            auraGlide = new Vector3(worldOffset.x, 0f, worldOffset.z);
+            layer.localPosition = new Vector3(
+                auraGlide.x, ActiveEffectAuraSurfaceOffset, auraGlide.z);
+        }
+
         public void ConfigureCornerHighlight(HexCornerHighlightTemplate template)
         {
             var highlight = GetComponent<HexCornerHighlight>() ??
