@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Same assembly identity and pure-project dependencies as Unity; Presentation is a pure-source slice only. -->
+  <PropertyGroup><AssemblyName>GuardsDigital.Core.CardState</AssemblyName></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)/Assets/GuardsDigital/Core/CardState/**/*.cs" />
+
+  </ItemGroup>
+</Project>

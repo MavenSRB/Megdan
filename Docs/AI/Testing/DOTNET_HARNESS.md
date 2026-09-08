@@ -2,15 +2,21 @@
 
 Canonical active shard for the Unity-free validation tier introduced by milestone 6.1t. Return to [TESTING.md](../TESTING.md).
 
+The superseded single-assembly contract is preserved in [the archive](../Archive/DOTNET_HARNESS_BEFORE_CLEANUP.md).
+
 ## Scope and what it proves
 
-`Tools/DotnetTests/GuardsDigital.DotnetTests.csproj` compiles the complete `Assets/GuardsDigital/Core` (including the nested `Core/CardState` assembly sources) and `Assets/GuardsDigital/Application` sources plus every Unity-free Edit Mode test file, unmodified, under net10.0 with `LangVersion` pinned to 9.0 (Unity 6000.x's C# level) so net-only syntax cannot leak into shared source. At milestone 6.1t it runs 272 tests in seconds on any OS with a .NET 10 SDK, including the full snapshot compatibility corpus, the replay/Undo determinism suites, the `MatchAggregate` atomicity fixture, and all authority fixtures. The single-assembly compile makes `GuardsDigital.Application`'s `InternalsVisibleTo` grant inert but harmless. It also hides the opposite case, which is not harmless: `GuardsDigital.Core` grants the Edit Mode test assembly nothing, so a test calling a Core `internal` member compiles and passes here and fails to compile at all under Unity's real assembly split. Milestone 8.12 introduced exactly that and it stood until milestone 8.14 next ran the Windows launcher, because the milestones between were green here and truthfully recorded that no production Unity-facing path had changed. Exercise an internal through its real caller, as the existing fixtures do, and run the launcher whenever an Edit Mode test file changes.
+The harness compiles unmodified production sources into separate `GuardsDigital.Core.CardState`, `GuardsDigital.Core`, `GuardsDigital.Application`, and `GuardsDigital.Network` assemblies targeting netstandard2.1/C# 9. The net10.0 test assembly is named `GuardsDigital.EditModeTests`, matching Unity and preserving Application's existing, deliberately narrow internal-access grant. Core grants no such access. Project-reference/identity checks compare the harness projects with their corresponding asmdefs.
 
-It does NOT prove: Presentation compilation or behavior, `[UnityTest]`/Play Mode scenarios, assembly-boundary reflection checks, IL conformance over the real assembly split, scene or asset integrity, or anything requiring the Unity editor. Those remain owned by the Unity suites through the Windows launcher in [POLICY.md](POLICY.md).
+The pure `ActiveEffectVisibility.cs` Presentation slice is compiled separately under its actual assembly identity. This is not the entire Presentation assembly. No Unity API is shimmed for that source: adding one makes the offline build fail. The map loader remains the one explicit stand-in below.
+
+`Tools/Test-DotnetAssemblyBoundaries.ps1` deliberately compiles forbidden Core access and requires compiler error CS0122, then builds/runs the public-boundary and shim checks. Before 8.35z66 the same forbidden source compiled successfully in the single assembly; it now fails across the actual boundary. Production asmdefs and visibility grants are unchanged.
+
+This does **not** prove full Presentation, Unity lifecycle/serialization/assets, Play Mode, or Unity's complete assembly/package graph. NUnit remains the existing offline package (3.14); Unity supplies its own version, so tests using new framework APIs still need Unity compilation. The presentation compile probe is also still a single-assembly convenience check, not a substitute for this boundary guard or Unity.
 
 ## Exclude-list maintenance rule
 
-Unity-free test files are included by glob; the Unity- and Presentation-dependent Edit Mode files are named in the csproj `Exclude` attribute. The count is deliberately not stated here: nothing checks it mechanically, and it was wrong in two directions at milestone 7.9a - stale by three, and describing every entry as Unity-dependent when several are excluded for reaching `GuardsDigital.Presentation`, which this harness does not compile. Read the attribute for the list. A newly added Edit Mode test therefore compiles into the harness by default, and a Unity-dependent newcomer breaks the harness build immediately. That build failure is the tripwire: resolve it by adding the file to the `Exclude` list only when it genuinely requires Unity, never by weakening the harness. Deleting an excluded file must remove its `Exclude` entry.
+Unity-free test files are included by glob; the Unity- and Presentation-dependent Edit Mode files are named one per entry in `Tools/DotnetTests/UnityOnlyTests.props`. The count is deliberately not stated here: nothing checks it mechanically, and it was wrong in two directions at milestone 7.9a - stale by three, and describing every entry as Unity-dependent when several are excluded for reaching `GuardsDigital.Presentation`, which this harness does not compile. Read that file for the list; the harness guard rejects duplicates, globs, and missing paths. A newly added Edit Mode test therefore compiles into the harness by default, and a Unity-dependent newcomer breaks the harness build immediately. That build failure is the tripwire: resolve it by adding the file to the explicit exclusion list only when it genuinely requires Unity, never by weakening the harness. Deleting an excluded file must remove its entry.
 
 ## The shim boundary (known drift risk)
 
@@ -28,6 +34,7 @@ Retiring the shim entirely by moving map parsing onto a Unity-free parser in Cor
 | Task | Linux | Windows |
 | --- | --- | --- |
 | Full harness | `dotnet test Tools/DotnetTests/GuardsDigital.DotnetTests.csproj` | same |
+| Assembly-boundary guard | `pwsh -NoProfile -File Tools/Test-DotnetAssemblyBoundaries.ps1` | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\Tools\\Test-DotnetAssemblyBoundaries.ps1` |
 | Focused filter | append `--filter "FullyQualifiedName~<FixtureName>"` | same |
 | Living-doc validator | `pwsh -NoProfile -File ./Tools/Validate-LivingDocumentation.ps1` | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-LivingDocumentation.ps1` |
 | Board-map validator | `pwsh -NoProfile -File ./Tools/Validate-BoardMapSpecification.ps1` | `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Validate-BoardMapSpecification.ps1` |
@@ -37,4 +44,4 @@ One-time Linux setup: a .NET 10 SDK and pwsh (`sudo snap install powershell --cl
 
 ## Tier placement
 
-For pure Core/CardState/Application changes, a green full harness run plus the applicable focused filters satisfies the Edit Mode portion of the [POLICY.md](POLICY.md) T1/T2 evidence on any OS. Any change touching Presentation, assets, scenes, assemblies, or another Unity-facing path still requires the applicable Unity tier through the Windows launcher before its milestone closes; until then the milestone records that run as pending.
+For pure Core/CardState/Application changes, green focused behavior tests plus directly affected regressions satisfies the Edit Mode portion of the [POLICY.md](POLICY.md) T1/T2 evidence on any OS. Any change touching Presentation, assets, scenes, assemblies, or another Unity-facing path still requires the applicable Unity tier through the Windows launcher before its milestone closes; until then the milestone records that run as pending.

@@ -5,8 +5,11 @@
        Docs/AI/Testing/DOTNET_HARNESS.md. Unity-dependent Edit Mode files are
        excluded explicitly so a new Unity-dependent test breaks this build
        instead of being silently skipped. -->
+  <Import Project="UnityOnlyTests.props" />
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>GuardsDigital.EditModeTests</AssemblyName>
     <LangVersion>9.0</LangVersion>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>disable</Nullable>
@@ -15,36 +18,26 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="../../Assets/GuardsDigital/Core/**/*.cs" />
-    <Compile Include="../../Assets/GuardsDigital/Application/**/*.cs" />
-    <Compile Include="../../Assets/GuardsDigital/Network/**/*.cs" />
-
-    <!-- Milestone 8.35z63. The ONE Presentation source this harness compiles, and it is
-         admitted by file rather than by wildcard on purpose.
-
-         `ActiveEffectVisibility` derives which hero pieces an Active effect stands on and which
-         hexes its disk covers, from facts the read model already carries. That derivation is pure
-         C# over Core and Application types with no `UnityEngine` reference at all, and the whole
-         point of proving it is the exact hex set of a disk - a question that wants a real content
-         catalog and real board geometry, not a Unity launch. Compiling it here is what lets
-         `ActiveEffectVisibilityTests` answer it in the ordinary offline harness.
-
-         IT IS ALSO A TRIPWIRE. The day someone reaches for a `Color`, a `Vector3` or a
-         `MonoBehaviour` in that file, THIS BUILD goes red rather than the derivation quietly
-         becoming Unity-only and untestable offline. Everything that draws - the ring, the tint,
-         the materials - lives in the view files beside it and is deliberately not here. -->
-    <Compile Include="../../Assets/GuardsDigital/Presentation/Match/ActiveEffectVisibility.cs" />
+    <ProjectReference Include="Assemblies/CardState/GuardsDigital.Core.CardState.csproj" />
+    <ProjectReference Include="Assemblies/Core/GuardsDigital.Core.csproj" />
+    <ProjectReference Include="Assemblies/Application/GuardsDigital.Application.csproj" />
+    <ProjectReference Include="Assemblies/Network/GuardsDigital.Network.csproj" />
+    <ProjectReference Include="Assemblies/Presentation/GuardsDigital.Presentation.csproj" />
 
     <Compile Include="Shims/**/*.cs" />
     <Compile Include="HarnessTests/**/*.cs" />
     <Compile Include="../../Assets/Tests/EditMode/*.cs"
-             Exclude="../../Assets/Tests/EditMode/ActionUnavailabilityTooltipTests.cs;../../Assets/Tests/EditMode/ActiveEffectBoardTreatmentTests.cs;../../Assets/Tests/EditMode/ApplicationArchitectureBoundaryTests.cs;../../Assets/Tests/EditMode/AttackSpotlightGeometryTests.cs;../../Assets/Tests/EditMode/AttackSpotlightTests.cs;../../Assets/Tests/EditMode/BoardOverlayVariantRetentionTests.cs;../../Assets/Tests/EditMode/BoardPieceDepthTests.cs;../../Assets/Tests/EditMode/BroganAlliedHeroCardTests.cs;../../Assets/Tests/EditMode/CardCommitmentDragStateTests.cs;../../Assets/Tests/EditMode/ClearPresentationTests.cs;../../Assets/Tests/EditMode/ComponentLifetimeOwnershipConformanceTests.cs;../../Assets/Tests/EditMode/ConfiguredCardArtworkCatalogTests.cs;../../Assets/Tests/EditMode/ConfiguredMatchCutoverArchitectureTests.cs;../../Assets/Tests/EditMode/ConfiguredPointerSelectionTests.cs;../../Assets/Tests/EditMode/ConfiguredSceneSerializationTests.cs;../../Assets/Tests/EditMode/DefeatFadeGhostTests.cs;../../Assets/Tests/EditMode/DestinationHighlightMaterialOwnershipTests.cs;../../Assets/Tests/EditMode/DirectorHandPresentationTests.cs;../../Assets/Tests/EditMode/EffectChoiceStatusNamingTests.cs;../../Assets/Tests/EditMode/FizzleNoticeStreamTests.cs;../../Assets/Tests/EditMode/FlatHexMeshBuilderTests.cs;../../Assets/Tests/EditMode/HeroRailPortraitTests.cs;../../Assets/Tests/EditMode/HexCornerHighlightTests.cs;../../Assets/Tests/EditMode/HexWorldLayoutTests.cs;../../Assets/Tests/EditMode/HostConsoleCommandsTests.cs;../../Assets/Tests/EditMode/HudButtonTreatmentTests.cs;../../Assets/Tests/EditMode/ILConformanceScannerTests.cs;../../Assets/Tests/EditMode/KineticConductorTests.cs;../../Assets/Tests/EditMode/KineticCueTests.cs;../../Assets/Tests/EditMode/KineticMotionLanguageTests.cs;../../Assets/Tests/EditMode/KineticMotionVocabularyTests.cs;../../Assets/Tests/EditMode/KineticPlaybackTests.cs;../../Assets/Tests/EditMode/LevelUpHandPreviewTests.cs;../../Assets/Tests/EditMode/MatchFeaturePresenterTests.cs;../../Assets/Tests/EditMode/MatchHudAspectRatioFitTests.cs;../../Assets/Tests/EditMode/MatchHudPanelScalingTests.cs;../../Assets/Tests/EditMode/MatchHudPresentationTests.cs;../../Assets/Tests/EditMode/MatchSessionDiagnosticCostTests.cs;../../Assets/Tests/EditMode/MinimalHexGridSceneTests.cs;../../Assets/Tests/EditMode/MinionBattleAgreementRenderingTests.cs;../../Assets/Tests/EditMode/MinionChoicePresentationTests.cs;../../Assets/Tests/EditMode/OfficialBoardArtworkTests.cs;../../Assets/Tests/EditMode/PendingDecisionContractConformanceTests.cs;../../Assets/Tests/EditMode/Phase4ArchitectureConformanceTests.cs;../../Assets/Tests/EditMode/Phase4RuntimeHygieneTests.cs;../../Assets/Tests/EditMode/PlaceholderObstacleViewTests.cs;../../Assets/Tests/EditMode/PlacedTokenViewTests.cs;../../Assets/Tests/EditMode/PracticeBotSeatDriverTests.cs;../../Assets/Tests/EditMode/PrimitiveHeroViewTests.cs;../../Assets/Tests/EditMode/PrivateOnlineBackgroundExecutionTests.cs;../../Assets/Tests/EditMode/PrivateSeatDriverGreedyPreferenceTests.cs;../../Assets/Tests/EditMode/PrivateSeatDriverTests.cs;../../Assets/Tests/EditMode/PromptReachabilityConformanceTests.cs;../../Assets/Tests/EditMode/RangedSmackTests.cs;../../Assets/Tests/EditMode/RuntimeShaderResolutionTests.cs;../../Assets/Tests/EditMode/RuntimeTooltipLayerTests.cs;../../Assets/Tests/EditMode/SabinaAfterAttackRemovalTests.cs;../../Assets/Tests/EditMode/SceneAssetInspection.cs;../../Assets/Tests/EditMode/SeatScopedMatchHudTests.cs;../../Assets/Tests/EditMode/SeatScopedPresenterBindingTests.cs;../../Assets/Tests/EditMode/StandardMinionViewTests.cs;../../Assets/Tests/EditMode/StatusDerivationConformanceTests.cs;../../Assets/Tests/EditMode/UrpMigrationTests.cs;../../Assets/Tests/EditMode/WaveRemainingHudTests.cs" />
+             Exclude="@(UnityOnlyTest)" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(HarnessForbiddenAccessProbe)' == 'true'">
+    <Compile Include="HarnessProbes/ForbiddenCoreAccess.cs" />
   </ItemGroup>
 
   <ItemGroup>

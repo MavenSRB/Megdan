@@ -37,7 +37,7 @@ Non-goals: no semantic rule changes, bulk corpus pruning, or replacement governa
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z65-remove-routine-generated-governance-churn-completion-evidence).
 
-### [ ] 8.35z66 Make focused offline validation trustworthy
+### [x] 8.35z66 Make focused offline validation trustworthy
 
 Observable outcome: the .NET harness compiles production and tests across the corresponding Unity assembly boundaries and supports focused runs without hiding illegal internal access.
 
@@ -48,6 +48,8 @@ Acceptance checks:
 - Record focused versus full timing; do not weaken evidence/launcher rejection to make a run green.
 
 Non-goals: no production assembly/SDK migration, removal of regression coverage, or test parallelism against one Unity project.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z66-make-focused-offline-validation-trustworthy-completion-evidence).
 
 ### [ ] 8.35z67 Give HUD features cohesive source boundaries
 

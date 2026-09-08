@@ -1325,3 +1325,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z65 | Frozen historical experiments, one current-status route, and archived README chronology remove routine regeneration while retaining live guards. | `milestone/8.35z65` |
 
+## Milestone 8.35z66 Make focused offline validation trustworthy completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z66 | Offline production/test assembly boundaries now match Unity; focused checks preserve coverage, and the level-up capture fixture reaches its actual prerequisite. | `milestone/8.35z66` |
+

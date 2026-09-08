@@ -38,3 +38,4 @@ Active definitions remain indexed from [ROADMAP.md](../ROADMAP.md).
 - [Pre-governance project-status snapshot](PROJECT_STATUS_PRE_GOVERNANCE.md)
 - [Resolved technical risks](RESOLVED_TECHNICAL_RISKS.md)
 - [Pre-cleanup README status narrative](README_STATUS_BEFORE_CLEANUP.md).
+- [Pre-cleanup offline harness contract](DOTNET_HARNESS_BEFORE_CLEANUP.md).

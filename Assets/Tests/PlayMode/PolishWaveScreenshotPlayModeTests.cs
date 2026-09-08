@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -299,30 +301,68 @@ namespace GuardsDigital.Tests.PlayMode
         /// Milestone 8.35z58's second half: the seat's own hand, drawn above the p.15 upgrade offer.
         /// </summary>
         /// <remarks>
-        /// The preview is gated on a real levelling pause, so this case photographs it only when the
-        /// composed opening position can be driven to one within its own budget; otherwise it says so
-        /// rather than photographing an empty stack and calling it the feature.
+        /// Reach a real levelling pause through the existing Director fixture controls, then bind
+        /// the levelling hero as this presenter's viewer. This is a rendering/capture check, not a
+        /// network authorization or real-pointer journey. Missing setup is a failure, never a skip.
         /// </remarks>
         [UnityTest]
         public IEnumerator TheLevellingHandPreview_IsPhotographedAboveTheOffer()
         {
             EnsureShotFolder();
             yield return LoadTheMatch();
-            var hud = Root().Hud;
+            var root = Root();
+            var runtime = root.Runtime;
+            var budget = 256;
+            while (runtime.SystemTransitionPrompt?.Kind != SystemTransitionPromptKind.LevelUpUpgrade)
+            {
+                Assert.That(budget--, Is.GreaterThan(0), "The fixture never reached a level-up offer.");
+                var awaiting = runtime.HandsView.Model.Hands.FirstOrDefault(hand =>
+                    hand.CommitmentStatus == TurnCardCommitmentStatus.AwaitingResponse && hand.Cards.Count > 0);
+                if (awaiting != null)
+                {
+                    Assert.That(runtime.SelectCommitmentCard(awaiting.Cards[0].Id), Is.True);
+                    Assert.That(runtime.ConfirmSelectedCommitment(), Is.True);
+                }
+                else if (runtime.PendingInitiativeChoice != null)
+                {
+                    Assert.That(runtime.SubmitInitiativeChoice(
+                        runtime.PendingInitiativeChoice.CandidateCardInstanceIds[0]), Is.True);
+                }
+                else if (runtime.SystemTransitionPrompt != null)
+                {
+                    Assert.That(runtime.SubmitSystemTransitionOption(0), Is.True);
+                }
+                else if (runtime.Phase == RoundResolutionPhase.EndOfRound)
+                {
+                    Assert.That(runtime.ContinueEndOfRound(), Is.True);
+                }
+                else
+                {
+                    Assert.That(runtime.SubmitEndTurn(), Is.True);
+                }
+                yield return null;
+            }
+
+            // The feature intentionally excludes an undefined Director viewer. Bind a real hero
+            // through the existing presenter seam; never manufacture a preview model or hand.
+            var heroId = runtime.Projection.PendingSystemTransitionDescription.HeroId;
+            runtime.RoundPresenter.SetHomeHero(heroId);
+            runtime.RefreshAll();
+            yield return null;
+            yield return null;
+            var hud = root.Hud;
             Assert.That(hud, Is.Not.Null);
 
             var preview = UiPlayer.Descendants(hud.RootElement)
                 .FirstOrDefault(element => element.name == "gd-levelup-hand-preview");
-            if (preview == null || !UiPlayer.IsShown(preview))
-            {
-                Assert.Ignore(
-                    "The composed opening position is not paused on a p.15 upgrade, so the levelling " +
-                    "hand preview is correctly absent. Its four Edit Mode cases in " +
-                    "LevelUpHandPreviewTests drive the real pause and gate the behaviour; this case " +
-                    "photographs it only when a driven scene stands in that window.");
-            }
+            Assert.That(preview, Is.Not.Null, "The real level-up pause must render its hand preview.");
+            Assert.That(UiPlayer.IsShown(preview), Is.True);
+            Assert.That(runtime.RoundView.Model.LevelUpHandPreview, Is.Not.Empty);
+            Assert.That(runtime.RoundView.Model.LevelUpHandPreview.All(card =>
+                runtime.Projection.Cards.Single(instance => instance.Id.Equals(card.CardInstanceId)).OwnerId.Equals(heroId)),
+                Is.True, "Every preview card belongs to the bound levelling hero.");
 
-            yield return UiPlayer.CaptureGameView(Shot, "levelup-hand-preview");
+            yield return UiPlayer.CaptureGameView("8-35z66", "levelup-hand-preview");
         }
     }
 }

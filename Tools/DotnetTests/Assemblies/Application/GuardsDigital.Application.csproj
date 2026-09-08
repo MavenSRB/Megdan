@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Same assembly identity and pure-project dependencies as Unity; Presentation is a pure-source slice only. -->
+  <PropertyGroup><AssemblyName>GuardsDigital.Application</AssemblyName></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(RepoRoot)/Assets/GuardsDigital/Application/**/*.cs" />
+    <ProjectReference Include="../Core/GuardsDigital.Core.csproj" />
+    <ProjectReference Include="../CardState/GuardsDigital.Core.CardState.csproj" />
+  </ItemGroup>
+</Project>
