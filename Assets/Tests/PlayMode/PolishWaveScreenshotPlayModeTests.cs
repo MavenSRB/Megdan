@@ -120,12 +120,7 @@ namespace GuardsDigital.Tests.PlayMode
             if (!Directory.Exists(corpus)) yield break;
             yield return LoadTheMatch();
             var hud = Root().Hud;
-            var gallery = new VisualElement { name = "gd-private-artwork-verification" };
-            gallery.style.position = Position.Absolute;
-            gallery.style.left = 400f;
-            gallery.style.top = 120f;
-            gallery.style.flexDirection = FlexDirection.Row;
-            gallery.style.backgroundColor = MatchHudTheme.TopBarBackground;
+            var gallery = PlayerSmokeTestDriver.BuildArtworkInspection();
             hud.RootElement.Add(gallery);
             try
             {
@@ -139,20 +134,13 @@ namespace GuardsDigital.Tests.PlayMode
                 };
                 foreach (var hero in heroes)
                 {
-                    var column = new VisualElement();
-                    column.style.width = CardFootprint.Width + 20f;
-                    column.style.flexShrink = 0f;
-                    column.Add(new Label(hero.Name) { style = { color = Color.white, fontSize = 20f } });
-                    gallery.Add(column);
                     foreach (var tier in new[] { CardTier.None, CardTier.II })
                     {
                         var definition = hero.Cards.First(card => card.Progression.Tier == tier);
                         Assert.That(ConfiguredCardArtwork.TryLoadTexture(definition.Reference,
                             out var texture, out var path), Is.True, definition.Id.Value);
-                        var card = CurrentRoundCards.DeckCard(
-                            new CardInstanceId("artwork-check-" + definition.Id.Value), definition);
-                        var face = DirectorHandsUnityView.BuildStandaloneCard(card);
-                        column.Add(face);
+                        var face = gallery.Children().SelectMany(column => column.Children()).Single(element =>
+                            element.userData is CardDefinitionReference reference && reference.Equals(definition.Reference));
                         var picture = face.Q<Image>("gd-card-artwork");
                         Assert.That(picture, Is.Not.Null, path);
                         Assert.That(picture.image, Is.SameAs(texture));

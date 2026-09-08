@@ -563,6 +563,66 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
         }
 
+        [UnityTest]
+        public IEnumerator FillButton_ConnectsInProcessBotsAndLeaveReleasesTheHost()
+        {
+            var previousPacing = System.Environment.GetEnvironmentVariable("GUARDS_TESTDRIVER_THINK_SECONDS");
+            System.Environment.SetEnvironmentVariable("GUARDS_TESTDRIVER_THINK_SECONDS", "0");
+            try
+            {
+                foreach (var format in new[] { "2V2", "3V3" })
+                {
+                    yield return LoadTheLobby();
+                    var driver = Driver();
+                    UiPlayer.Click(Control(driver, format));
+                    yield return null;
+                    yield return null;
+                    var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+                    probe.Start();
+                    var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+                    probe.Stop();
+                    Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
+                    Field(driver, PrivateLobbyUnityView.PortFieldName).value = port.ToString();
+                    yield return null;
+                    UiPlayer.Click(Control(driver, "HOST"));
+                    yield return null;
+                    yield return null;
+                    UiPlayer.Click(Control(driver, "FILL WITH BOTS"));
+                    // This is the regression for the shipped button, not a rehearsal-only spawn path.
+                    yield return null;
+                    Assert.That(driver.Presenter.Model.Seats.Count(row => row.IsTestDriverSeat && row.OccupancyLabel == "SEATED"),
+                        Is.EqualTo(format == "2V2" ? 4 : 6));
+                    var deadline = Time.realtimeSinceStartup + 30f;
+                    while (Time.realtimeSinceStartup < deadline && Runtime().Host.Version < 20)
+                        yield return null;
+                    Assert.That(driver.Presenter.Model.HasMatchStarted, Is.True);
+                    Assert.That(Runtime().Host.Version,
+                        Is.GreaterThanOrEqualTo(20), "The actual button must reach accepted gameplay, not just launch something.");
+                    if (format == "2V2")
+                    {
+                        UiPlayer.Click(Control(driver, "LEAVE"));
+                        yield return null;
+                        yield return null;
+                        Assert.That(driver.Presenter.Model.Seats.Any(row => row.IsTestDriverSeat), Is.False);
+                        Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
+                    }
+                    else
+                    {
+                        Object.Destroy(driver.gameObject);
+                        yield return null;
+                        yield return null;
+                    }
+                    var stoppedVersion = Runtime().Host.Version;
+                    yield return null;
+                    Assert.That(Runtime().Host.Version, Is.EqualTo(stoppedVersion));
+                    var rebound = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, port);
+                    rebound.Start(); // Leaving releases the actual port, not the probe's previous ephemeral bind.
+                    rebound.Stop();
+                }
+            }
+            finally { System.Environment.SetEnvironmentVariable("GUARDS_TESTDRIVER_THINK_SECONDS", previousPacing); }
+        }
+
         /// <summary>
         /// Every control the lobby offers can actually be pressed at every supported desktop
         /// validation resolution - drawn inside the panel, and reached by a pointer at its centre.

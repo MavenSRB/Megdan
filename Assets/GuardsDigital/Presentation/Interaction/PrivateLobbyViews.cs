@@ -667,54 +667,10 @@ namespace GuardsDigital.Presentation.Interaction
         /// </summary>
         private string lastSurfacedLobbyRefusal = string.Empty;
 
-        /// <summary>
-        /// 8.35t corrective. Why a spawned child never reached this host at all: the address a
-        /// human types to HOST is the bind address, not necessarily a dialable one from a second
-        /// process on this same machine. A listener bound to this machine's own real network
-        /// address (typed so a remote friend's port-forward lands on it - the shape the tester
-        /// instructions' own solo-practice paragraph invites, not only the multi-human case)
-        /// actively refuses a loopback dial; confirmed directly with a bare
-        /// <c>TcpListener</c>/<c>TcpClient</c> pair before touching this file. Resolved once, right
-        /// after a successful bind, so every later spawn dials the address that will actually
-        /// answer rather than the form's own unrelated placeholder text.
-        /// </summary>
-        private string hostDialAddress = string.Empty;
+        private GuardsDigital.Application.Bots.PrivateSessionBotFleet botFleet;
+        private string reportedBotFailure = string.Empty;
+        private readonly HashSet<SeatId> testDriverSeats = new HashSet<SeatId>();
 
-        /// <summary>
-        /// THIRTEENTH amendment. This host's own spawned test-driver children - its own OS process
-        /// tree, killed when this session ends, per the amendment's own "who owns them, how they
-        /// shut down" design point. 8.35t adds a parent-PID watchdog on the child's own side as a
-        /// second, independent line of defense: a host that dies without a clean Leave (crash,
-        /// closed window, task-killed) still orphaned every spawned child before that corrective,
-        /// because nothing but this list's own teardown ever reaped them.
-        /// </summary>
-        private readonly System.Collections.Generic.List<System.Diagnostics.Process>
-            testDriverProcesses = new System.Collections.Generic.List<System.Diagnostics.Process>();
-        private readonly System.Collections.Generic.HashSet<SeatId> testDriverSeats =
-            new System.Collections.Generic.HashSet<SeatId>();
-
-        /// <summary>
-        /// 8.35t corrective. One seat's own join grace period, keyed only while that seat's own
-        /// spawn is still unconfirmed: a seat that claims itself before its deadline is simply
-        /// removed, never reported as failed. Its presence is also what "must not stack" checks -
-        /// a seat already carrying a live deadline is a seat FILL has already tried, so a repeated
-        /// press skips it rather than spawning a second, redundant child onto the same seat.
-        /// </summary>
-        private readonly System.Collections.Generic.Dictionary<SeatId, DateTime> testDriverDeadlines =
-            new System.Collections.Generic.Dictionary<SeatId, DateTime>();
-
-        private const double TestDriverJoinGraceSeconds = 12.0;
-
-        private ITestDriverProcessLauncher testDriverLauncher = new RealTestDriverProcessLauncher();
-
-        /// <summary>
-        /// Test-only seam: replaces the real process launcher with a fake before a fixture presses
-        /// FILL WITH TEST DRIVERS, so the spawning decision is provable without ever starting a real
-        /// OS process - spawning six copies of an Editor Play Mode host would otherwise be exactly
-        /// what a fixture must never do by accident.
-        /// </summary>
-        internal void SetTestDriverProcessLauncherForTests(ITestDriverProcessLauncher launcher) =>
-            testDriverLauncher = launcher ?? new RealTestDriverProcessLauncher();
 
         internal IReadOnlyCollection<SeatId> TestDriverSeatsForTests => testDriverSeats;
 
@@ -851,6 +807,16 @@ namespace GuardsDigital.Presentation.Interaction
                     }
                 }
 
+                botFleet?.Tick(now.Ticks);
+                if (botFleet != null && botFleet.LastFailure != reportedBotFailure)
+                {
+                    reportedBotFailure = botFleet.LastFailure;
+                    if (reportedBotFailure.Length > 0)
+                    {
+                        presenter.SetTestDriverSeats(testDriverSeats, reportedBotFailure);
+                        PrivateOnlineMarkers.Fail(reportedBotFailure);
+                    }
+                }
                 session.Sweep(now.Ticks);
                 foreach (var record in session.DrainEvents())
                 {
@@ -858,11 +824,6 @@ namespace GuardsDigital.Presentation.Interaction
                     HostEventObserved?.Invoke(record);
                 }
 
-                // 8.35t corrective. A spawned test driver that never claims its seat must not look
-                // identical to nothing having happened - checked every frame, but cheap: the
-                // dictionary is empty whenever FILL has never been pressed or every prior spawn has
-                // already resolved one way or the other.
-                CheckTestDriverJoinTimeouts();
             }
 
             if (machine != null && transport != null)
@@ -1434,9 +1395,11 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             sessionKey = entry.SessionKey;
-            session = new PrivateSessionHost(
+            botFleet = new GuardsDigital.Application.Bots.PrivateSessionBotFleet(
                 compositionRoot.Runtime.Host, compositionRoot.Runtime.SessionIdentity,
-                sessionKey, listener, new CryptoNonceSource());
+                sessionKey, listener, new CryptoNonceSource(),
+                () => compositionRoot.Runtime.ReadModel, compositionRoot.Runtime.ContentCatalogs);
+            session = botFleet.Host;
 
             // Milestone 8.35z61. The gameplay narration, on the lobby host too. The
             // 2026-09-06 playtest was hosted through THIS path, and a narration attached only to
@@ -1453,232 +1416,41 @@ namespace GuardsDigital.Presentation.Interaction
             console = new HostConsoleReader();
             console.Start();
             signature = string.Empty;
-            // 8.35t corrective. The endpoint itself resolves this - a socket-typed decision the
-            // architecture record confines to the adapter, per
-            // PrivateSessionArchitectureConformanceTests.SocketTypes_LiveOnlyInTheNetworkAdapter -
-            // rather than this file naming the socket type its own answer would otherwise require.
-            hostDialAddress = endpoint.ResolveLocalDialAddress();
             testDriverSeats.Clear();
-            testDriverDeadlines.Clear();
+            reportedBotFailure = string.Empty;
             presenter.AttachHost(session, string.Empty);
             PrivateOnlineMarkers.Log(
                 "LOBBY_HOSTING port=" + listener.BoundPort.ToString(CultureInfo.InvariantCulture) +
                 " keyed=" + (sessionKey.Length > 0 ? "true" : "false"));
         }
 
-        /// <summary>
-        /// THIRTEENTH amendment. An automated regression's only way to make a Solo cohort finish in
-        /// a bounded window: the CI runner sets this on the HOST process before it presses FILL, and
-        /// the host reads it once and hands each spawned child the equivalent
-        /// <see cref="PrivateSeatDriverOptions.ThinkSecondsFlag"/>. Unset for a real solo session, so
-        /// nothing about ordinary play depends on this variable existing.
-        /// </summary>
+        /// <summary>Optional test pacing override; normal bots use the existing two-second pace.</summary>
         internal const string ThinkSecondsOverrideEnvironmentVariable = "GUARDS_TESTDRIVER_THINK_SECONDS";
 
-        /// <summary>
-        /// THIRTEENTH amendment. Spawns one real keyed test-driver client onto every seat still
-        /// Open and not already carrying an outstanding attempt of its own, exactly as an operator
-        /// running "PLAY - Join Match.bat" would claim one by hand - each child dials
-        /// <see cref="hostDialAddress"/> (this host's own actually-bound address, resolved once at
-        /// hosting time - 8.35t's corrective, replacing a hardcoded loopback constant that a
-        /// non-loopback bind silently defeated) and presents the same session key this host was
-        /// hosted with, an ordinary keyed join with no shortcut around it.
-        /// </summary>
-        /// <remarks>
-        /// 8.35t corrective, "must not stack": a seat already carrying a live entry in
-        /// <see cref="testDriverDeadlines"/> is a seat this method has already sent a driver to and
-        /// not yet heard back from - skipped rather than sent a second, redundant child, so a
-        /// player mashing the button out of exactly the frustration this defect caused cannot
-        /// accumulate orphaned processes the way the interim-4 report's 34 did.
-        /// </remarks>
+        /// <summary>Fill only open seats through the in-process encoded protocol; repeated presses cannot stack bots.</summary>
         private void FillEmptySeatsWithTestDrivers()
         {
-            if (session == null || listener == null)
-            {
-                return;
-            }
-
-            var openSeats = new List<SeatId>();
-            var freshSeats = new List<SeatId>();
-            foreach (var entry in session.Roster)
-            {
-                if (entry.Occupancy != SeatOccupancyState.Open)
-                {
-                    continue;
-                }
-
-                openSeats.Add(entry.Seat);
-                if (!testDriverDeadlines.ContainsKey(entry.Seat))
-                {
-                    freshSeats.Add(entry.Seat);
-                }
-            }
-
-            if (openSeats.Count == 0)
-            {
-                presenter.SetTestDriverSeats(testDriverSeats, "Every seat is already taken.");
-                return;
-            }
-
-            if (freshSeats.Count == 0)
-            {
-                // Every still-open seat already has an outstanding attempt - a repeated press is
-                // refused with a visible reason instead of silently spawning a second child onto
-                // the same seat.
-                presenter.SetTestDriverSeats(
-                    testDriverSeats, "Test drivers are already on their way for every open seat.");
-                return;
-            }
-
-            double? thinkSecondsOverride = null;
+            if (botFleet == null) return;
+            var thinkSeconds = PrivateSeatDriverOptions.DefaultThinkSeconds;
             var overrideText = Environment.GetEnvironmentVariable(ThinkSecondsOverrideEnvironmentVariable);
-            if (!string.IsNullOrWhiteSpace(overrideText) &&
-                double.TryParse(overrideText, System.Globalization.NumberStyles.Float,
-                    CultureInfo.InvariantCulture, out var parsedOverride) && parsedOverride >= 0)
-            {
-                thinkSecondsOverride = parsedOverride;
-            }
-
-            // PLAYTEST FAILURE #2 fix (lobby recut). Every spawned child inherits the format the host
-            // ACTUALLY composed, read off the composition rather than assumed, so a 2v2 (or Long, or
-            // any non-default) table fills with bots instead of refusing each one MatchFormatMismatch.
-            var hostFormatId = compositionRoot?.ComposedPlan?.Format.Id ?? string.Empty;
-            var spawned = 0;
-            var deadline = DateTime.UtcNow.AddSeconds(TestDriverJoinGraceSeconds);
-            foreach (var seat in freshSeats)
-            {
-                var request = new TestDriverSpawnRequest(
-                    seat, hostDialAddress, listener.BoundPort, sessionKey, thinkSecondsOverride,
-                    System.Diagnostics.Process.GetCurrentProcess().Id, hostFormatId);
-                try
-                {
-                    var process = testDriverLauncher.Launch(request);
-                    if (process != null)
-                    {
-                        testDriverProcesses.Add(process);
-                    }
-
-                    testDriverSeats.Add(seat);
-                    testDriverDeadlines[seat] = deadline;
-                    spawned++;
-                    PrivateOnlineMarkers.Log(
-                        "LOBBY_TEST_DRIVER_SPAWNED seat=" + seat.Value + " address=" + hostDialAddress);
-                }
-                catch (Exception exception)
-                {
-                    PrivateOnlineMarkers.Fail(
-                        "test-driver-spawn seat=" + seat.Value + " " + exception.GetType().Name);
-                }
-            }
-
-            var status = spawned < freshSeats.Count
-                ? spawned + "/" + freshSeats.Count + " test drivers spawned; see the log for the rest."
-                : "Sent " + spawned + " test driver(s); watch the seats below for who joins.";
-            presenter.SetTestDriverSeats(testDriverSeats, status);
+            if (double.TryParse(overrideText, NumberStyles.Float, CultureInfo.InvariantCulture,
+                    out var parsed) && !double.IsInfinity(parsed) && parsed >= 0 && parsed <= 60)
+                thinkSeconds = parsed;
+            var added = botFleet.FillOpenSeats(DateTime.UtcNow.Ticks, thinkSeconds);
+            testDriverSeats.Clear();
+            testDriverSeats.UnionWith(botFleet.Seats);
+            presenter.SetTestDriverSeats(testDriverSeats, added == 0
+                ? "Every open seat already has a bot joining."
+                : "Connected " + added + " in-process bot(s). Ready your human seat to begin picking.");
+            PrivateOnlineMarkers.Log("LOBBY_BOTS_CONNECTED count=" + added);
         }
 
-        /// <summary>
-        /// 8.35t corrective, "must produce visible feedback even when spawning fails". A spawned
-        /// child that never claims its seat within its own grace period is reported rather than
-        /// left to look identical to nothing having happened: logged for anyone reading the host's
-        /// log, and surfaced on the host's own screen through the same feedback line FILL itself
-        /// writes to. The seat is then dropped from <see cref="testDriverDeadlines"/> - removed,
-        /// not merely expired - so a later FILL press is free to try that seat again rather than
-        /// treat a proven failure as a permanently "already attempted" seat.
-        /// </summary>
-        private void CheckTestDriverJoinTimeouts()
-        {
-            if (testDriverDeadlines.Count == 0 || session == null)
-            {
-                return;
-            }
-
-            var now = DateTime.UtcNow;
-            List<SeatId> timedOut = null;
-            foreach (var pair in testDriverDeadlines)
-            {
-                if (now < pair.Value)
-                {
-                    continue;
-                }
-
-                (timedOut ?? (timedOut = new List<SeatId>())).Add(pair.Key);
-            }
-
-            if (timedOut == null)
-            {
-                return;
-            }
-
-            var stillOpen = new List<SeatId>();
-            foreach (var seat in timedOut)
-            {
-                testDriverDeadlines.Remove(seat);
-                var occupancy = SeatOccupancyState.Open;
-                foreach (var entry in session.Roster)
-                {
-                    if (entry.Seat.Equals(seat))
-                    {
-                        occupancy = entry.Occupancy;
-                        break;
-                    }
-                }
-
-                if (occupancy == SeatOccupancyState.Open)
-                {
-                    stillOpen.Add(seat);
-                    testDriverSeats.Remove(seat);
-                }
-            }
-
-            if (stillOpen.Count == 0)
-            {
-                return;
-            }
-
-            foreach (var seat in stillOpen)
-            {
-                PrivateOnlineMarkers.Fail("test-driver-join-timeout seat=" + seat.Value);
-            }
-
-            presenter.SetTestDriverSeats(
-                testDriverSeats,
-                stillOpen.Count + " test driver(s) failed to join in time (seat"
-                + (stillOpen.Count == 1 ? " " : "s ")
-                + string.Join(", ", stillOpen.ConvertAll(seat => seat.Value))
-                + ") - see the log, or press FILL WITH TEST DRIVERS again to retry.");
-        }
-
-        /// <summary>
-        /// THIRTEENTH amendment. This host's own spawned children, killed when its session ends -
-        /// they hold no reservation and no capability of their own to return with, so there is
-        /// nothing for a lingering process to protect and every reason not to leave one running.
-        /// </summary>
         private void StopTestDrivers()
         {
-            foreach (var process in testDriverProcesses)
-            {
-                try
-                {
-                    if (!process.HasExited)
-                    {
-                        process.Kill();
-                    }
-                }
-                catch (Exception)
-                {
-                    // Already gone, or gone the instant we asked - either way there is nothing left
-                    // to clean up and no reason to fail the host's own teardown over it.
-                }
-                finally
-                {
-                    process.Dispose();
-                }
-            }
-
-            testDriverProcesses.Clear();
+            botFleet?.Dispose();
+            botFleet = null;
+            reportedBotFailure = string.Empty;
             testDriverSeats.Clear();
-            testDriverDeadlines.Clear();
         }
 
         private void BeginJoining(PrivateLobbyEntry entry)
@@ -2072,6 +1844,8 @@ namespace GuardsDigital.Presentation.Interaction
         {
             DisposeTransport();
             StopTestDrivers();
+            session?.Shutdown();
+            session = null;
             listener?.Dispose();
             listener = null;
             onlineHudAttached = false;

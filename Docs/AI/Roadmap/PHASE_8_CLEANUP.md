@@ -78,7 +78,7 @@ Non-goals: no new hero/capability, rule interpretation, persisted-state redesign
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z68-remove-demonstrated-resolver-maintenance-duplication-completion-evidence).
 
-### [ ] 8.35z69 Fix the built-player FILL WITH BOTS path
+### [x] 8.35z69 Fix the built-player FILL WITH BOTS path
 
 Observable outcome: the actual lobby button fills open seats with host-owned in-process bots using the normal seat/protocol/command authorization and existing bounded AI, without launching child game processes.
 
@@ -90,6 +90,8 @@ Acceptance checks:
 - Record build source identity, gate outcomes, limitations, and actual change/validation costs as the cleanup's practical comparison.
 
 Non-goals: no stronger AI tier, public distribution, relay/service changes, or claim that local smoke completes the human internet gate.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z69-fix-the-built-player-fill-with-bots-path-completion-evidence).
 
 ### [x] 8.35z80 Apply the current treatment to END TURN and UNDO
 
@@ -110,6 +112,16 @@ Acceptance checks: inventory which configured faces lack real artwork; map each 
 All 90 missing fronts are prepared and source-identical; catalog/footprint checks and the five-hero basic/upgrade Game View inspection are complete. Final-player inspection remains in 8.35z69's combined build gate.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z81-import-real-artwork-for-the-newly-playable-heroes-completion-evidence).
+
+### [ ] 8.35z82 Restore neutral hero token artwork and package the corrected build
+
+The user explicitly added this correction on 2026-09-08 after observing Whisper's primitive board token, then requested a ZIP with the existing Play/Host launchers. Execute after 8.35z69 and before final delivery; this extends only the bounded approved sequence, not the backlog below.
+
+Observable outcome: Whisper's already-prepared neutral portrait appears on the board and hero rail through the existing team-identity resolution contract; the corrected private build is available as a ZIP with Play/Host scripts.
+
+Acceptance checks: reproduce the neutral-resource hookup failure in a retained automated regression; use the existing baked-first, neutral-second, primitive-last contract, including the neutral face's wider authoritative-team ring; preserve old baked faces, missing-resource fallback, picking, ownership, and resource cleanup. Run affected Unity tests and inspect Whisper in the rebuilt player. Repeat required artifact/package gates on that exact build, carry the completed cleanup evidence forward with bounded affectedness, verify ZIP contents and launcher targets, and record exact source/build identity. Keep private art, logs and ZIP excluded and local.
+
+Non-goals: no new token art, rule changes, hero content work, public distribution, or unrelated rendering redesign.
 
 ## Reconciled follow-up queue (not authorized)
 

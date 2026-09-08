@@ -1,11 +1,15 @@
+using System.Collections;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Presentation.Match;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace GuardsDigital.Presentation.Interaction
 {
@@ -61,11 +65,65 @@ namespace GuardsDigital.Presentation.Interaction
             compositionRoot = root;
         }
 
-        private void Start()
+        private IEnumerator Start()
         {
             var exitCode = RunScriptedInteraction();
+            if (exitCode == 0 && System.Environment.GetCommandLineArgs().Contains("-guardsArtworkGallery"))
+            {
+                UnityEngine.Application.runInBackground = true;
+                try
+                {
+                    compositionRoot.Hud.RootElement.Add(BuildArtworkInspection());
+                    Debug.Log($"{MarkerPrefix} ARTWORK_GALLERY_READY fronts=10 catalog={ConfiguredCardArtworkCatalog.Catalog.Entries.Count}");
+                }
+                catch (System.Exception exception) { exitCode = Fail(exception.Message); }
+                // Opt-in, bounded inspection window; the ordinary smoke and normal player never wait here.
+                if (exitCode == 0) yield return new WaitForSecondsRealtime(60f);
+            }
             Debug.Log($"{MarkerPrefix} EXIT {exitCode}");
             UnityEngine.Application.Quit(exitCode);
+        }
+
+        /// <summary>The shared Editor/player artwork probe. Never attached by the normal game.</summary>
+        public static VisualElement BuildArtworkInspection()
+        {
+            foreach (var entry in ConfiguredCardArtworkCatalog.Catalog.Entries)
+                if (!ConfiguredCardArtwork.TryLoadTexture(entry.Reference, out var texture, out _) ||
+                    texture.width != 372 || texture.height != 520)
+                    throw new System.InvalidOperationException("Private artwork missing or malformed: " + entry.ResourcePath);
+
+            var gallery = new VisualElement { name = "gd-private-artwork-verification" };
+            gallery.style.position = Position.Absolute;
+            gallery.style.left = 400f;
+            gallery.style.top = 120f;
+            gallery.style.flexDirection = FlexDirection.Row;
+            gallery.style.backgroundColor = MatchHudTheme.TopBarBackground;
+            var heroes = new[]
+            {
+                (Name: "Dodger", Cards: DodgerCardContent.DealtDefinitions),
+                (Name: "Misa", Cards: MisaCardContent.DealtDefinitions),
+                (Name: "Silverarrow", Cards: SilverarrowCardContent.DealtDefinitions),
+                (Name: "Ursafar", Cards: UrsafarCardContent.DealtDefinitions),
+                (Name: "Whisper", Cards: WhisperCardContent.DealtDefinitions)
+            };
+            foreach (var hero in heroes)
+            {
+                var column = new VisualElement();
+                column.style.width = CardFootprint.Width + 20f;
+                column.style.flexShrink = 0f;
+                column.Add(new Label(hero.Name) { style = { color = Color.white, fontSize = 20f } });
+                gallery.Add(column);
+                foreach (var tier in new[] { CardTier.None, CardTier.II })
+                {
+                    var definition = hero.Cards.First(card => card.Progression.Tier == tier);
+                    var card = CurrentRoundCards.DeckCard(
+                        new CardInstanceId("artwork-check-" + definition.Id.Value), definition);
+                    var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+                    face.userData = definition.Reference;
+                    column.Add(face);
+                }
+            }
+            return gallery;
         }
 
         private int RunScriptedInteraction()

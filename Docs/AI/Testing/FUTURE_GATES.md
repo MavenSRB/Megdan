@@ -184,6 +184,8 @@ Milestone 7.9 is the reason `7.9` is on that list, and the run is the argument f
 
 Do not run this gate as a substitute for the Unity test suites. It proves the artifact runs; it does not prove the rules are right.
 
+**Private artwork inspection (8.35z69).** Launch that same graphical player with both `-guardsSmokeTest -guardsArtworkGallery` at the validated 2048-by-1152 viewport. After the ordinary two-round smoke succeeds, `PlayerSmokeTestDriver` loads every configured private front at 372-by-520 and presents the Editor test's shared ten-face basic/upgrade gallery for Dodger, Misa, Silverarrow, Ursafar, and Whisper. Require `ARTWORK_GALLERY_READY fronts=10`, inspect the actual window, and require exit zero after its bounded 60-second inspection interval. Missing private art fails this opt-in check; a public/source-only checkout is not expected to pass it. This is artifact/render evidence, not a player-input journey. Normal play never attaches the smoke driver; the ordinary headless build smoke does not request the gallery.
+
 ## Multi-client smoke gate - REQUIRED BEFORE EVERY PACKAGE
 
 Added at milestone `8.35z54`, and it is a **required step of the package ceremony**: no package is cut without it, exactly as none is cut without the [player-build](#player-build-smoke-gate) and [board visual](#board-visual-smoke-gate) gates above.

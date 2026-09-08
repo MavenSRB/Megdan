@@ -15,6 +15,7 @@ Current implementation detail lives in the indexed subject shards below. Exact a
 - [Product scope and durable constraints](Project/PRODUCT.md)
 - [Core architecture constraints](Project/ARCHITECTURE.md)
 - [Minimum private-online architecture decision](Project/PRIVATE_ONLINE_ARCHITECTURE.md)
+- [Host-owned private-session bots](Project/PRIVATE_SESSION_BOTS.md)
 - [Presentation and accessibility direction](Project/PRESENTATION.md)
 - [Development workflow, references, and terminology](Project/WORKFLOW_AND_TERMS.md)
 

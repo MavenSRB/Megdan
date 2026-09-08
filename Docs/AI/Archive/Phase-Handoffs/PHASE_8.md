@@ -1355,3 +1355,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z81 | The importer covers all configured heroes; 90 missing private fronts are prepared while existing metadata/overlays are preserved. Final-player repeat belongs to 8.35z69. | `milestone/8.35z81` |
 
+## Milestone 8.35z69 Fix the built-player FILL WITH BOTS path completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z69 | Bounded in-process bots pass real built-player 2v2/3v3 human journeys; card-face and turn-control checks pass. User-added token correction/final ZIP follows at 8.35z82. | `milestone/8.35z69` |
+
