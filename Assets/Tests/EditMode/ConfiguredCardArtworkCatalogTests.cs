@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Presentation.Match;
@@ -12,6 +14,36 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class ConfiguredCardArtworkCatalogTests
     {
+        [Test]
+        public void PrivatePreparationScript_CoversEveryConfiguredHeroFolder()
+        {
+            var script = File.ReadAllText(Path.Combine(UnityEngine.Application.dataPath,
+                "..", "Tools", "Prepare-CardArtwork.ps1"));
+            var folders = Regex.Matches(script, @"(?m)^\s*([a-z]+)\s*=\s*'([A-Za-z]+)'\s*$")
+                .Cast<Match>().Select(match => match.Groups[1].Value + ":" + match.Groups[2].Value);
+            var expected = ConfiguredCardArtworkCatalog.Catalog.Entries
+                .Select(entry => entry.ContentSetId + ":" + entry.SourcePath.Split('/')[1]).Distinct();
+            Assert.That(folders, Is.EquivalentTo(expected),
+                "A newly configured hero must not be omitted by the private importer.");
+        }
+
+        [Test]
+        public void WhenPrivateCorpusIsPresent_EveryConfiguredFrontIsPreparedAndLoadable()
+        {
+            var corpus = Path.GetFullPath(Path.Combine(UnityEngine.Application.dataPath,
+                "..", "Docs", "Guards of Atlantis II - Tabletopia Cards"));
+            // A clean checkout deliberately has no private art; separate tests prove its fallback.
+            if (!Directory.Exists(corpus)) return;
+            foreach (var entry in ConfiguredCardArtworkCatalog.Catalog.Entries)
+            {
+                Assert.That(File.Exists(Path.Combine(corpus, entry.SourcePath)), Is.True, entry.SourcePath);
+                var texture = Resources.Load<Texture2D>(entry.ResourcePath);
+                Assert.That(texture, Is.Not.Null, entry.Reference + " requires its private prepared front.");
+                Assert.That(texture.width, Is.EqualTo(372), entry.ResourcePath);
+                Assert.That(texture.height, Is.EqualTo(520), entry.ResourcePath);
+            }
+        }
+
         [Test]
         public void ConfiguredCatalog_IsA198EntryBijectionWithOnePlayableFrontPerDefinition()
         {

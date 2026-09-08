@@ -101,11 +101,15 @@ Implementation/input/render checks are complete; the final-player repeat remains
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z80-apply-the-current-treatment-to-end-turn-and-undo-completion-evidence).
 
-### [ ] 8.35z81 Import real artwork for the newly playable heroes
+### [x] 8.35z81 Import real artwork for the newly playable heroes
 
 Observable outcome: the new heroes show their verified source card faces rather than generated synthetic faces wherever real source artwork exists.
 
 Acceptance checks: inventory which configured faces lack real artwork; map each imported face to the existing definition identity/revision; use the established private resource import path without changing printed rules or content identities; exercise catalog/face resolution and inspect representative basic/upgraded faces for each affected hero in the final build. Record unavailable source faces explicitly. Extracted art/builds stay private and are not committed or distributed unless separately authorized.
+
+All 90 missing fronts are prepared and source-identical; catalog/footprint checks and the five-hero basic/upgrade Game View inspection are complete. Final-player inspection remains in 8.35z69's combined build gate.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z81-import-real-artwork-for-the-newly-playable-heroes-completion-evidence).
 
 ## Reconciled follow-up queue (not authorized)
 

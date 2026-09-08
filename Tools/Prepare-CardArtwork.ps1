@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Prepares all 108 configured private card fronts as ignored Unity resources.
+    Prepares every configured private card front as an ignored Unity resource.
 
 .DESCRIPTION
     Milestone 8.25f. The tracked JSON catalog is the one definition-to-source map. This command
-    validates its complete six-hero inventory before writing anything, reads the existing ignored
+    validates its complete configured inventory before writing anything, reads the existing ignored
     Tabletopia corpus without mutating it, and copies the verified fronts beneath:
 
         Assets/Resources/Private/Cards/<content-id>/<definition-local-id>.png
@@ -17,7 +17,7 @@
     resource exists, has the declared 372x520 dimensions, and is byte-identical to its source.
 
 .PARAMETER Force
-    Replace the prepared set even when all 108 resources already match their sources.
+    Replace the prepared set even when all resources already match their sources.
 #>
 [CmdletBinding()]
 param(
@@ -45,6 +45,11 @@ $heroFolders = [ordered]@{
     arien = 'Arien'
     brogan = 'Brogan'
     sabina = 'Sabina'
+    dodger = 'Dodger'
+    misa = 'Misa'
+    silverarrow = 'SilverArrow'
+    ursafar = 'Ursafar'
+    whisper = 'Whisper'
 }
 
 function Assert-PathUnder([string] $path, [string] $root, [string] $label) {
@@ -92,8 +97,9 @@ if ($catalog.version -ne 1 -or $null -eq $catalog.entries) {
 }
 else {
     $entries = @($catalog.entries)
-    if ($entries.Count -ne 108) {
-        $errors.Add("Expected 108 configured entries; found $($entries.Count).")
+    $expectedCount = $heroFolders.Count * 18
+    if ($entries.Count -ne $expectedCount) {
+        $errors.Add("Expected $expectedCount configured entries; found $($entries.Count).")
     }
 
     foreach ($group in @($entries | Group-Object { "$($_.definitionId)@$($_.contentRevision)" } |
@@ -185,7 +191,7 @@ if ($errors.Count -gt 0) {
         ($errors -join "`n - "))
 }
 
-Write-Output "PASS: the tracked catalog resolves 108 unique playable 372x520 fronts, 18 for each of six configured heroes."
+Write-Output "PASS: the tracked catalog resolves $($inventory.Count) unique playable 372x520 fronts, 18 for each of $($heroFolders.Count) configured heroes."
 
 function Test-PreparedSet([switch] $ReportErrors) {
     $preparedErrors = New-Object 'System.Collections.Generic.List[string]'
@@ -218,12 +224,12 @@ function Test-PreparedSet([switch] $ReportErrors) {
 
 if ($Check) {
     [void] (Test-PreparedSet -ReportErrors)
-    Write-Output 'PASS: all 108 prepared resources are present, 372x520, and byte-identical to their private sources.'
+    Write-Output "PASS: all $($inventory.Count) prepared resources are present, 372x520, and byte-identical to their private sources."
     exit 0
 }
 
 if (-not $Force -and (Test-PreparedSet)) {
-    Write-Output 'SKIP: all 108 prepared resources already match. Pass -Force to replace them atomically.'
+    Write-Output "SKIP: all $($inventory.Count) prepared resources already match. Pass -Force to replace them atomically."
     exit 0
 }
 
@@ -244,6 +250,13 @@ $backupRoot = Assert-PathUnder $backupCandidate $privateRoot 'The backup directo
 
 try {
     New-Item -ItemType Directory -Path $stagingRoot -Force | Out-Null
+    # Preserve existing Unity metadata, shine overlays, and any other private files.
+    # Importing another hero must not replace these with a fronts-only directory.
+    if (Test-Path -LiteralPath $targetRoot -PathType Container) {
+        foreach ($existing in Get-ChildItem -LiteralPath $targetRoot -Force) {
+            Copy-Item -LiteralPath $existing.FullName -Destination $stagingRoot -Recurse -Force
+        }
+    }
     foreach ($item in $inventory) {
         $stagedCandidate = [System.IO.Path]::Combine(
             $stagingRoot,
@@ -288,4 +301,4 @@ finally {
 }
 
 [void] (Test-PreparedSet -ReportErrors)
-Write-Output 'WROTE: 108 ignored Unity card resources. The private corpus was read only; no source or prepared pixel was staged, embedded, uploaded, or distributed.'
+Write-Output "WROTE: $($inventory.Count) ignored Unity card resources. Existing metadata/overlays were preserved. The private corpus was read only; no pixel was Git-staged, uploaded, or distributed."

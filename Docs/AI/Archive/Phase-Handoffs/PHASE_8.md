@@ -1349,3 +1349,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.35z80 | END TURN/seat UNDO use shared button chrome, preserve authorization/layout, and pass real-input/render checks; final-player repeat belongs to 8.35z69. | `milestone/8.35z80` |
 
+## Milestone 8.35z81 Import real artwork for the newly playable heroes completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z81 | The importer covers all configured heroes; 90 missing private fronts are prepared while existing metadata/overlays are preserved. Final-player repeat belongs to 8.35z69. | `milestone/8.35z81` |
+

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
@@ -109,6 +110,60 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(root, Is.Not.Null);
             Assert.That(root.Runtime, Is.Not.Null);
             return root;
+        }
+
+        [UnityTest]
+        public IEnumerator WhenPrivateCorpusIsPresent_NewHeroBasicAndUpgradeFacesUseRealArtwork()
+        {
+            var corpus = Path.Combine(UnityEngine.Application.dataPath, "..", "Docs",
+                "Guards of Atlantis II - Tabletopia Cards");
+            if (!Directory.Exists(corpus)) yield break;
+            yield return LoadTheMatch();
+            var hud = Root().Hud;
+            var gallery = new VisualElement { name = "gd-private-artwork-verification" };
+            gallery.style.position = Position.Absolute;
+            gallery.style.left = 400f;
+            gallery.style.top = 120f;
+            gallery.style.flexDirection = FlexDirection.Row;
+            gallery.style.backgroundColor = MatchHudTheme.TopBarBackground;
+            hud.RootElement.Add(gallery);
+            try
+            {
+                var heroes = new[]
+                {
+                    (Name: "Dodger", Cards: DodgerCardContent.DealtDefinitions),
+                    (Name: "Misa", Cards: MisaCardContent.DealtDefinitions),
+                    (Name: "Silverarrow", Cards: SilverarrowCardContent.DealtDefinitions),
+                    (Name: "Ursafar", Cards: UrsafarCardContent.DealtDefinitions),
+                    (Name: "Whisper", Cards: WhisperCardContent.DealtDefinitions)
+                };
+                foreach (var hero in heroes)
+                {
+                    var column = new VisualElement();
+                    column.style.width = CardFootprint.Width + 20f;
+                    column.style.flexShrink = 0f;
+                    column.Add(new Label(hero.Name) { style = { color = Color.white, fontSize = 20f } });
+                    gallery.Add(column);
+                    foreach (var tier in new[] { CardTier.None, CardTier.II })
+                    {
+                        var definition = hero.Cards.First(card => card.Progression.Tier == tier);
+                        Assert.That(ConfiguredCardArtwork.TryLoadTexture(definition.Reference,
+                            out var texture, out var path), Is.True, definition.Id.Value);
+                        var card = CurrentRoundCards.DeckCard(
+                            new CardInstanceId("artwork-check-" + definition.Id.Value), definition);
+                        var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+                        column.Add(face);
+                        var picture = face.Q<Image>("gd-card-artwork");
+                        Assert.That(picture, Is.Not.Null, path);
+                        Assert.That(picture.image, Is.SameAs(texture));
+                        Assert.That(face.Q("gd-card-frame"), Is.Null);
+                    }
+                }
+                yield return null;
+                yield return null;
+                yield return UiPlayer.CaptureGameView("8-35z81", "new-hero-real-faces");
+            }
+            finally { gallery.RemoveFromHierarchy(); }
         }
 
         /// <summary>
