@@ -393,7 +393,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new Rect(0f, 968f, 732f, 460f)));
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateUpgradeComparisonPanelRect(width, height),
-                Is.EqualTo(new Rect(0f, 878f, 2560f, 550f)));
+                Is.EqualTo(new Rect(0f, 521f, 2560f, 907f)));
             Assert.That(
                 ConfiguredMatchHudRenderer.CalculateStatusDockRect(width, height),
                 Is.EqualTo(new Rect(12f, 838f, 720f, 128f)),

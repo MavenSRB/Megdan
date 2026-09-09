@@ -185,7 +185,8 @@ namespace GuardsDigital.Presentation.Match
         // One horizontal Level Up choice row: a complete card, its centred item box, and the prompt
         // line. It may extend a little above the ordinary hand, but never changes the hero
         // columns or the camera-safe board surface around the legacy near-full-height context.
-        public const float UpgradeComparisonBandHeight = CardFootprint.Height + 130f;
+        public const float UpgradeComparisonBandHeight =
+            CardFootprint.Height + RoundActionUnityView.LevelUpHandPreviewHeight + 130f;
         // Keeps UI Toolkit border/pixel snapping from turning two mathematically adjacent rectangles
         // into a live one-pixel overlap at non-identity panel scales.
         private const float BoardTraySeparation = 2f;

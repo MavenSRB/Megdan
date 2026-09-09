@@ -59,12 +59,10 @@ namespace GuardsDigital.Presentation.Match
         private const float UpgradeItemOverlayHeight = 46f;
 
         /// <summary>
-        /// Milestone 8.35z58, the level-up hand preview. How far a full standard face
-        /// scales down to sit above the offer without pushing the six-card comparison band off the
-        /// reference viewport - small enough to read as a reminder rather than a second decision
-        /// surface, large enough that colour and printed name are still legible.
+        /// Readable comparison faces; hovering reveals the full standard face without a command.
         /// </summary>
-        private const float LevelUpHandPreviewScale = 0.4f;
+        private const float LevelUpHandPreviewScale = 0.85f;
+        public const float LevelUpHandPreviewHeight = CardFootprint.Height * LevelUpHandPreviewScale;
 
         private const float LevelUpHandPreviewGap = 6f;
         private const float UpgradeItemOverlayTop =
@@ -854,21 +852,15 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.35z58. User directive (2026-09-07): "when leveling. Show current
-        /// hand (all 5 cards) above the offer." A read-only reminder of what this seat currently
-        /// holds while it decides which upgrade to take, drawn through the SAME standalone
-        /// card-face builder an upgrade candidate and a Defense offer already use
-        /// (<see cref="DirectorHandsUnityView.BuildStandaloneCard"/>) - a card here is never a
-        /// second, invented look - at a reduced scale so it sits above the six-card comparison
-        /// band without pushing it, or the standing rects the fit/overlap sweep checks, off the
-        /// reference viewport.
+        /// The seat's current hand above its upgrade offer, using the same standalone card faces.
+        /// The panel reserves this row's height and scrolls on short viewports instead of clipping
+        /// the candidate cards. Hovering a read-only slot opens full-size inspection.
         /// </summary>
         /// <remarks>
         /// Read-only by construction, not merely by omission: <see cref="DirectorHandsUnityView.BuildStandaloneCard"/>
         /// returns a plain <see cref="VisualElement"/> with no click handler at all (unlike the hand
-        /// tray's own interactive card, which wraps a <see cref="Button"/>), and every element this
-        /// method builds additionally sets <c>pickingMode = PickingMode.Ignore</c>, so the preview
-        /// can never intercept or compete with the offer's own controls beneath it.
+        /// tray's own interactive card, which wraps a <see cref="Button"/>). Only the containing
+        /// slot receives hover; all face descendants and the floating inspection ignore picking.
         /// </remarks>
         private VisualElement BuildLevelUpHandPreviewRow()
         {
@@ -891,9 +883,13 @@ namespace GuardsDigital.Presentation.Match
                 slot.style.height = CardFootprint.Height * LevelUpHandPreviewScale;
                 slot.style.flexShrink = 0f;
                 slot.style.overflow = Overflow.Hidden;
-                slot.pickingMode = PickingMode.Ignore;
+                slot.pickingMode = PickingMode.Position;
+                slot.focusable = false;
 
                 var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+                // Comparison is read-only, not an unavailable in-play action. Never let the map
+                // bleed through a card that the player needs to read while choosing an upgrade.
+                face.style.opacity = 1f;
                 face.style.position = Position.Absolute;
                 face.style.left = 0f;
                 face.style.top = 0f;
@@ -920,6 +916,16 @@ namespace GuardsDigital.Presentation.Match
                 IgnorePointerThroughout(face);
 
                 slot.Add(face);
+                slot.RegisterCallback<PointerEnterEvent>(_ =>
+                {
+                    if (!Model.LevelUpHandPreview.Contains(card)) return;
+                    // Defense and leveling are exclusive decisions, sharing one unclipped,
+                    // pointer-transparent inspection layer without adding playable controls.
+                    ClearDefenseCardPeekPreview();
+                    DirectorHandsUnityView.PopulatePeekPreview(
+                        defenseCardHoverPreview, card, slot, isRightSideGroup: true, dimUnavailable: false);
+                });
+                slot.RegisterCallback<PointerLeaveEvent>(_ => ClearDefenseCardPeekPreview());
                 row.Add(slot);
             }
 
@@ -1094,6 +1100,8 @@ namespace GuardsDigital.Presentation.Match
             itemBox.style.backgroundColor = UpgradeItemOverlayBackground;
             itemBox.pickingMode = PickingMode.Ignore;
             HudElements.Border(itemBox, UpgradeItemOverlayBackground, 2f, 3f);
+            itemBox.Add(HudElements.Text(
+                "GAINS:", 12f, MatchHudTheme.PrimaryText, FontStyle.Bold));
             if (option.ItemIcon == PrintedValueChannel.None)
             {
                 // Two absences p.15 and p.16 produce between them - a deck with no second candidate, and

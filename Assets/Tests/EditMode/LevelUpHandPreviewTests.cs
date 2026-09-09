@@ -96,7 +96,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void LevelUpHandPreview_IsReadOnlyAndNeverInterceptsThePointer()
+        public void LevelUpHandPreview_HasReadOnlyHoverTargetsWithoutCardCommands()
         {
             var (_, view, _) = RenderLevelingHero();
 
@@ -109,7 +109,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(slots, Is.Not.Empty);
             foreach (var slot in slots)
             {
-                Assert.That(slot.pickingMode, Is.EqualTo(PickingMode.Ignore));
+                Assert.That(slot.pickingMode, Is.EqualTo(PickingMode.Position),
+                    "The read-only slot must receive hover so the card can be inspected at full size.");
                 foreach (var descendant in Descendants(slot))
                 {
                     Assert.That(descendant.pickingMode, Is.EqualTo(PickingMode.Ignore),
@@ -120,6 +121,38 @@ namespace GuardsDigital.Tests.EditMode
                         "not merely by omitting a handler.");
                 }
             }
+        }
+
+        [Test]
+        public void LevelUpComparison_CardsStayOpaqueOverTheMap()
+        {
+            var (_, view, _) = RenderLevelingHero();
+            foreach (var slot in Descendants(view.Root).Where(element =>
+                         element.name == "gd-levelup-hand-preview-card").ToArray())
+            {
+                Assert.That(slot.ElementAt(0).style.opacity.value, Is.EqualTo(1f),
+                    "Every comparison face must cover the map, even a card dimmed during ordinary play.");
+            }
+        }
+
+        [Test]
+        public void LevelUpComparison_ReservesBothTheHandAndCompleteUpgradeCards()
+        {
+            var (_, view, _) = RenderLevelingHero();
+            var slot = Descendants(view.Root).First(element => element.name == "gd-levelup-hand-preview-card");
+            Assert.That(ConfiguredMatchHudRenderer.UpgradeComparisonBandHeight,
+                Is.GreaterThanOrEqualTo(CardFootprint.Height + slot.style.height.value.value + 12f),
+                "The hand must not consume the height reserved for the complete upgrade faces.");
+        }
+
+        [Test]
+        public void LevelUpRewards_AreExplicitlyLabelledAsGains()
+        {
+            var (_, view, _) = RenderLevelingHero();
+            var rewards = Descendants(view.Root).Where(element => element.name == "gd-upgrade-item").ToArray();
+            Assert.That(rewards, Is.Not.Empty);
+            foreach (var reward in rewards)
+                Assert.That(Descendants(reward).OfType<Label>().Select(label => label.text), Does.Contain("GAINS:"));
         }
 
         [Test]

@@ -44,11 +44,15 @@ Validation disposition approved by the user on 2026-09-09: Windows Application C
 
 Historical evidence: [8.36f handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836f-card-resolution-and-feedback-completion-evidence).
 
-### [~] 8.36f1 Make the level-up comparison and rewards readable
+### [x] 8.36f1 Make the level-up comparison and rewards readable
 
 User-approved on 2026-09-09, after 8.36f and before 8.36g. The supplied Misa level-up screenshot shows a tiny unreadable current hand and upgrade choices clipped at the bottom. Outcome: the current hand can be read/compared during leveling and complete upgrade cards/rewards remain accessible inside the viewport. The reward overlay stays centered on its card and reads "GAINS:" followed by the actual authoritative gain icon(s). Preserve whole-card selection and the existing source-ratio/hover/short-viewport card contracts; no change to upgrade or reward rules. Closing checks: focused layout/reward-projection regressions, a pointer-driven level-up journey comparing the hand and selecting an upgrade, and full-screen visual inspection at the user's viewport and the supported short viewport, with no bottom clipping or unreachable choices.
 
-### [ ] 8.36f2 Correct attack presentation without shrinking the attacker
+The user clarified during visual validation: comparison cards must not be see-through, particularly the rightmost face over the map. Include opaque inline and hover faces in the closing checks; in-play unavailability must not obscure read-only comparison.
+
+Historical evidence: [8.36f1 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836f1-level-up-comparison-completion-evidence).
+
+### [~] 8.36f2 Correct attack presentation without shrinking the attacker
 
 User-approved on 2026-09-09, after f1 and before g. Report: the camera zooms but the attacking hero shrinks away during the animation. Outcome: a readable zoom followed by a strike/impact; the attacker retains a visible, stable token scale, and the defender remains or is removed according to the authoritative resolved outcome. Reproduce the actual camera/token animation path; distinguish presentation scaling from authoritative Defeat and preserve input/timing ownership. Closing checks: failing-then-passing animation geometry/lifetime regression, actual player-input attacks with surviving and defeated defenders, interruption/rebuild/Undo cleanup where affected, and targeted non-batch visual inspection. No combat rule, damage, targeting or new VFX-system changes.
 

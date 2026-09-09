@@ -866,7 +866,7 @@ namespace GuardsDigital.Tests.PlayMode
                         .Count(element => element.name == "gd-printed-channel-symbol"),
                     Is.EqualTo(1));
                 Assert.That(Descendants(item).OfType<Label>().Select(label => label.text),
-                    Is.EqualTo(new[] { "+1" }),
+                    Is.EqualTo(new[] { "GAINS:", "+1" }),
                     "Only the signed value remains text in the upgrade box.");
             }
             foreach (var card in cards)

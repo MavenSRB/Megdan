@@ -1426,3 +1426,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36f | Live Trailblazer scope, ordinary Skill minion Defeat with prevention/restore/Undo, Misa target eligibility and bounded player-safe error feedback. | `milestone/8.36f` |
+
+## Milestone 8.36f1 Level-up comparison completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36f1 | Opaque readable current-hand comparison with full-face hover, reserved upgrade-card space and centered GAINS rewards. | `milestone/8.36f1` |

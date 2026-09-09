@@ -5102,7 +5102,7 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(46f).Within(0.01f),
                     "The opaque box fully masks the candidate's original printed item icon.");
                 Assert.That(Descendants(item).OfType<Label>().Select(label => label.text),
-                    Is.EqualTo(new[] { "+1" }),
+                    Is.EqualTo(new[] { "GAINS:", "+1" }),
                     "The item box keeps only the signed value as text.");
             }
         }

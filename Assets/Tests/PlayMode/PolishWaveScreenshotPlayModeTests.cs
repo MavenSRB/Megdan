@@ -444,7 +444,8 @@ namespace GuardsDigital.Tests.PlayMode
         /// <remarks>
         /// Reach a real levelling pause through the existing Director fixture controls, then bind
         /// the levelling hero as this presenter's viewer. This is a rendering/capture check, not a
-        /// network authorization or real-pointer journey. Missing setup is a failure, never a skip.
+        /// network authorization check. The staged pause is inspected and answered through real
+        /// pointer controls. Missing setup is a failure, never a skip.
         /// </remarks>
         [UnityTest]
         public IEnumerator TheLevellingHandPreview_IsPhotographedAboveTheOffer()
@@ -503,7 +504,59 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.Projection.Cards.Single(instance => instance.Id.Equals(card.CardInstanceId)).OwnerId.Equals(heroId)),
                 Is.True, "Every preview card belongs to the bound levelling hero.");
 
-            yield return UiPlayer.CaptureGameView("8-35z66", "levelup-hand-preview");
+            var snapshot = runtime.CaptureSnapshot();
+            try
+            {
+                foreach (var size in new[] { new Vector2Int(2032, 754), new Vector2Int(2560, 540) })
+                {
+                    UiPlayer.SetPlayerViewport((uint)size.x, (uint)size.y, "8.36f1 level-up comparison");
+                    yield return null;
+                    yield return null;
+                    hud.Layout();
+                    yield return null;
+                    yield return null;
+                    var slot = UiPlayer.Descendants(preview).Last(element =>
+                        element.name == "gd-levelup-hand-preview-card");
+                    UiPlayer.EnsureVisible(slot);
+                    yield return null;
+                    UiPlayer.PointAt(slot);
+                    yield return null;
+                    var peek = runtime.RoundView.DefenseCardHoverPreviewRoot;
+                    Assert.That(UiPlayer.IsShown(peek), Is.True);
+                    Assert.That(peek.ElementAt(0).resolvedStyle.opacity, Is.EqualTo(1f));
+                    Assert.That(UiPlayer.Descendants(peek).Any(element => element.name == "gd-card-unavailable-veil"), Is.False);
+                    var viewport = ConfiguredMatchHudRenderer.PanelViewport;
+                    var face = peek.ElementAt(0).worldBound;
+                    Assert.That(face.height, Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping(2)));
+                    Assert.That(face.yMin, Is.GreaterThanOrEqualTo(0f));
+                    Assert.That(face.yMax, Is.LessThanOrEqualTo(viewport.y + UiPlayer.PixelSnapping(2)));
+                    Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshot), "Inspection must not submit a card command.");
+                    yield return UiPlayer.CaptureGameView("8-36f1", $"hand-{size.x}-{size.y}");
+                    UiPlayer.PointAway(slot);
+                    yield return null;
+                    Assert.That(UiPlayer.IsShown(peek), Is.False);
+
+                    var option = UiPlayer.Descendants(hud.RootElement).OfType<Button>()
+                        .First(element => element.name == "gd-upgrade-option");
+                    UiPlayer.EnsureVisible(option);
+                    yield return null;
+                    var tray = UiPlayer.Descendants(hud.RootElement)
+                        .Single(element => element.name == "gd-tray-region").worldBound;
+                    Assert.That(option.worldBound.yMin, Is.GreaterThanOrEqualTo(tray.yMin - UiPlayer.PixelSnapping(2)));
+                    Assert.That(option.worldBound.yMax, Is.LessThanOrEqualTo(tray.yMax + UiPlayer.PixelSnapping(2)));
+                    Assert.That(UiPlayer.Descendants(option).OfType<Label>().Any(label => label.text == "GAINS:"), Is.True);
+                    yield return UiPlayer.CaptureGameView("8-36f1", $"upgrades-{size.x}-{size.y}");
+                }
+                var selected = UiPlayer.Descendants(hud.RootElement).OfType<Button>()
+                    .First(element => element.name == "gd-upgrade-option");
+                UiPlayer.Click(selected);
+                yield return null;
+                Assert.That(runtime.CaptureSnapshot(), Is.Not.EqualTo(snapshot), "The real upgrade control must consume its choice.");
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(1920, 1080, "restore after 8.36f1");
+            }
         }
     }
 }

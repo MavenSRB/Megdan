@@ -1797,14 +1797,19 @@ namespace GuardsDigital.Presentation.Match
             VisualElement preview,
             TrayCardViewModel card,
             VisualElement anchor,
-            bool isRightSideGroup = false)
+            bool isRightSideGroup = false,
+            bool dimUnavailable = true)
         {
             preview.Clear();
             var face = BuildStandaloneCard(card);
-            if (isRightSideGroup)
+            if (isRightSideGroup && dimUnavailable)
             {
                 HudElements.MarkUnavailableOpaqueInspectable(face);
                 face.focusable = false;
+            }
+            if (!dimUnavailable)
+            {
+                face.style.opacity = 1f;
             }
             IgnorePickingRecursively(face);
             preview.Add(face);
