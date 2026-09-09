@@ -226,6 +226,22 @@ namespace GuardsDigital.Presentation.Match
             // owns WHICH scene plays and the deferral owns WHEN within a granted spotlight its cues
             // fire; they are two jobs, and only the first was ever done twice.
             KineticPresenter.DeferWhile(() => SpotlightPresenter.DefersCues);
+            AttackSpotlightScene fadingAttack = null;
+            var strikeStarted = false;
+            BoardView.DeferDefeatFades = () =>
+            {
+                var scene = SpotlightPresenter.Stage.Current;
+                if (!ReferenceEquals(scene, fadingAttack))
+                {
+                    fadingAttack = scene;
+                    strikeStarted = false;
+                }
+                // Releasing queued cues is not the strike: earlier HUD flights can still own
+                // the conductor. Retain only the decorative echo until the lunge actually starts.
+                if (scene != null && KineticView.Playback.LungeTargetFor(scene.Attacker).IsDefined)
+                    strikeStarted = true;
+                return scene != null && (SpotlightPresenter.DefersCues || !strikeStarted);
+            };
             SpotlightPresenter.CuesReleased += () => KineticPresenter.Resume();
 
             BoardView.BindIntentHandlers(

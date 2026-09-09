@@ -125,6 +125,41 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void HeroDefeatGhost_WaitsForTheStrikeWithoutKeepingTheRealPieceActive()
+        {
+            var objects = new List<GameObject>();
+            var material = new Material(Shader.Find("Standard"));
+            try
+            {
+                var occupancy = new HeroOccupancy(new HeroId("red-hero"), new HexCoordinate(0, 0));
+                var hero = CreateHero(objects, occupancy);
+                var held = true;
+                var view = new BoardInteractionUnityView(new[] { hero }, Array.Empty<HexTileView>(), material)
+                {
+                    DeferDefeatFades = () => held
+                };
+                view.Render(BoardModel(1, new[] { occupancy }, Array.Empty<MinionOccupancy>()));
+                view.Render(BoardModel(2, Array.Empty<HeroOccupancy>(), Array.Empty<MinionOccupancy>()));
+                var ghost = view.HeroDefeatGhostFor(hero);
+                view.AdvanceDefeatFades(1f);
+                Assert.That(hero.gameObject.activeSelf, Is.False);
+                Assert.That(ghost.gameObject.activeSelf, Is.True);
+                Assert.That(ghost.Progress01, Is.EqualTo(0f));
+                held = false;
+                view.AdvanceDefeatFades(DefeatFadeGhostView.DefaultFadeSeconds / 2f);
+                Assert.That(ghost.Progress01, Is.EqualTo(0.5f).Within(0.001f));
+                held = true;
+                view.Render(BoardModel(3, new[] { occupancy }, Array.Empty<MinionOccupancy>()));
+                Assert.That(view.ActiveDefeatFadeCount, Is.Zero, "A restored hero cancels even a held echo.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(material);
+                DestroyAll(objects);
+            }
+        }
+
+        [Test]
         public void HeroDefeatGhost_IsCancelledImmediately_WhenTheHeroReappearsBeforeItsFadeFinishes()
         {
             var objects = new List<GameObject>();

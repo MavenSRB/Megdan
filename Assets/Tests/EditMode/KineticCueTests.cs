@@ -242,6 +242,27 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void AProjectedHeroRemoval_NeverShrinksTheAttacker()
+        {
+            var rows = MatchLogProjection.Derive(new[]
+            {
+                new RuleEventLogEntry(1, "Action.HeroRemovalCompleted",
+                    $"round=1;turn=1;hero={Attacker.Value};target={Defender.Value};card=attack-card", "step=s1")
+            });
+            var cue = CuesFor(rows.ToArray()).Single();
+            Assert.That(cue.Kind, Is.EqualTo(KineticCueKind.Defeat));
+            Assert.That(cue.Subject, Is.EqualTo(KineticSubject.ForHero(Defender)));
+            Assert.That(cue.Subject, Is.Not.EqualTo(KineticSubject.ForHero(Attacker)));
+            var playback = new KineticPlayback();
+            playback.Begin(new[] { cue });
+            playback.Advance(cue.DurationSeconds * 0.5f);
+            Assert.That(playback.MotionFor(KineticSubject.ForHero(Attacker)).Scale, Is.EqualTo(1f));
+            Assert.That(playback.MotionFor(KineticSubject.ForHero(Defender)).Scale, Is.LessThan(1f));
+            playback.CancelAll();
+            Assert.That(playback.MotionFor(KineticSubject.ForHero(Defender)).IsStill, Is.True);
+        }
+
+        [Test]
         public void ARemovedPiece_ShrinksAndFadesRatherThanVanishing()
         {
             var hero = CuesFor(Row(13, MatchLogEntryKind.HeroRemoved, subjectHero: Defender));

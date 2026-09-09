@@ -1432,3 +1432,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36f1 | Opaque readable current-hand comparison with full-face hover, reserved upgrade-card space and centered GAINS rewards. | `milestone/8.36f1` |
+
+## Milestone 8.36f2 Attack presentation completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36f2 | Correct victim identity, stable attacker scale, strike-synchronized defender echoes and spotlight cards clear of zoomed tokens. | `milestone/8.36f2` |

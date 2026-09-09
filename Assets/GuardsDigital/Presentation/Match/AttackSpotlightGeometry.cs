@@ -233,7 +233,8 @@ namespace GuardsDigital.Presentation.Match
             Vector2 cardSize,
             out Rect attackerCard,
             out Rect defenderCard,
-            float edgeMargin = EdgeMargin)
+            float edgeMargin = EdgeMargin,
+            float pieceRadius = 0f)
         {
             attackerCard = default;
             defenderCard = default;
@@ -246,13 +247,21 @@ namespace GuardsDigital.Presentation.Match
 
             var attackerIsLeft = TakesLeftEdge(attackerPanelPoint, defenderPanelPoint);
             attackerCard = Beside(
-                attackerPanelPoint, panelViewport, cardSize, attackerIsLeft, edgeMargin);
+                attackerPanelPoint, panelViewport, cardSize, attackerIsLeft, edgeMargin, pieceRadius);
             defenderCard = Beside(
-                defenderPanelPoint, panelViewport, cardSize, !attackerIsLeft, edgeMargin);
+                defenderPanelPoint, panelViewport, cardSize, !attackerIsLeft, edgeMargin, pieceRadius);
 
             Separate(ref attackerCard, ref defenderCard, panelViewport, cardSize, edgeMargin, attackerIsLeft);
-            ClearOfPieces(ref attackerCard, attackerPanelPoint, defenderPanelPoint, panelViewport, edgeMargin);
-            ClearOfPieces(ref defenderCard, attackerPanelPoint, defenderPanelPoint, panelViewport, edgeMargin);
+            ClearOfPieces(ref attackerCard, attackerPanelPoint, defenderPanelPoint, panelViewport, edgeMargin, pieceRadius);
+            ClearOfPieces(ref defenderCard, attackerPanelPoint, defenderPanelPoint, panelViewport, edgeMargin, pieceRadius);
+            if (Covers(attackerCard, attackerPanelPoint, pieceRadius) ||
+                Covers(attackerCard, defenderPanelPoint, pieceRadius) ||
+                Covers(defenderCard, attackerPanelPoint, pieceRadius) ||
+                Covers(defenderCard, defenderPanelPoint, pieceRadius))
+            {
+                attackerCard = defenderCard = default;
+                return false;
+            }
             return true;
         }
 
@@ -265,16 +274,18 @@ namespace GuardsDigital.Presentation.Match
             Vector2 panelViewport,
             Vector2 cardSize,
             bool outwardIsLeft,
-            float edgeMargin)
+            float edgeMargin,
+            float pieceRadius)
         {
             var lowest = edgeMargin;
             var highest = Mathf.Max(edgeMargin, panelViewport.x - edgeMargin - cardSize.x);
+            var clearance = PieceGap + Mathf.Max(0f, pieceRadius);
             var outward = outwardIsLeft
-                ? piecePoint.x - PieceGap - cardSize.x
-                : piecePoint.x + PieceGap;
+                ? piecePoint.x - clearance - cardSize.x
+                : piecePoint.x + clearance;
             var inward = outwardIsLeft
-                ? piecePoint.x + PieceGap
-                : piecePoint.x - PieceGap - cardSize.x;
+                ? piecePoint.x + clearance
+                : piecePoint.x - clearance - cardSize.x;
 
             var x = outward;
             if (outward < lowest || outward > highest)
@@ -335,13 +346,14 @@ namespace GuardsDigital.Presentation.Match
             Vector2 attackerPanelPoint,
             Vector2 defenderPanelPoint,
             Vector2 panelViewport,
-            float edgeMargin)
+            float edgeMargin,
+            float pieceRadius)
         {
             for (var attempt = 0; attempt < 2; attempt++)
             {
-                var covered = card.Contains(attackerPanelPoint)
+                var covered = Covers(card, attackerPanelPoint, pieceRadius)
                     ? attackerPanelPoint
-                    : card.Contains(defenderPanelPoint)
+                    : Covers(card, defenderPanelPoint, pieceRadius)
                         ? defenderPanelPoint
                         : (Vector2?)null;
                 if (covered == null)
@@ -351,8 +363,9 @@ namespace GuardsDigital.Presentation.Match
 
                 var lowest = edgeMargin;
                 var highest = Mathf.Max(edgeMargin, panelViewport.y - edgeMargin - card.height);
-                var above = covered.Value.y - card.height - PieceGap;
-                var below = covered.Value.y + PieceGap;
+                var clearance = PieceGap + Mathf.Max(0f, pieceRadius);
+                var above = covered.Value.y - card.height - clearance;
+                var below = covered.Value.y + clearance;
                 var roomAbove = above - lowest;
                 var roomBelow = highest - below;
                 card.y = Mathf.Clamp(roomAbove >= roomBelow ? above : below, lowest, highest);
@@ -380,5 +393,9 @@ namespace GuardsDigital.Presentation.Match
 
             return true;
         }
+
+        private static bool Covers(Rect card, Vector2 point, float radius) =>
+            new Rect(card.xMin - radius, card.yMin - radius,
+                card.width + (2f * radius), card.height + (2f * radius)).Contains(point);
     }
 }

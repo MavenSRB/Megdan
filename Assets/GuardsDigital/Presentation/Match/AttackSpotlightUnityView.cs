@@ -692,9 +692,12 @@ namespace GuardsDigital.Presentation.Match
             var cardSize = new Vector2(CardFootprint.Width, CardFootprint.Height);
             var attackerPoint = ToPanelPoint(camera, attackerWorld);
             var defenderPoint = ToPanelPoint(camera, defenderWorld);
+            var pieceRadius = Mathf.Max(
+                ProjectedPieceRadius(camera, model.Scene.Attacker, attackerWorld),
+                ProjectedPieceRadius(camera, model.Scene.Defender, defenderWorld));
             if (!AttackSpotlightCardLayout.TryPlace(
                     attackerPoint, defenderPoint, viewport, cardSize,
-                    out var attackerRect, out var defenderRect))
+                    out var attackerRect, out var defenderRect, pieceRadius: pieceRadius))
             {
                 attackerCardHost.style.display = DisplayStyle.None;
                 defenderCardHost.style.display = DisplayStyle.None;
@@ -703,6 +706,24 @@ namespace GuardsDigital.Presentation.Match
 
             Place(attackerCardHost, attackerRect, model.Scene?.AttackCard != null);
             Place(defenderCardHost, defenderRect, model.Scene?.DefenseCard != null);
+        }
+
+        private float ProjectedPieceRadius(Camera camera, KineticSubject subject, Vector3 world)
+        {
+            var radius = PieceRadius();
+            if (subject.Kind == KineticSubjectKind.Hero)
+            {
+                foreach (var hero in board.HeroViews)
+                {
+                    if (hero != null && hero.Occupancy.HeroId.Equals(subject.HeroId))
+                    {
+                        radius = hero.SelectionRadius;
+                        break;
+                    }
+                }
+            }
+            return Vector2.Distance(ToPanelPoint(camera, world),
+                ToPanelPoint(camera, world + camera.transform.right * radius));
         }
 
         private static void Place(VisualElement host, Rect rect, bool present)

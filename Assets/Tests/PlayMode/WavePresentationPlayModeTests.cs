@@ -270,6 +270,133 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator AttackKeepsTheAttackerVisibleWhenTheDefenderIsDefeated() =>
+            AttackKeepsTheAttackerVisible(defeatDefender: true);
+
+        [UnityTest]
+        public IEnumerator AttackKeepsTheAttackerVisibleWhenTheDefenderSurvives() =>
+            AttackKeepsTheAttackerVisible(defeatDefender: false);
+
+        private static IEnumerator AttackKeepsTheAttackerVisible(bool defeatDefender)
+        {
+            yield return LoadEngagedScene();
+            var root = Root();
+            var runtime = root.Runtime;
+            var hud = root.Hud;
+            var red = HeroOf(runtime, TeamSide.Red);
+            var blue = HeroOf(runtime, TeamSide.Blue);
+            // Stage adjacency through legal filler decisions. Preserve Red's Shock in hand so
+            // the same attack can be answered with a sufficient printed Defense or declined.
+            Commit(runtime, TeamSide.Red, WaspCardContent.LiftUp);
+            Commit(runtime, TeamSide.Blue, WaspCardContent.Shock);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(red));
+            Assert.That(runtime.SubmitEndTurn(), Is.True);
+            var movement = runtime.RoundView.Model.Actions.Single(value =>
+                ActionKindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Movement);
+            Assert.That(runtime.RoundPresenter.Submit(movement), Is.True);
+            var redAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(red)).Coordinate;
+            var step = runtime.PendingMovementChoice.LegalDestinations.First(value =>
+                HexDistanceQuery.Calculate(value.Destination, redAt) == 1);
+            Assert.That(runtime.BoardPresenter.SubmitDestination(step.Destination), Is.True);
+            if (runtime.PendingMovementChoice != null) Assert.That(runtime.SubmitEndTurn(), Is.True);
+            for (var budget = 0; runtime.Phase == RoundResolutionPhase.EndOfRound; budget++)
+            {
+                Assert.That(budget, Is.LessThan(40));
+                AnswerAnyEndOfRoundPause(runtime);
+            }
+            Commit(runtime, TeamSide.Blue, WaspCardContent.MagneticDagger);
+            Commit(runtime, TeamSide.Red, WaspCardContent.StaticBarrier);
+            Assert.That(runtime.SubmitEndTurn(), Is.True);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(blue));
+            yield return null;
+            yield return null;
+            var snapshot = runtime.CaptureSnapshot();
+            var attacker = Object.FindObjectsByType<PrimitiveHeroView>().Single(value => value.Occupancy.HeroId.Equals(blue));
+            var defender = Object.FindObjectsByType<PrimitiveHeroView>().Single(value => value.Occupancy.HeroId.Equals(red));
+            var scale = attacker.transform.localScale;
+            var control = UiPlayer.Descendants(hud.RootElement).Single(element =>
+                element.name == "gd-printed-action-region" &&
+                element.userData is PrintedActionRegionViewModel region && region.ActionKind == ActionKind.Attack);
+            UiPlayer.Click(control);
+            yield return null;
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                hud, defender.transform.position), Is.True);
+            yield return null;
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
+            if (defeatDefender)
+            {
+                UiPlayer.Click(UiPlayer.Button(hud, "DECLINE DEFENSE"));
+            }
+            else
+            {
+                var defense = UiPlayer.NamedElementWithText(hud, "gd-defense-card", "SHOCK");
+                UiPlayer.EnsureVisible(defense);
+                yield return null;
+                UiPlayer.Click(defense);
+            }
+            Assert.That(runtime.PendingDefenseChoice, Is.Null);
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(red)), Is.EqualTo(!defeatDefender),
+                string.Join("\n", runtime.DiagnosticEvents.Reverse().Take(18).Select(entry => entry.Detail)));
+            var sawFraming = false;
+            var sawStrike = false;
+            var subject = KineticSubject.ForHero(blue);
+            var deadline = Time.realtimeSinceStartup + 15f;
+            do
+            {
+                yield return null;
+                Assert.That(Time.realtimeSinceStartup, Is.LessThan(deadline), "Attack presentation must settle.");
+                Assert.That(attacker.gameObject.activeInHierarchy, Is.True);
+                Assert.That(attacker.transform.localScale.x, Is.GreaterThanOrEqualTo(scale.x * 0.99f));
+                Assert.That(runtime.KineticView.Playback.MotionFor(subject).Scale, Is.EqualTo(1f));
+                sawFraming |= runtime.SpotlightView.IsDrivingCamera;
+                if (runtime.KineticView.Playback.LungeTargetFor(subject).IsDefined && !sawStrike)
+                {
+                    sawStrike = true;
+                    Assert.That(runtime.SpotlightPresenter.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.Held));
+                    if (defeatDefender)
+                    {
+                        Assert.That(runtime.BoardView.HeroDefeatGhostFor(defender), Is.Not.Null,
+                            "The defeated hero's visual echo must survive the zoom until the strike.");
+                    }
+                    var camera = runtime.SpotlightView.CameraSource();
+                    foreach (var token in new[] { attacker, defender })
+                    {
+                        var point = MatchHudPanelScaling.ScreenToPanelPoint(
+                            camera.WorldToScreenPoint(token.transform.position), Screen.width, Screen.height);
+                        var edge = MatchHudPanelScaling.ScreenToPanelPoint(
+                            camera.WorldToScreenPoint(token.transform.position + camera.transform.right * token.SelectionRadius),
+                            Screen.width, Screen.height);
+                        var radius = Vector2.Distance(point, edge);
+                        foreach (var face in UiPlayer.Descendants(hud.RootElement).Where(element =>
+                                     (element.name == "gd-spotlight-attacker-card" ||
+                                      element.name == "gd-spotlight-defender-card") && UiPlayer.IsShown(element)))
+                        {
+                            var rect = face.worldBound;
+                            var closest = new Vector2(Mathf.Clamp(point.x, rect.xMin, rect.xMax),
+                                Mathf.Clamp(point.y, rect.yMin, rect.yMax));
+                            Assert.That(Vector2.Distance(point, closest), Is.GreaterThanOrEqualTo(radius - 1f),
+                                "The attack's cards must not cover either zoomed token.");
+                        }
+                    }
+                    yield return UiPlayer.CaptureGameView("8-36f2", defeatDefender ? "defeat-strike" : "surviving-strike");
+                }
+            } while (runtime.SpotlightPresenter.Stage.Phase != AttackSpotlightPhase.None ||
+                     !runtime.KineticView.Playback.IsIdle);
+            Assert.That(sawFraming, Is.True);
+            Assert.That(sawStrike, Is.True, "The real attack must zoom, then strike.");
+            yield return UiPlayer.CaptureGameView("8-36f2", defeatDefender ? "defeat-settled" : "surviving-settled");
+            Assert.That(runtime.Undo(), Is.True);
+            yield return null;
+            Assert.That(runtime.SpotlightPresenter.Stage.Phase, Is.EqualTo(AttackSpotlightPhase.None));
+            Assert.That(runtime.RestoreSnapshot(snapshot), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.KineticView.Playback.IsIdle, Is.True);
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(red)), Is.True);
+            Assert.That(attacker.transform.localScale.x, Is.EqualTo(scale.x).Within(0.001f));
+        }
+
         private static HeroId HeroOf(ConfiguredMatchSceneRuntime runtime, TeamSide side) =>
             runtime.Setup.Heroes.Single(hero => hero.TeamSide == side).HeroId;
 

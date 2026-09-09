@@ -52,15 +52,17 @@ The user clarified during visual validation: comparison cards must not be see-th
 
 Historical evidence: [8.36f1 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836f1-level-up-comparison-completion-evidence).
 
-### [~] 8.36f2 Correct attack presentation without shrinking the attacker
+### [x] 8.36f2 Correct attack presentation without shrinking the attacker
 
 User-approved on 2026-09-09, after f1 and before g. Report: the camera zooms but the attacking hero shrinks away during the animation. Outcome: a readable zoom followed by a strike/impact; the attacker retains a visible, stable token scale, and the defender remains or is removed according to the authoritative resolved outcome. Reproduce the actual camera/token animation path; distinguish presentation scaling from authoritative Defeat and preserve input/timing ownership. Closing checks: failing-then-passing animation geometry/lifetime regression, actual player-input attacks with surviving and defeated defenders, interruption/rebuild/Undo cleanup where affected, and targeted non-batch visual inspection. No combat rule, damage, targeting or new VFX-system changes.
 
-Read-only preparation identified a candidate cause: `MatchLogProjection` currently lets HeroRemoved and HeroDefeated fall through to the actor's `hero` reference, while `KineticCuePresenter` treats HeroRemoved.SubjectHeroId as the piece to shrink. The card-action event's `target` reference names the actual victim. Reproduce this identity mismatch before correction; inspect the narration consumers as part of the same bounded change. This observation is not a passing regression or milestone closure.
+The reported shrink was traced to HeroRemoved/HeroDefeated using the actor's `hero` reference instead of the affected `target`; HeroRemovalPrevented shares the corrected narration identity. Visual validation also exposed a defender echo fading before the queued strike and card spacing that cleared token centers but overlapped their zoomed discs. These belong to the same attack-readability outcome: retain only decorative echoes until the actual strike, and measure token clearance in projected panel units. Real removed pieces, authoritative outcomes and input ownership must remain unchanged.
 
 The user also expressed concern after two reported failures among roughly ten tried cards from the added roster. This is not a measured roster-wide failure rate. The broader audit and necessary corrections are explicitly approved below.
 
-### [ ] 8.36f3 Audit added-roster cards and correct demonstrated failures
+Historical evidence: [8.36f2 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836f2-attack-presentation-completion-evidence).
+
+### [~] 8.36f3 Audit added-roster cards and correct demonstrated failures
 
 User-approved on 2026-09-09: "Yes, audit the cards. And implement the fixes as needed." Execute after f2 and before g. Scope: the recently added configured roster (Dodger, Misa, Silverarrow, Ursafar, Whisper; reconcile the user's "six" against the eleven-hero configured catalog), not new hero content. Inventory every source card and its executable branches, map verified source authority to implementation and actual player-input coverage, and exercise uncovered or suspect paths through the configured UI. Existing green cases may be reused only under the testing policy's affectedness rules, never as assumed proof of untested branches. Correct demonstrated defects using shared typed capabilities, with a failing-then-passing regression per fault and directly affected consumers, restore/replay/Undo and visible-result checks as applicable. Record per-card conclusions, coverage gaps and any unresolved source/rules questions in one indexed audit record; no invented rules or silent quarantine. Select T3 if the shared boundary or unenumerable blast radius triggers it. This audit is implementation-authorized, not a separately mandated independent engineering review. No new heroes, rebalance, unbounded AI changes or public distribution.
 

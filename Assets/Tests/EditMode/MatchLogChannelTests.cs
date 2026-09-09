@@ -422,6 +422,23 @@ namespace GuardsDigital.Tests.EditMode
                 "The clear line names the space the token came off.");
         }
 
+        [TestCase("Action.HeroDefeatRecorded", MatchLogEntryKind.HeroDefeated)]
+        [TestCase("Action.HeroRemovalCompleted", MatchLogEntryKind.HeroRemoved)]
+        [TestCase("Action.HeroRemovalPrevented", MatchLogEntryKind.HeroRemovalPrevented)]
+        public void HeroConsequences_NameTheAffectedTargetRatherThanTheAttacker(
+            string eventType, MatchLogEntryKind kind)
+        {
+            var row = MatchLogProjection.Derive(new[]
+            {
+                Entry(1, eventType,
+                    "round=1;turn=1;hero=brogan;card=attack-card;target=sabina", "step=s1")
+            }).Single();
+            Assert.That(row.Kind, Is.EqualTo(kind));
+            Assert.That(row.SubjectHeroId, Is.EqualTo(new HeroId("sabina")));
+            Assert.That(row.SubjectCardInstanceId.IsDefined, Is.False,
+                "The attacker's source card is not the defeated hero's card.");
+        }
+
         private static RuleEventLogEntry Entry(
             int sequence, string eventType, string references, string detail) =>
             new RuleEventLogEntry(sequence, eventType, references, detail);

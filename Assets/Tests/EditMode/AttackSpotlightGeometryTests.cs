@@ -16,6 +16,25 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class AttackSpotlightGeometryTests
     {
         private const float Tolerance = 0.0005f;
+
+        [TestCase(40f)]
+        [TestCase(180f)]
+        [TestCase(260f)]
+        public void TheCards_ClearTheZoomedTokenDiscsNotOnlyTheirCenters(float radius)
+        {
+            var attacker = new Vector2(750f, 420f);
+            var defender = new Vector2(1150f, 640f);
+            Assert.That(AttackSpotlightCardLayout.TryPlace(attacker, defender,
+                new Vector2(1920f, 1080f), new Vector2(300f, 420f),
+                out var attackCard, out var defenseCard, pieceRadius: radius), Is.True);
+            foreach (var card in new[] { attackCard, defenseCard })
+            foreach (var point in new[] { attacker, defender })
+            {
+                var closest = new Vector2(Mathf.Clamp(point.x, card.xMin, card.xMax),
+                    Mathf.Clamp(point.y, card.yMin, card.yMax));
+                Assert.That(Vector2.Distance(point, closest), Is.GreaterThanOrEqualTo(radius));
+            }
+        }
         private static readonly Vector3 ScreenRight = Vector3.right;
         private static readonly Vector3 ScreenUp = Vector3.forward;
 

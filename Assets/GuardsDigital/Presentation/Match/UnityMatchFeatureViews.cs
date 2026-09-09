@@ -925,6 +925,10 @@ namespace GuardsDigital.Presentation.Match
         /// its own to assert against.</summary>
         public int ActiveDefeatFadeCount => heroDefeatGhosts.Count + minionDefeatGhosts.Count;
 
+        /// <summary>Presentation-only hold while the attack camera travels to its strike.
+        /// Authoritative pieces still deactivate immediately; only their non-interactive echoes wait.</summary>
+        public Func<bool> DeferDefeatFades { get; set; }
+
         /// <summary>The in-flight ghost for a hero, or null when it is not currently fading. Exposed for
         /// tests; the driver never needs it, since <see cref="AdvanceDefeatFades"/> ticks every ghost by
         /// itself.</summary>
@@ -943,6 +947,7 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public void AdvanceDefeatFades(float deltaSeconds)
         {
+            if (DeferDefeatFades?.Invoke() == true) return;
             AdvanceGhosts(heroDefeatGhosts, freeHeroDefeatGhosts, deltaSeconds);
             AdvanceGhosts(minionDefeatGhosts, freeMinionDefeatGhosts, deltaSeconds);
         }

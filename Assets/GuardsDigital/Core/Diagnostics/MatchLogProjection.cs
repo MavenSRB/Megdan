@@ -466,13 +466,18 @@ namespace GuardsDigital.Core.Diagnostics
                 // Milestone 8.35z61. THE SUBJECT IS THE TARGET, NOT THE ACTOR. On every
                 // card-action event `hero` is the acting hero and `target` is the hero the action was
                 // about, and this row is about the hero who was defeated and thereby passed over -
-                // the attacker is already named by the Defeat's own rows. Reading `hero` here would
+                // the attacker is already named by the Attack row. Reading `hero` here would
                 // have printed the attacker's name beside "their card resolved with no action",
                 // which is the one sentence in this log that has to name the right player.
                 //
                 // `card` is deliberately NOT read: on this event it is the ATTACKER's source card,
                 // not the card that was eaten. The eaten card rides the event as its own field and
                 // is commitment content this channel does not carry - the line CardRevealed draws.
+                // The same target identity owns removal/prevention narration and the board's
+                // disappearance cue. Using the actor here shrinks the hero who made the attack.
+                case MatchLogEntryKind.HeroDefeated:
+                case MatchLogEntryKind.HeroRemoved:
+                case MatchLogEntryKind.HeroRemovalPrevented:
                 case MatchLogEntryKind.HeroCardResolvedWithoutAction:
                     return new MatchLogEntry(
                         entry.Sequence, kind, round, turn,
