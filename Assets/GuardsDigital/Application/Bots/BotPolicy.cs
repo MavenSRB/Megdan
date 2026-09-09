@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Application.Bots
@@ -27,7 +31,11 @@ namespace GuardsDigital.Application.Bots
         Commitment = 1 << 4,
         TurnEconomy = 1 << 5,
         Respawn = 1 << 6,
-        All = Defense | AttackTarget | Geometry | ActionStart | Commitment | TurnEconomy | Respawn
+        TacticalGeometry = 1 << 7,
+        EffectChoice = 1 << 8,
+        PublicCardKnowledge = 1 << 9,
+        All = Defense | AttackTarget | Geometry | ActionStart | Commitment | TurnEconomy | Respawn,
+        PrivateSessionTactics = All | TacticalGeometry | EffectChoice | PublicCardKnowledge
     }
 
     /// <summary>
@@ -155,6 +163,24 @@ namespace GuardsDigital.Application.Bots
                 commands, readModel, ownHeroId, random, lookahead, families,
                 weights ?? BotEvaluationWeights.Default, policy ?? BotPolicyWeights.Default,
                 nearEqualBand, lookaheadCandidateCap);
+
+        /// <summary>
+        /// Milestone 8.36g. The bounded owner-projection policy used by real lobby bots. The prior
+        /// static tier-2 selector remains constructible as the measurement control; this candidate
+        /// adds battle-seeking geometry, typed Skill-choice judgment, and knowledge from cards that
+        /// this seat can actually name. It never receives a Director projection or a lookahead.
+        /// </summary>
+        public static DirectorCommand SelectPrivateSessionTactics(
+            IReadOnlyList<DirectorCommand> commands,
+            IMatchReadModel readModel,
+            HeroId ownHeroId,
+            IBotRandom random,
+            int nearEqualBand = NearEqualBand) =>
+            Select(
+                commands, readModel, ownHeroId, random, null,
+                BotPolicyFamilies.PrivateSessionTactics,
+                BotEvaluationWeights.Default, BotPolicyWeights.Default,
+                nearEqualBand, LookaheadCandidateCap);
 
         /// <summary>Tier-1's tiebreak rule: only an EXACT tie goes to the die.</summary>
         public const int ExactTiesOnly = 0;
@@ -365,18 +391,21 @@ namespace GuardsDigital.Application.Bots
                         ? DefenseDelta(candidate, readModel, weights, policy) : 0;
                 case DirectorCommandKind.ChooseAttackTarget:
                     return Enabled(families, BotPolicyFamilies.AttackTarget)
-                        ? AttackTargetDelta(candidate, readModel, weights, policy) : 0;
+                        ? AttackTargetDelta(candidate, readModel, ownHeroId, families, weights, policy) : 0;
                 case DirectorCommandKind.ChooseMovementDestination:
                 case DirectorCommandKind.PerformFastTravel:
                 case DirectorCommandKind.ChooseCorrectionDestination:
                     return Enabled(families, BotPolicyFamilies.Geometry)
-                        ? GeometryDelta(candidate.Coordinate, readModel, ownHeroId, weights, policy) : 0;
+                        ? GeometryDelta(candidate, readModel, ownHeroId, families, weights, policy) : 0;
                 case DirectorCommandKind.StartAction:
                     return Enabled(families, BotPolicyFamilies.ActionStart)
-                        ? ActionStartDelta(candidate, readModel, policy) : 0;
+                        ? ActionStartDelta(candidate, readModel, families, policy) : 0;
                 case DirectorCommandKind.CommitCard:
                     return Enabled(families, BotPolicyFamilies.Commitment)
-                        ? CommitDelta(candidate, readModel, ownHeroId, policy) : 0;
+                        ? CommitDelta(candidate, readModel, ownHeroId, families, policy) : 0;
+                case DirectorCommandKind.AnswerEffectChoice:
+                    return Enabled(families, BotPolicyFamilies.EffectChoice)
+                        ? EffectChoiceDelta(candidate, readModel, ownHeroId, families, weights, policy) : 0;
                 case DirectorCommandKind.Pass when !Enabled(families, BotPolicyFamilies.TurnEconomy):
                 case DirectorCommandKind.PerformHold when !Enabled(families, BotPolicyFamilies.TurnEconomy):
                     return 0;
@@ -465,14 +494,18 @@ namespace GuardsDigital.Application.Bots
         /// subtracted, both from the authority's own published preview.
         /// </remarks>
         private static int AttackTargetDelta(
-            DirectorCommand candidate, IMatchReadModel readModel, BotEvaluationWeights weights,
+            DirectorCommand candidate, IMatchReadModel readModel, HeroId ownHeroId,
+            BotPolicyFamilies families, BotEvaluationWeights weights,
             BotPolicyWeights policy)
         {
             if (!candidate.HeroId.IsDefined)
             {
-                // A minion target. No Life counter rides on it and no published Life fact describes
-                // one, so this policy has no opinion between minions - exactly as tier-0.5 had none.
-                return 0;
+                // Removing an enemy minion is an exact +1 change to the public pressure term. The
+                // old control deliberately had no opinion; the 8.36g policy states the lane value.
+                return candidate.MinionId.IsDefined &&
+                    Enabled(families, BotPolicyFamilies.TacticalGeometry)
+                        ? weights.MinionPressure * 2
+                        : 0;
             }
 
             var progression = (readModel.HeroProgression ?? Array.Empty<HeroProgressionProjection>())
@@ -510,6 +543,14 @@ namespace GuardsDigital.Application.Bots
                 delta -= bonus.MinionContributions.Sum(value => value.Amount) * weights.MinionPressure;
             }
 
+            if (Enabled(families, BotPolicyFamilies.PublicCardKnowledge))
+            {
+                // A revealed/current or publicly known retrieved card is exact knowledge. Unknown
+                // hand and deck cards are absent from Cards and therefore contribute nothing.
+                delta += KnownThreatValue(readModel, candidate.HeroId) / 2;
+                delta -= KnownDefenseValue(readModel, candidate.HeroId) / 2;
+            }
+
             return delta;
         }
 
@@ -520,10 +561,12 @@ namespace GuardsDigital.Application.Bots
         /// the difference of the geometry.
         /// </summary>
         private static int GeometryDelta(
-            HexCoordinate destination, IMatchReadModel readModel, HeroId ownHeroId,
+            DirectorCommand candidate, IMatchReadModel readModel, HeroId ownHeroId,
+            BotPolicyFamilies families,
             BotEvaluationWeights weights,
             BotPolicyWeights policy)
         {
+            var destination = candidate.Coordinate;
             var current = BotEvaluation.Explain(readModel, ownHeroId);
             var enemies = EnemyPositions(readModel, ownHeroId);
             if (enemies.Count == 0)
@@ -539,7 +582,36 @@ namespace GuardsDigital.Application.Bots
                 (current.AdjacentThreats * current.OwnDefeatLifeCost * weights.ThreatAdjacency);
             var after = (proximity * weights.EngagementProximity) -
                 (adjacent * current.OwnDefeatLifeCost * weights.ThreatAdjacency);
-            return after - before;
+            var delta = after - before;
+            if (!Enabled(families, BotPolicyFamilies.TacticalGeometry))
+            {
+                return delta;
+            }
+
+            // The static control's adjacency cost outweighed its proximity reward, so it reliably
+            // stopped one hex short of battle. A legal adjacent destination creates an Attack next
+            // turn and is worth more than that caution, while multiple adjacent enemies remain
+            // priced by the existing threat term above.
+            if (nearest <= 1)
+            {
+                delta += policy.MovementAction + weights.MinionPressure;
+            }
+
+            var own = (readModel.Heroes ?? Array.Empty<HeroOccupancy>())
+                .Where(value => value.HeroId.Equals(ownHeroId))
+                .Select(value => (HexCoordinate?)value.Coordinate)
+                .FirstOrDefault();
+            if (candidate.Kind == DirectorCommandKind.PerformFastTravel && own.HasValue)
+            {
+                var beforeNearest = enemies.Min(position =>
+                    HexDistanceQuery.Calculate(own.Value, position));
+                var gain = beforeNearest - nearest;
+                delta += gain > 0
+                    ? Math.Min(gain, BotEvaluation.ProximityCap) * weights.EngagementProximity * 2
+                    : -policy.MovementAction;
+            }
+
+            return delta;
         }
 
         /// <summary>
@@ -550,7 +622,8 @@ namespace GuardsDigital.Application.Bots
         /// is what makes the next Attack possible. Everything else is left alone.
         /// </summary>
         private static int ActionStartDelta(
-            DirectorCommand candidate, IMatchReadModel readModel, BotPolicyWeights policy)
+            DirectorCommand candidate, IMatchReadModel readModel, BotPolicyFamilies families,
+            BotPolicyWeights policy)
         {
             switch (ActionKindOf(readModel, candidate.CardInstanceId, candidate.ActionDefinitionId))
             {
@@ -559,6 +632,10 @@ namespace GuardsDigital.Application.Bots
                 case ActionKind.Movement:
                 case ActionKind.FastTravel:
                     return policy.MovementAction;
+                case ActionKind.Skill:
+                    return Enabled(families, BotPolicyFamilies.EffectChoice)
+                        ? policy.MovementAction + 20
+                        : 0;
                 case ActionKind.Hold:
                     return -policy.EndTurn;
                 default:
@@ -580,7 +657,7 @@ namespace GuardsDigital.Application.Bots
         /// </remarks>
         private static int CommitDelta(
             DirectorCommand candidate, IMatchReadModel readModel, HeroId ownHeroId,
-            BotPolicyWeights policy)
+            BotPolicyFamilies families, BotPolicyWeights policy)
         {
             var definition = DefinitionOf(readModel, candidate.CardInstanceId);
             if (definition == null)
@@ -640,7 +717,264 @@ namespace GuardsDigital.Application.Bots
                 }
             }
 
+            if (Enabled(families, BotPolicyFamilies.PublicCardKnowledge))
+            {
+                var knownIncoming = KnownEnemyThreatValue(readModel, ownHeroId);
+                if (knownIncoming > 0)
+                {
+                    var defense = definition.ActionDefinitions
+                        .Where(action => action != null && action.Kind == ActionKind.Defense)
+                        .SelectMany(action => action.BaseValues ?? Array.Empty<PrintedValueDefinition>())
+                        .Where(value => value.Channel == PrintedValueChannel.Defense)
+                        .Select(value => value.Amount).DefaultIfEmpty(0).Max();
+                    delta += Math.Min(knownIncoming, defense * 12);
+                }
+            }
+
             return delta;
+        }
+
+        private static int EffectChoiceDelta(
+            DirectorCommand candidate, IMatchReadModel readModel, HeroId ownHeroId,
+            BotPolicyFamilies families, BotEvaluationWeights weights, BotPolicyWeights policy)
+        {
+            var invocation = candidate.EffectChoice;
+            var choice = readModel.PendingEffectChoice;
+            if (invocation == null || choice == null)
+            {
+                return 0;
+            }
+
+            if (invocation.Kind == EffectChoiceCommandKind.Confirm)
+            {
+                return choice.SelectedCandidates.Count >= choice.MinimumSelections ? 30 : 0;
+            }
+
+            if (invocation.Kind == EffectChoiceCommandKind.Decline ||
+                invocation.Kind == EffectChoiceCommandKind.Stop ||
+                invocation.Kind == EffectChoiceCommandKind.Deselect)
+            {
+                return -20;
+            }
+
+            if (invocation.Kind != EffectChoiceCommandKind.Select)
+            {
+                return 0;
+            }
+
+            var candidateValue = invocation.Candidate.Value;
+            var preview = (readModel.PendingEffectChoicePreview ??
+                    Array.Empty<EffectChoiceCandidatePreview>())
+                .Where(value => value.CandidateValue.Equals(candidateValue))
+                .Select(value => (EffectChoiceCandidatePreview?)value)
+                .FirstOrDefault();
+            if (preview.HasValue)
+            {
+                return PreviewDelta(preview.Value, readModel, ownHeroId, families, weights, policy);
+            }
+
+            if (candidateValue.Kind == EffectValueKind.CardInstance)
+            {
+                var utility = CardTacticalUtility(
+                    DefinitionOf(readModel, candidateValue.CardInstanceId));
+                var intent = CardChoiceIntent(readModel);
+                return intent == CardChoiceTacticalIntent.Retrieve ? utility + 20 :
+                    intent == CardChoiceTacticalIntent.Discard ? -utility : 0;
+            }
+
+            if (invocation.Candidate.Kind == EffectChoiceCandidateKind.Option)
+            {
+                return OptionTacticalUtility(readModel, invocation.Candidate.OptionNodeId);
+            }
+
+            return 0;
+        }
+
+        private static int PreviewDelta(
+            EffectChoiceCandidatePreview preview, IMatchReadModel readModel, HeroId ownHeroId,
+            BotPolicyFamilies families, BotEvaluationWeights weights, BotPolicyWeights policy)
+        {
+            var friendly = IsFriendly(readModel, ownHeroId, preview.Occupant);
+            switch (preview.ConsequenceIntent)
+            {
+                case EffectChoiceConsequenceIntent.Removal:
+                    return friendly ? -policy.HitTaken :
+                        preview.Occupant.Kind == BoardObjectKind.Hero
+                            ? weights.TeamLife
+                            : weights.MinionPressure * 3;
+                case EffectChoiceConsequenceIntent.Attack:
+                    return friendly ? -policy.HitTaken : policy.AttackAction;
+                case EffectChoiceConsequenceIntent.Movement when
+                    preview.ResultingCoordinate.HasValue &&
+                    preview.Occupant.Kind == BoardObjectKind.Hero &&
+                    preview.Occupant.HeroId.Equals(ownHeroId):
+                    return GeometryDelta(
+                        DirectorCommand.ChooseMovementDestination(preview.ResultingCoordinate.Value),
+                        readModel, ownHeroId, families, weights, policy);
+                default:
+                    return preview.Occupant.IsDefined ? (friendly ? 10 : 20) : 0;
+            }
+        }
+
+        private enum CardChoiceTacticalIntent { None, Retrieve, Discard }
+
+        private static CardChoiceTacticalIntent CardChoiceIntent(IMatchReadModel readModel)
+        {
+            var resolution = readModel.PendingSkillResolution;
+            var choice = readModel.PendingEffectChoice;
+            var definition = EffectDefinitionOf(readModel, resolution);
+            if (resolution == null || choice == null || definition == null)
+            {
+                return CardChoiceTacticalIntent.None;
+            }
+
+            var consumers = definition.Nodes.Where(node => node.Kind == EffectNodeKind.Capability)
+                .Where(node => node.Id.Equals(choice.NodeId) || node.Inputs.Any(input =>
+                    input.SourceKind == EffectBindingSourceKind.NodeOutput &&
+                    input.SourceNodeId.Equals(choice.NodeId)))
+                .Select(node => node.Capability).ToArray();
+            if (consumers.Contains(SyntheticRosterCapabilities.RetrieveCardV1))
+            {
+                return CardChoiceTacticalIntent.Retrieve;
+            }
+
+            if (consumers.Contains(SyntheticRosterCapabilities.DiscardOwnedCardV1) ||
+                consumers.Contains(SyntheticCardStateCapabilities.DiscardChosenCardV1) ||
+                consumers.Contains(SyntheticCardStateCapabilities.DiscardChosenCardV2))
+            {
+                return CardChoiceTacticalIntent.Discard;
+            }
+
+            return CardChoiceTacticalIntent.None;
+        }
+
+        private static EffectDefinition EffectDefinitionOf(
+            IMatchReadModel readModel, PendingResolution resolution)
+        {
+            if (resolution == null)
+            {
+                return null;
+            }
+
+            var definition = DefinitionOf(readModel, resolution.SourceCardInstanceId);
+            var action = definition?.ActionDefinitions?.FirstOrDefault(value =>
+                value != null && value.Id.Equals(resolution.ActionDefinitionId));
+            return action?.EffectRootFor(resolution.EffectDefinitionReference);
+        }
+
+        private static int OptionTacticalUtility(IMatchReadModel readModel, EffectNodeId optionNodeId)
+        {
+            var definition = EffectDefinitionOf(readModel, readModel.PendingSkillResolution);
+            if (definition == null || !definition.TryGetNode(optionNodeId, out var option))
+            {
+                return 0;
+            }
+
+            var visited = new HashSet<EffectNodeId>();
+            var pending = new Stack<EffectNodeDefinition>();
+            pending.Push(option);
+            var score = 0;
+            while (pending.Count > 0 && visited.Count < 32)
+            {
+                var node = pending.Pop();
+                if (!visited.Add(node.Id)) continue;
+                if (node.Kind == EffectNodeKind.RepeatAction) score += 60;
+                if (node.Kind == EffectNodeKind.Capability)
+                {
+                    if (node.Capability.Equals(SyntheticRosterCapabilities.RetrieveCardV1)) score += 35;
+                    if (node.Capability.Equals(SyntheticRosterCapabilities.DiscardOwnedCardV1) ||
+                        node.Capability.Equals(SyntheticCardStateCapabilities.DiscardChosenCardV1) ||
+                        node.Capability.Equals(SyntheticCardStateCapabilities.DiscardChosenCardV2)) score += 30;
+                    if (node.Capability.Equals(SyntheticConsequenceCapabilities.DefeatHeroV1) ||
+                        node.Capability.Equals(SyntheticConsequenceCapabilities.DefeatMinionV1) ||
+                        node.Capability.Equals(SyntheticExchangeCapabilities.RemoveV2)) score += 80;
+                    if (node.Capability.Equals(SyntheticDisplacementCapabilities.DirectMoveV3) ||
+                        node.Capability.Equals(SyntheticDisplacementCapabilities.ObjectPushV3) ||
+                        node.Capability.Equals(SyntheticDisplacementCapabilities.PushTargetV3)) score += 25;
+                }
+                foreach (var childId in node.ChildNodeIds)
+                    if (definition.TryGetNode(childId, out var child)) pending.Push(child);
+            }
+
+            return score;
+        }
+
+        private static int CardTacticalUtility(CardDefinition definition)
+        {
+            if (definition == null) return 0;
+            var score = 0;
+            foreach (var action in definition.ActionDefinitions ?? Array.Empty<ActionDefinition>())
+            {
+                if (action == null) continue;
+                if (action.Kind == ActionKind.Attack) score += 50;
+                else if (action.Kind == ActionKind.Skill) score += 35;
+                else if (action.Kind == ActionKind.Movement || action.Kind == ActionKind.FastTravel) score += 20;
+                else if (action.Kind == ActionKind.Defense) score += 15;
+                score += (action.BaseValues ?? Array.Empty<PrintedValueDefinition>())
+                    .Sum(value => Math.Max(0, value.Amount));
+            }
+            return score;
+        }
+
+        private static int KnownEnemyThreatValue(IMatchReadModel readModel, HeroId ownHeroId)
+        {
+            TeamId ownTeam;
+            try { ownTeam = readModel.Participants.GetTeamForHero(ownHeroId).Id; }
+            catch (Exception) { return 0; }
+            return (readModel.Cards ?? Array.Empty<CardInstance>())
+                .Where(card => card != null && !card.OwnerId.Equals(ownHeroId))
+                .Where(card =>
+                {
+                    try { return !readModel.Participants.GetTeamForHero(card.OwnerId).Id.Equals(ownTeam); }
+                    catch (Exception) { return false; }
+                })
+                .Select(card => card.OwnerId)
+                .Distinct()
+                .Sum(heroId => KnownThreatValue(readModel, heroId));
+        }
+
+        private static int KnownThreatValue(IMatchReadModel readModel, HeroId heroId) =>
+            VisibleDefinitionsFor(readModel, heroId, card =>
+                    card.State.Location == CardLocation.Hand ||
+                    card.State.Location == CardLocation.TurnArea ||
+                    readModel.IsActiveEffectSource(card.Id))
+                .SelectMany(definition => definition.ActionDefinitions ?? Array.Empty<ActionDefinition>())
+                .Where(action => action != null && (action.Kind == ActionKind.Attack || action.Kind == ActionKind.Skill))
+                .Sum(action => action.Kind == ActionKind.Skill ? 20 : 30 +
+                    (action.BaseValues ?? Array.Empty<PrintedValueDefinition>())
+                        .Where(value => value.Channel == PrintedValueChannel.Attack)
+                        .Select(value => value.Amount * 5).DefaultIfEmpty(0).Max());
+
+        private static int KnownDefenseValue(IMatchReadModel readModel, HeroId heroId) =>
+            VisibleDefinitionsFor(readModel, heroId, card => card.State.Location == CardLocation.Hand)
+                .SelectMany(definition => definition.ActionDefinitions ?? Array.Empty<ActionDefinition>())
+                .Where(action => action != null && action.Kind == ActionKind.Defense)
+                .SelectMany(action => action.BaseValues ?? Array.Empty<PrintedValueDefinition>())
+                .Where(value => value.Channel == PrintedValueChannel.Defense)
+                .Sum(value => value.Amount * 5);
+
+        private static IEnumerable<CardDefinition> VisibleDefinitionsFor(
+            IMatchReadModel readModel, HeroId heroId, Func<CardInstance, bool> isRelevant) =>
+            (readModel.Cards ?? Array.Empty<CardInstance>())
+                .Where(card => card != null && card.OwnerId.Equals(heroId) &&
+                    (isRelevant == null || isRelevant(card)))
+                .Select(card => (readModel.Definitions ?? Array.Empty<CardDefinition>())
+                    .FirstOrDefault(definition => definition != null &&
+                        definition.Reference.Equals(card.DefinitionReference)))
+                .Where(definition => definition != null);
+
+        private static bool IsFriendly(
+            IMatchReadModel readModel, HeroId ownHeroId, BoardObjectReference target)
+        {
+            TeamId ownTeam;
+            try { ownTeam = readModel.Participants.GetTeamForHero(ownHeroId).Id; }
+            catch (Exception) { return false; }
+            if (target.Kind == BoardObjectKind.Minion)
+                return (readModel.Minions ?? Array.Empty<Core.Units.Minions.MinionOccupancy>())
+                    .Any(minion => minion.MinionId.Equals(target.MinionId) && minion.TeamId.Equals(ownTeam));
+            if (target.Kind != BoardObjectKind.Hero) return false;
+            try { return readModel.Participants.GetTeamForHero(target.HeroId).Id.Equals(ownTeam); }
+            catch (Exception) { return false; }
         }
 
         private static List<HexCoordinate> EnemyPositions(IMatchReadModel readModel, HeroId ownHeroId)

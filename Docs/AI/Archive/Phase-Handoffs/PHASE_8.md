@@ -1444,3 +1444,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36f3 | Audited all 90 dealt faces across Dodger, Misa, Silverarrow, Ursafar and Whisper; closed eight demonstrated resolver, state, replay and fixture findings with active source-linked player paths. | `milestone/8.36f3` |
+
+## Milestone 8.36g Private-session bot tactics completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36g | Owner-private lobby bots cross into battle, use productive Fast Travel, value feasible Skills and typed consequences, and react only to bounded public card knowledge. Fixed-seed and real encoded-fleet evidence shows legal progress within the host work cap; paired samples expose the measured tradeoff without a universal-strength claim. | `milestone/8.36g` |

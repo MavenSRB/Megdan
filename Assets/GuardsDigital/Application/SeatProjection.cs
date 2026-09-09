@@ -656,7 +656,7 @@ namespace GuardsDigital.Application
                 .ToArray();
             var publicCards = source.Cards
                 .Where(card => !card.OwnerId.Equals(seat.HeroId))
-                .Where(IsPublic)
+                .Where(card => IsPublic(card, source.MatchLog))
                 .ToArray();
             var handSummaries = source.Participants.Heroes
                 .Select(hero => new SeatHandSummary(
@@ -1061,7 +1061,9 @@ namespace GuardsDigital.Application
         /// printed set and read the hand. What remains derivable is the union of the two, which is
         /// inherent to a known printed deck and is not something a projection can take back.</para>
         /// </remarks>
-        private static bool IsPublic(CardInstance card)
+        private static bool IsPublic(
+            CardInstance card,
+            IReadOnlyList<GuardsDigital.Core.Diagnostics.MatchLogEntry> publicLog)
         {
             if (card.State.FaceOrientation != CardFaceOrientation.FaceUp)
             {
@@ -1075,6 +1077,12 @@ namespace GuardsDigital.Application
                 case CardLocation.ItemSlot:
                 case CardLocation.UltimateArea:
                     return true;
+                case CardLocation.Hand:
+                    // A retrieved card remains known at the physical table after p.8 returns it.
+                    // Retrieval resets lifecycle state so the card can be played again; the bounded
+                    // public log, not a rules-facing card flag, is the memory of its revealed ID.
+                    return (publicLog ?? Array.Empty<GuardsDigital.Core.Diagnostics.MatchLogEntry>())
+                        .Any(entry => entry.SubjectCardInstanceId.Equals(card.Id));
                 default:
                     return false;
             }

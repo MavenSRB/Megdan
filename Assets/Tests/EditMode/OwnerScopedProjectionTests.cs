@@ -258,7 +258,10 @@ namespace GuardsDigital.Tests.EditMode
                     !value.OwnerId.Equals(seat.HeroId)))
                 {
                     var readable = card.State.FaceOrientation == CardFaceOrientation.FaceUp &&
-                        open.Contains(card.State.Location);
+                        (open.Contains(card.State.Location) ||
+                         card.State.Location == CardLocation.Hand &&
+                         projection.MatchLog.Any(entry =>
+                             entry.SubjectCardInstanceId.Equals(card.Id)));
                     Assert.That(visible.Contains(card.Id.Value), Is.EqualTo(readable),
                         "Rulebook p.4 decides " + card.Id.Value + " at " + card.State.Location +
                         " / " + card.State.FaceOrientation + " for seat " + seat.Id + ".");
@@ -273,6 +276,13 @@ namespace GuardsDigital.Tests.EditMode
                     card.State.FaceOrientation == CardFaceOrientation.FaceUp), Is.True,
                 "It must also contain a face-up hand card, or the claim that orientation alone is " +
                 "not the rule is vacuous.");
+            Assert.That(host.Seats.Seats.Any(seat =>
+                    host.Projection.Cards.Any(card =>
+                        !card.OwnerId.Equals(seat.HeroId) &&
+                        card.State.Location == CardLocation.Hand &&
+                        !host.ProjectionForSeat(seat.Id).PublicCards.Any(known =>
+                            known.Id.Equals(card.Id)))), Is.True,
+                "At least one never-seen hand card must remain absent while retrieved known cards persist.");
         }
 
         /// <summary>

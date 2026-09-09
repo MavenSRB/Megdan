@@ -70,7 +70,7 @@ User-approved on 2026-09-09: "Yes, audit the cards. And implement the fixes as n
 
 Historical evidence: [8.36f3 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836f3-added-roster-card-audit-completion-evidence).
 
-### [~] 8.36g Improve private-session bot tactics with measured evidence
+### [x] 8.36g Improve private-session bot tactics with measured evidence
 
 User-approved on 2026-09-09 after all fixes in 8.36b-8.36f. This reopens the stronger-bot outcome parked at 8.35z78; that entry routes here rather than becoming a duplicate implementation. Outcome: improve the existing lobby bot policy's tactical usefulness, particularly reaching battle, useful legal Fast Travel, and avoiding wasted or repeated ineffective turns. First reproduce the reported decisions and compare against the existing static Tier-2 baseline. Closing checks: fixed-seed scenarios demonstrate the targeted improvements and legal forward progress, paired baseline/candidate match samples expose tradeoffs without claiming universal strength, and measured decision-work caps preserve host responsiveness. Exercise actual lobby bots, not just the practice director. Preserve owner-private information boundaries, authorized commands, deterministic rules/replay and reserved-human pause. No omniscient host-state search, new heroes, rule changes, external AI service or unbounded search; any larger architectural direction requires a separate decision.
 
@@ -78,7 +78,9 @@ The user's 2026-09-09 clarification makes winning the explicit tactical objectiv
 
 Also explicitly requested: use revealed commitments/initiative and public played, discarded and retrieved cards to assess current threats and possible future cards. Preserve the distinction between known and merely possible cards; public-history inference must never read hidden hands, decks or facedown commitments. Evaluate productive Skill modes, targets and setup effects alongside attacks and movement. Closing scenarios cover reacting to a revealed threat, updating card-availability knowledge after public retrieval, uncertainty when information is hidden, and useful Skill outcomes (including retrieval/discard, removal and positioning). Keep inference and decision work bounded; no perfect-information opponent-hand simulation or unbounded multi-turn search.
 
-### [ ] 8.36g1 Host and play from the same client
+Historical evidence: [8.36g handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836g-private-session-bot-tactics-completion-evidence).
+
+### [~] 8.36g1 Host and play from the same client
 
 Explicitly approved on 2026-09-09 after the card audit and bot work, before packaging. Outcome: everyone runs the same client; one player chooses Host and plays a seat while others choose Join. No separate seatless host process is required. The hosting player alone can deliberately access the Director tab for debugging; joining players remain owner-scoped, and bots retain their private seat projections even though their process owns authority. Preserve keyed TCP admission, reconnect, host-loss behavior and existing authoritative rules; no host migration or online-service change. Closing checks: actual same-client host-plus-remote-client lobby, picks and complete local gameplay; host-only Director visibility and authorization; joiners cannot invoke debug commands; host departure/rehost and client leave/rejoin recover correctly; host plus bots works with all configured sizes. Review the trust-model change explicitly: the playing host is trusted and can see or alter authoritative state through debug tools. Validate this final topology before 8.36h packaging.
 

@@ -187,7 +187,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void FirstLobbyBotCommitmentUsesTheExistingTierTwoOwnerPolicy()
+        public void FirstLobbyBotCommitmentUsesTheMeasuredTacticalOwnerPolicy()
         {
             const int seed = 17;
             var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
@@ -204,7 +204,7 @@ namespace GuardsDigital.Tests.EditMode
             var expected = composer.Match.Seats.Seats.Select(seat =>
             {
                 var owner = composer.Match.ProjectionForSeat(seat.Id);
-                return BotPolicy.SelectTierTwo(owner.AuthorizedCommands, owner, seat.HeroId,
+                return BotPolicy.SelectPrivateSessionTactics(owner.AuthorizedCommands, owner, seat.HeroId,
                     new DeterministicBotRandom(seed));
             }).ToArray();
             Assert.That(expected, Has.All.Not.Null);
@@ -220,7 +220,7 @@ namespace GuardsDigital.Tests.EditMode
                 timer.Elapsed.TotalMilliseconds.ToString("F2") + " ms");
             Assert.That(fleet.AcceptedCommands, Is.EqualTo(1));
             Assert.That(expected, Does.Contain(accepted),
-                "The real fleet must use the same tuned commitment choice as the existing owner-scoped policy.");
+                "The real fleet must use the same tactical choice as the owner-scoped policy.");
         }
 
         [Test]
@@ -229,6 +229,50 @@ namespace GuardsDigital.Tests.EditMode
             var first = Draft(7);
             Assert.That(Draft(7), Is.EqualTo(first), "A recorded input must reproduce the draft.");
             Assert.That(Draft(29), Is.Not.EqualTo(first), "Bots must not always take the first available hero.");
+        }
+
+        [Test]
+        public void ActualLobbyBotsUseFastTravelAndReachProductiveCombat()
+        {
+            var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
+            using var fleet = new PrivateSessionBotFleet(composer.Match, composer.Identity, "", new HumanWire(),
+                new CountingNonceSource(85), () => composer.Match.Projection,
+                composer.Configuration.ContentCatalogs, seed: 307);
+            fleet.Host.Composition = composer;
+            fleet.FillOpenSeats(0, 0);
+            long tick = 0;
+            while (!fleet.Host.HasMatchStarted && tick < 200) fleet.Tick(++tick);
+            Assert.That(fleet.Host.HasMatchStarted, Is.True, fleet.LastFailure);
+
+            var cursor = composer.Match.ReadResults(0).NextSequence;
+            var fastTravels = 0;
+            var accepted = 0;
+            while (!fleet.Host.HasEnded && accepted < 500 && tick < 5000)
+            {
+                fleet.Tick(++tick);
+                var batch = composer.Match.ReadResults(cursor);
+                cursor = batch.NextSequence;
+                foreach (var record in batch.Records)
+                {
+                    accepted++;
+                    if (record.Command.Kind == DirectorCommandKind.PerformFastTravel) fastTravels++;
+                }
+            }
+
+            var combat = composer.Match.Projection.MatchLog.Count(entry =>
+                entry.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.Attack ||
+                entry.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.SkillUsed ||
+                entry.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.MinionDefeated ||
+                entry.Kind == GuardsDigital.Core.Diagnostics.MatchLogEntryKind.HeroDefeated);
+            TestContext.WriteLine(
+                "accepted=" + accepted + " fastTravel=" + fastTravels + " combat=" + combat +
+                " ended=" + fleet.Host.HasEnded);
+            Assert.That(fleet.LastFailure, Is.Empty);
+            Assert.That(accepted, Is.GreaterThan(100));
+            Assert.That(fastTravels, Is.GreaterThan(0),
+                "The actual encoded lobby fleet never used Fast Travel.");
+            Assert.That(combat, Is.GreaterThan(0),
+                "The actual lobby fleet moved but never reached an Attack, Skill or Defeat.");
         }
 
         private static string[] Draft(int seed)

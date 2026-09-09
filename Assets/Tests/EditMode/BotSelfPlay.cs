@@ -30,7 +30,10 @@ namespace GuardsDigital.Tests.EditMode
         /// Tier-2: tier-1's judgment plus a real ply, under the tuned weights, with Ruling 41's
         /// seeded near-equal pick. Host-owned seats only - see <see cref="BotSeatConductor"/>.
         /// </summary>
-        TierTwo = 3
+        TierTwo = 3,
+
+        /// <summary>Milestone 8.36g's owner-private lobby policy, without host lookahead.</summary>
+        PrivateSessionTactics = 4
     }
 
     /// <summary>
@@ -76,7 +79,8 @@ namespace GuardsDigital.Tests.EditMode
             IReadOnlyDictionary<BotTier, long> decisionTicks,
             IReadOnlyDictionary<BotTier, int> decisionCounts,
             int simulatedPlies,
-            IReadOnlyList<BotSelfPlayRefusal> refusals)
+            IReadOnlyList<BotSelfPlayRefusal> refusals,
+            BotTacticalMetrics tactics = null)
         {
             Refusals = refusals;
             Seed = seed;
@@ -88,6 +92,7 @@ namespace GuardsDigital.Tests.EditMode
             DecisionTicks = decisionTicks;
             DecisionCounts = decisionCounts;
             SimulatedPlies = simulatedPlies;
+            Tactics = tactics ?? new BotTacticalMetrics();
         }
 
         public int Seed { get; }
@@ -108,6 +113,8 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>Every offered-then-refused command this run met. Empty is the expected value.</summary>
         public IReadOnlyList<BotSelfPlayRefusal> Refusals { get; }
 
+        public BotTacticalMetrics Tactics { get; }
+
         /// <summary>
         /// True when the match ended with a winner. A budget-exhausted or stalled run has no winner
         /// and must not be counted as a win for anybody.
@@ -119,6 +126,21 @@ namespace GuardsDigital.Tests.EditMode
             DecisionCounts.TryGetValue(tier, out var count) && count > 0
                 ? DecisionTicks[tier] * 1000.0 / Stopwatch.Frequency / count
                 : 0.0;
+    }
+
+    /// <summary>Public, outcome-level counters used by 8.36g's paired tactical comparison.</summary>
+    public sealed class BotTacticalMetrics
+    {
+        public int FastTravels;
+        public int MovementChoices;
+        public int Attacks;
+        public int Skills;
+        public int MinionDefeats;
+        public int HeroDefeats;
+        public int TeamLifeSpent;
+        public int PassesOrHolds;
+
+        public int ProductiveCombat => Attacks + Skills + MinionDefeats + HeroDefeats + TeamLifeSpent;
     }
 
     /// <summary>
@@ -238,12 +260,14 @@ namespace GuardsDigital.Tests.EditMode
             var stalled = false;
             var stopwatch = new Stopwatch();
             var refusals = new List<BotSelfPlayRefusal>();
+            var tactics = new BotTacticalMetrics();
+            var observedLogSequence = 0;
 
             while (session.Projection.Phase != RoundResolutionPhase.GameEnded)
             {
                 if (executed >= maximumCommands)
                 {
-                    return Result(seed, session, executed, true, false, ticks, counts, lookahead, refusals);
+                    return Result(seed, session, executed, true, false, ticks, counts, lookahead, refusals, tactics);
                 }
 
                 var candidates = DeterministicMatchLoop.EnumerateLegalCommands(session.Projection);
@@ -296,9 +320,23 @@ namespace GuardsDigital.Tests.EditMode
                 }
 
                 executed++;
+                if (chosen.Kind == DirectorCommandKind.PerformFastTravel) tactics.FastTravels++;
+                if (chosen.Kind == DirectorCommandKind.ChooseMovementDestination) tactics.MovementChoices++;
+                if (chosen.Kind == DirectorCommandKind.Pass || chosen.Kind == DirectorCommandKind.PerformHold)
+                    tactics.PassesOrHolds++;
+                foreach (var entry in session.Projection.MatchLog.Where(entry =>
+                    entry.Sequence > observedLogSequence).OrderBy(entry => entry.Sequence))
+                {
+                    if (entry.Kind == Core.Diagnostics.MatchLogEntryKind.Attack) tactics.Attacks++;
+                    else if (entry.Kind == Core.Diagnostics.MatchLogEntryKind.SkillUsed) tactics.Skills++;
+                    else if (entry.Kind == Core.Diagnostics.MatchLogEntryKind.MinionDefeated) tactics.MinionDefeats++;
+                    else if (entry.Kind == Core.Diagnostics.MatchLogEntryKind.HeroDefeated) tactics.HeroDefeats++;
+                    else if (entry.Kind == Core.Diagnostics.MatchLogEntryKind.TeamLifeSpent) tactics.TeamLifeSpent += entry.Amount;
+                    observedLogSequence = Math.Max(observedLogSequence, entry.Sequence);
+                }
             }
 
-            return Result(seed, session, executed, false, stalled, ticks, counts, lookahead, refusals);
+            return Result(seed, session, executed, false, stalled, ticks, counts, lookahead, refusals, tactics);
         }
 
         /// <summary>
@@ -338,6 +376,10 @@ namespace GuardsDigital.Tests.EditMode
                     return BotPolicy.SelectTierTwo(
                         candidates, readModel, decidingHero, random, lookahead, families,
                         weights, nearEqualBand, lookaheadCandidateCap, policy) ??
+                        candidates[random.Next(candidates.Count)];
+                case BotTier.PrivateSessionTactics:
+                    return BotPolicy.SelectPrivateSessionTactics(
+                        candidates, readModel, decidingHero, random, nearEqualBand) ??
                         candidates[random.Next(candidates.Count)];
                 case BotTier.TierOne:
                     // THE CONTROL, and it is handed no lookahead ON PURPOSE. Tier-1 is the brain that
@@ -427,7 +469,8 @@ namespace GuardsDigital.Tests.EditMode
             Dictionary<BotTier, long> ticks,
             Dictionary<BotTier, int> counts,
             IBotLookahead lookahead,
-            List<BotSelfPlayRefusal> refusals) =>
+            List<BotSelfPlayRefusal> refusals,
+            BotTacticalMetrics tactics) =>
             new BotSelfPlayResult(
                 seed,
                 session.Projection.Outcome,
@@ -438,7 +481,8 @@ namespace GuardsDigital.Tests.EditMode
                 ticks,
                 counts,
                 SimulatedPliesOf(lookahead),
-                refusals);
+                refusals,
+                tactics);
 
         /// <summary>
         /// The ply count off whichever probe was used. Not on <see cref="IBotLookahead"/>, because a

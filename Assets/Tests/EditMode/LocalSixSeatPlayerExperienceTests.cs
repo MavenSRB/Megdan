@@ -358,13 +358,16 @@ namespace GuardsDigital.Tests.EditMode
                     var isOwn = card.OwnerId.Equals(seat.HeroId);
                     var shouldBePublic = !isOwn &&
                         card.State.FaceOrientation == CardFaceOrientation.FaceUp &&
-                        PublicCardLocations.Contains(card.State.Location);
+                        (PublicCardLocations.Contains(card.State.Location) ||
+                         card.State.Location == CardLocation.Hand &&
+                         projection.MatchLog.Any(entry =>
+                             entry.SubjectCardInstanceId.Equals(card.Id)));
                     Assert.That(projection.OwnCards.Any(value => value.Id.Equals(card.Id)),
                         Is.EqualTo(isOwn),
                         "A seat receives all and only its own private cards.");
                     Assert.That(projection.PublicCards.Any(value => value.Id.Equals(card.Id)),
                         Is.EqualTo(shouldBePublic),
-                        "Rulebook p.4 open information alone reaches another seat.");
+                        "Rulebook p.4 open information and bounded memory of revealed cards reach another seat.");
                 }
 
                 foreach (var summary in projection.HandSummaries)

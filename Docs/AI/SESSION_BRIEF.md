@@ -14,13 +14,13 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.36f3**.
-- Active authorized milestone: **8.36g**.
-- Next proposed milestone: **8.36g**.
+- Current completed milestone: **8.36g**.
+- Active authorized milestone: **8.36g1**.
+- Next proposed milestone: **8.36g1**.
 
 The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 gate remains closed. The independent 8.36a review is integrated. On 2026-09-09 the user approved **8.36b-8.36d**, sequentially: authenticated departure, bounded transport, attributable diagnostics. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns the outcomes and closing checks. [Product](Project/PRODUCT.md) now limits the project to the user and friends: production presentation and publisher-pitch work are parked. More heroes remain desired future work, not authorized implementation in this correction batch. No repeat internet playtest, remote publication or unrelated refactor is authorized.
 
-Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Transparent aura and adaptive ring order passed exact-player rendering checks, including the turn pulse's minimum size. Lobby bots use the existing owner-scoped Tier-2 static policy. The verified local package is `Builds/Playtest-8.35z85-fixes.zip`, with Play/Host scripts; its actual lobby, Whisper selection, movement, Undo, End Turn and bot progress were checked. Additional heroes remain on hold. Aura order is token, purple effect ring, active-turn ring; without an effect, the turn ring sits beside the token.
+Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Transparent aura and adaptive ring order passed exact-player rendering checks, including the turn pulse's minimum size. Lobby bots now use the measured owner-scoped tactical policy: useful Fast Travel, battle entry, typed Skill choices and bounded public-card knowledge while hidden hands/decks remain absent. The prior Tier-2 static policy remains the comparison control. The verified package is still the pre-g1 `Builds/Playtest-8.35z85-fixes.zip`; replacement packaging follows only at 8.36h. Additional heroes remain on hold. Aura order is token, purple effect ring, active-turn ring; without an effect, the turn ring sits beside the token.
 
 ## Durable boundaries
 

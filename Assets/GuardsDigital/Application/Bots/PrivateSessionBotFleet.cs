@@ -171,14 +171,14 @@ namespace GuardsDigital.Application.Bots
             if (version != bot.RefusedVersion) { bot.Refused.Clear(); bot.RefusedVersion = version; }
             var commands = machine.LatestProjection.AuthorizedCommands.Where(command => !bot.Refused.Contains(command)).ToArray();
             if (commands.Length == 0) return false;
-            // Complete a selected choice instead of toggling it; minion selection must precede team agreement.
-            var selected = commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
-                command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            // Minion selection must precede team agreement. Effect confirmations are scored by the
+            // tactical policy: blindly confirming was one source of repeated ineffective Skills.
+            DirectorCommand selected = null;
             if (projection.PendingMinionBattleChoice != null)
                 selected = commands.FirstOrDefault(command => command.Kind == DirectorCommandKind.SelectMinionBattleRemoval);
-            // The existing tuned policy scores only this owner's published choices. Deliberately
-            // omit lookahead: a lobby bot must not borrow the host's hidden hands or commitments.
-            selected = selected ?? BotPolicy.SelectTierTwo(commands, projection, hero, random)
+            // The tactical policy scores only this owner's published choices. Deliberately omit
+            // lookahead: a lobby bot must not borrow the host's hidden hands or commitments.
+            selected = selected ?? BotPolicy.SelectPrivateSessionTactics(commands, projection, hero, random)
                 ?? commands[random.Next(commands.Length)];
             if (!machine.TrySubmitCommand(selected, out var submission)) return false;
             bot.PendingCommand = selected;
