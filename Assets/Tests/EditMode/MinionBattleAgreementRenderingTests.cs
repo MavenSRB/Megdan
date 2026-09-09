@@ -382,23 +382,20 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// The tray half, over a real seat-served walk. From rulebook p.8's Retrieve stage until the
-        /// next round begins, every seat holds commitments naming the other five heroes' revealed
-        /// cards while its own scoped list carries none of them - they went back to hands it may not
-        /// read. The tray renders that hero without the card's detail rather than failing.
+        /// next round begins, commitments still name the cards the table saw. The bounded public log
+        /// now preserves those exact identities when they return to hand, so the tray resolves the
+        /// known face while never requiring the rest of another hero's private hand.
         /// </summary>
         [Test]
-        public void ASeatTrayRendersAHeroWhoseRevealedCardItsScopedListDoesNotCarry()
+        public void ASeatTrayResolvesARevealedCardAfterItReturnsToAnotherHerosHand()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             var seat = host.Seats.Seats[0];
             var client = new SeatMatchClient(host.ClientForSeat(seat.Id));
             var view = new CapturingHandsView();
             var presenter = new DirectorHandsPresenter(client, view, seat.HeroId);
-            var absentRenders = 0;
-            var absentCard = string.Empty;
-            var absentOwner = string.Empty;
-            var absentLocations = new HashSet<CardLocation>();
-            var absentStages = new HashSet<EndOfRoundStage>();
+            var retrievedPublicRenders = 0;
+            var hiddenOpponentCards = 0;
 
             var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 1500, _ =>
             {
@@ -415,63 +412,33 @@ namespace GuardsDigital.Tests.EditMode
                         continue;
                     }
 
-                    if (hand.RevealedCard != null)
-                    {
-                        Assert.That(hand.RevealedCard.Id, Is.EqualTo(hand.RevealedCardInstanceId.Value));
-                        continue;
-                    }
-
-                    Assert.That(scoped.Cards.Any(card =>
-                            card.Id.Equals(hand.RevealedCardInstanceId.Value)), Is.False,
-                        "The detail is missing only because the scoped list does not carry it.");
-                    Assert.That(hand.CommitmentLabel, Is.EqualTo("REVEALED"),
-                        "The commitment is still public and still says so; only the card is absent.");
-                    Assert.That(hand.HeroId.Equals(seat.HeroId), Is.False,
-                        "A seat always carries its own hero's cards, wherever they are.");
-
                     var authoritative = host.Projection.Cards.Single(card =>
                         card.Id.Equals(hand.RevealedCardInstanceId.Value));
-                    if (absentRenders == 0)
+                    Assert.That(hand.RevealedCard, Is.Not.Null,
+                        "A revealed identity retained by the bounded public log must still resolve.");
+                    Assert.That(hand.RevealedCard.Id, Is.EqualTo(hand.RevealedCardInstanceId.Value));
+                    if (!hand.HeroId.Equals(seat.HeroId) &&
+                        authoritative.State.Location == CardLocation.Hand)
                     {
-                        absentCard = authoritative.Id.Value;
-                        absentOwner = authoritative.OwnerId.Value;
+                        Assert.That(scoped.Cards.Any(card => card.Id.Equals(authoritative.Id)), Is.True,
+                            "The exact retrieved card is public knowledge after its reveal.");
+                        retrievedPublicRenders++;
                     }
-
-                    absentLocations.Add(authoritative.State.Location);
-                    if (scoped.CurrentEndOfRoundStage.HasValue)
-                    {
-                        absentStages.Add(scoped.CurrentEndOfRoundStage.Value);
-                    }
-
-                    absentRenders++;
                 }
+
+                hiddenOpponentCards += host.Projection.Cards.Count(card =>
+                    !card.OwnerId.Equals(seat.HeroId) &&
+                    card.State.Location == CardLocation.Hand &&
+                    !scoped.Cards.Any(visible => visible.Id.Equals(card.Id)));
 
                 return false;
             });
 
-            Assert.That(absentRenders, Is.GreaterThan(0),
-                "The seeded seat walk never reached a version where a commitment named a card the " +
-                "seat could not see, in " + walked + " commands, so this case proves nothing.");
-            Assert.That(absentLocations.Contains(CardLocation.Hand), Is.True,
-                "The card the tray could not resolve is in its owner's hand: p.8's Retrieve stage " +
-                "put it back there. Card " + absentCard + " belongs to " + absentOwner + ".");
-            Assert.That(
-                absentLocations.All(location =>
-                    location == CardLocation.Hand || location == CardLocation.Deck),
-                Is.True,
-                "Every card the scoped list withheld is in its owner's hand or deck, which is the " +
-                "one pair `SeatProjectionFactory.IsPublic` withholds together and the whole reason " +
-                "the absence is legitimate rather than a projection defect; observed " +
-                string.Join(", ", absentLocations.Select(location => location.ToString()).ToArray()) +
-                ".");
-            Assert.That(absentStages.All(stage =>
-                    (int)stage >= (int)EndOfRoundStage.RetrieveCardsAndCancelActiveEffects),
-                Is.True,
-                "The window opens at the Retrieve stage and not before it; observed " +
-                string.Join(", ", absentStages.Select(stage => stage.ToString()).ToArray()) + ".");
-            Assert.That(absentStages, Is.Not.Empty,
-                "Every absence stood inside end of round, which is where the stage that opened " +
-                "the window runs.");
+            Assert.That(retrievedPublicRenders, Is.GreaterThan(0),
+                "The seeded seat walk never rendered a publicly revealed opponent card after " +
+                "Retrieve in " + walked + " commands, so this case proves nothing.");
+            Assert.That(hiddenOpponentCards, Is.GreaterThan(0),
+                "Retaining an exact revealed identity must not expose the rest of an opponent's hand.");
         }
 
         /// <summary>

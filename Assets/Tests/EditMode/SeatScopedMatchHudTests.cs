@@ -512,11 +512,21 @@ namespace GuardsDigital.Tests.EditMode
 
                 var hands = new CapturingHandsView();
                 new DirectorHandsPresenter(client, hands).Refresh();
-                Assert.That(hands.Model.Hands
-                        .Where(hand => !hand.HeroId.Equals(seat.HeroId))
-                        .SelectMany(hand => hand.Cards),
-                    Is.Empty,
-                    "The completed-state tray still cannot name another seat's private hand.");
+                var projectedOpponentHand = client.Projection.Cards
+                    .Where(card => !card.OwnerId.Equals(seat.HeroId) &&
+                        card.State.Location == CardLocation.Hand)
+                    .Select(card => card.Id)
+                    .OrderBy(id => id.Value)
+                    .ToArray();
+                var renderedOpponentHand = hands.Model.Hands
+                    .Where(hand => !hand.HeroId.Equals(seat.HeroId))
+                    .SelectMany(hand => hand.Cards)
+                    .Select(card => card.Id)
+                    .OrderBy(id => id.Value)
+                    .ToArray();
+                CollectionAssert.AreEqual(projectedOpponentHand, renderedOpponentHand,
+                    "The completed tray may show cards whose exact identity is already public, " +
+                    "but it must never invent another card beyond the seat projection.");
             }
 
             Assert.That(statuses.Distinct().Count(), Is.EqualTo(1),

@@ -2,6 +2,8 @@
 
 This is the only active technical-risk register. Its lifecycle and required fields are governed by [DOCUMENTATION_GOVERNANCE.md](DOCUMENTATION_GOVERNANCE.md). Planned mitigations name roadmap ownership; they do not authorize implementation.
 
+**8.36g1 trust-model amendment.** Interpret `RISK-ONLINE-001` against the implemented playing-host topology: the trusted host process owns authority and also runs one ordinary loopback player client whose match projection remains owner-scoped. Only that host installation may expose local Director diagnostics; Director data and commands are never serialized to joining clients. Bot hands likewise remain owner-scoped, and host migration remains unsupported. This amendment supersedes the row's older dedicated-seatless-host and never-expose-Director assumptions without weakening its remote-player privacy boundary.
+
 ## Active risks
 
 | ID | Concrete failure mode and impact | Evidence / confidence | Trigger or detection | Earliest affected milestone | Retirement or reassessment | Approved mitigation or explicit acceptance |

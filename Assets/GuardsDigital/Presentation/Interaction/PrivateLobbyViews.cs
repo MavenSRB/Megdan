@@ -986,7 +986,17 @@ namespace GuardsDigital.Presentation.Interaction
                     // line-up, and a line-up names its team size, so the format is derivable here
                     // without a new message, exactly as z57 derives it from the plaintext refusal.
                     var lineup = machine.ComposedLineup();
-                    if (lineup != null && compositionRoot.ComposedPlan != null)
+                    if (session != null)
+                    {
+                        // Milestone 8.36g1. The session called this same composition root before it
+                        // announced MatchStarted and replaced its authority with the returned host.
+                        // Re-running the joiner's local-copy composition here would create a fresh
+                        // version-zero twin and point the hosting player's HUD away from the match
+                        // every remote and bot is actually playing.
+                        PrivateOnlineMarkers.Log(
+                            "LOBBY_HOST_RUNTIME_RETAINED seat=" + machine.TargetSeat.Value);
+                    }
+                    else if (lineup != null && compositionRoot.ComposedPlan != null)
                     {
                         var plan = compositionRoot.ComposedPlan;
                         if (lineup.HeroesPerTeam != plan.Format.HeroesPerTeam)
@@ -1028,7 +1038,12 @@ namespace GuardsDigital.Presentation.Interaction
                             "LOBBY_TRANSITION_LINEUP_ABSENT seat=" + machine.TargetSeat.Value);
                     }
 
-                    compositionRoot.Runtime.AttachOnlineClient(machine);
+                    compositionRoot.Runtime.AttachOnlineClient(
+                        machine,
+                        exposeHostDirectorTools: session != null,
+                        republishAfterHostDebugChange: session == null
+                            ? (Action)null
+                            : session.RepublishProjections);
                     onlineHudAttached = true;
                     PrivateOnlineMarkers.Log(
                         "LOBBY_MATCH_HUD seat=" + machine.TargetSeat.Value +
@@ -1550,10 +1565,43 @@ namespace GuardsDigital.Presentation.Interaction
             signature = string.Empty;
             testDriverSeats.Clear();
             reportedBotFailure = string.Empty;
-            presenter.AttachHost(session, string.Empty);
+            joinedSeat = default;
+            if (!PrivateSessionEndpoint.TryCreate(
+                    endpoint.ResolveLocalDialAddress(), listener.BoundPort,
+                    out dialled, out var localEndpointError))
+            {
+                AbortHostingStart("The hosting player could not open its local seat: " + localEndpointError);
+                return;
+            }
+
+            machine = new PrivateSessionClient(
+                compositionRoot.Runtime.SessionIdentity, joinedSeat, sessionKey,
+                clientOutbox, new CryptoNonceSource(), retainedCapabilities: RetainedCapabilities());
+            OpenTransport();
+            if (!Dial())
+            {
+                AbortHostingStart("The hosting player could not join the local session.");
+                return;
+            }
+
+            presenter.AttachHostingClient(session, machine, string.Empty);
             PrivateOnlineMarkers.Log(
                 "LOBBY_HOSTING port=" + listener.BoundPort.ToString(CultureInfo.InvariantCulture) +
-                " keyed=" + (sessionKey.Length > 0 ? "true" : "false"));
+                " keyed=" + (sessionKey.Length > 0 ? "true" : "false") +
+                " playing-client=true");
+        }
+
+        private void AbortHostingStart(string reason)
+        {
+            DisposeTransport();
+            machine = null;
+            StopTestDrivers();
+            session?.Shutdown();
+            session = null;
+            console = null;
+            listener?.Dispose();
+            listener = null;
+            presenter.ShowEntry(LocalSeats(), reason, ComposedFormatLabel());
         }
 
         /// <summary>Optional test pacing override; normal bots use the existing two-second pace.</summary>

@@ -77,7 +77,7 @@ namespace GuardsDigital.Presentation.Interaction
             this.view = view ?? throw new ArgumentNullException(nameof(view));
         }
 
-        /// <summary>Raised when a player asked to become the seatless host of a new session.</summary>
+        /// <summary>Raised when a player asked to host a new session and join it locally.</summary>
         public event Action<PrivateLobbyEntry> HostRequested;
 
         /// <summary>Raised when a player asked to join the typed session as the picked seat.</summary>
@@ -177,6 +177,17 @@ namespace GuardsDigital.Presentation.Interaction
             Refresh();
         }
 
+        /// <summary>Shows the host's ordinary owner-scoped client plus its host-only lobby tools.</summary>
+        public void AttachHostingClient(
+            PrivateSessionHost hostSession, PrivateSessionClient clientSession, string status)
+        {
+            host = hostSession ?? throw new ArgumentNullException(nameof(hostSession));
+            client = clientSession ?? throw new ArgumentNullException(nameof(clientSession));
+            feedback = status ?? string.Empty;
+            testDriverSeats.Clear();
+            Refresh();
+        }
+
         /// <summary>
         /// THIRTEENTH amendment. Records which seats this host's own spawned test drivers claimed,
         /// for <see cref="PrivateLobbySeatRow.IsTestDriverSeat"/>, and redraws. The driver calls this
@@ -202,8 +213,10 @@ namespace GuardsDigital.Presentation.Interaction
         /// <summary>Rebuilds the model from the session as it stands and redraws.</summary>
         public void Refresh()
         {
-            Model = client != null
-                ? PrivateLobbyModel.ForClient(client)
+            Model = client != null && host != null
+                ? PrivateLobbyModel.ForHostPlayer(host, client, feedback, testDriverSeats)
+                : client != null
+                    ? PrivateLobbyModel.ForClient(client)
                 : host != null
                     ? PrivateLobbyModel.ForHost(host, feedback, testDriverSeats)
                     : PrivateLobbyModel.Entry(localSeats, feedback, entryMatchFormatLabel);

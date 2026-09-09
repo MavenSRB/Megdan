@@ -80,10 +80,12 @@ Also explicitly requested: use revealed commitments/initiative and public played
 
 Historical evidence: [8.36g handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836g-private-session-bot-tactics-completion-evidence).
 
-### [~] 8.36g1 Host and play from the same client
+### [x] 8.36g1 Host and play from the same client
 
 Explicitly approved on 2026-09-09 after the card audit and bot work, before packaging. Outcome: everyone runs the same client; one player chooses Host and plays a seat while others choose Join. No separate seatless host process is required. The hosting player alone can deliberately access the Director tab for debugging; joining players remain owner-scoped, and bots retain their private seat projections even though their process owns authority. Preserve keyed TCP admission, reconnect, host-loss behavior and existing authoritative rules; no host migration or online-service change. Closing checks: actual same-client host-plus-remote-client lobby, picks and complete local gameplay; host-only Director visibility and authorization; joiners cannot invoke debug commands; host departure/rehost and client leave/rejoin recover correctly; host plus bots works with all configured sizes. Review the trust-model change explicitly: the playing host is trusted and can see or alter authoritative state through debug tools. Validate this final topology before 8.36h packaging.
 
-### [ ] 8.36h Package the corrected private playtest build
+Historical evidence: [8.36g1 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836g1-playing-host-topology-completion-evidence).
+
+### [~] 8.36h Package the corrected private playtest build
 
 Carries the user's standing request for a new build after the fixes and a local ZIP, amended on 2026-09-09 to use the same playing client for Host and Join. Execute after 8.36g1, not in place of any correction or audit. Outcome: a separately named current Windows build and matching ZIP under Builds, with a clear play launcher, in-client Host/Join and version identity; do not require a separate dedicated-host launcher. Closing checks: the applicable complete pre-build regression gate, private-resource checks, required build-and-launch smoke, and inspection of the ZIP contents and launch scripts. Exercise actual packaged host-and-play, joining-client and bot paths; do not infer built-player success from a rehearsal script. Keep prior packages and private evidence. No upload, remote operation, public distribution, new heroes, or repeat internet playtest is authorized.

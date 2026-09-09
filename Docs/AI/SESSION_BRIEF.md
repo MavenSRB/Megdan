@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.36g**.
-- Active authorized milestone: **8.36g1**.
-- Next proposed milestone: **8.36g1**.
+- Current completed milestone: **8.36g1**.
+- Active authorized milestone: **8.36h**.
+- Next proposed milestone: **8.36h**.
 
 The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 gate remains closed. The independent 8.36a review is integrated. On 2026-09-09 the user approved **8.36b-8.36d**, sequentially: authenticated departure, bounded transport, attributable diagnostics. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns the outcomes and closing checks. [Product](Project/PRODUCT.md) now limits the project to the user and friends: production presentation and publisher-pitch work are parked. More heroes remain desired future work, not authorized implementation in this correction batch. No repeat internet playtest, remote publication or unrelated refactor is authorized.
 
@@ -30,7 +30,7 @@ The user additionally approved **8.36e**, after 8.36b-8.36d: visible hero select
 
 **8.36f** is also approved after 8.36e: verify and correct the reported active-Trailblazer resolver failure and clipped internal-error feedback. Treat the supplied diagnosis as a report until reproduced against code and printed-card authority; Phase 8 owns closing checks. The additional player screenshot confirms a clipped banner exposing an InvalidOperationException tied to the active Silverarrow Trailblazer effect; it does not by itself prove the resolver cause.
 
-8.36f also includes the reported Watch How I Soar minion surviving its chosen Defeat branch, through the actual input/confirmation path. **8.36g** is approved last: measured smarter lobby tactics, including useful Fast Travel and reaching battle, with bounded work and no private-information advantage. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns all current outcomes.
+8.36f also includes the reported Watch How I Soar minion surviving its chosen Defeat branch, through the actual input/confirmation path. **8.36g** delivered measured smarter lobby tactics, including useful Fast Travel and reaching battle, with bounded work and no private-information advantage. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns all current outcomes.
 
 **8.36f1** is approved between f and g: readable current-hand comparison during leveling, unclipped upgrade choices, and centered "GAINS:" plus actual reward icon(s). The supplied level-up screenshot is the reported failure reference; validate the full screen at user and supported short viewports.
 
@@ -38,7 +38,7 @@ The user additionally approved **8.36e**, after 8.36b-8.36d: visible hero select
 
 - Rules/source hierarchy and deviations: [RULES_LEDGER.md](RULES_LEDGER.md). Cleanup does not change rules, content, or compatibility identities.
 - The standing new-build/Play-and-Host-ZIP request is mapped to **8.36h**, after the correction, audit and bot work; the private-game corrections shard owns its closing checks.
-- On 2026-09-09 the user amended the remaining sequence: **8.36f3 → 8.36g → 8.36g1 → 8.36h**, without another approval stop between them. Bots must actively pursue wins through productive minion/hero defeats and team objectives. **8.36g1** changes the target topology to one shared client: the host also plays and alone gets deliberate Director debug access, while other players Join. No separate seatless host process is required in the new package. This is approved work, not yet implemented; the private-game corrections shard owns the checks and supersedes the older packaging requirement where they differ.
+- On 2026-09-09 the user amended the remaining sequence: **8.36f3 → 8.36g → 8.36g1 → 8.36h**, without another approval stop between them. Bots actively pursue wins through productive minion/hero defeats and team objectives. **8.36g1 is complete:** one shared client hosts and plays through an owner-scoped loopback seat, the hosting player alone gets deliberate local Director debug access, and other players Join. No separate seatless host process is required in the new package. **8.36h packaging is now active** under the private-game corrections shard.
 - Preserve pure rules/state, commands/choices, host authorization/privacy, snapshots, and replay. [Architecture](Project/ARCHITECTURE.md).
 - Windows is the reference target; macOS/iOS are declared rather than validated. [Product](Project/PRODUCT.md).
 - Source/rulebook permission does not cover extracted cards, maps, builds, private logs, or worktrees. No remote, upload, or distribution is authorized.

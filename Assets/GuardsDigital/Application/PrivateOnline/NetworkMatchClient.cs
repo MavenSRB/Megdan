@@ -398,6 +398,16 @@ namespace GuardsDigital.Application
         public bool IsInputEnabled => actionable;
 
         /// <summary>
+        /// The host-published command surface for this network seat. Kept outside
+        /// <see cref="IMatchReadModel"/> because local Director projections derive their own full
+        /// surface; a network-aware journey may use this exact list instead of reconstructing one.
+        /// </summary>
+        public IReadOnlyList<DirectorCommand> AuthorizedCommands =>
+            actionable && wire != null
+                ? wire.AuthorizedCommands
+                : Array.Empty<DirectorCommand>();
+
+        /// <summary>
         /// Milestone 8.35f. The host's own answer, carried on the seat record, and withheld while
         /// this view is not actionable - a waiting, stale, resynchronizing or disconnected client
         /// may not mint a rewind any more than it may mint a command.

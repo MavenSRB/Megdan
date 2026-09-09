@@ -901,6 +901,45 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void HostingPlayerGetsOwnerSeatControlsAndHostToolsWithoutOwningOtherSeats()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.Connect(1, "red-player-01");
+            harness.Pump();
+
+            var model = PrivateLobbyModel.ForHostPlayer(
+                harness.Session, harness.Client(1), string.Empty);
+
+            Assert.That(model.Role, Is.EqualTo(PrivateLobbyRole.Host));
+            Assert.That(model.Seats.Count(row => row.IsOwnSeat), Is.EqualTo(1));
+            Assert.That(model.Seats.Single(row => row.IsOwnSeat).Seat.Value,
+                Is.EqualTo("red-player-01"));
+            Assert.That(model.Offers(PrivateLobbyControl.Ready), Is.True,
+                "The host plays through its ordinary owner-scoped client.");
+            Assert.That(model.Offers(PrivateLobbyControl.FillWithTestDrivers), Is.True,
+                "Only after taking a seat may the host fill the remaining open seats.");
+        }
+
+        [Test]
+        public void HostingPlayerMustTakeASeatBeforeFillingTheRestWithBots()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            var client = harness.ConnectSeatless(1);
+            harness.Pump();
+
+            var beforeClaim = PrivateLobbyModel.ForHostPlayer(
+                harness.Session, client, string.Empty);
+            Assert.That(beforeClaim.Offers(PrivateLobbyControl.ClaimSeat), Is.True);
+            Assert.That(beforeClaim.Offers(PrivateLobbyControl.FillWithTestDrivers), Is.False);
+
+            Assert.That(client.TryClaimSeat(new SeatId("red-player-01")), Is.True);
+            harness.Pump();
+            var afterClaim = PrivateLobbyModel.ForHostPlayer(
+                harness.Session, client, string.Empty);
+            Assert.That(afterClaim.Offers(PrivateLobbyControl.FillWithTestDrivers), Is.True);
+        }
+
+        [Test]
         public void ATestDriverSeat_IsLabeledOnlyOnTheHostsOwnRow_FromTheHostsOwnLocalRecord()
         {
             var harness = PrivateOnlineWireHarness.Compose();
@@ -1036,7 +1075,7 @@ namespace GuardsDigital.Tests.EditMode
                 .GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
                 .Where(method => method.ReturnType == typeof(PrivateLobbyModel))
                 .ToArray();
-            Assert.That(factories.Length, Is.EqualTo(3),
+            Assert.That(factories.Length, Is.EqualTo(4),
                 "A scan that finds no factory is a broken rule; it found " +
                 string.Join(", ", factories.Select(method => method.Name)) + ".");
 

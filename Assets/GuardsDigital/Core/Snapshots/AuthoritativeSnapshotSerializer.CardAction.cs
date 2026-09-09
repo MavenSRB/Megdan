@@ -437,6 +437,7 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants,
             MatchContentCatalogs catalogs,
             MatchComponents components,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             int roundIndex,
@@ -458,7 +459,7 @@ namespace GuardsDigital.Core.Snapshots
             var frame = reader.ReadBoolean()
                 ? ReadSkillResolution(
                     reader, definitions, cards, catalogs.Capabilities, participants, components,
-                    modifications, heroItems, catalogs.TriggeredEffects,
+                    timing, modifications, heroItems, catalogs.TriggeredEffects,
                     roundIndex, turnIndex, rosterState)
                 : null;
 
@@ -526,6 +527,7 @@ namespace GuardsDigital.Core.Snapshots
                 MatchParticipants participants,
                 MatchContentCatalogs catalogs,
                 MatchComponents components,
+                ActiveEffectLifecycle timing,
                 RuleModificationSet modifications,
                 GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
                 int roundIndex,
@@ -547,7 +549,7 @@ namespace GuardsDigital.Core.Snapshots
                 ReadRuleObject(reader, "effect interrupt remaining subject"));
             var frame = ReadSkillResolution(
                 reader, definitions, cards, catalogs.Capabilities, participants, components,
-                modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex,
+                timing, modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex,
                 rosterState,
                 IntrinsicKindQuery.Of(subject) == RuleObjectKind.Hero ? subject.HeroId : default);
 
@@ -867,6 +869,7 @@ namespace GuardsDigital.Core.Snapshots
             MatchParticipants participants,
             MatchContentCatalogs catalogs,
             MarkerAttachmentRegister markers,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             TieBreakerState tieBreaker,
@@ -882,11 +885,11 @@ namespace GuardsDigital.Core.Snapshots
             var preAction = ReadPreAction(
                 reader, definitions, cards, participants, catalogs,
                 CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                modifications, heroItems, roundIndex, turnIndex, rosterState);
+                timing, modifications, heroItems, roundIndex, turnIndex, rosterState);
             var effectInterrupt = ReadEffectInterrupt(
                 reader, definitions, cards, participants, catalogs,
                 CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                modifications, heroItems, roundIndex, turnIndex, rosterState);
+                timing, modifications, heroItems, roundIndex, turnIndex, rosterState);
             var removalPrevention = ReadRemovalPrevention(reader);
             var cardTextRemainder = ReadCardTextRemainder(reader);
             var afterActionRepeatSubject = ReadAfterActionRepeatSubject(reader);
@@ -904,7 +907,7 @@ namespace GuardsDigital.Core.Snapshots
             for (var index = 0; index < borrowedParentCount; index++)
                 borrowedParents.Add(ReadSkillResolution(reader, definitions, cards, catalogs.Capabilities,
                     participants, CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                    modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex, rosterState));
+                    timing, modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex, rosterState));
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -925,7 +928,7 @@ namespace GuardsDigital.Core.Snapshots
                         ReadSkillResolution(
                             reader, definitions, cards, catalogs.Capabilities, participants,
                             CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                            modifications, heroItems, catalogs.TriggeredEffects,
+                            timing, modifications, heroItems, catalogs.TriggeredEffects,
                             roundIndex, turnIndex, rosterState),
                         coinLedger,
                         lanePush);
@@ -951,7 +954,7 @@ namespace GuardsDigital.Core.Snapshots
                     var frameAwaitingItsAttack = ReadSkillResolutionAwaitingItsAttack(
                         reader, definitions, cards, catalogs.Capabilities, participants,
                         CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                        modifications, heroItems, null,
+                        timing, modifications, heroItems, null,
                         roundIndex, turnIndex, rosterState,
                         opposingHeroFor: actor => selectedActorId.IsDefined && !actor.Equals(selectedActorId)
                             ? selectedActorId
@@ -1184,6 +1187,7 @@ namespace GuardsDigital.Core.Snapshots
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
             MatchComponents components,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             TriggeredEffectCatalog triggeredEffects,
@@ -1193,8 +1197,8 @@ namespace GuardsDigital.Core.Snapshots
             HeroId opposingHeroId = default,
             Func<HeroId, HeroId> opposingHeroFor = null) =>
             ReadSkillResolutionAwaitingItsAttack(
-                reader, definitions, cards, capabilities, participants, components, modifications,
-                heroItems, triggeredEffects, roundIndex, turnIndex, rosterState,
+                reader, definitions, cards, capabilities, participants, components, timing,
+                modifications, heroItems, triggeredEffects, roundIndex, turnIndex, rosterState,
                 opposingHeroId, opposingHeroFor)(EnclosingAttackFacts.None);
 
         /// <summary>
@@ -1218,6 +1222,7 @@ namespace GuardsDigital.Core.Snapshots
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
             MatchComponents components,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             TriggeredEffectCatalog triggeredEffects,
@@ -1342,7 +1347,7 @@ namespace GuardsDigital.Core.Snapshots
             // adds no wire field, while a written one could disagree with the definition it names.
             return enclosingAttack => MaterializePendingChoice(
                 enclosingAttack, restored, trusted, node, definitions, cards, capabilities,
-                participants, components, modifications, heroItems, rosterState,
+                participants, components, timing, modifications, heroItems, rosterState,
                 roundIndex, turnIndex, opposing, common,
                 choiceId, nodeId, chooserId, choiceKind, minimum, maximum, selected);
         }
@@ -1368,6 +1373,7 @@ namespace GuardsDigital.Core.Snapshots
             EffectCapabilityCatalog capabilities,
             MatchParticipants participants,
             MatchComponents components,
+            ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             EffectRosterState rosterState,
@@ -1384,7 +1390,7 @@ namespace GuardsDigital.Core.Snapshots
             IReadOnlyList<EffectChoiceCandidate> selected)
         {
             var resolution = new EffectResolutionContext(
-                trusted, capabilities, participants, null, roundIndex, turnIndex, modifications,
+                trusted, capabilities, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(definitions, cards),
                 EnclosingActionKindOf(definitions, common.DefinitionReference, common.ActionId),
                 // Milestone 8.22, finding `F-SNAP-01`. A frame bound to the other side of a moment has

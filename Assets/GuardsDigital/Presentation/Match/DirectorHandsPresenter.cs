@@ -354,14 +354,11 @@ namespace GuardsDigital.Presentation.Match
                             projection.IsInputEnabled && commitment.CanPass,
                             commitment.RevealedCardInstanceId,
                             // Milestone 8.35e. `Single` here failed the whole tray refresh, and the
-                            // absence it refused is legitimate: rulebook p.8's Retrieve stage puts
-                            // each hero's revealed card back in that hero's hand, and a seat's
-                            // scoped card list withholds another hero's hand and deck together, so
-                            // from that stage until the next round every seat holds five
-                            // commitments naming a card its own projection may not carry. The
-                            // identity stays - it is public, and the label reads REVEALED from it -
-                            // and only the card's detail is missing. `HeroOverviewPresentation`
-                            // already reads the same field this way.
+                            // absence it refused is legitimate for any projection that withholds a
+                            // named card. The current seat projection retains a retrieved card when
+                            // the bounded public log already revealed its exact identity, but this
+                            // remains tolerant so a presentation read cannot turn a privacy omission
+                            // or older projection into a whole-tray failure.
                             commitment.RevealedCardInstanceId.HasValue
                                 ? projection.Cards.SingleOrDefault(card =>
                                     card.Id.Equals(commitment.RevealedCardInstanceId.Value))

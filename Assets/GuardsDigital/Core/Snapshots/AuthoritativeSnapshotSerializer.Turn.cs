@@ -86,7 +86,7 @@ namespace GuardsDigital.Core.Snapshots
             // the unlocked Ultimates to that cross-check, derived from the same restored cards the live
             // match derived them from, so a total an always-on ability raised is reproduced too.
             cardActions = ReadCardAction(
-                reader, board, definitions, cards, participants, catalogs, markers,
+                reader, board, definitions, cards, participants, catalogs, markers, timing,
                 RuleModificationQuery.Build(
                     timing,
                     board,

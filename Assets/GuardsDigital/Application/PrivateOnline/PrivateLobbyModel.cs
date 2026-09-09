@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 
@@ -12,7 +13,7 @@ namespace GuardsDigital.Application
         /// <summary>No session yet: the entry form, where an invitation is typed in.</summary>
         None = 0,
 
-        /// <summary>The dedicated seatless host, observing the seats it serves.</summary>
+        /// <summary>The host surface, including the host's own playing client when present.</summary>
         Host = 1,
 
         /// <summary>One invited player, holding one seat.</summary>
@@ -28,7 +29,7 @@ namespace GuardsDigital.Application
     {
         None = 0,
 
-        /// <summary>Entry form: become the dedicated seatless host of a new session.</summary>
+        /// <summary>Entry form: host a new session and join it as a player.</summary>
         Host = 1,
 
         /// <summary>Entry form: join the typed session as the picked seat.</summary>
@@ -752,6 +753,57 @@ namespace GuardsDigital.Application
                 controls,
                 host.HasMatchStarted,
                 selection,
+                host.Identity.MatchFormatId);
+        }
+
+        /// <summary>
+        /// Milestone 8.36g1. The shared client's hosting view: owner-scoped seat controls from its
+        /// ordinary protocol client, plus the bounded lobby controls that belong only to the host.
+        /// </summary>
+        public static PrivateLobbyModel ForHostPlayer(
+            PrivateSessionHost host,
+            PrivateSessionClient client,
+            string hostFeedback,
+            ISet<SeatId> testDriverSeats = null)
+        {
+            if (host == null) throw new ArgumentNullException(nameof(host));
+            if (client == null) throw new ArgumentNullException(nameof(client));
+
+            var owner = ForClient(client);
+            var controls = new List<PrivateLobbyControl>(
+                owner.Controls.Where(value => value != PrivateLobbyControl.Leave));
+            var anySeatOpen = host.Roster.Any(value => value.Occupancy == SeatOccupancyState.Open);
+            if (!host.HasMatchStarted && client.State == PrivateSessionClientState.Seated && anySeatOpen)
+            {
+                controls.Add(PrivateLobbyControl.FillWithTestDrivers);
+            }
+            if (host.CanUndoLobbyStep)
+            {
+                controls.Add(PrivateLobbyControl.HostUndo);
+            }
+            controls.Add(PrivateLobbyControl.Leave);
+
+            testDriverSeats = testDriverSeats ?? EmptyTestDriverSeats;
+            var rows = owner.Seats.Select(row => new PrivateLobbySeatRow(
+                row.Seat,
+                row.SeatLabel,
+                row.HeroLabel,
+                row.TeamLabel,
+                row.OccupancyLabel,
+                row.ReadinessLabel,
+                row.IsOwnSeat,
+                testDriverSeats.Contains(row.Seat))).ToArray();
+
+            return new PrivateLobbyModel(
+                PrivateLobbyRole.Host,
+                owner.IsShown,
+                "HOSTING AS PLAYER - " + owner.StatusLabel,
+                string.IsNullOrEmpty(hostFeedback) ? owner.FeedbackLabel : hostFeedback,
+                host.SessionCorrelation,
+                rows,
+                controls,
+                owner.HasMatchStarted,
+                owner.Selection,
                 host.Identity.MatchFormatId);
         }
 

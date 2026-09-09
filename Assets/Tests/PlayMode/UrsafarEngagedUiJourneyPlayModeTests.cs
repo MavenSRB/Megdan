@@ -102,6 +102,14 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("roar-borrow"));
+            var pausedSnapshot = runtime.CaptureSnapshot();
+            Assert.That(runtime.RestoreSnapshot(pausedSnapshot), Is.True,
+                "A borrowed-card choice depends on the restored Active-effect lifecycle and must " +
+                "survive the same snapshot round trip rollback uses.");
+            Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(pausedSnapshot));
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("roar-borrow"));
             var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "PROWLING BRUTE");
             UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null, "Selecting the borrowed card must actually start its action. " + Remaining(runtime));

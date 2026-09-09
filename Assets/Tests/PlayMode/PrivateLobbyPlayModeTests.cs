@@ -239,6 +239,55 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>One actual TCP joiner beside the lobby driver's own loopback playing client.</summary>
+        private sealed class SocketJoiner : System.IDisposable, IPrivateSessionClientOutbox
+        {
+            private sealed class SocketNonces : IPrivateSessionNonceSource
+            {
+                private long value;
+                public byte[] NextNonce() => System.BitConverter.GetBytes(++value);
+            }
+
+            private readonly System.Net.Sockets.TcpClient socket = new System.Net.Sockets.TcpClient();
+            private readonly PrivateSessionFrameAssembler assembler = new PrivateSessionFrameAssembler();
+            private readonly byte[] buffer = new byte[65536];
+            internal readonly PrivateSessionClient Machine;
+
+            internal SocketJoiner(
+                PrivateSessionIdentity identity,
+                System.Net.IPAddress address,
+                int port,
+                string sessionKey)
+            {
+                socket.Connect(address, port);
+                Machine = new PrivateSessionClient(
+                    identity, default, sessionKey, this, new SocketNonces());
+                Machine.OnConnected();
+            }
+
+            internal void Pump()
+            {
+                while (socket.Available > 0)
+                {
+                    var read = socket.GetStream().Read(buffer, 0, buffer.Length);
+                    if (read <= 0)
+                    {
+                        Machine.OnDisconnected();
+                        return;
+                    }
+
+                    Assert.That(assembler.Add(buffer, 0, read), Is.True);
+                    while (assembler.TryDequeue(out var frame)) Machine.OnFrame(frame);
+                }
+            }
+
+            public void Send(byte[] frame) => socket.GetStream().Write(frame, 0, frame.Length);
+
+            public void Close() => socket.Close();
+
+            public void Dispose() => socket.Close();
+        }
+
         /// <summary>
         /// Six invited players see one table: their own seat named, both teams written out, and
         /// every seat's status in words rather than in a colour.
@@ -580,13 +629,19 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             UiPlayer.Click(Control(driver, "HOST"));
-            yield return null;
-            yield return null;
-            yield return null;
+            var hostingDeadline = Time.realtimeSinceStartup + 5f;
+            while (Time.realtimeSinceStartup < hostingDeadline &&
+                !driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat))
+                yield return null;
 
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.Host),
                 "An unkeyed loopback host is the local default and must not be refused; the " +
                 "lobby said: '" + Text(driver, PrivateLobbyUnityView.FeedbackName) + "'.");
+            Assert.That(driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat), Is.True,
+                "HOST now admits this process's ordinary protocol client and shows its seat claim.");
+            Assert.That(ControlLabels(driver), Does.Contain("TAKE THIS SEAT"));
+            Assert.That(ControlLabels(driver), Does.Not.Contain("FILL WITH BOTS"),
+                "The host must take its own seat before bots may fill the rest.");
 
             var capture = typeof(PrivateLobbyDriver)
                 .GetField("evidence", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
@@ -603,6 +658,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(begun, Does.Not.Contain("GD_EVIDENCE_END"));
 
             // Close the listener this journey opened, through the control a player would use.
+            yield return null;
             UiPlayer.Click(Control(driver, "LEAVE"));
             yield return null;
             yield return null;
@@ -618,6 +674,169 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.Click(Control(driver, "LEAVE"));
             yield return null;
             CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+        }
+
+        /// <summary>
+        /// Milestone 8.36g1's final topology: HOST is an ordinary owner-scoped player connection,
+        /// a second process-shaped TCP client joins it, and only the still-open chairs become bots.
+        /// The two human clients ready, pick and play the same authoritative match to its outcome.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator PlayingHostAndRemoteTcpClient_CompleteOneLocalMatch()
+        {
+            var previousPacing = System.Environment.GetEnvironmentVariable("GUARDS_TESTDRIVER_THINK_SECONDS");
+            System.Environment.SetEnvironmentVariable("GUARDS_TESTDRIVER_THINK_SECONDS", "0");
+            SocketJoiner remote = null;
+            try
+            {
+                yield return LoadTheLobby();
+                var driver = Driver();
+                UiPlayer.Click(Control(driver, "2V2"));
+                yield return null;
+                yield return null;
+
+                var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+                probe.Start();
+                var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+                probe.Stop();
+                const string Key = "g1-playing-host";
+                Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
+                Field(driver, PrivateLobbyUnityView.PortFieldName).value = port.ToString();
+                Field(driver, PrivateLobbyUnityView.KeyFieldName).value = Key;
+                yield return null;
+                UiPlayer.Click(Control(driver, "HOST"));
+
+                var hostAdmissionDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < hostAdmissionDeadline &&
+                    !driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat))
+                    yield return null;
+                Assert.That(driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat), Is.True);
+                yield return null;
+                yield return null;
+                var hostSeatButton = Named(driver, PrivateLobbyUnityView.SeatPickName)
+                    .OfType<Button>().First(UiPlayer.IsShown);
+                UiPlayer.Click(hostSeatButton);
+                var hostSeatDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < hostSeatDeadline &&
+                    !driver.Presenter.Model.Seats.Any(row => row.IsOwnSeat))
+                    yield return null;
+                var hostSeat = driver.Presenter.Model.Seats.Single(row => row.IsOwnSeat).Seat;
+                var hostTeam = driver.Presenter.Model.Seats.Single(row => row.IsOwnSeat).TeamLabel;
+
+                remote = new SocketJoiner(
+                    Runtime().SessionIdentity, System.Net.IPAddress.Loopback, port, Key);
+                var remoteAdmissionDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < remoteAdmissionDeadline &&
+                    remote.Machine.State != PrivateSessionClientState.Admitted)
+                {
+                    remote.Pump();
+                    yield return null;
+                }
+                Assert.That(remote.Machine.State, Is.EqualTo(PrivateSessionClientState.Admitted));
+                var remoteSeat = remote.Machine.Roster.First(row =>
+                    row.Occupancy == SeatOccupancyState.Open &&
+                    !row.Seat.Equals(hostSeat) &&
+                    PrivateLobbyLabels.Team(row.TeamSide) != hostTeam).Seat;
+                Assert.That(remote.Machine.TryClaimSeat(remoteSeat), Is.True);
+                var remoteSeatDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < remoteSeatDeadline &&
+                    remote.Machine.State != PrivateSessionClientState.Seated)
+                {
+                    remote.Pump();
+                    yield return null;
+                }
+                Assert.That(remote.Machine.State, Is.EqualTo(PrivateSessionClientState.Seated));
+
+                // A deliberate remote departure releases its chair, and a fresh client can join
+                // and claim it again before the match. This is distinct from reconnect capability:
+                // Goodbye explicitly relinquishes that capability and the seat reservation.
+                remote.Machine.SendGoodbye();
+                for (var frame = 0; frame < 20; frame++)
+                {
+                    remote.Pump();
+                    yield return null;
+                    if (driver.Presenter.Model.Seats.Any(row =>
+                        row.Seat.Equals(remoteSeat) && row.OccupancyLabel == "OPEN")) break;
+                }
+                remote.Dispose();
+                remote = new SocketJoiner(
+                    Runtime().SessionIdentity, System.Net.IPAddress.Loopback, port, Key);
+                remoteAdmissionDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < remoteAdmissionDeadline &&
+                    remote.Machine.State != PrivateSessionClientState.Admitted)
+                {
+                    remote.Pump();
+                    yield return null;
+                }
+                Assert.That(remote.Machine.State, Is.EqualTo(PrivateSessionClientState.Admitted));
+                Assert.That(remote.Machine.TryClaimSeat(remoteSeat), Is.True);
+                remoteSeatDeadline = Time.realtimeSinceStartup + 5f;
+                while (Time.realtimeSinceStartup < remoteSeatDeadline &&
+                    remote.Machine.State != PrivateSessionClientState.Seated)
+                {
+                    remote.Pump();
+                    yield return null;
+                }
+                Assert.That(remote.Machine.State, Is.EqualTo(PrivateSessionClientState.Seated));
+
+                Assert.That(driver.Presenter.Press(
+                    PrivateLobbyControl.FillWithTestDrivers, driver.View.CurrentEntry()), Is.True);
+                yield return null;
+                Assert.That(driver.Presenter.Model.Seats.Count(row => row.IsTestDriverSeat), Is.EqualTo(2),
+                    "The two human-owned seats must not be replaced by host-owned bots.");
+                Assert.That(driver.Presenter.Press(
+                    PrivateLobbyControl.Ready, driver.View.CurrentEntry()), Is.True);
+                Assert.That(remote.Machine.TrySetReadiness(true), Is.True);
+
+                var pickDeadline = Time.realtimeSinceStartup + 20f;
+                while (Time.realtimeSinceStartup < pickDeadline &&
+                    !driver.Presenter.Model.HasMatchStarted)
+                {
+                    remote.Pump();
+                    if (driver.Presenter.Model.Selection.IsOwnPick)
+                    {
+                        driver.Presenter.SelectedHeroIdValue = driver.Presenter.Model.Selection.Heroes
+                            .First(hero => hero.IsAvailable).HeroIdValue;
+                        Assert.That(driver.Presenter.Press(
+                            PrivateLobbyControl.ChooseHero, driver.View.CurrentEntry()), Is.True);
+                    }
+
+                    var remoteLobby = PrivateLobbyModel.ForClient(remote.Machine);
+                    if (remoteLobby.Selection.IsOwnPick)
+                    {
+                        Assert.That(remote.Machine.TryChooseHero(remoteLobby.Selection.Heroes
+                            .First(hero => hero.IsAvailable).HeroIdValue), Is.True);
+                    }
+                    yield return null;
+                }
+                remote.Pump();
+                Assert.That(driver.Presenter.Model.HasMatchStarted, Is.True);
+                Assert.That(remote.Machine.HasMatchStarted, Is.True);
+                Assert.That(remote.Machine.LatestProjection, Is.Not.Null);
+
+                var remoteMatch = new NetworkMatchClient(
+                    remote.Machine, Runtime().Projection, Runtime().ContentCatalogs);
+                var hostRandom = new GuardsDigital.Application.Bots.DeterministicBotRandom(811);
+                var remoteRandom = new GuardsDigital.Application.Bots.DeterministicBotRandom(977);
+                var playDeadline = Time.realtimeSinceStartup + 90f;
+                while (Time.realtimeSinceStartup < playDeadline && !Runtime().ReadModel.Outcome.HasEnded)
+                {
+                    remote.Pump();
+                    PlayProjectedHuman(Runtime(), hostRandom);
+                    PlayNetworkHuman(remote.Machine, remoteMatch, remoteRandom);
+                    yield return null;
+                }
+                remote.Pump();
+                Assert.That(Runtime().ReadModel.Outcome.HasEnded, Is.True,
+                    "The actual playing-host topology must reach an authoritative local outcome.");
+                Assert.That(remote.Machine.LatestProjection.Version, Is.EqualTo(Runtime().Host.Version),
+                    "The remote owner projection must finish on the authoritative host version.");
+            }
+            finally
+            {
+                remote?.Dispose();
+                System.Environment.SetEnvironmentVariable("GUARDS_TESTDRIVER_THINK_SECONDS", previousPacing);
+            }
         }
 
         [UnityTest]
@@ -642,22 +861,75 @@ namespace GuardsDigital.Tests.PlayMode
                     Field(driver, PrivateLobbyUnityView.PortFieldName).value = port.ToString();
                     yield return null;
                     UiPlayer.Click(Control(driver, "HOST"));
+                    var admittedDeadline = Time.realtimeSinceStartup + 5f;
+                    while (Time.realtimeSinceStartup < admittedDeadline &&
+                        !Named(driver, PrivateLobbyUnityView.SeatPickName).OfType<Button>()
+                            .Any(UiPlayer.IsShown))
+                        yield return null;
                     yield return null;
+                    var hostSeat = Named(driver, PrivateLobbyUnityView.SeatPickName)
+                        .OfType<Button>().First(UiPlayer.IsShown);
+                    UiPlayer.Click(hostSeat);
+                    var seatedDeadline = Time.realtimeSinceStartup + 5f;
+                    while (Time.realtimeSinceStartup < seatedDeadline &&
+                        !ControlLabels(driver).Contains("FILL WITH BOTS"))
+                        yield return null;
                     yield return null;
                     UiPlayer.Click(Control(driver, "FILL WITH BOTS"));
                     // This is the regression for the shipped button, not a rehearsal-only spawn path.
                     yield return null;
                     Assert.That(driver.Presenter.Model.Seats.Count(row => row.IsTestDriverSeat && row.OccupancyLabel == "SEATED"),
-                        Is.EqualTo(format == "2V2" ? 4 : 6));
-                    var deadline = Time.realtimeSinceStartup + 30f;
-                    while (Time.realtimeSinceStartup < deadline && Runtime().Host.Version < 20)
+                        Is.EqualTo(format == "2V2" ? 3 : 5),
+                        "The host's own seat stays human; bots fill every other chair.");
+                    Assert.That(
+                        driver.Presenter.Press(PrivateLobbyControl.Ready, driver.View.CurrentEntry()),
+                        Is.True);
+                    var matchStartDeadline = Time.realtimeSinceStartup + 20f;
+                    while (Time.realtimeSinceStartup < matchStartDeadline &&
+                        !driver.Presenter.Model.HasMatchStarted)
+                    {
+                        if (driver.Presenter.Model.Selection.IsOwnPick)
+                        {
+                            driver.Presenter.SelectedHeroIdValue = driver.Presenter.Model.Selection.Heroes
+                                .First(option => option.IsAvailable).HeroIdValue;
+                            Assert.That(driver.Presenter.Press(
+                                PrivateLobbyControl.ChooseHero, driver.View.CurrentEntry()), Is.True);
+                        }
                         yield return null;
+                    }
+                    Assert.That(driver.Presenter.Model.HasMatchStarted, Is.True,
+                        "The hosting player and every bot must finish readiness and picks.");
+                    var deadline = Time.realtimeSinceStartup + 30f;
+                    var hostRandom = new GuardsDigital.Application.Bots.DeterministicBotRandom(17);
+                    while (Time.realtimeSinceStartup < deadline && Runtime().Host.Version < 20)
+                    {
+                        var agreement = Runtime().ReadModel.TeamAgreement;
+                        if (agreement != null && agreement.AuthorizedCommands.Count > 0)
+                        {
+                            Runtime().SubmitProjectedAgreement(agreement.AuthorizedCommands[0]);
+                            yield return null;
+                            continue;
+                        }
+
+                        var commands = Runtime().EnumerateProjectedCommands();
+                        if (commands.Count > 0)
+                        {
+                            var selected = GuardsDigital.Application.Bots.BotPolicy.SelectPrivateSessionTactics(
+                                commands,
+                                Runtime().ReadModel,
+                                Runtime().Seat.HeroId,
+                                hostRandom);
+                            Runtime().SubmitProjectedCommand(selected);
+                        }
+                        yield return null;
+                    }
                     Assert.That(driver.Presenter.Model.HasMatchStarted, Is.True);
                     Assert.That(Runtime().Host.Version,
                         Is.GreaterThanOrEqualTo(20), "The actual button must reach accepted gameplay, not just launch something.");
                     if (format == "2V2")
                     {
-                        UiPlayer.Click(Control(driver, "LEAVE"));
+                        Assert.That(driver.Presenter.Press(
+                            PrivateLobbyControl.Leave, driver.View.CurrentEntry()), Is.True);
                         yield return null;
                         yield return null;
                         Assert.That(driver.Presenter.Model.Seats.Any(row => row.IsTestDriverSeat), Is.False);
@@ -1420,6 +1692,49 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             return picked;
+        }
+
+        private static void PlayProjectedHuman(
+            ConfiguredMatchSceneRuntime runtime,
+            GuardsDigital.Application.Bots.IBotRandom random)
+        {
+            if (runtime.ReadModel.Outcome.HasEnded)
+                return;
+            var agreement = runtime.ReadModel.TeamAgreement;
+            if (agreement != null && agreement.AuthorizedCommands.Count > 0)
+            {
+                runtime.SubmitProjectedAgreement(agreement.AuthorizedCommands[0]);
+                return;
+            }
+
+            var commands = runtime.EnumerateProjectedCommands();
+            if (commands.Count == 0) return;
+            var selected = GuardsDigital.Application.Bots.BotPolicy.SelectPrivateSessionTactics(
+                commands, runtime.ReadModel, runtime.Seat.HeroId, random) ?? commands[0];
+            runtime.SubmitProjectedCommand(selected);
+        }
+
+        private static void PlayNetworkHuman(
+            PrivateSessionClient machine,
+            NetworkMatchClient client,
+            GuardsDigital.Application.Bots.IBotRandom random)
+        {
+            if (machine.IsWaitingForHost || machine.LatestProjection == null) return;
+            var projection = client.Projection;
+            if (projection.Outcome.HasEnded) return;
+            var agreement = projection.TeamAgreement;
+            if (agreement != null && agreement.AuthorizedCommands.Count > 0)
+            {
+                client.SubmitAgreement(agreement.AuthorizedCommands[0]);
+                return;
+            }
+
+            var commands = machine.LatestProjection.AuthorizedCommands;
+            if (commands.Count == 0) return;
+            var hero = new HeroId(machine.LatestProjection.HeroId);
+            var selected = GuardsDigital.Application.Bots.BotPolicy.SelectPrivateSessionTactics(
+                commands, projection, hero, random) ?? commands[0];
+            client.Submit(selected);
         }
 
         private static bool IsUnder(VisualElement candidate, VisualElement ancestor)

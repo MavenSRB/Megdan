@@ -494,7 +494,10 @@ namespace GuardsDigital.Presentation.Match
         /// immutable local content remains the trusted dictionary for the admitted digest, while
         /// every mutable read and every submission switches to this connection's owner-scoped port.
         /// </summary>
-        public void AttachOnlineClient(PrivateSessionClient online)
+        public void AttachOnlineClient(
+            PrivateSessionClient online,
+            bool exposeHostDirectorTools = false,
+            Action republishAfterHostDebugChange = null)
         {
             if (online == null) throw new ArgumentNullException(nameof(online));
             if (online.GrantedSeat == null || online.LatestProjection == null || !online.HasMatchStarted)
@@ -507,7 +510,13 @@ namespace GuardsDigital.Presentation.Match
                 throw new InvalidOperationException("The admitted seat is not in this build's participant graph.");
             client.Replace(new NetworkMatchClient(online, trustedContent, ContentCatalogs));
             BindHomeHero(Seat.HeroId);
-            hud.SetDirectorToolsVisible(false);
+            hud.SetDirectorToolsVisible(exposeHostDirectorTools);
+            if (exposeHostDirectorTools && republishAfterHostDebugChange != null &&
+                UndoRestartPresenter != null)
+            {
+                UndoRestartPresenter.SessionProjectionChanged +=
+                    _ => republishAfterHostDebugChange();
+            }
             RefreshAll();
         }
 
@@ -599,6 +608,15 @@ namespace GuardsDigital.Presentation.Match
             var candidates = new List<DirectorCommand>();
             if (!projection.IsInputEnabled || projection.Phase == RoundResolutionPhase.GameEnded)
             {
+                return candidates;
+            }
+
+            // Milestone 8.36g1. A hosting player is still a network seat. Use the exact bounded
+            // surface the authority sent rather than reconstructing a plausible Director command
+            // (notably Hold) that this seat was never authorized to submit.
+            if (projection is NetworkMatchReadModel network)
+            {
+                candidates.AddRange(network.AuthorizedCommands);
                 return candidates;
             }
 

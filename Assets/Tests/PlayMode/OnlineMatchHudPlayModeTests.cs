@@ -152,6 +152,51 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator HostingPlayerKeepsOwnerProjectionAndAloneGetsDirectorDebugTools()
+        {
+            MatchSceneCompositionRoot.NextComposedSeat = null;
+            MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
+            var load = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
+            while (!load.isDone) yield return null;
+            yield return null;
+
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            Assert.That(root?.Runtime, Is.Not.Null);
+            var wire = Wire.Compose(root.Runtime, composition: root);
+
+            var setupCommand = root.Runtime.EnumerateProjectedCommands().First();
+            Assert.That(root.Runtime.SubmitProjectedCommand(setupCommand), Is.True);
+            wire.Host.RepublishProjections();
+            wire.Pump();
+
+            var hostingClient = wire.Client(1);
+            var remoteClient = wire.Client(2);
+            root.Runtime.AttachOnlineClient(
+                hostingClient,
+                exposeHostDirectorTools: true,
+                republishAfterHostDebugChange: wire.Host.RepublishProjections);
+            root.Runtime.RefreshAll();
+            yield return null;
+
+            Assert.That(root.Runtime.ReadModel, Is.TypeOf<NetworkMatchReadModel>(),
+                "Playing as host still reads the same owner projection as a joining player.");
+            Assert.That(root.Runtime.ReadModel.Cards.All(card =>
+                card.OwnerId.Equals(root.Runtime.Seat.HeroId) ||
+                card.State.Location != GuardsDigital.Core.Cards.CardLocation.Hand), Is.True);
+            var director = root.Hud.RootElement.Q<Button>("gd-director-toggle");
+            Assert.That(director, Is.Not.Null);
+            Assert.That(director.style.display.value, Is.EqualTo(DisplayStyle.Flex),
+                "The local hosting player alone is deliberately offered the debug drawer.");
+
+            var remoteReceiptBefore = remoteClient.ProjectionRevision;
+            Assert.That(root.Runtime.UndoRestartPresenter.Undo(), Is.True);
+            wire.Pump();
+            Assert.That(remoteClient.ProjectionRevision, Is.GreaterThan(remoteReceiptBefore));
+            Assert.That(remoteClient.LatestProjection.Version, Is.EqualTo(root.Runtime.Host.Version),
+                "A host debug mutation is republished to every owner-scoped remote client.");
+        }
+
+        [UnityTest]
         public IEnumerator StartedNetworkSeat_UsesExistingHud_AndHostLossClearsItsControls()
         {
             MatchSceneCompositionRoot.NextComposedSeat = null;

@@ -113,7 +113,7 @@ namespace GuardsDigital.Tests.EditMode
                         actions = (CardActionResolutionAuthority)typeof(AuthoritativeSnapshotSerializer)
                             .GetMethod("ReadCardAction", BindingFlags.Static | BindingFlags.NonPublic)
                             .Invoke(null, new object[] { new BinaryReader(buffer), board, definitions, instances,
-                                configuration.Participants, catalogs, new MarkerAttachmentRegister(), RuleModificationSet.Empty,
+                                configuration.Participants, catalogs, new MarkerAttachmentRegister(), timing, RuleModificationSet.Empty,
                                 null, turn.TieBreakerState, 1, 1, null, actor });
                         Assert.That(buffer.Position, Is.EqualTo(buffer.Length));
                     }
