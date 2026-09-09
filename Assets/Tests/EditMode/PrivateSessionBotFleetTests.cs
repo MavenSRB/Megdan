@@ -224,6 +224,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void BotDraftVariesBySeedAndReproducesLegalPicks()
+        {
+            var first = Draft(7);
+            Assert.That(Draft(7), Is.EqualTo(first), "A recorded input must reproduce the draft.");
+            Assert.That(Draft(29), Is.Not.EqualTo(first), "Bots must not always take the first available hero.");
+        }
+
+        private static string[] Draft(int seed)
+        {
+            var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
+            using var fleet = new PrivateSessionBotFleet(composer.Match, composer.Identity, "", new HumanWire(),
+                new CountingNonceSource(85), () => composer.Match.Projection, composer.Configuration.ContentCatalogs, seed);
+            fleet.Host.Composition = composer;
+            fleet.FillOpenSeats(0, 0);
+            for (var tick = 1; tick <= 100 && !fleet.Host.HasMatchStarted; tick++) fleet.Tick(tick);
+            Assert.That(fleet.Host.HasMatchStarted, Is.True, fleet.LastFailure);
+            var choices = fleet.Host.Roster.Select(seat => seat.Hero.Value).ToArray();
+            Assert.That(choices.Distinct().Count(), Is.EqualTo(4));
+            Assert.That(choices.All(hero => RegisteredHeroRoster.ForThisBuild.Any(option => option.HeroIdValue == hero)), Is.True);
+            return choices;
+        }
+
+        [Test]
         public void InvalidPacingIsRefusedBeforeAnySeatIsClaimed()
         {
             var composer = new Composer(MatchFormat.TwoVersusTwoQuick);

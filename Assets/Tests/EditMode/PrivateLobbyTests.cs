@@ -613,7 +613,8 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.Seats.Count, Is.EqualTo(PrivateSessionProtocol.MaxSeats),
                 "Every invited player runs this build, so the six seats can be offered as picks " +
                 "before any host has answered.");
-            Assert.That(model.Seats.All(row => row.HeroLabel.Length > 0), Is.True);
+            Assert.That(model.Seats.All(row => row.HeroLabel.Length == 0), Is.True,
+                "Before joining, provisional assignments must not look like hero picks.");
             Assert.That(model.FeedbackLabel, Does.StartWith("The host could not be reached"));
         }
 

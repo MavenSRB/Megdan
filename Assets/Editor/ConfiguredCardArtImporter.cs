@@ -16,7 +16,8 @@ namespace GuardsDigital.Editor
 
         private void OnPreprocessTexture()
         {
-            if (!assetPath.StartsWith(ArtFolder, StringComparison.Ordinal) ||
+            if ((!assetPath.StartsWith(ArtFolder, StringComparison.Ordinal) &&
+                 !assetPath.StartsWith("Assets/Resources/Private/HeroSelection/", StringComparison.Ordinal)) ||
                 !assetPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
             {
                 return;

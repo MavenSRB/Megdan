@@ -258,7 +258,8 @@ namespace GuardsDigital.Tests.PlayMode
             var teams = Texts(driver, "gd-lobby-seat-team").Distinct().OrderBy(v => v).ToArray();
             Assert.That(teams, Is.EqualTo(new[] { "BLUE TEAM", "RED TEAM" }),
                 "Both sides are readable as words on the panel itself.");
-            Assert.That(Texts(driver, "gd-lobby-seat-hero").All(text => text.Length > 0), Is.True);
+            Assert.That(Texts(driver, "gd-lobby-seat-hero").All(text => text.Length == 0), Is.True,
+                "Seating is not picking: no provisional hero name should be shown.");
             Assert.That(Texts(driver, "gd-lobby-seat-occupancy").Count(text => text == "SEATED"),
                 Is.EqualTo(seats.Count));
             Assert.That(Texts(driver, "gd-lobby-seat-readiness").Count(text => text == "NOT READY"),
@@ -417,7 +418,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
-            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "HOST", "JOIN" }));
+            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.EntryName)), Is.True);
             foreach (var field in new[]
                      {
@@ -480,7 +481,38 @@ namespace GuardsDigital.Tests.PlayMode
                 "A failed join says so; the entry form is still standing behind it.");
             Assert.That(said.Contains("127.0.0.1"), Is.False,
                 "Milestone 8.31's rule: a player-facing diagnostic never names an address.");
-            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "HOST", "JOIN" }));
+            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+        }
+
+        [UnityTest]
+        public IEnumerator RepeatedSocketJoinsAndLeaves_RestoreEverySetupControl()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            listener.Start();
+            try
+            {
+                Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "127.0.0.1";
+                Field(driver, PrivateLobbyUnityView.PortFieldName).value =
+                    ((System.Net.IPEndPoint)listener.LocalEndpoint).Port.ToString();
+                Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
+                for (var attempt = 0; attempt < 2; attempt++)
+                {
+                    yield return null;
+                    UiPlayer.Click(Control(driver, "JOIN"));
+                    yield return null;
+                    yield return null;
+                    yield return null;
+                    // The listener accepts TCP but sends no Welcome: a player may leave even
+                    // when joining has not yet completed. Seated Leave is covered separately.
+                    UiPlayer.Click(Control(driver, "LEAVE"));
+                    yield return null;
+                    CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+                    Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
+                }
+            }
+            finally { listener.Stop(); }
         }
 
         /// <summary>
@@ -520,8 +552,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "A refusal is one bounded line like every other the lobby draws.");
             Assert.That(said.Contains("203.0.113.10"), Is.False,
                 "Milestone 8.31's rule: a player-facing diagnostic never names an address.");
-            Assert.That(ControlLabels(driver), Is.EqualTo(new[] { "HOST", "JOIN" }),
-                "A refused host stays on the entry form with both of its controls.");
+            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver),
+                "A refused host keeps every applicable setup control.");
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None),
                 "A refused host opened no session.");
         }
@@ -577,6 +609,15 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
             Assert.That(System.IO.File.ReadAllText(capturePath), Does.Contain("GD_EVIDENCE_ABORT"),
                 "Leaving an unfinished lobby must not manufacture a completed-match capture.");
+            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
+            UiPlayer.Click(Control(driver, "HOST"));
+            yield return null;
+            Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.Host));
+            yield return null;
+            yield return null;
+            UiPlayer.Click(Control(driver, "LEAVE"));
+            yield return null;
+            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver));
         }
 
         [UnityTest]
@@ -769,6 +810,34 @@ namespace GuardsDigital.Tests.PlayMode
                 "Nothing is taken yet, so nothing is greyed.");
             Assert.That(ControlLabels(driver), Contains.Item("PICK HERO"));
 
+            var selectedOption = options[0];
+            var idleEdge = selectedOption.resolvedStyle.borderTopColor;
+            UiPlayer.Click(selectedOption);
+            yield return null;
+            Assert.That(selectedOption.resolvedStyle.borderTopColor, Is.Not.EqualTo(idleEdge),
+                "Clicking a candidate must immediately show which hero PICK HERO will confirm.");
+            driver.Presenter.Refresh();
+            yield return null;
+            Assert.That(HeroOptions(driver)[0].text, Does.Contain("SELECTED"), "An ordinary redraw preserves the candidate.");
+            Assert.That(driver.View.Root.resolvedStyle.backgroundColor.a, Is.EqualTo(1f),
+                "No part of the provisional map should show through the pre-match screen.");
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.WordmarkName)), Is.True);
+            foreach (var option in HeroOptions(driver))
+            {
+                UiPlayer.PointAt(option.parent);
+                yield return null;
+                var preview = (Image)Element(driver, PrivateLobbyUnityView.HeroOverviewName);
+                var hero = (PrivateLobbyHeroOption)option.userData;
+                Assert.That(preview.image, Is.SameAs(Resources.Load<Texture2D>("Private/HeroSelection/" + hero.HeroIdValue)));
+                Assert.That(preview.image, Is.Not.Null, "Prepared overview missing for " + hero.HeroIdValue);
+                Assert.That(preview.image.width, Is.EqualTo(372));
+                Assert.That(preview.image.height, Is.EqualTo(260));
+                Assert.That(UiPlayer.IsShown(preview), Is.True);
+                Assert.That(driver.View.Root.worldBound.Contains(preview.worldBound.min), Is.True);
+                Assert.That(driver.View.Root.worldBound.Contains(preview.worldBound.max), Is.True);
+                UiPlayer.PointAway(option.parent);
+            }
+
             // Somebody takes a hero; every other seat must now see it greyed AND be told why.
             var taken = RegisteredHeroRoster.ForThisBuild[0];
             Assert.That(wire.Client(pickingOrdinal).TryChooseHero(taken.HeroIdValue), Is.True);
@@ -782,6 +851,81 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(greyed.text, Does.Contain("already taken"),
                 "A hero that vanished would teach a player nothing; the one-copy rule's own " +
                 "sentence rides the option itself.");
+            Assert.That(driver.View.HighlightedHero, Is.Empty, "An accepted pick clears the local candidate.");
+            Assert.That(Texts(driver, "gd-lobby-seat-hero").Where(text => text.Length > 0),
+                Is.EqualTo(new[] { PrivateLobbyLabels.Identifier(taken.HeroIdValue) }));
+            Assert.That(PrivateLobbyModel.ForHost(wire.Session, "").Seats.Count(row => row.HeroLabel.Length > 0), Is.EqualTo(1));
+            // The next picker (on the other team) sees the confirmed opponent before choosing.
+            var nextOrdinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(nextOrdinal));
+            yield return null;
+            yield return null;
+            Assert.That(Text(driver, PrivateLobbyUnityView.SelectionStatusName), Is.EqualTo("YOUR PICK"));
+            Assert.That(Texts(driver, "gd-lobby-seat-hero").Where(text => text.Length > 0),
+                Is.EqualTo(new[] { PrivateLobbyLabels.Identifier(taken.HeroIdValue) }));
+            var nextHero = HeroOptions(driver).First(button => button.enabledSelf);
+            var nextHeroId = ((PrivateLobbyHeroOption)nextHero.userData).HeroIdValue;
+            UiPlayer.Click(nextHero);
+            yield return null;
+            UiPlayer.Click(Control(driver, "PICK HERO"));
+            wire.Pump();
+            driver.Presenter.Refresh();
+            yield return null;
+            CollectionAssert.AreEquivalent(new[] { PrivateLobbyLabels.Identifier(taken.HeroIdValue), PrivateLobbyLabels.Identifier(nextHeroId) },
+                Texts(driver, "gd-lobby-seat-hero").Where(text => text.Length > 0));
+            Assert.That(PrivateLobbyModel.ForHost(wire.Session, "").Seats.Count(row => row.HeroLabel.Length > 0), Is.EqualTo(2));
+        }
+
+        [UnityTest]
+        public IEnumerator PickerRemainsReadableAtNormalAndShortViewports()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            try
+            {
+                foreach (var viewport in new[] { new Vector2(1920, 1080), new Vector2(2560, 540) })
+                {
+                    UiPlayer.SetPlayerViewport((uint)viewport.x, (uint)viewport.y, "8.36e picker");
+                    yield return null;
+                    yield return null;
+                    driver.Presenter.Refresh();
+                    yield return null;
+                    var option = HeroOptions(driver).Last();
+                    UiPlayer.EnsureVisible(option);
+                    yield return null;
+                    UiPlayer.Click(option);
+                    yield return null;
+                    Assert.That(option.text, Does.Contain("SELECTED"));
+                    if (viewport.x == 2560)
+                        Assert.That(option.worldBound.height * Screen.width / driver.View.Root.worldBound.width,
+                            Is.GreaterThanOrEqualTo(24f), "A short window must scroll, not miniaturize the picker.");
+                    UiPlayer.PointAway(option.parent);
+                    yield return null;
+                    yield return UiPlayer.CaptureGameView("8-36e", "selection-" + (int)viewport.x + "x" + (int)viewport.y);
+                    UiPlayer.PointAt(option.parent);
+                    yield return null;
+                    var overview = (Image)Element(driver, PrivateLobbyUnityView.HeroOverviewName);
+                    Assert.That(UiPlayer.IsShown(overview), Is.True);
+                    Assert.That(driver.View.Root.worldBound.Contains(overview.worldBound.min), Is.True);
+                    Assert.That(driver.View.Root.worldBound.Contains(overview.worldBound.max), Is.True);
+                    yield return UiPlayer.CaptureGameView("8-36e", "overview-" + (int)viewport.x + "x" + (int)viewport.y);
+                    UiPlayer.PointAway(option.parent);
+                    UiPlayer.EnsureVisible(Control(driver, "PICK HERO"));
+                    yield return null;
+                    Assert.That(UiPlayer.IsShown(Control(driver, "PICK HERO")), Is.True);
+                }
+                UiPlayer.Click(Control(driver, "PICK HERO"));
+                wire.Pump();
+                driver.Presenter.Refresh();
+                yield return null;
+                Assert.That(wire.Client(ordinal).Roster.Single(row => row.Seat.Value == seats[ordinal - 1]).HasChosenHero, Is.True);
+                Assert.That(ControlLabels(driver), Does.Not.Contain("PICK HERO"));
+            }
+            finally { UiPlayer.SetPlayerViewport(1920, 1080, "8.36e restore"); }
         }
 
         /// <summary>

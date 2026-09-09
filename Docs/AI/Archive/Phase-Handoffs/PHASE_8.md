@@ -1414,3 +1414,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36d | Unique host instances and preserved public-metadata captures bind complete participant outcomes to one build/run and a hashed local manifest. | `milestone/8.36d` |
+
+## Milestone 8.36e Private lobby and picker completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36e | Visible candidate selection, confirmed roster names, source overview cards, opaque scrollable lobby, retry controls and reproducible varied bot drafts. | `milestone/8.36e` |

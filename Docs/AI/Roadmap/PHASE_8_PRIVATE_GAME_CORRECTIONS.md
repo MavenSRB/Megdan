@@ -24,7 +24,7 @@ Origin: [8.36a F-ONLINE-04](PHASE_8_PRIVATE_ONLINE_REVIEW.md); approved on 2026-
 
 Historical evidence: [8.36d handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836d-attributable-private-diagnostics-completion-evidence).
 
-### [~] 8.36e Clarify the private lobby and hero picker
+### [x] 8.36e Clarify the private lobby and hero picker
 
 User-approved on 2026-09-09, to follow 8.36b-8.36d. Outcome: clicking a hero visibly marks the selection; lobby seats show hero names only after an actual pick, never placeholder assignments; hovering a hero shows its source overview card from the Docs hero-selection-card assets; the pre-match screen hides the map behind a clean backdrop with the existing game logo above the picker and reveals the board only when the match loads. Dependency: complete 8.36d and inspect the supplied overview/logo resources. Closing checks: focused selection/unpicked-seat/hover/state-transition regressions, actual pointer-driven configured lobby-to-match Play Mode coverage, and targeted visual inspection at supported viewports. Preserve authoritative pick restrictions, readiness, bot selection and reconnect. No new heroes, invented art, public distribution or general presentation overhaul.
 
@@ -32,7 +32,9 @@ The user also included disappearing lobby buttons in this outcome. Exact reporte
 
 Also approved: bots randomly select from their currently legal hero choices instead of always selecting the first available. Preserve authoritative pick order and all selection restrictions; inject/record the selection input at the bot boundary so focused tests can prove varied choices, legal-only selection, reproducibility and no added nondeterminism in rules or replay. This changes draft choice only, not gameplay policy or hero content.
 
-### [ ] 8.36f Correct reported card-resolution failures and feedback
+Historical evidence: [8.36e handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836e-private-lobby-and-picker-completion-evidence). The user reiterated that confirmed picks must update for everyone, including the next picker; unconfirmed/default names alone remain hidden. With no existing logo resource found, the approved game-title alternative supplies the wordmark.
+
+### [~] 8.36f Correct reported card-resolution failures and feedback
 
 User-approved on 2026-09-09 after 8.36e. The supplied screenshot reports an unsupported resolver scope for Silverarrow and friendly heroes in radius while Trailblazer is active, followed by a clipped internal-exception banner; this diagnosis is not yet independently verified. Outcome: verified legal Trailblazer actions resolve through the shared typed capability without a host engine fault, and unexpected internal errors produce bounded player-safe feedback with private diagnostic detail retained. Dependency: verify the printed card/rules-ledger authority and reproduce the actual resolver/host path. Closing checks: failing-then-passing source-linked active-Trailblazer regression covering self/friendly/enemy and radius boundaries, directly affected shared capability consumers and host authorization/atomicity; focused banner and player-path coverage where behavior changes. No card-name branches, invented rules, rebalance or broad error-system refactor.
 
@@ -41,6 +43,16 @@ Additional user-approved report: Misa's Watch How I Soar offers its printed "Def
 ### [ ] 8.36f1 Make the level-up comparison and rewards readable
 
 User-approved on 2026-09-09, after 8.36f and before 8.36g. The supplied Misa level-up screenshot shows a tiny unreadable current hand and upgrade choices clipped at the bottom. Outcome: the current hand can be read/compared during leveling and complete upgrade cards/rewards remain accessible inside the viewport. The reward overlay stays centered on its card and reads "GAINS:" followed by the actual authoritative gain icon(s). Preserve whole-card selection and the existing source-ratio/hover/short-viewport card contracts; no change to upgrade or reward rules. Closing checks: focused layout/reward-projection regressions, a pointer-driven level-up journey comparing the hand and selecting an upgrade, and full-screen visual inspection at the user's viewport and the supported short viewport, with no bottom clipping or unreachable choices.
+
+### [ ] 8.36f2 Correct attack presentation without shrinking the attacker
+
+User-approved on 2026-09-09, after f1 and before g. Report: the camera zooms but the attacking hero shrinks away during the animation. Outcome: a readable zoom followed by a strike/impact; the attacker retains a visible, stable token scale, and the defender remains or is removed according to the authoritative resolved outcome. Reproduce the actual camera/token animation path; distinguish presentation scaling from authoritative Defeat and preserve input/timing ownership. Closing checks: failing-then-passing animation geometry/lifetime regression, actual player-input attacks with surviving and defeated defenders, interruption/rebuild/Undo cleanup where affected, and targeted non-batch visual inspection. No combat rule, damage, targeting or new VFX-system changes.
+
+The user also expressed concern after two reported failures among roughly ten tried cards from the added roster. This is not a measured roster-wide failure rate. The broader audit and necessary corrections are explicitly approved below.
+
+### [ ] 8.36f3 Audit added-roster cards and correct demonstrated failures
+
+User-approved on 2026-09-09: "Yes, audit the cards. And implement the fixes as needed." Execute after f2 and before g. Scope: the recently added configured roster (Dodger, Misa, Silverarrow, Ursafar, Whisper; reconcile the user's "six" against the eleven-hero configured catalog), not new hero content. Inventory every source card and its executable branches, map verified source authority to implementation and actual player-input coverage, and exercise uncovered or suspect paths through the configured UI. Existing green cases may be reused only under the testing policy's affectedness rules, never as assumed proof of untested branches. Correct demonstrated defects using shared typed capabilities, with a failing-then-passing regression per fault and directly affected consumers, restore/replay/Undo and visible-result checks as applicable. Record per-card conclusions, coverage gaps and any unresolved source/rules questions in one indexed audit record; no invented rules or silent quarantine. Select T3 if the shared boundary or unenumerable blast radius triggers it. This audit is implementation-authorized, not a separately mandated independent engineering review. No new heroes, rebalance, unbounded AI changes or public distribution.
 
 ### [ ] 8.36g Improve private-session bot tactics with measured evidence
 

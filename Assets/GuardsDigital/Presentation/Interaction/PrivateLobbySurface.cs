@@ -151,7 +151,10 @@ namespace GuardsDigital.Presentation.Interaction
             client = null;
             host = null;
             feedback = reason ?? string.Empty;
-            entryMatchFormatLabel = matchFormatLabel;
+            // A retry/leave omits the format because it did not change it. Explicit empty still
+            // suppresses setup when composition is unavailable; first-use null stays unspecified.
+            entryMatchFormatLabel = matchFormatLabel ?? entryMatchFormatLabel;
+            SelectedHeroIdValue = string.Empty;
             Refresh();
         }
 

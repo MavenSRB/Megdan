@@ -53,6 +53,8 @@ namespace GuardsDigital.Presentation.Interaction
         public const string SelectionStatusName = "gd-lobby-selection-status";
         public const string HeroesName = "gd-lobby-heroes";
         public const string HeroOptionName = "gd-lobby-hero-option";
+        public const string HeroOverviewName = "gd-lobby-hero-overview";
+        public const string WordmarkName = "gd-lobby-wordmark";
 
         /// <summary>The default invitation: this machine, on the protocol's own port.</summary>
         public const string DefaultAddress = "127.0.0.1";
@@ -81,6 +83,8 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly TextField key;
         private readonly Label selectionStatus;
         private readonly VisualElement heroes;
+        private readonly Image heroOverview;
+        private readonly Label wordmark;
         private SeatId picked;
 
         /// <summary>
@@ -101,10 +105,19 @@ namespace GuardsDigital.Presentation.Interaction
             Root.style.alignItems = Align.Center;
             Root.style.justifyContent = Justify.Center;
 
-            var frame = new VisualElement { name = PanelName };
+            wordmark = Caption("GUARDS OF ATLANTIS II", 40, WordmarkName);
+            wordmark.style.color = MatchHudTheme.CoinFace;
+            wordmark.style.marginBottom = 16f;
+            wordmark.pickingMode = PickingMode.Ignore;
+            Root.Add(wordmark);
+
+            var frame = new ScrollView(ScrollViewMode.Vertical) { name = PanelName };
+            frame.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            frame.verticalScrollerVisibility = ScrollerVisibility.Auto;
             frame.style.width = new StyleLength(new Length(72f, LengthUnit.Percent));
             frame.style.maxWidth = 1800f;
-            frame.style.maxHeight = new StyleLength(new Length(92f, LengthUnit.Percent));
+            frame.style.maxHeight = new StyleLength(new Length(82f, LengthUnit.Percent));
+            frame.style.flexShrink = 1f;
             frame.style.paddingLeft = 24f;
             frame.style.paddingRight = 24f;
             frame.style.paddingTop = 20f;
@@ -181,6 +194,11 @@ namespace GuardsDigital.Presentation.Interaction
             buildStamp.style.color = new Color(PanelText.r, PanelText.g, PanelText.b, 0.5f);
             buildStamp.pickingMode = PickingMode.Ignore;
             Root.Add(buildStamp);
+            heroOverview = new Image { name = HeroOverviewName, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore };
+            heroOverview.style.position = Position.Absolute;
+            heroOverview.style.display = DisplayStyle.None;
+            Root.Add(heroOverview);
+            Root.RegisterCallback<GeometryChangedEvent>(_ => HideHeroOverview());
         }
 
         public VisualElement Root { get; }
@@ -217,6 +235,8 @@ namespace GuardsDigital.Presentation.Interaction
 
             Root.style.display = model.IsShown ? DisplayStyle.Flex : DisplayStyle.None;
             Root.pickingMode = model.IsShown ? PickingMode.Position : PickingMode.Ignore;
+            Root.style.backgroundColor = model.HasMatchStarted ? Color.clear : new Color(0.025f, 0.04f, 0.05f, 1f);
+            wordmark.style.display = model.HasMatchStarted ? DisplayStyle.None : DisplayStyle.Flex;
             status.text = model.StatusLabel;
             session.text = model.SessionLabel.Length == 0
                 ? string.Empty
@@ -264,6 +284,7 @@ namespace GuardsDigital.Presentation.Interaction
         /// </remarks>
         private void RenderSelection(PrivateLobbySelection selection)
         {
+            HideHeroOverview();
             var running = selection != null && selection.IsRunning;
             selectionStatus.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
             heroes.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
@@ -271,15 +292,22 @@ namespace GuardsDigital.Presentation.Interaction
             if (!running)
             {
                 highlightedHero = string.Empty;
+                HeroHighlighted?.Invoke(string.Empty);
                 selectionStatus.text = string.Empty;
                 return;
             }
 
+            if (!selection.IsOwnPick || !selection.Heroes.Any(option => option.IsAvailable && option.HeroIdValue == highlightedHero))
+            {
+                highlightedHero = string.Empty;
+                HeroHighlighted?.Invoke(string.Empty);
+            }
             selectionStatus.text = selection.StatusLabel;
             foreach (var option in selection.Heroes)
             {
                 heroes.Add(BuildHeroOption(option, selection.IsOwnPick));
             }
+            RefreshHeroHighlights();
         }
 
         private VisualElement BuildHeroOption(PrivateLobbyHeroOption option, bool isOwnPick)
@@ -293,10 +321,12 @@ namespace GuardsDigital.Presentation.Interaction
                 }
 
                 highlightedHero = option.HeroIdValue;
+                RefreshHeroHighlights();
                 HeroHighlighted?.Invoke(option.HeroIdValue);
             })
             {
                 name = HeroOptionName,
+                userData = option,
                 // The reason travels ON the option rather than in a status line, so a player reading
                 // a greyed hero is told why by the thing they are looking at.
                 text = option.IsAvailable
@@ -342,7 +372,51 @@ namespace GuardsDigital.Presentation.Interaction
             button.style.borderBottomColor = edge;
             button.style.borderLeftColor = edge;
             button.style.borderRightColor = edge;
-            return button;
+            var tile = new VisualElement();
+            tile.Add(button);
+            // The wrapper still receives hover when the contained choice is unavailable.
+            tile.RegisterCallback<PointerEnterEvent>(_ => ShowHeroOverview(option.HeroIdValue, button.worldBound.max));
+            tile.RegisterCallback<PointerLeaveEvent>(_ => HideHeroOverview());
+            button.RegisterCallback<FocusInEvent>(_ => ShowHeroOverview(option.HeroIdValue, button.worldBound.max));
+            button.RegisterCallback<FocusOutEvent>(_ => HideHeroOverview());
+            return tile;
+        }
+
+        private void RefreshHeroHighlights()
+        {
+            foreach (var button in heroes.Query<Button>(HeroOptionName).ToList())
+            {
+                var option = (PrivateLobbyHeroOption)button.userData;
+                var selected = highlightedHero == option.HeroIdValue;
+                var color = selected ? new Color(1f, 0.82f, 0.35f, 1f) : PanelEdge;
+                button.style.borderTopColor = button.style.borderBottomColor = color;
+                button.style.borderLeftColor = button.style.borderRightColor = color;
+                button.EnableInClassList("gd-hero-selected", selected);
+                button.text = option.DisplayName + (selected ? " — SELECTED" : option.IsAvailable ? "" : " - " + option.UnavailableReason);
+            }
+        }
+
+        private void ShowHeroOverview(string heroId, Vector2 position)
+        {
+            var texture = Resources.Load<Texture2D>("Private/HeroSelection/" + heroId);
+            if (texture == null) { HideHeroOverview(); return; }
+            var bounds = Root.contentRect;
+            var width = Mathf.Min(744f, bounds.width - 32f, (bounds.height - 32f) * texture.width / texture.height);
+            var height = width * texture.height / texture.width;
+            var local = Root.WorldToLocal(position);
+            heroOverview.image = texture;
+            heroOverview.style.width = width;
+            heroOverview.style.height = height;
+            heroOverview.style.left = Mathf.Clamp(local.x + 20f, 16f, bounds.width - width - 16f);
+            heroOverview.style.top = Mathf.Clamp(local.y - height - 16f, 16f, bounds.height - height - 16f);
+            heroOverview.style.display = DisplayStyle.Flex;
+            heroOverview.BringToFront();
+        }
+
+        private void HideHeroOverview()
+        {
+            heroOverview.style.display = DisplayStyle.None;
+            heroOverview.image = null;
         }
 
         private VisualElement BuildSeatRow(PrivateLobbySeatRow row, bool offerPick)
@@ -1451,11 +1525,13 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             sessionKey = entry.SessionKey;
+            var draftSeed = BitConverter.ToInt32(new CryptoNonceSource().NextNonce(), 0);
             botFleet = new GuardsDigital.Application.Bots.PrivateSessionBotFleet(
                 compositionRoot.Runtime.Host, compositionRoot.Runtime.SessionIdentity,
                 sessionKey, listener, new CryptoNonceSource(),
-                () => compositionRoot.Runtime.ReadModel, compositionRoot.Runtime.ContentCatalogs);
+                () => compositionRoot.Runtime.ReadModel, compositionRoot.Runtime.ContentCatalogs, draftSeed: draftSeed);
             session = botFleet.Host;
+            PrivateOnlineMarkers.Log("LOBBY_BOT_DRAFT_SEED seed=" + draftSeed.ToString(CultureInfo.InvariantCulture));
 
             // Milestone 8.35z61. The gameplay narration, on the lobby host too. The
             // 2026-09-06 playtest was hosted through THIS path, and a narration attached only to
@@ -1845,6 +1921,16 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             return PrivateSessionEndpoint.TryCreate(entry.Address, port, out endpoint, out error);
+        }
+
+        private void LateUpdate()
+        {
+            if (panelSettings == null || presenter?.Model == null) return;
+            // The menu can scroll, so short windows must not shrink it to the game's full-board
+            // footprint. Restore the shared HUD coordinates for in-match connection notices.
+            var preMatch = !presenter.Model.HasMatchStarted;
+            panelSettings.screenMatchMode = preMatch ? PanelScreenMatchMode.MatchWidthOrHeight : MatchHudPanelScaling.ScreenMatchMode;
+            panelSettings.match = preMatch ? 0f : MatchHudPanelScaling.Match;
         }
 
         private void BuildPanel()

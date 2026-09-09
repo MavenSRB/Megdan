@@ -53,6 +53,7 @@ namespace GuardsDigital.Application.Bots
         private readonly Dictionary<int, Bot> byOrdinal = new Dictionary<int, Bot>();
         private readonly Queue<Delivery> deliveries = new Queue<Delivery>();
         private readonly DeterministicBotRandom random;
+        private readonly DeterministicBotRandom draftRandom;
         private long nowTicks;
         private long thinkTicks;
         private int nextOrdinal;
@@ -62,7 +63,7 @@ namespace GuardsDigital.Application.Bots
         public PrivateSessionBotFleet(
             IMatchHost matchHost, PrivateSessionIdentity identity, string sessionKey,
             IPrivateSessionOutbox humanOutbox, IPrivateSessionNonceSource nonceSource,
-            Func<IMatchReadModel> trustedContent, MatchContentCatalogs catalogs, int seed = 0)
+            Func<IMatchReadModel> trustedContent, MatchContentCatalogs catalogs, int seed = 0, int? draftSeed = null)
         {
             this.humanOutbox = humanOutbox ?? throw new ArgumentNullException(nameof(humanOutbox));
             this.trustedContent = trustedContent ?? throw new ArgumentNullException(nameof(trustedContent));
@@ -70,6 +71,7 @@ namespace GuardsDigital.Application.Bots
             this.nonceSource = nonceSource;
             this.sessionKey = sessionKey ?? string.Empty;
             random = new DeterministicBotRandom(seed);
+            draftRandom = new DeterministicBotRandom(draftSeed ?? seed);
             Host = new PrivateSessionHost(matchHost, identity, this.sessionKey, this, nonceSource);
         }
 
@@ -142,8 +144,8 @@ namespace GuardsDigital.Application.Bots
                 var lobby = PrivateLobbyModel.ForClient(machine);
                 if (lobby.Offers(PrivateLobbyControl.Ready)) return machine.TrySetReadiness(true);
                 if (!lobby.Selection.IsOwnPick) return false;
-                var pick = lobby.Selection.Heroes.FirstOrDefault(option => option.IsAvailable);
-                return pick != null && machine.TryChooseHero(pick.HeroIdValue);
+                var legal = lobby.Selection.Heroes.Where(option => option.IsAvailable).ToArray();
+                return legal.Length > 0 && machine.TryChooseHero(legal[draftRandom.Next(legal.Length)].HeroIdValue);
             }
             if (machine.LatestProjection == null) return false;
             if (bot.Client == null) bot.Client = new NetworkMatchClient(machine, trustedContent(), catalogs);

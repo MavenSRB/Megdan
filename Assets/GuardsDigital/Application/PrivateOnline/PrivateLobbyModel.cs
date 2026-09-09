@@ -579,7 +579,7 @@ namespace GuardsDigital.Application
                 rows.Add(new PrivateLobbySeatRow(
                     entry.Seat,
                     PrivateLobbyLabels.Identifier(entry.Seat.Value),
-                    PrivateLobbyLabels.Identifier(entry.Hero.Value),
+                    string.Empty,
                     PrivateLobbyLabels.Team(entry.TeamSide),
                     "NOT CONNECTED",
                     string.Empty,
@@ -630,7 +630,7 @@ namespace GuardsDigital.Application
                 rows.Add(new PrivateLobbySeatRow(
                     entry.Seat,
                     PrivateLobbyLabels.Identifier(entry.Seat.Value),
-                    PrivateLobbyLabels.Identifier(entry.Hero.Value),
+                    entry.HasChosenHero ? PrivateLobbyLabels.Identifier(entry.Hero.Value) : string.Empty,
                     PrivateLobbyLabels.Team(entry.TeamSide),
                     PrivateLobbyLabels.Occupancy(entry.Occupancy),
                     PrivateLobbyLabels.Readiness(entry.IsReady),
@@ -700,7 +700,7 @@ namespace GuardsDigital.Application
                 rows.Add(new PrivateLobbySeatRow(
                     entry.Seat,
                     PrivateLobbyLabels.Identifier(entry.Seat.Value),
-                    PrivateLobbyLabels.Identifier(entry.Hero.Value),
+                    entry.HasChosenHero ? PrivateLobbyLabels.Identifier(entry.Hero.Value) : string.Empty,
                     PrivateLobbyLabels.Team(entry.TeamSide),
                     PrivateLobbyLabels.Occupancy(entry.Occupancy),
                     PrivateLobbyLabels.Readiness(entry.IsReady),
