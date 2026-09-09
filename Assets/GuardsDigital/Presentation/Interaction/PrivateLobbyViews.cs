@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
@@ -679,6 +680,8 @@ namespace GuardsDigital.Presentation.Interaction
         private Label matchStatus;
         private bool onlineHudAttached;
         private bool outcomeReported;
+        private PrivateOnlineEvidenceFile evidence;
+        private bool evidenceUnavailable;
 
         /// <summary>
         /// Host-only event observation for the opt-in build rehearsal. The ordinary lobby does
@@ -859,6 +862,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             SurfaceLobbyPickRefusal();
 
+            EnsureEvidence();
             ReportOutcomeOnce();
 
             var current = Signature();
@@ -1011,6 +1015,58 @@ namespace GuardsDigital.Presentation.Interaction
 
             outcomeReported = true;
             PrivateOnlineMarkers.Log(line);
+            if (evidence != null)
+            {
+                try
+                {
+                    if (session != null)
+                    {
+                        var bots = new HashSet<string>(botFleet == null ? Array.Empty<string>() :
+                            botFleet.Seats.Select(seat => seat.Value));
+                        evidence.Complete(compositionRoot.Runtime.Host.Projection.Version,
+                            compositionRoot.Runtime.Host.Projection.Outcome,
+                            session.Roster.Where(row => !bots.Contains(row.Seat.Value)).Select(row => row.Seat.Value), bots);
+                    }
+                    else
+                        evidence.Complete(machine.LatestProjection.Version, compositionRoot.Runtime.ReadModel.Outcome);
+                }
+                catch (System.IO.IOException) { EvidenceFailed(); }
+                catch (UnauthorizedAccessException) { EvidenceFailed(); }
+            }
+        }
+
+        private void EnsureEvidence()
+        {
+            if (evidence != null || evidenceUnavailable || compositionRoot?.Runtime == null) return;
+            if (session == null && (machine == null || machine.State != PrivateSessionClientState.Seated)) return;
+            try
+            {
+                var directory = System.IO.Path.GetFullPath(System.IO.Path.Combine(UnityEngine.Application.dataPath,
+                    "..", UnityEngine.Application.isEditor ? "tmp" : "Logs", "online-runs"));
+                evidence = new PrivateOnlineEvidenceFile(directory, compositionRoot.Runtime.SessionIdentity,
+                    session != null ? session.SessionCorrelation : machine.SessionCorrelation,
+                    session != null ? PrivateOnlineEvidenceRole.Host : PrivateOnlineEvidenceRole.Client,
+                    session != null ? "" : machine.TargetSeat.Value);
+                PrivateOnlineMarkers.Log("EVIDENCE_BEGIN run=" + evidence.RunId + " role=" + evidence.Role +
+                    " " + PrivateOnlineMarkers.Describe(compositionRoot.Runtime.SessionIdentity));
+            }
+            catch (System.IO.IOException) { EvidenceFailed(); }
+            catch (UnauthorizedAccessException) { EvidenceFailed(); }
+        }
+
+        private void EvidenceFailed()
+        {
+            evidenceUnavailable = true;
+            Debug.LogWarning("GUARDS_ONLINE: EVIDENCE_UNAVAILABLE (local capture failed)");
+        }
+
+        private void CloseEvidence()
+        {
+            try { evidence?.Dispose(); }
+            catch (System.IO.IOException) { EvidenceFailed(); }
+            catch (UnauthorizedAccessException) { EvidenceFailed(); }
+            evidence = null;
+            evidenceUnavailable = false;
         }
 
         /// <summary>
@@ -1742,6 +1798,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void Leave()
         {
+            CloseEvidence();
             var departing = machine;
             DisposeTransport();
             departing?.OnDisconnected();
@@ -1842,6 +1899,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void OnDestroy()
         {
+            CloseEvidence();
             DisposeTransport();
             StopTestDrivers();
             session?.Shutdown();

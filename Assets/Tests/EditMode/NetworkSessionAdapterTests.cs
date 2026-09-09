@@ -240,7 +240,7 @@ namespace GuardsDigital.Tests.EditMode
                     // frame onto its own sealed connection.
                     hostile.Transport.Send(NetworkMessageCodec.SubmitCommandFrame(
                         new NetworkSubmissionMessage(
-                            new NetworkEnvelope(host.Identity.Correlation, 1, 1, 1),
+                            new NetworkEnvelope(host.Session.SessionCorrelation, 1, 1, 1),
                             "wire-plain-1",
                             hostile.Machine.LatestProjection.Version,
                             NetworkCommandCodec.Encode(

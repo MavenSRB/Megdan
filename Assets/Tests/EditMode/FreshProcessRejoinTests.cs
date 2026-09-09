@@ -211,11 +211,11 @@ namespace GuardsDigital.Tests.EditMode
             var harness = PrivateOnlineWireHarness.Compose();
             var seat = new SeatId(ReturningSeat);
 
-            // Exactly what a previous session on this machine left behind: the correlation is a
-            // function of the content, so a finished session keyed its entry at this very address.
+            // Deliberately seed a stale capability at the current session key. Production hosts
+            // now use fresh instance IDs; the open-seat fallback must still tolerate stale stores.
             const string stale = "a-capability-a-finished-session-minted";
             var leftOver = new InMemoryRetainedSeatCapabilityStore();
-            leftOver.Retain(harness.Identity.Correlation, seat, stale);
+            leftOver.Retain(harness.Session.SessionCorrelation, seat, stale);
 
             var joining = harness.Connect(harness.NextOrdinal(), ReturningSeat, machineStore: leftOver);
             harness.Pump();
@@ -227,7 +227,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(joining.IsReconnecting, Is.False,
                 "and it must not even have claimed to be returning.");
             Assert.That(Occupancy(harness, ReturningSeat), Is.EqualTo(SeatOccupancyState.Claimed));
-            Assert.That(leftOver.Find(harness.Identity.Correlation, seat), Is.Not.EqualTo(stale),
+            Assert.That(leftOver.Find(harness.Session.SessionCorrelation, seat), Is.Not.EqualTo(stale),
                 "The stale entry is gone rather than left on disk for the life of the build - " +
                 "replaced, here, by the capability this new session's own grant issued.");
         }

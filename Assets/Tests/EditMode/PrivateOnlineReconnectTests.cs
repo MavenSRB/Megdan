@@ -283,7 +283,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // A submission the lost connection had in flight, arriving after the return.
             harness.SendRaw(2, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(harness.Identity.Correlation,
+                new NetworkEnvelope(harness.Session.SessionCorrelation,
                     PrivateSessionProtocol.InitialConnectionEpoch, 1, 1),
                 "wire-old-connection", version, NetworkCommandCodec.Encode(command))));
 
@@ -301,7 +301,7 @@ namespace GuardsDigital.Tests.EditMode
             // the lost connection spoke under.
             harness.SendRaw(returned, NetworkMessageCodec.SubmitCommandFrame(
                 new NetworkSubmissionMessage(
-                    new NetworkEnvelope(harness.Identity.Correlation,
+                    new NetworkEnvelope(harness.Session.SessionCorrelation,
                         PrivateSessionProtocol.InitialConnectionEpoch, 1, 1),
                     "wire-old-epoch", version, NetworkCommandCodec.Encode(command))));
 

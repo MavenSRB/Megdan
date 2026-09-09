@@ -18,11 +18,13 @@ Origin: [8.36a F-ONLINE-02 and F-ONLINE-03](PHASE_8_PRIVATE_ONLINE_REVIEW.md); a
 
 Historical evidence: [8.36c handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836c-bounded-private-transport-completion-evidence).
 
-### [~] 8.36d Preserve attributable private-online diagnostic bundles
+### [x] 8.36d Preserve attributable private-online diagnostic bundles
 
 Origin: [8.36a F-ONLINE-04](PHASE_8_PRIVATE_ONLINE_REVIEW.md); approved on 2026-09-09. Dependency: 8.36c, before the next captured online run. Outcome: ordinary-lobby evidence identifies its exact run and build and cannot silently reuse another cohort's logs. Acceptance: `OnlineEvidenceBundleRejectsMixedRunIdentity` fails on mixed-run/build evidence and passes a coherent bundle, including the declared participants' terminal outcome/version; retain privacy and distinct output directories. Non-goals: telemetry, upload, repeat playtest or recovering the accepted old-build internet session. Not a reopening of 8.36 or independently a Phase 9 blocker.
 
-### [ ] 8.36e Clarify the private lobby and hero picker
+Historical evidence: [8.36d handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836d-attributable-private-diagnostics-completion-evidence).
+
+### [~] 8.36e Clarify the private lobby and hero picker
 
 User-approved on 2026-09-09, to follow 8.36b-8.36d. Outcome: clicking a hero visibly marks the selection; lobby seats show hero names only after an actual pick, never placeholder assignments; hovering a hero shows its source overview card from the Docs hero-selection-card assets; the pre-match screen hides the map behind a clean backdrop with the existing game logo above the picker and reveals the board only when the match loads. Dependency: complete 8.36d and inspect the supplied overview/logo resources. Closing checks: focused selection/unpicked-seat/hover/state-transition regressions, actual pointer-driven configured lobby-to-match Play Mode coverage, and targeted visual inspection at supported viewports. Preserve authoritative pick restrictions, readiness, bot selection and reconnect. No new heroes, invented art, public distribution or general presentation overhaul.
 

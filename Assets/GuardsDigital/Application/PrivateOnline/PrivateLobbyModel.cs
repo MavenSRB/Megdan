@@ -747,7 +747,7 @@ namespace GuardsDigital.Application
                 true,
                 status,
                 feedback,
-                host.Identity.Correlation,
+                host.SessionCorrelation,
                 rows,
                 controls,
                 host.HasMatchStarted,

@@ -144,7 +144,8 @@ if ($TimeoutSeconds -le 0) {
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $unityEditorVersion = '6000.5.9f1'
-$tmpRoot = [System.IO.Path]::Combine($projectRoot, 'tmp')
+$captureId = [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss') + '-' + [Guid]::NewGuid().ToString('N')
+$tmpRoot = [System.IO.Path]::Combine($projectRoot, 'tmp', 'private-online-runs', $captureId)
 $buildLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-build.log')
 $hostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-host.log')
 $executablePath = [System.IO.Path]::Combine($projectRoot, 'Builds', 'Win64Smoke', 'GuardsDigitalSmoke.exe')

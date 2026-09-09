@@ -853,7 +853,7 @@ namespace GuardsDigital.Tests.EditMode
                 "to be ready with.");
             Assert.That(model.Seats.Any(row => row.IsOwnSeat), Is.False);
             Assert.That(model.StatusLabel, Does.Contain("6/6 SEATED"));
-            Assert.That(model.SessionLabel, Is.EqualTo(harness.Identity.Correlation));
+            Assert.That(model.SessionLabel, Is.EqualTo(harness.Session.SessionCorrelation));
         }
 
         // --- THIRTEENTH amendment: fill empty seats with test drivers -----------------------------

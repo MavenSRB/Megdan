@@ -338,6 +338,18 @@ namespace GuardsDigital.Application
             this.outbox = outbox ?? throw new ArgumentNullException(nameof(outbox));
             this.nonceSource = nonceSource;
 
+            // Compatibility identity is stable; a live host instance is not. Production adapters
+            // supply platform entropy. Deterministic in-memory ports can omit it or inject it.
+            SessionCorrelation = identity.Correlation;
+            if (nonceSource != null)
+            {
+                var instanceNonce = nonceSource.NextNonce();
+                if (instanceNonce == null || instanceNonce.Length == 0)
+                    throw new ArgumentException("A session instance requires a nonce.", nameof(nonceSource));
+                SessionCorrelation += "-" + PrivateSessionContentDigest.HashText(
+                    Convert.ToBase64String(instanceNonce)).Substring(0, 32);
+            }
+
             if (this.sessionKey.Length > 0 && nonceSource == null)
             {
                 throw new ArgumentException(
@@ -376,6 +388,9 @@ namespace GuardsDigital.Application
         }
 
         public PrivateSessionIdentity Identity => identity;
+
+        /// <summary>Opaque host-instance identity shared by Welcome, envelopes and recovery.</summary>
+        public string SessionCorrelation { get; }
 
         /// <summary>
         /// Milestone 8.35z37. Rulebook p.22's hero selection for this session's seats, from
@@ -824,7 +839,7 @@ namespace GuardsDigital.Application
             // was away.
             Deliver(record, PrivateSessionFrameCodec.WelcomeFrame(
                 new SessionWelcomeMessage(
-                    identity.Correlation, Roster, matchStarted, selection.FirstPickingTeam)));
+                    SessionCorrelation, Roster, matchStarted, selection.FirstPickingTeam)));
             Record(PrivateSessionEventKind.Admitted, record.Ordinal,
                 default, default, TeamSide.None, SessionRejectionReason.None);
         }
@@ -1432,7 +1447,7 @@ namespace GuardsDigital.Application
                 material.Append(value.ToString("x2", CultureInfo.InvariantCulture));
             }
 
-            material.Append('|').Append(seat.Value).Append('|').Append(identity.Correlation);
+            material.Append('|').Append(seat.Value).Append('|').Append(SessionCorrelation);
             return PrivateSessionContentDigest.HashText(material.ToString()).Substring(0, 32);
         }
 
@@ -1803,7 +1818,7 @@ namespace GuardsDigital.Application
         /// </remarks>
         private bool AcceptGameplayEnvelope(ConnectionRecord record, NetworkEnvelope envelope)
         {
-            if (!string.Equals(envelope.SessionCorrelation, identity.Correlation, StringComparison.Ordinal) ||
+            if (!string.Equals(envelope.SessionCorrelation, SessionCorrelation, StringComparison.Ordinal) ||
                 envelope.Epoch != record.Epoch ||
                 envelope.Sequence != record.GameplayReceiveSequence + 1)
             {
@@ -1867,7 +1882,7 @@ namespace GuardsDigital.Application
             // was served down the same throwing path. The sequence now moves only beside a frame
             // that exists.
             var envelope = new NetworkEnvelope(
-                identity.Correlation, record.Epoch, record.GameplaySendSequence + 1, correlation);
+                SessionCorrelation, record.Epoch, record.GameplaySendSequence + 1, correlation);
             if (!TryComposeProjectionFrame(
                 new NetworkSeatProjectionMessage(envelope, payload, Array.AsReadOnly(log)),
                 out var frame, out var droppedLogRows))
@@ -2000,7 +2015,7 @@ namespace GuardsDigital.Application
         {
             record.GameplaySendSequence++;
             return new NetworkEnvelope(
-                identity.Correlation,
+                SessionCorrelation,
                 record.Epoch,
                 record.GameplaySendSequence,
                 correlation);

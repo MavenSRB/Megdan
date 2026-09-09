@@ -1408,3 +1408,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36c | Bounded TCP queues, connection slots, pump batches and cancellable delivery preserve seat reservation, reconnect and deliberate leave. | `milestone/8.36c` |
+
+## Milestone 8.36d Attributable private diagnostics completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36d | Unique host instances and preserved public-metadata captures bind complete participant outcomes to one build/run and a hashed local manifest. | `milestone/8.36d` |

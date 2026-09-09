@@ -87,6 +87,7 @@ namespace GuardsDigital.Presentation.Interaction
             " schema=" + identity.SnapshotSchemaVersion.ToString(CultureInfo.InvariantCulture) +
             " map=" + identity.MapId + "@" +
             identity.MapContentRevision.ToString(CultureInfo.InvariantCulture) +
+            " format=" + identity.MatchFormatId +
             " content=" + identity.ContentDigest +
             " build=" + identity.BuildIdentity;
 

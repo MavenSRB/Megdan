@@ -295,7 +295,7 @@ namespace GuardsDigital.Tests.EditMode
                     // nothing afterwards.
                     asking.Transport.Send(NetworkMessageCodec.RequestResyncFrame(
                         new NetworkResyncRequestMessage(
-                            new NetworkEnvelope(host.Identity.Correlation, 1, 1, 7))));
+                            new NetworkEnvelope(host.Session.SessionCorrelation, 1, 1, 7))));
 
                     PumpUntil(host, new[] { first, asking }, () => host.Events.Any(record =>
                         record.Kind == PrivateSessionEventKind.ResyncServed &&

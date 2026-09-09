@@ -556,11 +556,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "An unkeyed loopback host is the local default and must not be refused; the " +
                 "lobby said: '" + Text(driver, PrivateLobbyUnityView.FeedbackName) + "'.");
 
+            var capture = typeof(PrivateLobbyDriver)
+                .GetField("evidence", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+                .GetValue(driver);
+            Assert.That(capture, Is.Not.Null, "The ordinary HOST button must open attributable evidence.");
+            var capturePath = (string)capture.GetType().GetProperty("Path").GetValue(capture);
+            var runId = (string)capture.GetType().GetProperty("RunId").GetValue(capture);
+            string begun;
+            using (var reader = new System.IO.StreamReader(new System.IO.FileStream(capturePath,
+                System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite)))
+                begun = reader.ReadToEnd();
+            Assert.That(begun, Does.Contain("GD_EVIDENCE_BEGIN run=" + runId));
+            Assert.That(begun, Does.Contain("role=host seat=-"));
+            Assert.That(begun, Does.Not.Contain("GD_EVIDENCE_END"));
+
             // Close the listener this journey opened, through the control a player would use.
             UiPlayer.Click(Control(driver, "LEAVE"));
             yield return null;
             yield return null;
             Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None));
+            Assert.That(System.IO.File.ReadAllText(capturePath), Does.Contain("GD_EVIDENCE_ABORT"),
+                "Leaving an unfinished lobby must not manufacture a completed-match capture.");
         }
 
         [UnityTest]

@@ -570,7 +570,7 @@ namespace GuardsDigital.Tests.EditMode
             link.LastClientSequence++;
             SendRaw(ordinal, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
                 new NetworkEnvelope(
-                    Identity.Correlation,
+                    Session.SessionCorrelation,
                     link.Machine.ConnectionEpoch,
                     link.LastClientSequence,
                     link.LastClientSequence),

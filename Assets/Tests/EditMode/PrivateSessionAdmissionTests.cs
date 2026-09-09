@@ -26,7 +26,7 @@ namespace GuardsDigital.Tests.EditMode
             var welcome = driver.Outbox.LastFrameFor(1);
             Assert.That(welcome.Kind, Is.EqualTo(SessionMessageKind.Welcome));
             Assert.That(PrivateSessionFrameCodec.TryDecodeWelcome(welcome.Payload, out var decoded), Is.True);
-            Assert.That(decoded.SessionCorrelation, Is.EqualTo(driver.Identity.Correlation));
+            Assert.That(decoded.SessionCorrelation, Is.EqualTo(driver.Session.SessionCorrelation));
             Assert.That(decoded.Roster.Count, Is.EqualTo(6));
             Assert.That(decoded.Roster.All(entry => entry.Occupancy == SeatOccupancyState.Open), Is.True);
             Assert.That(driver.Outbox.WasClosed(1), Is.False);

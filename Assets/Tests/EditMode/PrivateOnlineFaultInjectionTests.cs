@@ -208,7 +208,7 @@ namespace GuardsDigital.Tests.EditMode
             var version = client.LatestProjection.Version;
 
             harness.SendRaw(2, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(harness.Identity.Correlation, 1, 1, 1),
+                new NetworkEnvelope(harness.Session.SessionCorrelation, 1, 1, 1),
                 "wire-replay-1", version, NetworkCommandCodec.Encode(command))));
             Assert.That(client.LastSubmissionResult.Accepted, Is.True,
                 client.LastSubmissionResult.Detail);
@@ -219,7 +219,7 @@ namespace GuardsDigital.Tests.EditMode
             // The same identity asking the same thing again, on the next sequence: answered from
             // the retained result, with nothing executed and nothing appended.
             harness.SendRaw(2, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(harness.Identity.Correlation, 1, 2, 2),
+                new NetworkEnvelope(harness.Session.SessionCorrelation, 1, 2, 2),
                 "wire-replay-1", versionAfter,
                 NetworkCommandCodec.Encode(command))));
             Assert.That(client.LastSubmissionResult.Accepted, Is.True);
@@ -230,7 +230,7 @@ namespace GuardsDigital.Tests.EditMode
             // The same identity asking something else is a used name, and is refused.
             var other = harness.Client(3).LatestProjection.AuthorizedCommands[0];
             harness.SendRaw(3, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(harness.Identity.Correlation, 1, 1, 1),
+                new NetworkEnvelope(harness.Session.SessionCorrelation, 1, 1, 1),
                 "wire-replay-1", harness.MatchHost.Version,
                 NetworkCommandCodec.Encode(other))));
             Assert.That(harness.Client(3).LastSubmissionResult.Accepted, Is.False);
@@ -256,13 +256,13 @@ namespace GuardsDigital.Tests.EditMode
             var command = client.LatestProjection.AuthorizedCommands[0];
 
             harness.SendRaw(3, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(harness.Identity.Correlation, 1, 1, 1),
+                new NetworkEnvelope(harness.Session.SessionCorrelation, 1, 1, 1),
                 "wire-version-future", 999_999, NetworkCommandCodec.Encode(command))));
             Assert.That(client.LastSubmissionResult.RejectionReason,
                 Is.EqualTo(SeatSubmissionRejectionReason.StaleProjection));
 
             harness.SendRaw(3, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(harness.Identity.Correlation, 1, 2, 2),
+                new NetworkEnvelope(harness.Session.SessionCorrelation, 1, 2, 2),
                 "wire-version-current", current, NetworkCommandCodec.Encode(command))));
             Assert.That(client.LastSubmissionResult.Accepted, Is.True,
                 client.LastSubmissionResult.Detail);
@@ -270,7 +270,7 @@ namespace GuardsDigital.Tests.EditMode
             // The version the first answer was decided against now trails the authority by one,
             // so the same expected version is the stale shape - no arithmetic invented it.
             harness.SendRaw(3, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(harness.Identity.Correlation, 1, 3, 3),
+                new NetworkEnvelope(harness.Session.SessionCorrelation, 1, 3, 3),
                 "wire-version-stale", current, NetworkCommandCodec.Encode(command))));
             Assert.That(client.LastSubmissionResult.Accepted, Is.False);
             Assert.That(client.LastSubmissionResult.RejectionReason,
@@ -452,7 +452,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var skippedSequence = PrivateOnlineWireHarness.Compose();
             skippedSequence.SeatAll();
-            var proposal = new NetworkEnvelope(skippedSequence.Identity.Correlation, 1, 9, 9);
+            var proposal = new NetworkEnvelope(skippedSequence.Session.SessionCorrelation, 1, 9, 9);
             skippedSequence.SendRaw(2, NetworkMessageCodec.SubmitAgreementFrame(
                 new NetworkAgreementSubmissionMessage(
                     proposal, "wire-forged-agreement", 0,
@@ -464,7 +464,7 @@ namespace GuardsDigital.Tests.EditMode
             wrongEpoch.SeatAll();
             wrongEpoch.SendRaw(2, NetworkMessageCodec.RequestResyncFrame(
                 new NetworkResyncRequestMessage(
-                    new NetworkEnvelope(wrongEpoch.Identity.Correlation, 2, 1, 1))));
+                    new NetworkEnvelope(wrongEpoch.Session.SessionCorrelation, 2, 1, 1))));
             Assert.That(wrongEpoch.Client(2).RejectionReason,
                 Is.EqualTo(SessionRejectionReason.EnvelopeMismatch));
         }

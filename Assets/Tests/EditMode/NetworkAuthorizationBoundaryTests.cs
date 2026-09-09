@@ -74,7 +74,7 @@ namespace GuardsDigital.Tests.EditMode
                 sendSequence++;
                 var frame = NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
                     new NetworkEnvelope(
-                        sessionCorrelation ?? driver.Identity.Correlation,
+                        sessionCorrelation ?? driver.Session.SessionCorrelation,
                         epoch,
                         sequence ?? sendSequence,
                         sendSequence),
@@ -271,7 +271,7 @@ namespace GuardsDigital.Tests.EditMode
 
             // A structurally valid envelope whose command bytes declare more than they carry.
             var garbage = NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(driver.Identity.Correlation, 1, 1, 1),
+                new NetworkEnvelope(driver.Session.SessionCorrelation, 1, 1, 1),
                 "wire-mal-1", record.Version, new byte[] { 0x7F, 0x00, 0x00, 0x00 }));
             driver.Submit(attacker.Ordinal, garbage);
             Assert.That(driver.Outbox.RejectFor(attacker.Ordinal).Reason,
@@ -284,7 +284,7 @@ namespace GuardsDigital.Tests.EditMode
             var (driver4, _, _) = ComposeSeatedPair();
             driver4.Session.OnConnected(9, 0);
             driver4.Submit(9, NetworkMessageCodec.SubmitCommandFrame(new NetworkSubmissionMessage(
-                new NetworkEnvelope(driver4.Identity.Correlation, 1, 1, 1),
+                new NetworkEnvelope(driver4.Session.SessionCorrelation, 1, 1, 1),
                 "wire-mal-2", 0, NetworkCommandCodec.Encode(DirectorCommand.AdvanceEndOfRound()))));
             Assert.That(driver4.Outbox.RejectFor(9).Reason,
                 Is.EqualTo(SessionRejectionReason.UnexpectedMessage));
