@@ -263,9 +263,10 @@ namespace GuardsDigital.Tests.EditMode
         /// one number.
         /// </remarks>
         [Test]
-        public void SeatWireMeaning_UsesProtocolEleven_AndRejectsEveryOlderFrame()
+        public void SeatWireMeaning_UsesProtocolTwelve_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(11),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(12),
+                "8.36b requires authenticated keyed departures and rejects protocol 11. " +
                 "Milestone 8.35z60's integration pass took it to 11: the seat projection now carries " +
                 "rulebook p.8's shared Wave-counter pool as a plain Int32 beside the per-team Life " +
                 "counters, so a remote seat's top strip reads the host's live count rather than the " +
@@ -312,7 +313,7 @@ namespace GuardsDigital.Tests.EditMode
                 "IsSeatUndoAvailable plus SubmitUndo and UndoResult, which protocol two peers could " +
                 "not decode safely.");
 
-            foreach (var older in new[] { 1, 2, 3, 4, 5, 6, 7, 8 })
+            for (var older = 1; older < PrivateSessionProtocol.Version; older++)
             {
                 var bytes = PrivateSessionFrameCodec.ChallengeFrame(
                     new SessionChallengeMessage(new byte[] { 1, 2, 3 }));

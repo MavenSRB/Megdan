@@ -149,7 +149,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(11),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(12),
+                "8.36b requires authenticated keyed departures and rejects protocol 11. " +
                 "Milestone 8.35z60's integration pass took it to 11 to carry rulebook p.8's shared " +
                 "Wave-counter pool on the seat projection, so a remote seat's top strip reads the " +
                 "host's live number instead of its own frozen starting total. A version 10 peer " +

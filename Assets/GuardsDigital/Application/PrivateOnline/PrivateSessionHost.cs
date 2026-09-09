@@ -606,12 +606,8 @@ namespace GuardsDigital.Application
                 return;
             }
 
-            // Milestone 8.32. Once this connection's key proof verified, only sealed frames and a
-            // plaintext Goodbye are meaningful: a plaintext frame of any other kind on a sealed
-            // connection is an injection or a broken peer, refused whole. Goodbye and Reject stay
-            // plaintext in both directions - they carry no secret, a pre-admission refusal has no
-            // keys yet, and forging a close signal is the denial of service an on-path party could
-            // already commit with a reset.
+            // A keyed client's deliberate departure forfeits its reconnect capability, unlike
+            // a dropped socket. It therefore requires authentication just like a gameplay frame.
             if (frame.Kind == SessionMessageKind.Sealed)
             {
                 if (record.Channel == null || !record.Channel.TryUnseal(frame.Payload, out frame))
@@ -621,7 +617,7 @@ namespace GuardsDigital.Application
                     return;
                 }
             }
-            else if (record.Channel != null && frame.Kind != SessionMessageKind.Goodbye)
+            else if (record.Channel != null)
             {
                 RejectAndClose(record, SessionRejectionReason.SealViolation,
                     "A sealed connection accepts sealed frames only.");

@@ -4,6 +4,8 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Mission
 
+**2026-09-09 user-directed scope amendment:** maintain a private, noncommercial game for the user and friends; no public release or publisher pitch is planned. Prioritize reliable multiplayer, practical improvements to the existing UI and separately approved heroes. Production presentation, 3D/animation, pitch deliverables and licensed-product expansion are parked, not prerequisites for private use. The earlier mission/horizons below are preserved historical direction and do not authorize that work. Existing rules fidelity, privacy, artifact-preservation and publication restrictions remain unchanged; this amendment grants no new rights or external publication authority.
+
 Create a polished private digital prototype of *Guards of Atlantis II* that can be demonstrated to its publisher as the basis for a possible licensed, cross-platform adaptation.
 
 The private pitch prototype is a complete 3v3 match with six different heroes: the roster the user approved on 2026-08-23 at milestone 8.17, which is the rulebook's own recommended first-game line-up from p.6's setup step 7 - Wasp the Warmaiden, Xargatha the Changed and Tigerclaw the Cutpurse on Red against Arien the Tidemaster, Brogan the Destroyer and Sabina the Gunslinger on Blue - each source-verified before implementation. It retains single-controller director mode for development and demonstration, and now also targets an invite-only pre-production internet playtest in which six humans each control their independently owned hero before production presentation begins.

@@ -197,7 +197,9 @@ namespace GuardsDigital.Application
         /// a REMOTE READ MODEL reports, not what an <c>AuthoritativeSnapshotSerializer</c> payload
         /// contains. No corpus digest, pinned constant or bare version assertion moves.</para>
         /// </remarks>
-        public const int Version = 11;
+        // Version 12 requires authentication for a keyed client's forfeiting Goodbye.
+        // Older peers are rejected before admission; snapshot and payload layouts are unchanged.
+        public const int Version = 12;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

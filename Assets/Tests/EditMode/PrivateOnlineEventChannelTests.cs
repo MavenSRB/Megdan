@@ -585,7 +585,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(11),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(12),
+                "8.36b requires authenticated keyed departures and rejects protocol 11. " +
                 "This case pins the CURRENT version rather than the one the event channel moved to, " +
                 "so a later move is accounted for here rather than passing unread. Milestone " +
                 "8.35z60's integration pass took it to 11 for the shared Wave-counter pool the seat " +

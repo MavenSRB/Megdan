@@ -131,6 +131,61 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(SeatOccupancyState.Reserved));
         }
 
+        [Test]
+        public void KeyedPlaintextGoodbyePreservesReservationAndCapability()
+        {
+            var driver = PrivateSessionTestDriver.Compose("departure-key");
+            driver.Seat(1, "red-player-01");
+            var grantFrame = driver.Outbox.FramesFor(1).Single(frame => frame.Kind == SessionMessageKind.SeatGranted);
+            Assert.That(PrivateSessionFrameCodec.TryDecodeSeatGranted(grantFrame.Payload, out var grant), Is.True);
+            driver.Session.OnFrame(1, PrivateSessionTestDriver.Decode(PrivateSessionFrameCodec.GoodbyeFrame()));
+            Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "red-player-01").Occupancy,
+                Is.EqualTo(SeatOccupancyState.Reserved), "Unauthenticated departure cannot forfeit a seat.");
+            Assert.That(driver.Outbox.RejectFor(1).Reason, Is.EqualTo(SessionRejectionReason.SealViolation));
+            driver.Admit(2);
+            driver.Claim(2, "red-player-01");
+            Assert.That(driver.Outbox.RejectFor(2).Reason, Is.EqualTo(SessionRejectionReason.SeatReserved));
+            driver.Admit(3);
+            driver.Submit(3, PrivateSessionFrameCodec.ReclaimSeatFrame(
+                new SeatReclaimMessage(new SeatId("red-player-01"), grant.ReconnectCapability)));
+            Assert.That(driver.Session.TryGetSeatForConnection(3, out var reclaimed), Is.True);
+            Assert.That(reclaimed.Id.Value, Is.EqualTo("red-player-01"));
+        }
+
+        [TestCase("")]
+        [TestCase("departure-key")]
+        public void ClientGoodbyeReleasesOnlyItsOwnSeat(string key)
+        {
+            var wire = PrivateOnlineWireHarness.Compose(key);
+            wire.SeatAll();
+            var seat = wire.SeatOf(1);
+            wire.Client(1).SendGoodbye();
+            wire.Pump();
+            Assert.That(wire.Session.Roster.Single(row => row.Seat.Value == seat).Occupancy,
+                Is.EqualTo(SeatOccupancyState.Open));
+            Assert.That(wire.Session.ClaimedSeatCount, Is.EqualTo(5));
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void TamperedOrReplayedKeyedGoodbyeCannotReleaseAnotherConnection(bool tamper)
+        {
+            var driver = PrivateSessionTestDriver.Compose("departure-key");
+            driver.Seat(1, "red-player-01");
+            var bytes = driver.Outbox.ClientChannels[1].Seal(SessionMessageKind.Goodbye, System.Array.Empty<byte>());
+            if (tamper) bytes[bytes.Length - 1] ^= 1;
+            driver.Session.OnFrame(1, PrivateSessionTestDriver.Decode(bytes));
+            Assert.That(driver.Session.Roster.Single(row => row.Seat.Value == "red-player-01").Occupancy,
+                Is.EqualTo(tamper ? SeatOccupancyState.Reserved : SeatOccupancyState.Open));
+            if (!tamper)
+            {
+                driver.Seat(2, "red-player-01");
+                driver.Session.OnFrame(1, PrivateSessionTestDriver.Decode(bytes));
+                Assert.That(driver.Session.TryGetSeatForConnection(2, out _), Is.True,
+                    "A replay on a retired connection cannot release the new occupant.");
+            }
+        }
+
         /// <summary>
         /// Milestone 8.35k. A Goodbye is the departure the player CHOSE, and it gives the seat up.
         /// </summary>

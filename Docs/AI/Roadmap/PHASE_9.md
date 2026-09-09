@@ -4,6 +4,8 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 ## Phase 9 - Presentation and pitch polish
 
+Parked by the user's 2026-09-09 private-game scope amendment in [Product](../Project/PRODUCT.md). Retain the plan for history; no production presentation work is authorized. Bounded improvements to the existing UI require their own scoped approval.
+
 Every item remains a separate micro-milestone. Phase 9 starts only after milestone 8.28 establishes URP as the accepted rendering baseline, milestone 8.36 closes under [its user-approved acceptance amendment](PHASE_8.md), and independent reviews 8.28a and 8.36a dispose of every gate-blocking finding.
 
 The completed [8.36a review](PHASE_8_PRIVATE_ONLINE_REVIEW.md) proposes two blocking dispositions before this phase and keeps 9.1-9.16a unchanged. Its roadmap-fitness assessment retains the planning range below; no new asset/hero scope or Phase 9 execution is authorized. Exact proposed corrective owners and closing checks live in that review and [Phase 8](PHASE_8.md).

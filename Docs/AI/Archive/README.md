@@ -4,6 +4,8 @@ Historical files are version-controlled evidence excluded from routine startup l
 
 ## Preservation and migration
 
+- [Private-online implementation track before 8.36b](PRIVATE_ONLINE_IMPLEMENTATION_TRACK.md)
+
 - [Retired routine governance experiment](GOVERNANCE_EXPERIMENT_RETIREMENT.md)
 
 - [Startup brief before the 2026-09-08 cleanup](SESSION_BRIEF_BEFORE_CLEANUP.md)

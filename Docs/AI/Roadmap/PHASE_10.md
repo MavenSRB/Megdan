@@ -4,6 +4,8 @@ Canonical active roadmap shard. Return to [ROADMAP.md](../ROADMAP.md). Historica
 
 ## Phase 10 - Private publisher pitch package
 
+Publisher-pitch work is parked by the user's 2026-09-09 [private-game scope amendment](../Project/PRODUCT.md). These retained definitions do not block separately authorized builds for the user and friends.
+
 ### [ ] 10.1 Windows standalone build
 
 Observable outcome: An unchanged milestone 9.16 revision produces a private Win64 player that launches to the pitch prototype without compilation, startup, or missing-content errors.

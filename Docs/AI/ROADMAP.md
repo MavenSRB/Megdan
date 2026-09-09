@@ -70,6 +70,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 7 - Progression, victory, and the complete synthetic core loop](Roadmap/PHASE_7.md)
 - [Phase 8 - Verified hero content, deterministic 3v3, and private online validation](Roadmap/PHASE_8.md)
 - [Phase 8 - Independent private-online review and finding dispositions](Roadmap/PHASE_8_PRIVATE_ONLINE_REVIEW.md)
+- [Phase 8 - Approved private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md)
 - [Phase 8 - Authorized cleanup and consolidated follow-up backlog](Roadmap/PHASE_8_CLEANUP.md)
 - [Phase 8 - Six-hero roster re-baseline and shared foundations](Roadmap/PHASE_8_ROSTER_REBASE.md)
 - [Phase 8 - Roster-complete stabilization and corrective route](Roadmap/PHASE_8_STABILIZATION.md)

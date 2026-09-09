@@ -1396,3 +1396,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36a | Independent source/evidence review records four open findings and proposed corrective checks; accepted 8.36 closure preserved, no implementation authorized. | `milestone/8.36a` |
+
+## Milestone 8.36b Authenticate keyed-session seat forfeiture completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36b | Keyed deliberate leave is authenticated; forged departure preserves seat reclaim, and protocol 12 rejects older peers. | `milestone/8.36b` |

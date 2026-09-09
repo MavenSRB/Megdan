@@ -8,21 +8,29 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v40 persists the current state; wire protocol is `guards-private-online/11`. The approved cleanup and final private packaging are complete; evidence is indexed in [Phase 8 handoffs](Archive/Phase-Handoffs/PHASE_8.md). The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v40 persists the current state; wire protocol is `guards-private-online/12`. The approved cleanup and final private packaging are complete; evidence is indexed in [Phase 8 handoffs](Archive/Phase-Handoffs/PHASE_8.md). The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail; the packaged picker produces her matching hand and tray. The corrected ZIP with Play/Host launchers is local under Builds. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.36a**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **8.36b**.
+- Current completed milestone: **8.36b**.
+- Active authorized milestone: **8.36c**.
+- Next proposed milestone: **8.36c**.
 
-The original cleanup through **8.35z82** and the user's bounded follow-up **8.35z83-8.35z85** are complete. [The cleanup shard](Roadmap/PHASE_8_CLEANUP.md) owns exact outcomes, checks, and the preserved backlog. The user accepted the clean old-build internet 2v2 as closing **8.36**, under the explicit acceptance amendment in [Phase 8](Roadmap/PHASE_8.md). The user-authorized **8.36a** fresh-task review is complete. [Its findings](Roadmap/PHASE_8_PRIVATE_ONLINE_REVIEW.md) propose authenticated departure (**8.36b**), bounded transport (**8.36c**) and attributable diagnostics (**8.36d**). Stop for user disposition; Phase 9 remains held on the proposed blocking findings. No corrective implementation, repeat playtest, new AI research or unrelated backlog work is authorized.
+The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 gate remains closed. The independent 8.36a review is integrated. On 2026-09-09 the user approved **8.36b-8.36d**, sequentially: authenticated departure, bounded transport, attributable diagnostics. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns the outcomes and closing checks. [Product](Project/PRODUCT.md) now limits the project to the user and friends: production presentation and publisher-pitch work are parked. More heroes remain desired future work, not authorized implementation in this correction batch. No repeat internet playtest, remote publication or unrelated refactor is authorized.
 
 Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Transparent aura and adaptive ring order passed exact-player rendering checks, including the turn pulse's minimum size. Lobby bots use the existing owner-scoped Tier-2 static policy. The verified local package is `Builds/Playtest-8.35z85-fixes.zip`, with Play/Host scripts; its actual lobby, Whisper selection, movement, Undo, End Turn and bot progress were checked. Additional heroes remain on hold. Aura order is token, purple effect ring, active-turn ring; without an effect, the turn ring sits beside the token.
 
 ## Durable boundaries
+
+The user additionally approved **8.36e**, after 8.36b-8.36d: visible hero selection, no unpicked hero names, hover overview cards from Docs, and a logo/backdrop instead of the pre-match map. Its bounded closing checks live in Phase 8; this does not authorize the parked presentation program or new heroes.
+
+8.36e also includes the reported disappearing lobby buttons, with state-transition visibility, reachability and action checks, and random bot hero picks from the currently legal choices instead of the first available hero.
+
+**8.36f** is also approved after 8.36e: verify and correct the reported active-Trailblazer resolver failure and clipped internal-error feedback. Treat the supplied diagnosis as a report until reproduced against code and printed-card authority; Phase 8 owns closing checks. The additional player screenshot confirms a clipped banner exposing an InvalidOperationException tied to the active Silverarrow Trailblazer effect; it does not by itself prove the resolver cause.
+
+8.36f also includes the reported Watch How I Soar minion surviving its chosen Defeat branch, through the actual input/confirmation path. **8.36g** is approved last: measured smarter lobby tactics, including useful Fast Travel and reaching battle, with bounded work and no private-information advantage. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns all current outcomes.
 
 - Rules/source hierarchy and deviations: [RULES_LEDGER.md](RULES_LEDGER.md). Cleanup does not change rules, content, or compatibility identities.
 - Preserve pure rules/state, commands/choices, host authorization/privacy, snapshots, and replay. [Architecture](Project/ARCHITECTURE.md).

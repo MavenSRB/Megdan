@@ -477,14 +477,6 @@ Non-goals: No second playtest, production hosting/service design, accounts, matc
 
 Hard gate: Phase 9 does not begin until milestone 8.36a and every gate-blocking corrective milestone are reviewed and approved.
 
-### [ ] 8.36b Authenticate keyed-session seat forfeiture
+## Authorized private-game reliability corrections
 
-Proposed by [8.36a F-ONLINE-01](PHASE_8_PRIVATE_ONLINE_REVIEW.md), not authorized. Dependency: user disposition of that finding. Outcome: an unauthenticated leave cannot release a protected seat; authenticated deliberate leave still releases it. Acceptance: the review's exact `KeyedPlaintextGoodbyePreservesReservationAndCapability` check fails before correction and passes afterward, with authenticated leave, tamper/replay, reconnect and directly affected adapter regressions; record the protocol compatibility assessment. Non-goals: accounts, rules changes, hosting redesign or another playtest. Proposed Phase 9 blocker.
-
-### [ ] 8.36c Keep transport service bounded under backpressure and ingress
-
-Proposed by [8.36a F-ONLINE-02 and F-ONLINE-03](PHASE_8_PRIVATE_ONLINE_REVIEW.md), not authorized. Dependency: user disposition; proposed after 8.36b to validate the final departure contract together. Outcome: a non-reading or flooding peer cannot monopolize host control or unbounded adapter resources. Acceptance: the review's exact `NonReadingPeerCannotBlockHostPumpOrDispose` and `TransportIngressRemainsBoundedBeforeAdmission` checks fail before correction and pass afterward; preserve ordered authorization, reserved-seat pause, reconnect and healthy-peer service. Select testing breadth from the affected transport and build paths. Non-goals: production service, host migration, gameplay timeouts or rules changes. F-ONLINE-02 is a proposed Phase 9 blocker; F-ONLINE-03 shares the correction's transport boundary.
-
-### [ ] 8.36d Preserve attributable private-online diagnostic bundles
-
-Proposed by [8.36a F-ONLINE-04](PHASE_8_PRIVATE_ONLINE_REVIEW.md), not authorized. Dependency: user disposition, before the next captured online run. Outcome: ordinary-lobby evidence identifies its exact run and build and cannot silently reuse another cohort's logs. Acceptance: `OnlineEvidenceBundleRejectsMixedRunIdentity` fails on mixed-run/build evidence and passes a coherent bundle, including the declared participants' terminal outcome/version; retain privacy and distinct output directories. Non-goals: telemetry, upload, repeat playtest or recovering the accepted old-build internet session. Not a reopening of 8.36 or independently a Phase 9 blocker.
+The approved 8.36b-8.36g outcomes and closing checks live in [Private-game corrections](PHASE_8_PRIVATE_GAME_CORRECTIONS.md). The session brief owns the exact active route.

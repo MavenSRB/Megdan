@@ -165,6 +165,8 @@ Outcome: verified Tali definitions/tokens integrate into configuration, draft, a
 
 Outcome: a reported infeasible-offer loop is reproduced and corrected or documented as unconfirmed on the final bot build. Dependency: 8.35z69. Closing check: deterministic scenario showing forward progress and bounded decision work; carry unresolved reproduction limits explicitly. If 8.35z69 proves the exact case fixed, link its evidence instead of implementing it twice.
 
+2026-09-09 report after the 8.35z85 Tier-2 integration: bots still appear weak and do not use Fast Travel to reach battle. Source confirms the lobby uses static Tier-2 without lookahead; Fast Travel participates in action and geometry scoring, but the observed decision is not reproduced. A focused diagnosis must distinguish a missing legal offer, policy ranking and an execution refusal. Random draft picks (approved 8.36e) do not close tactical competence. A broader AI upgrade remains separately scoped, not authorized by this report.
+
 ### [ ] 8.35z72 Investigate Wasp movement before card selection
 
 Outcome: distinguish a rules mutation from presentation timing or an old-build report. Dependency: source-identified logs from a recurrence/final build. Closing check: reproduce through the actual commitment flow and assert no unauthorized action/state advancement; do not invent a cause for an unreproduced report.
@@ -192,6 +194,8 @@ Parked by user. Outcome if reopened: click-to-spawn/staged-token tooling inside 
 ### [!] 8.35z78 Stronger practice-bot tier
 
 Parked by user. Outcome if reopened: separately specified stronger bot policy. Dependency: user scope, performance budget, and information boundary. Closing check: policy improves its chosen measure with bounded host work and unchanged authorization/privacy.
+
+Reopened by the user on 2026-09-09 specifically for private-lobby bot tactics after the current fixes. Approved implementation and closing checks are owned by [8.36g](PHASE_8_PRIVATE_GAME_CORRECTIONS.md); this parked historical entry is not a second execution route.
 
 ### [!] 8.35z79 Resolve the prepared designer-question list
 

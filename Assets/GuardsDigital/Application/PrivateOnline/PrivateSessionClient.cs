@@ -1374,7 +1374,7 @@ namespace GuardsDigital.Application
             }
         }
 
-        /// <summary>An orderly close; plaintext by design, like the host's own Goodbye.</summary>
+        /// <summary>An orderly forfeiting departure, authenticated when the connection is keyed.</summary>
         /// <remarks>
         /// Milestone 8.35k. LEAVING FORFEITS THE SEAT, and this is the client's half of that. A
         /// Goodbye is the one departure the player chose, so the road back is dropped here at the
@@ -1386,7 +1386,7 @@ namespace GuardsDigital.Application
         {
             retainedCapabilities.Forget(SessionCorrelation, targetSeat);
             reconnectCapability = string.Empty;
-            outbox.Send(PrivateSessionFrameCodec.GoodbyeFrame());
+            Send(PrivateSessionFrameCodec.GoodbyeFrame());
         }
 
         private enum EnvelopeReading
