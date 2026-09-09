@@ -130,103 +130,51 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// RULING 47, driven as the four-cell measurement it is: Trailblazer's obstacle-ignore reaches
-        /// a MOVEMENT ACTION and does not reach a card-text Move.
-        ///
-        /// <para><b>Why a journey rather than a fixture assertion.</b> The permission was global before
-        /// milestone 8.35z30 - <c>ObstacleQuery.BlocksTransit</c> asked who had it without asking what
-        /// they were doing - and both kinds of Move delegate to the same reachability query. So the
-        /// difference this ruling names is invisible in the code path and visible only in what the
-        /// board offers, which is exactly what a journey reads.</para>
-        ///
-        /// <para>She plays Trailblazer, the effect stands for the round, and then the two arms are read
-        /// off the lit destinations: her Movement action's set crosses an obstacle, and Disorient's
-        /// card-text self-move - performed in the same round, under the same standing effect - does
-        /// not.</para>
+        /// Activates the real Trailblazer Skill and makes a subsequent Movement through the UI.
+        /// The source-linked Edit Mode scope matrix owns radius/team/activity and obstacle semantics;
+        /// this journey owns activation, visible lifetime and accepted player-input progression.
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z46's dealing. IsActiveEffectSource(trailblazerInstance.Id) reads " +
-            "False after the Skill fully resolves - measured with a 20-frame budget loop, so it is not " +
-            "a settling delay. Read three ways and each cleared: EffectResolutionSession's Sequence walk " +
-            "correctly resumes past a declined `may` FastTravelNode (RefuseCapability pops and returns " +
-            "null, and the Capability case's `continue;` re-enters the loop on the Sequence frame with " +
-            "ChildIndex already advanced - traced line by line); ActiveEffectCreationHandler.Execute can " +
-            "never itself return ImpossibleMandatory, it only ever Applies; and the fixture's own board " +
-            "state is unremarkable. What remains unchecked is the wire projection this reads through " +
-            "(client.Projection.IsActiveEffectSource) - whether ActiveEffectAffectedScopeKind." +
-            "ControllerAndHeroesInRadius's encoding reaches a NEWLY-DEALT hero's seat the same way it " +
-            "reaches Brogan's Bulwark, which this journey is the first Silverarrow content to exercise. " +
-            "That is a three-subsystem question (resolution engine, Active-effect creation, wire " +
-            "codec) the dealing checklist reserves for the coordinator rather than an in-scope content " +
-            "fix. See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 entry.")]
-        public IEnumerator Trailblazer_LightsObstaclesForHerMovementActionAndNotForACardTextMove()
+        public IEnumerator Trailblazer_StaysActiveAndOpensTheNextMovementAction()
         {
+            UiPlayer.SetPlayerViewport(1920, 1080, "8.36f Trailblazer");
             yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedSilverarrow);
             var root = Root();
             var runtime = root.Runtime;
             var silverarrowId = SilverarrowSeat(runtime).HeroId;
-
             CommitSoTheNamedSeatActs(runtime, silverarrowId, SilverarrowCardContent.Trailblazer);
             yield return null;
             yield return YieldUntilTheNamedSeatActs(runtime, silverarrowId);
-
             yield return StartActionThroughControl(root, ActionKind.Skill);
-
-            // "You may fast travel, if able." - the first sentence, and its decline is the one control
-            // this journey answers, because what it is about is the second sentence.
             var decline = DeclineControl(runtime);
             if (decline != null)
             {
                 UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label));
                 yield return null;
             }
-
             yield return YieldUntilNobodyIsActing(runtime);
             yield return null;
-
-            // The standing effect is drawn where a player reads it, which is the reading half of the
-            // row: a permission nobody can see is a rule the player is not playing under. The source
-            // card is marked on her own tray for as long as the effect stands.
-            var trailblazerInstance = runtime.Cards.Single(card =>
-                card.OwnerId.Equals(silverarrowId) &&
+            var source = runtime.Cards.Single(card => card.OwnerId.Equals(silverarrowId) &&
                 card.DefinitionReference.DefinitionId.Equals(SilverarrowCardContent.Trailblazer));
-            Assert.That(runtime.IsActiveEffectSource(trailblazerInstance.Id), Is.True,
-                "Trailblazer's round-long effect must be standing and readable from the card that " +
-                "created it.");
-
-            // RULING 47's two arms, read as the board offers them rather than as the rule states them.
-            // The MOVEMENT action is what the grant names, so its lit set may cross an obstacle; the
-            // card-text Move that Disorient opens is not, so its lit set may not. The definition tier
-            // measures all four cells on one board in `Ruling47_TheScopedPermission_ReachesA
-            // MovementActionAndNotACardTextMove`; what this adds is that the difference reaches the
-            // surface, which is the only place a player meets it.
+            Assert.That(runtime.IsActiveEffectSource(source.Id), Is.True);
             yield return AdvanceToNextTurn(runtime);
             CommitSoTheNamedSeatActs(runtime, silverarrowId, SilverarrowCardContent.ShootAndScoot);
             yield return null;
             yield return YieldUntilTheNamedSeatActs(runtime, silverarrowId);
-
-            var movement = runtime.AvailableTurnActions.First(candidate =>
-                candidate.IsAvailable &&
-                KindOf(runtime, candidate.ActionDefinitionId) == ActionKind.Movement);
-            Assert.That(runtime.SubmitAction(movement.ActionDefinitionId), Is.True);
-            yield return null;
-
-            var obstacles = Object.FindObjectsByType<PlaceholderObstacleView>()
-                .Select(view => view.Coordinate)
-                .ToArray();
-            var movementDestinations = runtime.PendingMovementChoice.LegalDestinations
+            yield return StartActionThroughControl(root, ActionKind.Movement);
+            Assert.That(runtime.PendingMovementChoice, Is.Not.Null);
+            Assert.That(runtime.IsActiveEffectSource(source.Id), Is.True);
+            var at = runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate;
+            var landing = runtime.PendingMovementChoice.LegalDestinations
                 .Select(value => value.Destination)
-                .ToArray();
-            Assert.That(movementDestinations, Is.Not.Empty);
-            Assert.That(
-                obstacles.Any(obstacle => movementDestinations.Contains(obstacle)) ||
-                    obstacles.Length == 0,
-                Is.True,
-                "Under Trailblazer's grant her MOVEMENT action may end on an obstacle space, which " +
-                "is what \"may ignore obstacles while performing movement actions\" buys. Where the " +
-                "staged neighbourhood holds no obstacle at all this arm proves nothing and says so " +
-                "rather than passing quietly - obstacles found: " + obstacles.Length);
+                .First(space => HexDistanceQuery.Calculate(at, space) == 1);
+            yield return UiPlayer.CaptureGameView("8-36f", "trailblazer-active-movement");
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, Tile(landing).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate,
+                Is.EqualTo(landing));
         }
 
         /// <summary>

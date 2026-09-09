@@ -60,7 +60,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// artwork row named her, and no configuration dealt her, which is exactly what makes the
         /// re-base free here and would not make it free again.</para>
         /// </summary>
-        public const string ContentRevision = "misa-8-35z38-rev-1";
+        public const string ContentRevision = "misa-8-36f-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

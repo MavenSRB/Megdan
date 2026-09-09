@@ -2294,6 +2294,7 @@ namespace GuardsDigital.Core.Cards
             }
 
             var origin = standing.Origin;
+            var interruptsSkill = cardActions.RemovalPreventionInterruptsSkill;
             // Milestone 8.25a. Read before the answer, for the reason the effect-choice answer reads it
             // before its own: this is the other command that can finish the trigger holding it.
             var heldByThePrevention = cardActions.AfterActionRepeatSubject;
@@ -2308,6 +2309,8 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(
                     TurnResolutionRejectionReason.AttackCommandRejected, answered.RejectionReason);
             }
+
+            if (interruptsSkill) return CompleteSkillStep(answered);
 
             if (origin ==
                 GuardsDigital.Core.Rules.CardResolution.RemovalPreventionOrigin

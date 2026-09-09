@@ -1420,3 +1420,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36e | Visible candidate selection, confirmed roster names, source overview cards, opaque scrollable lobby, retry controls and reproducible varied bot drafts. | `milestone/8.36e` |
+
+## Milestone 8.36f Card resolution and feedback completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36f | Live Trailblazer scope, ordinary Skill minion Defeat with prevention/restore/Undo, Misa target eligibility and bounded player-safe error feedback. | `milestone/8.36f` |

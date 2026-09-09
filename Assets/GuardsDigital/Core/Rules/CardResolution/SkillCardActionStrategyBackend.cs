@@ -74,6 +74,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public bool HasPendingResolution => pendingResolution != null;
 
+        // Transient outputs of this call only. A saved prevention pause already owns its Defeat;
+        // the persisted effect continuation resumes after the emitting node.
+        internal IReadOnlyList<GuardsDigital.Core.Setup.MinionId> StagedMinionDefeats { get; private set; } =
+            Array.Empty<GuardsDigital.Core.Setup.MinionId>();
+
         /// <summary>
         /// Milestone 8.19c1. Whether any unlocked Ultimate in these cards declares an
         /// `after-push-trigger@1`, which is what makes the resolver stop at a Push that applied.
@@ -148,7 +153,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -239,7 +244,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -396,7 +401,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
@@ -481,7 +486,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Continue(pendingResolution, context);
             if (!step.Accepted)
@@ -590,6 +595,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             pendingResolution = step.Frame;
+            StagedMinionDefeats = step.IsComplete
+                ? Array.Empty<GuardsDigital.Core.Setup.MinionId>() : step.RequestedMinionDefeats;
 
             var steps = new List<ResolutionStep>();
             if (isStart)

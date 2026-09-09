@@ -13,6 +13,21 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class OnlineMatchHudTests
     {
+        [TestCase(MatchSessionRejectionReason.EngineFault)]
+        [TestCase(MatchSessionRejectionReason.AtomicityViolation)]
+        public void InternalFaultDetailNeverBecomesThePlayerBanner(MatchSessionRejectionReason reason)
+        {
+            var detail = "InvalidOperationException: active effect secret-internal-instance and implementation stack";
+            var method = typeof(NetworkMatchFeedback).GetMethod("PlayerDetail",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            var safe = (string)method.Invoke(null, new object[] { reason, detail, "fallback" });
+            var banner = NetworkMatchFeedback.ForState(PrivateSessionClientState.Seated, hasProjection: true, feedback: safe);
+            Assert.That(banner, Does.Contain("Internal error"));
+            Assert.That(banner, Does.Contain("please report this"));
+            Assert.That(banner, Does.Not.Contain("InvalidOperationException"));
+            Assert.That(banner, Does.Not.Contain("secret-internal-instance"));
+            Assert.That(banner.Length, Is.LessThanOrEqualTo(NetworkMatchFeedback.MaxLength));
+        }
         [Test]
         public void EveryWirePromptFamily_ReachesTheSharedReadModel_WithEquivalentMeaning()
         {

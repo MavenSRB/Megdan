@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.36e**.
-- Active authorized milestone: **8.36f**.
-- Next proposed milestone: **8.36f**.
+- Current completed milestone: **8.36f**.
+- Active authorized milestone: **8.36f1**.
+- Next proposed milestone: **8.36f1**.
 
 The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 gate remains closed. The independent 8.36a review is integrated. On 2026-09-09 the user approved **8.36b-8.36d**, sequentially: authenticated departure, bounded transport, attributable diagnostics. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns the outcomes and closing checks. [Product](Project/PRODUCT.md) now limits the project to the user and friends: production presentation and publisher-pitch work are parked. More heroes remain desired future work, not authorized implementation in this correction batch. No repeat internet playtest, remote publication or unrelated refactor is authorized.
 
@@ -37,6 +37,7 @@ The user additionally approved **8.36e**, after 8.36b-8.36d: visible hero select
 **8.36f2** is approved after f1: attack zoom/strike without the attacker shrinking away, followed by the authoritative defender outcome. The user additionally approved **8.36f3**, an added-roster card-by-card audit and necessary fixes, after f2 and before g. Reconcile the exact configured roster and source cards, exercise actual player-input paths, and preserve explicit unresolved rule questions. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns the checks and limits.
 
 - Rules/source hierarchy and deviations: [RULES_LEDGER.md](RULES_LEDGER.md). Cleanup does not change rules, content, or compatibility identities.
+- The standing new-build/Play-and-Host-ZIP request is mapped to **8.36h**, after the correction, audit and bot work; the private-game corrections shard owns its closing checks.
 - Preserve pure rules/state, commands/choices, host authorization/privacy, snapshots, and replay. [Architecture](Project/ARCHITECTURE.md).
 - Windows is the reference target; macOS/iOS are declared rather than validated. [Product](Project/PRODUCT.md).
 - Source/rulebook permission does not cover extracted cards, maps, builds, private logs, or worktrees. No remote, upload, or distribution is authorized.

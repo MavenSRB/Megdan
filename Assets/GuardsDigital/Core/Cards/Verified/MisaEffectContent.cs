@@ -338,10 +338,8 @@ namespace GuardsDigital.Core.Cards.Verified
         /// greyed and offers p.10's stop, which is milestone 6.5ae's shape and not a special case
         /// here.</para>
         ///
-        /// <para><b>"Defeat a minion adjacent to you" says nothing about sides.</b> p.19's minion is
-        /// either team's, the face prints no adjective, and the cards-are-the-definition rule makes
-        /// that absence content: she may defeat a friendly minion, which is a real cost the second
-        /// bullet carries and the reason the choice is a choice. The Defeat is card-text-invoked, which
+        /// <para><b>The card does not override p.13's friendly-Defeat prohibition.</b> Enemy relation,
+        /// adjacency and immunity all apply. The Defeat is card-text-invoked, which
         /// is p.13's own family and milestone 8.13's staged shape.</para>
         /// </summary>
         private static EffectDefinition CreateSoar(CardDefinitionId cardId, string contentRevision)
@@ -380,10 +378,9 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         select, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticRosterCapabilities.ChooseTargetV2,
-                        // "a minion adjacent to you", with no side named: p.19's minions of either
-                        // team. The activity is the Skill's own, which is what p.18's immunity is
-                        // asked about.
-                        inputs: AdjacentAnySide(RosterUnitKind.Minion, RuleActivity.Skill),
+                        // p.13 forbids defeating friendly units. The card does not override that
+                        // restriction; its adjacency and the Skill's immunity checks also apply.
+                        inputs: Adjacent(RosterUnitKind.Minion, RuleActivity.Skill, SourceTeamRelation.OpposingSource),
                         outputs: new[]
                         {
                             new EffectOutputBinding(
@@ -988,13 +985,8 @@ namespace GuardsDigital.Core.Cards.Verified
             Adjacent(unitKind, activity, SourceTeamRelation.OpposingSource);
 
         /// <summary>
-        /// An adjacent unit of one kind on either side - Watch How I Soar's second bullet, which prints
-        /// "a minion" and no adjective, so p.19's minions of both teams answer.
+        /// An adjacent unit filtered by the action's declared relation and activity.
         /// </summary>
-        private static IEnumerable<EffectInputBinding> AdjacentAnySide(
-            RosterUnitKind unitKind, RuleActivity activity) =>
-            Adjacent(unitKind, activity, SourceTeamRelation.AnyTeam);
-
         private static IEnumerable<EffectInputBinding> Adjacent(
             RosterUnitKind unitKind, RuleActivity activity, SourceTeamRelation relation) =>
             new[]

@@ -74,7 +74,7 @@ namespace GuardsDigital.Tests.EditMode
             // deliberately wrong value and the digest read off this oracle's own failure output. A
             // filtered pin run has been green while digests moved, which is why the rule is the
             // complete run rather than the cheap one.
-            new IdentityPin("misa", "misa-8-35z38-rev-1", "4472b5aa57a237ca7f9ff955ce5107bfa054ca2f890505db8921ad2f21eee5d6"),
+            new IdentityPin("misa", "misa-8-36f-rev-1", "211c427604fd42053b516548187343efd245b71b0a8ab376ee40a2b3ea1ccaed"),
             // Milestone 8.35z46. THE NINTH PIN, arriving on exactly the terms the seventh and eighth
             // did: a pin is a claim about content a configured match loads, and milestone 8.35z30
             // composed Silverarrow without dealing her.

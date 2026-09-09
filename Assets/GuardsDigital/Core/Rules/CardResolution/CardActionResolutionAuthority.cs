@@ -313,6 +313,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>
             triggeredEffects.PendingResolution ?? skillBackend.PendingResolution;
 
+        internal bool RemovalPreventionInterruptsSkill => skillBackend.PendingResolution != null &&
+            attackDefenseBackend.PendingRemovalPrevention?.Origin == RemovalPreventionOrigin.EffectInvokedMinionDefeat &&
+            skillBackend.PendingResolution.ResolutionId.Value == attackDefenseBackend.PendingRemovalPrevention.Resolution.ResolutionId.Value;
+
         public bool IsPendingTriggeredEffect => triggeredEffects.PendingResolution != null;
 
         /// <summary>
@@ -872,7 +876,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             result = WithSkillRequestedHeroDefeats(
                 result, requestedDefeats, resolutionId, offer.SourceCardInstanceId,
                 offer.ActionDefinitionId, offer.ActorId, boundary);
-            result = RunAppliedPushTriggers(
+            result = RunSkillConsequences(
                 result, appliedPushes, boundary, ref repeat, ref lanePushCause);
             return CloseActionBoundary(
                 result, repeat, lanePushCause, resolutionId, offer.SourceCardInstanceId,
@@ -1064,7 +1068,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             result = WithSkillRequestedHeroDefeats(
                 result, requestedDefeats, new ActionResolutionId(frame.ResolutionId.Value),
                 frame.SourceCardInstanceId, frame.ActionDefinitionId, frame.ActorId, boundary);
-            result = RunAppliedPushTriggers(
+            result = RunSkillConsequences(
                 result, appliedPushes, boundary, ref repeat, ref lanePushCause);
             return CloseActionBoundary(
                 result, repeat, lanePushCause, new ActionResolutionId(frame.ResolutionId.Value),
@@ -1292,7 +1296,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             repeated = WithSkillRequestedHeroDefeats(
                 repeated, repeatedDefeats, repeat.ResolutionId, repeat.SourceCardInstanceId,
                 repeat.ActionDefinitionId, repeat.ActorId, boundary);
-            repeated = RunAppliedPushTriggers(
+            repeated = RunSkillConsequences(
                 repeated, repeatedPushes, boundary, ref furtherRepeat, ref repeatedLanePushCause);
             steps.AddRange(repeated.Steps);
             return CloseActionBoundary(
@@ -3658,7 +3662,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>
         /// Milestone 8.19c1. Runs whatever declared an `after-push-trigger@1` for the objects a Skill's
-        /// Push has just displaced, and carries that Skill on when nothing stops it.
+        /// Push has just displaced, or settles its requested minion Defeat through the existing
+        /// reward/removal-prevention authority, then carries the Skill on when nothing stops it.
         ///
         /// <para>The loop is the whole shape of the moment. A Push stops the effect at the node it
         /// finished; every source concerned by an object it displaced runs in turn; and when none of
@@ -3670,22 +3675,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// of the displaced objects each of them concerns, is <c>AfterPushTriggerQuery</c>'s, asked
         /// against this authority's board and the caller's participants.</para>
         /// </summary>
-        private CardActionResolutionResult RunAppliedPushTriggers(
+        private CardActionResolutionResult RunSkillConsequences(
             CardActionResolutionResult result,
             IReadOnlyList<RuleObject> appliedPushes,
             ActionBoundaryContext boundary,
             ref PendingRepeatedAction repeat,
             ref LanePushCauseKind lanePushCause)
         {
-            if (!result.Accepted || appliedPushes == null || appliedPushes.Count == 0 || board == null)
+            if (!result.Accepted || board == null ||
+                ((appliedPushes == null || appliedPushes.Count == 0) && skillBackend.StagedMinionDefeats.Count == 0))
             {
                 return result;
             }
 
             var steps = new List<ResolutionStep>(result.Steps);
-            var pushes = appliedPushes;
+            var pushes = appliedPushes ?? Array.Empty<RuleObject>();
             var complete = result.IsComplete;
-            while (pushes.Count > 0)
+            while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0)
             {
                 var interrupted = skillBackend.PendingResolution;
                 if (interrupted == null || interrupted.PendingChoice != null)
@@ -3695,7 +3701,28 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     break;
                 }
 
-                if (!TryStartAfterPushTrigger(interrupted, pushes, boundary, steps))
+                var minionDefeats = skillBackend.StagedMinionDefeats;
+                foreach (var minionId in minionDefeats)
+                {
+                    var modifications = CurrentModificationsFor(boundary, interrupted.ActorId);
+                    var defeat = attackDefenseBackend.ResolveEffectInvokedMinionDefeat(
+                        new ActionResolutionId(interrupted.ResolutionId.Value), interrupted.SourceCardInstanceId,
+                        interrupted.SourceDefinitionReference, interrupted.ActionDefinitionId,
+                        interrupted.ActorId, minionId, boundary.Participants, modifications,
+                        boundary.Definitions, boundary.Instances, out var identity,
+                        outcomeDiscriminator: interrupted.CompletedOutcomes.Last().NodeId.Value);
+                    if (defeat == null)
+                    {
+                        steps.Add(ResolutionStep.FromFact(CardActionResolutionEvent.RemovalPreventionRequested(
+                            identity, attackDefenseBackend.PendingRemovalPrevention)));
+                        return CardActionResolutionResult.Accept(false, null, null, steps);
+                    }
+                    steps.AddRange(defeat.Facts.Select(fact => ResolutionStep.FromFact(
+                        CardActionResolutionEvent.MinionDefeatFact(identity, defeat, fact))));
+                    if (defeat.LanePush.Cause != LanePushCauseKind.None) lanePushCause = defeat.LanePush.Cause;
+                }
+
+                if (minionDefeats.Count > 0 || !TryStartAfterPushTrigger(interrupted, pushes, boundary, steps))
                 {
                     var continued = skillBackend.ContinueAfterInterrupt(
                         boundary.Definitions, boundary.Instances, boundary.Participants,
@@ -3998,7 +4025,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 furtherDefeats, new ActionResolutionId(interrupted.ResolutionId.Value),
                 interrupted.SourceCardInstanceId, interrupted.ActionDefinitionId,
                 interrupted.ActorId, boundary, steps);
-            var afterPushes = RunAppliedPushTriggers(
+            var afterPushes = RunSkillConsequences(
                 CardActionResolutionResult.Accept(
                     continued.IsComplete, null, null, Array.Empty<ResolutionStep>()),
                 furtherPushes, boundary, ref repeat, ref lanePushCause);
@@ -4059,7 +4086,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Milestone 8.22, finding `F-ATK-02`. Runs the after-push triggers owed for the Pushes an
         /// Attack's card text applied.
         ///
-        /// <para><b>Why it is not <see cref="RunAppliedPushTriggers"/>.</b> That one interrupts a
+        /// <para><b>Why it is not <see cref="RunSkillConsequences"/>.</b> That one interrupts a
         /// standing Skill and carries it on from the node it left; there is no Skill here and the text
         /// that pushed has already finished, so what a trigger interrupts at this altitude is the rest
         /// of rulebook p.14 rather than an effect. The trigger's own machinery is otherwise the same
@@ -4271,6 +4298,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             if (answered.Origin == RemovalPreventionOrigin.EffectInvokedMinionDefeat)
             {
+                var skill = skillBackend.PendingResolution;
+                if (skill != null && skill.ResolutionId.Value == answered.Resolution.ResolutionId.Value)
+                {
+                    var continued = skillBackend.ContinueAfterInterrupt(
+                        boundary.Definitions, boundary.Instances, boundary.Participants, boundary.Timing,
+                        CurrentModificationsFor(boundary, skill.ActorId), components,
+                        boundary.RoundIndex, boundary.TurnIndex, out var repeat, out var cause,
+                        out var pushes, out var heroDefeats, out var borrow);
+                    if (!continued.Accepted) return continued;
+                    RecordOwedBorrowedAction(borrow, skill.ActorId);
+                    if (defeat.LanePush.Cause != LanePushCauseKind.None) cause = defeat.LanePush.Cause;
+                    steps.AddRange(continued.Steps);
+                    var resumed = WithSkillRequestedHeroDefeats(
+                        CardActionResolutionResult.Accept(continued.IsComplete, null, null, steps),
+                        heroDefeats, new ActionResolutionId(skill.ResolutionId.Value),
+                        skill.SourceCardInstanceId, skill.ActionDefinitionId, skill.ActorId, boundary);
+                    resumed = RunSkillConsequences(resumed, pushes, boundary, ref repeat, ref cause);
+                    return CloseActionBoundary(resumed, repeat, cause, new ActionResolutionId(skill.ResolutionId.Value),
+                        skill.SourceCardInstanceId, skill.ActionDefinitionId, skill.ActorId, boundary);
+                }
                 RecordImmediateLanePush(
                     defeat.LanePush.Cause,
                     new ActionResolutionId(answered.Resolution.ResolutionId.Value),

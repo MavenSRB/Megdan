@@ -256,6 +256,11 @@ namespace GuardsDigital.Application
     {
         public const int MaxLength = 96;
 
+        internal static string PlayerDetail(MatchSessionRejectionReason reason, string detail, string fallback) =>
+            reason == MatchSessionRejectionReason.EngineFault || reason == MatchSessionRejectionReason.AtomicityViolation
+                ? "Internal error. Action not completed; please report this."
+                : string.IsNullOrWhiteSpace(detail) ? fallback : detail;
+
         public static string For(PrivateSessionClient client)
         {
             if (client == null) return Bound("Not connected.");

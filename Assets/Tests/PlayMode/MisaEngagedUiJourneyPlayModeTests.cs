@@ -54,6 +54,50 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class MisaEngagedUiJourneyPlayModeTests
     {
+        [UnityTest]
+        public IEnumerator WatchHowISoar_DefeatBulletRemovesTheClickedMinion()
+        {
+            UiPlayer.SetPlayerViewport(1920, 1080, "8.36f Misa");
+            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedMisa);
+            var root = Root();
+            var runtime = root.Runtime;
+            var misaId = MisaSeat(runtime).HeroId;
+            yield return CommitEverySeat(root, misaId, NameOf(runtime, MisaCardContent.WatchHowISoar));
+            yield return PointTrayAt(root, misaId);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            var bullets = runtime.RoundView.Model.EffectChoices.Where(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select).ToArray();
+            Assert.That(bullets, Has.Length.EqualTo(2));
+            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[1].Label));
+            yield return null;
+            yield return null;
+            var at = runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate;
+            var team = runtime.ReadModel.Participants.GetTeamForHero(misaId).Id;
+            var minion = runtime.ReadModel.Minions.First(value => !value.TeamId.Equals(team) &&
+                HexDistanceQuery.Calculate(at, value.Coordinate) == 1);
+            yield return UiPlayer.CaptureGameView("8-36f", "misa-defeat-target");
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud,
+                MinionView(minion.MinionId).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            if (confirm != null)
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label));
+                yield return null;
+                yield return null;
+            }
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(minion.MinionId)), Is.False,
+                "The accepted printed Defeat must remove this unprotected adjacent minion.");
+            yield return new WaitForSecondsRealtime(1f);
+            Assert.That(Object.FindObjectsByType<GuardsDigital.Presentation.Units.Minions.StandardMinionView>()
+                .Any(view => view.BoundMinionId.Equals(minion.MinionId)), Is.False,
+                "The removed minion's visible token must leave after its presentation settles.");
+            yield return UiPlayer.CaptureGameView("8-36f", "misa-defeat-complete");
+        }
+
         /// <summary>
         /// Watch How I Soar: "Choose one — • Place yourself into a space at maximum range. • Defeat a
         /// minion adjacent to you."
@@ -61,7 +105,7 @@ namespace GuardsDigital.Tests.PlayMode
         /// <para>Rulebook p.10's modal form on the roster's first basic card that is not an Attack,
         /// and the first face of hers a player meets. Both bullets have a subject on this board, which
         /// is what makes the choice a real one: twenty-two empty spaces stand at exactly Range 4, and
-        /// two minions - one of each team - stand beside her.</para>
+        /// an enemy minion stands beside her. The adjacent friendly minion is not a legal Defeat.</para>
         ///
         /// <para><b>The journey takes the first bullet, and RULING 1 is what it measures.</b> "At
         /// maximum range" is EXACTLY the printed number, so the offered destinations are a RING of

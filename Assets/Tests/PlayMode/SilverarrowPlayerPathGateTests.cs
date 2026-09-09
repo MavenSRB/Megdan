@@ -88,7 +88,7 @@ namespace GuardsDigital.Tests.PlayMode
             "ShootAndScoot_ReachesExactlyItsPrintedRangeAndThenOffersHerTheAdjacentZone";
 
         private const string ObstacleScope =
-            "Trailblazer_LightsObstaclesForHerMovementActionAndNotForACardTextMove";
+            "Trailblazer_StaysActiveAndOpensTheNextMovementAction";
 
         private const string ShoveAndStep =
             "Disorient_ShovesTheEnemyBesideHerAndThenOffersHerOwnStepOnItsOwnControl";

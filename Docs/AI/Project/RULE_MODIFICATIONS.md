@@ -14,6 +14,12 @@ Modifiers, restrictions, permissions, immunity, and `Counts As` are one contract
 
 ## The declarable space and its consumers
 
+`ControllerAndHeroesInRadius` is consumed by the live modification query: it includes the controller
+and in-radius heroes, excludes minions, and retains the declaration's team/activity restrictions.
+Trailblazer therefore reaches its controller and friendly heroes through its live Radius Total (printed 4) for Movement
+actions, not enemies or card-text Direct Move. The source-linked `SilverarrowCapabilityTests` cover
+self, teams, minions and both sides of the radius boundary.
+
 Every member a definition can declare either changes a production answer or is excluded by name with its reason and the seam its consumer would go in, and a conformance rule enumerates the space from the enums themselves so a new member is undecided until someone decides it. The rule's probes read production seams rather than the set, because the set answers every member by construction and the question is whether any rule asks; where the asking seam needs a match in flight, a second rule asserts the link from that seam to the query the probe read. Restrictions reach every action kind through one shared predicate over the action-to-activity mapping - consulted by the turn's offer set, by the three general-rule offers, and by p.14's Defense response - so a card that first prints a prohibition is obeyed without a new consumer, and the value channels no source modifies stay excluded rather than gaining speculative ones.
 
 A restriction may also name **who** is barred: the affected object itself, or heroes standing in a declared team relation to the source, resolved against the controlling side the applied record already carries. The undirected question - may this object do this itself - is what an offer asks, and a directed query answers the other one, which the Swap and Place capabilities ask at target and piece derivation. p.19's Swap and p.18's Place are named activities for this, beside Object Push: all three are effect families the rules perform rather than action kinds a hero takes, and both capabilities ask immunity for their own family as well as for the enclosing action's.

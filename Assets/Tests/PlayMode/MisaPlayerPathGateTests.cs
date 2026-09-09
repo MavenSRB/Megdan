@@ -87,6 +87,9 @@ namespace GuardsDigital.Tests.PlayMode
         private const string SoarJourney =
             "WatchHowISoar_OffersItsTwoBulletsAndPlacesHerOnTheRingTheFirstOneNames";
 
+        private const string SoarDefeatJourney =
+            "WatchHowISoar_DefeatBulletRemovesTheClickedMinion";
+
         private const string SwoopJourney =
             "SwoopIn_PlacesHerBesideTwoEnemiesAndOffersTheRetrieveOnItsOwnConfirm";
 
@@ -163,7 +166,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(PrimarySkillControl, SoarJourney),
                         Prove(ModalBulletChoice, SoarJourney),
                         Prove(BoardSpaceSelection, SoarJourney),
-                        Prove(BoardUnitSelection, UltimateJourney),
+                        Prove(BoardUnitSelection, SoarDefeatJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },
@@ -171,7 +174,7 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         "MisaPrintedSetTests" +
                             ".Ruling1_PutsTheExactDistanceContractsOnTheFourFacesThatPrintTheWords",
-                        "MisaPrintedSetTests.TheGoldCardsSecondBullet_DefeatsAMinionOfEitherTeam",
+                        "MisaPrintedSetTests.TheGoldCardsSecondBullet_RespectsTheFriendlyDefeatProhibition",
                         "MisaCapabilityTests.Ruling1_TheExactDistancePlace_OffersTheRingAndNotTheDisk"
                     }),
 

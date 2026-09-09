@@ -20,12 +20,19 @@ and Tier, upgrade relationships, printed values, exact rules text, ordered steps
 effect-node bindings, capability identities, item contributions, Active-effect versus continuous-source
 classification, and the source-linked scenarios each row rests on.
 
-Her identity is pinned at content revision `misa-8-35z38-rev-1`, measured rather than predicted by
+Her current content revision is `misa-8-36f-rev-1`. Watch How I Soar's Defeat selection admits only
+opposing minions: rulebook printed p.13 prohibits defeating friendly heroes or minions, and this card's
+generic "a minion" does not override that prohibition. The original `AnyTeam` selection was incorrect.
+The ordinary Skill path now settles the requested Defeat through the shared reward/removal-prevention
+authority before completing its action. [Skill consequences](../Card-System/SKILL_CONSEQUENCES.md)
+owns the continuation contract; `MisaSkillDefeatTests` owns restore, prevention, reward and Undo coverage.
+
+Her original dealt identity was pinned at content revision `misa-8-35z38-rev-1`, measured rather than predicted by
 `VerifiedContentIdentityTests` on a complete unfiltered run. That is her eighth-pin entry; the seven pins
 above it came back byte-identical in the same run, which is what attributes the movement to her content
 and to nothing else.
 
-The revision is **re-based rather than incremented**, on the reading milestone 8.35z34 settled one
+That original dealing revision was **re-based rather than incremented**, on the reading milestone 8.35z34 settled one
 milestone earlier for Dodger: her earlier revision was minted under the placeholder id `8.35x`, which is a
 claim rather than a milestone. Nothing read the old string - no pin named her, no artwork row named her,
 and no configuration dealt her - which is exactly what makes the re-base free here and would not make it

@@ -476,12 +476,10 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Watch How I Soar's second bullet, and the absence that decides it: the face prints
-        /// "a minion" with no adjective, so p.19's minions of either team answer. Defeating a friendly
-        /// minion is a real cost the bullet carries, and reading a side into it would be inventing one.
+        /// The generic minion subject does not override p.13's explicit friendly-Defeat prohibition.
         /// </summary>
         [Test]
-        public void TheGoldCardsSecondBullet_DefeatsAMinionOfEitherTeam()
+        public void TheGoldCardsSecondBullet_RespectsTheFriendlyDefeatProhibition()
         {
             var body = SkillBody(MisaCardContent.WatchHowISoar);
             var select = body.Nodes.Single(node =>
@@ -492,7 +490,7 @@ namespace GuardsDigital.Tests.EditMode
                     .Single(input => input.ParameterName ==
                         SyntheticRosterCapabilities.RelationParameter)
                     .Literal.IntegerValue,
-                Is.EqualTo(SourceTeamRelation.AnyTeam));
+                Is.EqualTo(SourceTeamRelation.OpposingSource));
             Assert.That(
                 (RosterUnitKind)select.Inputs
                     .Single(input => input.ParameterName ==

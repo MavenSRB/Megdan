@@ -246,6 +246,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                 case ActiveEffectAffectedScopeKind.HeroesInRadius:
                 case ActiveEffectAffectedScopeKind.MinionsInRadius:
                 case ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius:
+                case ActiveEffectAffectedScopeKind.ControllerAndHeroesInRadius:
                     // Milestone 8.20 added the second of these and milestone 8.21 the third and
                     // fourth - p.19's heroes alone, p.19's minions alone, and the units beside the
                     // hero the disk is drawn around. The walk below is shared rather than copied,
@@ -306,8 +307,10 @@ namespace GuardsDigital.Core.Rules.Modifications
             ActiveEffectAffectedScopeKind scope)
         {
             var admitsHeroes = scope != ActiveEffectAffectedScopeKind.MinionsInRadius;
-            var admitsMinions = scope != ActiveEffectAffectedScopeKind.HeroesInRadius;
-            var admitsController = scope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius;
+            var admitsMinions = scope != ActiveEffectAffectedScopeKind.HeroesInRadius &&
+                scope != ActiveEffectAffectedScopeKind.ControllerAndHeroesInRadius;
+            var admitsController = scope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius ||
+                scope == ActiveEffectAffectedScopeKind.ControllerAndHeroesInRadius;
 
             if (board == null)
             {

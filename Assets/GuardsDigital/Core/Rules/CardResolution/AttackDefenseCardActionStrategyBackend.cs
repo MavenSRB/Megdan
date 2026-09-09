@@ -1726,7 +1726,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
-            out PendingAttackResolution eventIdentity)
+            out PendingAttackResolution eventIdentity,
+            string outcomeDiscriminator = null)
         {
             var target = adjacentMoveAuthority.Minions
                 .Single(minion => minion.MinionId.Equals(targetMinionId));
@@ -1744,7 +1745,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var coins = StandardMinionProfileCatalog.Rulebook.Get(target.MinionType).DefeatCoins;
             var outcome = new DefeatOutcome(
-                new DefeatOutcomeId($"{resolutionId.Value}:minion-defeat"),
+                new DefeatOutcomeId($"{resolutionId.Value}:minion-defeat" +
+                    (outcomeDiscriminator == null ? string.Empty : ":" + outcomeDiscriminator)),
                 new DefeatTargetId(targetMinionId.Value),
                 target.TeamId,
                 actorId,

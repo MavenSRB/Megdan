@@ -31,6 +31,26 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly PrintedAttackTargetPolicy RangedDefault =
             PrintedAttackTargetPolicy.ForClassification(AttackRangeKind.Ranged);
 
+        [TestCase(1, true)]
+        [TestCase(4, true)]
+        [TestCase(5, false)]
+        public void ActiveTrailblazer_DerivesSelfAndOnlyFriendlyHeroesInsideItsLiveRadius(int distance, bool affected)
+        {
+            var board = CreateBoard(new[] { (Silverarrow, Origin), (Ally, At(distance)), (Enemy, AtOtherFile(1)) },
+                new[] { ("friendly-minion", RedTeam, AtOtherFile(2)), ("enemy-minion", BlueTeam, AtOtherFile(3)) });
+            var lifecycle = new ActiveEffectLifecycle();
+            Create(lifecycle, SilverarrowActiveEffectContent.TrailblazerDefinition);
+            var rules = RuleModificationQuery.Build(lifecycle, board, CreateParticipants(),
+                new TieBreakerState(TeamSide.Red), GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None,
+                RuleObject.None, null, null);
+            Assert.That(rules.HasPermission(RuleObject.ForHero(Silverarrow), RulePermissionKind.MoveThroughObstacles, RuleActivity.Movement), Is.True);
+            Assert.That(rules.HasPermission(RuleObject.ForHero(Ally), RulePermissionKind.MoveThroughObstacles, RuleActivity.Movement), Is.EqualTo(affected));
+            Assert.That(rules.HasPermission(RuleObject.ForHero(Enemy), RulePermissionKind.MoveThroughObstacles, RuleActivity.Movement), Is.False);
+            foreach (var minion in board.Minions)
+                Assert.That(rules.HasPermission(RuleObject.ForMinion(minion.MinionId), RulePermissionKind.MoveThroughObstacles, RuleActivity.Movement), Is.False);
+            Assert.That(rules.HasPermission(RuleObject.ForHero(Silverarrow), RulePermissionKind.MoveThroughObstacles, RuleActivity.DirectMove), Is.False);
+        }
+
         // -----------------------------------------------------------------------------------------
         // RULING 1 - "at maximum range" is a band, not a ceiling
         // -----------------------------------------------------------------------------------------

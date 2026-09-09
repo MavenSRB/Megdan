@@ -6,6 +6,8 @@ The current resolver composes every playable face of all six configured heroes, 
 
 Canonical active shard. Return to [../CARD_SYSTEM_ARCHITECTURE.md](../CARD_SYSTEM_ARCHITECTURE.md).
 
+[Skill consequences](SKILL_CONSEQUENCES.md) owns ordinary Skill minion-Defeat suspension and resumption.
+
 ## Action offers and invocation context
 
 An action is selected from runtime offers produced by rules, not inferred from card art or one permanent `ActionType` field.

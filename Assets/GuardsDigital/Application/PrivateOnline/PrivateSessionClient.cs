@@ -809,9 +809,7 @@ namespace GuardsDigital.Application
                 gameplayReceiveSequence = result.Envelope.Sequence;
                 LastSubmissionResult = result;
                 MatchFeedback = result.Accepted ? string.Empty :
-                    (string.IsNullOrWhiteSpace(result.Detail)
-                        ? result.RejectionReason.ToString()
-                        : result.Detail);
+                    NetworkMatchFeedback.PlayerDetail(result.SessionRejectionReason, result.Detail, result.RejectionReason.ToString());
                 if (string.Equals(awaitingCommandResultId, result.SubmissionId, StringComparison.Ordinal))
                 {
                     if (result.Accepted ||
@@ -856,9 +854,7 @@ namespace GuardsDigital.Application
                 gameplayReceiveSequence = undo.Envelope.Sequence;
                 LastUndoResult = undo;
                 MatchFeedback = undo.Accepted ? string.Empty :
-                    (string.IsNullOrWhiteSpace(undo.Detail)
-                        ? undo.RejectionReason.ToString()
-                        : undo.Detail);
+                    NetworkMatchFeedback.PlayerDetail(undo.SessionRejectionReason, undo.Detail, undo.RejectionReason.ToString());
                 if (string.Equals(awaitingUndoResultId, undo.SubmissionId, StringComparison.Ordinal))
                 {
                     if (undo.Accepted ||

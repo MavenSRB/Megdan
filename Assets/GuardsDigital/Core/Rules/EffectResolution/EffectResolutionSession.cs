@@ -309,9 +309,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectRosterState rosterState = null,
             bool watchesAppliedPushes = false,
             bool repeatIsUnavailable = false,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null)
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            bool stagesMinionDefeats = false)
         {
             WatchesAppliedPushes = watchesAppliedPushes;
+            StagesMinionDefeats = stagesMinionDefeats;
             RepeatIsUnavailable = repeatIsUnavailable;
             this.repeatCanBePerformed = repeatCanBePerformed;
             EnclosingAttack = enclosingAttack;
@@ -395,6 +397,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// so a match with no such source cannot pay for one.</para>
         /// </summary>
         public bool WatchesAppliedPushes { get; }
+        public bool StagesMinionDefeats { get; }
 
         public EffectDefinition Definition { get; }
         public EffectCapabilityCatalog Catalog { get; }
@@ -1282,6 +1285,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 default:
                     Pop(continuation);
                     Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied, result);
+
+                    // A Skill's Defeat is completed by card authority before the next effect node.
+                    // The existing continuation persists the position after this node, including
+                    // while removal prevention asks a player; resuming cannot request it twice.
+                    if (context.StagesMinionDefeats)
+                    {
+                        var defeats = RequestedMinionDefeatQuery.Requested(context.Definition,
+                            new[] { outcomes[outcomes.Count - 1] });
+                        if (defeats.Count > 0)
+                            return EffectResolutionStepResult.Accept(
+                                Rebuild(frame, continuation, outcomes, choices), false, events,
+                                requestedMinionDefeats: defeats);
+                    }
 
                     // Milestone 8.19c1. The node is finished and its facts are recorded before the walk
                     // stops, so what the caller resumes is the effect standing exactly after the Push -
