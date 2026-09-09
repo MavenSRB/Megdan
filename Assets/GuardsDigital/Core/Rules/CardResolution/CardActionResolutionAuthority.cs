@@ -27,6 +27,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private readonly FastTravelCardActionStrategyBackend fastTravelBackend;
         private readonly ClearCardActionStrategyBackend clearBackend;
         private readonly SkillCardActionStrategyBackend skillBackend;
+        private readonly List<PendingResolution> borrowedSkillParents = new List<PendingResolution>();
+        public bool HasBorrowedSkillParent => borrowedSkillParents.Count > 0;
         private readonly TriggeredEffectResolutionAuthority triggeredEffects;
         private readonly MatchComponents components;
         private readonly AdjacentMoveAuthority board;
@@ -1479,7 +1481,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // whatever continuation the capture found, for the reason the owed repeats above do -
                 // it is a fact about the action the pause is inside rather than a kind of pause - and
                 // it is applied last so it forwards everything the builders before it set.
-                .WithAttackSequenceChain(attackDefenseBackend.PendingSequenceChain);
+                .WithAttackSequenceChain(attackDefenseBackend.PendingSequenceChain)
+                .WithBorrowedSkillParents(borrowedSkillParents);
 
         private CardActionResolutionRestoreState CaptureContinuation()
         {
@@ -1590,6 +1593,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // reached. Restoring it twice on the Attack arm is harmless; restoring it nowhere for that
             // state would lose the whole rest of the action.
             restoredAuthority.attackDefenseBackend.RestoreSequenceChain(state.AttackSequenceChain);
+            restoredAuthority.borrowedSkillParents.AddRange(state.BorrowedSkillParents);
 
             // Milestone 8.22, same line of reasoning again: the rest of p.14 owed while a card-text
             // Push has set off a trigger is not a continuation either, and the continuation it stands
@@ -1794,7 +1798,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     offer,
                     prepared.Definitions,
                     prepared.Instances,
-                    modifications);
+                    modifications,
+                    IsAuthorizedBorrowedOffer(offer, prepared.Definitions));
         }
 
         public CardActionResolutionResult AnswerMovementChoice(
@@ -1940,7 +1945,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 prepared.Definitions,
                 prepared.Instances,
                 participants,
-                modifications);
+                modifications,
+                IsAuthorizedBorrowedOffer(offer, prepared.Definitions));
         }
 
 
@@ -2651,100 +2657,59 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// committing that card, exactly as p.14's step-1 move inside an Attack is part of the
         /// Attack.</para>
         /// </summary>
-        public CardActionResolutionResult StartOwedBorrowedAction(
-            IEnumerable<CardDefinition> definitions,
-            IEnumerable<CardInstance> instances,
-            MatchParticipants participants,
-            ActiveEffectLifecycle timing,
-            RuleModificationSet modifications,
-            TieBreakerState tieBreaker,
-            int roundIndex,
-            int turnIndex)
+        internal ActionOffer TakeOwedBorrowedAction(
+            IEnumerable<CardDefinition> definitions, IEnumerable<CardInstance> instances,
+            out ActionResolutionId resolutionId)
         {
-            var borrowedCardId = owedBorrowedActionCardId;
-            var actorId = owedBorrowedActionActorId;
+            if (!HasOwedBorrowedAction)
+                throw new InvalidOperationException("No borrowed primary is owed.");
+            var actor = owedBorrowedActionActorId;
+            var card = instances.Single(value => value.Id.Equals(owedBorrowedActionCardId));
+            var definition = definitions.Single(value => value.Reference.Equals(card.DefinitionReference));
+            if (BorrowedPrimaryActionDeclaration.Refuses(definition) != BorrowRefusal.None)
+                throw new InvalidOperationException("The selected card has no borrowable primary.");
+            var parent = skillBackend.SuspendForBorrow();
+            borrowedSkillParents.Add(parent);
             owedBorrowedActionCardId = default;
             owedBorrowedActionActorId = default;
+            var primary = definition.ActionDefinitions.Single(value => value.Origin == ActionDefinitionOrigin.PrintedPrimary);
+            resolutionId = new ActionResolutionId(parent.ResolutionId.Value + ":borrow:" +
+                parent.CompletedOutcomes.Count + ":" + card.Id.Value);
+            return new ActionOffer(card.Id, definition.Reference, primary.Id, actor,
+                ActionInvocationContext.TextGranted, true, primary.AttackRange, primary.SourceCardStateTransition);
+        }
 
-            var nothingHappened = CardActionResolutionResult.Accept(
-                true, null, null, Array.Empty<ResolutionStep>());
-            if (!borrowedCardId.IsDefined || !actorId.IsDefined)
-            {
-                return nothingHappened;
-            }
+        private bool IsAuthorizedBorrowedOffer(ActionOffer offer, IReadOnlyList<CardDefinition> definitions)
+        {
+            if (offer.InvocationContext != ActionInvocationContext.TextGranted || !HasBorrowedSkillParent)
+                return false;
+            var parent = borrowedSkillParents[borrowedSkillParents.Count - 1];
+            var root = SkillCardActionStrategyBackend.FindEffectRoot(definitions, parent);
+            var request = root == null ? default : BorrowedActionQuery.Requested(root, parent.CompletedOutcomes);
+            return request.IsRequested && request.BorrowedCardId.Equals(offer.SourceCardInstanceId) &&
+                parent.ActorId.Equals(offer.ActorId) &&
+                ActionOfferQuery.FindActionDefinition(offer, definitions).Origin == ActionDefinitionOrigin.PrintedPrimary;
+        }
 
-            var materializedDefinitions = definitions?.ToArray() ??
-                throw new ArgumentNullException(nameof(definitions));
-            var materializedInstances = instances?.ToArray() ??
-                throw new ArgumentNullException(nameof(instances));
-
-            var card = materializedInstances.FirstOrDefault(
-                candidate => candidate.Id.Equals(borrowedCardId));
-            var definition = card == null
-                ? null
-                : materializedDefinitions.FirstOrDefault(
-                    candidate => candidate.Reference.Equals(card.DefinitionReference));
-            if (definition == null)
-            {
-                // A payload naming a card this build does not supply performs nothing rather than a
-                // reconstructed action - the same refusal every other continuation here makes against a
-                // tampered or stale record.
-                return nothingHappened;
-            }
-
-            // The contract's own refusal set, asked before an offer exists rather than after one is
-            // built: no printed primary (p.16's Ultimate), text transcribed but not composed (p.20's
-            // Handicap cards), or an action that would move its own card.
-            if (BorrowedPrimaryActionDeclaration.Refuses(definition) != BorrowRefusal.None)
-            {
-                return nothingHappened;
-            }
-
-            var primary = definition.ActionDefinitions.First(
-                action => action.Origin == ActionDefinitionOrigin.PrintedPrimary);
-            var borrowedOffer = new ActionOffer(
-                borrowedCardId,
-                definition.Reference,
-                primary.Id,
-                actorId,
-                BorrowedPrimaryActionDeclaration.InvocationContext,
-                true,
-                primary.AttackRange,
-                primary.SourceCardStateTransition);
-
-            // Each kind is started through THIS authority's own public entry point rather than through
-            // a backend directly, so a borrowed instance passes the identical `PrepareStart` funnel a
-            // printed one does - the same availability, pending-resolution and invocation-context
-            // checks, in the same order. That is what makes "a borrowed primary is an ordinary action
-            // instance" true of the code and not only of the doc comment.
-            var borrowedResolutionId = BorrowedResolutionIdFor(borrowedCardId, actorId);
-            switch (primary.Kind)
-            {
-                case ActionKind.Attack:
-                    var borrowedAttack = StartAttackResolution(
-                        borrowedResolutionId, borrowedOffer, materializedDefinitions,
-                        materializedInstances, participants, modifications);
-                    return borrowedAttack.Accepted
-                        ? CardActionResolutionResult.Accept(false, null, null, borrowedAttack.Steps)
-                        : nothingHappened;
-
-                case ActionKind.Movement:
-                    return StartMovementResolution(
-                        borrowedResolutionId, borrowedOffer, materializedDefinitions,
-                        materializedInstances, modifications);
-
-                case ActionKind.Skill:
-                    return StartTurnSkill(
-                        borrowedResolutionId, borrowedOffer, materializedDefinitions,
-                        materializedInstances, participants, timing, modifications, tieBreaker,
-                        roundIndex, turnIndex);
-
-                default:
-                    // p.11's Fast Travel, p.12's Hold and p.13's Clear are not printed primaries a card
-                    // carries, so no borrow can name one; a kind arriving here means the contract's own
-                    // refusal set was bypassed.
-                    return nothingHappened;
-            }
+        internal CardActionResolutionResult ResumeBorrowingSkill(ActionBoundaryContext boundary)
+        {
+            if (!HasBorrowedSkillParent)
+                throw new InvalidOperationException("No borrowing Skill is suspended.");
+            var parent = borrowedSkillParents[borrowedSkillParents.Count - 1];
+            borrowedSkillParents.RemoveAt(borrowedSkillParents.Count - 1);
+            skillBackend.RestoreBorrowParent(parent);
+            var result = skillBackend.ContinueAfterInterrupt(
+                boundary.Definitions, boundary.Instances, boundary.Participants, boundary.Timing,
+                CurrentModificationsFor(boundary, parent.ActorId), components, boundary.RoundIndex,
+                boundary.TurnIndex, out var repeat, out var cause, out var pushes,
+                out var defeats, out var borrow);
+            RecordOwedBorrowedAction(borrow, parent.ActorId);
+            var id = new ActionResolutionId(parent.ResolutionId.Value);
+            result = WithSkillRequestedHeroDefeats(result, defeats, id, parent.SourceCardInstanceId,
+                parent.ActionDefinitionId, parent.ActorId, boundary);
+            result = RunSkillConsequences(result, pushes, boundary, ref repeat, ref cause);
+            return CloseActionBoundary(result, repeat, cause, id, parent.SourceCardInstanceId,
+                parent.ActionDefinitionId, parent.ActorId, boundary);
         }
 
         /// <summary>
@@ -4560,7 +4525,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedInstances,
                     offer.ActorId,
                     ActionOfferWindow.NormalPlay);
-            if (!offer.IsAvailable || !authoritativeOffers.Contains(offer))
+            if (!offer.IsAvailable || (!authoritativeOffers.Contains(offer) &&
+                !IsAuthorizedBorrowedOffer(offer, materializedDefinitions)))
             {
                 return PreparedStart.Reject(
                     CardActionResolutionRejectionReason.UnavailableOffer,

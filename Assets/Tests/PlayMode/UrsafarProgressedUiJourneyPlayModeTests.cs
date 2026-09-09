@@ -6,6 +6,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -19,12 +20,8 @@ using static GuardsDigital.Tests.PlayMode.XargathaUiJourneyPlayModeTests;
 namespace GuardsDigital.Tests.PlayMode
 {
     /// <summary>
-    /// Ursafar the Savage's printed set at rulebook p.15's Tier II and Tier III stages. Milestone
-    /// 8.35z50.
-    ///
-    /// <para><b>NEVER EXECUTED</b>, on the terms <see cref="UrsafarUiJourneyPlayModeTests"/> states,
-    /// and the borrow's dispatch stops where <see cref="UrsafarEngagedUiJourneyPlayModeTests"/>
-    /// records.</para>
+    /// Ursafar the Savage's printed set at rulebook p.15's Tier II and Tier III stages. Milestones
+    /// 8.35z50 and 8.36f3, including the complete borrowed-primary and restore paths.
     /// </summary>
     public sealed class UrsafarProgressedUiJourneyPlayModeTests
     {
@@ -38,58 +35,25 @@ namespace GuardsDigital.Tests.PlayMode
         /// spend rather than two.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z50's dealing, after two complete Play Mode runs. THE HERO IS " +
-            "DEALT, REGISTERED, GATED AND GREEN ON THE OTHER TWO TIERS - the dotnet harness and the " +
-            "complete Edit Mode run both pass his content, his printed set and his player-path gate " +
-            "table. What is parked here is this journey's own INSTRUMENTATION, and every one of the " +
-            "nine was diagnosed rather than guessed at. " +
-            "Dies inside a Commit naming a card its own staged hand does not hold, on the same terms " +
-            "as Apex Predator's above. RULING 35's Tier + 1 single spend is pinned offline.")]
         public IEnumerator Tear_SpendsTierPlusOneOnce_AndEndsTheGameOnTheLastCounter()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeAlternateEngagedStagedUrsafar);
-            var root = Root();
-            var runtime = root.Runtime;
-            var ursafarId = UrsafarSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, ursafarId);
 
-            // Enrage him first (Rip is not in this branch's hand; Tear itself grants, but the clause
-            // this journey proves reads `enraged` before it grants, so a prior enraging card is owed).
-            // Cold Ire's own grant is unconditional, exactly as every Blue face's is.
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.ColdIre);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
-            yield return DrainEffectPausesHeadlessly(runtime, 5);
-            Assert.That(IsEnraged(runtime, ursafarId), Is.True);
-            yield return AdvanceToNextTurn(runtime);
-
-            // Drive the enemy's Life counters down close to empty through repeated headless Attacks
-            // first, so the Tear attack this journey actually drives is very likely the game's last -
-            // the budget is generous (RULING 35's Tier + 1 against a starting six is at most a handful
-            // of Attacks short of the floor) rather than engineered to an exact remaining count, which
-            // this surface has no direct reading for.
-            yield return RepeatedHeadlessAttacks(runtime, ursafarId, enemyId, 6);
-
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.Tear);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            if (runtime.SubmitAction(PrimaryActionOf(runtime)))
-            {
-                var target = runtime.PendingAttackTargetChoice?.LegalTargets.FirstOrDefault();
-                if (target != null)
-                {
-                    Assert.That(runtime.SubmitProjectedCommand(ChooseTarget(target.Value)), Is.True);
-                }
-            }
-
-            yield return DrainEffectPausesHeadlessly(runtime, 8);
-
-            Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded),
-                "RULING 35: the extra Life counter is computed once as Tier + 1 and spent as one " +
-                "spend at the defeat, so a Tear landed against a team driven near its floor must end " +
-                "the game in the same combined spend rather than needing a further Attack.");
+            // The enemy still holds Tier I cards: p.13 costs the lowest card Tier, not hero Level.
+            yield return UrsafarAuditStaging.Load(SceneCardContent.VerifiedTierThreeAlternateEngagedStagedUrsafar, enemyDistance: 1, enemyLife: 2);
+            var root = Root(); var runtime = root.Runtime; var own = UrsafarSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            Assert.That(runtime.Projection.HeroProgression.Single(value => value.HeroId.Equals(enemy)).Level, Is.EqualTo(7));
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.Tear);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud, HeroView(enemy).transform.position), Is.True);
+            yield return null; yield return null;
+            yield return UrsafarAuditStaging.AnswerDefense(false);
+            Assert.That(runtime.Phase, Is.EqualTo(RoundResolutionPhase.GameEnded), Remaining(runtime) + "\n" +
+                string.Join("\n", runtime.DiagnosticEvents.Select(entry => entry.DisplayText)));
+            Assert.That(runtime.Projection.TeamLifeCounters.Any(value => value.Value == 0), Is.True);
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
         /// <summary>
@@ -97,76 +61,34 @@ namespace GuardsDigital.Tests.PlayMode
         /// - Angry Roar reaching a resolved card whose own Active effect has already expired.
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z50's dealing, after two complete Play Mode runs. THE HERO IS " +
-            "DEALT, REGISTERED, GATED AND GREEN ON THE OTHER TWO TIERS - the dotnet harness and the " +
-            "complete Edit Mode run both pass his content, his printed set and his player-path gate " +
-            "table. What is parked here is this journey's own INSTRUMENTATION, and every one of the " +
-            "nine was diagnosed rather than guessed at. " +
-            "THE CLOSEST TO GREEN, and worth reading before the others. It now runs its whole length: " +
-            "the Ultimate's first clause holds (an enraged-gated step is reached with no card of his " +
-            "having granted the state), the swap resolves, and its round-duration grant lapses as the " +
-            "journey requires. Only the LAST assertion stands - that Angry Roar's pool then widens to " +
-            "that expired, merely-resolved card. Whether the widening or the journey's own two-round " +
-            "lapse arithmetic is at fault is the open question, and it is one measurement away.")]
         public IEnumerator UnboundFury_IsAlwaysEnraged_AndWidensAngryRoarsPoolToExpiredCards()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedUrsafar);
-            var root = Root();
-            var runtime = root.Runtime;
-            var ursafarId = UrsafarSeat(runtime).HeroId;
-
-            // MILESTONE 8.35z50's FIRST PLAY MODE RUN CORRECTED THIS ASSERTION, and the correction is
-            // the interesting half. `IsEnraged` reads whether any DISCARDED card of his is a live
-            // Active-effect source - which is exactly how a CARD grants the state. Unbound Fury does
-            // not grant it: "You are always enraged" is a permanent Ultimate ABILITY, a continuous
-            // rule source that p.16 makes true while its hero is on the board, with no card, no
-            // instance and no lifetime of its own. So the helper could only ever read False here, and
-            // the assertion's own words said so - "with no card of his ever having granted it".
-            //
-            // The seat read model exposes `IsActiveEffectSource` and no continuous-source accessor, by
-            // design, so a journey cannot read the rule directly. It does not need to: what a journey
-            // proves is what a player can observe. The precondition is asserted here, and the CLAIM is
-            // carried by the behaviour at the end of this journey - an enraged-gated clause that fires
-            // with no granting card is the state being true.
-            Assert.That(
-                runtime.Cards
-                    .Where(card => card.OwnerId.Equals(ursafarId))
-                    .Any(card => runtime.IsActiveEffectSource(card.Id)),
-                Is.False,
-                "The premise of Unbound Fury's first clause: no card of his has granted enraged " +
-                "this match, so anything gated on it that fires below is the Ultimate's doing. " +
-                Remaining(runtime));
-
-            // Resolve a Blue swap-family card and let its Round-duration grant lapse into a new
-            // round, so the card is resolved but its OWN effect has expired - the case RULING 43
-            // names as reachable only post-Ultimate.
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.UnstoppableForce);
-            var enemyId = OtherHeroId(runtime, ursafarId);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
-            yield return DrainEffectPausesHeadlessly(runtime, 5);
-            yield return AdvanceToNextTurn(runtime);
-            yield return AdvanceToNextTurn(runtime);
-
-            var swapCard = runtime.Cards.Single(card =>
-                card.OwnerId.Equals(ursafarId) &&
+            yield return UrsafarAuditStaging.Load(SceneCardContent.VerifiedTierThreeEngagedStagedUrsafar);
+            var root = Root(); var runtime = root.Runtime; var own = UrsafarSeat(runtime).HeroId;
+            // Hold resolves the card without granting its own enrage effect. It is therefore only
+            // Unbound Fury that makes this resolved, non-active card available to Angry Roar.
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.UnstoppableForce);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            Assert.That(runtime.SubmitEndTurn(), Is.True);
+            yield return null;
+            var source = runtime.Cards.Single(card => card.OwnerId.Equals(own) &&
                 card.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.UnstoppableForce));
-            Assert.That(runtime.IsActiveEffectSource(swapCard.Id), Is.False,
-                "This round's own grant must have lapsed by the round after next.");
-
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.AngryRoar);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            yield return PointTrayAt(root, ursafarId);
+            Assert.That(source.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved));
+            Assert.That(runtime.IsActiveEffectSource(source.Id), Is.False);
+            yield return AdvanceToNextTurn(runtime);
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.AngryRoar);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "BOTH of Unbound Fury's clauses at once, and neither is provable without the other " +
-                "here: the borrow step is gated on \"If enraged\", and no card of his has granted " +
-                "that this match - so a standing choice is the FIRST clause being true. And what it " +
-                "offers is this expired, merely-resolved card, which is the SECOND clause widening " +
-                "the pool past live Active-effect sources. " + Remaining(runtime));
+            var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "UNSTOPPABLE FORCE");
+            UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
+            Assert.That(runtime.PendingMovementChoice, Is.Not.Null, Remaining(runtime));
+            yield return UrsafarAuditStaging.FinishMovement();
+            var decline = runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
+            UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label)); yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.PendingMovementChoice, Is.Null);
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
         /// <summary>
@@ -176,87 +98,183 @@ namespace GuardsDigital.Tests.PlayMode
         /// being Warning Shot's chooser/discarder pair, on a different hero's dealing).
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z50's dealing, after two complete Play Mode runs. THE HERO IS " +
-            "DEALT, REGISTERED, GATED AND GREEN ON THE OTHER TWO TIERS - the dotnet harness and the " +
-            "complete Edit Mode run both pass his content, his printed set and his player-path gate " +
-            "table. What is parked here is this journey's own INSTRUMENTATION, and every one of the " +
-            "nine was diagnosed rather than guessed at. " +
-            "Dies inside a Commit naming a card its own staged hand does not hold. The borrow's " +
-            "restore-safety is the claim here and it is the one this milestone would most like " +
-            "driven live, which is why it is named rather than quietly dropped.")]
         public IEnumerator TheBorrowsCardChoice_IsAnsweredAgainAfterAnUndoAndAfterARestore()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedTierTwoAlternateEngagedStagedUrsafar);
-            var root = Root();
-            var runtime = root.Runtime;
-            var hud = root.Hud;
-            var ursafarId = UrsafarSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, ursafarId);
-
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.Rip);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
-            var ripTarget = runtime.PendingAttackTargetChoice?.LegalTargets.FirstOrDefault();
-            if (ripTarget != null)
-            {
-                Assert.That(
-                    runtime.SubmitProjectedCommand(ChooseTarget(ripTarget.Value)),
-                    Is.True);
-            }
-
-            yield return DrainEffectPausesHeadlessly(runtime, 5);
-            yield return AdvanceToNextTurn(runtime);
-
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.InstinctiveReaction);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            yield return PointTrayAt(root, ursafarId);
+            yield return UrsafarAuditStaging.Load(SceneCardContent.VerifiedTierTwoAlternateEngagedStagedUrsafar,
+                discardOwn: UrsafarCardContent.ColdIre);
+            var root = Root(); var runtime = root.Runtime; var own = UrsafarSeat(runtime).HeroId;
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.AngryRoar);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-
-            // p.10's modal: one bullet is the borrow, over the DISCARDED pool this Green pair reaches.
-            var borrowBullet = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+            yield return AdvanceToNextTurn(runtime);
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.InstinctiveReaction);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            var bullet = runtime.RoundView.Model.EffectChoices.First(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
-            Assert.That(borrowBullet, Is.Not.Null, "The modal must draw its bullets. " + Remaining(runtime));
-            Assert.That(
-                runtime.SubmitProjectedCommand(borrowBullet.Command), Is.True);
+            UiPlayer.Click(UiPlayer.Button(root.Hud, bullet.Label)); yield return null;
+            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            if (confirm != null) { UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label)); yield return null; }
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            var before = runtime.CaptureSnapshot();
+            var source = runtime.Cards.Single(card => card.OwnerId.Equals(own) &&
+                card.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.ColdIre));
+            var sourceState = source.State;
+            var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "COLD IRE");
+            UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
+            Assert.That(runtime.PendingMovementChoice, Is.Not.Null, Remaining(runtime));
+            var during = runtime.CaptureSnapshot();
+            UiPlayer.Click(UiPlayer.Button(root.Hud, "DIRECTOR")); yield return null;
+            UiPlayer.Click(UiPlayer.Button(root.Hud, "UNDO")); yield return null;
+            // A whole-card click records selection then confirmation. Undo retracts the
+            // confirmation and restores the card picker with its selection still present.
+            Assert.That(runtime.PendingMovementChoice, Is.Null);
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("modal-borrow"));
+            UiPlayer.Click(UiPlayer.Button(root.Hud, "DIRECTOR ▾")); yield return null;
+            Assert.That(runtime.RestoreSnapshot(before), Is.True);
             yield return null;
+            face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "COLD IRE");
+            UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
+            Assert.That(runtime.PendingMovementChoice, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.RestoreSnapshot(during), Is.True);
+            yield return null;
+            yield return UrsafarAuditStaging.FinishMovement();
+            Assert.That(runtime.PendingMovementChoice, Is.Null);
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(source.Id)).State, Is.EqualTo(sourceState));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
+        }
 
+        /// <summary>
+        /// The borrowed dispatcher is shared by all three printed primary kinds. This is its Attack
+        /// arm through the real modal, card picker, target, Defense and parent-Skill continuation.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator InstinctiveReaction_PerformsADiscardedAttackWithoutMovingItsCard()
+        {
+            yield return UrsafarAuditStaging.Load(
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedUrsafar,
+                enemyDistance: 1,
+                discardOwn: UrsafarCardContent.Rip);
+            var root = Root(); var runtime = root.Runtime; var own = UrsafarSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            yield return EnrageThenStartInstinctiveReaction(root, runtime, own);
+
+            var source = runtime.Cards.Single(card => card.OwnerId.Equals(own) &&
+                card.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.Rip));
+            var sourceState = source.State;
+            var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "RIP");
+            UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null, Remaining(runtime));
+            var target = runtime.Projection.DecisionContract.Commands.Single(value =>
+                value.Kind == DirectorCommandKind.ChooseAttackTarget && value.HeroId.Equals(enemy));
+            Assert.That(runtime.SubmitProjectedCommand(target), Is.True,
+                "The owner-scoped player command must submit the borrowed Attack target. " +
+                runtime.LastOperationDetail + " " + Remaining(runtime));
+            yield return null; yield return null;
+            if (runtime.PendingDefenseChoice == null)
+            {
+                Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null, Remaining(runtime));
+                Assert.That(runtime.PendingAttackTargetChoice.LegalTargets,
+                    Does.Contain(AttackTarget.Hero(enemy)), Remaining(runtime));
+                Assert.That(runtime.SubmitProjectedCommand(runtime.Projection.DecisionContract.Commands.Single(
+                    value => value.Kind == DirectorCommandKind.ChooseAttackTarget &&
+                        value.HeroId.Equals(enemy))), Is.True,
+                    runtime.LastOperationDetail + " " + Remaining(runtime));
+                yield return null; yield return null;
+            }
+            yield return UrsafarAuditStaging.AnswerDefense(false);
+
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(source.Id)).State,
+                Is.EqualTo(sourceState));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")),
+                Is.False);
+        }
+
+        /// <summary>
+        /// The borrowed dispatcher's Skill arm, including the borrowed Skill's own target and
+        /// opponent card choice before control returns to Instinctive Reaction.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator InstinctiveReaction_PerformsADiscardedSkillAndReturnsThroughNestedParents()
+        {
+            yield return UrsafarAuditStaging.Load(
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedUrsafar,
+                enemyDistance: 1,
+                discardOwn: UrsafarCardContent.AngryRoar);
+            var root = Root(); var runtime = root.Runtime; var own = UrsafarSeat(runtime).HeroId;
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.ColdIre);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Movement);
+            yield return UrsafarAuditStaging.FinishMovement();
+            yield return AdvanceToNextTurn(runtime);
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.InstinctiveReaction);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            var bullet = runtime.RoundView.Model.EffectChoices.First(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            UiPlayer.Click(UiPlayer.Button(root.Hud, bullet.Label)); yield return null;
+            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            if (confirm != null) { UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label)); yield return null; }
+
+            var source = runtime.Cards.Single(card => card.OwnerId.Equals(own) &&
+                card.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.AngryRoar));
+            var sourceState = source.State;
+            var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "ANGRY ROAR");
+            UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The borrow's own card-instance pause must open over Rip, his one discarded card.");
-            var pausedSnapshot = runtime.CaptureSnapshot();
+                "Borrowed Angry Roar must open its own active-card choice. " + Remaining(runtime));
+            face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "COLD IRE");
+            UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
+            Assert.That(runtime.PendingMovementChoice, Is.Not.Null, Remaining(runtime));
+            yield return UrsafarAuditStaging.FinishMovement();
 
-            // UNDO first.
-            UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
-            yield return null;
-            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
-            yield return null;
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The Undo retracts the modal's own answer and not the whole turn; the pause must " +
-                "still be answerable - it is exactly this re-ask the z34 class is named for.");
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.PendingMovementChoice, Is.Null);
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(source.Id)).State,
+                Is.EqualTo(sourceState));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")),
+                Is.False);
+        }
 
-            var ripName = UrsafarCardContent.Definition(UrsafarCardContent.Rip).DisplayName
-                .ToUpperInvariant();
-            UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", ripName));
-            yield return null;
-            UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-effect-card", ripName));
-            yield return null;
-
-            // Then a snapshot restore back to the moment the pause first opened - the same discipline
-            // the borrow's own candidate re-derivation extends (it is handed the resolution's timing,
-            // not null), proved by round-tripping the payload captured above.
-            Assert.That(runtime.RestoreSnapshot(pausedSnapshot), Is.True,
-                "A restore into a match holding this pause must succeed.");
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The restored match must still be asking the same question.");
-            UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", ripName));
-            yield return null;
-            UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-effect-card", ripName));
-            yield return null;
-
-            // STOPS HERE, on the same terms UrsafarEngagedUiJourneyPlayModeTests records: the pause
-            // and its restore-safety are the subject, not the unwired dispatch after it.
+        private static IEnumerator EnrageThenStartInstinctiveReaction(
+            MatchSceneCompositionRoot root,
+            ConfiguredMatchSceneRuntime runtime,
+            HeroId own)
+        {
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.AngryRoar);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            Assert.That(runtime.RoundView.Model.Actions.Any(value =>
+                KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Skill),
+                Is.True, "Angry Roar must expose its Skill control. " + Remaining(runtime));
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            yield return AdvanceToNextTurn(runtime);
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.InstinctiveReaction);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            Assert.That(runtime.RoundView.Model.Actions.Any(value =>
+                KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Skill),
+                Is.True, "Instinctive Reaction must expose its Skill control. " + Remaining(runtime));
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            var bullet = runtime.RoundView.Model.EffectChoices.First(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            UiPlayer.Click(UiPlayer.Button(root.Hud, bullet.Label)); yield return null;
+            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            if (confirm != null)
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label));
+                yield return null;
+            }
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
         }
 
         /// <summary>
@@ -266,47 +284,23 @@ namespace GuardsDigital.Tests.PlayMode
         /// this journey actually observes.
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z50's dealing, after two complete Play Mode runs. THE HERO IS " +
-            "DEALT, REGISTERED, GATED AND GREEN ON THE OTHER TWO TIERS - the dotnet harness and the " +
-            "complete Edit Mode run both pass his content, his printed set and his player-path gate " +
-            "table. What is parked here is this journey's own INSTRUMENTATION, and every one of the " +
-            "nine was diagnosed rather than guessed at. " +
-            "Dies inside a Commit naming a card its own staged hand does not hold - the Tier III " +
-            "progressed hands deal the two basics plus exactly three cards of the named branch, and " +
-            "this journey's setup sequence spends past that. The escalation it exists to prove is " +
-            "pinned offline by UrsafarVerifiedContentTests.")]
         public IEnumerator ApexPredator_DefeatsTheEnemyInRange_WhenTheirHandIsAlreadyEmpty()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedUrsafar);
-            var root = Root();
-            var runtime = root.Runtime;
-            var ursafarId = UrsafarSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, ursafarId);
 
-            // Empty the enemy's hand headlessly by committing every remaining card across turns this
-            // journey does not otherwise care about, so the mandatory discard step Apex Predator
-            // prints has nothing to pay with.
-            yield return EmptyHandHeadlessly(runtime, enemyId, ursafarId);
-
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.UnstoppableForce);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
-            yield return DrainEffectPausesHeadlessly(runtime, 5);
-            Assert.That(IsEnraged(runtime, ursafarId), Is.True);
-            yield return AdvanceToNextTurn(runtime);
-
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.ApexPredator);
-            yield return YieldUntilTheNamedSeatActs(runtime, ursafarId);
-
-            yield return PointTrayAt(root, ursafarId);
+            yield return UrsafarAuditStaging.Load(SceneCardContent.VerifiedTierThreeEngagedStagedUrsafar, enemyDistance: 1, emptyEnemyHand: true);
+            var root = Root(); var runtime = root.Runtime; var own = UrsafarSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            Assert.That(runtime.Cards.Any(card => card.OwnerId.Equals(enemy) && card.State.Location == CardLocation.Hand), Is.False);
+            Commit(runtime, own, UrsafarCardContent.ApexPredator);
+            Assert.That(runtime.SubmitProjectedCommand(DirectorCommand.Pass(enemy)), Is.True);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            yield return DrainEffectPausesHeadlessly(runtime, 5);
-
-            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.False,
-                "An empty hand cannot pay the mandatory discard, so ledger question 13's escalation " +
-                "must defeat the enemy instead - a defeated hero is off the board until it respawns.");
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud, HeroView(enemy).transform.position), Is.True);
+            yield return null; yield return null;
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.False, Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
         // ---------------------------------------------------------------------------------------

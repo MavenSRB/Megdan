@@ -102,7 +102,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers was added in the same commit that
             // made her pickable, so the digest below is over her whole dealt set.
-            new IdentityPin("whisper", "whisper-8-35z53-rev-1", "ea0a8a40564a260fe94f9f5b9788fa7564b85fbe593e8cd6484b74027f6e09a9")
+            new IdentityPin("whisper", "whisper-8-36f3-rev-1", "ffab5620b82e7b1b7310fff782971a2124baf0b6b6697cd25ef113b5f525eae5")
         };
 
         [Test]

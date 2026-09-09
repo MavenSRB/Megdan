@@ -404,6 +404,17 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public EffectCardState CardState { get; }
 
+        // These queries concern the hero performing this action, whose on-board eligibility is
+        // already validated by action authority. Unlocked Ultimate declarations are derived from
+        // current card state, not stored in the Active-effect lifecycle.
+        public IEnumerable<ContinuousRuleSource> ActorContinuousSources =>
+            (Timing?.ContinuousSources ?? Array.Empty<ContinuousRuleSource>()).Concat(
+                CardState.IsAvailable
+                    ? GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery
+                        .Derive(CardState.Definitions, CardState.Instances).Ultimates
+                        .Where(ultimate => ultimate.OwnerId.Equals(ActorId)).Select(ultimate => ultimate.Source)
+                    : Enumerable.Empty<ContinuousRuleSource>());
+
         /// <summary>
         /// Milestone 6.2's token and marker collaborators, or <c>null</c> outside a live match. Like
         /// <see cref="Timing"/>, this is authoritative state the handler may mutate through a named

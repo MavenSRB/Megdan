@@ -1438,3 +1438,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36f2 | Correct victim identity, stable attacker scale, strike-synchronized defender echoes and spotlight cards clear of zoomed tokens. | `milestone/8.36f2` |
+
+## Milestone 8.36f3 Added-roster card audit completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36f3 | Audited all 90 dealt faces across Dodger, Misa, Silverarrow, Ursafar and Whisper; closed eight demonstrated resolver, state, replay and fixture findings with active source-linked player paths. | `milestone/8.36f3` |

@@ -77,7 +77,8 @@ namespace GuardsDigital.Core.Participants
             IEnumerable<ConfiguredHand> hands,
             TieBreakerState tieBreakerState,
             SetupRandomnessSeed setupSeed,
-            bool validateInitialCardState)
+            bool validateInitialCardState,
+            IReadOnlyList<CardInstance> restoredInstanceOrder = null)
         {
             SetupSeed = setupSeed;
 
@@ -111,6 +112,16 @@ namespace GuardsDigital.Core.Participants
             var cardInstances = handArray
                 .SelectMany(hand => hand.AllInstances)
                 .ToArray();
+            if (restoredInstanceOrder != null)
+            {
+                // The flat order is part of the captured configuration. Rebuilding dealt/deck
+                // groups must not reorder a progressed starting hand during replay or Undo.
+                if (restoredInstanceOrder.Count != cardInstances.Length ||
+                    restoredInstanceOrder.Distinct().Count() != cardInstances.Length ||
+                    restoredInstanceOrder.Except(cardInstances).Any())
+                    throw new ArgumentException("Restored ordering must contain exactly the rebuilt card instances.", nameof(restoredInstanceOrder));
+                cardInstances = restoredInstanceOrder.ToArray();
+            }
             foreach (var instance in cardInstances)
             {
                 participants.GetHero(instance.OwnerId);
@@ -1888,7 +1899,8 @@ namespace GuardsDigital.Core.Participants
                 participants.Heroes.Select(hero => BuildHand(hero.Id)).ToArray(),
                 state.TieBreakerState,
                 state.SetupSeed,
-                false);
+                false,
+                instanceArray);
         }
 
         /// <summary>

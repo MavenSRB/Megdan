@@ -592,7 +592,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ResolvingSourceCard_CancelsItsActiveEffectThroughTurnAuthority()
+        public void ResolvingSourceCard_PreservesItsActiveEffectUntilARealSourceChange()
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Red);
             var redCard = configuration.RedHand.Instances.OrderBy(card =>
@@ -658,12 +658,16 @@ namespace GuardsDigital.Tests.EditMode
             var hold = authority.TryPerformHold(redCard.Id);
 
             Assert.That(hold.Accepted, Is.True);
-            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Ended));
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Active),
+                "p.17 leaves the resolved card face-up to indicate its continuing Active effect.");
             Assert.That(hold.Events.Any(value =>
                 value.Kind == TurnResolutionEventKind.TimingProgressed &&
                 value.ActiveEffectEvent.Kind == ActiveEffectLifecycleEventKind.Cancelled &&
                 value.ActiveEffectEvent.Checkpoint == TimingCheckpoint.SourceCardStateChanged),
-                Is.True);
+                Is.False);
+            Assert.That(authority.NotifySourceCardStateChanged(redCard.Id)
+                .Single().Kind, Is.EqualTo(ActiveEffectLifecycleEventKind.Cancelled));
+            Assert.That(lifecycle.Effects.Single().Phase, Is.EqualTo(ActiveEffectPhase.Ended));
         }
 
         [Test]

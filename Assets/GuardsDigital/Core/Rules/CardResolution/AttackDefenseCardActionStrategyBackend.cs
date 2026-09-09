@@ -254,11 +254,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            bool authorizedTextGrant = false)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var authoritativeOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
+            var authoritativeOffers = authorizedTextGrant
+                ? new[] { offer }
+                : ActionOfferQuery.GetAvailableTurnActionOffers(
                 materializedDefinitions,
                 materializedInstances,
                 offer.ActorId,
@@ -356,7 +359,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     default(AttackTarget),
                     null,
                     excludedTarget: excludedTarget,
-                    actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId));
+                    actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId),
+                    excludedTargets: repeated.ExcludedTargets);
                 pendingAttackResolution = applying;
                 pendingAttackTargetChoice = null;
                 pendingDefenseChoice = null;
@@ -445,6 +449,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// instance it would run, the target question it would ask, and whether the card's own text
         /// names the target instead. Nothing here writes a field, so the query above can ask it.
         /// </summary>
+        private static IReadOnlyList<AttackTarget> RepeatExclusions(
+            PendingAttackResolution completed, AttackTarget excludedTarget,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            if (!excludedTarget.IsDefined) return Array.Empty<AttackTarget>();
+            var action = definitions.Single(value => value.Reference.Equals(completed.SourceDefinitionReference))
+                .ActionDefinitions.Single(value => value.Id.Equals(completed.ActionDefinitionId));
+            var clause = CardTextRepeatChain.ProducingClause(action, CardTextRepeatChain.Mint(completed.ResolutionId));
+            // Accumulation belongs to a multi-repeat "different targets" clause. Separate
+            // one-repeat clauses keep their own binding; an unbound repeat inherits no exclusion.
+            return clause != null && clause.MaximumRepeats > 1
+                ? completed.ExcludedTargets.Concat(new[] { excludedTarget }).Distinct().ToArray()
+                : new[] { excludedTarget };
+        }
+
         private CardActionResolutionRejectionReason PlanRepeatedAttack(
             PendingAttackResolution completed,
             ActionResolutionId repeatedResolutionId,
@@ -480,7 +499,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 default(AttackTarget),
                 null,
                 excludedTarget: excludedTarget,
-                actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId));
+                actorSpaceAtActionStart: ActorSpaceOf(completed.ActorId),
+                excludedTargets: RepeatExclusions(completed, excludedTarget, materializedDefinitions));
             var offer = FindPendingAttackOffer(
                 planned, materializedDefinitions, materializedInstances);
             if (!offer.HasValue)
@@ -731,7 +751,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 null,
                 excludedTarget: pendingAttackResolution.ExcludedTarget,
                 targetSpaceBeforeConsequences: TargetSpaceOf(command.Target),
-                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart);
+                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart,
+                excludedTargets: pendingAttackResolution.ExcludedTargets);
 
             pendingAttackResolution = applying;
             pendingAttackTargetChoice = null;
@@ -845,8 +866,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     resolution.ActorId, offer.Value, materializedDefinitions, participants,
                     modifications);
                 if (!legal.Contains(boundTarget) ||
-                    (resolution.ExcludedTarget.IsDefined &&
-                        boundTarget.Equals(resolution.ExcludedTarget)))
+                    resolution.ExcludedTargets.Contains(boundTarget))
                 {
                     return StopAttackWithoutATarget(resolution, steps);
                 }
@@ -864,7 +884,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     null,
                     excludedTarget: resolution.ExcludedTarget,
                     targetSpaceBeforeConsequences: TargetSpaceOf(boundTarget),
-                    actorSpaceAtActionStart: resolution.ActorSpaceAtActionStart);
+                    actorSpaceAtActionStart: resolution.ActorSpaceAtActionStart,
+                    excludedTargets: resolution.ExcludedTargets);
                 pendingAttackResolution = resolution;
                 steps.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.AttackTargetValidated(resolution)));
@@ -903,7 +924,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 attackValue,
                 excludedTarget: resolution.ExcludedTarget,
                 targetSpaceBeforeConsequences: resolution.TargetSpaceBeforeConsequences,
-                actorSpaceAtActionStart: resolution.ActorSpaceAtActionStart);
+                actorSpaceAtActionStart: resolution.ActorSpaceAtActionStart,
+                excludedTargets: resolution.ExcludedTargets);
             var defenseOffers = FindDefenseOffers(
                 materializedDefinitions, materializedInstances, defenseResolution.TargetHeroId,
                 modifications, offer.Value);
@@ -1180,7 +1202,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// its source card's text performs none, which is what keeps a printed secondary - and the
         /// replacements p.13 gives a Movement or an Attack - from applying the card's rider.</para>
         /// </summary>
-        private static IEnumerable<ResolutionStep> CardTextAt(
+        private IEnumerable<ResolutionStep> CardTextAt(
             CardTextTiming timing,
             PendingAttackResolution resolution,
             HeroId actorId,
@@ -1200,7 +1222,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// The same, for text on a card that is not the Attack's own - p.14's step 4 applies the
         /// defender's card, which the attacker's resolution does not name.
         /// </summary>
-        private static IEnumerable<ResolutionStep> CardTextAt(
+        private IEnumerable<ResolutionStep> CardTextAt(
             CardTextTiming timing,
             PendingAttackResolution resolution,
             HeroId actorId,
@@ -1211,6 +1233,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackResolutionOutcome remainderOutcome = AttackResolutionOutcome.None)
         {
             var action = FindCardTextAction(sourceDefinitionReference, actionDefinitionId, definitions);
+            var bullet = SequenceBulletFor(resolution);
+            if (timing == CardTextTiming.AfterTheAttack && bullet.IsDefined && !bullet.AppliesAfterAttackText)
+                return Array.Empty<ResolutionStep>();
             // Milestone 8.23. An Attack may print text at both of p.14's attacker moments, so the
             // question is whether this action has text for THIS moment rather than whether its one
             // declared moment happens to be this one.
@@ -1367,7 +1392,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 targetSpaceBeforeConsequences:
                     pendingAttackResolution.TargetSpaceBeforeConsequences ??
                     TargetSpaceOf(AttackTarget.Minion(targetMinionId)),
-                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart);
+                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart,
+                excludedTargets: pendingAttackResolution.ExcludedTargets);
             // Finding `F-ER2-09`: p.13's coin values are read from the declared standard-minion content
             // rather than restated here as a Heavy-versus-other literal. The number is unchanged.
             var coins = StandardMinionProfileCatalog.Rulebook.Get(target.MinionType).DefeatCoins;
@@ -2604,7 +2630,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.ExcludedTarget,
                 blockResult,
                 pendingAttackResolution.TargetSpaceBeforeConsequences,
-                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart);
+                actorSpaceAtActionStart: pendingAttackResolution.ActorSpaceAtActionStart,
+                excludedTargets: pendingAttackResolution.ExcludedTargets);
         }
 
         private PendingAttackTargetChoice CreateAttackTargetChoice(
@@ -2622,9 +2649,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var legal = FindLegalAttackTargets(
                 resolution.ActorId, offer, definitions, participants, modifications,
                 SequenceBulletFor(resolution), cardInstances);
-            if (resolution.ExcludedTarget.IsDefined)
+            if (resolution.ExcludedTargets.Count > 0)
             {
-                legal = legal.Where(target => !target.Equals(resolution.ExcludedTarget)).ToArray();
+                legal = legal.Where(target => !resolution.ExcludedTargets.Contains(target)).ToArray();
             }
 
             // Milestone 8.35z27. Ruling 19's "(on different targets)" is the card's own
@@ -3114,6 +3141,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             var sourceCard = instances.SingleOrDefault(candidate =>
                 candidate.Id.Equals(resolution.SourceCardInstanceId));
+            // Milestone 8.36f3. A borrowed primary was admitted by the enclosing authority before
+            // this backend created the pending resolution. It cannot be rediscovered through either
+            // ordinary offer window: the borrowed card remains in its owner's discard, by ruling 36.
+            // Rebuild that already-authorized continuation from the exact identity held on the
+            // resolution, while still requiring the source instance, its definition, and its printed
+            // primary to agree. No new TextGranted action can enter through here; this method only
+            // continues or restores a pending Attack that StartAttackResolution already accepted.
+            if (resolution.InvocationContext == ActionInvocationContext.TextGranted &&
+                sourceCard != null &&
+                sourceCard.DefinitionReference.Equals(resolution.SourceDefinitionReference))
+            {
+                var definition = definitions.SingleOrDefault(candidate =>
+                    candidate.Reference.Equals(resolution.SourceDefinitionReference));
+                var action = definition?.ActionDefinitions.SingleOrDefault(candidate =>
+                    candidate.Id.Equals(resolution.ActionDefinitionId));
+                if (action != null && action.Origin == ActionDefinitionOrigin.PrintedPrimary &&
+                    action.Kind == ActionKind.Attack)
+                {
+                    return new ActionOffer(
+                        sourceCard.Id,
+                        definition.Reference,
+                        action.Id,
+                        resolution.ActorId,
+                        ActionInvocationContext.TextGranted,
+                        true,
+                        action.AttackRange,
+                        action.SourceCardStateTransition);
+                }
+
+                return null;
+            }
+
             var offers = sourceCard != null &&
                 sourceCard.State.Location == CardLocation.TurnArea &&
                 sourceCard.State.HasBeenPlayed &&

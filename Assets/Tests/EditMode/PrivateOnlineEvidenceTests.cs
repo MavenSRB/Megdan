@@ -79,7 +79,8 @@ namespace GuardsDigital.Tests.EditMode
             var command = "& " + Quote(Path.Combine(root, "Tools", "Validate-PrivateOnlineEvidence.ps1")) +
                 " -LogPaths @(" + string.Join(",", paths.Select(Quote)) + ") -OutputDirectory " + Quote(Path.Combine(directory, "bundle"));
             var encoded = Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(command));
-            using (var process = Process.Start(new ProcessStartInfo("powershell.exe", "-NoProfile -EncodedCommand " + encoded)
+            using (var process = Process.Start(new ProcessStartInfo(
+                "powershell.exe", "-NoProfile -ExecutionPolicy Bypass -EncodedCommand " + encoded)
             { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true }))
             {
                 Assert.That(process.WaitForExit(20000), Is.True, "Bounded evidence checker did not exit.");

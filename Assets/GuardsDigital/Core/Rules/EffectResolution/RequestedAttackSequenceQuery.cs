@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -130,7 +131,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     (AttackTargetableUnits)units,
                     (AttackTargetReach)reach,
                     (AttackTargetLine)line),
-                DeclaredNarrowing(node));
+                DeclaredNarrowing(node),
+                !node.Inputs.Any(input => input.ParameterName == SyntheticSequenceCapabilities.AppliesAfterAttackTextParameter &&
+                    input.SourceKind == EffectBindingSourceKind.Literal && input.Literal.Kind == EffectValueKind.Boolean &&
+                    !input.Literal.BooleanValue));
             return true;
         }
 
@@ -189,6 +193,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             // Milestone 8.35z45. Absent unless the bullet prints the clause, so a plan
             // named by a frame that ran before this field existed reads exactly as it did.
             var narrowing = AttackSequenceSubjectNarrowing.None;
+            var appliesAfterAttackText = true;
             foreach (var fact in outcome.Outputs)
             {
                 if (string.Equals(
@@ -229,6 +234,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 {
                     narrowing = (AttackSequenceSubjectNarrowing)fact.Value.IntegerValue;
                 }
+                else if (fact.OutputName == SyntheticSequenceCapabilities.AppliesAfterAttackTextOutput &&
+                    fact.Value.Kind == EffectValueKind.Boolean)
+                    appliesAfterAttackText = fact.Value.BooleanValue;
             }
 
             if (!sawDistinct ||
@@ -246,7 +254,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     (AttackTargetableUnits)units,
                     (AttackTargetReach)reach,
                     (AttackTargetLine)line),
-                narrowing);
+                narrowing, appliesAfterAttackText);
             return true;
         }
     }

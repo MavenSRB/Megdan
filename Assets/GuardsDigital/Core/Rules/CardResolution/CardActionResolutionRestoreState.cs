@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
@@ -70,8 +72,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTarget owedAttackRepeatExclusion = default,
             PendingAfterActionRepeat owedAfterActionRepeat = null,
             AttackTarget owedAfterActionRepeatExclusion = default,
-            PendingAttackSequenceChain attackSequenceChain = null)
+            PendingAttackSequenceChain attackSequenceChain = null,
+            IEnumerable<PendingResolution> borrowedSkillParents = null)
         {
+            BorrowedSkillParents = Array.AsReadOnly((borrowedSkillParents ?? Array.Empty<PendingResolution>()).ToArray());
+            if (BorrowedSkillParents.Any(frame => frame == null || frame.PendingChoice != null))
+                throw new ArgumentException("A borrowed-action parent is paused after its selection.", nameof(borrowedSkillParents));
             AttackSequenceChain = attackSequenceChain;
             OwedAttackRepeat = owedAttackRepeat;
             OwedAttackRepeatExclusion = owedAttackRepeatExclusion;
@@ -100,6 +106,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// trigger stopped, and the pause itself is the interrupt beside it.
         /// </summary>
         public PendingAttackCardTextRemainder PendingCardTextRemainder { get; }
+
+        public IReadOnlyList<PendingResolution> BorrowedSkillParents { get; }
+
+        public CardActionResolutionRestoreState WithBorrowedSkillParents(IEnumerable<PendingResolution> parents) =>
+            new CardActionResolutionRestoreState(ContinuationKind, PendingMovementResolution,
+                PendingAttackResolution, PendingSkillResolution, CoinLedger, PendingCorrection,
+                PendingRepeat, PendingImmediateLanePush, PendingCardText, PendingPreAction,
+                PendingEffectInterrupt, PendingRemovalPrevention, PendingCardTextRemainder,
+                AfterActionRepeatSubject, OwedAttackRepeat, OwedAttackRepeatExclusion,
+                OwedAfterActionRepeat, OwedAfterActionRepeatExclusion, AttackSequenceChain, parents);
 
         /// <summary>
         /// Milestone 8.23. The completed basic action a standing after-action ability may still be

@@ -44,6 +44,8 @@ namespace GuardsDigital.Core.Snapshots
             WriteAfterActionRepeatSubject(writer, state.AfterActionRepeatSubject);
             WriteOwedRepeats(writer, state);
             WriteAttackSequenceChain(writer, state.AttackSequenceChain);
+            writer.Write(state.BorrowedSkillParents.Count);
+            foreach (var parent in state.BorrowedSkillParents) WriteSkillResolution(writer, parent);
             if (continuationKind == CardActionContinuationKind.Movement)
             {
                 WriteMovementResolution(writer, pendingMovement);
@@ -255,6 +257,7 @@ namespace GuardsDigital.Core.Snapshots
                 // resolved through the catalog - would have been a payload choosing which code filters
                 // a target set, which no writer in this file does.
                 writer.Write((int)bullet.SubjectNarrowing);
+                writer.Write(bullet.AppliesAfterAttackText);
             }
 
             writer.Write(chain.StartedSequences);
@@ -297,7 +300,7 @@ namespace GuardsDigital.Core.Snapshots
                 var narrowing = SnapshotEnumReader.Read<AttackSequenceSubjectNarrowing>(
                     reader, "modal Attack bullet subject narrowing");
                 bullets.Add(new AttackSequenceBullet(
-                    bulletId, new PrintedAttackTargetPolicy(units, reach, line, binding), narrowing));
+                    bulletId, new PrintedAttackTargetPolicy(units, reach, line, binding), narrowing, reader.ReadBoolean()));
             }
 
             var startedSequences = reader.ReadInt32();
@@ -894,6 +897,14 @@ namespace GuardsDigital.Core.Snapshots
             var owedAfterActionRepeatExclusion = ReadAttackTarget(
                 reader, "owed after-action repeat exclusion kind");
             var attackSequenceChain = ReadAttackSequenceChain(reader);
+            var borrowedParentCount = reader.ReadInt32();
+            if (borrowedParentCount < 0 || borrowedParentCount > 1024)
+                throw new InvalidOperationException("Invalid borrowed-action parent count.");
+            var borrowedParents = new List<PendingResolution>();
+            for (var index = 0; index < borrowedParentCount; index++)
+                borrowedParents.Add(ReadSkillResolution(reader, definitions, cards, catalogs.Capabilities,
+                    participants, CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
+                    modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex, rosterState));
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -975,7 +986,8 @@ namespace GuardsDigital.Core.Snapshots
                         owedAttackRepeatExclusion,
                         owedAfterActionRepeat,
                         owedAfterActionRepeatExclusion)
-                    .WithAttackSequenceChain(attackSequenceChain),
+                    .WithAttackSequenceChain(attackSequenceChain)
+                    .WithBorrowedSkillParents(borrowedParents),
                 null, null, null, definitions, cards,
                 participants, markers, modifications, heroItems,
                 rosterState: rosterState);
@@ -1825,6 +1837,8 @@ namespace GuardsDigital.Core.Snapshots
             {
                 WriteCoordinate(writer, pending.ActorSpaceAtActionStart.Value);
             }
+            writer.Write(pending.ExcludedTargets.Count);
+            foreach (var excluded in pending.ExcludedTargets) WriteAttackTarget(writer, excluded);
         }
 
         private static PendingAttackResolution ReadAttackResolution(BinaryReader reader)
@@ -1878,6 +1892,12 @@ namespace GuardsDigital.Core.Snapshots
                 reader, "pending attack Block result");
             var targetSpace = reader.ReadBoolean() ? (HexCoordinate?)ReadCoordinate(reader) : null;
             var actorSpace = reader.ReadBoolean() ? (HexCoordinate?)ReadCoordinate(reader) : null;
+            var exclusionCount = reader.ReadInt32();
+            if (exclusionCount < 0 || exclusionCount > 1024)
+                throw Malformed("Invalid pending Attack exclusion count.");
+            var exclusions = new AttackTarget[exclusionCount];
+            for (var index = 0; index < exclusions.Length; index++)
+                exclusions[index] = ReadAttackTarget(reader, "pending Attack exclusion kind");
             if (targetSpace.HasValue && !target.IsDefined)
             {
                 throw Malformed(
@@ -1888,7 +1908,7 @@ namespace GuardsDigital.Core.Snapshots
                 common.ResolutionId, common.CardId, common.DefinitionReference, common.ActionId,
                 common.ActorId, common.InvocationContext, common.StepId, phase, target,
                 attackValue, defenseOffer, defenseValue, excludedTarget, blockResult, targetSpace,
-                actorSpace);
+                actorSpace, exclusions);
         }
 
         private static void WriteCoinLedger(BinaryWriter writer, HeroCoinLedgerRestoreStateHolder holder)

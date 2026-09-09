@@ -137,14 +137,20 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>
         /// The Red step-then-target seam, driven on Sanguine Path. Crimson Trail prints the same seam
-        /// and cannot be driven today - see its row.
+        /// behind a boolean condition; its distinct branch rule is covered by the source-linked gate.
         /// </summary>
         private const string RedStepJourney =
             "SanguinePath_BuysItsStepFromTheSpawnPointCountBeforeItNamesTheUnitBesideHer";
 
+        private const string RedStepUnavailableJourney =
+            "SanguinePath_NoReachableTargetRemainsUnavailable";
+
+        private const string RedStepZeroBudgetJourney =
+            "SanguinePath_ZeroBudgetStaysThenTargets";
+
         /// <summary>RULING 34's chain, and the single-slot exclusion it actually gets.</summary>
         private const string ChainJourney =
-            "BloodFrenzy_ExcludesOnlyTheInstanceBeforeIt_RecordingTheSingleSlotShortfall";
+            "BloodFrenzy_PerformsFiveDistinctRepeatsAcrossUndoAndRestore";
 
         private const string SeedsJourney =
             "SeedsOfFear_MovesTheEnemyOffItsSpawnPointExactlyOneSpaceAndNotZero";
@@ -248,10 +254,9 @@ namespace GuardsDigital.Tests.PlayMode
                 Face(WhisperCardContent.DeathSeeker, "Death Seeker", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
-                        // Milestone 8.35z53. The turn-one journey drives the SAME control and is named
-                        // here rather than left unaccounted, which is what the coverage check asks. It
-                        // ships parked: see its own `[Explicit]` reason, which records a fork between
-                        // RULING 42 and what the build measurably does, not a defect in this row.
+                        // Milestone 8.36f3. The turn-one journey drives the SAME control and is named
+                        // here rather than left unaccounted. RULING 53 resolved the earlier fork: the
+                        // legal do-nothing Hold path is active coverage, not a parked exception.
                         Prove(PrimarySkillControl, DeathSeekerTurnOne),
                         Prove(PrimarySkillControl, ImmunityJourney),
                         Prove(ModalBulletChoice, ImmunityJourney),
@@ -273,16 +278,11 @@ namespace GuardsDigital.Tests.PlayMode
                 // left her in. All three compose the identical seam and differ only in what pays for
                 // the step - a boolean here, a counted budget with a printed ceiling on the other two.
                 //
-                // CRIMSON TRAIL'S OWN ATTACK CANNOT BE DRIVEN TODAY, AND THAT IS SAID HERE RATHER THAN
-                // DISCOVERED IN A RED RUN. `WalkToAttackTargetBinding`'s Conditional arm returns
-                // Blocked, so this face's Attack is greyed on every board in the build - a
-                // PRE-EXISTING ENGINE DEFECT that has nothing to do with this hero and is being
-                // corrected separately. Its two siblings are unaffected, because their Move is a direct
-                // Sequence child under `EffectFailurePolicy.UpTo` rather than a Conditional's, so the
-                // seam this row's shapes describe IS driven - on Sanguine Path, which prints the same
-                // sentence with a counted budget. A gate row records what the CARD asks; the journey
-                // column records where a player actually supplies it, and pointing it at a face that
-                // cannot be started would have been the dishonest half.
+                // CRIMSON TRAIL'S CONDITIONAL AND ITS INPUT SHAPE HAVE SEPARATE WITNESSES. Milestone
+                // 8.35z49 corrected the source-level binding walk so the boolean gate can fall through
+                // to the mandatory target step. Sanguine Path drives the identical move-then-target
+                // player interaction with a counted budget; the authoritative scenarios below pin the
+                // Conditional-specific branch rather than asking one UI journey to re-prove it.
                 Face(WhisperCardContent.CrimsonTrail, "Crimson Trail", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
@@ -305,6 +305,8 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(AdjacentAttackTarget, RedStepJourney),
+                        Prove(AdjacentAttackTarget, RedStepUnavailableJourney),
+                        Prove(AdjacentAttackTarget, RedStepZeroBudgetJourney),
                         Prove(BeforeAttackTextPause, RedStepJourney),
                         Prove(BoardSpaceSelection, RedStepJourney),
                         Prove(BoardUnitSelection, RedStepJourney),

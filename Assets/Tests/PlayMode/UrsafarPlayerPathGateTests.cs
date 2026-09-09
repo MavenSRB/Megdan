@@ -100,6 +100,14 @@ namespace GuardsDigital.Tests.PlayMode
         private const string ModalUndoRestore =
             "TheBorrowsCardChoice_IsAnsweredAgainAfterAnUndoAndAfterARestore";
 
+        /// <summary>The borrow continuation through a discarded printed Attack.</summary>
+        private const string BorrowedAttackJourney =
+            "InstinctiveReaction_PerformsADiscardedAttackWithoutMovingItsCard";
+
+        /// <summary>The nested borrow continuation through a discarded printed Skill.</summary>
+        private const string BorrowedSkillJourney =
+            "InstinctiveReaction_PerformsADiscardedSkillAndReturnsThroughNestedParents";
+
         /// <summary>Apex Predator's escalation to Defeat when the mandatory discard cannot be paid.</summary>
         private const string ApexJourney =
             "ApexPredator_DefeatsTheEnemyInRange_WhenTheirHandIsAlreadyEmpty";
@@ -400,6 +408,8 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(PrimarySkillControl, ModalUndoRestore),
                         Prove(ModalBulletChoice, ModalUndoRestore),
                         Prove(HandCardSelection, ModalUndoRestore),
+                        Prove(HandCardSelection, BorrowedAttackJourney),
+                        Prove(HandCardSelection, BorrowedSkillJourney),
                         Prove(ConfirmOrDecline, ModalUndoRestore),
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)

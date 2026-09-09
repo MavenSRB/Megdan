@@ -46,6 +46,24 @@ namespace GuardsDigital.Tests.EditMode
         /// which is what "adjacent to an empty spawn point" asks for without printing a number.
         /// </summary>
         [Test]
+        public void TheRadiusCount_IsAvailableToReadOnlyMoveFeasibility()
+        {
+            var perch = new HexCoordinate(0, -1);
+            var board = CreateBoard(Dodger, perch, RangedSpawnNear);
+            var handler = Handler(RosterCatalog, SyntheticRosterCapabilities.EmptyMinionSpawnPointsInRadiusV1);
+            var context = RitualContext(board, perch, DodgerCardContent.DarkRitual, minimum: 2);
+            var before = board.Occupancies.ToArray();
+            Assert.That(handler, Is.InstanceOf<IEffectAnticipatedOutcomeCapabilityHandler>(),
+                "A following move must see the computed count, not treat its unbound distance as zero.");
+            var publisher = (IEffectAnticipatedOutcomeCapabilityHandler)handler;
+            Assert.That(publisher.PublishesWithoutApplying, Is.True);
+            var anticipated = publisher.AnticipateOutcomes(context, Array.Empty<EffectValue>());
+            Assert.That(anticipated.Single(fact => fact.OutputName == SyntheticRosterCapabilities.CountOutput).Value.IntegerValue, Is.EqualTo(3));
+            Assert.That(anticipated, Is.EqualTo(handler.Execute(context).Outcomes));
+            Assert.That(board.Occupancies, Is.EqualTo(before));
+        }
+
+        [Test]
         public void TheAdjacencyArm_AnswersPresentBesideOneQualifyingPoint()
         {
             var board = CreateBoard(Dodger, Origin);

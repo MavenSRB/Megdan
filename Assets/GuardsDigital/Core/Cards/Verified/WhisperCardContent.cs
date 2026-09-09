@@ -48,7 +48,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <see cref="TigerclawCardContent.ContentRevision"/> has: it moves when Whisper's content
         /// does.
         /// </summary>
-        public const string ContentRevision = "whisper-8-35z53-rev-1";
+        public const string ContentRevision = "whisper-8-36f3-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

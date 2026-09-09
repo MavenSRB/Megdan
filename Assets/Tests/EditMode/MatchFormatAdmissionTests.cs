@@ -169,7 +169,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSnapshotSchema_DidNotMoveBecauseAFormatIsValuesAndNotShape()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(40),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(41),
                 "The Wave total, each team's Life counters and the participant list have all been " +
                 "counted values in the payload for many versions, so a 2v2 payload is a v38 payload " +
                 "of different numbers rather than of a different shape. The version itself has moved " +

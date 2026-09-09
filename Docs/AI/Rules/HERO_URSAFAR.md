@@ -176,7 +176,7 @@ content has not moved.
 | Card / action | Composes (implemented) | New or refined (owner) |
 | --- | --- | --- |
 | Claws That Catch - Basic Attack | Printed Attack contracts; p.19a's step-1 move-then-target trio (Brogan's Mad Dash shape, reused) | Grant at step 7 (after the mandatory target step); RULING 46/47 govern the move-then-target order and its non-Movement-action status. **Composed at 8.35z31** |
-| Angry Roar - Basic Skill | `borrow-primary-action@1` over `OwnedActiveCardsWithAnActiveEffect` | **THE BORROW CONTRACT** (`BorrowedPrimaryAction.cs`), shared with Tali. This milestone widened the four dispatch guards that admit its `TextGranted` stamp; the authority that starts the borrowed instance once the choice is answered remains unwired (see worker notes) |
+| Angry Roar - Basic Skill | `borrow-primary-action@1` over `OwnedActiveCardsWithAnActiveEffect` | **THE BORROW CONTRACT** (`BorrowedPrimaryAction.cs`), shared with Tali. Milestone 8.36f3 completed the `TextGranted` continuation: the selected printed primary now runs through its ordinary Movement, Attack or Skill authority while the borrowing Skill is suspended, then resumes without changing the borrowed card's state |
 | Prey Drive / Prey Abundance / Feeding Frenzy - Attack | `choose-target-set@1` + `synthetic-remove@2` (Sabina's `CreateFollowUpRemoval` shape, reused verbatim) over `synthetic-card-radius@1` reach | **THIS MILESTONE**: `attack-target-survived@1` (`SyntheticAttackTargetSurvivalCapabilities`) - reads `EnclosingAttackFacts.TargetWasRemoved`, itself read live off board occupancy at `CardActionResolutionAuthority.EnclosingAttackOf`, closing phase 1's named shortfall with zero schema movement |
 | Rip / Tear - Attack | `gain-resource@1`; Tear also declares `RuleModificationKind.AdditionalDefeatLifeCost` (new, payload-free) | RULING 35: Tier + 1 computed once, spent once, at the defeat |
 | Prowling Brute / Rampaging Beast / Unstoppable Force - Movement | `synthetic-choose-target` (Blue swap target - **this milestone found it unclassified in `HeroPlayerPathMatrix` and added it**) + `synthetic-swap-actor@1` + `synthetic-direct-move@1` | `CardTextTiming.AfterTheMovement` (new enum member, already declared pre-8.35z31; first consumed here) |
@@ -202,11 +202,12 @@ alternative already load-bearing elsewhere in this codebase (`EffectRosterState`
 board occupancy live, at the exact moment the fact is asked, rather than storing it. Three pieces built
 instead of four; see `UrsafarEffectContent.RemovalGatedOnTargetSurvival`'s doc comment for the full account.
 
-**Full borrow dispatch remains owed.** This milestone did not build the authority that constructs a
-borrowed `ActionOffer` and starts the borrowed card's primary action once `borrow-primary-action@1`'s
-choice is answered - `BorrowedActionQuery`, the direct twin of `RepeatedActionQuery.Requested` that
-phase 1's own doc comment named, does not yet exist. The four guards admit the stamp; nothing yet
-produces one.
+**Borrow dispatch completed at 8.36f3.** `BorrowedActionQuery` reads the selected card from the
+completed effect frame; `CardActionResolutionAuthority` suspends the borrowing Skill, constructs the
+borrowed card's exact printed-primary `TextGranted` offer, and dispatches it through the ordinary
+Movement, Attack or Skill authority. Completion restores the parent frame, including nested borrowed
+Skills. The borrowed card remains in its original state, and schema 41 preserves the suspended-parent
+stack through restore/replay.
 
 ## Ursafar hero profile
 

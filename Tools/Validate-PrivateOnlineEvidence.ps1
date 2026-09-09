@@ -84,7 +84,13 @@ if ($OutputDirectory) {
     foreach ($capture in $captures) {
         $target = Join-Path $OutputDirectory ($capture.Begin.process + '.log')
         Copy-Item -LiteralPath $capture.Source -Destination $target
-        if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash -cne $capture.Hash) { throw 'Capture changed during collection.' }
+        # Use the same framework hash path used for source captures above. Depending on
+        # module auto-loading here made the checker fail in otherwise-valid test and
+        # operator shells where Microsoft.PowerShell.Utility was not discoverable.
+        $targetBytes = [IO.File]::ReadAllBytes($target)
+        $targetSha = [Security.Cryptography.SHA256]::Create()
+        try { $targetHash = [BitConverter]::ToString($targetSha.ComputeHash($targetBytes)).Replace('-','') } finally { $targetSha.Dispose() }
+        if ($targetHash -cne $capture.Hash) { throw 'Capture changed during collection.' }
     }
     $manifest | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $OutputDirectory 'manifest.json') -Encoding UTF8
 }

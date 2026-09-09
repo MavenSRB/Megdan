@@ -112,11 +112,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            bool authorizedTextGrant = false)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
-            var authoritativeOffers = ActionOfferQuery.GetAvailableTurnActionOffers(
+            var authoritativeOffers = authorizedTextGrant
+                ? new[] { offer }
+                : ActionOfferQuery.GetAvailableTurnActionOffers(
                 materializedDefinitions,
                 materializedInstances,
                 offer.ActorId,
@@ -445,7 +448,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     completedResolution.SourceCardInstanceId,
                     completedResolution.ActionDefinitionId,
                     completedResolution.ActorId,
-                    ActionKind.Movement));
+                    ActionKind.Movement, completedResolution.InvocationContext));
                 pendingResolution = null;
                 pendingChoice = null;
 
@@ -468,7 +471,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     completedResolution.SourceCardInstanceId,
                     completedResolution.ActionDefinitionId,
                     completedResolution.ActorId,
-                    ActionKind.Movement));
+                    ActionKind.Movement, completedResolution.InvocationContext));
                 pendingResolution = null;
                 pendingChoice = null;
 
@@ -510,7 +513,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         completedResolution.SourceCardInstanceId,
                         completedResolution.ActionDefinitionId,
                         completedResolution.ActorId,
-                        ActionKind.Movement)
+                        ActionKind.Movement, completedResolution.InvocationContext)
                 });
         }
 

@@ -139,18 +139,6 @@ namespace GuardsDigital.Tests.PlayMode
         /// because the bound does the work.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z46's dealing. After the mandatory first Move resolves (measured " +
-            "at exactly the printed distance) the second Move's own control never reaches the surface: " +
-            "DeclineControl finds nothing, so 'nought is a legal answer' has no control to click. The " +
-            "sibling journey above (DivertAttention_OffersHerALineNoLongerThanTheSpacesItActuallyMoved" +
-            "TheEnemy) exercises the SAME up-to-2 push composition and passes, so the composition " +
-            "itself is not broken in general - what differs here is the realised distance is nought, " +
-            "and RULING 37's own binding (the second Move's bound reads the first Move's realised " +
-            "distance) may correctly compute a zero-length step as 'nothing to offer' rather than as " +
-            "'offer nought as an answer', which is a card-text reading question the checklist reserves " +
-            "for the coordinator rather than a UI-fixture fix. See Docs/AI/Archive/Phase-Handoffs/" +
-            "PHASE_8.md's 8.35z46 entry.")]
         public IEnumerator DivertAttention_OffersHerNothing_WhenTheEnemyWasMovedNoSpacesAtAll()
         {
             yield return LoadStagedScene(
@@ -188,10 +176,9 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             var enemyBefore = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate;
-            var stop = DeclineControl(runtime);
-            Assert.That(stop, Is.Not.Null,
-                "An \"up to\" push must be answerable with nought. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, stop.Label));
+            // The zero-distance answer is the occupied origin on the board, not a decline button.
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets.Any(value => value.Space.Equals(enemyBefore)), Is.True);
+            Assert.That(UiPlayer.ClickBoard(pointerInput, root.Hud, HeroView(enemyId).transform.position), Is.True);
             yield return null;
 
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
@@ -214,33 +201,14 @@ namespace GuardsDigital.Tests.PlayMode
         /// 37's bound is - no separate did-it-happen predicate anywhere.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z46's dealing. The Radius 4 disk candidate count reads 1 where " +
-            "RULING 8 (any hero in the disk, self included) predicts 2 - the enemy and Silverarrow " +
-            "herself. The sibling journey below (FaeHealing_RetrievesACardForSilverarrowHerself) shares " +
-            "this staging and fails at Commit before reaching the same disk. " +
-            "MILESTONE 8.35z52's BURN-DOWN SETTLED THE FORK, and it is NOT the fixture: every staged " +
-            "Silverarrow scene - this Tier II arm included - is restaged by EngagedMirrorStaging, " +
-            "which by CONSTRUCTION returns only a board where the two heroes stand EXACTLY TWO SPACES " +
-            "apart (it iterates free neighbours and returns on the first pair whose HexDistanceQuery " +
-            "reads 2, and throws rather than staging anything else). Two is well inside Radius 4, so " +
-            "both heroes are in the disk and the staged-distance reading is false by construction. " +
-            "What stands is therefore the CONTENT question this parking named as the alternative: the " +
-            "candidate query admits one hero where RULING 8 (any hero in the disk, self included) " +
-            "predicts two, so the disk is excluding a subject the ruling admits. That is a rules-side " +
-            "correction with an identity re-pin behind it rather than a fixture edit, so it is left " +
-            "NAMED rather than smuggled into a package cut. " +
-            "See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 and 8.35z52 entries.")]
         public IEnumerator FaeHealing_RetrievesACardForTheEnemyHeroItNamed()
         {
-            yield return LoadStagedScene(
-                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSilverarrow);
+            yield return LoadHealingStaging();
             var root = Root();
             var runtime = root.Runtime;
             var silverarrowId = SilverarrowSeat(runtime).HeroId;
             var enemyId = OtherHeroId(runtime, silverarrowId);
 
-            yield return SpendOneEnemyCardIntoTheirDiscard(root, silverarrowId, enemyId);
             Assert.That(DiscardOf(runtime, enemyId), Is.Not.Empty,
                 "The retrieval needs something to retrieve, and an answered Attack is what puts it " +
                 "there.");
@@ -281,20 +249,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// exclusion.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z46's dealing. Fails inside the shared " +
-            "SpendOneOwnCardIntoHerDiscard helper's Commit call with 'Sequence contains no matching " +
-            "element', after two rounds of fixing the same double-card-commit trap this whole dealing " +
-            "hit repeatedly elsewhere (a Wasp filler card named twice in one journey). A third named " +
-            "card was substituted each time without resolving the underlying count; the helper commits " +
-            "and resolves several setup turns before Fae Healing itself is even reached, and which " +
-            "specific commit is failing needs a fresh, careful re-derivation of every card this helper " +
-            "spends against Silverarrow's five-card Tier II hand rather than another guess-and-rerun " +
-            "cycle. See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 entry.")]
         public IEnumerator FaeHealing_RetrievesACardForSilverarrowHerself()
         {
-            yield return LoadStagedScene(
-                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSilverarrow);
+            yield return LoadHealingStaging();
             var root = Root();
             var runtime = root.Runtime;
             var silverarrowId = SilverarrowSeat(runtime).HeroId;
@@ -302,7 +259,6 @@ namespace GuardsDigital.Tests.PlayMode
 
             // Her own discard is filled by answering an attack, which is the one route a hero has to
             // a discard pile before p.15 has upgraded anybody.
-            yield return SpendOneOwnCardIntoHerDiscard(root, silverarrowId, enemyId);
             Assert.That(DiscardOf(runtime, silverarrowId), Is.Not.Empty);
 
             CommitSoTheNamedSeatActs(runtime, silverarrowId, SilverarrowCardContent.FaeHealing);
@@ -345,19 +301,6 @@ namespace GuardsDigital.Tests.PlayMode
         /// is inside the disk at the close rather than at the moment the Skill resolved.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z46's dealing. Fails inside the shared " +
-            "AnswerTheHandChoiceWithItsFirstCard helper with 'No effect pause is standing to read a " +
-            "node from', status='YOUR COMMITMENT - CHOOSE A CARD, OR PASS' - a fresh round's " +
-            "commitment phase, not the end-of-turn discard pause SL-06's own handshake should be " +
-            "holding open. The button-click-on-a-card-element trap (fixed once already in this same " +
-            "helper) is cleared; what stands unconfirmed is whether the turn genuinely withholds its " +
-            "close while the End of turn: trigger's question is pending on THIS surface path, which is " +
-            "exactly the claim milestone 8.35z30 recorded as unverified and the reason this journey " +
-            "exists. A three-way trace (turn-close withholding, the triggered-effect's own firing " +
-            "moment, and this helper's own round bookkeeping) is more than a UI-fixture fix and is " +
-            "reserved for the coordinator. See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 " +
-            "entry.")]
         public IEnumerator WarningShot_FiresAtTheCloseOfHerOwnTurnAndTakesACardFromTheEnemyInRadius()
         {
             yield return LoadStagedScene(
@@ -445,22 +388,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// which is what makes the absence evidence rather than an empty assertion.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z46's dealing. Wild Hunt's own 'before every action' pre-action " +
-            "move pause (this staging's Tier III unlocks it) is now explicitly declined before the " +
-            "Attack's own target question, which cleared the original null-PendingAttackTargetChoice " +
-            "failure. What stands now is a DIFFERENT, later assertion: 'the chain's condition is that " +
-            "the printed instance took a hero' reads False after the printed Attack resolves against " +
-            "this staging's one enemy hero. Whether the take-a-hero fact is failing to record, or " +
-            "Wild Hunt's own declined move is consuming an outcome slot Rain of Arrows' chain reads " +
-            "from, is unconfirmed and is exactly the kind of cross-capability interaction (a Tier III " +
-            "Ultimate's standing trigger beside a Tier III Attack's own repeat chain) the checklist " +
-            "reserves for the coordinator. See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 " +
-            "entry.")]
         public IEnumerator RainOfArrows_TakesItsHeroAndOpensNoRepeatControl_TheChainHavingNowhereToGo()
         {
-            yield return LoadStagedScene(
-                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSilverarrow);
+            yield return LoadRangeStaging(SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSilverarrow, 3);
             var root = Root();
             var runtime = root.Runtime;
             var silverarrowId = SilverarrowSeat(runtime).HeroId;
@@ -478,7 +408,7 @@ namespace GuardsDigital.Tests.PlayMode
             var wildHunt = DeclineControl(runtime);
             if (wildHunt != null)
             {
-                Assert.That(runtime.RoundPresenter.Submit(wildHunt), Is.True);
+                UiPlayer.Click(UiPlayer.Button(root.Hud, wildHunt.Label));
                 yield return null;
             }
 
@@ -489,15 +419,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(hero.IsDefined, Is.True,
                 "This staging deals one enemy hero, and the chain's condition is that the printed " +
                 "instance took a hero.");
-            Assert.That(runtime.SubmitProjectedCommand(TargetCommand(choice, hero)), Is.True);
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud,
+                HeroView(hero.HeroId).transform.position), Is.True);
             yield return null;
 
             if (runtime.PendingDefenseChoice != null)
             {
-                var surviving = SurvivingDefense(runtime);
-                Assert.That(runtime.SubmitProjectedCommand(surviving != null
-                    ? surviving.Command
-                    : DirectorCommand.DeclineDefense()), Is.True);
+                var decline = runtime.RoundView.Model.DefenseChoices.Single(value => value.Command.Kind == DirectorCommandKind.DeclineDefense);
+                UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label));
                 yield return null;
             }
 
@@ -780,12 +709,35 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             // A hand-card face is a card ELEMENT and not a labelled button - the same submit-directly
             // fix milestone 8.35z38's dealing found for a defense face.
-            Assert.That(runtime.RoundPresenter.Submit(select), Is.True);
+            var node = StandingNode(runtime);
+            var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", select.Label);
+            UiPlayer.EnsureVisible(face);
             yield return null;
-            yield return ConfirmIfStillStanding(root, StandingNode(runtime));
+            UiPlayer.Click(face);
+            yield return null;
+            yield return ConfirmIfStillStanding(root, node);
         }
 
         /// <summary>The retrieval's own card question, which is the same whole-face contract.</summary>
+        private static IEnumerator LoadHealingStaging()
+        {
+            const SceneCardContent content = SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSilverarrow;
+            yield return LoadStagedScene(content);
+            var runtime = Root().Runtime;
+            var own = SilverarrowSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(heroes: new[]
+            {
+                new SandboxHeroStaging(own, hand: runtime.Cards.Where(card => card.OwnerId.Equals(own) &&
+                    card.State.Location == CardLocation.Hand && !card.DefinitionReference.DefinitionId.Equals(SilverarrowCardContent.ShootAndScoot))
+                    .Select(card => card.DefinitionReference.DefinitionId)),
+                new SandboxHeroStaging(enemy, hand: runtime.Cards.Where(card => card.OwnerId.Equals(enemy) &&
+                    card.State.Location == CardLocation.Hand && !card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StaticBarrier))
+                    .Select(card => card.DefinitionReference.DefinitionId))
+            });
+            yield return LoadStagedScene(content);
+        }
+
         private static IEnumerator AnswerTheRetrievalWithItsFirstCard(
             MatchSceneCompositionRoot root)
         {

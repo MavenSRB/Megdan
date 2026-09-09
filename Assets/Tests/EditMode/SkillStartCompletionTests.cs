@@ -115,7 +115,7 @@ namespace GuardsDigital.Tests.EditMode
         /// after the node executed.
         /// </summary>
         [Test]
-        public void TheActionCheckpoints_StillRunAroundACompletingNode()
+        public void TheActionEndCheckpoint_RunsAndTheResolvedCardPreservesItsEffect()
         {
             var session = CreateStartCompletingSession();
             CommitBothSides(session);
@@ -133,20 +133,14 @@ namespace GuardsDigital.Tests.EditMode
                 TimingEvents(session).Select(value => (value.Kind, value.Checkpoint)),
                 Is.EqualTo(new[]
                 {
-                    (ActiveEffectLifecycleEventKind.Triggered, TimingCheckpoint.ActionEnded),
-                    (ActiveEffectLifecycleEventKind.Cancelled,
-                        TimingCheckpoint.SourceCardStateChanged)
+                    (ActiveEffectLifecycleEventKind.Triggered, TimingCheckpoint.ActionEnded)
                 }),
                 "The mark declares an ActionEnded trigger, so the triggered event proves the closing " +
-                "checkpoint ran after the completing node rather than being skipped along with the " +
-                "frame; the cancellation is the source card resolving, which is the completion " +
-                "path's own next step.");
+                "checkpoint ran after the completing node rather than being skipped with the frame. " +
+                "Resolving the face-up card is not a source-invalidating transition and must not " +
+                "cancel the Active effect it just created.");
 
-            // The instance is Ended by the time the command returns, and that is correct rather than
-            // incidental: the mark's declared cancellation condition is SourceCardStateChanged, and a
-            // completed Skill resolves its source card. The lifecycle events above are what report
-            // the checkpoints; the final phase reports the card transition.
-            Assert.That(effect.Phase, Is.EqualTo(ActiveEffectPhase.Ended));
+            Assert.That(effect.Phase, Is.EqualTo(ActiveEffectPhase.Active));
         }
 
         [Test]

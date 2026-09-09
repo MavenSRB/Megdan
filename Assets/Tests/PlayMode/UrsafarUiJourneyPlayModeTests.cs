@@ -31,11 +31,9 @@ namespace GuardsDigital.Tests.PlayMode
     /// <para><b>He needs no ally arm.</b> Not one of his nineteen faces names a friendly hero at all -
     /// his whole set reads his own state (whether he is enraged) and the enemy or their minions.</para>
     ///
-    /// <para><b>EXECUTED AT MILESTONE 8.35z50, and four of these five pass.</b> They were written
-    /// offline against the composed content and the offline shape derivation; two complete Play Mode
-    /// runs then drove them. Every journey still carrying an [Explicit] reason says what its own run
-    /// measured - all of it fixture instrumentation rather than anything about his content, which is
-    /// green on the harness and Edit Mode tiers.</para>
+    /// <para><b>REPAIRED AND ACTIVE AT MILESTONE 8.36f3.</b> The original offline fixtures included
+    /// stale staging assumptions; the audit replaced those assumptions with valid player-reachable
+    /// setups and returned every journey to the ordinary Play Mode gate.</para>
     ///
     /// <para>The driving helpers are shared rather than copied, on milestone 8.35z34's precedent: what
     /// is Ursafar's own is <see cref="UrsafarSeat"/> and the journeys.</para>
@@ -208,88 +206,44 @@ namespace GuardsDigital.Tests.PlayMode
         /// Attack a Defeat regardless of either side's printed values.
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z50's dealing, after two complete Play Mode runs. THE HERO IS " +
-            "DEALT, REGISTERED, GATED AND GREEN ON THE OTHER TWO TIERS - the dotnet harness and the " +
-            "complete Edit Mode run both pass his content, his printed set and his player-path gate " +
-            "table. What is parked here is this journey's own INSTRUMENTATION, and every one of the " +
-            "nine was diagnosed rather than guessed at. " +
-            "The engaged staging holds the two heroes exactly TWO spaces apart around the engaged " +
-            "minion, and the enemy Attack this journey picks has no hero target at that distance - " +
-            "so Ursafar is never among its legal targets. Preferring a RANGED printed Attack (applied " +
-            "here) was not sufficient on the run that measured it; closing the gap first, the way " +
-            "Arien's own defeat journey does on this same staging, is the shape that works and is " +
-            "left for the milestone that drives it.")]
         public IEnumerator Ursafar_IsDefeatedByAnAttackAndRespawnsOnHisOwnSpawnByAClick()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedUrsafar);
-            var root = Root();
-            var runtime = root.Runtime;
-            var hud = root.Hud;
-            var ursafarId = UrsafarSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, ursafarId);
-            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
-
-            Commit(runtime, enemyId, HighestInitiativeAttackIdOf(runtime, enemyId));
-            Commit(runtime, ursafarId, LowestInitiativeIdOf(runtime, ursafarId));
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(enemyId),
-                "The enemy's Attack must act before Ursafar's lowest card. " + Remaining(runtime));
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
-            var offered = runtime.PendingAttackTargetChoice.LegalTargets;
-            var target = offered.FirstOrDefault(candidate =>
-                candidate.Kind == AttackTargetKind.Hero &&
-                candidate.HeroId.Equals(ursafarId));
-            Assert.That(target, Is.Not.Null,
-                "The enemy's Attack must be able to reach Ursafar on this staging, or there is no " +
-                "Defeat to drive. Offered: " +
-                string.Join(", ", offered.Select(candidate => candidate.Kind.ToString())) +
-                ". " + Remaining(runtime));
-            Assert.That(
-                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(target.HeroId)),
-                Is.True);
-
-            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
-                "The journey needs p.14's Defense response standing. " + Remaining(runtime));
-            Assert.That(runtime.DeclineDefense(), Is.True,
-                "Declining is what makes this Attack a Defeat regardless of either printed value.");
-            yield return null;
-            yield return null;
-
-            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(ursafarId)), Is.False,
-                "The defeated hero is off the board until he respawns.");
-            Assert.That(Object.FindObjectsByType<PrimitiveHeroView>()
-                    .Any(view => view.Occupancy.HeroId.Equals(ursafarId)), Is.False);
-
-            if (runtime.IsTurnActive)
-            {
-                Assert.That(runtime.SubmitEndTurn(), Is.True);
+            yield return UrsafarAuditStaging.Load(SceneCardContent.VerifiedEngagedStagedUrsafar, enemyDistance: 1);
+            var root = Root(); var runtime = root.Runtime; var own = UrsafarSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            Commit(runtime, enemy, WaspCardContent.MagneticDagger);
+            Commit(runtime, own, UrsafarCardContent.SniffOut);
+            yield return YieldUntilTheNamedSeatActs(runtime, enemy);
+            yield return PointTrayAt(root, enemy);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargets.Any(target =>
+                target.Kind == AttackTargetKind.Hero && target.HeroId.Equals(own)), Is.True);
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, HeroView(own).transform.position), Is.True);
+            yield return null; yield return null;
+            yield return UrsafarAuditStaging.AnswerDefense(false);
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(own)), Is.False);
+            // A noninteractive defeat ghost may remain until the strike finishes.
+            yield return new WaitForSeconds(3f);
+            Assert.That(runtime.SpotlightView.Model.IsContinueArmed, Is.True);
+            UiPlayer.Click(UiPlayer.Button(root.Hud, "CONTINUE"));
+            var cameraDeadline = Time.realtimeSinceStartup + 10f;
+            while (runtime.SpotlightView.IsDrivingCamera && Time.realtimeSinceStartup < cameraDeadline)
                 yield return null;
-            }
-
+            Assert.That(runtime.SpotlightView.IsDrivingCamera, Is.False);
             yield return AdvanceToNextTurn(runtime);
-            CommitSoTheNamedSeatActs(runtime, ursafarId, UrsafarCardContent.PreyDrive);
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(ursafarId),
-                "The respawn is offered at his own turn, so his card has to open it. " +
-                Remaining(runtime));
-
-            Assert.That(runtime.RoundView.Model.HeroRespawnOptions, Is.Not.Empty,
-                "The defeated Ursafar must be offered his respawn at his own turn. Status: " +
-                runtime.RoundView.Model.Status);
-            var respawn = runtime.RoundView.Model.HeroRespawnOptions.First();
-            var respawnTile = Object.FindObjectsByType<HexTileView>()
-                .Single(value => value.Coordinate.Equals(respawn.Destination));
-            Assert.That(
-                UiPlayer.ClickBoard(pointerInput, hud, respawnTile.transform.position), Is.True,
-                "The respawn space is answered on the board.");
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.PreyDrive);
             yield return null;
-
-            var respawned = Object.FindObjectsByType<PrimitiveHeroView>()
-                .Where(view => view.Occupancy.HeroId.Equals(ursafarId))
-                .ToArray();
-            Assert.That(respawned, Has.Length.EqualTo(1),
-                "Exactly one Ursafar token stands after the respawn, not a second beside a stale one.");
-            Assert.That(respawned[0].Coordinate, Is.EqualTo(respawn.Destination));
-            Assert.That(respawned[0].HasTokenVisual, Is.True);
+            Assert.That(runtime.RoundView.Model.HeroRespawnOptions, Is.Not.Empty, Remaining(runtime));
+            var respawn = runtime.RoundView.Model.HeroRespawnOptions.First();
+            var tile = Object.FindObjectsByType<HexTileView>().Single(value => value.Coordinate.Equals(respawn.Destination));
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, tile.transform.position), Is.True);
+            yield return null;
+            var views = Object.FindObjectsByType<PrimitiveHeroView>().Where(view => view.Occupancy.HeroId.Equals(own)).ToArray();
+            Assert.That(views, Has.Length.EqualTo(1));
+            Assert.That(views[0].Coordinate, Is.EqualTo(respawn.Destination));
+            Assert.That(views[0].HasTokenVisual, Is.True);
         }
 
         // ---------------------------------------------------------------------------------------

@@ -1175,6 +1175,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private TurnResolutionResult? RunPlacedAroundActionWork(List<TurnResolutionEvent> events)
         {
+            var owed = cardActions.PendingPreActionResolution;
             var work = cardActions.StartOwedAroundActionWork(
                 definitions, instances, participants, timing, CurrentModifications(),
                 roundIndex, turnIndex);
@@ -1185,6 +1186,12 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(MaterializeSteps(work.Steps, TurnResolutionEvent.FromCardAction));
+            if (cardActions.PendingPreActionResolution == null && owed?.HeldActionHasStarted == true)
+            {
+                AddCompletedAction(events, owed.HeldOffer.SourceCardInstanceId,
+                    owed.HeldOffer.ActionDefinitionId, owed.HeldOffer.ActorId, ActionKind.Movement,
+                    owed.HeldOffer.InvocationContext);
+            }
             return cardActions.PendingPreActionResolution?.Frame != null
                 ? (TurnResolutionResult?)TurnResolutionResult.Accept(events)
                 : null;
@@ -1219,13 +1226,12 @@ namespace GuardsDigital.Core.Cards
             }
 
             var pending = cardActions.PendingResolution;
-            if (!pending.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) ||
-                !pending.ActorId.Equals(initiative.SelectedActor.ActorId))
+            if (!IsSelectedActionSource(pending.SourceCardInstanceId, pending.ActorId, pending.InvocationContext))
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.MovementCommandRejected);
             }
 
-            var card = instances.Single(candidate => candidate.Id.Equals(pending.SourceCardInstanceId));
+            var card = instances.Single(candidate => candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (card.State.Location != CardLocation.TurnArea ||
                 !card.State.HasBeenPlayed ||
                 card.State.ResolutionStatus != CardResolutionStatus.Unresolved ||
@@ -1297,17 +1303,20 @@ namespace GuardsDigital.Core.Cards
                 return null;
             }
 
-            var borrowed = cardActions.StartOwedBorrowedAction(
-                definitions, instances, participants, timing, CurrentModifications(),
-                TieBreakerState, roundIndex, turnIndex);
-            events.AddRange(MaterializeSteps(borrowed.Steps, TurnResolutionEvent.FromSkillAction));
-
-            // Read from what actually stands once the steps have applied, on milestone 8.25e's own
-            // reasoning above: a borrowed instance whose mandatory step the board leaves nothing for
-            // was performed and is over, and reporting it as still standing would strand the actor.
-            return cardActions.HasPendingResolution || cardActions.IsCardTextPageStopped
-                ? TurnResolutionResult.Accept(events)
-                : (TurnResolutionResult?)null;
+            var offer = cardActions.TakeOwedBorrowedAction(definitions, instances, out var resolution);
+            switch (ActionOfferQuery.FindActionDefinition(offer, definitions).Kind)
+            {
+                case ActionKind.Movement:
+                    return StartMovementCore(resolution, offer, events);
+                case ActionKind.Attack:
+                    return StartAttackCore(resolution, offer, events);
+                case ActionKind.Skill:
+                    return CompleteSkillStep(cardActions.StartTurnSkill(resolution, offer, definitions,
+                        instances, participants, timing, CurrentModifications(), TieBreakerState,
+                        roundIndex, turnIndex), events);
+                default:
+                    throw new InvalidOperationException("A borrowed card must declare a supported primary.");
+            }
         }
 
         private TurnResolutionResult? TryStartOwedAfterActionRepeat(List<TurnResolutionEvent> events)
@@ -1512,6 +1521,9 @@ namespace GuardsDigital.Core.Cards
                     ", so Initiative was never acknowledged for it.");
             }
 
+            if (cardActions?.HasBorrowedSkillParent == true)
+                return ResumeBorrowingSkill(events);
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -1520,8 +1532,6 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
@@ -1566,6 +1576,9 @@ namespace GuardsDigital.Core.Cards
                 return held.Value;
             }
 
+            if (cardActions?.HasBorrowedSkillParent == true)
+                return ResumeBorrowingSkill(events);
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -1573,8 +1586,6 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
@@ -1746,6 +1757,9 @@ namespace GuardsDigital.Core.Cards
 
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (cardActions?.HasBorrowedSkillParent == true)
+                return ResumeBorrowingSkill(events);
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -1753,8 +1767,6 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
@@ -2086,13 +2098,12 @@ namespace GuardsDigital.Core.Cards
             }
 
             var pending = cardActions.PendingSkillResolution;
-            if (!pending.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) ||
-                !pending.ActorId.Equals(initiative.SelectedActor.ActorId))
+            if (!IsSelectedActionSource(pending.SourceCardInstanceId, pending.ActorId, pending.InvocationContext))
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
             }
 
-            var card = instances.Single(candidate => candidate.Id.Equals(pending.SourceCardInstanceId));
+            var card = instances.Single(candidate => candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (card.State.Location != CardLocation.TurnArea ||
                 !card.State.HasBeenPlayed ||
                 card.State.ResolutionStatus != CardResolutionStatus.Unresolved ||
@@ -2129,8 +2140,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             var paused = cardActions.PendingCardTextResolution;
-            if (!paused.Attack.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) ||
-                !paused.Attack.ActorId.Equals(initiative.SelectedActor.ActorId))
+            if (!IsSelectedActionSource(paused.Attack.SourceCardInstanceId,
+                paused.Attack.ActorId, paused.Attack.InvocationContext))
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             }
@@ -2208,9 +2219,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             var paused = cardActions.PendingPreActionResolution;
-            if (!paused.HeldOffer.SourceCardInstanceId.Equals(
-                    initiative.SelectedActor.CardInstanceId) ||
-                !paused.HeldOffer.ActorId.Equals(initiative.SelectedActor.ActorId))
+            if (!IsSelectedActionSource(paused.HeldOffer.SourceCardInstanceId,
+                paused.HeldOffer.ActorId, paused.HeldOffer.InvocationContext))
             {
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
             }
@@ -2373,6 +2383,9 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Accept(events);
             }
 
+            if (cardActions?.HasBorrowedSkillParent == true)
+                return ResumeBorrowingSkill(events);
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -2381,8 +2394,6 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
@@ -2414,6 +2425,9 @@ namespace GuardsDigital.Core.Cards
             // The action has already run when the work the actor placed after it has just finished.
             if (owed == null && paused.HeldActionHasStarted)
             {
+                AddCompletedAction(events, paused.HeldOffer.SourceCardInstanceId,
+                    paused.HeldOffer.ActionDefinitionId, paused.HeldOffer.ActorId, ActionKind.Movement,
+                    paused.HeldOffer.InvocationContext);
                 var card = instances.Single(candidate =>
                     candidate.Id.Equals(paused.HeldOffer.SourceCardInstanceId));
                 return CompleteMovementAndAdvance(card, events);
@@ -2482,9 +2496,18 @@ namespace GuardsDigital.Core.Cards
         /// A Skill that has finished resolves its source card and advances Initiative exactly as every
         /// other completed action does; one that is still waiting simply publishes its facts.
         /// </summary>
-        private TurnResolutionResult CompleteSkillStep(CardActionResolutionResult result)
+        private TurnResolutionResult ResumeBorrowingSkill(List<TurnResolutionEvent> events) =>
+            CompleteSkillStep(cardActions.ResumeBorrowingSkill(
+                new ActionBoundaryContext(definitions, instances, participants, timing,
+                    TieBreakerState, roundIndex, turnIndex)), events);
+
+        private TurnResolutionResult CompleteSkillStep(CardActionResolutionResult result,
+            List<TurnResolutionEvent> precedingEvents = null)
         {
-            var events = MaterializeSteps(result.Steps, TurnResolutionEvent.FromSkillAction);
+            var events = precedingEvents ?? new List<TurnResolutionEvent>();
+            events.AddRange(MaterializeSteps(result.Steps, TurnResolutionEvent.FromSkillAction));
+            var borrowed = TryStartOwedBorrowedAction(events);
+            if (borrowed.HasValue) return borrowed.Value;
             if (!result.IsComplete)
             {
                 return TurnResolutionResult.Accept(events);
@@ -2511,6 +2534,9 @@ namespace GuardsDigital.Core.Cards
 
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (cardActions?.HasBorrowedSkillParent == true)
+                return ResumeBorrowingSkill(events);
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -2518,8 +2544,6 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
@@ -2894,6 +2918,9 @@ namespace GuardsDigital.Core.Cards
 
             var card = instances.Single(candidate =>
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
+            if (cardActions?.HasBorrowedSkillParent == true)
+                return ResumeBorrowingSkill(events);
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -2901,8 +2928,6 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.Add(TurnResolutionEvent.CardWasResolved(card.Id, card.OwnerId));
-            foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
-                events.Add(TurnResolutionEvent.FromTiming(timingEvent));
             var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
             if (!acknowledgement.Accepted)
             {
@@ -2914,13 +2939,16 @@ namespace GuardsDigital.Core.Cards
             return AdvanceInitiative(events);
         }
 
+        private bool IsSelectedActionSource(CardInstanceId card, HeroId actor, ActionInvocationContext invocation) =>
+            initiative.SelectedActor.IsDefined && actor.Equals(initiative.SelectedActor.ActorId) &&
+            (card.Equals(initiative.SelectedActor.CardInstanceId) ||
+                (invocation == ActionInvocationContext.TextGranted && cardActions.HasBorrowedSkillParent));
+
         private bool IsPendingAttackForSelectedActor()
         {
             var pending = cardActions?.PendingAttackResolution;
-            return pending != null &&
-                initiative.SelectedActor.IsDefined &&
-                pending.SourceCardInstanceId.Equals(initiative.SelectedActor.CardInstanceId) &&
-                pending.ActorId.Equals(initiative.SelectedActor.ActorId);
+            return pending != null && IsSelectedActionSource(pending.SourceCardInstanceId,
+                pending.ActorId, pending.InvocationContext);
         }
 
         /// <summary>
@@ -3249,6 +3277,13 @@ namespace GuardsDigital.Core.Cards
                 {
                     if (step.Checkpoint == TimingCheckpoint.ActionEnded)
                     {
+                        // After-movement text belongs to this action. Its existing continuation
+                        // carries the eventual completion across choices, Undo and restore.
+                        if (step.CompletedActionKind == ActionKind.Movement &&
+                            cardActions.PendingPreActionResolution?.HeldActionHasStarted == true)
+                        {
+                            continue;
+                        }
                         AddCompletedAction(
                             events,
                             step.CheckpointSourceCardInstanceId,
@@ -3398,6 +3433,9 @@ namespace GuardsDigital.Core.Cards
                 CurrentUltimates(), cardActions.Board, participants, basicAction);
         }
 
+        // p.17: resolving a face-up played card preserves its Active effect. Action completion
+        // therefore does not emit this cancellation checkpoint; discarding, retrieval and other
+        // source-invalidating transitions still do.
         public IReadOnlyList<ActiveEffectLifecycleEvent> NotifySourceCardStateChanged(
             CardInstanceId sourceCardInstanceId)
         {

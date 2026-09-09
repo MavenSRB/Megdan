@@ -120,7 +120,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the exact walk it had before this milestone, rather than a new one that happens to agree.
         /// </para>
         /// </summary>
-        internal static bool PrintsAChain(ActionDefinition action) => ClausesOf(action).Count > 1;
+        internal static bool PrintsAChain(ActionDefinition action) =>
+            ClausesOf(action).Count > 1 || ClausesOf(action).Any(clause => clause.MaximumRepeats > 1);
+
+        // A clause can authorize several instances itself. Count those instances, not just
+        // the number of clauses: "repeat up to five times" must not inherit the one-repeat cap.
+        private static EffectNodeDefinition ClauseAt(ActionDefinition action, int position)
+        {
+            if (position < 0) return null;
+            foreach (var clause in ClausesOf(action))
+            {
+                if (position < clause.MaximumRepeats) return clause;
+                position -= clause.MaximumRepeats;
+            }
+            return null;
+        }
 
         /// <summary>
         /// Whether an instance at this chain position may ask the clause declaring this binding.
@@ -134,14 +148,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal static bool ClauseIsReachable(
             ActionDefinition action, ActionResolutionId resolutionId, RepeatTargetBinding binding)
         {
-            var clauses = ClausesOf(action);
-            if (clauses.Count <= 1)
+            if (!PrintsAChain(action))
             {
                 return true;
             }
 
             var depth = DepthOf(resolutionId);
-            return depth < clauses.Count && clauses[depth].RepeatTargetBinding == binding;
+            return ClauseAt(action, depth)?.RepeatTargetBinding == binding;
         }
 
         /// <summary>
@@ -151,14 +164,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal static EffectNodeDefinition ProducingClause(
             ActionDefinition action, ActionResolutionId resolutionId)
         {
-            var clauses = ClausesOf(action);
-            if (clauses.Count <= 1)
+            if (!PrintsAChain(action))
             {
                 return null;
             }
 
             var depth = DepthOf(resolutionId);
-            return depth >= 1 && depth <= clauses.Count ? clauses[depth - 1] : null;
+            return ClauseAt(action, depth - 1);
         }
 
         private static IEnumerable<EffectNodeDefinition> ClausesIn(EffectDefinition effect) =>

@@ -326,7 +326,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     // Accusation narrows this one bullet to heroes and nothing else about the face.
                     ModalBulletNode(
                         adjacentUnit, adjacentBulletUnits, AttackTargetReach.AdjacentOnly,
-                        AttackSequenceSubjectNarrowing.None)
+                        AttackSequenceSubjectNarrowing.None, appliesAfterAttackText: false)
                 });
         }
 
@@ -343,7 +343,8 @@ namespace GuardsDigital.Core.Cards.Verified
             EffectNodeId nodeId,
             AttackTargetableUnits targetableUnits,
             AttackTargetReach reach,
-            AttackSequenceSubjectNarrowing subjectNarrowing)
+            AttackSequenceSubjectNarrowing subjectNarrowing,
+            bool appliesAfterAttackText = true)
         {
             var inputs = new List<EffectInputBinding>
             {
@@ -379,6 +380,11 @@ namespace GuardsDigital.Core.Cards.Verified
                     SyntheticSequenceCapabilities.SubjectNarrowingOutput, EffectValueKind.Integer));
             }
 
+            if (!appliesAfterAttackText)
+            {
+                inputs.Add(EffectInputBinding.FromLiteral(SyntheticSequenceCapabilities.AppliesAfterAttackTextParameter, EffectValue.Boolean(false)));
+                outputs.Add(new EffectOutputBinding(SyntheticSequenceCapabilities.AppliesAfterAttackTextOutput, EffectValueKind.Boolean));
+            }
             return new EffectNodeDefinition(
                 nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                 SyntheticSequenceCapabilities.AttackSequenceV1,

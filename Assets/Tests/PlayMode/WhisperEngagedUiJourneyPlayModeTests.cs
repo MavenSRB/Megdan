@@ -450,147 +450,41 @@ namespace GuardsDigital.Tests.PlayMode
         /// will count immune units" is the page's rule and not this card's.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "MEASURED AT 8.35z53's FIRST PLAY MODE RUNS: FIXTURE INSTRUMENTATION, not content. The arc " +
-            "dies in CommitSoTheNamedSeatActs, which returns False because the card it names is no longer " +
-            "committable at that point. WHAT IS ELIMINATED: the turn hand-off, which was the first wall " +
-            "and is fixed - the shared YieldUntilNobodyIsActing now answers a standing decision before " +
-            "insisting a turn is endable, because her Gold basic's rider asks the DEFENDER for a space " +
-            "and no earlier hero's arc could leave one open. WHAT STANDS is this journey's own longest " +
-            "setup: it must fill an enemy discard pile by driving a whole Attack-and-Defence exchange, " +
-            "and it needs a THIRD turn, so a card it spends to fill the pile is a card a later step still " +
-            "names. Fixing it is re-authoring the arc's card bookkeeping against a board it can only see " +
-            "live. Her content is green on the other two tiers, and the immunity itself is proved at the " +
-            "definition tier by " +
-            "WhisperVerifiedContentTests.DeathSeeker_IsImmuneToEveryActivity_OfEnemyHeroesOnly.")]
         public IEnumerator DeathSeeker_RaisesHerTurnLongImmunityAndAnEnemyHeroCanNeitherTargetNorAffectHer()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedWhisper);
+            yield return WhisperAuditStaging.WithDiscards(SceneCardContent.VerifiedEngagedStagedWhisper, adjacent: true);
             var root = Root();
             var runtime = root.Runtime;
-            var hud = root.Hud;
-            var whisperId = WhisperSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, whisperId);
-
-            // SETUP, HEADLESSLY: she attacks the enemy hero with her Gold basic's ranged bullet and
-            // they answer with a face. That spent face is what puts a card in their pile, and their
-            // pile is the whole precondition of the card this journey is about.
-            CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.SwiftJustice);
-            yield return YieldUntilTheNamedSeatActs(runtime, whisperId);
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True, Remaining(runtime));
-            yield return null;
-
-            for (var budget = 0; budget < 3 && AStandingChoiceCanBeAnswered(runtime); budget++)
-            {
-                Assert.That(AnswerStandingChoiceHeadlessly(runtime), Is.True, Remaining(runtime));
-                yield return null;
-                yield return null;
-            }
-
-            var pending = runtime.PendingAttackTargetChoice;
-            Assert.That(pending, Is.Not.Null, Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(
-                pending.ResolutionId, pending.ChoiceId, enemyId)), Is.True,
-                "The enemy hero has to be nameable, or nothing puts a card in their pile. " +
-                Remaining(runtime));
-            yield return null;
-
-            var defense = SurvivingDefense(runtime);
-            Assert.That(defense, Is.Not.Null, Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(defense.Command), Is.True,
-                "Their spent Defense is this journey's setup and the card's precondition. " +
-                Remaining(runtime));
-            yield return null;
-            yield return null;
-
-            for (var budget = 0; budget < 4 && AStandingChoiceCanBeAnswered(runtime); budget++)
-            {
-                AnswerStandingChoiceHeadlessly(runtime);
-                yield return null;
-                yield return null;
-            }
-
-            Assert.That(
-                runtime.Cards.Any(card =>
-                    card.OwnerId.Equals(enemyId) &&
-                    card.State.Location == CardLocation.DiscardPile),
-                Is.True,
-                "The enemy's pile now holds the face they defended with, which is what arms Death " +
-                "Seeker. " + Remaining(runtime));
-
-            yield return YieldUntilNobodyIsActing(runtime);
-            yield return AdvanceToNextTurn(runtime);
-
-            // HER TURN, ON THE LIVE SURFACE. The card that was greyed on turn one is startable now, and
-            // nothing about the card changed - the board did.
-            CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.DeathSeeker);
-            yield return YieldUntilTheNamedSeatActs(runtime, whisperId);
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(whisperId), Remaining(runtime));
-
-            var deathSeeker = runtime.Cards.Single(card =>
-                card.OwnerId.Equals(whisperId) &&
-                card.DefinitionReference.DefinitionId.Equals(WhisperCardContent.DeathSeeker));
-
-            yield return PointTrayAt(root, whisperId);
+            var own = WhisperSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            SilverarrowEngagedUiJourneyPlayModeTests.CommitBothSeats(runtime, own, WhisperCardContent.DeathSeeker, enemy, WaspCardContent.MagneticDagger);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The gate is satisfied now, so \"choose one\" opens - the same card, the same text, a " +
-                "different board. " + Remaining(runtime));
-            Assert.That(StandingChoiceBelongsTo(runtime, whisperId), Is.True,
-                "This modal is HERS - the text names no other hero, so its chooser is the actor. That " +
-                "is the contrast Lesser Evil's journey measures from the other side. " +
-                Remaining(runtime));
-
-            var bullets = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2),
-                "Both bullets are offered: the immunity always applies, and the retrieve has a " +
-                "discarded card of her own only if she has one - but RULING 17 offers an option that " +
-                "would apply nothing rather than greying it. " + Remaining(runtime));
-            Assert.That(runtime.PendingEffectChoice.MaximumSelections, Is.EqualTo(1),
-                "\"Choose one\" until Grim Reaper is unlocked. " + Remaining(runtime));
-
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            var node = StandingNode(runtime);
+            var bullets = runtime.RoundView.Model.EffectChoices.Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select).ToArray();
+            Assert.That(bullets, Has.Length.EqualTo(2));
+            Assert.That(runtime.PendingEffectChoice.MaximumSelections, Is.EqualTo(1));
+            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[0].Label));
             yield return null;
-            yield return null;
-
-            Assert.That(runtime.IsActiveEffectSource(deathSeeker.Id), Is.True,
-                "The chosen bullet raised a p.17 Active effect and the card is its source, which is " +
-                "what a player reads on the tray while it runs. " + Remaining(runtime));
-
-            // THE ENEMY'S SIDE OF IT. Their Attack cannot name her at all - the immunity is scoped by
-            // ACTOR rather than by activity, so it bars every hero action of theirs rather than a
-            // named list.
-            yield return YieldUntilNobodyIsActing(runtime);
-            yield return AdvanceToNextTurn(runtime);
-
-            CommitSoTheNamedSeatActs(runtime, enemyId, WaspCardContent.MagneticDagger);
-            yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
-            if (runtime.SubmitAction(PrimaryActionOf(runtime)))
+            yield return ConfirmIfStillStanding(root, node);
+            var card = runtime.Cards.Single(value => value.OwnerId.Equals(own) && value.DefinitionReference.DefinitionId.Equals(WhisperCardContent.DeathSeeker));
+            Assert.That(runtime.IsActiveEffectSource(card.Id), Is.True);
+            yield return YieldUntilTheNamedSeatActs(runtime, enemy);
+            Assert.That(runtime.IsActiveEffectSource(card.Id), Is.True, "Immunity remains through the opponent's action in this turn.");
+            var attack = runtime.RoundView.Model.Actions.FirstOrDefault(value => KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack);
+            if (attack != null)
             {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, attack.Label));
                 yield return null;
-                var enemyTargets = runtime.PendingAttackTargetChoice;
-                if (enemyTargets != null)
-                {
-                    // `Does.Not.Contain` binds NUnit's STRING-substring overload through
-                    // ConstraintExpression, so a typed element is tested with LINQ instead - the
-                    // compile probe caught all three of these before Unity could.
-                    Assert.That(enemyTargets.LegalTargetHeroIds.Contains(whisperId), Is.False,
-                        "An immune hero is not among an enemy hero's legal targets - p.18 enforces " +
-                        "immunity by leaving the piece out of the candidates rather than by offering " +
-                        "it and refusing afterwards. " + Remaining(runtime));
-                }
+                Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
+                Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds.Contains(own), Is.False);
             }
             else
             {
-                // The whole Attack was refused because she is its only subject, which is the same rule
-                // one step earlier and an equally correct outcome.
-                Assert.That(runtime.RoundView.Model.UnavailableActions, Is.Not.Empty,
-                    "An Attack whose only possible target is immune is refused before it is offered, " +
-                    "and is drawn greyed rather than dropped. " + Remaining(runtime));
+                Assert.That(runtime.RoundView.Model.UnavailableActions, Is.Not.Empty, Remaining(runtime));
             }
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
         /// <summary>
@@ -691,19 +585,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// refused before it is offered rather than taken and wasted.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "MEASURED AT 8.35z53's FIRST PLAY MODE RUNS: FIXTURE INSTRUMENTATION. It throws " +
-            "InvalidOperationException \"Sequence contains no matching element\" inside " +
-            "StartActionThroughControl, which is a Single() over the shown controls for the ActionKind it " +
-            "names - so the control it reaches for is not on the surface at that moment, and the throw is " +
-            "the fixture asking for something absent rather than the build refusing anything. WHAT IS " +
-            "ELIMINATED: this is not the registration or the composition - the same Place contract is " +
-            "exercised by her gate rows and by WhisperVerifiedContentTests, both green. WHAT STANDS is " +
-            "which control a Place-shaped Skill draws at this staging, which wants a live surface read " +
-            "rather than a guess.")]
         public IEnumerator ShadowStep_PlacesHerIntoAnEmptyMinionSpawnPointAtItsPrintedRange()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedWhisper);
+            yield return WhisperAuditStaging.WithEmptyBattleSpawn(SceneCardContent.VerifiedEngagedStagedWhisper);
             var root = Root();
             var runtime = root.Runtime;
             var hud = root.Hud;

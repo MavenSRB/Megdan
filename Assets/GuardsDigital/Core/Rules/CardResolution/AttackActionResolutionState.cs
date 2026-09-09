@@ -104,12 +104,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTarget excludedTarget = default,
             DefenseBlockResult blockResult = DefenseBlockResult.None,
             HexCoordinate? targetSpaceBeforeConsequences = null,
-            HexCoordinate? actorSpaceAtActionStart = null)
+            HexCoordinate? actorSpaceAtActionStart = null,
+            IEnumerable<AttackTarget> excludedTargets = null)
             : this(resolutionId, sourceCardInstanceId, sourceDefinitionReference, actionDefinitionId,
                 actorId, invocationContext, currentStepId, phase,
                 targetHeroId.IsDefined ? AttackTarget.Hero(targetHeroId) : default,
                 attackValue, defenseOffer, defenseValue, excludedTarget, blockResult,
-                targetSpaceBeforeConsequences, actorSpaceAtActionStart)
+                targetSpaceBeforeConsequences, actorSpaceAtActionStart, excludedTargets)
         {
         }
 
@@ -129,9 +130,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTarget excludedTarget = default,
             DefenseBlockResult blockResult = DefenseBlockResult.None,
             HexCoordinate? targetSpaceBeforeConsequences = null,
-            HexCoordinate? actorSpaceAtActionStart = null)
+            HexCoordinate? actorSpaceAtActionStart = null,
+            IEnumerable<AttackTarget> excludedTargets = null)
         {
             ExcludedTarget = excludedTarget;
+            var exclusions = (excludedTargets ?? (excludedTarget.IsDefined
+                ? new[] { excludedTarget } : Array.Empty<AttackTarget>())).ToArray();
+            if (exclusions.Any(value => !value.IsDefined) ||
+                exclusions.Distinct().Count() != exclusions.Length ||
+                (excludedTarget.IsDefined && !exclusions.Contains(excludedTarget)))
+                throw new ArgumentException("Attack exclusions require distinct defined targets and include the immediate exclusion.", nameof(excludedTargets));
+            ExcludedTargets = Array.AsReadOnly(exclusions);
             BlockResult = blockResult;
             TargetSpaceBeforeConsequences = targetSpaceBeforeConsequences;
             ActorSpaceAtActionStart = actorSpaceAtActionStart;
@@ -277,6 +286,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// apply.</para>
         /// </summary>
         public AttackTarget ExcludedTarget { get; }
+
+        /// <summary>All targets excluded by this repeated instance, including earlier instances
+        /// of a clause that requires pairwise-distinct targets across several repeats.</summary>
+        public IReadOnlyList<AttackTarget> ExcludedTargets { get; }
 
         /// <summary>
         /// Milestone 8.11. What rulebook p.14's Block did, or <see cref="DefenseBlockResult.None"/>

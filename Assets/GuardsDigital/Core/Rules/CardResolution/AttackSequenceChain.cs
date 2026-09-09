@@ -112,7 +112,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public AttackSequenceBullet(
             string bulletId,
             PrintedAttackTargetPolicy targetPolicy,
-            AttackSequenceSubjectNarrowing subjectNarrowing = AttackSequenceSubjectNarrowing.None)
+            AttackSequenceSubjectNarrowing subjectNarrowing = AttackSequenceSubjectNarrowing.None,
+            bool appliesAfterAttackText = true)
         {
             if (string.IsNullOrWhiteSpace(bulletId))
             {
@@ -131,6 +132,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             BulletId = bulletId;
             TargetPolicy = targetPolicy;
             SubjectNarrowing = subjectNarrowing;
+            AppliesAfterAttackText = appliesAfterAttackText;
         }
 
         /// <summary>The bullet's stable content identity, so a paused chain names what it is owed.</summary>
@@ -150,6 +152,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         public AttackSequenceSubjectNarrowing SubjectNarrowing { get; }
 
+        /// <summary>Whether this bullet includes the action's after-Attack text.</summary>
+        public bool AppliesAfterAttackText { get; }
+
         /// <summary>Whether this bullet prints a predicate about the candidate at all.</summary>
         public bool NarrowsItsSubject => SubjectNarrowing != AttackSequenceSubjectNarrowing.None;
 
@@ -158,7 +163,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public bool Equals(AttackSequenceBullet other) =>
             string.Equals(BulletId, other.BulletId, StringComparison.Ordinal) &&
             TargetPolicy.Equals(other.TargetPolicy) &&
-            SubjectNarrowing == other.SubjectNarrowing;
+            SubjectNarrowing == other.SubjectNarrowing &&
+            AppliesAfterAttackText == other.AppliesAfterAttackText;
 
         public override bool Equals(object obj) =>
             obj is AttackSequenceBullet other && Equals(other);
@@ -167,8 +173,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         {
             unchecked
             {
-                return (((StringComparer.Ordinal.GetHashCode(BulletId ?? string.Empty) * 397) ^
-                    TargetPolicy.GetHashCode()) * 397) ^ (int)SubjectNarrowing;
+                return (((((StringComparer.Ordinal.GetHashCode(BulletId ?? string.Empty) * 397) ^
+                    TargetPolicy.GetHashCode()) * 397) ^ (int)SubjectNarrowing) * 397) ^ AppliesAfterAttackText.GetHashCode();
             }
         }
 

@@ -81,6 +81,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// says so and declares its domain.</para>
         /// </summary>
         public const string SubjectNarrowingParameter = "subjectNarrowing";
+        public const string AppliesAfterAttackTextParameter = "appliesAfterAttackText";
+        public const string AppliesAfterAttackTextOutput = "attackSequenceAppliesAfterAttackText";
 
         public const string TargetableUnitsOutput = "attackSequenceUnits";
         public const string ReachOutput = "attackSequenceReach";
@@ -136,7 +138,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             SubjectNarrowingParameter,
                             EffectValueKind.Integer,
                             isRequired: false,
-                            integerDomain: EffectIntegerDomain.All<AttackSequenceSubjectNarrowing>())
+                            integerDomain: EffectIntegerDomain.All<AttackSequenceSubjectNarrowing>()),
+                        new EffectCapabilityParameter(AppliesAfterAttackTextParameter, EffectValueKind.Boolean, isRequired: false)
                     },
                     new[]
                     {
@@ -144,7 +147,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectOutputBinding(ReachOutput, EffectValueKind.Integer),
                         new EffectOutputBinding(LineOutput, EffectValueKind.Integer),
                         new EffectOutputBinding(DistinctTargetsOutput, EffectValueKind.Boolean),
-                        new EffectOutputBinding(SubjectNarrowingOutput, EffectValueKind.Integer)
+                        new EffectOutputBinding(SubjectNarrowingOutput, EffectValueKind.Integer),
+                        new EffectOutputBinding(AppliesAfterAttackTextOutput, EffectValueKind.Boolean)
                     });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -179,6 +183,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         SubjectNarrowingOutput, EffectValue.Integer((int)narrowing)));
                 }
 
+                var rider = context.Input(AppliesAfterAttackTextParameter);
+                if (rider.Kind == EffectValueKind.Boolean && !rider.BooleanValue)
+                    facts.Add(new EffectOutcomeFact(AppliesAfterAttackTextOutput, EffectValue.Boolean(false)));
                 return EffectExecutionResult.Applied(facts);
             }
 

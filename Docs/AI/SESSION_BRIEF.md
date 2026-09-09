@@ -8,15 +8,15 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v40 persists the current state; wire protocol is `guards-private-online/12`. The approved cleanup and final private packaging are complete; evidence is indexed in [Phase 8 handoffs](Archive/Phase-Handoffs/PHASE_8.md). The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v41 persists the current state; wire protocol is `guards-private-online/12`. The approved cleanup and final private packaging are complete; evidence is indexed in [Phase 8 handoffs](Archive/Phase-Handoffs/PHASE_8.md). The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail; the packaged picker produces her matching hand and tray. The corrected ZIP with Play/Host launchers is local under Builds. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.36f2**.
-- Active authorized milestone: **8.36f3**.
-- Next proposed milestone: **8.36f3**.
+- Current completed milestone: **8.36f3**.
+- Active authorized milestone: **8.36g**.
+- Next proposed milestone: **8.36g**.
 
 The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 gate remains closed. The independent 8.36a review is integrated. On 2026-09-09 the user approved **8.36b-8.36d**, sequentially: authenticated departure, bounded transport, attributable diagnostics. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns the outcomes and closing checks. [Product](Project/PRODUCT.md) now limits the project to the user and friends: production presentation and publisher-pitch work are parked. More heroes remain desired future work, not authorized implementation in this correction batch. No repeat internet playtest, remote publication or unrelated refactor is authorized.
 
@@ -38,6 +38,7 @@ The user additionally approved **8.36e**, after 8.36b-8.36d: visible hero select
 
 - Rules/source hierarchy and deviations: [RULES_LEDGER.md](RULES_LEDGER.md). Cleanup does not change rules, content, or compatibility identities.
 - The standing new-build/Play-and-Host-ZIP request is mapped to **8.36h**, after the correction, audit and bot work; the private-game corrections shard owns its closing checks.
+- On 2026-09-09 the user amended the remaining sequence: **8.36f3 → 8.36g → 8.36g1 → 8.36h**, without another approval stop between them. Bots must actively pursue wins through productive minion/hero defeats and team objectives. **8.36g1** changes the target topology to one shared client: the host also plays and alone gets deliberate Director debug access, while other players Join. No separate seatless host process is required in the new package. This is approved work, not yet implemented; the private-game corrections shard owns the checks and supersedes the older packaging requirement where they differ.
 - Preserve pure rules/state, commands/choices, host authorization/privacy, snapshots, and replay. [Architecture](Project/ARCHITECTURE.md).
 - Windows is the reference target; macOS/iOS are declared rather than validated. [Product](Project/PRODUCT.md).
 - Source/rulebook permission does not cover extracted cards, maps, builds, private logs, or worktrees. No remote, upload, or distribution is authorized.

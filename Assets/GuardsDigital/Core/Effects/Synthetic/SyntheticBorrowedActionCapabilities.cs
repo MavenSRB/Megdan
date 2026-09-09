@@ -103,7 +103,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 context.Capabilities,
                 BorrowedPrimaryActionDeclaration.ResolvedCardsCountAsActive(
                     context.ActorId,
-                    context.Timing == null ? null : context.Timing.ContinuousSources));
+                    context.ActorContinuousSources));
         }
 
         private sealed class BorrowPrimaryActionHandler : IEffectCapabilityHandler

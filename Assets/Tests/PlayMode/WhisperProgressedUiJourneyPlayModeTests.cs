@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Units.Heroes;
@@ -78,118 +79,86 @@ namespace GuardsDigital.Tests.PlayMode
         /// by whatever the board actually holds, and this journey asserts the smaller of them over the
         /// whole offer.</para>
         ///
-        /// <para><b>This journey stands in for CRIMSON TRAIL as well, and the reason is named rather
-        /// than hidden.</b> Crimson Trail prints the identical seam with a boolean gate instead of a
-        /// count, and its Attack is GREYED ON EVERY BOARD IN THIS BUILD -
-        /// <c>WalkToAttackTargetBinding</c>'s Conditional arm returns <c>Blocked</c>, which is a
-        /// pre-existing engine defect unrelated to this hero and corrected separately. Sanguine Path
-        /// and Blood Pilgrimage are unaffected because their Move is a direct Sequence child under
-        /// <c>EffectFailurePolicy.UpTo</c> rather than a Conditional's, so the seam all three faces'
-        /// gate rows describe is driven here.</para>
+        /// <para><b>This journey stands in for CRIMSON TRAIL's identical interaction seam.</b>
+        /// Crimson Trail uses a boolean Conditional where Sanguine Path uses a counted budget;
+        /// milestone 8.35z49 corrected the binding walk so an unsatisfied Conditional continues to
+        /// the mandatory target step after it. The source-level conditional regression covers that
+        /// distinction, while this journey drives the shared move-then-target input sequence.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "MEASURED AT 8.35z53's FIRST PLAY MODE RUNS, and it is a genuine fork this dealing does not " +
-            "settle. She is at (-3,1) and exactly one candidate is offered, at distance 0 - so the " +
-            "printed step did NOT move her before the targeting sentence ran. WHAT IS ELIMINATED: the " +
-            "ordering is composed correctly and is proved at the definition tier, and Crimson Trail's own " +
-            "Attack now starts at all (milestone 8.35z49's Conditional fix), so this is not the binding " +
-            "defect that shape used to carry. WHAT STANDS are two readings this board cannot separate: " +
-            "either the empty-minion-spawn-point condition is FALSE on the staged board, in which case " +
-            "the step correctly skipped and the assertion is written against a board that never promised " +
-            "one - the reading ledger row 21 makes ordinary - or the step is offered and the candidates " +
-            "are derived from where she started. Distinguishing them needs a staging with a KNOWN empty " +
-            "Spawn point in radius, which is a fixture this milestone did not build.")]
         public IEnumerator SanguinePath_BuysItsStepFromTheSpawnPointCountBeforeItNamesTheUnitBesideHer()
+        {
+            yield return WhisperAuditStaging.WithEmptyBattleSpawn(SceneCardContent.VerifiedTierTwoEngagedStagedWhisper);
+            var root = Root();
+            var runtime = root.Runtime;
+            var own = WhisperSeat(runtime).HeroId;
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var victim = runtime.Projection.Minions.Single(minion => minion.MinionId.Value == "audit-step-victim");
+            CommitSoTheNamedSeatActs(runtime, own, WhisperCardContent.SanguinePath);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var origin = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
+            var steps = LitDestinations(runtime);
+            Assert.That(steps, Is.Not.Empty, "The staged empty battle-zone spawn permits a positive move.");
+            Assert.That(steps.All(space => HexDistanceQuery.Calculate(space, origin) <= 2), Is.True);
+            var destination = steps.First(space => !space.Equals(origin) && HexDistanceQuery.Calculate(space, victim.Coordinate) == 1);
+            Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, Tile(destination).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate, Is.EqualTo(destination));
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets.All(value => HexDistanceQuery.Calculate(value.Space, destination) == 1), Is.True);
+            Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, Tile(victim.Coordinate).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Projection.Minions.Any(minion => minion.MinionId.Equals(victim.MinionId)), Is.False);
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator SanguinePath_NoReachableTargetRemainsUnavailable()
+        {
+            yield return WhisperAuditStaging.WithEmptyBattleSpawn(SceneCardContent.VerifiedTierTwoEngagedStagedWhisper, hasReachableTarget: false);
+            var runtime = Root().Runtime;
+            var own = WhisperSeat(runtime).HeroId;
+            CommitSoTheNamedSeatActs(runtime, own, WhisperCardContent.SanguinePath);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            Assert.That(runtime.RoundView.Model.Actions.Any(value => KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack), Is.False);
+            Assert.That(runtime.RoundView.Model.UnavailableActions.Any(value => KindOf(runtime, value.ActionDefinitionId) == ActionKind.Attack), Is.True);
+            Assert.That(runtime.PendingEffectChoice, Is.Null);
+        }
+
+        [UnityTest]
+        public IEnumerator SanguinePath_ZeroBudgetStaysThenTargets()
         {
             yield return LoadStagedScene(SceneCardContent.VerifiedTierTwoEngagedStagedWhisper);
             var root = Root();
             var runtime = root.Runtime;
-            var hud = root.Hud;
-            var whisperId = WhisperSeat(runtime).HeroId;
-            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
-
-            CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.SanguinePath);
-            yield return YieldUntilTheNamedSeatActs(runtime, whisperId);
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(whisperId),
-                "The journey needs her turn open on Sanguine Path. " + Remaining(runtime));
-
-            var stoodAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(whisperId)).Coordinate;
-
-            yield return PointTrayAt(root, whisperId);
+            var own = WhisperSeat(runtime).HeroId;
+            CommitSoTheNamedSeatActs(runtime, own, WhisperCardContent.SanguinePath);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Attack);
-            yield return null;
-
-            // THE STEP COMES FIRST AND p.14's OWN QUESTION DOES NOT. That pairing is the seam: a card
-            // whose text names its target has nothing for the page's opening question to ask.
-            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
-                "The target is bound by this card's own text, so p.14's opening question is not " +
-                "asked - the step-1 body runs first. " + Remaining(runtime));
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "\"Before the attack: You may move ...\" is what opens. " + Remaining(runtime));
-
-            var steps = LitDestinations(runtime);
-            if (steps.Length > 0)
-            {
-                Assert.That(
-                    steps.All(space => HexDistanceQuery.Calculate(space, stoodAt) <= 2), Is.True,
-                    "The budget is the LESSER of the board's empty minion Spawn points in radius and " +
-                    "the card's printed ceiling of two, published as one number. Offered: " +
-                    string.Join(", ", steps.Select(space =>
-                        $"({space.Q},{space.R})@{HexDistanceQuery.Calculate(space, stoodAt)}")));
-
-                Assert.That(
-                    UiPlayer.ClickBoard(pointerInput, hud, Tile(steps[0]).transform.position),
-                    Is.True,
-                    "The step is answered on the board.");
-                yield return null;
-                yield return null;
-            }
-            else
-            {
-                // A board with no qualifying Spawn point yields a budget of zero, and an up-to move of
-                // zero spaces moves nowhere without needing a condition to say so - which is exactly
-                // why this face prints no "if there is" where Crimson Trail does. A legitimate outcome
-                // rather than a failure, and the journey says which one it met.
-                var decline = DeclineControl(runtime);
-                if (decline != null)
-                {
-                    UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
-                    yield return null;
-                    yield return null;
-                }
-            }
-
-            // THE TARGETING SENTENCE, judged from wherever the step left her.
-            var nowAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(whisperId)).Coordinate;
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "\"Target a unit adjacent to you\" is the card's own second sentence and its own " +
-                "question. " + Remaining(runtime));
-            var victims = runtime.RoundView.Model.EffectChoiceTargets
-                .Select(candidate => candidate.Space)
-                .ToArray();
-            Assert.That(victims, Is.Not.Empty,
-                "An enemy Ranged minion stands adjacent to her at this staging, so the mandatory " +
-                "targeting step has a subject. " + Remaining(runtime));
-            Assert.That(
-                victims.All(space => HexDistanceQuery.Calculate(space, nowAt) == 1), Is.True,
-                "and every candidate is adjacent to WHERE SHE NOW STANDS rather than to where she " +
-                "started, which is the whole reason the move is printed first. She is at " +
-                $"({nowAt.Q},{nowAt.R}); offered: " + string.Join(", ", victims.Select(space =>
-                    $"({space.Q},{space.R})@{HexDistanceQuery.Calculate(space, nowAt)}")));
-
-            Assert.That(
-                UiPlayer.ClickBoard(pointerInput, hud, Tile(victims[0]).transform.position), Is.True,
-                "The target is chosen by clicking the piece where it stands.");
+            var origin = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
+            Assert.That(LitDestinations(runtime), Is.Empty);
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets.Select(value => value.Space), Is.EqualTo(new[] { origin }));
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, Tile(origin).transform.position), Is.True);
             yield return null;
             yield return null;
-
-            for (var budget = 0; budget < 6 && runtime.PendingDefenseChoice != null; budget++)
-            {
-                Assert.That(runtime.DeclineDefense(), Is.True, Remaining(runtime));
-                yield return null;
-                yield return null;
-            }
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate, Is.EqualTo(origin));
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets.All(value => HexDistanceQuery.Calculate(value.Space, origin) == 1), Is.True);
+            var target = runtime.RoundView.Model.EffectChoiceTargets.First();
+            Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, Tile(target.Space).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
         /// <summary>
@@ -361,16 +330,6 @@ namespace GuardsDigital.Tests.PlayMode
         /// drives the hand-card question both opponent-chosen faces' gate rows rest on.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "MEASURED AT 8.35z53's FIRST PLAY MODE RUNS: FIXTURE SEQUENCING. It counts the enemy hand " +
-            "expecting 3 and measures 4 while the surface still stands on \"YOUR CARD CHOICE - Choose 1 of " +
-            "4 cards for Wasp to discard\" - so the count is taken BEFORE the price is actually paid, and " +
-            "the four cards it sees are the four it is being asked to choose among. WHAT IS ELIMINATED: " +
-            "the offer itself, which is the journey's real subject and which passed - the empty Defeat " +
-            "bullet is offered ungreyed, RULING 17's escape hatch, asserted before this line. WHAT STANDS " +
-            "is one missing step: answer the discard choice, then count. It is left parked rather than " +
-            "patched blind because the same arc feeds two later assertions whose expected numbers move " +
-            "with it.")]
         public IEnumerator GreaterGood_OffersItsEmptyDefeatBulletUngreyedAndTakesThePriceInstead()
         {
             yield return LoadStagedScene(
@@ -427,9 +386,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             // THE PRICE. Bullet 1 is mandatory with two ways to complete, and with cards in hand the
             // completion is the discard.
-            Assert.That(runtime.SubmitProjectedCommand(bullets[0].Command), Is.True,
-                "The enemy seat takes the price. " + Remaining(runtime));
+            var priceNode = StandingNode(runtime);
+            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
             yield return null;
+            yield return ConfirmIfStillStanding(root, priceNode);
             yield return null;
 
             // The hand-card question belongs to the hero paying it, which is the shape
@@ -440,8 +400,14 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(StandingChoiceBelongsTo(runtime, enemyId), Is.True,
                     "Which card is discarded is the discarding hero's own choice. " +
                     Remaining(runtime));
-                Assert.That(AnswerStandingChoiceHeadlessly(runtime), Is.True,
-                    "The enemy seat answers with one of their own faces. " + Remaining(runtime));
+                var cardNode = StandingNode(runtime);
+                var card = runtime.RoundView.Model.EffectChoices.First(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+                var face = UiPlayer.NamedElementWithText(hud, "gd-effect-card", card.Label);
+                UiPlayer.EnsureVisible(face);
+                yield return null;
+                UiPlayer.Click(face);
+                yield return null;
+                yield return ConfirmIfStillStanding(root, cardNode);
                 yield return null;
                 yield return null;
             }
@@ -488,16 +454,6 @@ namespace GuardsDigital.Tests.PlayMode
         /// about the exchange spends this budget.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "MEASURED AT 8.35z53's FIRST PLAY MODE RUNS: the swap itself completes and what fails is the " +
-            "step AFTER it. The surface stands at \"YOUR TURN - RELEASE TO CONTINUE\" with no pending " +
-            "choice where this expects the printed \"You may then move\" to be its own question. WHAT IS " +
-            "ELIMINATED: choose-swap-subject@1 is registered, reachable and exercised - its showcase " +
-            "consumer and her gate row both pass, and the selection resolved here before this assertion. " +
-            "WHAT STANDS is whether the optional move opens as a separate question at all on this board, " +
-            "or whether it was already answered inside the same resolution: distinguishing them is a " +
-            "content-and-feasibility reading of her Blue pair rather than a fixture edit, so it is left " +
-            "NAMED rather than settled inside a dealing.")]
         public IEnumerator CruelTwist_SwapsWithAUnitDrawnFromTheUnionItsOneSelectionOffers()
         {
             yield return LoadStagedScene(
@@ -543,6 +499,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "and there is no MODE control beside the pieces - the card offers one choice among a " +
                 "union, not a choice of arm followed by a choice of piece. " + Remaining(runtime));
 
+            Assert.That(subjects.Contains(stoodAt), Is.False, "Whisper cannot swap with herself.");
             var subject = subjects[0];
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(subject).transform.position), Is.True,
@@ -715,224 +672,81 @@ namespace GuardsDigital.Tests.PlayMode
                 "half had to run first.");
         }
 
-        /// <summary>
-        /// Blood Frenzy: "Target a unit adjacent to you. After the attack: If an enemy hero in radius
-        /// has a card in the discard, repeat up to five times on different targets."
-        ///
-        /// <para><b>THIS JOURNEY PROVES A SHORTFALL RATHER THAN THE PRINTED RULE, deliberately, and
-        /// asserts what the engine actually does today.</b> RULING 34 reads "on different targets" as
-        /// PAIRWISE distinct - no unit attacked twice anywhere in the chain.
-        /// <c>CardActionResolutionAuthority</c>'s repeat exclusion is a SINGLE <c>AttackTarget</c>,
-        /// reset at each instance, so it excludes only the unit the instance IMMEDIATELY BEFORE took.
-        /// At Blood Fury's printed maximum of one the two readings coincide exactly and that card is
-        /// correct; at Blood Frenzy's five they diverge, and the third instance may re-take the first's
-        /// target.</para>
-        ///
-        /// <para><b>It is recorded and not fixed here, because the fix is schema-bumping.</b> Closing
-        /// it means an accumulating exclusion SET where a single target is held, and that state is
-        /// persisted (<c>OwedAttackRepeatExclusion</c> is in the restore state), so it is not a
-        /// dealing's work. This journey is the same instrument Whisper's phase-one worker used for
-        /// Sabina's analogous gap - a named test that pins the measurement so the fix has something to
-        /// turn red.</para>
-        ///
-        /// <para><b>The condition is re-checked before each instance and that is the other half.</b>
-        /// p.10 makes each repeat a separate instance of the action, so the card text runs again inside
-        /// it and asks the board again - which is why a hero who discards TO DEFEND one instance arms
-        /// the instances after it. Nothing arranges that; it falls out of the condition being a live
-        /// query inside a body that runs per instance.</para>
-        ///
-        /// <para><b>The chain is bounded by the board before it is bounded by the card, and the journey
-        /// says which bound it met.</b> "A unit adjacent to you" is measured from her space every
-        /// instance, so the number of reachable instances is a property of this staging rather than of
-        /// the printed five - and running out of targets is the ordinary end of a chain rather than a
-        /// stop.</para>
-        /// </summary>
+        /// <summary>Six board clicks exercise the repeat bound, including retained-prefix
+        /// Undo and a snapshot restore during the third instance.</summary>
         [UnityTest]
-        [Explicit(
-            "MEASURED AT 8.35z53's FIRST PLAY MODE RUNS: FIXTURE INSTRUMENTATION, and its own author " +
-            "predicted the shape. It dies in CommitSoTheNamedSeatActs for the same reason the immunity " +
-            "journey does - the arc must manufacture a mid-chain defense discard to arm later repeat " +
-            "instances (RULING 34's only mechanism), and a card spent to arm the chain is a card a later " +
-            "commit still names. WHAT IS ELIMINATED: the turn hand-off, fixed for every Whisper journey " +
-            "at this milestone. WHAT STANDS is the arc's card bookkeeping, plus the prep's own recorded " +
-            "uncertainty that the engaged staging may not seat enough neighbours to reach a THIRD " +
-            "instance, which is the only position from which the single-slot divergence is observable at " +
-            "all. The shortfall itself is pinned at the definition tier instead, which is what the " +
-            "journey's own name says it records.")]
-        public IEnumerator BloodFrenzy_ExcludesOnlyTheInstanceBeforeIt_RecordingTheSingleSlotShortfall()
+        public IEnumerator BloodFrenzy_PerformsFiveDistinctRepeatsAcrossUndoAndRestore()
         {
-            yield return LoadStagedScene(
-                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedWhisper);
+            const SceneCardContent content = SceneCardContent.VerifiedTierThreeAlternateEngagedStagedWhisper;
+            yield return LoadStagedScene(content);
+            var initial = Root().Runtime;
+            var whisperId = WhisperSeat(initial).HeroId;
+            var enemyId = OtherHeroId(initial, whisperId);
+            var enemySide = initial.Setup.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).TeamSide;
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var playable = new HashSet<HexCoordinate>(map.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable).Select(space => space.Coordinate));
+            var center = playable.Where(space => space.GetNeighbors().All(playable.Contains))
+                .OrderBy(space => HexDistanceQuery.Calculate(space, new HexCoordinate(0, 0))).First();
+            var ring = center.GetNeighbors().ToArray();
+            var enemyAt = playable.First(space => HexDistanceQuery.Calculate(center, space) == 2);
+            var occupied = new HashSet<HexCoordinate>(ring.Concat(new[] { center, enemyAt }));
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                heroes: new[]
+                {
+                    new SandboxHeroStaging(whisperId, center),
+                    new SandboxHeroStaging(enemyId, enemyAt, hand: new[] { WaspCardContent.MagneticDagger })
+                },
+                removedMinions: initial.Setup.Minions.Where(minion => occupied.Contains(minion.Coordinate)).Select(minion => minion.MinionId),
+                spawnedMinions: ring.Select((space, index) => new SandboxMinionStaging(
+                    new MinionId("audit-frenzy-" + index), enemySide, StandardMinionType.Melee, space)));
+            yield return LoadStagedScene(content);
             var root = Root();
             var runtime = root.Runtime;
             var hud = root.Hud;
-            var whisperId = WhisperSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, whisperId);
-
-            // SETUP, HEADLESSLY: the gate reads an ENEMY HERO's discard pile, which fills only when
-            // they defend. So the enemy attacks her first and she answers - no, the other way round:
-            // her own pile is irrelevant here, and the enemy's is what the condition reads. She attacks
-            // them with her Gold basic and they spend a face.
-            CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.SwiftJustice);
-            yield return YieldUntilTheNamedSeatActs(runtime, whisperId);
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True, Remaining(runtime));
-            yield return null;
-
-            for (var budget = 0; budget < 3 && AStandingChoiceCanBeAnswered(runtime); budget++)
-            {
-                AnswerStandingChoiceHeadlessly(runtime);
-                yield return null;
-                yield return null;
-            }
-
-            var opening = runtime.PendingAttackTargetChoice;
-            if (opening != null && opening.LegalTargetHeroIds.Contains(enemyId))
-            {
-                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(
-                    opening.ResolutionId, opening.ChoiceId, enemyId));
-                yield return null;
-
-                var answer = SurvivingDefense(runtime);
-                if (answer != null)
-                {
-                    runtime.SubmitProjectedCommand(answer.Command);
-                    yield return null;
-                    yield return null;
-                }
-            }
-
-            for (var budget = 0; budget < 4 && AStandingChoiceCanBeAnswered(runtime); budget++)
-            {
-                AnswerStandingChoiceHeadlessly(runtime);
-                yield return null;
-                yield return null;
-            }
-
-            Assert.That(
-                runtime.Cards.Any(card =>
-                    card.OwnerId.Equals(enemyId) &&
-                    card.State.Location == CardLocation.DiscardPile),
-                Is.True,
-                "The chain's gate reads an ENEMY hero's pile, and a spent Defense is what fills one. " +
-                Remaining(runtime));
-
-            yield return YieldUntilNobodyIsActing(runtime);
-            yield return AdvanceToNextTurn(runtime);
-
-            // HER TURN, ON THE LIVE SURFACE.
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(runtime.Cards.Any(card => card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.DiscardPile), Is.True);
             CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.BloodFrenzy);
             yield return YieldUntilTheNamedSeatActs(runtime, whisperId);
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(whisperId),
-                "The journey needs her turn open on Blood Frenzy. " + Remaining(runtime));
-
             yield return PointTrayAt(root, whisperId);
             yield return StartActionThroughControl(root, ActionKind.Attack);
             yield return null;
-
-            // BLOOD FRENZY TAKES p.14's ORDINARY QUESTION and narrows nothing - it prints its
-            // targeting sentence FIRST and its rider at step 7, so "a unit" is the page's own word and
-            // the card declares no binding.
-            var first = runtime.PendingAttackTargetChoice;
-            Assert.That(first, Is.Not.Null,
-                "The two Red repeaters take p.14's own opening question, unlike the three step-1 " +
-                "movers. " + Remaining(runtime));
-
-            var takenInOrder = new List<string>();
-            var offeredAtEachInstance = new List<string[]>();
-
-            for (var instance = 0; instance < 5; instance++)
+            var taken = new List<AttackTarget>();
+            for (var index = 0; index < 6; index++)
             {
                 var pending = runtime.PendingAttackTargetChoice;
-                if (pending == null)
-                {
-                    break;
-                }
-
-                var offered = pending.LegalTargetHeroIds.Select(id => "hero:" + id.Value)
-                    .Concat(pending.LegalTargetMinionIds.Select(id => "minion:" + id.Value))
-                    .OrderBy(id => id, System.StringComparer.Ordinal)
-                    .ToArray();
-                offeredAtEachInstance.Add(offered);
-                if (offered.Length == 0)
-                {
-                    break;
-                }
-
-                // THE EXCLUSION, OBSERVED AT THE OFFER. Instance N is not offered instance N-1's
-                // target, and that single fact is the whole of what the engine enforces.
-                if (takenInOrder.Count > 0)
-                {
-                    Assert.That(offered, Does.Not.Contain(takenInOrder[takenInOrder.Count - 1]),
-                        "\"On different targets\" excludes the unit the PREVIOUS instance took, which " +
-                        "the engine does enforce. Instance " + (instance + 1) + " was offered: " +
-                        string.Join(", ", offered) + "; the previous instance took " +
-                        takenInOrder[takenInOrder.Count - 1] + ". " + Remaining(runtime));
-                }
-
-                var chosen = pending.LegalTargetHeroIds.Count > 0
-                    ? (Target: "hero:" + pending.LegalTargetHeroIds[0].Value,
-                        Command: DirectorCommand.ChooseAttackTarget(
-                            pending.ResolutionId, pending.ChoiceId, pending.LegalTargetHeroIds[0]))
-                    : (Target: "minion:" + pending.LegalTargetMinionIds[0].Value,
-                        Command: DirectorCommand.ChooseAttackTarget(
-                            pending.ResolutionId, pending.ChoiceId, pending.LegalTargetMinionIds[0]));
-
-                Assert.That(runtime.SubmitProjectedCommand(chosen.Command), Is.True,
-                    Remaining(runtime));
-                takenInOrder.Add(chosen.Target);
+                Assert.That(pending, Is.Not.Null, "Expected attack " + (index + 1) + ". " + Remaining(runtime));
+                Assert.That(pending.LegalTargets.Intersect(taken), Is.Empty);
+                var target = pending.LegalTargets.First(value => value.Kind == AttackTargetKind.Minion &&
+                    value.MinionId.Value.StartsWith("audit-frenzy-", System.StringComparison.Ordinal));
+                var snapshot = runtime.CaptureSnapshot();
+                Assert.That(UiPlayer.ClickBoard(pointer, hud, ViewOf(target).transform.position), Is.True);
                 yield return null;
-
-                for (var budget = 0; budget < 4 && runtime.PendingDefenseChoice != null; budget++)
-                {
-                    runtime.DeclineDefense();
-                    yield return null;
-                    yield return null;
-                }
-
-                for (var budget = 0; budget < 4 && AStandingChoiceCanBeAnswered(runtime); budget++)
-                {
-                    AnswerStandingChoiceHeadlessly(runtime);
-                    yield return null;
-                    yield return null;
-                }
-
                 yield return null;
+                Assert.That(runtime.Projection.Minions.Any(minion => minion.MinionId.Equals(target.MinionId)), Is.False);
+                if (index == 2)
+                {
+                    UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
+                    yield return null;
+                    UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
+                    yield return null;
+                    yield return null;
+                    Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(snapshot));
+                    UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR ▾"));
+                    yield return null;
+                    Assert.That(runtime.RestoreSnapshot(snapshot), Is.True);
+                    yield return null;
+                    Assert.That(runtime.PendingAttackTargetChoice.LegalTargets.Intersect(taken), Is.Empty);
+                    Assert.That(UiPlayer.ClickBoard(pointer, hud, ViewOf(target).transform.position), Is.True);
+                    yield return null;
+                    yield return null;
+                    Assert.That(runtime.Projection.Minions.Any(minion => minion.MinionId.Equals(target.MinionId)), Is.False);
+                }
+                taken.Add(target);
             }
-
-            Assert.That(takenInOrder, Is.Not.Empty,
-                "The printed instance has to have run at all. " + Remaining(runtime));
-
-            // WHAT THE JOURNEY MEASURED, stated whichever bound the board turned out to impose.
-            if (takenInOrder.Count < 3)
-            {
-                // THE BOARD BOUNDED THE CHAIN BEFORE THE CARD DID, which is an ordinary end and not a
-                // failure: "a unit adjacent to you" is re-measured from her space every instance, and
-                // this staging holds a small number of neighbours. The pairwise-versus-single-slot
-                // divergence cannot be OBSERVED in fewer than three instances - it first appears when
-                // instance 3 re-offers instance 1's target - so what this run proves is the enforced
-                // half, and the shortfall stays pinned at the definition tier by
-                // WhisperVerifiedContentTests
-                // .BloodFrenzy_IsTheFirstAttackRepeat_WhoseDistinctTargetMaximumIsAboveOne.
-                Assert.That(takenInOrder, Has.Count.GreaterThanOrEqualTo(1),
-                    "The chain ran " + takenInOrder.Count + " instance(s) before the board ran out " +
-                    "of adjacent subjects: " + string.Join(" -> ", takenInOrder) + ". " +
-                    Remaining(runtime));
-                yield break;
-            }
-
-            // THE SHORTFALL, OBSERVED. Three or more instances ran, so instance 3's offer is where the
-            // two readings diverge - and under the single-slot exclusion the first instance's target is
-            // back in it. This assertion is written to hold for the ENGINE AS IT IS: if the pairwise
-            // fix ever lands, this is the case that turns red, which is exactly what a pinned
-            // measurement is for.
-            Assert.That(offeredAtEachInstance[2], Does.Contain(takenInOrder[0]),
-                "MEASURED SHORTFALL, not printed behaviour. RULING 34 reads \"on different targets\" " +
-                "as pairwise distinct across the whole chain, and the engine holds ONE excluded " +
-                "target reset at each instance - so the third instance is offered the first's target " +
-                "again. Taken in order: " + string.Join(" -> ", takenInOrder) + "; instance 3 was " +
-                "offered: " + string.Join(", ", offeredAtEachInstance[2]) + ". If this assertion " +
-                "fails, the accumulating-exclusion fix has landed and this journey should be inverted " +
-                "rather than deleted. " + Remaining(runtime));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null, "There must be no seventh attack.");
+            Assert.That(taken.Distinct().Count(), Is.EqualTo(6));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
         /// <summary>
@@ -1098,162 +912,43 @@ namespace GuardsDigital.Tests.PlayMode
         /// never choosing it, and only the second is what an unchosen bullet means.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "MEASURED AT 8.35z53's FIRST PLAY MODE RUNS: FIXTURE INSTRUMENTATION, and the message names " +
-            "it exactly - \"wasp-magnetic-dagger must be selectable from primitive-hero's hand\". Wasp's " +
-            "Gold basic IS dealt to her Tier III hand (WaspProgressedHands puts Magnetic Dagger and " +
-            "Static Barrier there beside the upgrades), so the card is not missing from the staging: the " +
-            "arc SPENDS it earlier, as the Defense that fills the enemy discard pile this journey's " +
-            "subject depends on, and then names the same card for a later commit. WHAT IS ELIMINATED: the " +
-            "raised ceiling, which is real and now proved - " +
-            "GrimReaper_RaisesSwiftJusticesCeilingSoBothBulletsRunTheirOwnFullSequence passes at this " +
-            "milestone once the cardinality query was given the card supertype it had never been passed. " +
-            "WHAT STANDS is one card's bookkeeping inside this arc.")]
         public IEnumerator DeathSeeker_AppliesBothOfItsBulletsOnceGrimReaperHasRaisedItsCeiling()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedWhisper);
+            yield return WhisperAuditStaging.WithDiscards(SceneCardContent.VerifiedTierThreeEngagedStagedWhisper);
             var root = Root();
             var runtime = root.Runtime;
-            var hud = root.Hud;
-            var whisperId = WhisperSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, whisperId);
-
-            // SETUP, HEADLESSLY, AND IT HAS TO FILL TWO PILES. The gate reads an ENEMY hero's pile;
-            // the retrieve bullet reads HER OWN. Both fill only by defending, so both heroes have to
-            // have answered an Attack before this card is worth its second bullet.
-            CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.SwiftJustice);
-            yield return YieldUntilTheNamedSeatActs(runtime, whisperId);
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True, Remaining(runtime));
-            yield return null;
-
-            for (var budget = 0; budget < 3 && AStandingChoiceCanBeAnswered(runtime); budget++)
-            {
-                AnswerStandingChoiceHeadlessly(runtime);
-                yield return null;
-                yield return null;
-            }
-
-            var opening = runtime.PendingAttackTargetChoice;
-            if (opening != null && opening.LegalTargetHeroIds.Contains(enemyId))
-            {
-                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(
-                    opening.ResolutionId, opening.ChoiceId, enemyId));
-                yield return null;
-                var answer = SurvivingDefense(runtime);
-                if (answer != null)
-                {
-                    runtime.SubmitProjectedCommand(answer.Command);
-                    yield return null;
-                    yield return null;
-                }
-            }
-
-            for (var budget = 0; budget < 4 && AStandingChoiceCanBeAnswered(runtime); budget++)
-            {
-                AnswerStandingChoiceHeadlessly(runtime);
-                yield return null;
-                yield return null;
-            }
-
-            yield return YieldUntilNobodyIsActing(runtime);
-            yield return AdvanceToNextTurn(runtime);
-
-            // The enemy's turn: their Attack fills HER pile when she answers it.
-            CommitSoTheNamedSeatActs(runtime, enemyId, WaspCardContent.MagneticDagger);
-            yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
-            if (runtime.SubmitAction(PrimaryActionOf(runtime)))
-            {
-                yield return null;
-                var theirs = runtime.PendingAttackTargetChoice;
-                if (theirs != null && theirs.LegalTargetHeroIds.Contains(whisperId))
-                {
-                    runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(
-                        theirs.ResolutionId, theirs.ChoiceId, whisperId));
-                    yield return null;
-                    var hers = SurvivingDefense(runtime);
-                    if (hers != null)
-                    {
-                        runtime.SubmitProjectedCommand(hers.Command);
-                        yield return null;
-                        yield return null;
-                    }
-                }
-            }
-
-            for (var budget = 0; budget < 4 && AStandingChoiceCanBeAnswered(runtime); budget++)
-            {
-                AnswerStandingChoiceHeadlessly(runtime);
-                yield return null;
-                yield return null;
-            }
-
-            yield return YieldUntilNobodyIsActing(runtime);
-            yield return AdvanceToNextTurn(runtime);
-
-            // HER TURN, ON THE LIVE SURFACE.
-            CommitSoTheNamedSeatActs(runtime, whisperId, WhisperCardContent.DeathSeeker);
-            yield return YieldUntilTheNamedSeatActs(runtime, whisperId);
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(whisperId), Remaining(runtime));
-
-            var deathSeeker = runtime.Cards.Single(card =>
-                card.OwnerId.Equals(whisperId) &&
-                card.DefinitionReference.DefinitionId.Equals(WhisperCardContent.DeathSeeker));
-
-            yield return PointTrayAt(root, whisperId);
+            var own = WhisperSeat(runtime).HeroId;
+            CommitSoTheNamedSeatActs(runtime, own, WhisperCardContent.DeathSeeker);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The enemy's pile holds the face they defended with, so the gate is satisfied. " +
-                Remaining(runtime));
-            Assert.That(runtime.PendingEffectChoice.MaximumSelections, Is.EqualTo(2),
-                "The same Ultimate raises the same number on her other basic card - and \"both\" here " +
-                "is the plain reading, because these bullets are two EFFECTS. " + Remaining(runtime));
-
-            var bullets = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2), Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            var node = StandingNode(runtime);
+            Assert.That(runtime.PendingEffectChoice.MaximumSelections, Is.EqualTo(2));
+            var bullets = runtime.RoundView.Model.EffectChoices.Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select).ToArray();
+            Assert.That(bullets, Has.Length.EqualTo(2));
+            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[0].Label));
             yield return null;
-
-            var second = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(second, Is.Not.Empty, Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, second[0].Label));
+            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[1].Label));
             yield return null;
+            yield return ConfirmIfStillStanding(root, node);
+            var card = runtime.Cards.Single(value => value.OwnerId.Equals(own) && value.DefinitionReference.DefinitionId.Equals(WhisperCardContent.DeathSeeker));
+            Assert.That(runtime.IsActiveEffectSource(card.Id), Is.True);
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
+            var accept = runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            UiPlayer.Click(UiPlayer.Button(root.Hud, accept.Label));
             yield return null;
-
-            Assert.That(runtime.IsActiveEffectSource(deathSeeker.Id), Is.True,
-                "The immunity bullet applied. " + Remaining(runtime));
-
-            // THE RETRIEVE BULLET'S OWN `may`, which is the bullet's optionality and not the modal's.
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "\"You MAY retrieve a discarded card\" opens its own confirm-or-decline once the " +
-                "bullet has been chosen - which is a different thing from never choosing it. " +
-                Remaining(runtime));
-            var decline = DeclineControl(runtime);
-            Assert.That(decline, Is.Not.Null,
-                "A printed `may` is answerable both ways. " + Remaining(runtime));
-
-            Assert.That(AnswerStandingChoiceHeadlessly(runtime), Is.True,
-                "Confirming opens the hand-card question the retrieve is about. " + Remaining(runtime));
+            var handBefore = runtime.Cards.Count(value => value.OwnerId.Equals(own) && value.State.Location == CardLocation.Hand);
+            node = StandingNode(runtime);
+            var retrieve = runtime.RoundView.Model.EffectChoices.First(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", retrieve.Label);
+            UiPlayer.EnsureVisible(face);
             yield return null;
+            UiPlayer.Click(face);
             yield return null;
-
-            if (runtime.PendingEffectChoice != null)
-            {
-                Assert.That(StandingChoiceBelongsTo(runtime, whisperId), Is.True,
-                    "\"A discarded card\" is HER OWN pile, so the choice is hers - which is the " +
-                    "contrast with Greater Good's discard, where the same kind of question belongs to " +
-                    "the hero paying it. " + Remaining(runtime));
-                Assert.That(AnswerStandingChoiceHeadlessly(runtime), Is.True, Remaining(runtime));
-                yield return null;
-                yield return null;
-            }
-
-            Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "Both bullets have applied and the card is finished. " + Remaining(runtime));
+            yield return ConfirmIfStillStanding(root, node);
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.Cards.Count(value => value.OwnerId.Equals(own) && value.State.Location == CardLocation.Hand), Is.EqualTo(handBefore + 1));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
     }
 }

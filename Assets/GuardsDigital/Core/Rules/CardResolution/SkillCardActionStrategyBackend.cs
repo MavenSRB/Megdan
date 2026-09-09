@@ -70,6 +70,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public PendingResolution PendingResolution => pendingResolution;
 
+        internal PendingResolution SuspendForBorrow()
+        {
+            var suspended = pendingResolution;
+            if (suspended == null || suspended.PendingChoice != null)
+                throw new InvalidOperationException("Borrowing requires a suspended effect continuation.");
+            pendingResolution = null;
+            return suspended;
+        }
+
+        internal void RestoreBorrowParent(PendingResolution parent)
+        {
+            if (pendingResolution != null || parent == null || parent.PendingChoice != null)
+                throw new InvalidOperationException("A borrowed action must finish before its parent resumes.");
+            pendingResolution = parent;
+        }
+
         public PendingEffectChoice PendingChoice => pendingResolution?.PendingChoice;
 
         public bool HasPendingResolution => pendingResolution != null;
@@ -153,7 +169,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -244,7 +261,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -401,7 +419,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
@@ -486,7 +505,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, watchesAppliedPushes: WatchesAppliedPushes(
+                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Continue(pendingResolution, context);
             if (!step.Accepted)

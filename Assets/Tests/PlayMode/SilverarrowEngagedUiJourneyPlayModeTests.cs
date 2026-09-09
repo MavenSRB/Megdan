@@ -188,27 +188,9 @@ namespace GuardsDigital.Tests.PlayMode
         /// Zone.</para>
         /// </summary>
         [UnityTest]
-        [Explicit(
-            "PARKED at milestone 8.35z46's dealing. After the resolved Attack (including the " +
-            "defender's decline), PendingEffectChoice reads null and the round shows " +
-            "'YOUR TURN - RELEASE TO CONTINUE' - the after-attack Fast Travel rider never pauses, " +
-            "which is consistent with p.11's own 'if able' silently skipping a May node the engine " +
-            "correctly proves infeasible (see the Trailblazer parking above for the trace that clears " +
-            "the Sequence walker of the general case). " +
-            "MILESTONE 8.35z52's BURN-DOWN ELIMINATED THE FIXTURE-GEOMETRY READING, which is the half " +
-            "this parking could not decide: the official map declares SEVEN zones (two thrones, three " +
-            "lane zones, two jungles), and EngagedMirrorStaging places both heroes mid-board in the " +
-            "60-space starting battle zone, which the map's own ordered lane makes ADJACENT to both " +
-            "approach zones. So a second Zone exists, SameOrAdjacentZone has a large eligible " +
-            "destination set from the staged space, and the assertion was NOT written against a " +
-            "geometry the staging never promised. What remains is therefore a content or feasibility " +
-            "question rather than a fixture one - why the rider does not pause when its zone scope is " +
-            "satisfiable - and it is left NAMED rather than guessed at, because diagnosing it wants a " +
-            "Play Mode run with a feasibility diagnostic rather than a fixture edit. " +
-            "See Docs/AI/Archive/Phase-Handoffs/PHASE_8.md's 8.35z46 and 8.35z52 entries.")]
         public IEnumerator ShootAndScoot_ReachesExactlyItsPrintedRangeAndThenOffersHerTheAdjacentZone()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedSilverarrow);
+            yield return LoadRangeStaging(SceneCardContent.VerifiedEngagedStagedSilverarrow, 2);
             var root = Root();
             var runtime = root.Runtime;
             var silverarrowId = SilverarrowSeat(runtime).HeroId;
@@ -269,6 +251,12 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True,
                 "A Fast Travel that offered the space she is already standing on would be a step " +
                 "that changes nothing.");
+            var destination = lit[0];
+            Assert.That(UiPlayer.ClickBoard(pointerInput, root.Hud, Object.FindObjectsByType<HexTileView>()
+                .Single(tile => tile.Coordinate.Equals(destination)).transform.position), Is.True);
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate, Is.EqualTo(destination));
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
         }
 
         /// <summary>
@@ -423,6 +411,26 @@ namespace GuardsDigital.Tests.PlayMode
         /// exact card by hand would find it already gone. Used only where the auto-filled card would
         /// collide with a card this journey needs back on a later turn.
         /// </summary>
+        internal static IEnumerator LoadRangeStaging(SceneCardContent content, int range)
+        {
+            yield return LoadStagedScene(content);
+            var runtime = Root().Runtime;
+            var own = SilverarrowSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var playable = map.Spaces.Where(space => space.Kind == BoardMapSpaceKind.Playable).ToArray();
+            var origin = playable.First(space => playable.Any(other => !other.ZoneId.Equals(space.ZoneId) &&
+                HexDistanceQuery.Calculate(space.Coordinate, other.Coordinate) == range));
+            var target = playable.First(space => !space.ZoneId.Equals(origin.ZoneId) &&
+                HexDistanceQuery.Calculate(space.Coordinate, origin.Coordinate) == range);
+            // Both Fast Travel endpoint zones must be enemy-free after the target is defeated.
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(heroes: new[]
+            {
+                new SandboxHeroStaging(own, origin.Coordinate), new SandboxHeroStaging(enemy, target.Coordinate)
+            }, removedMinions: runtime.Setup.Minions.Select(minion => minion.MinionId));
+            yield return LoadStagedScene(content);
+        }
+
         internal static void CommitBothSeats(
             ConfiguredMatchSceneRuntime runtime,
             HeroId firstHeroId, CardDefinitionId firstCardId,

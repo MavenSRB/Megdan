@@ -310,10 +310,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool watchesAppliedPushes = false,
             bool repeatIsUnavailable = false,
             Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
-            bool stagesMinionDefeats = false)
+            bool stagesMinionDefeats = false,
+            bool stagesBorrowedActions = false)
         {
             WatchesAppliedPushes = watchesAppliedPushes;
             StagesMinionDefeats = stagesMinionDefeats;
+            StagesBorrowedActions = stagesBorrowedActions;
             RepeatIsUnavailable = repeatIsUnavailable;
             this.repeatCanBePerformed = repeatCanBePerformed;
             EnclosingAttack = enclosingAttack;
@@ -398,6 +400,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public bool WatchesAppliedPushes { get; }
         public bool StagesMinionDefeats { get; }
+        public bool StagesBorrowedActions { get; }
 
         public EffectDefinition Definition { get; }
         public EffectCapabilityCatalog Catalog { get; }
@@ -736,7 +739,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                         // request above reads, and is carried beside the repeat rather than inside it.
 
-                        borrowRequested: BorrowedActionQuery.Requested(context.Definition, outcomes));
+                        borrowRequested: context.StagesBorrowedActions ? default :
+                            BorrowedActionQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult Resume(
@@ -908,7 +912,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                         // request above reads, and is carried beside the repeat rather than inside it.
 
-                        borrowRequested: BorrowedActionQuery.Requested(context.Definition, outcomes));
+                        borrowRequested: context.StagesBorrowedActions ? default :
+                            BorrowedActionQuery.Requested(context.Definition, outcomes));
                 }
 
                 var top = continuation[continuation.Count - 1];
@@ -1286,6 +1291,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     Pop(continuation);
                     Record(outcomes, events, node.Id, EffectExecutionResultKind.Applied, result);
 
+                    // Borrowed primaries execute before the next printed clause, not after the
+                    // enclosing Skill's grant/retrieval or ActionEnded checkpoint.
+                    if (context.StagesBorrowedActions)
+                    {
+                        var borrow = BorrowedActionQuery.Requested(context.Definition,
+                            new[] { outcomes[outcomes.Count - 1] });
+                        if (borrow.IsRequested)
+                            return EffectResolutionStepResult.Accept(
+                                Rebuild(frame, continuation, outcomes, choices), false, events,
+                                borrowRequested: borrow);
+                    }
+
                     // A Skill's Defeat is completed by card authority before the next effect node.
                     // The existing continuation persists the position after this node, including
                     // while removal prevention asks a player; resuming cannot request it twice.
@@ -1361,7 +1378,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                         // request above reads, and is carried beside the repeat rather than inside it.
 
-                        borrowRequested: BorrowedActionQuery.Requested(context.Definition, outcomes));
+                        borrowRequested: context.StagesBorrowedActions ? default :
+                            BorrowedActionQuery.Requested(context.Definition, outcomes));
         }
 
         private static EffectResolutionStepResult PauseOn(

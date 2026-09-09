@@ -36,6 +36,27 @@ namespace GuardsDigital.Tests.EditMode
             new EffectCapabilityCatalog(SyntheticRosterCapabilities.Handlers());
 
         [Test]
+        public void SwapSubject_AdjacencyNeverIncludesTheActor()
+        {
+            // Cruel Twist / Sealed Fate: "a unit adjacent to you" excludes yourself.
+            var friendly = Minion("red-adjacent", TeamSide.Red, StandardMinionType.Melee, new HexCoordinate(0, 1));
+            var board = Board(new HexCoordinate(0, 0), new HexCoordinate(1, 0), new[] { friendly });
+            var inputs = new Dictionary<string, EffectValue>
+            {
+                { SyntheticRosterCapabilities.AdjacentUnitKindParameter, EffectValue.Integer((int)RosterUnitKind.Unit) },
+                { SyntheticRosterCapabilities.RangedHeroRelationParameter, EffectValue.Integer((int)SourceTeamRelation.None) }
+            };
+            var context = Context(board, inputs);
+            var handler = Handler(SyntheticRosterCapabilities.ChooseSwapSubjectV1);
+            var offered = handler.Execute(context);
+            Assert.That(offered.Choice.Candidates, Is.EquivalentTo(new[] { EffectValue.Hero(Other), EffectValue.Minion(friendly.MinionId) }));
+            Assert.That(handler.Resume(context, new[] { EffectValue.Hero(Actor) }).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(handler.Resume(context, new[] { EffectValue.Minion(friendly.MinionId) }).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied));
+        }
+
+        [Test]
         public void TargetSetAndPair_UseOneCanonicalTypedContractAcrossIntrinsicAndCountsAsUnits()
         {
             var minion = Minion("blue-a-minion", TeamSide.Blue, StandardMinionType.Melee,

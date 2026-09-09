@@ -43,9 +43,9 @@ namespace GuardsDigital.Tests.EditMode
             var observed = Observe(session, StartOfficialMapMovementFour);
 
             Assert.That(Describe(observed), Is.EqualTo(
-                    "TurnStarted -> ActionStarted -> ActionEnded -> SourceCardStateChanged"),
-                "Movement checkpoint order changed. Measured at 2e47c97 before the correction; the " +
-                "correction moves where these are emitted from, not their order.");
+                    "TurnStarted -> ActionStarted -> ActionEnded"),
+                "Resolving a face-up action card preserves its Active effect; no source-invalidating " +
+                "transition is emitted at ordinary action completion.");
         }
 
         [Test]
@@ -56,8 +56,8 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(Describe(observed), Is.EqualTo(
                     "ActionStarted -> BeforeAttack -> DefenseResponse -> AttackResultComparison -> " +
-                    "AfterAttack -> ActionEnded -> SourceCardStateChanged"),
-                "Attack-with-Defense checkpoint order changed. Measured at 2e47c97 before the correction.");
+                    "AfterAttack -> ActionEnded"),
+                "Attack completion resolves the face-up card without cancelling its Active effect.");
         }
 
         [Test]
@@ -67,9 +67,8 @@ namespace GuardsDigital.Tests.EditMode
             var observed = Observe(session, DriveAttackAgainstMinion);
 
             Assert.That(Describe(observed), Is.EqualTo(
-                    "ActionStarted -> BeforeAttack -> AfterAttack -> ActionEnded -> SourceCardStateChanged"),
-                "Attack-against-minion checkpoint order changed. Measured at 2e47c97 before the " +
-                "correction. A minion opens no Defense reaction, so neither DefenseResponse nor " +
+                    "ActionStarted -> BeforeAttack -> AfterAttack -> ActionEnded"),
+                "A minion opens no Defense reaction, so neither DefenseResponse nor " +
                 "AttackResultComparison appears here - that difference is the point of this case.");
         }
 
@@ -80,8 +79,8 @@ namespace GuardsDigital.Tests.EditMode
             var observed = Observe(session, DriveFastTravel);
 
             Assert.That(Describe(observed), Is.EqualTo(
-                    "TurnStarted -> ActionStarted -> ActionEnded -> SourceCardStateChanged"),
-                "Fast Travel checkpoint order changed. Measured at 2e47c97 before the correction.");
+                    "TurnStarted -> ActionStarted -> ActionEnded"),
+                "Fast Travel resolves the face-up card without a source-invalidating transition.");
         }
 
         /// <summary>
@@ -98,7 +97,7 @@ namespace GuardsDigital.Tests.EditMode
         /// silence. `Card-System/RESOLUTION_AND_EFFECTS.md` specifies the corrected order.
         /// </summary>
         [Test]
-        public void ActionEndCheckpoint_ReachesAnEffectBeforeItsSourceCardCancellation()
+        public void ActionEndCheckpoint_ReachesAnEffectAndOrdinaryResolutionDoesNotCancelIt()
         {
             var configuration = MatchConfiguration.CreateForInternalTest(TeamSide.Blue);
             var actingCardId = ActingCardId(configuration);
@@ -109,12 +108,9 @@ namespace GuardsDigital.Tests.EditMode
             var observed = DescribeLifecycle(raw);
 
             Assert.That(observed, Does.Contain("Triggered@ActionEnded"),
-                "The action-end checkpoint no longer reaches an effect anchored to the acting card, " +
-                "which means source-card cancellation ran first - the pre-6.1ap order.");
-            Assert.That(
-                IndexOf(observed, "Triggered@ActionEnded"),
-                Is.LessThan(IndexOf(observed, "Cancelled@SourceCardStateChanged")),
-                "Action end must reach the Active-effect lifecycle before source-card cancellation.");
+                "The action-end checkpoint must reach an effect anchored to the acting card.");
+            Assert.That(observed, Does.Not.Contain("Cancelled@SourceCardStateChanged"),
+                "A face-up card becoming resolved preserves its printed Active effect.");
         }
 
         /// <summary>
@@ -525,11 +521,11 @@ namespace GuardsDigital.Tests.EditMode
         /// Global scope so no checkpoint is filtered out by which hero it names, and This Round duration
         /// so it survives the whole turn.
         ///
-        /// It declares source-card cancellation, but that only fires for an effect whose source card is
-        /// the one whose state changed. Every scenario except
-        /// <see cref="ActionEndCheckpoint_ReachesAnEffectBeforeItsSourceCardCancellation"/> anchors it to
-        /// a card that is not in the match, so nothing an ordinary action does ends it early; that one
-        /// scenario anchors it to the acting card precisely so the cancellation does fire.
+        /// It declares source-card cancellation, but that fires only for a transition that invalidates
+        /// the source. Every scenario except
+        /// <see cref="ActionEndCheckpoint_ReachesAnEffectAndOrdinaryResolutionDoesNotCancelIt"/> anchors
+        /// it to a card that is not in the match; that one anchors it to the acting card to prove that
+        /// ordinary face-up resolution is deliberately not such a transition.
         /// </summary>
         private static ActiveEffectDefinition ObservingDefinition() =>
             new ActiveEffectDefinition(

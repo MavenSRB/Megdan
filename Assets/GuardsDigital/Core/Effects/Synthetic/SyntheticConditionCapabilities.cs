@@ -116,7 +116,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectOutcomeFact(
                         PresentOutput,
                         EffectValue.Boolean(HeroConditionQuery.IsInCondition(
-                            condition, context.ActorId, context.Timing)))
+                            condition, context.ActorId, context.Timing?.Effects,
+                            context.ActorContinuousSources)))
                 });
             }
 

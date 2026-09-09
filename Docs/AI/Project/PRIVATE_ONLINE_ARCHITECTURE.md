@@ -2,6 +2,13 @@
 
 Canonical decision record for milestone 8.29. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md). Reassess this record before any dependency upgrade, provider change, public distribution, non-Windows bring-up, dedicated hosting, host migration, account system, matchmaking, or scale beyond six invited players.
 
+**8.36f3 compatibility assessment.** Snapshot schema 41 adds suspended borrowed-Skill parents,
+multi-target Attack exclusions and modal-bullet continuation scope. Wire protocol 12 is unchanged, but
+the existing admission identity includes the schema version, so schema-40 peers are rejected before
+snapshot exchange rather than partially interpreting the new state.
+
+**2026-09-09 approved target amendment — implementation pending 8.36g1.** The user now requests one shared client with Host/Join: the host also plays and alone has intentional Director debug access. A separate seatless host is no longer required for the next package. The implementation description below remains the current baseline until [8.36g1](../Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md#836g1-host-and-play-from-the-same-client) closes. The new target deliberately trusts the hosting player with authoritative state; it must not grant remote joiners debug authority or give bots other owners' private information. TCP transport, keyed admission, reconnect, terminal host loss and no host migration remain in scope unchanged.
+
 **2026-09-01 user-directed amendment.** Invoking this record's own reassessment clause for a provider change and dedicated hosting, the user replaced the selected transport and topology: a dedicated seatless host process over direct TCP sockets replaces the player-hosted UGS Multiplayer Services/Relay-DTLS stack for the private playtest track. All six players are clients of that host, which runs on the operator's machine now and on an operator-run Windows server later. Every other boundary at that amendment - protocol family and version, the admission tuple, structural owner projections, host-bound seats, snapshot resync, terminal host loss, the transport-neutral port with adapters beneath it, and the excluded scope - stood unchanged. Milestones 8.35b and 8.35f later advance only the protocol version under this record's compatibility rule. The sections below are amended in place; the superseded UGS/Relay selection remains visible in the alternatives table as the deferred fallback.
 
 ## Decision

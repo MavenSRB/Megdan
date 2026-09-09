@@ -2498,7 +2498,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// says such a clause skips and the card continues. Only a genuinely unanswerable question - no
         /// board port at all, or an actor standing nowhere - is impossible.</para>
         /// </summary>
-        private sealed class EmptyMinionSpawnPointCountHandler : IEffectCapabilityHandler
+        private sealed class EmptyMinionSpawnPointCountHandler : IEffectCapabilityHandler,
+            IEffectAnticipatedOutcomeCapabilityHandler
         {
             private readonly bool readsPrintedRadius;
 
@@ -2643,6 +2644,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 Count(context) < 0
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.Applied;
+
+            // This query only reads the board. Carry its count into a following move's
+            // feasibility check, so a computed positive budget is not mistaken for zero.
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var count = Count(context);
+                return count < 0 ? Array.Empty<EffectOutcomeFact>() : new[]
+                {
+                    new EffectOutcomeFact(CountOutput, EffectValue.Integer(Capped(context, count))),
+                    new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(count >= Minimum(context)))
+                };
+            }
         }
 
         private sealed class PreConsequenceAdjacencyHandler : IEffectCapabilityHandler
@@ -4330,7 +4346,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
                 }
 
+                // A radius-one query includes its origin; "adjacent" does not. A swap
+                // with the actor itself is invalid in either arm of this union.
                 return found
+                    .Where(value => !value.Equals(BoardObjectReference.ForHero(context.ActorId)))
                     .Distinct()
                     .OrderBy(value => value.Kind)
                     .ThenBy(value => value.HeroId.Value ?? value.MinionId.Value, StringComparer.Ordinal)
