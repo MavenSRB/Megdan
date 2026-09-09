@@ -4,7 +4,7 @@ Review definition and authorization: [Phase 8](PHASE_8.md). Finding policy: [ROA
 
 ## Decision and scope
 
-The independent analysis-only review is complete. The user approved corrections 8.36b-8.36d on 2026-09-09; [Private-game corrections](PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns their outcomes. F-ONLINE-01 is mechanically closed by 8.36b's observed test transition; F-ONLINE-02/03 remain with 8.36c and F-ONLINE-04 with 8.36d. The user has parked Phase 9 and the publisher pitch; the corrections serve private play and do not reopen the accepted internet gate.
+The independent analysis-only review is complete. The user approved corrections 8.36b-8.36d on 2026-09-09; [Private-game corrections](PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns their outcomes. F-ONLINE-01 through F-ONLINE-03 are mechanically closed by 8.36b/8.36c's observed test transitions. F-ONLINE-04 remains with approved 8.36d. The user has parked Phase 9 and the publisher pitch; the corrections serve private play and do not reopen the accepted internet gate.
 
 The user-accepted 8.36 closure stands. The reported clean completed internet 2v2 is an accepted tester observation on an unidentified older build. It is not six-human, deliberate reconnect, latency, or final-package proof. Nothing in this review reopens that acceptance or authorizes another playtest, heroes, implementation, publication or remote operations.
 
@@ -15,8 +15,8 @@ One fresh-task reviewer inspected source at `119f29c8` (executable paths unchang
 | Finding | Classification / severity and timing | Proposed owner / disposition | Exact closing check | Current status / approved decision |
 | --- | --- | --- | --- | --- |
 | F-ONLINE-01: unauthenticated leave releases a protected seat | Confirmed authorization defect, P1 | Approved 8.36b: authenticate forfeiting departure | `KeyedPlaintextGoodbyePreservesReservationAndCapability` | Closed; failing-then-passing transition and compatibility assessment indexed by `milestone/8.36b` |
-| F-ONLINE-02: one blocked socket write can hold the host executor and shutdown | Architectural liveness/resource risk, P1; proposed Phase 9 blocker pending correction or explicit disposition | Proposed 8.36c: bounded transport service | `NonReadingPeerCannotBlockHostPumpOrDispose` | Open; blocking mechanism confirmed in source, no measured stall or test transition |
-| F-ONLINE-03: transport allocations precede admission bounds | Architectural resource risk, P2; before further exposed-host testing | Proposed 8.36c, same transport boundary | `TransportIngressRemainsBoundedBeforeAdmission` | Open; no measured exhaustion or test transition |
+| F-ONLINE-02: one blocked socket write can hold the host executor and shutdown | Architectural liveness/resource risk, P1; proposed Phase 9 blocker pending correction or explicit disposition | Approved 8.36c: bounded transport service | `NonReadingPeerCannotBlockHostPumpOrDispose` | Closed; real socket backpressure failed before and passed after, indexed by `milestone/8.36c` |
+| F-ONLINE-03: transport allocations precede admission bounds | Architectural resource risk, P2; before further exposed-host testing | Approved 8.36c, same transport boundary | `TransportIngressRemainsBoundedBeforeAdmission` | Closed; pre-admission connection-cap breach failed before and passed after, indexed by `milestone/8.36c` |
 | F-ONLINE-04: retained run evidence can mix identities | Demonstrated evidence/diagnostic-quality problem, P2; before next captured run, not a reopening of 8.36 | Proposed 8.36d: attributable private diagnostic bundles | `OnlineEvidenceBundleRejectsMixedRunIdentity` | Open; mixed retained artifacts observed, checker and corrective decision pending |
 
 ### F-ONLINE-01 - Authenticate a deliberate leave

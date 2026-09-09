@@ -1402,3 +1402,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36b | Keyed deliberate leave is authenticated; forged departure preserves seat reclaim, and protocol 12 rejects older peers. | `milestone/8.36b` |
+
+## Milestone 8.36c Bounded private transport completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36c | Bounded TCP queues, connection slots, pump batches and cancellable delivery preserve seat reservation, reconnect and deliberate leave. | `milestone/8.36c` |

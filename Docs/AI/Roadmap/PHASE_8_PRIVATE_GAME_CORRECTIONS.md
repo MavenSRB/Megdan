@@ -12,11 +12,13 @@ Origin: [8.36a F-ONLINE-01](PHASE_8_PRIVATE_ONLINE_REVIEW.md); approved on 2026-
 
 Historical evidence: [8.36b handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836b-authenticate-keyed-session-seat-forfeiture-completion-evidence).
 
-### [~] 8.36c Keep transport service bounded under backpressure and ingress
+### [x] 8.36c Keep transport service bounded under backpressure and ingress
 
 Origin: [8.36a F-ONLINE-02 and F-ONLINE-03](PHASE_8_PRIVATE_ONLINE_REVIEW.md); approved on 2026-09-09. Dependency: after 8.36b to validate the final departure contract together. Outcome: a non-reading or flooding peer cannot monopolize host control or unbounded adapter resources. Acceptance: the review's exact `NonReadingPeerCannotBlockHostPumpOrDispose` and `TransportIngressRemainsBoundedBeforeAdmission` checks fail before correction and pass afterward; preserve ordered authorization, reserved-seat pause, reconnect and healthy-peer service. Select testing breadth from the affected transport and build paths. Non-goals: production service, host migration, gameplay timeouts or rules changes. F-ONLINE-02 is a proposed Phase 9 blocker; F-ONLINE-03 shares the correction's transport boundary.
 
-### [ ] 8.36d Preserve attributable private-online diagnostic bundles
+Historical evidence: [8.36c handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-836c-bounded-private-transport-completion-evidence).
+
+### [~] 8.36d Preserve attributable private-online diagnostic bundles
 
 Origin: [8.36a F-ONLINE-04](PHASE_8_PRIVATE_ONLINE_REVIEW.md); approved on 2026-09-09. Dependency: 8.36c, before the next captured online run. Outcome: ordinary-lobby evidence identifies its exact run and build and cannot silently reuse another cohort's logs. Acceptance: `OnlineEvidenceBundleRejectsMixedRunIdentity` fails on mixed-run/build evidence and passes a coherent bundle, including the declared participants' terminal outcome/version; retain privacy and distinct output directories. Non-goals: telemetry, upload, repeat playtest or recovering the accepted old-build internet session. Not a reopening of 8.36 or independently a Phase 9 blocker.
 
@@ -33,6 +35,10 @@ Also approved: bots randomly select from their currently legal hero choices inst
 User-approved on 2026-09-09 after 8.36e. The supplied screenshot reports an unsupported resolver scope for Silverarrow and friendly heroes in radius while Trailblazer is active, followed by a clipped internal-exception banner; this diagnosis is not yet independently verified. Outcome: verified legal Trailblazer actions resolve through the shared typed capability without a host engine fault, and unexpected internal errors produce bounded player-safe feedback with private diagnostic detail retained. Dependency: verify the printed card/rules-ledger authority and reproduce the actual resolver/host path. Closing checks: failing-then-passing source-linked active-Trailblazer regression covering self/friendly/enemy and radius boundaries, directly affected shared capability consumers and host authorization/atomicity; focused banner and player-path coverage where behavior changes. No card-name branches, invented rules, rebalance or broad error-system refactor.
 
 Additional user-approved report: Misa's Watch How I Soar offers its printed "Defeat a minion adjacent to you" branch, permits target selection, but the selected minion survives. Reproduce the actual choice/target/confirmation route, distinguish provisional selection from accepted resolution, verify printed adjacency and any applicable prevention, and correct the demonstrated fault. Add source-linked legal/invalid-target and accepted Defeat state/event tests plus a real-input player journey proving removal and subsequent prompt progression; preserve the alternate placement branch and shared effect-choice semantics. These card-resolution reports share this bounded outcome and get distinct focused regressions; no other card changes are authorized.
+
+### [ ] 8.36f1 Make the level-up comparison and rewards readable
+
+User-approved on 2026-09-09, after 8.36f and before 8.36g. The supplied Misa level-up screenshot shows a tiny unreadable current hand and upgrade choices clipped at the bottom. Outcome: the current hand can be read/compared during leveling and complete upgrade cards/rewards remain accessible inside the viewport. The reward overlay stays centered on its card and reads "GAINS:" followed by the actual authoritative gain icon(s). Preserve whole-card selection and the existing source-ratio/hover/short-viewport card contracts; no change to upgrade or reward rules. Closing checks: focused layout/reward-projection regressions, a pointer-driven level-up journey comparing the hand and selecting an upgrade, and full-screen visual inspection at the user's viewport and the supported short viewport, with no bottom clipping or unreachable choices.
 
 ### [ ] 8.36g Improve private-session bot tactics with measured evidence
 

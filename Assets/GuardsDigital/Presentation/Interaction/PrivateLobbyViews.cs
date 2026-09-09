@@ -788,7 +788,7 @@ namespace GuardsDigital.Presentation.Interaction
                     HostConsoleCommands.Dispatch(consoleLine, session);
                 }
 
-                while (listener.TryDequeue(out var hostEvent))
+                foreach (var hostEvent in listener.Drain())
                 {
                     switch (hostEvent.Kind)
                     {
@@ -828,7 +828,7 @@ namespace GuardsDigital.Presentation.Interaction
 
             if (machine != null && transport != null)
             {
-                while (transport.TryDequeue(out var clientEvent))
+                foreach (var clientEvent in transport.Drain())
                 {
                     switch (clientEvent.Kind)
                     {

@@ -321,7 +321,7 @@ namespace GuardsDigital.Presentation.Interaction
                 HostConsoleCommands.Dispatch(consoleLine, session);
             }
 
-            while (listener.TryDequeue(out var transportEvent))
+            foreach (var transportEvent in listener.Drain())
             {
                 switch (transportEvent.Kind)
                 {
@@ -449,7 +449,7 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            while (transport.TryDequeue(out var transportEvent))
+            foreach (var transportEvent in transport.Drain())
             {
                 switch (transportEvent.Kind)
                 {

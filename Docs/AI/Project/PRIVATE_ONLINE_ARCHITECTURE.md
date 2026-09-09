@@ -75,6 +75,14 @@ Removal path: all socket types remain in the Unity-free adapter assembly beneath
 
 ## Failure and disconnect policy
 
+### Bounded TCP service (8.36c)
+
+The listener retains at most twelve connection slots before application admission; a closed slot is not reused until its final event is consumed and both socket workers have exited. Each slot owns one reader and one ordered writer, plus one shared accept thread. Each peer can retain at most 64 incoming frames and 512 KiB of incoming payload; control events are limited by the retained slots (Connected, optional stream rejection, Disconnected). The frame assembler's existing 64 KiB payload limit still applies. One transient accepted socket can be rejected before it receives a slot or worker.
+
+Outgoing frames are copied into an ordered queue, capped at 64 queued frames and 1 MiB including the writer's in-flight bytes. Socket writes occur only on that writer, with a one-second send timeout. Queue overflow or I/O failure closes only the connection; the host receives ordinary disconnect and preserves its seat reservation/pause. Closing never needs a lock held across socket I/O. Normal Close drains already queued terminal messages; Dispose allows one shared 200 ms drain window, aborts remaining sockets, and joins all owned threads within one shared 750 ms budget, reporting failure if a worker remains alive.
+
+Both ordinary-lobby and standalone host/client pumps use the transport's finite Drain batch of at most 64 events per update, leaving time for sweeps, control and UI work. Limits bound local adapter resources, not internet latency or a production denial-of-service guarantee. Wire protocol remains 12 and snapshot schema 40: framing, payload interpretation, authorization and game-state semantics are unchanged. Closing checks are owned by [8.36c](../Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md).
+
 All input is length-checked before allocation-heavy decode and semantically validated before mutation. One malformed input rejects that submission; repeated malformed/oversized or protocol-invalid input disconnects that client. No rejection advances state or projection version.
 
 | Condition | Required result |
