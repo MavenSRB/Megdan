@@ -1456,3 +1456,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36g1 | HOST now starts an ordinary loopback player client beside authority, claims one owner-scoped seat, retains that authoritative runtime after lineup composition, and alone exposes the deliberate local Director tab; debug Undo/restart changes republish to remote projections. An actual keyed TCP remote client leaves, freshly rejoins, picks on the opposing team, and completes a 2v2 match with the host plus two owner-scoped bots; host leave/rehost, reconnect/host loss, joiner privacy, and 2v2/3v3 host-plus-bot paths pass. The complete-match gate also found and fixed borrowed-Skill snapshot restoration omitting the restored Active-effect lifecycle, with no payload, schema, wire, rules, map or content-identity change. | `milestone/8.36g1` |
+
+## Milestone 8.36h Host-and-play package completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.36h | Corrected Windows host-and-play package and matching private ZIP, including tactical lobby bots; user confirmation closes the outstanding ordinary-window package check. | `milestone/8.36h-completion` |
