@@ -46,8 +46,10 @@ $resourcePath = [System.IO.Path]::Combine(
 function Get-PngSize([string] $path) {
     $bytes = [System.IO.File]::ReadAllBytes($path)
     if ($bytes.Length -lt 24) { return $null }
-    $width = ($bytes[16] -shl 24) -bor ($bytes[17] -shl 16) -bor ($bytes[18] -shl 8) -bor $bytes[19]
-    $height = ($bytes[20] -shl 24) -bor ($bytes[21] -shl 16) -bor ($bytes[22] -shl 8) -bor $bytes[23]
+    # Cast before shifting. PowerShell otherwise preserves the byte operand type and
+    # truncates every shifted term, making a valid PNG appear to be 0x0.
+    $width = (([int] $bytes[16]) -shl 24) -bor (([int] $bytes[17]) -shl 16) -bor (([int] $bytes[18]) -shl 8) -bor ([int] $bytes[19])
+    $height = (([int] $bytes[20]) -shl 24) -bor (([int] $bytes[21]) -shl 16) -bor (([int] $bytes[22]) -shl 8) -bor ([int] $bytes[23])
     return [pscustomobject]@{ Width = $width; Height = $height }
 }
 
@@ -102,7 +104,8 @@ if ($Check) {
 
     $size = Get-PngSize $resourcePath
     if ($null -eq $size -or $size.Width -ne $spriteWidth -or $size.Height -ne $spriteHeight) {
-        Write-Error ("The prepared board artwork is ${($size.Width)}x${($size.Height)}, but the manifest declares ${spriteWidth}x${spriteHeight}. " +
+        $actualSize = if ($null -eq $size) { 'unreadable' } else { "$($size.Width)x$($size.Height)" }
+        Write-Error ("The prepared board artwork is $actualSize, but the manifest declares ${spriteWidth}x${spriteHeight}. " +
             'Run Tools/Prepare-OfficialBoardArtwork.ps1 -Force to rewrite it.')
         exit 1
     }

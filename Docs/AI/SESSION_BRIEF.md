@@ -8,19 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v41 persists the current state; wire protocol is `guards-private-online/12`. The approved cleanup and final private packaging are complete; evidence is indexed in [Phase 8 handoffs](Archive/Phase-Handoffs/PHASE_8.md). The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; eleven playable heroes; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v41 persists the current state; wire protocol is `guards-private-online/12`. Cleanup and corrections through 8.36g1 are complete; 8.36h has a locally verified package candidate but remains paused on one direct native-input check. The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
 
-FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail; the packaged picker produces her matching hand and tray. The corrected ZIP with Play/Host launchers is local under Builds. Private logs and extracted art remain private evidence/resources.
+FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
 - Current completed milestone: **8.36g1**.
-- Active authorized milestone: **8.36h**.
+- Active authorized milestone: **none**, with 8.36h paused on its direct native-input package check.
 - Next proposed milestone: **8.36h**.
 
 The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 gate remains closed. The independent 8.36a review is integrated. On 2026-09-09 the user approved **8.36b-8.36d**, sequentially: authenticated departure, bounded transport, attributable diagnostics. [Private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md) owns the outcomes and closing checks. [Product](Project/PRODUCT.md) now limits the project to the user and friends: production presentation and publisher-pitch work are parked. More heroes remain desired future work, not authorized implementation in this correction batch. No repeat internet playtest, remote publication or unrelated refactor is authorized.
 
-Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Transparent aura and adaptive ring order passed exact-player rendering checks, including the turn pulse's minimum size. Lobby bots now use the measured owner-scoped tactical policy: useful Fast Travel, battle entry, typed Skill choices and bounded public-card knowledge while hidden hands/decks remain absent. The prior Tier-2 static policy remains the comparison control. The verified package is still the pre-g1 `Builds/Playtest-8.35z85-fixes.zip`; replacement packaging follows only at 8.36h. Additional heroes remain on hold. Aura order is token, purple effect ring, active-turn ring; without an effect, the turn ring sits beside the token.
+Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Lobby bots use the measured owner-scoped tactical policy while hidden hands/decks remain absent. `Builds/Playtest-8.36h-host-and-play.zip` is the current local candidate: all 183 members match its loose folder and its exact binary passed build, board, and playing-host multi-process gates. Computer-use exposed no native app surface, so the required ordinary-window Host/Join/Bot click-through remains human-gated. Additional heroes remain on hold.
 
 ## Durable boundaries
 
@@ -38,7 +38,7 @@ The user additionally approved **8.36e**, after 8.36b-8.36d: visible hero select
 
 - Rules/source hierarchy and deviations: [RULES_LEDGER.md](RULES_LEDGER.md). Cleanup does not change rules, content, or compatibility identities.
 - The standing new-build/Play-and-Host-ZIP request is mapped to **8.36h**, after the correction, audit and bot work; the private-game corrections shard owns its closing checks.
-- On 2026-09-09 the user amended the remaining sequence: **8.36f3 → 8.36g → 8.36g1 → 8.36h**, without another approval stop between them. Bots actively pursue wins through productive minion/hero defeats and team objectives. **8.36g1 is complete:** one shared client hosts and plays through an owner-scoped loopback seat, the hosting player alone gets deliberate local Director debug access, and other players Join. No separate seatless host process is required in the new package. **8.36h packaging is now active** under the private-game corrections shard.
+- On 2026-09-09 the user amended the remaining sequence: **8.36f3 → 8.36g → 8.36g1 → 8.36h**, without another approval stop between them. **8.36g1 is complete:** one shared client hosts and plays through an owner-scoped loopback seat, the hosting player alone gets deliberate local Director debug access, and other players Join. **8.36h is paused only on the native packaged click-through named above**; its private-game corrections row owns the exact closing action.
 - Preserve pure rules/state, commands/choices, host authorization/privacy, snapshots, and replay. [Architecture](Project/ARCHITECTURE.md).
 - Windows is the reference target; macOS/iOS are declared rather than validated. [Product](Project/PRODUCT.md).
 - Source/rulebook permission does not cover extracted cards, maps, builds, private logs, or worktrees. No remote, upload, or distribution is authorized.

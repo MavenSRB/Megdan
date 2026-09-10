@@ -8,8 +8,8 @@ The whole session takes roughly two hours.
 
 PLEASE READ THIS ONE: WHO YOU ARE TRUSTING
 
-One machine hosts this match. It holds every card in the game and decides every
-rule; all six of us are clients of it. Whoever runs that machine can read anything
+One player's machine hosts this match. It holds every card in the game and decides
+every rule while that player also occupies a normal seat. Whoever hosts can read anything
 in the match, including the cards in your hand, and could change what the game
 does. Nothing in this build prevents that, and nothing is meant to. The session key
 you are given is an invitation that keeps strangers out and scrambles the traffic on
@@ -44,29 +44,15 @@ accidentally mix an old copy into this session.
 
 1. STARTING THE GAME
 
-Double-clicking the executable itself starts a local practice mode with no lobby
-in it. That is not what we want. Two launcher files sit next to it; use one of
-those instead:
+Double-click `PLAY - Host or Join.bat`. It opens the shared lobby and writes a
+private log beneath `Logs\launches`. Everyone uses this same launcher: one player
+chooses HOST in the lobby and everybody else chooses JOIN. No separate server
+window or host launcher is needed.
 
-    PLAY - Join Match.bat      the one you want. It starts the game with the
-                               lobby and writes your log file for you, named
-                               playtest-<your Windows username>.log.
-    HOST - Start Server.bat    only for whoever is hosting the match. You can
-                               ignore it.
-
-(Wondering about practicing alone first? You can play a full six-seat match by
-yourself: run HOST - Start Server.bat, then also run PLAY - Join Match.bat on the
-same PC, point it at 127.0.0.1 and the same key, pick whichever seat you want to
-play, and press JOIN then READY as normal. Now switch back to the HOST window and
-press its FILL WITH TEST DRIVERS button - it fills every other still-open seat
-with a QA test driver, not a real opponent, just random legal moves at a watchable
-pace, clearly labeled as a test driver only on the host's own screen. Each one
-dials the same address the host is actually using and either joins for real or
-gives up loudly - if a seat cannot be filled, the host's own screen says so by
-name instead of the practice game quietly hanging. The match begins itself once
-all six seats are ready, exactly as in a real session, so you get to play your one
-seat and watch the other five play themselves. It plays no part in the six-person
-session itself - nobody presses FILL once real people are joining.)
+(Wondering about practicing alone first? Run the same launcher, choose HOST on
+127.0.0.1, take the seat you want to play, then press FILL WITH BOTS. The remaining
+seats are controlled in-process at a watchable pace. The match begins once the
+host and bots are ready, exactly through the ordinary lobby and match surfaces.)
 
 The first time, Windows may say "Windows protected your PC". Choose "More info",
 then "Run anyway" - the build is unsigned, which is expected for a private
@@ -85,15 +71,22 @@ A window headed PRIVATE LOBBY should appear. If it does not, tell us before doin
 anything else.
 
 
-2. JOINING THE MATCH
+2. HOSTING OR JOINING THE MATCH
+
+If you are hosting:
+
+  1. Enter the bind ADDRESS, PORT and SESSION KEY, then press HOST.
+  2. When the roster appears, take your own seat and press READY.
+  3. Wait for the joining players. Use FILL WITH BOTS only for seats you genuinely
+     want the computer to control.
+
+If you are joining:
 
   1. Type the ADDRESS you were sent into the ADDRESS box, replacing 127.0.0.1.
   2. Type the PORT into the PORT box.
   3. Paste the SESSION KEY into the SESSION KEY box. It must match exactly.
-  4. Find YOUR SEAT in the table and press PICK on that row. The line above the
-     table should then read SEAT: <your seat>. Please take only the seat you were
-     given; two people racing for one seat just wastes a join.
-  5. Press JOIN.
+  4. Press JOIN. Once the host's roster appears, press TAKE THIS SEAT on the row
+     you were assigned. Two people racing for one seat just wastes a join.
 
 You should see your row change to SEATED with YOU beside it, and the other seats
 fill in as everyone arrives.
@@ -274,13 +267,9 @@ given the first time - and rejoin. You do not need to do anything special: your
 seat is reserved and you are dropped straight back into it, with everything as you
 left it.
 
-If your machine is out of action for the rest of the evening, tell us. The host can
-free your seat from their own console with a typed "release <your seat>" once it
-shows as disconnected, without restarting the match for everyone else - but that
-only works on a seat that has actually dropped; it is not a way to remove someone
-who is still playing. Once released, the seat goes back to Open and anyone holding
-the session key could claim it, so this is genuinely for "I am out for the night,"
-not a pause.
+If your machine is out of action for the rest of the evening, tell the host. The
+current playing-host lobby does not migrate authority to another machine; the group
+must decide whether to wait or restart.
 
 If the host machine itself goes away, every client says HOST LOST and that match is
 over - it cannot be continued or restored. We would start a new one.
@@ -318,12 +307,9 @@ line rather than guessing, but we would like to know which ones you hit.
     report.
   - The small enemy figures did not gain the raised edge the hero discs did, so in
     a spotlight they still read as flat.
-  - When you fill empty seats with practice bots, they now genuinely fight - they
-    attack, they move toward the fighting and they block a hit that would kill
-    them - but which card they commit each round is still chosen at random ON
-    PURPOSE. A bot that also chose its card well would stop being practice and
-    start being an opponent, which is not what this is for. So do not read
-    anything into their commitments.
+  - Practice bots now choose from their own hand using bounded tactical scoring.
+    They pursue useful movement, combat and team objectives, but they are still a
+    deterministic playtest aid rather than a claim of strong or human-level play.
 
 
 5. AFTER THE MATCH
@@ -341,5 +327,4 @@ Two things, please:
 
 Then please delete the build.
 
-Thank you. This is the first time this game has been played by six people over the
-internet, and the only way to find out what is wrong with it is to have you play it.
+Thank you. Real play is still the best way to find what the automated gates missed.

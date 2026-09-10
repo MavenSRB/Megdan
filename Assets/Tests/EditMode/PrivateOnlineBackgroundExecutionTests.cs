@@ -80,5 +80,44 @@ namespace GuardsDigital.Tests.EditMode
                 Object.DestroyImmediate(carrier);
             }
         }
+
+        [Test]
+        public void RehearsalOptions_AllowAPlayingHostSeatOnlyForThePackageSmoke()
+        {
+            var addressName = PrivateOnlineRehearsalDriver.AddressEnvironmentVariable;
+            var portName = PrivateOnlineRehearsalDriver.PortEnvironmentVariable;
+            var keyName = PrivateOnlineRehearsalDriver.KeyEnvironmentVariable;
+            var savedAddress = System.Environment.GetEnvironmentVariable(addressName);
+            var savedPort = System.Environment.GetEnvironmentVariable(portName);
+            var savedKey = System.Environment.GetEnvironmentVariable(keyName);
+            try
+            {
+                System.Environment.SetEnvironmentVariable(addressName, "127.0.0.1");
+                System.Environment.SetEnvironmentVariable(portName, "45677");
+                System.Environment.SetEnvironmentVariable(keyName, "package-smoke-key");
+                var common = new[]
+                {
+                    PrivateSessionLaunchOptions.LobbyFlag,
+                    PrivateOnlineRehearsalDriver.RoleFlag, "host",
+                    PrivateOnlineRehearsalDriver.ModeFlag, "smoke",
+                    PrivateOnlineRehearsalDriver.SeatFlag, "red-player-02"
+                };
+
+                Assert.That(PrivateOnlineRehearsalOptions.TryParse(
+                    common, out var playingHost, out var error), Is.True, error);
+                Assert.That(playingHost.Seat.Value, Is.EqualTo("red-player-02"));
+
+                common[4] = "match";
+                Assert.That(PrivateOnlineRehearsalOptions.TryParse(
+                    common, out _, out error), Is.False);
+                StringAssert.Contains("seatless outside playing-host smoke", error);
+            }
+            finally
+            {
+                System.Environment.SetEnvironmentVariable(addressName, savedAddress);
+                System.Environment.SetEnvironmentVariable(portName, savedPort);
+                System.Environment.SetEnvironmentVariable(keyName, savedKey);
+            }
+        }
     }
 }

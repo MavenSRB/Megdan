@@ -198,7 +198,7 @@ Run from the project root, against a freshly built player:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Tools\Invoke-PrivateOnlineRehearsal.ps1 -Topology MultiClientSmoke -FaultPlan None
 ```
 
-One dedicated seatless host process and **two real joiner processes** walk the shipped lobby flow through its own controls - join naming no seat, TAKE SEAT from the host's roster, READY, the host's own FILL WITH BOTS for the remaining chairs, then rulebook p.22's alternating hero picks - and every process stops at the **first commitment window**, which is where all five questions below are already answerable. Expected result: exit code `0` and `SMOKE PASSED`.
+One **playing host** and **two real joiner processes** walk the shipped lobby flow through its own controls. All three take seats, ready and pick heroes; the host fills the remaining chairs with bots. Every process stops at the **first commitment window**, where authorization, landed picks, version zero and identical board framing are asserted. Expected result: exit code `0` and `SMOKE PASSED`.
 
 It asserts the direct negatives of the five 2026-09-08 playtest findings, and each failure names the finding it reproduced rather than reporting a bare assertion:
 

@@ -209,9 +209,10 @@ namespace GuardsDigital.Presentation.Interaction
                 return false;
             }
 
-            if (parsedRole == PrivateOnlineRehearsalRole.Host && parsedSeat.IsDefined)
+            if (parsedRole == PrivateOnlineRehearsalRole.Host && parsedSeat.IsDefined &&
+                parsedMode != PrivateOnlineRehearsalMode.Smoke)
             {
-                error = "the dedicated rehearsal host is seatless";
+                error = "the dedicated rehearsal host is seatless outside playing-host smoke";
                 return false;
             }
 
@@ -271,6 +272,7 @@ namespace GuardsDigital.Presentation.Interaction
         private bool testDriversFillAttempted;
         private bool testDriversRefillAttempted;
         private bool hudReported;
+        private bool hostHudReported;
 
         /// <summary>
         /// Milestone <c>8.35z54</c>. One-shot, because <c>Quit</c> does not stop the frame it is called
@@ -409,6 +411,14 @@ namespace GuardsDigital.Presentation.Interaction
             if (options.Role == PrivateOnlineRehearsalRole.Host)
             {
                 UpdateHost();
+                // 8.36h's package smoke uses the shipped playing-host topology. Its authority
+                // and its ordinary loopback player client both live in this process, so drive the
+                // owner-scoped client through the same claim/ready/pick/HUD path as a joiner.
+                if (!stopped && options.Mode == PrivateOnlineRehearsalMode.Smoke &&
+                    options.Seat.IsDefined)
+                {
+                    UpdateClient();
+                }
                 return;
             }
 
@@ -485,8 +495,11 @@ namespace GuardsDigital.Presentation.Interaction
             // discipline, but waits for BOTH scripted joiners to be seated rather than one: this
             // cohort's whole point is that two real processes are in the session at once, and filling
             // while only the first has arrived would take the second one's chair.
+            // The current package smoke has three humans: this process's playing-host seat and two
+            // joiners. Waiting for all three keeps FILL from taking the second joiner's chair.
+            var smokeHumanCount = options.Seat.IsDefined ? 3 : 2;
             if (options.Mode == PrivateOnlineRehearsalMode.Smoke && !testDriversFillAttempted &&
-                !host.HasMatchStarted && host.ClaimedSeatCount >= 2)
+                !host.HasMatchStarted && host.ClaimedSeatCount >= smokeHumanCount)
             {
                 if (lobby.Presenter.Model?.Offers(PrivateLobbyControl.FillWithTestDrivers) == true)
                 {
@@ -546,9 +559,9 @@ namespace GuardsDigital.Presentation.Interaction
 
             if (options.Mode == PrivateOnlineRehearsalMode.HostLoss)
             {
-                if (!hudReported)
+                if (!hostHudReported)
                 {
-                    hudReported = true;
+                    hostHudReported = true;
                     PrivateOnlineMarkers.Log("REHEARSAL_HOSTLOSS_READY version=" +
                         projection.Version.ToString(CultureInfo.InvariantCulture));
                 }
@@ -563,16 +576,19 @@ namespace GuardsDigital.Presentation.Interaction
             // authority's own side.
             if (options.Mode == PrivateOnlineRehearsalMode.Smoke)
             {
-                if (!hudReported)
+                if (!hostHudReported)
                 {
-                    hudReported = true;
+                    hostHudReported = true;
                     PrivateOnlineMarkers.Log(
                         "REHEARSAL_SMOKE_HOST_READY version=" +
                         projection.Version.ToString(CultureInfo.InvariantCulture) +
                         " phase=" + compositionRoot.Runtime.Phase +
                         " seats=" + host.ClaimedSeatCount.ToString(CultureInfo.InvariantCulture));
-                    lobby.Presenter.Press(PrivateLobbyControl.Leave, null);
-                    Quit(0);
+                    if (!options.Seat.IsDefined)
+                    {
+                        lobby.Presenter.Press(PrivateLobbyControl.Leave, null);
+                        Quit(0);
+                    }
                 }
 
                 return;

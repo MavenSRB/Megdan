@@ -229,7 +229,8 @@ function Wait-ForLogMarker {
         $snapshot = Get-LogText -LogPath $LogPath
         if ($snapshot.Length -gt 0) {
             if ($snapshot -match 'GUARDS_ONLINE: FAIL') {
-                $line = ($snapshot -split "`r?`n" | Where-Object { $_ -match 'GUARDS_ONLINE: FAIL' })[0]
+                $lines = @($snapshot -split "`r?`n" | Where-Object { $_ -match 'GUARDS_ONLINE: FAIL' })
+                $line = [string]$lines[0]
                 throw "A process reported a failure while waiting for $Description : $($line.Trim()) (see $LogPath)"
             }
             if ($snapshot -match $Pattern) { return }
@@ -562,15 +563,15 @@ elseif ($Topology -eq 'MultiClientSmoke') {
     # WHY IT EXISTS. The 8.35z51 package shipped a lobby whose picked-line-up match was unplayable on
     # all six seats, and every automated tier was green when it shipped, because every lobby journey
     # drives the HOST's own view. Only real processes disagreeing about a seat can see that class of
-    # defect. This is the cheapest topology that can: one host, TWO real joiners, the rest of the
-    # table filled by the host's own control, stopping at the first commitment window.
+    # defect. This is the cheapest current topology that can: one PLAYING host, TWO real joiners,
+    # the rest of the table filled by the host's own control, stopping at the first commitment window.
     #
     # WHAT IT ASSERTS - the direct negatives of the five 2026-09-08 playtest findings:
     #   1  per-seat authorization  each client's own AuditProjection passes (it fails the process if
     #                              any offered command is not held by that seat) and REHEARSAL_SMOKE_PASS
     #                              reports a non-empty authorized set per seat
     #   2  a pick visibly lands    the two joiners field two DIFFERENT chosen heroes
-    #   3  the flow                seatless join -> TAKE SEAT -> READY -> pick -> match, walked through
+    #   3  the flow                host and joiners TAKE SEAT -> READY -> pick -> match, walked through
     #                              the shipped controls, with FILL WITH BOTS supplying the rest
     #   4  nothing acts early      REHEARSAL_PRECOMMIT is version 0 in AwaitingCommitments on every seat
     #                              AND on the host
@@ -580,6 +581,7 @@ elseif ($Topology -eq 'MultiClientSmoke') {
     # fault, exercises no reconnect and no host loss. Those are -Topology SixClient -FaultPlan Full.
     # ---------------------------------------------------------------------------------------------
     $smokeHostLog = [System.IO.Path]::Combine($tmpRoot, 'private-online-smoke-host.log')
+    $smokeHostSeat = $seats[1]
     $smokeSeats = @($seats[0], $seats[3])
     $smokePlayers = @()
     $smokeClients = @()
@@ -590,7 +592,7 @@ elseif ($Topology -eq 'MultiClientSmoke') {
             throw "-ReuseBuild was given but no player exists at $executablePath."
         }
 
-        Write-Output '== Step 2: one seatless host and TWO real joiners on loopback =='
+        Write-Output '== Step 2: one playing host and TWO real joiners on loopback =='
         $smokePort = Get-FreeLoopbackPort
         $smokeKey = [System.Guid]::NewGuid().ToString('N')
         $rehearsalKeys += $smokeKey
@@ -601,11 +603,16 @@ elseif ($Topology -eq 'MultiClientSmoke') {
             Write-Output "== Host composes format '$MatchFormat'; joiners and bots must INHERIT it =="
         }
         $smokeHost = Start-RehearsalPlayer -Name 'smoke-host' -Role 'host' -Mode 'smoke' `
+            -Seat $smokeHostSeat `
             -Address '127.0.0.1' -Port $smokePort -Key $smokeKey -BudgetSeconds $smokeBudget -LogPath $smokeHostLog `
             -MatchFormatId $MatchFormat
         $smokePlayers += $smokeHost
         Wait-ForLogMarker -LogPath $smokeHostLog -Pattern 'GUARDS_ONLINE: LOBBY_HOSTING port=' `
             -DeadlineSeconds 180 -Description 'the smoke host to bind its lobby'
+        Wait-ForCohortMarkers -Requirements @(
+                [pscustomobject]@{ Log = $smokeHostLog; Pattern = ('REHEARSAL_CLIENT event=seat-claimed-' + [regex]::Escape($smokeHostSeat)) }
+            ) -WatchLogs @($smokeHostLog) -DeadlineSeconds 180 `
+            -Description 'the playing host to claim its ordinary owner-scoped seat'
 
         foreach ($seat in $smokeSeats) {
             $log = [System.IO.Path]::Combine($tmpRoot, "private-online-smoke-$seat.log")
@@ -631,7 +638,7 @@ elseif ($Topology -eq 'MultiClientSmoke') {
             ) -WatchLogs $smokeLogs -DeadlineSeconds 180 -Description 'the host to press FILL WITH BOTS'
 
         $reached = @()
-        foreach ($player in $smokeClients) {
+        foreach ($player in $smokePlayers) {
             $reached += [pscustomobject]@{ Log = $player.Log; Pattern = 'REHEARSAL_SMOKE_PASS seat=' }
         }
         $reached += [pscustomobject]@{ Log = $smokeHostLog; Pattern = 'REHEARSAL_SMOKE_HOST_READY version=' }
@@ -641,7 +648,7 @@ elseif ($Topology -eq 'MultiClientSmoke') {
 
         Write-Output '== Step 4: the five findings, asserted on the logs =='
         $smokeRects = @()
-        foreach ($player in $smokeClients) {
+        foreach ($player in $smokePlayers) {
             $text = Get-Content -LiteralPath $player.Log -Raw
 
             $pass = [regex]::Match($text, 'REHEARSAL_SMOKE_PASS seat=(\S+) hero=(\S+) authorized=(\d+) version=(\d+)')
@@ -696,20 +703,20 @@ elseif ($Topology -eq 'MultiClientSmoke') {
 
         # FINDING 2. Two joiners must hold two DIFFERENT heroes: one hero on both seats would mean a
         # pick that was accepted and then discarded, which is the shape of the z51 report.
-        $heroes = @($smokeClients | ForEach-Object {
+        $heroes = @($smokePlayers | ForEach-Object {
             [regex]::Match((Get-Content -LiteralPath $_.Log -Raw),
                 'REHEARSAL_SMOKE_PASS seat=\S+ hero=(\S+)').Groups[1].Value })
         if (@($heroes | Sort-Object -Unique).Count -ne $heroes.Count) {
             throw ('FINDING 2 REPRODUCED: two seats are fielding the same hero (' +
                 ($heroes -join ', ') + '), so at least one accepted pick did not reach the match.')
         }
-        Write-Output ("  FINDING 2 NEGATIVE HELD: each joiner fields its own chosen hero (" + ($heroes -join ', ') + ").")
+        Write-Output ("  FINDING 2 NEGATIVE HELD: the playing host and each joiner field their own chosen hero (" + ($heroes -join ', ') + ").")
 
         if (@($smokeRects | Sort-Object -Unique).Count -ne 1) {
             throw ('FINDING 5 REPRODUCED: the joiners do not agree on the board framing: ' +
                 ((@($smokeRects | Sort-Object -Unique)) -join ' | '))
         }
-        Write-Output '  FINDING 5 NEGATIVE HELD: every client framed the board identically.'
+        Write-Output '  FINDING 5 NEGATIVE HELD: the playing host and both joiners framed the board identically.'
 
         $hostText = Get-Content -LiteralPath $smokeHostLog -Raw
         $hostReady = [regex]::Match($hostText, 'REHEARSAL_SMOKE_HOST_READY version=(\d+) phase=(\S+) seats=(\d+)')
@@ -1600,8 +1607,8 @@ if ($Topology -eq 'LoopbackSmoke') {
     Write-Output 'REHEARSAL PASSED: one seatless host, six distinct seats, and three named refusals on loopback.'
 }
 elseif ($Topology -eq 'MultiClientSmoke') {
-    Write-Output ('SMOKE PASSED: one seatless host and TWO real joiners walked the shipped lobby flow - ' +
-        'seatless join, TAKE SEAT, READY, FILL WITH BOTS, and p.22 hero picks - and reached the first ' +
+    Write-Output ('SMOKE PASSED: one playing host and TWO real joiners walked the shipped lobby flow - ' +
+        'TAKE SEAT, READY, FILL WITH BOTS, and p.22 hero picks - and reached the first ' +
         'commitment window on the line-up they chose. Every seat was offered its own decisions and no ' +
         "other seat's, each joiner fields the hero it picked, nothing was accepted before the " +
         'commitment window on any process including the host, and every client framed the board ' +
