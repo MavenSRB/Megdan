@@ -35,11 +35,11 @@ namespace GuardsDigital.Tests.PlayMode
     /// borrow flow needs one, which is what
     /// <see cref="TaliProgressedUiJourneyPlayModeTests"/>'s own staging supplies.</para>
     ///
-    /// <para><b>NEVER EXECUTED.</b> These journeys were written offline, against the composed content
-    /// and the offline shape derivation (this milestone's gate probe: all nineteen faces derive
-    /// without throwing), and have not been run in Unity. The executor's Play Mode pass is what
-    /// confirms them; see the worker notes for the places most likely to need a correction, on the
-    /// same honest terms the Silverarrow and Ursafar dealing preps recorded for their own.</para>
+    /// <para><b>EXECUTED AT MILESTONE 8.37, and fourteen of the sixteen were corrected by that run.</b>
+    /// They were written offline against the composed content and the offline shape derivation, and
+    /// the first Unity pass failed twelve - each for a reading the offline author could not have had.
+    /// Two shipped parked and milestone 8.37a un-parked both, one of them by finding a shipped engine
+    /// defect on the way. Nothing in this file is unrun any more.</para>
     ///
     /// <para>The driving helpers are shared rather than copied, on milestone 8.35z34's precedent: what
     /// is Tali's own is <see cref="TaliSeat"/> and the journeys.</para>

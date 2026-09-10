@@ -643,7 +643,8 @@ namespace GuardsDigital.Presentation.Interaction
 
         /// <summary>
         /// The Tier III staging with Tali holding the first sibling of each colour - Winter Scepter,
-        /// Warrior Spirit and Pack Ice - and p.16's Ultimate unlocked on both seats.
+        /// Blizzard and Pack Ice - and p.16's Ultimate unlocked on both seats. Milestone 8.37a put
+        /// Blizzard here in place of the second branch's Warrior Spirit, the composition having arrived.
         /// </summary>
         VerifiedTierThreeEngagedStagedTali = 63,
 

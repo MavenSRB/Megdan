@@ -8,17 +8,17 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; twelve playable heroes - the whole package arc, every composed hero dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v41 persists the current state; wire protocol is `guards-private-online/13`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b deal Tali the Spiritcaller and give her runtime-integer decisions controls a player can answer. One FACE remains uncomposed - Blizzard's End-of-turn repeat, which 8.37a owns. The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; twelve playable heroes - the whole package arc, every composed hero dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v41 persists the current state; wire protocol is `guards-private-online/13`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the twelve p.20 Handicap cards p.6 returns to the box at setup. The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.37b**.
+- Current completed milestone: **8.37a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.37a**.
+- Next proposed milestone: **8.35z74**.
 
-The approved sequence is finished. The next proposed item is the existing Tali backlog entry, still on hold and not authorized; await the user's next direction.
+The approved sequence is finished, and the Tali backlog entry the previous route named is closed with it: 8.37 dealt her and 8.37a composed her last deferred face. The next proposed item is [8.35z74 Repair explicitly parked player-path coverage](Roadmap/PHASE_8_CLEANUP.md#835z74-repair-explicitly-parked-player-path-coverage), an existing cleanup-queue entry that is **not authorized** - 8.37a repaired the two parked cases Tali's own dealing left, so what that entry still owes is Ursafar's. Await the user's next direction.
 
 On 2026-09-10 the user requested documentation only for future four-round lobby-bot planning. [8.36i-8.36k](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md#future-four-round-lobby-bot-planning-parked-not-authorized) park a bounded turn-planning prototype, revisable four-round card strategy, and actual one-human/five-bot modest-hardware validation. Do not start them; the user explicitly does not want this implemented now. This does not change the current/next route or authorize a new build.
 

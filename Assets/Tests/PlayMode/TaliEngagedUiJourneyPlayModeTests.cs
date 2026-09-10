@@ -20,8 +20,8 @@ namespace GuardsDigital.Tests.PlayMode
 {
     /// <summary>
     /// Tali's own themed journeys, driven on <see cref="SceneCardContent.VerifiedEngagedStagedTali"/> -
-    /// her starting-hand faces. Milestone 8.37. NEVER EXECUTED; see
-    /// <see cref="TaliUiJourneyPlayModeTests"/>'s own remarks.
+    /// her starting-hand faces. Milestone 8.37; executed and corrected by that milestone's own Unity
+    /// pass - see <see cref="TaliUiJourneyPlayModeTests"/>'s own remarks.
     ///
     /// <para><b>Two themes the prep scope named could not be built on any staged board this prep has,
     /// and are named here rather than smuggled as passing.</b></para>

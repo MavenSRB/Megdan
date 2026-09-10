@@ -106,6 +106,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string NegateParameter = "negate";
 
         /// <summary>
+        /// Milestone 8.37a. Optional, defaulting to false. Bind <see cref="EffectValue.Boolean"/> true
+        /// to count a card the controller has PLAYED AND RESOLVED as being in their discard.
+        ///
+        /// <para><b>Why this is a parameter and not the plain reading.</b> This build keeps a played
+        /// card in <see cref="CardLocation.TurnArea"/> for the round and reserves
+        /// <see cref="CardLocation.DiscardPile"/> for a card SPENT - one given as a p.14 Defense, or
+        /// taken by a discard clause. The two are different piles to this engine and the same pile at
+        /// the table, and the roster reads them differently already:
+        /// <c>RosterCardRetrievalKind.OwnedDiscardedCard</c> admits only the spent card, while the
+        /// basic-Skill retrieval beside it admits a resolved played one too.
+        ///
+        /// <para>Every reading that existed before this milestone wants the narrow one and keeps it:
+        /// the three Winter Attacks and both Spirit Attacks ask while the card is mid-resolution, when
+        /// it is neither spent nor resolved, and Guardian and Warrior Spirit's own clause is about a
+        /// card being run FROM the discard by Commune's borrow. Blizzard is the first face to ask
+        /// about itself AFTER its own resolution has finished - "If Blizzard is in your discard, End
+        /// of turn:" - where the narrow reading is false by construction and would make the clause
+        /// dead text. See open question 34: the widening is an interpretation, so it is opt-in and
+        /// named at its one call site rather than applied to everybody.</para>
+        /// </summary>
+        public const string CountResolvedPlayedParameter = "countResolvedPlayed";
+
+        /// <summary>
         /// Milestone 8.35z50 registered this file's one handler, beside the hero whose dealt cards
         /// start it.
         ///
@@ -149,7 +172,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new[]
                     {
                         new EffectCapabilityParameter(
-                            NegateParameter, EffectValueKind.Boolean, isRequired: false)
+                            NegateParameter, EffectValueKind.Boolean, isRequired: false),
+                        new EffectCapabilityParameter(
+                            CountResolvedPlayedParameter, EffectValueKind.Boolean, isRequired: false)
                     },
                     new[] { new EffectOutputBinding(InDiscardOutput, EffectValueKind.Boolean) });
 
@@ -176,7 +201,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var inDiscard = card.State.Location == CardLocation.DiscardPile;
+                var inDiscard = card.State.Location == CardLocation.DiscardPile ||
+                    (context.Input(CountResolvedPlayedParameter).BooleanValue &&
+                        card.State.Location == CardLocation.TurnArea &&
+                        card.State.HasBeenPlayed &&
+                        card.State.ResolutionStatus == CardResolutionStatus.Resolved);
                 var negate = context.Input(NegateParameter).BooleanValue;
                 return EffectExecutionResult.Applied(new[]
                 {

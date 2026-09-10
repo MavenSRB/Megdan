@@ -20,8 +20,8 @@ worker, 2026-09-06; composed there: the whole Green line, 5 of 19 faces), the re
 composable faces composed, the mandatory-prevention wiring closed, `CardColor.Purple` and the
 runtime colour-naming capability built, the free-direction batch Move built, and Reign of Winter's
 trigger built, and the whole set REGISTERED, DEALT, ARTWORKED, PICKABLE AND PLAYER-PATH GATED at
-milestone 8.37 (this milestone)**. Blizzard's second sentence is the one face still deferred; it
-needs an End-of-turn repeat that re-invokes a full primary action, and milestone 8.37a owns it. Everything below is read from `TaliCardContent`, `TaliComponentContent` and
+milestone 8.37, and Blizzard COMPOSED at milestone 8.37a**, which leaves her set with no deferred
+face but p.20's Handicap card. Everything below is read from `TaliCardContent`, `TaliComponentContent` and
 `TaliEffectContent` and cross-checked against the general rulebook; the
 [capability matrix](#tali-capability-matrix) maps every action onto the implemented contracts.
 
@@ -202,18 +202,24 @@ it).
 | Spirit Wolf / Spirit Bear - Ranged Attack | `Choose` over a `Conditional`-gated ranged bullet and a plain adjacent-hero bullet, on the multi-sequence contract Dodger's Middlefinger and Whisper's Swift Justice proved | **THIS MILESTONE**: `synthetic-source-card-in-discard` (`SyntheticConditionCapabilities.SourceCardInDiscardV1`, negatable) gates the first bullet; the gated leaf sits inside the Conditional's own then-branch, not as a Sequence sibling, so this composition does not reach the mandatory-Conditional-before-a-sibling-binding shape the Ursafar executor's `WalkToAttackTargetBinding` fix is for |
 | Cold Snap / Snowstorm - Skill | `synthetic-choose-direction` (free, unconditional, all six directions) + `synthetic-batch-direct-move@1` (one mandatory node, simultaneity by capturing every candidate's pre-effect coordinate before any commits) | **THIS MILESTONE**: both capabilities, in `SyntheticDisplacementCapabilities` |
 | Guardian Spirit / Warrior Spirit - Skill | `synthetic-radius-hero-target@1` (allied, self included) feeding `retrieve-card@1` (May policy) - Silverarrow's Nature's Blessing template, minus the reward; a self-gate (`SourceCardInDiscardV1`, un-negated) feeds a second, Mandatory `retrieve-card@1` restricted to the source card itself via the new `RestrictToCardParameter` | **THIS MILESTONE**: `RetrieveCardHandler`'s `RestrictToCardParameter` (bypasses `NeedsChoice` when bound to one card) |
-| Blizzard | (deferred - see below) | - |
+| Blizzard | Cold Snap's own two nodes, plus an `ActiveEffectCreationHandler` arm (`tali-blizzard-end-of-turn-repeat`) on Silverarrow's End-of-turn shape, whose triggered effect re-runs those same two nodes once under an `Optional`/`May` | **MILESTONE 8.37a**: `SyntheticConditionCapabilities.CountResolvedPlayedParameter` - the opt-in wide reading of "in your discard" that open question 34 records, bound true by this trigger and by nothing else |
 | Glacial Barrier / Wall of Frost / Pack Ice - Skill | `synthetic-place-token@1` / `synthetic-reclaim-token@1`, phase 1 | (unchanged this milestone) |
 | Ancestral Totem / Venerated Totem - Skill | as above, plus the mandatory save now wired live | **THIS MILESTONE**: the wiring only - no new capability |
 | Reign of Winter - Ultimate | `UltimateTriggerCondition.AfterControllerDefeatsMinionWithBasicAttack` (new member) at `TimingCheckpoint.ActionEnded`, then the identical select/name/discard shape Ice Blast's rider composes | **THIS MILESTONE**: the trigger condition, `PerformedBasicAction.DefeatedMinionWithBasicAttack` (new fact, set in `TurnResolutionAuthority.MaterializeSteps` from whether the completed Attack's own events include a `MinionRemovalCompleted`) |
 
-**Blizzard stays deferred.** Its first sentence (the free direction, the batch Move) is composed
-and proven on Cold Snap and Snowstorm, which print nothing else. Blizzard alone carries a second,
-independent clause - "If Blizzard is in your discard, End of turn: May repeat once" - asking the
-primary Skill to run again from a turn-ended trigger rather than from a card-text node inside its
-own resolution. `ActionDefinition`'s constructor refuses a definition carrying both a composed
-`EffectRoot` and an awaited `PrintedTextComposition` simultaneously, so the two sentences cannot
-ship split - the whole face stays deferred until the repeat-from-trigger shape exists.
+**Blizzard composed at milestone 8.37a, and its second sentence is NOT a p.10 repeat.** Its first
+sentence (the free direction, the batch Move) is Cold Snap's and Snowstorm's, which print nothing
+else. Blizzard alone carries a second, independent clause - "If Blizzard is in your discard, End of
+turn: May repeat once" - and `EffectNodeKind.RepeatAction` cannot express it: that node re-runs the
+enclosing ACTION from its own start, and there is no enclosing action at `TimingCheckpoint.TurnEnded`.
+What the Skill does instead is ARM an End-of-turn Active effect on exactly Silverarrow's shape, whose
+triggered effect re-runs the same two nodes once, under the card's own "May". **The consequence is on
+the record rather than left to be found: a card forbidding an action REPEAT does not read this**,
+because nothing here is spelled as a repeat to the engine - the same seam milestone 8.35z27's modal
+Attack chose deliberately in the other direction. The gate the clause prints needs the wide reading of
+"in your discard" that [open question 34](OPEN_QUESTIONS.md#open-source-and-rules-questions) records:
+at the turn's end the card is played and RESOLVED, which this engine keeps in `CardLocation.TurnArea`,
+and the narrow reading would make the whole sentence dead text on every board.
 
 **Delta register (this milestone).** New capabilities: `synthetic-source-card-in-discard`,
 `friendly-hero-in-play`, `name-color`, `synthetic-choose-direction`, `synthetic-batch-direct-move`,

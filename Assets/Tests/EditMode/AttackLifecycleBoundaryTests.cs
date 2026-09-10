@@ -578,6 +578,105 @@ namespace GuardsDigital.Tests.EditMode
         /// the engagement, at the moment before any action starts - which is when milestone 8.29b1's
         /// resolving card has every printed region bound and a presenter holds both invocations.
         /// </summary>
+
+        // -----------------------------------------------------------------------------------------
+        // Milestone 8.37a. The whole page inside one command
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.37a. A face printing card text at BOTH of the attacker's own moments, pointed
+        /// at a MINION, runs the whole of rulebook p.14 inside one command - and every step of it has
+        /// to be materialized by the same code that materializes a step found at the top of the stream.
+        ///
+        /// <para><b>What was wrong.</b> p.13 gives a minion target no steps 3 to 5 - "Minions cannot
+        /// defend. When you target an enemy minion with an attack, it is simply defeated." - so
+        /// <c>ContinueAfterBeforeAttackText</c> resolves the Defeat and hands back the rest of the page
+        /// INSIDE the step-1 text's own produced stream: step 7's card-text step, and the action's own
+        /// <c>ActionEnded</c>. <c>MaterializeSteps</c> walked that produced stream with a second,
+        /// smaller loop that knew neither - it read the card-text step as a fact, whose
+        /// <see cref="CardActionResolutionEventKind"/> is <c>None</c>, and the engine threw
+        /// <c>ArgumentException: A turn card-action event requires a defined card-action event</c>.
+        /// The same gap raised <c>ActionEnded</c> through the plain timing path, which carries no
+        /// <c>PerformedBasicAction</c>, so a trigger reading "after you defeat a minion with a basic
+        /// attack" could not have fired even had the throw not happened.</para>
+        ///
+        /// <para><b>Why no earlier hero found it.</b> Against a HERO the page stops at the Defense
+        /// window, so step 7 arrives in a later command through the outer loop, which has always been
+        /// complete. Arien's Dangerous Current above prints ONE body and reaches the minion arm safely.
+        /// It takes both at once, and Tali's Ice Blast is the first dealt face of that shape - its step-1
+        /// body exists only because <c>ActionDefinition</c> refuses a second body without an explicit
+        /// first, which is what makes this the quietest possible way to reach the gap.</para>
+        /// </summary>
+        [Test]
+        public void ATwoBodyAttackAtAMinion_RunsTheWholePageInOneCommand_WithoutFaultingTheEngine()
+        {
+            var board = IceBlastBesideAMinion();
+            var card = SourceCard(board, TaliCardContent.IceBlast);
+            var target = board.MinionAt(StagedHeroBoard.FirstAdjacent);
+
+            StartThePrintedAttack(board);
+            AnswerTheTarget(board, target);
+
+            Assert.That(
+                board.Session.Projection.Minions.Any(minion => minion.MinionId.Equals(target)),
+                Is.False,
+                "p.13's minion arm: the piece is simply defeated, in the same command that named it.");
+            Assert.That(ResolutionStatusOf(board, card), Is.EqualTo(CardResolutionStatus.Resolved),
+                "The whole page ran, so the card that carried it is spent - which is the claim the " +
+                "throw used to make impossible to check.");
+        }
+
+        /// <summary>
+        /// Milestone 8.37a, the second half of the same gap and the one a throw would have hidden: the
+        /// <c>ActionEnded</c> the page raises from inside step 1's produced stream carries rulebook
+        /// p.9's performed-basic-action fact, so a trigger hanging on it can read what happened.
+        ///
+        /// <para>Reign of Winter is the content that asks - "Each time after you defeat a minion with
+        /// your basic attack" - and Ice Blast is her only basic Attack. Driven here at the authority
+        /// rather than only in her Play Mode journey, because a fact carried in the wrong shape is a
+        /// question about the event stream and not about the screen.</para>
+        /// </summary>
+        [Test]
+        public void TheActionEndedItRaises_CarriesTheBasicAttackThatDefeatedTheMinion()
+        {
+            var board = IceBlastBesideAMinion(withHerUltimate: true);
+            var target = board.MinionAt(StagedHeroBoard.FirstAdjacent);
+
+            StartThePrintedAttack(board);
+            AnswerTheTarget(board, target);
+
+            Assert.That(board.Session.Projection.PendingEffectChoice, Is.Not.Null,
+                "Reign of Winter's own selection stands, which is only true if the ActionEnded the " +
+                "page raised knew a basic Attack had just defeated a minion.");
+            Assert.That(board.Session.Projection.PendingEffectChoice.ChooserId, Is.EqualTo(board.Hero),
+                "\"An enemy hero in radius\" is hers to name.");
+        }
+
+        /// <summary>
+        /// Tali holding Ice Blast with one enemy minion beside her and the enemy hero out of the
+        /// engagement - the two-body face pointed at the arm that runs the whole page at once.
+        /// </summary>
+        private static StagedHeroBoard IceBlastBesideAMinion(bool withHerUltimate = false)
+        {
+            // Her Tier III configuration already unlocks Reign of Winter, exactly as Misa's unlocks
+            // Power Overwhelming, so nothing here passes `unlockUltimate` - measured, not assumed:
+            // passing it fails on the card no longer being in the deck to move.
+            var board = TaliBoard.Create(
+                tier: withHerUltimate ? 3 : 1,
+                minionPlacements: StagedHeroBoard.At(
+                    "red-melee-01", StagedHeroBoard.FirstAdjacent),
+                // The enemy hero is put out of the engagement for the plain case and left where the
+                // staging stands them - two spaces away, inside Radius 4 - for the Ultimate's, which
+                // needs the trigger to find a subject.
+                heroPlacements: withHerUltimate
+                    ? null
+                    : StagedHeroBoard.At("primitive-hero", FarFromTheEngagement),
+                banishedMinions: EveryMinionExcept("red-melee-01"));
+            Assert.That(board.IsPrimaryAvailable(TaliCardContent.IceBlast), Is.True,
+                "The case starts from an Attack the board offers.");
+            return board;
+        }
+
         private static StagedHeroBoard DangerousCurrentReadyToAct()
         {
             var board = ArienBoard.Create(

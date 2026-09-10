@@ -44,10 +44,10 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <see cref="UltimateTriggerCondition"/> member this milestone adds.</para>
     ///
     /// <para><b>What still defers, and why it is one face rather than thirteen.</b>
-    /// <see cref="CompositionOwed"/> now names two: p.20's Handicap card (parked by standing decision,
-    /// unrelated to engine debt) and Blizzard, whose second, independent sentence - an End-of-turn
-    /// repeat that re-invokes a whole primary action from a timing trigger - is a genuinely different
-    /// mechanic from anything this build has, named rather than improvised. Every other face's printed
+    /// <see cref="CompositionOwed"/> now names ONE, and it is not an engine debt: p.20's Handicap
+    /// card, parked by the standing 2026-08-21 decision that every hero's Handicap shares. Blizzard
+    /// left the list at milestone 8.37a, so every face of hers that this project intends to compose
+    /// is composed. Every other face's printed
     /// values, words, colours and upgrade pairs ship complete regardless of composition state, so the
     /// deck is whole and playable as values throughout.</para>
     /// </summary>
@@ -62,6 +62,13 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>The triggered effect Reign of Winter's rule runs each time it fires.</summary>
         public static EffectDefinitionId ReignOfWinterTriggerId { get; } =
             new EffectDefinitionId("tali-reign-of-winter-trigger");
+
+        /// <summary>
+        /// Milestone 8.37a. The triggered effect Blizzard's own End-of-turn effect runs - her second
+        /// and last timing-triggered definition, and the only one on the set that is not an Ultimate's.
+        /// </summary>
+        public static EffectDefinitionId BlizzardRepeatTriggerId { get; } =
+            new EffectDefinitionId("tali-blizzard-repeat-trigger");
 
         // -----------------------------------------------------------------------------------------
         // Capability identities. One placement and one p.18 short-supply handler per token role, on
@@ -164,22 +171,16 @@ namespace GuardsDigital.Core.Cards.Verified
                 // it back.
                 [TaliCardContent.IceShard] = "first odd-player-count configuration",
 
-                // Milestone 8.37. The card's FIRST sentence (the free direction, the
-                // simultaneous batch Move) is composed and proven on Cold Snap and Snowstorm, which
-                // print nothing else. Blizzard alone carries a second, independent clause - "If Blizzard
-                // is in your discard, End of turn: May repeat once" - which asks the primary Skill to
-                // run again from a TURN-ENDED trigger rather than from a card-text node inside its own
-                // resolution. ActionDefinition refuses a definition carrying both a composed EffectRoot
-                // and an awaited PrintedTextComposition, so the two sentences cannot ship separately:
-                // until the repeat-from-trigger shape exists, the whole face stays deferred rather than
-                // shipping its first sentence silently uncoupled from its second. Silverarrow's
-                // End-of-turn discard (SilverarrowActiveEffectContent) proves the CHECKPOINT half of
-                // this shape; what it does not prove is RE-INVOKING A FULL PRIMARY ACTION rather than
-                // running a bounded effect at that checkpoint, which is the genuinely new piece.
-                [TaliCardContent.Blizzard] =
-                    "an End-of-turn repeat that re-invokes a full primary action from a timing " +
-                    "trigger, distinct from Silverarrow's End-of-turn effect (which runs a bounded " +
-                    "discard, not a repeated action)"
+                // BLIZZARD LEFT THIS LIST AT MILESTONE 8.37a, and it was the last face in the whole
+                // build whose printed text was marked absent. Milestone 8.37 deferred it because its
+                // second clause asks the primary Skill to run again from a TURN-ENDED trigger rather
+                // than from a card-text node inside its own resolution, and ActionDefinition refuses
+                // a definition carrying both a composed EffectRoot and an awaited
+                // PrintedTextComposition - so the two sentences could not ship split. What was
+                // missing was never the checkpoint, which Silverarrow's End-of-turn discard already
+                // proved, but running the SAME WORK again at it. See
+                // BlizzardRepeatTriggeredEffect for why that is not a p.10 RepeatAction and what the
+                // difference costs.
             });
 
         /// <summary>
@@ -564,6 +565,13 @@ namespace GuardsDigital.Core.Cards.Verified
                 return CreateFreeDirectionBatchMove(cardId, contentRevision);
             }
 
+            // Milestone 8.37a. Blizzard prints Cold Snap's sentence word for word and one more, so it
+            // takes the same composition with the End-of-turn clause armed on the end of it.
+            if (cardId.Equals(TaliCardContent.Blizzard))
+            {
+                return CreateFreeDirectionBatchMove(cardId, contentRevision, armsEndOfTurnRepeat: true);
+            }
+
             if (cardId.Equals(TaliCardContent.CommuneWithSpirits))
             {
                 return CreateCommuneWithSpirits(cardId, contentRevision);
@@ -601,13 +609,152 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <see cref="SyntheticDisplacementCapabilities.BatchDirectMoveV1"/>'s own remarks for the
         /// simultaneity this reuses from p.18's push.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.37a. "If Blizzard is in your discard, <b>End of turn:</b> May repeat once." -
+        /// Blizzard's second, independent sentence, and the last face in this build whose printed text
+        /// was marked absent.
+        ///
+        /// <para><b>It is not a p.10 Repeat, and the difference is stated rather than glossed.</b>
+        /// <see cref="EffectNodeKind.RepeatAction"/> is card-text machinery: it re-runs the enclosing
+        /// ACTION from its own start, its bound is read off <c>CardTextRepeatChain</c>, and p.10's "you
+        /// cannot repeat a repeated action" is enforced against it inside that action's resolution.
+        /// There is no enclosing action at <see cref="TimingCheckpoint.TurnEnded"/> - the turn is over -
+        /// so the node cannot express this clause, which is exactly what milestone 8.37 recorded as the
+        /// missing shape. What runs instead is this triggered effect: the same two nodes the primary
+        /// Skill performs, offered once, under the clause's own "May".
+        ///
+        /// <para>The consequence worth naming: a card that forbids REPEATING an action does not read
+        /// this, because nothing here is spelled as a repeat to the engine. That is the same seam
+        /// milestone 8.35z27's modal Attack chose deliberately in the other direction, and it is
+        /// recorded here for the same reason - so the reading is a decision on the record rather than
+        /// an accident of which node was available.</para>
+        ///
+        /// <para><b>The gate asks about the card AFTER its own resolution, which is why it needs the
+        /// widened reading.</b> A played card lives in <see cref="CardLocation.TurnArea"/> for the
+        /// round and this engine reserves <see cref="CardLocation.DiscardPile"/> for a card SPENT as a
+        /// Defense or taken by a discard clause. At the turn's end Blizzard has been played and
+        /// resolved, which is "in your discard" at the table and not in the narrow reading - so the
+        /// node binds
+        /// <see cref="SyntheticConditionCapabilities.CountResolvedPlayedParameter"/> true and open
+        /// question 34 records the interpretation. Bound false, this clause would be dead text on every
+        /// board.</para>
+        ///
+        /// <para><b>Why the gate is here and not on the Skill.</b> "If Blizzard is in your discard" can
+        /// only be answered when the clause fires: while the Skill resolves, the card is mid-resolution
+        /// and the answer is no on any reading. The Skill therefore creates the End-of-turn effect
+        /// unconditionally and the condition is asked at the checkpoint, where it is about something.</para>
+        /// </summary>
+        public static EffectDefinition BlizzardRepeatTriggeredEffect(string contentRevision)
+        {
+            var root = new EffectNodeId("blizzard-repeat-root");
+            var gate = new EffectNodeId("blizzard-repeat-gate");
+            var optional = new EffectNodeId("blizzard-repeat-optional");
+            var sequence = new EffectNodeId("blizzard-repeat-sequence");
+            var chooseDirection = new EffectNodeId("blizzard-repeat-direction");
+            var radius = new EffectNodeId("blizzard-repeat-radius");
+            var move = new EffectNodeId("blizzard-repeat-batch");
+
+            return new EffectDefinition(
+                BlizzardRepeatTriggerId,
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { gate }),
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticConditionCapabilities.SourceCardInDiscardV1,
+                        childNodeIds: new[] { optional },
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticConditionCapabilities.CountResolvedPlayedParameter,
+                                EffectValue.Boolean(true))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticConditionCapabilities.InDiscardOutput, EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        optional, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { sequence },
+                        chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(
+                        sequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { chooseDirection, radius, move }),
+                    new EffectNodeDefinition(
+                        chooseDirection, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.ChooseDirectionV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.ChosenDirectionOutput,
+                                EffectValueKind.Integer)
+                        }),
+                    // The repeat measures its own disk the same way the first pass does - off the
+                    // card's printed Radius icon, so p.16's item raises both or neither.
+                    new EffectNodeDefinition(
+                        radius, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticValueCapabilities.CardRadiusV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticValueCapabilities.RadiusOutput, EffectValueKind.Integer)
+                        }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.BatchDirectMoveV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticDisplacementCapabilities.BatchRadiusParameterName,
+                                radius, SyntheticValueCapabilities.RadiusOutput, EffectValueKind.Integer),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticDisplacementCapabilities.BatchDirectionParameterName,
+                                chooseDirection, SyntheticDisplacementCapabilities.ChosenDirectionOutput,
+                                EffectValueKind.Integer,
+                                EffectIntegerDomain.All<Board.HexDirection>())
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.BatchMovedCountOutput,
+                                EffectValueKind.Integer)
+                        })
+                });
+        }
+
         private static EffectDefinition CreateFreeDirectionBatchMove(
-            CardDefinitionId cardId, string contentRevision)
+            CardDefinitionId cardId, string contentRevision, bool armsEndOfTurnRepeat = false)
         {
             var root = new EffectNodeId("batch-move-root");
             var chooseDirection = new EffectNodeId("batch-move-direction");
             var radius = new EffectNodeId("batch-move-radius");
             var move = new EffectNodeId("batch-move-batch");
+            var arm = new EffectNodeId("batch-move-arm-repeat");
+
+            // Milestone 8.37a. Blizzard's second sentence is armed here and asked at the turn's end;
+            // Cold Snap and Snowstorm print no such sentence and take the three-node root unchanged,
+            // so their own composition is byte-for-byte what it was.
+            var children = armsEndOfTurnRepeat
+                ? new[] { chooseDirection, radius, move, arm }
+                : new[] { chooseDirection, radius, move };
+            var armNode = armsEndOfTurnRepeat
+                ? new[]
+                {
+                    new EffectNodeDefinition(
+                        arm, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        TaliActiveEffectContent.BlizzardEndOfTurnRepeatV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                ActiveEffectCreationHandler.AffectedOutputName, EffectValueKind.Hero)
+                        })
+                }
+                : Array.Empty<EffectNodeDefinition>();
 
             return new EffectDefinition(
                 SkillEffectId(cardId),
@@ -617,7 +764,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { chooseDirection, radius, move }),
+                        childNodeIds: children),
                     new EffectNodeDefinition(
                         chooseDirection, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticDisplacementCapabilities.ChooseDirectionV1,
@@ -655,7 +802,7 @@ namespace GuardsDigital.Core.Cards.Verified
                                 SyntheticDisplacementCapabilities.BatchMovedCountOutput,
                                 EffectValueKind.Integer)
                         })
-                });
+                }.Concat(armNode).ToArray());
         }
 
         /// <summary>

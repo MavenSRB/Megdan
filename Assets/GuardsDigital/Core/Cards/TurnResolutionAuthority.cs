@@ -3271,6 +3271,44 @@ namespace GuardsDigital.Core.Cards
             Func<CardActionResolutionEvent, TurnResolutionEvent> toTurnEvent)
         {
             var events = new List<TurnResolutionEvent>();
+            MaterializeInto(events, steps, toTurnEvent);
+            return events;
+        }
+
+        /// <summary>
+        /// Milestone 8.37a. The body of <see cref="MaterializeSteps"/>, extracted so that the steps a
+        /// card-text moment PRODUCES are materialized by the same code as the steps it was found in.
+        ///
+        /// <para><b>They were not, and one shape of content reached the difference.</b> The produced
+        /// stream used to be walked by a second, smaller loop that knew two of this method's three
+        /// arms: it raised a plain checkpoint and it emitted a fact, and it stated in a comment that
+        /// card text "cannot produce a card-text step of its own, so this does not recurse". That is
+        /// true of every attack whose target is a HERO, because rulebook p.14's step 1 then ends at the
+        /// Defense window and step 7 arrives in a later command through the outer loop. It is false
+        /// when the target is a MINION: p.13 gives that arm no steps 3 to 5, so
+        /// <c>ContinueAfterBeforeAttackText</c> runs the defeat and the whole rest of the page inside
+        /// the step-1 resume - and hands back step 7's own card-text step and the action's own
+        /// <c>ActionEnded</c>. The smaller loop then read a card-text step as a fact, whose
+        /// <see cref="CardActionResolutionEventKind"/> is <c>None</c>, and the engine threw; and it
+        /// raised <c>ActionEnded</c> through <see cref="AddTiming"/>, which carries no
+        /// <see cref="PerformedBasicAction"/>, so a trigger reading "after you defeat a minion with a
+        /// basic attack" could not have fired even had the throw not happened.</para>
+        ///
+        /// <para>Only a face printing card text at BOTH of the attacker's own moments can reach it, and
+        /// only against a minion. Tali's Ice Blast is the first dealt content of that shape to be driven
+        /// at a minion - <c>TaliVerifiedContentTests</c> pins the composition, and her Ultimate's own
+        /// journey is what found this, because the trigger it drives has no other subject.</para>
+        /// </summary>
+        /// <returns>
+        /// False once rulebook p.14 has stopped the page, so every enclosing stream stops with it -
+        /// the steps below a pause are never carried, they are regenerated from the continuation's own
+        /// identity when the answer arrives.
+        /// </returns>
+        private bool MaterializeInto(
+            List<TurnResolutionEvent> events,
+            IEnumerable<ResolutionStep> steps,
+            Func<CardActionResolutionEvent, TurnResolutionEvent> toTurnEvent)
+        {
             foreach (var step in steps)
             {
                 if (step.Kind == ResolutionStepKind.Checkpoint)
@@ -3321,22 +3359,15 @@ namespace GuardsDigital.Core.Cards
                     // Milestone 8.10. Card text can now produce checkpoints as well as facts, because
                     // rulebook p.13's Defeat list reaches it: Electroblast's rider escalates into the
                     // page, and cancelling the defeated hero's Active effects is a checkpoint the list
-                    // raises. It cannot produce a card-text step of its own, so this does not recurse.
-                    foreach (var produced in cardActions.ApplyCardText(
+                    // raises. Milestone 8.37a: it can also produce the REST OF THE PAGE, card text and
+                    // ActionEnded included, when p.14's step 1 sits above a minion target - so the
+                    // produced stream is materialized by this same method rather than by a partial copy.
+                    var produced = cardActions.ApplyCardText(
                         step, definitions, instances, participants, timing, CurrentModifications(),
-                        TieBreakerState, roundIndex, turnIndex))
+                        TieBreakerState, roundIndex, turnIndex);
+                    if (!MaterializeInto(events, produced, toTurnEvent))
                     {
-                        if (produced.Kind == ResolutionStepKind.Checkpoint)
-                        {
-                            AddTiming(
-                                events,
-                                produced.Checkpoint,
-                                produced.CheckpointAffectedHeroId,
-                                produced.CheckpointSourceCardInstanceId);
-                            continue;
-                        }
-
-                        events.Add(toTurnEvent(produced.Fact));
+                        return false;
                     }
 
                     // Milestone 8.10. The text asked the player something, so rulebook p.14 stops
@@ -3345,7 +3376,7 @@ namespace GuardsDigital.Core.Cards
                     // keeps a paused attack and an unpaused one producing the one same order.
                     if (cardActions.IsCardTextPageStopped)
                     {
-                        break;
+                        return false;
                     }
 
                     continue;
@@ -3354,7 +3385,7 @@ namespace GuardsDigital.Core.Cards
                 events.Add(toTurnEvent(step.Fact));
             }
 
-            return events;
+            return true;
         }
 
         /// <summary>

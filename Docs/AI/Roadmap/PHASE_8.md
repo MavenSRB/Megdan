@@ -335,13 +335,19 @@ Non-goals: Blizzard's End-of-turn repeat, which 8.37a owns; the controls her two
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837-deal-register-and-player-path-gate-tali-the-spiritcaller-as-the-twelfth-hero-completion-evidence).
 
-### [ ] 8.37a Compose Blizzard's End-of-turn repeat and close Tali's last deferred face
+### [x] 8.37a Compose Blizzard's End-of-turn repeat and close Tali's last deferred face
 
 The one face milestone 8.37 could not ship, taken on its own terms rather than folded into a dealing that was already the largest of the six.
 
 Observable outcome: Blizzard's whole printed text runs - the free direction and the simultaneous batch Move its two siblings already have, and then the "End of turn: May repeat once" clause that neither of them prints - so no dealt hero in this build has a face whose printed text is marked absent.
 
 **WHAT IS GENUINELY NEW IS RE-INVOKING AN ACTION FROM A TIMING TRIGGER, not the checkpoint.** Silverarrow's End-of-turn discard proves the checkpoint half: a definition can declare an effect that runs at the turn's end. What it does not prove is running a full **primary action** there rather than a bounded effect, which is what "May repeat once" asks for. The optional half is p.10's ordinary May policy and needs nothing new.
+
+**AND THE ANSWER IS THAT IT IS NOT A p.10 REPEAT AT ALL, which is a reading rather than a workaround and is recorded as one.** `EffectNodeKind.RepeatAction` is card-text machinery: it re-runs the enclosing ACTION from its own start, its bound is read off `CardTextRepeatChain`, and p.10's "you cannot repeat a repeated action" is enforced against it inside that action's resolution. There is no enclosing action at `TimingCheckpoint.TurnEnded` - the turn is over - so the node cannot express this clause. What ships instead is an End-of-turn Active effect on exactly Silverarrow's shape, whose triggered effect re-runs the SAME two nodes the printed Skill performs, once, under the card's own "May". **The consequence is named rather than left to be discovered: a card that forbids repeating an action does not read this, because nothing here is spelled as a repeat to the engine** - the same seam milestone 8.35z27's modal Attack chose deliberately in the other direction.
+
+**THE GATE THE CLAUSE PRINTS NEEDED A RULING, AND IT IS OPEN QUESTION 34.** "If Blizzard is in your discard" is asked at the turn's end, when the card has been played and resolved - and this engine keeps a played card in `CardLocation.TurnArea` for the round, reserving `CardLocation.DiscardPile` for a card SPENT as a p.14 Defense or taken by a discard clause. On the narrow reading the condition is false by construction and the whole second sentence is dead text on every board. The wide reading is implemented and **opt-in at its one call site** - `SyntheticConditionCapabilities.CountResolvedPlayedParameter`, bound true by Blizzard's trigger and by nothing else, with an Edit Mode case asserting no printed face of hers binds it - so every earlier reading of the same predicate keeps the narrow one it wants.
+
+**THE MILESTONE ALSO UN-PARKS BOTH JOURNEYS THE DEALING SHIPPED PARKED, and one of them found a shipped engine defect.** `GuardianSpirit_...` was `[Explicit]` for a three-turn arc the round could not hold; the diagnosis was wrong in a way worth recording - **playing a card never fills a discard at all**, so the arc could not have produced a candidate however many turns it was given - and the fix is one round with the enemy's Attack taking a card out of her hand as a Defense. `ReignOfWinter_...` self-skipped when p.8's waves stood no minion its subject could address; staging one beside her through `NextComposedSandboxStaging` is what the old remarks called a new staging and is in fact a parameter. Driving it then **threw**: `ArgumentException: A turn card-action event requires a defined card-action event`. p.13 gives a minion target no steps 3 to 5, so p.14's step-1 text resumes the whole rest of the page inside its own produced stream, and `TurnResolutionAuthority.MaterializeSteps` walked that produced stream with a smaller loop that knew neither a card-text step nor an `ActionEnded`. The same gap would also have dropped the `PerformedBasicAction` this very Ultimate reads. Only a face printing text at BOTH of an attacker's own moments can reach it, and only against a minion; Ice Blast is the first dealt content of that shape to be pointed at one.
 
 Acceptance checks:
 
@@ -351,6 +357,8 @@ Acceptance checks:
 - Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
 
 Non-goals: Ice Shard, which stays on the standing p.20 Handicap deferral; no other hero's deferred text; no schema or wire movement.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837a-compose-blizzards-end-of-turn-repeat-and-close-talis-last-deferred-face-completion-evidence).
 
 ### [x] 8.37b Give a named colour and a chosen direction a control a player can actually answer, and draw a placed token as its own piece
 

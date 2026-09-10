@@ -137,7 +137,11 @@ namespace GuardsDigital.Core.Cards
                 // build cannot load, which `VerifiedContentIdentityTests` says out loud.
                 .Concat(new[]
                 {
-                    TaliEffectContent.ReignOfWinterTriggeredEffect(TaliCardContent.ContentRevision)
+                    TaliEffectContent.ReignOfWinterTriggeredEffect(TaliCardContent.ContentRevision),
+                    // Milestone 8.37a. Blizzard's End-of-turn repeat, on the same terms: a timing
+                    // trigger names its effect by reference, and the owner walk resolves that
+                    // reference against this catalog.
+                    TaliEffectContent.BlizzardRepeatTriggeredEffect(TaliCardContent.ContentRevision)
                 })
                 .ToArray()));
 
@@ -208,9 +212,12 @@ namespace GuardsDigital.Core.Cards
                 // handlers - a placement and a p.18 short-supply reclamation for each of the three
                 // roles of her one supply - are content of HERS rather than generic vocabulary, which
                 // is why they register from her own file the way Tigerclaw's Poison marker does and
-                // not from a Synthetic one. She declares no Active effect at all: her only
-                // Active-effect keyword is Blizzard's `End of turn:`, and Blizzard's whole face stays
-                // deferred, so the empty contribution is explicit rather than missing.
-                .Concat(TaliEffectContent.RegisteredHandlers());
+                // not from a Synthetic one.
+                .Concat(TaliEffectContent.RegisteredHandlers())
+                // Milestone 8.37a. Her ONE Active effect - Blizzard's End-of-turn clause, the only
+                // Active-effect keyword her whole set prints. Milestone 8.37 recorded her as
+                // declaring none, which was true of the set it shipped: Blizzard was the face it
+                // left deferred.
+                .Concat(TaliActiveEffectContent.Handlers());
     }
 }

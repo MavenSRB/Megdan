@@ -267,7 +267,10 @@ namespace GuardsDigital.Tests.EditMode
             // `ReclaimHeroTokenHandler`, whose showcase instances register from
             // `SyntheticTokenCapabilities` while her six real ones register from her own content.
             // Her six token capability IDS move this by nothing beyond those two types, because this
-            // rule counts TYPES; she declares no Active effect at all.
+            // rule counts TYPES. Milestone 8.37a then composed Blizzard, which gives her the one Active
+            // effect her set's one `End of turn:` prints - and moves this count by NOTHING, on the
+            // sentence six dealings have now written: `ActiveEffectCreationHandler` is the type, and it
+            // has been registered since milestone 6.8.
             Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(77),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");

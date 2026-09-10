@@ -1,5 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
@@ -7,9 +9,12 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
@@ -21,8 +26,9 @@ using static GuardsDigital.Tests.PlayMode.XargathaUiJourneyPlayModeTests;
 namespace GuardsDigital.Tests.PlayMode
 {
     /// <summary>
-    /// Tali's Tier II/III and ally-staged journeys. Milestone 8.37. NEVER EXECUTED; see
-    /// <see cref="TaliUiJourneyPlayModeTests"/>'s own remarks.
+    /// Tali's Tier II/III and ally-staged journeys. Milestone 8.37, with Blizzard's End-of-turn repeat
+    /// and both of that milestone's parked journeys added at 8.37a - see
+    /// <see cref="TaliUiJourneyPlayModeTests"/>'s own remarks for what the first Unity pass corrected.
     ///
     /// <para><b>Two named simplifications, stated rather than smuggled.</b> Arty's 8/15 ruling is that
     /// Commune's naming step succeeds even with an EMPTY hand; the journey below drives it on the
@@ -293,331 +299,549 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.37. Drives the round on until Tali's own next turn, answering a standing
-        /// RESPAWN on the way rather than pressing End Turn against it.
-        ///
-        /// <para>The ordinary wait presses whatever End Turn currently means until the named seat is
-        /// acting. That is right until somebody has been defeated: rulebook p.7 offers the respawn at
-        /// the defeated hero's OWN turn, and it stands in front of every ending until that seat
-        /// answers it - so the ordinary wait asserts a refused press and fails on a board that is
-        /// behaving correctly. This answers the respawn on the board, exactly as a player would, and
-        /// otherwise defers to the ordinary wait.</para>
-        /// </summary>
-        /// <param name="commitWhenAsked">
-        /// The face to commit if a NEW ROUND's commitment phase opens while driving. Three turns of
-        /// setup is more than one round holds on this staging, so the journey arrives at its own
-        /// second turn through a fresh commitment rather than through the same round.
-        /// </param>
-        private static IEnumerator DriveToTalisNextTurnAnsweringAnyRespawn(
-            MatchSceneCompositionRoot root, HeroId taliId, CardDefinitionId commitWhenAsked = default)
-        {
-            var runtime = root.Runtime;
-            for (var budget = 0; budget < 12; budget++)
-            {
-                if (commitWhenAsked.IsDefined &&
-                    runtime.Phase == RoundResolutionPhase.AwaitingCommitments)
-                {
-                    CommitSoTheNamedSeatActs(runtime, taliId, commitWhenAsked);
-                    yield return null;
-                    continue;
-                }
-
-                if (runtime.RoundView.Model.HeroRespawnOptions.Count > 0)
-                {
-                    var respawn = runtime.RoundView.Model.HeroRespawnOptions.First();
-                    var tile = Object.FindObjectsByType<HexTileView>()
-                        .Single(value => value.Coordinate.Equals(respawn.Destination));
-                    var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
-                    Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, tile.transform.position),
-                        Is.True, Remaining(runtime));
-                    yield return null;
-                    continue;
-                }
-
-                // The named seat must be ACTING, not merely un-named. The ordinary wait exits on
-                // "nobody is acting" too, which between turns is a moment with no action controls at
-                // all - and a journey that starts an action there finds none and throws inside its
-                // own helper rather than failing on anything it meant to assert.
-                if (runtime.PendingTurnRelease == null &&
-                    runtime.SelectedActor.IsDefined &&
-                    runtime.SelectedActor.ActorId.Equals(taliId))
-                {
-                    yield break;
-                }
-
-                if (runtime.RoundView.Model.EndTurnInvocation == null)
-                {
-                    yield return null;
-                    continue;
-                }
-
-                Assert.That(runtime.SubmitEndTurn(), Is.True, Remaining(runtime));
-                yield return null;
-            }
-
-            Assert.Fail("Tali never took her own turn. " + Remaining(runtime));
-        }
-
-        /// <summary>
-        /// "Target a friendly hero (or yourself) in range. You may retrieve a card from their discard."
-        /// - Guardian Spirit, driven across two turns so the retrieve has a real candidate: turn one
-        /// resolves Ice Blast into Tali's own discard, turn two targets herself and retrieves it back to
-        /// hand. Warrior Spirit shares this evidence - <see cref="TaliEffectContent.CreateSpiritRetrieval"/>
-        /// composes both siblings from the identical select-then-retrieve Sequence.
+        /// "Up to 1 friendly hero in radius may retrieve a discarded card. If Guardian Spirit is in
+        /// your discard, retrieve it." - Guardian Spirit, driven inside ONE round: the enemy's Attack
+        /// takes a card out of her hand as p.14's Defense, and her own turn later that same round
+        /// targets herself and brings it back. Warrior Spirit shares this evidence -
+        /// <see cref="TaliEffectContent.CreateSpiritRetrieval"/> composes both siblings from the
+        /// identical select-then-retrieve Sequence.
         /// </summary>
         /// <remarks>
-        /// <b>PARKED AT MILESTONE 8.37, WITH THE REASON MEASURED RATHER THAN GUESSED.</b> Every other
-        /// journey of hers runs; this one needs a THREE-turn arc and the staging does not hold one.
-        /// Guardian Spirit's retrieve is a May-policy clause over her own discard, so the arc is:
-        /// close the two-space gap her adjacent-only Gold basic needs (one turn), resolve Ice Blast
-        /// into her discard (a second), then play Guardian Spirit and retrieve it (a third). The
-        /// round does not hold three of her turns - the last run reached
-        /// <c>YOUR COMMITMENT - CHOOSE A CARD, OR PASS</c>, a NEW round's commitment phase, with the
-        /// journey still owing its own final turn - and committing Guardian Spirit into that fresh
-        /// phase does not clear it either, which is the part that needs a reading rather than another
-        /// attempt: p.15 deals a new hand at the round boundary, so the instance the journey means to
-        /// retrieve and the card it means to play are not obviously the same objects on the far side.
+        /// <b>UN-PARKED AT MILESTONE 8.37a, and what changed is the ARC rather than any rule.</b>
+        /// Milestone 8.37 shipped it <c>[Explicit]</c> because it was written to fill her discard by
+        /// PLAYING a card, which costs a whole turn to close her adjacent-only Gold basic's gap and a
+        /// second to resolve it - a three-turn arc, and the round does not hold three of her turns.
+        /// Two measurements taken at 8.37a replaced it:
+        /// <list type="bullet">
+        /// <item><description><b>Playing a card never fills a discard at all.</b> A played card lives
+        /// in <see cref="CardLocation.TurnArea"/> for the round; this engine reserves
+        /// <see cref="CardLocation.DiscardPile"/> for a card SPENT as a Defense or taken by a discard
+        /// clause, and <c>RosterCardRetrievalKind.OwnedDiscardedCard</c> admits only the spent one. So
+        /// the original arc could not have produced a candidate however many turns it was given, which
+        /// is the part the first diagnosis missed. Open question 34 records the same distinction from
+        /// the other side.</description></item>
+        /// <item><description><b>The staging IS a parameter.</b> The old remarks read
+        /// <c>EngagedMirrorStaging</c>'s two-space gap as fixed and concluded a new staging was needed.
+        /// <see cref="MatchSceneCompositionRoot.NextComposedSandboxStaging"/> is the seam Silverarrow's
+        /// own range journeys already use for exactly this - it places heroes where a journey needs
+        /// them, on the scene the journey was going to load anyway.</description></item>
+        /// </list>
         ///
-        /// <para><b>What it would take.</b> Either a staged configuration that starts Tali adjacent -
-        /// <c>EngagedMirrorStaging</c> fixes two spaces for every hero, so this is a new staging and
-        /// not a parameter - which collapses the arc to two turns, or a headless setup that puts a
-        /// card in her discard without spending a turn on it. Both are more than this dealing should
-        /// invent, and neither changes any rule her content states.</para>
-        ///
-        /// <para><b>What is NOT lost by parking it.</b> Its evidence in the gate table is Guardian
-        /// Spirit's <c>HandCardSelection</c>, <c>BoardUnitSelection</c> and <c>ConfirmOrDecline</c>
-        /// cells; the same shapes are proved on the same content by
-        /// <see cref="CommuneWithSpirits_LetsTheNamedAllySteerTheColorRatherThanTaliHerself"/> and by
-        /// the retrieval half of Warrior Spirit's own row, which
-        /// <see cref="TaliEffectContent"/> composes from the identical Sequence. The composition
-        /// itself is proved offline by the Edit Mode content fixtures.</para>
+        /// <para>Together they collapse the arc to ONE round with no turn spent on setup: standing the
+        /// enemy adjacent means their Attack needs no gap-closing turn, and rulebook p.7 resolves the
+        /// higher printed Initiative first, so their Magnetic Dagger at 12 acts before her Guardian
+        /// Spirit at 10 and the discard is standing by the time she asks. Measured offline before this
+        /// was rewritten, at <c>tmp/8-37a-blizzard-repeat/probes/drive</c>.</para>
         /// </remarks>
         [UnityTest]
-        [Explicit(
-            "8.37: needs a three-turn arc the engaged staging cannot hold - see the remarks. Run it " +
-            "by name once a staging starts Tali adjacent, or once a headless discard setup exists.")]
-        public IEnumerator GuardianSpirit_TargetsHerselfAndRetrievesTheIceBlastSheJustDiscarded()
+        public IEnumerator GuardianSpirit_TargetsHerselfAndRetrievesTheCardSheSpentAsADefence()
         {
+            // The first load is only to read the seats and measure the contact square; the sandbox
+            // staging then re-composes the same scene with the enemy standing beside her.
             yield return LoadStagedScene(SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTali);
+            var surveyed = Root().Runtime;
+            var taliId = TaliSeat(surveyed).HeroId;
+            var enemyId = OtherHeroId(surveyed, taliId);
+            var taliAt = surveyed.Heroes.Single(hero => hero.HeroId.Equals(taliId)).Coordinate;
+            var contact = AnEmptySquareBeside(surveyed, taliAt);
+
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                heroes: new[]
+                {
+                    new SandboxHeroStaging(taliId, taliAt),
+                    new SandboxHeroStaging(enemyId, contact)
+                });
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTali);
+
             var root = Root();
             var runtime = root.Runtime;
-            var taliId = TaliSeat(runtime).HeroId;
-            var enemyId = OtherHeroId(runtime, taliId);
-
-            // Turn one owes this journey ONE THING: a card of Tali's own standing in her discard by
-            // the time Guardian Spirit asks, because a fresh Tier II hand starts with nothing there
-            // for the May-policy retrieve to find.
-            //
-            // It resolves Ice Blast for real rather than passing the turn, because a card that is
-            // merely committed has not been PLAYED and does not reach the discard. That means closing
-            // the gap first (her Gold basic is adjacent-only) and it means the declined Defense may
-            // make this a DEFEAT - so the wait below answers a standing respawn instead of pressing
-            // End Turn against it, which is the decision the first attempt at this journey could not
-            // get past.
-            yield return SpendATurnClosingTheGap(
-                root, taliId, enemyId, TaliCardContent.IceBlast, TaliCardContent.GuardianSpirit);
-            CommitSoTheNamedSeatActs(runtime, taliId, TaliCardContent.IceBlast);
-            yield return YieldUntilTheNamedSeatActs(runtime, taliId);
-            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
-            var iceBlastTarget = runtime.PendingAttackTargetChoice.LegalTargets
-                .First(candidate => candidate.HeroId.Equals(enemyId));
             Assert.That(
-                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(iceBlastTarget.HeroId)),
-                Is.True);
+                HexDistanceQuery.Calculate(
+                    runtime.Heroes.Single(hero => hero.HeroId.Equals(taliId)).Coordinate,
+                    runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate),
+                Is.EqualTo(1),
+                "The whole arc depends on the enemy needing no turn to reach her.");
+
+            // Their highest-Initiative Attack against her Guardian Spirit: p.7 gives them the turn
+            // first, which is what puts a card in her discard before she asks for one.
+            Commit(runtime, enemyId, HighestInitiativeAttackIdOf(runtime, enemyId));
+            Commit(runtime, taliId, TaliCardContent.GuardianSpirit);
+            yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(enemyId),
+                "Their Attack must act before her Skill. " + Remaining(runtime));
+
+            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True, Remaining(runtime));
+            var target = runtime.PendingAttackTargetChoice.LegalTargets
+                .First(candidate => candidate.Kind == AttackTargetKind.Hero &&
+                    candidate.HeroId.Equals(taliId));
+            Assert.That(
+                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(target.HeroId)),
+                Is.True, Remaining(runtime));
             yield return null;
-            for (var budget = 0; budget < 4 && runtime.PendingDefenseChoice != null; budget++)
-            {
-                Assert.That(runtime.DeclineDefense(), Is.True, Remaining(runtime));
-                yield return null;
-            }
+
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
+                "p.14's Defense response is what this arc is for. " + Remaining(runtime));
+            var survives = SurvivingDefense(runtime);
+            Assert.That(survives, Is.Not.Null,
+                "She holds a face that answers this total, so spending it is a real choice rather " +
+                "than a defeat dressed up as one. " + Remaining(runtime));
+            var spent = survives.DefenseBreakdown.CardInstanceId.Value;
+            Assert.That(runtime.SubmitDefenseCard(spent), Is.True, Remaining(runtime));
+            yield return null;
+
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(spent)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "A card SPENT as a Defense is what this engine calls discarded - which is why the " +
+                "arc fills her discard this way and not by playing something.");
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(taliId)), Is.True,
+                "She answered the total, so she is still standing to take her own turn.");
+
             if (runtime.IsTurnActive && runtime.RoundView.Model.EndTurnInvocation != null)
             {
                 Assert.That(runtime.SubmitEndTurn(), Is.True, Remaining(runtime));
                 yield return null;
             }
 
-            yield return DriveToTalisNextTurnAnsweringAnyRespawn(root, taliId);
-
-            // Turn two: Guardian Spirit targets Tali herself - the radius always admits the caster -
-            // and retrieves the Ice Blast instance turn one just sent to her discard. The wait is the
-            // respawn-aware one again, because the defeated enemy is offered their space on their own
-            // turn, which comes up after this commitment rather than before it.
-            yield return DriveToTalisNextTurnAnsweringAnyRespawn(
-                root, taliId, TaliCardContent.GuardianSpirit);
-            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(taliId), Remaining(runtime));
+            yield return YieldUntilTheNamedSeatActs(runtime, taliId);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(taliId),
+                "Her own turn is later in the SAME round, so nothing has been retrieved back. " +
+                Remaining(runtime));
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(spent)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "The discard survives to her turn; a round boundary would have emptied it.");
 
             yield return PointTrayAt(root, taliId);
             yield return StartActionThroughControl(root, ActionKind.Skill);
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "\"Target a friendly hero in range\" is mandatory and always finds at least herself. " +
-                Remaining(runtime));
+                "\"Up to 1 friendly hero in radius\" is the first question, and on a one-hero team " +
+                "the radius always still admits the caster. " + Remaining(runtime));
             // Answered on the map, like every other hero-valued candidate in this file.
             Assert.That(
                 runtime.RoundView.Model.EffectChoiceTargets.Any(value =>
                     value.Command.EffectChoice.Candidate.Value.HeroId.Equals(taliId)),
                 Is.True,
-                "The radius always admits the caster. " + Remaining(runtime));
-            var selfPointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+                "She is her own legal subject. " + Remaining(runtime));
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(
-                UiPlayer.ClickBoard(selfPointer, root.Hud, HeroView(taliId).transform.position),
+                UiPlayer.ClickBoard(pointerInput, root.Hud, HeroView(taliId).transform.position),
                 Is.True, Remaining(runtime));
             yield return null;
+            yield return ConfirmIfStillStanding(root, StandingNode(runtime));
 
-            // "You may retrieve" - the May-policy clause, now with a real candidate: Ice Blast, sitting
-            // in her own discard since turn one. Choosing it (rather than declining) is what proves the
-            // card-selection question, not only that a decline was legal.
+            // "May retrieve" - the May-policy clause, now with a real candidate. Choosing it rather
+            // than declining is what proves the card-selection question.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "A legal card in her own discard means the retrieve opens rather than fizzling " +
                 "quietly. " + Remaining(runtime));
-            Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(taliId), Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(taliId),
+                "It is her discard, so it is her choice. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Not.Null,
+                "\"May\" is a control she can refuse. " + Remaining(runtime));
             var cardCandidates = runtime.RoundView.Model.EffectChoices
                 .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
-            Assert.That(cardCandidates, Is.Not.Empty,
-                "Ice Blast is the one card standing in her discard. " + Remaining(runtime));
+            Assert.That(cardCandidates, Has.Length.EqualTo(1),
+                "The card she spent is the one thing standing in her discard. " + Remaining(runtime));
             Assert.That(runtime.SubmitProjectedCommand(cardCandidates[0].Command), Is.True);
             yield return null;
+            yield return ConfirmIfStillStanding(root, StandingNode(runtime));
 
-            Assert.That(runtime.Cards
-                    .Single(card => card.OwnerId.Equals(taliId) &&
-                        card.DefinitionReference.DefinitionId.Equals(TaliCardContent.IceBlast))
-                    .State.Location,
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(spent)).State.Location,
                 Is.EqualTo(CardLocation.Hand),
                 "Retrieved means back in hand, not merely no longer in the discard.");
         }
 
         /// <summary>
-        /// "After you defeat a minion with a basic Attack: A hero in radius 4 discards a card of a
-        /// chosen colour, if able." - Reign of Winter, the Gold trigger, fired by resolving Spirit
-        /// Bear's ranged bullet against an enemy minion on the Tier III board where her Ultimate is
-        /// unlocked.
-        ///
-        /// <para><b>Best-effort, not a certainty this build's staging guarantees.</b> Whether a single
-        /// hit actually defeats the minion p.8's waves happen to place in range is not something this
-        /// journey controls. Either observable outcome is asserted as legal - merely damaged, so the
-        /// trigger correctly does not fire; or defeated, so it does - on the same terms Cold Snap's own
-        /// "if able" fizzle is. Only the DEFEATED branch is what proves the Ultimate's own shapes, which
-        /// is why this journey exists rather than being left to Edit Mode coverage alone.</para>
+        /// A playable square beside the named one with nothing standing on it - heroes AND minions,
+        /// which is the difference from <c>SilverarrowEngagedUiJourneyPlayModeTests.Contact</c>: the
+        /// engaged staging puts a friendly melee minion next to her, so an adjacency measured over
+        /// heroes alone would stage the enemy on top of it.
         /// </summary>
+        private static HexCoordinate AnEmptySquareBeside(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate beside)
+        {
+            var occupied = runtime.Heroes.Select(hero => hero.Coordinate)
+                .Concat(Object.FindObjectsByType<StandardMinionView>(FindObjectsSortMode.None)
+                    .Where(view => view.Occupancy != null)
+                    .Select(view => view.Occupancy.Coordinate))
+                .ToArray();
+            var candidates = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                .Select(tile => tile.Coordinate)
+                .Where(space => HexDistanceQuery.Calculate(space, beside) == 1)
+                .Where(space => !occupied.Contains(space))
+                .OrderBy(space => space.Q)
+                .ThenBy(space => space.R)
+                .ToArray();
+            Assert.That(candidates, Is.Not.Empty,
+                "The staging leaves no empty square beside her, so no journey about an adjacent " +
+                "enemy can be driven from it.");
+            return candidates[0];
+        }
+
+        /// <summary>
+        /// Milestone 8.37a. "Choose a direction. Move each enemy unit in radius 1 space in that
+        /// direction, if able. If Blizzard is in your discard, <b>End of turn:</b> May repeat once." -
+        /// Blizzard, the last face in this build whose printed text was recorded as absent, driven
+        /// through both of its sentences on one turn.
+        ///
+        /// <para><b>What is new here is only the second sentence.</b> The first is Cold Snap's and
+        /// Snowstorm's, already proved by
+        /// <see cref="TaliEngagedUiJourneyPlayModeTests.ColdSnap_ChoosesAFreeDirectionThenMovesTheEnemyOneSpaceWithNoSecondQuestion"/>;
+        /// what this journey exists for is that the same two nodes are offered AGAIN at the turn's own
+        /// close, under the clause's own "May", and that the arm is gone once they have run.</para>
+        ///
+        /// <para><b>The gate is open question 34 made visible.</b> When the checkpoint arrives Blizzard
+        /// stands in <see cref="CardLocation.TurnArea"/>, played and resolved - this engine reserves
+        /// <see cref="CardLocation.DiscardPile"/> for a card SPENT as a Defense or taken by a discard
+        /// clause - so the journey asserts that location at the moment the trigger fires. Under the
+        /// narrow reading the condition would be false there and the whole second sentence would be
+        /// dead text; the widened reading is bound at
+        /// <see cref="SyntheticConditionCapabilities.CountResolvedPlayedParameter"/> by this one
+        /// trigger and nowhere else.</para>
+        ///
+        /// <para><b>It is NOT a p.10 repeat, and the difference is observable here.</b> Nothing in this
+        /// clause is spelled as a repeat to the engine - there is no enclosing action at
+        /// <see cref="TimingCheckpoint.TurnEnded"/> for <see cref="EffectNodeKind.RepeatAction"/> to
+        /// re-run - so what a player meets is a fresh pair of questions rather than a repeat control.
+        /// <see cref="TaliEffectContent.BlizzardRepeatTriggeredEffect"/> records the reading.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Blizzard_RepeatsItsOwnBatchMoveAtTheCloseOfHerTurn_AndTheArmIsThenSpent()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedTali);
+            var root = Root();
+            var runtime = root.Runtime;
+            var taliId = TaliSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, taliId);
+
+            CommitSoTheNamedSeatActs(runtime, taliId, TaliCardContent.Blizzard);
+            yield return YieldUntilTheNamedSeatActs(runtime, taliId);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(taliId),
+                "The journey needs her turn open on Blizzard. " + Remaining(runtime));
+
+            var blizzard = runtime.Cards.Single(card =>
+                card.OwnerId.Equals(taliId) &&
+                card.DefinitionReference.DefinitionId.Equals(TaliCardContent.Blizzard));
+
+            yield return PointTrayAt(root, taliId);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+
+            // Sentence one, on Cold Snap's own terms: six directions on their own control, the
+            // selection held until it is confirmed, then a batch with no second question.
+            yield return AnswerTheFreeDirection(runtime, "the printed pass");
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The first batch applies from its own node table and asks nothing further. " +
+                Remaining(runtime));
+
+            Assert.That(runtime.IsActiveEffectSource(blizzard.Id), Is.True,
+                "The arm the second sentence needs must be readable from the card that armed it, or " +
+                "a player has no way to know their turn is going to end differently. " +
+                Remaining(runtime));
+
+            var beforeTheRepeat = EnemyUnitPositions(runtime, taliId);
+
+            // The turn's close is what fires it. Nothing is answered on the way: the loop stops the
+            // moment nobody is acting, which is exactly when the trigger's own question stands.
+            yield return YieldUntilNobodyIsActing(runtime);
+
+            var atTheClose = runtime.Cards.Single(card => card.Id.Equals(blizzard.Id));
+            Assert.That(atTheClose.State.Location, Is.EqualTo(CardLocation.TurnArea),
+                "Open question 34: the card the clause asks about is in her TURN AREA at the " +
+                "checkpoint, not in the discard pile this engine reserves for a spent card.");
+            Assert.That(atTheClose.State.HasBeenPlayed, Is.True);
+            Assert.That(atTheClose.State.ResolutionStatus, Is.EqualTo(CardResolutionStatus.Resolved),
+                "The gate's widened reading is about a card whose own resolution has FINISHED, which " +
+                "is the whole difference from every earlier face that asks mid-resolution.");
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The turn is not over while the clause's own question stands - the second sentence " +
+                "is printed as happening at the end of THIS turn. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(taliId),
+                "\"May\" is hers, and the End-of-turn effect's scope is the controller hero.");
+            Assert.That(runtime.PendingEffectChoice.ConfirmInvocation, Is.Not.Null,
+                "The clause prints \"May\", so it is offered rather than performed. " +
+                Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.DeclineInvocation, Is.Not.Null,
+                "A \"May\" a player cannot refuse is not a May. " + Remaining(runtime));
+
+            Assert.That(
+                runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(
+                    runtime.PendingEffectChoice.ConfirmInvocation)),
+                Is.True,
+                "She takes the repeat. " + Remaining(runtime));
+            yield return null;
+
+            // Sentence two asks the SAME two questions the printed pass asked, on a fresh control -
+            // never a repeat control, because nothing here is a p.10 repeat to the engine.
+            yield return AnswerTheFreeDirection(runtime, "the End-of-turn repeat");
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "The repeat's batch applies with no second question either. " + Remaining(runtime));
+            Assert.That(EnemyUnitPositions(runtime, taliId), Is.Not.EqualTo(beforeTheRepeat),
+                "The repeat moved somebody. Measured offline before this journey was written at " +
+                "tmp/8-37a-blizzard-repeat/probes/drive: on this staging the printed pass and the " +
+                "repeat each step the enemy hero and one enemy minion one space, so a run where " +
+                "nothing moved at all is the clause not firing rather than an honest \"if able\".");
+            Assert.That(runtime.IsActiveEffectSource(blizzard.Id), Is.False,
+                "The effect expires at the very checkpoint it fires at, so it is spent once the work " +
+                "is done - which is what makes \"once\" true without counting anything.");
+        }
+
+
+        /// <summary>
+        /// Milestone 8.37a, the other half of Blizzard's "May". The clause is an OFFER, so refusing it
+        /// has to be as ordinary as taking it: the repeat is declined, the turn closes, nothing on the
+        /// board moves a second time, and the arm is spent all the same.
+        ///
+        /// <para>Its subject is the one thing
+        /// <see cref="Blizzard_RepeatsItsOwnBatchMoveAtTheCloseOfHerTurn_AndTheArmIsThenSpent"/>
+        /// structurally cannot also prove - a one-shot effect is taken or refused, never both - and it
+        /// is the acceptance check milestone 8.37a's own definition names.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Blizzard_TheEndOfTurnRepeatCanBeRefused_AndTheTurnClosesWithTheArmSpent()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedTali);
+            var root = Root();
+            var runtime = root.Runtime;
+            var taliId = TaliSeat(runtime).HeroId;
+
+            CommitSoTheNamedSeatActs(runtime, taliId, TaliCardContent.Blizzard);
+            yield return YieldUntilTheNamedSeatActs(runtime, taliId);
+            Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(taliId), Remaining(runtime));
+
+            var blizzard = runtime.Cards.Single(card =>
+                card.OwnerId.Equals(taliId) &&
+                card.DefinitionReference.DefinitionId.Equals(TaliCardContent.Blizzard));
+
+            yield return PointTrayAt(root, taliId);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            yield return AnswerTheFreeDirection(runtime, "the printed pass");
+
+            Assert.That(runtime.IsActiveEffectSource(blizzard.Id), Is.True,
+                "The arm stands on her own tray between the printed pass and the turn's close. " +
+                Remaining(runtime));
+            var afterThePrintedPass = EnemyUnitPositions(runtime, taliId);
+
+            yield return YieldUntilNobodyIsActing(runtime);
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The clause asks before the turn is allowed to finish. " + Remaining(runtime));
+            var decline = DeclineControl(runtime);
+            Assert.That(decline, Is.Not.Null,
+                "\"May\" prints a refusal, and a refusal a player cannot press is not one. " +
+                Remaining(runtime));
+            Assert.That(runtime.SubmitProjectedCommand(decline.Command), Is.True, Remaining(runtime));
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "Refusing the offer is the whole of the answer - nothing below it is asked. " +
+                Remaining(runtime));
+            Assert.That(EnemyUnitPositions(runtime, taliId), Is.EqualTo(afterThePrintedPass),
+                "Nothing moved a second time, which is what declining the repeat means.");
+            Assert.That(runtime.IsActiveEffectSource(blizzard.Id), Is.False,
+                "The effect expires at the checkpoint it fired at whether or not the offer was " +
+                "taken, so a refused repeat cannot be asked again later in the round.");
+        }
+
+        /// <summary>
+        /// Answers one free-direction control the way a player does: pick a direction, then confirm it,
+        /// because a bounded selection is HELD until the chooser spends it. Cold Snap's own journey
+        /// records why that second step is not optional.
+        /// </summary>
+        private static IEnumerator AnswerTheFreeDirection(
+            ConfiguredMatchSceneRuntime runtime, string which)
+        {
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                $"\"Choose a direction\" opens unconditionally on {which}. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ValueVocabulary,
+                Is.EqualTo(EffectChoiceValueVocabulary.HexDirection),
+                "Milestone 8.37b: the candidates are directions and must say so, or a player is " +
+                "offered the buttons \"0\" through \"5\". " + Remaining(runtime));
+
+            var directions = runtime.RoundView.Model.EffectChoices
+                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                .ToArray();
+            Assert.That(directions, Has.Length.EqualTo(6),
+                "All six of p.17's directions are always offered - the sentence names no origin and " +
+                "no destination to narrow them. " + Remaining(runtime));
+            Assert.That(runtime.SubmitProjectedCommand(directions[0].Command), Is.True,
+                "The chosen direction is answered on its own control, never a board click.");
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The selection is held until it is confirmed. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ConfirmInvocation, Is.Not.Null,
+                "A held direction offers the confirmation that spends it. " + Remaining(runtime));
+            Assert.That(
+                runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(
+                    runtime.PendingEffectChoice.ConfirmInvocation)),
+                Is.True,
+                "Confirming the direction is what runs the batch. " + Remaining(runtime));
+            yield return null;
+            yield return null;
+        }
+
+        /// <summary>
+        /// Where every unit hostile to the named hero stands, as one comparable string, read off the
+        /// live VIEWS rather than the projection - the batch is only proved if what a player can see
+        /// moved.
+        /// </summary>
+        private static string EnemyUnitPositions(ConfiguredMatchSceneRuntime runtime, HeroId taliId) =>
+            string.Join("|", runtime.Heroes
+                .Where(hero => !hero.HeroId.Equals(taliId))
+                .Select(hero => $"{hero.HeroId.Value}@{hero.Coordinate}")
+                .Concat(Object.FindObjectsByType<StandardMinionView>(FindObjectsSortMode.None)
+                    .Where(view => view.Occupancy != null &&
+                        view.Occupancy.TeamSide != TaliSeat(runtime).TeamSide)
+                    .Select(view => $"{view.Occupancy.MinionId.Value}@{view.Occupancy.Coordinate}"))
+                .OrderBy(value => value));
+
+        /// <summary>
+        /// "Each time after you defeat a minion with your basic attack, an enemy hero in radius
+        /// discards a card of a chosen colour, if able." - Reign of Winter, driven to its own trigger:
+        /// Ice Blast, her one basic Attack, takes an adjacent enemy minion off the board, and the
+        /// Ultimate then asks its two questions and hands the third to the seat whose hand it empties.
+        /// </summary>
+        /// <remarks>
+        /// <b>UN-PARKED AT MILESTONE 8.37a, and it found a shipped engine defect on the way.</b>
+        /// Milestone 8.37 shipped this self-<c>Assert.Ignore</c>ing when p.8's waves happened to stand
+        /// no enemy minion beside her - which they do not on this staging - so the DEFEATED branch, the
+        /// only one that proves anything, had never run. Two things changed:
+        /// <list type="bullet">
+        /// <item><description><b>The subject is staged rather than hoped for.</b>
+        /// <see cref="MatchSceneCompositionRoot.NextComposedSandboxStaging"/> moves one enemy melee
+        /// minion to a square beside her, which is the same seam Silverarrow's range journeys use to
+        /// place their own subjects. Nothing else about the board moves, and no rule is bent: the
+        /// minion is an ordinary p.8 wave minion standing an ordinary space away.</description></item>
+        /// <item><description><b>The engine faulted the moment it was reached.</b> Answering the target
+        /// threw <c>ArgumentException: A turn card-action event requires a defined card-action
+        /// event</c>. p.13 gives a minion target no steps 3 to 5, so p.14's step-1 text resumes the
+        /// WHOLE rest of the page inside its own produced stream - step 7's card text and the action's
+        /// own <c>ActionEnded</c> included - and <c>TurnResolutionAuthority.MaterializeSteps</c> walked
+        /// that produced stream with a smaller loop that knew neither. The same gap would also have
+        /// dropped the <c>PerformedBasicAction</c> this very trigger reads, so the clause could not have
+        /// fired even without the throw. Fixed there, at the authority, and pinned by
+        /// <c>AttackCardTextPageTests</c>.</description></item>
+        /// </list>
+        ///
+        /// <para>Only a face printing card text at BOTH of the attacker's own moments can reach that
+        /// gap, and only against a minion. Ice Blast is the first dealt content of that shape to be
+        /// pointed at one, which is why twelve dealings passed over it. Measured offline before this
+        /// was rewritten, at <c>tmp/8-37a-blizzard-repeat/probes/drive</c>.</para>
+        /// </remarks>
         [UnityTest]
         public IEnumerator ReignOfWinter_OpensTheColorNamingChoiceWhenABasicAttackDefeatsAMinion()
         {
+            // The first load measures the board; the sandbox staging then re-composes it with one
+            // enemy minion standing where her adjacent-only basic Attack can reach it.
             yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTali);
+            var surveyed = Root().Runtime;
+            var taliId = TaliSeat(surveyed).HeroId;
+            var enemyId = OtherHeroId(surveyed, taliId);
+            var taliAt = surveyed.Heroes.Single(hero => hero.HeroId.Equals(taliId)).Coordinate;
+            var beside = AnEmptySquareBeside(surveyed, taliAt);
+            var subject = Object.FindObjectsByType<StandardMinionView>(FindObjectsSortMode.None)
+                .Select(view => view.Occupancy)
+                .Where(occupancy => occupancy != null &&
+                    occupancy.TeamSide != TaliSeat(surveyed).TeamSide &&
+                    occupancy.MinionType == StandardMinionType.Melee)
+                .OrderBy(occupancy => occupancy.MinionId.Value)
+                .First()
+                .MinionId;
+
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                movedMinions: new[]
+                {
+                    new KeyValuePair<MinionId, HexCoordinate>(subject, beside)
+                });
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTali);
+
             var root = Root();
             var runtime = root.Runtime;
             var hud = root.Hud;
-            var taliId = TaliSeat(runtime).HeroId;
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
 
-            // HER ULTIMATE READS A **BASIC** ATTACK, AND THIS JOURNEY WAS DRIVING THE WRONG CARD.
-            // `AfterControllerDefeatsMinionWithBasicAttack` is exactly what its name says, and Ice
-            // Blast is her only basic Attack - `TaliCardContent.IceBlast`'s own summary calls it "the
-            // one action Reign of Winter reads". Spirit Bear is a Red Tier II face, so a minion
-            // defeated by it can never raise this trigger, and the journey was asserting that it did.
-            //
-            // Ice Blast targets a unit ADJACENT to her, so the minion it defeats has to be one she is
-            // already standing beside - which p.8's own waves provide on this staging and the
-            // gap-closing helper is not needed for.
+            // HER ULTIMATE READS A **BASIC** ATTACK. `AfterControllerDefeatsMinionWithBasicAttack` is
+            // exactly what its name says, and Ice Blast is her only basic Attack - TaliCardContent's own
+            // summary calls it "the one action Reign of Winter reads". Spirit Bear is a Red Tier III
+            // face, so a minion defeated by it can never raise this trigger, and milestone 8.37's first
+            // draft of this journey was asserting that it did.
             CommitSoTheNamedSeatActs(runtime, taliId, TaliCardContent.IceBlast);
             yield return YieldUntilTheNamedSeatActs(runtime, taliId);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(taliId), Remaining(runtime));
 
             Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
             Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null, Remaining(runtime));
-            var minionTargets = runtime.PendingAttackTargetChoice.LegalTargets
-                .Where(candidate => candidate.Kind == AttackTargetKind.Minion)
+            var staged = runtime.PendingAttackTargetChoice.LegalTargets
+                .Where(candidate => candidate.Kind == AttackTargetKind.Minion &&
+                    candidate.MinionId.Equals(subject))
                 .ToArray();
-            if (minionTargets.Length == 0)
-            {
-                // Nothing this journey can prove without an adjacent enemy minion, and inventing one
-                // would be staging a board rather than reading one. Said out loud rather than passed
-                // silently: p.8's wave placement is what decides it, and it is not this hero's to fix.
-                Assert.Ignore(
-                    "p.8's waves stood no enemy minion adjacent to Tali on this staging, so her only " +
-                    "basic Attack has no minion to defeat and the Ultimate's trigger cannot be " +
-                    "reached from here. " + Remaining(runtime));
-            }
-
-            // Every offered minion is tried rather than only the first: LegalTargets is the rules'
-            // own set and SubmitProjectedCommand answers from the seat's PROJECTED one, and the two
-            // are not obliged to agree candidate-for-candidate on a board where a minion may be
-            // standing somewhere this seat cannot address it.
-            var minion = minionTargets[0];
-            var minionTaken = false;
-            foreach (var candidate in minionTargets)
-            {
-                if (!runtime.SubmitProjectedCommand(
-                        DirectorCommand.ChooseAttackTarget(candidate.MinionId)))
-                {
-                    continue;
-                }
-
-                minion = candidate;
-                minionTaken = true;
-                break;
-            }
-
-            if (!minionTaken)
-            {
-                Assert.Ignore(
-                    "No minion this basic Attack lists is answerable from this seat's own projection " +
-                    "on this staging, so the Ultimate's trigger cannot be reached from here. " +
-                    Remaining(runtime));
-            }
-
+            Assert.That(staged, Has.Length.EqualTo(1),
+                "The staged minion is standing beside her, so her adjacent-only basic Attack must " +
+                "offer it. " + Remaining(runtime));
+            Assert.That(
+                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(subject)), Is.True,
+                "The minion is answered as the Attack's target. " + Remaining(runtime));
+            yield return null;
             yield return null;
 
-            // Ice Blast's own step-7 rider may ask its own questions; answer whatever still stands so
-            // the action reaches its end, which is where the Ultimate's checkpoint is raised.
-            for (var budget = 0; budget < 8; budget++)
-            {
-                if (runtime.PendingDefenseChoice != null)
-                {
-                    Assert.That(runtime.DeclineDefense(), Is.True, Remaining(runtime));
-                    yield return null;
-                    continue;
-                }
+            Assert.That(
+                Object.FindObjectsByType<StandardMinionView>(FindObjectsSortMode.None)
+                    .Any(view => view.Occupancy != null && view.Occupancy.MinionId.Equals(subject)),
+                Is.False,
+                "p.13: \"Minions cannot defend. When you target an enemy minion with an attack, it is " +
+                "simply defeated.\" - so the piece is off the board and the trigger has its cause.");
 
-                break;
-            }
-
-            var minionSurvived = Object.FindObjectsByType<StandardMinionView>()
-                .Any(view => view.Occupancy.MinionId.Equals(minion.MinionId));
-            if (minionSurvived)
-            {
-                Assert.That(runtime.PendingEffectChoice, Is.Null,
-                    "The minion only took damage; a basic Attack that does not defeat names no " +
-                    "trigger. " + Remaining(runtime));
-                yield break;
-            }
-
-            // The minion is gone: a basic Attack just defeated it, and Reign of Winter's own
-            // AfterControllerDefeatsMinionWithBasicAttack condition reads true at the ActionEnded
-            // checkpoint.
+            // Question one is hers: which enemy hero inside the printed Radius 4 disk.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "\"A hero in radius 4\" is a mandatory selection the trigger opens on its own control. " +
+                "\"An enemy hero in radius\" is a mandatory selection the trigger opens on its own " +
+                "control - and the whole point of un-parking this journey is that it now stands. " +
                 Remaining(runtime));
-            var heroCandidates = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(heroCandidates, Is.Not.Empty, Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(heroCandidates[0].Command), Is.True);
+            Assert.That(
+                runtime.RoundView.Model.EffectChoiceTargets.Any(value =>
+                    value.Command.EffectChoice.Candidate.Value.HeroId.Equals(enemyId)),
+                Is.True,
+                "The engaged staging stands the enemy two spaces away, well inside Radius 4. " +
+                Remaining(runtime));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, HeroView(enemyId).transform.position), Is.True,
+                "A hero-valued candidate is answered ON THE MAP. " + Remaining(runtime));
             yield return null;
+            yield return ConfirmIfStillStanding(root, StandingNode(runtime));
 
+            // Question two is hers as well: which colour. Milestone 8.37b is what makes it readable.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "Naming a colour is mandatory, unconditional on which target was found. " +
                 Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ValueVocabulary,
+                Is.EqualTo(EffectChoiceValueVocabulary.CardColor),
+                "Milestone 8.37b: the candidates are colours and must say so. " + Remaining(runtime));
             var colorCandidates = runtime.RoundView.Model.EffectChoices
                 .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
-            Assert.That(colorCandidates, Has.Length.EqualTo(6), Remaining(runtime));
+            Assert.That(colorCandidates, Has.Length.EqualTo(6),
+                "All six of p.9's colours are offered, RULING 21's Purple included. " +
+                Remaining(runtime));
             Assert.That(runtime.SubmitProjectedCommand(colorCandidates[0].Command), Is.True);
             yield return null;
+            yield return ConfirmIfStillStanding(root, StandingNode(runtime));
 
-            // "Discards a card of that colour, if able" is the mandatory final step, and this journey
-            // does not force a specific outcome either way: fizzling for want of a legal card is
-            // exactly as correct a reading as finding one.
+            // Question three is THEIRS: it is their hand the clause empties, and a decision owned by
+            // another seat is what milestone 8.37b's narration correction is about.
+            if (runtime.PendingEffectChoice != null)
+            {
+                Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(enemyId),
+                    "\"[They] discard a card\" - it is their hand, so it is their choice. " +
+                    Remaining(runtime));
+            }
+
+            // "Discards a card of that colour, IF ABLE" is the mandatory final step, and this journey
+            // does not force a specific outcome: fizzling for want of a card of the named colour is
+            // exactly as correct a reading of the printed sentence as finding one. What it does force
+            // is everything above it, which is what milestone 8.37 could not reach at all.
         }
     }
 }

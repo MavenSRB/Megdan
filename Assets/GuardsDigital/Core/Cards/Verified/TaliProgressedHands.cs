@@ -35,12 +35,14 @@ namespace GuardsDigital.Core.Cards.Verified
     /// into a composed session is card <em>location</em>, so these hands state exactly the locations
     /// the page's own procedure produces and nothing else.</para>
     ///
-    /// <para><b>Blue's Tier III is Warrior Spirit on BOTH branches</b>, not the branch's own thematic
-    /// pairing (Blizzard for the second). Blizzard stays deferred (see
-    /// <see cref="TaliEffectContent.CompositionOwed"/>) - its card definition is whole and valid to
-    /// hold, exactly as every deferred face's is, but a staged hand built for journeys is more useful
-    /// holding the composed sibling. Once Blizzard composes, the second branch's Tier III Blue is the
-    /// one line to revisit.</para>
+    /// <para><b>Milestone 8.37a took the one line milestone 8.37 left named.</b> Blue's Tier III was
+    /// Warrior Spirit on BOTH branches while Blizzard stayed deferred - its card definition was whole
+    /// and valid to hold, exactly as every deferred face's is, but a staged hand built for journeys was
+    /// more useful holding the composed sibling. Blizzard composes now, so the branch that reaches it
+    /// takes its own thematic pairing back: Cold Snap upgrades to Snowstorm and Snowstorm to Blizzard,
+    /// all three printing the identical displacement sentence, while the second branch keeps Guardian
+    /// Spirit into Warrior Spirit and its retrieval. Each branch is now one line of hers end to end,
+    /// which is what the pairing was for.</para>
     ///
     /// <para>The two basics kept in hand are Ice Blast and Commune with Spirits. Ice Shard is p.20's
     /// Handicap card and is already out of the box at p.6's setup, which is why
@@ -63,7 +65,7 @@ namespace GuardsDigital.Core.Cards.Verified
 
         private static readonly CardDefinitionId[] TierThreeFirst =
         {
-            TaliCardContent.WinterScepter, TaliCardContent.WarriorSpirit, TaliCardContent.PackIce
+            TaliCardContent.WinterScepter, TaliCardContent.Blizzard, TaliCardContent.PackIce
         };
 
         private static readonly CardDefinitionId[] TierThreeSecond =

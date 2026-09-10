@@ -133,14 +133,17 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.37. Tali's SIX token handlers - a placement and a rulebook p.18
                 // short-supply reclamation for each of the three roles of her one pile - mirrored by
                 // hand for the reason Dodger's pair records. She is the first hero whose contribution
-                // here is not an Active-effect list at all: she declares no Active effect (her only
-                // such keyword is Blizzard's `End of turn:`, and Blizzard stays deferred), and what
-                // she does contribute is content-of-hers bound to her own token definitions, the way
-                // Tigerclaw's Poison marker is. Her EIGHT genuinely new generic contracts are NOT in
-                // this list - the six from SyntheticCondition/BorrowedAction/Displacement/Roster and
-                // the two showcase token instances from SyntheticTokenCapabilities are all registered
-                // from their own Synthetic files, and this mirror is of VerifiedCapabilityHandlers
-                // alone, exactly as Silverarrow's CardTextFastTravelHandler is excluded above.
-                .Concat(TaliEffectContent.RegisteredHandlers());
+                // here is not ONLY an Active-effect list: what these six are is content-of-hers bound
+                // to her own token definitions, the way Tigerclaw's Poison marker is. Her EIGHT
+                // genuinely new generic contracts are NOT in this list - the six from
+                // SyntheticCondition/BorrowedAction/Displacement/Roster and the two showcase token
+                // instances from SyntheticTokenCapabilities are all registered from their own
+                // Synthetic files, and this mirror is of VerifiedCapabilityHandlers alone, exactly as
+                // Silverarrow's CardTextFastTravelHandler is excluded above.
+                .Concat(TaliEffectContent.RegisteredHandlers())
+                // Milestone 8.37a. Her ONE Active effect, and the reason milestone 8.37 recorded her
+                // as declaring none: her whole set's only Active-effect keyword is Blizzard's
+                // `End of turn:`, and Blizzard was the one face that milestone left deferred.
+                .Concat(TaliActiveEffectContent.Handlers());
     }
 }

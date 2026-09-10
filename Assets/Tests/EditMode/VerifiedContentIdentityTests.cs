@@ -113,7 +113,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("tali", "tali-8-37-rev-1", "265b8c5e0cc533fd9423bf109404a39eac09b3743fa200a38ae720e867076f7f")
+            new IdentityPin("tali", "tali-8-37a-rev-1", "fb78ab529dfe631209ac91aa573e5773ab13465ecf145a956404947c8943edcd")
         };
 
         [Test]

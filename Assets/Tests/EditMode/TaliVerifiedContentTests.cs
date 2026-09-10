@@ -1,7 +1,11 @@
+using System;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
 
@@ -348,7 +352,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheTaliDealPrepCompositionsAreExactlyTheseSeventeenFaces()
+        public void TheTaliCompositionsAreExactlyTheseEighteenFaces()
         {
             var composed = TaliCardContent.AllDefinitions
                 .Where(definition => !TaliEffectContent.CompositionOwed.ContainsKey(definition.Id))
@@ -367,10 +371,124 @@ namespace GuardsDigital.Tests.EditMode
                 TaliCardContent.SpiritWolf, TaliCardContent.SpiritBear,
                 TaliCardContent.ColdSnap, TaliCardContent.Snowstorm,
                 TaliCardContent.GuardianSpirit, TaliCardContent.WarriorSpirit,
-                TaliCardContent.ReignOfWinter
-            }), "Seventeen of her nineteen faces are composed; only p.20's parked Handicap card and " +
-                "Blizzard's second, independent sentence remain deferred, each with a named, still-true " +
-                "reason in CompositionOwed.");
+                TaliCardContent.ReignOfWinter,
+
+                // Milestone 8.37a's one, and the last face in this build whose printed text was
+                // recorded as absent.
+                TaliCardContent.Blizzard
+            }), "Eighteen of her nineteen faces are composed; only p.20's parked Handicap card - the " +
+                "standing deferral every hero carries - remains, with its named, still-true reason in " +
+                "CompositionOwed.");
+        }
+
+        /// <summary>
+        /// Milestone 8.37a. Blizzard's second sentence, asserted where the composition lives rather than
+        /// only where a journey drives it: "If Blizzard is in your discard, <b>End of turn:</b> May
+        /// repeat once."
+        ///
+        /// <para><b>What this pins is the three decisions the clause could not avoid making.</b> That
+        /// the primary Skill ARMS something (rather than the face printing a p.10 repeat, which
+        /// <see cref="EffectNodeKind.RepeatAction"/> cannot express with no enclosing action at the
+        /// turn's end); that the armed effect is the one-shot End-of-turn shape Silverarrow's two Skills
+        /// established, so "once" is true without counting anything; and that its triggered effect re-runs
+        /// the SAME two nodes the printed pass runs, gated by the discard reading open question 34
+        /// records and offered under the clause's own "May".</para>
+        /// </summary>
+        [Test]
+        public void Blizzard_ArmsAnEndOfTurnEffectWhoseTriggerRepeatsItsOwnTwoNodes()
+        {
+            var blizzard = TaliCardContent.AllDefinitions
+                .Single(definition => definition.Id.Equals(TaliCardContent.Blizzard));
+            var primary = blizzard.ActionDefinitions
+                .Single(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary);
+            Assert.That(primary.EffectRoot, Is.Not.Null);
+
+            var arm = primary.EffectRoot.Nodes.SingleOrDefault(node =>
+                node.Kind == EffectNodeKind.Capability &&
+                node.Capability.Equals(TaliActiveEffectContent.BlizzardEndOfTurnRepeatV1));
+            Assert.That(arm, Is.Not.Null,
+                "The printed Skill's last step arms the clause. Cold Snap and Snowstorm print the " +
+                "identical first sentence and arm nothing, which is the whole difference between the " +
+                "three faces.");
+            Assert.That(
+                new[] { TaliCardContent.ColdSnap, TaliCardContent.Snowstorm }
+                    .Select(id => TaliCardContent.AllDefinitions.Single(d => d.Id.Equals(id)))
+                    .SelectMany(definition => definition.ActionDefinitions)
+                    .Where(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary)
+                    .SelectMany(action => action.EffectRoot.Nodes)
+                    .Where(node => node.Kind == EffectNodeKind.Capability)
+                    .Select(node => node.Capability.CapabilityId),
+                Has.No.Member(TaliActiveEffectContent.BlizzardEndOfTurnRepeat));
+
+            Assert.That(
+                TaliActiveEffectContent.Handlers()
+                    .SelectMany(handler => handler.ActiveEffectDefinitions),
+                Is.EquivalentTo(TaliActiveEffectContent.Definitions()),
+                "Her declared definition list is exactly what her handlers can create, so a fixture " +
+                "that needs them all is reading the same set the catalog registers.");
+
+            var effect = TaliActiveEffectContent.BlizzardRepeatDefinition;
+            Assert.That(effect.DurationKind, Is.EqualTo(ActiveEffectDurationKind.EndOfTurn));
+            Assert.That(effect.TriggerCheckpoints, Is.EquivalentTo(new[] { TimingCheckpoint.TurnEnded }));
+            Assert.That(effect.ExpirationCheckpoint, Is.EqualTo(TimingCheckpoint.TurnEnded),
+                "It expires at the very checkpoint it fires at, so it fires exactly once - which is " +
+                "how \"May repeat once\" is expressed without a counter.");
+            Assert.That(effect.Modifications, Is.Empty,
+                "It affects nobody while it stands: the effect exists only to hold a checkpoint.");
+            Assert.That(effect.CancellationConditions, Is.EquivalentTo(new[]
+            {
+                ActiveEffectCancellationCondition.ControllerHeroDefeated,
+                ActiveEffectCancellationCondition.CardsRetrieved
+            }), "p.8's retrieval takes back the card the clause is about, so it ends the clause too.");
+
+            var triggered = TaliEffectContent.BlizzardRepeatTriggeredEffect(
+                TaliCardContent.ContentRevision);
+            Assert.That(effect.TriggeredEffect, Is.EqualTo(triggered.Reference));
+
+            var gate = triggered.Nodes.Single(node =>
+                node.Kind == EffectNodeKind.Conditional &&
+                node.Capability.Equals(SyntheticConditionCapabilities.SourceCardInDiscardV1));
+            var widened = gate.Inputs.Single(input => string.Equals(
+                input.ParameterName,
+                SyntheticConditionCapabilities.CountResolvedPlayedParameter,
+                StringComparison.Ordinal));
+            Assert.That(widened.Literal.BooleanValue, Is.True,
+                "Open question 34: bound false, the gate is false by construction at the turn's end " +
+                "and the whole second sentence is dead text.");
+            Assert.That(
+                TaliCardContent.AllDefinitions
+                    .SelectMany(definition => definition.ActionDefinitions)
+                    .Where(action => action.EffectRoot != null)
+                    .SelectMany(action => action.EffectRoot.Nodes)
+                    .SelectMany(node => node.Inputs)
+                    .Where(input => string.Equals(
+                        input.ParameterName,
+                        SyntheticConditionCapabilities.CountResolvedPlayedParameter,
+                        StringComparison.Ordinal)),
+                Is.Empty,
+                "The widening is opt-in at ONE call site. No printed face of hers binds it: every " +
+                "earlier reading asks while its own card is still mid-resolution and wants the narrow " +
+                "one.");
+
+            Assert.That(
+                triggered.Nodes.Any(node => node.Kind == EffectNodeKind.Optional &&
+                    node.FailurePolicy == EffectFailurePolicy.May),
+                Is.True,
+                "\"May\" is a control, not a formality.");
+            Assert.That(
+                triggered.Nodes
+                    .Where(node => node.Kind == EffectNodeKind.Capability)
+                    .Select(node => node.Capability.CapabilityId),
+                Is.EquivalentTo(new[]
+                {
+                    SyntheticDisplacementCapabilities.ChooseDirectionV1.CapabilityId,
+                    SyntheticValueCapabilities.CardRadiusV1.CapabilityId,
+                    SyntheticDisplacementCapabilities.BatchDirectMoveV1.CapabilityId
+                }),
+                "The repeat PERFORMS what the printed pass performs and nothing else - the same free " +
+                "direction, the same printed-icon disk, the same simultaneous batch. The discard gate " +
+                "is asserted above and is not in this set because it is a Conditional rather than a " +
+                "Capability node: it decides whether the three below it run and does none of the work.");
         }
 
         /// <summary>

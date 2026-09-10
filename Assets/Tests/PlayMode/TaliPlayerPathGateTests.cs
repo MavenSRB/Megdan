@@ -33,7 +33,10 @@ namespace GuardsDigital.Tests.PlayMode
     /// is written FROM that derivation, offline, the way milestone 8.35z34's method requires - and it is
     /// checked against the source rather than assumed, at
     /// <c>tmp/8-35d-8-35e-multiplayer-corrections/worker-talideal-prep/probes/gate/</c>, whose printed
-    /// output for all nineteen faces is reproduced in this milestone's own notes.</para>
+    /// output for all nineteen faces is reproduced in this milestone's own notes. Milestone 8.37a
+    /// re-derived all nineteen against the composed Blizzard at
+    /// <c>tmp/8-37a-blizzard-repeat/probes/gate/</c>: eighteen came back byte-identical and Blizzard's
+    /// row below is written from the nineteenth.</para>
     ///
     /// <para><b>THE BORROW DISPATCH IS PARTIAL, and the one row that touches it says so.</b> Commune
     /// with Spirits' own row proves the naming and the routing and stops there:
@@ -42,15 +45,18 @@ namespace GuardsDigital.Tests.PlayMode
     /// would hand the following <c>borrow-primary-action</c> node a real candidate and drive straight
     /// into the Ursafar executor's still-unbuilt "start it" authority. Her own
     /// <see cref="PlayerInteractionShape.HandCardSelection"/> cell is proved instead by
-    /// <see cref="TaliProgressedUiJourneyPlayModeTests.GuardianSpirit_TargetsHerselfAndRetrievesTheIceBlastSheJustDiscarded"/>
+    /// <see cref="TaliProgressedUiJourneyPlayModeTests.GuardianSpirit_TargetsHerselfAndRetrievesTheCardSheSpentAsADefence"/>
     /// - a different capability, the identical card-instance-picking shape, and one that never touches
     /// the borrow authority at all. See the checklist for exactly what completing the dispatch still
     /// owes.</para>
     ///
-    /// <para><b>NEVER EXECUTED.</b> Every journey this table names was written offline, against the
-    /// composed content and the offline shape derivation, and has not been run in Unity - see
-    /// <see cref="TaliUiJourneyPlayModeTests"/>'s own remarks for what that means and where the
-    /// executor's pass is most likely to find a correction.</para>
+    /// <para><b>MILESTONE 8.37a CLOSED THE TABLE.</b> The dealing shipped two rows this gate could
+    /// not fill: Blizzard as an <c>UnreachableFace</c>, because its second sentence had no composition,
+    /// and Guardian Spirit's journey <c>[Explicit]</c>. Both are ordinary rows now, and only Ice Shard
+    /// - p.20's Handicap card, returned to the box at setup, exactly as every hero's is - remains
+    /// unreachable. Every journey this table names has been RUN, which was not true when the dealing
+    /// shipped: see <see cref="TaliUiJourneyPlayModeTests"/>'s own remarks for what the first pass
+    /// corrected.</para>
     /// </summary>
     public sealed class TaliPlayerPathGateTests
     {
@@ -103,11 +109,22 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>Guardian Spirit's own select-then-retrieve - Warrior Spirit shares the composition.</summary>
         private const string RetrievalJourney =
-            "GuardianSpirit_TargetsHerselfAndRetrievesTheIceBlastSheJustDiscarded";
+            "GuardianSpirit_TargetsHerselfAndRetrievesTheCardSheSpentAsADefence";
 
         /// <summary>The Gold trigger, fired by a basic Attack that defeats a minion.</summary>
         private const string ReignOfWinterJourney =
             "ReignOfWinter_OpensTheColorNamingChoiceWhenABasicAttackDefeatsAMinion";
+
+        /// <summary>
+        /// Milestone 8.37a. Both of Blizzard's sentences on one turn: the printed batch, then the same
+        /// two nodes offered again at the turn's own close under the clause's "May".
+        /// </summary>
+        private const string BlizzardJourney =
+            "Blizzard_RepeatsItsOwnBatchMoveAtTheCloseOfHerTurn_AndTheArmIsThenSpent";
+
+        /// <summary>The same clause refused, which a one-shot offer cannot also be in the journey above.</summary>
+        private const string BlizzardDeclineJourney =
+            "Blizzard_TheEndOfTurnRepeatCanBeRefused_AndTheTurnClosesWithTheArmSpent";
 
         // -----------------------------------------------------------------------------------------
         // The matrix. One row per printed face in the shard's table order, then the hero-owned
@@ -119,10 +136,19 @@ namespace GuardsDigital.Tests.PlayMode
             TaliCardContent.AllDefinitions,
             TaliCardContent.ReturnedToBoxAtSetup,
             TaliEffectContent.RegisteredHandlers()
+                // Milestone 8.37a. Blizzard's arm, which is what makes her Active-effect readings
+                // derivable at all - the gate classifies a capability that CREATES an effect from the
+                // definition it creates, so the handler has to be here or the row would be guessed.
+                .Concat(TaliActiveEffectContent.Handlers())
                 .Concat(SyntheticConditionCapabilities.DeferredHandlers())
                 .Concat(SyntheticBorrowedActionCapabilities.DeferredHandlers())
                 .Concat(SyntheticDisplacementCapabilities.DeferredHandlers())
                 .Concat(SyntheticRosterCapabilities.DeferredHandlers()),
+            // Milestone 8.37a deliberately does NOT add Blizzard's trigger here. This list resolves an
+            // ULTIMATE rule's own triggered effect, which the card carries only by reference; an Active
+            // effect's trigger is reached through the definition its capability creates, and the two
+            // reading shapes are what the gate says about it - exactly as Silverarrow's own two
+            // End-of-turn rows do, neither of which declares the questions its trigger asks.
             new[] { TaliEffectContent.ReignOfWinterTriggeredEffect(TaliCardContent.ContentRevision) },
             new[]
             {
@@ -274,16 +300,34 @@ namespace GuardsDigital.Tests.PlayMode
                     },
                     Array.Empty<string>()),
 
-                // Blizzard alone carries the second, independent End-of-turn clause that forces the
-                // whole face to stay deferred - see CompositionOwed's own remarks.
-                UnreachableFace(TaliCardContent.Blizzard, "Blizzard",
-                    "the card's first sentence (the free direction, the simultaneous batch Move) is " +
-                    "composed and proven on Cold Snap and Snowstorm, which print nothing else; Blizzard " +
-                    "alone carries a second, independent clause - \"If Blizzard is in your discard, End " +
-                    "of turn: May repeat once\" - asking the primary Skill to run again from a " +
-                    "turn-ended trigger, a shape ActionDefinition's own refusal of a composed EffectRoot " +
-                    "beside an awaited PrintedTextComposition means cannot ship split from the first " +
-                    "sentence, so the whole face stays deferred"),
+                // Milestone 8.37a. Blizzard was this table's second UnreachableFace and is now a row
+                // like any other - the last face in this build whose printed text was recorded absent.
+                // Its first sentence is Cold Snap's and Snowstorm's, so it declares their shapes; what
+                // it adds is the pair of readings its own second sentence arms, and one journey drives
+                // both sentences on one turn because that is where the clause happens.
+                Face(TaliCardContent.Blizzard, "Blizzard", new[]
+                    {
+                        Prove(CommitAndReveal, TrayCommitAndWalk),
+                        Prove(PrimarySkillControl, BlizzardJourney),
+                        Prove(SecondaryMovementDestination, TrayCommitAndWalk),
+                        Prove(SecondaryDefenseOffer, DefeatAndRespawn),
+                        Prove(DirectionChoice, BlizzardJourney),
+                        Prove(ActiveEffectReading, BlizzardJourney),
+                        // Silverarrow's own End-of-turn rows carry this pair for the same reason and
+                        // the same duration: `RoundLongActiveEffectReading` is added by every duration
+                        // except `This turn`, and `EndOfTurn` is not that one. What there is to prove
+                        // of the pair is that the arm is readable while it stands and gone the moment
+                        // its checkpoint has fired, and BOTH journeys prove exactly that - so the two
+                        // cells are split between them rather than doubled onto one. They differ in
+                        // the only way a one-shot offer can: one takes the repeat and one refuses it,
+                        // which no single journey can do.
+                        Prove(RoundLongActiveEffectReading, BlizzardDeclineJourney)
+                    },
+                    new[]
+                    {
+                        "TaliVerifiedContentTests" +
+                            ".Blizzard_ArmsAnEndOfTurnEffectWhoseTriggerRepeatsItsOwnTwoNodes"
+                    }),
 
                 Face(TaliCardContent.WarriorSpirit, "Warrior Spirit", new[]
                     {
