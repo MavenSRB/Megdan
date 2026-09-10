@@ -824,7 +824,9 @@ namespace GuardsDigital.Core.Cards
             // prints one.
             if (AttackTargetPolicy.HasValue &&
                 (AttackTargetPolicy.Value.Reach == AttackTargetReach.PrintedRange ||
-                    AttackTargetPolicy.Value.Reach == AttackTargetReach.ExactlyPrintedRange) &&
+                    AttackTargetPolicy.Value.Reach == AttackTargetReach.ExactlyPrintedRange ||
+                    AttackTargetPolicy.Value.Reach ==
+                        AttackTargetReach.PrintedRangeBeyondAdjacent) &&
                 BaseValues.All(value => value.Channel != PrintedValueChannel.Range))
             {
                 throw new ArgumentException(

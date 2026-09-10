@@ -85,7 +85,27 @@ namespace GuardsDigital.Core.Cards
         /// <para>The Range is still read off the card, so this reach carries
         /// <see cref="PrintedRange"/>'s own requirement that the Attack print a Range icon.</para>
         /// </summary>
-        ExactlyPrintedRange = 2
+        ExactlyPrintedRange = 2,
+
+        /// <summary>
+        /// Milestone 8.38a. The reach Swift's Prepared Shot and Killshot print - "Target a unit in
+        /// range, in a straight line, and <em>not adjacent to you</em>": the same printed-Range
+        /// ceiling <see cref="PrintedRange"/> reads, with a floor of two spaces under it.
+        ///
+        /// <para><b>It is a reach rather than a fourth dimension on this policy, and that is the
+        /// honest reading rather than the cheap one.</b> This enum already carries three bands over
+        /// one number - adjacency alone, everything up to the ceiling, and the ceiling exactly - so
+        /// "in range and not adjacent" is the fourth band in the same family and not a separate
+        /// question hanging beside it. Its lower bound is a constant rather than a printed value,
+        /// which is what keeps it a member here instead of a parameter: p.19's separation-of-one is
+        /// the only distance any printed face excludes this way.</para>
+        ///
+        /// <para>It reads the card's Range exactly as <see cref="PrintedRange"/> does and therefore
+        /// carries the same requirement that the Attack print a Range icon. A sharpshooter who cannot
+        /// answer an enemy that has closed with her is what both cards' names describe, and it is the
+        /// same shape of drawback <see cref="ExactlyPrintedRange"/> states more strongly.</para>
+        /// </summary>
+        PrintedRangeBeyondAdjacent = 3
     }
 
     /// <summary>Whether a printed Attack's own words exclude rulebook p.19's straight line.</summary>
@@ -107,7 +127,26 @@ namespace GuardsDigital.Core.Cards
         /// p.19's separation-of-one case, so the reminder is describing the one query rather than
         /// adding to it.</para>
         /// </summary>
-        NotInStraightLine = 1
+        NotInStraightLine = 1,
+
+        /// <summary>
+        /// Milestone 8.38a. The complement of the member above, and the narrowing three of Swift's
+        /// five Red Attacks print: Snipe's "at maximum range, and <em>in a straight line</em>" and
+        /// Prepared Shot's and Killshot's "in range, <em>in a straight line</em>, and not adjacent to
+        /// you". Measured from the attacker's own space, by the same
+        /// <see cref="GuardsDigital.Core.Board.StraightLineQuery"/> membership question its
+        /// complement uses, so the two cannot disagree about what a file is.
+        ///
+        /// <para><b>p.19 makes this member and <see cref="AttackTargetReach.AdjacentOnly"/> a
+        /// tautology together, and the constructor refuses the pair for that reason rather than for
+        /// impossibility.</b> Every space beside the attacker is in a straight line with it, so an
+        /// adjacent-only Attack restricted to the straight line admits exactly what it would have
+        /// admitted anyway - and a policy that declares a narrowing while narrowing nothing would
+        /// make <see cref="PrintedAttackTargetPolicy.NarrowsTheDefault"/> report a narrowing that is
+        /// not there. No printed face states the pair; refusing it is the alternative to this file
+        /// deciding what it would have meant.</para>
+        /// </summary>
+        InStraightLine = 2
     }
 
     /// <summary>
@@ -210,6 +249,21 @@ namespace GuardsDigital.Core.Cards
                     nameof(line));
             }
 
+            // Milestone 8.38a. p.19 counts an adjacent space as a straight line, so the complement
+            // of the refusal above is a tautology rather than an impossibility: an adjacent-only
+            // Attack restricted TO the straight line admits exactly the set it would have admitted
+            // with no line declared. It is refused all the same, and for a reason of its own -
+            // NarrowsTheDefault would report a narrowing that is not there, and no printed face
+            // states the pair, so accepting it would be this type deciding what it meant.
+            if (line == AttackTargetLine.InStraightLine && reach == AttackTargetReach.AdjacentOnly)
+            {
+                throw new ArgumentException(
+                    "Rulebook p.19 counts an adjacent space as a straight line, so an Attack " +
+                    "reaching only adjacent units narrows nothing by restricting itself to the " +
+                    "straight line.",
+                    nameof(line));
+            }
+
             // Milestone 8.35z30. The modal's first bullet says "a unit in range", so the
             // union is only writable over p.13's ceiling. Paired with AdjacentOnly it would be an
             // Attack whose first arm has no range to be in; paired with the exact band it would be a
@@ -300,6 +354,22 @@ namespace GuardsDigital.Core.Cards
         public PrintedAttackTargetPolicy ExcludingTheStraightLine() =>
             new PrintedAttackTargetPolicy(
                 TargetableUnits, Reach, AttackTargetLine.NotInStraightLine, Binding);
+
+        /// <summary>
+        /// Milestone 8.38a. The same policy narrowed TO p.19's straight line, which is what three of
+        /// Swift's five Red Attacks print.
+        /// </summary>
+        public PrintedAttackTargetPolicy RestrictedToTheStraightLine() =>
+            new PrintedAttackTargetPolicy(
+                TargetableUnits, Reach, AttackTargetLine.InStraightLine, Binding);
+
+        /// <summary>
+        /// Milestone 8.38a. The same printed-Range ceiling with p.19's separation-of-one taken out
+        /// from under it, which is Prepared Shot's and Killshot's "not adjacent to you".
+        /// </summary>
+        public PrintedAttackTargetPolicy BeyondAdjacentWithinThePrintedRange() =>
+            new PrintedAttackTargetPolicy(
+                TargetableUnits, AttackTargetReach.PrintedRangeBeyondAdjacent, Line, Binding);
 
         /// <summary>Whether this policy says anything the subtype's default does not.</summary>
         public bool NarrowsTheDefault(AttackRangeKind attackRange) =>

@@ -80,17 +80,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // own space. Nothing is written here for the reminder that adjacent units are in one:
             // p.19 makes adjacency the separation-of-one case of a file, so the single membership
             // question already answers it, and a second adjacency test would be a second rule.
-            bool StandsOnAnExcludedLine(HexCoordinate candidate) =>
-                policy.Line == AttackTargetLine.NotInStraightLine &&
-                StraightLineQuery.AreInStraightLine(attackerOccupancy.Coordinate, candidate);
+            // Milestone 8.38a reads the complement from the same membership question, so a card that
+            // demands the file and a card that forbids it cannot disagree about what one is. The
+            // switch is exhaustive on purpose: a fourth member added later fails to compile here
+            // rather than silently admitting everything.
+            bool StandsOnAnAdmittedLine(HexCoordinate candidate)
+            {
+                switch (policy.Line)
+                {
+                    case AttackTargetLine.AnyLine:
+                        return true;
+                    case AttackTargetLine.NotInStraightLine:
+                        return !StraightLineQuery.AreInStraightLine(
+                            attackerOccupancy.Coordinate, candidate);
+                    case AttackTargetLine.InStraightLine:
+                        return StraightLineQuery.AreInStraightLine(
+                            attackerOccupancy.Coordinate, candidate);
+                    default:
+                        throw new ArgumentOutOfRangeException(
+                            nameof(policy), policy.Line,
+                            "A printed Attack target policy states whether it excludes, demands or " +
+                            "ignores rulebook p.19's straight line.");
+                }
+            }
 
             // Milestone 8.35z30, RULING 1. "at maximum range" is a band and "in range" is
             // p.13's ceiling, and the composed Range Total is the one number both read. The distance
             // is measured here for both unit kinds, so the two halves of the answer below cannot
             // disagree about what the card reaches.
-            bool StandsAtAnAdmittedDistance(HexCoordinate candidate) =>
-                policy.Reach != AttackTargetReach.ExactlyPrintedRange ||
-                HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, candidate) == rangeTotal;
+            // Milestone 8.38a adds the fourth band under the same ceiling: "in range, and not
+            // adjacent to you" is the printed Range with p.19's separation-of-one taken out from
+            // under it. The ceiling itself is already applied by the two per-register queries below,
+            // which read rangeTotal; only the floor is stated here.
+            bool StandsAtAnAdmittedDistance(HexCoordinate candidate)
+            {
+                switch (policy.Reach)
+                {
+                    case AttackTargetReach.ExactlyPrintedRange:
+                        return HexDistanceQuery.Calculate(
+                            attackerOccupancy.Coordinate, candidate) == rangeTotal;
+                    case AttackTargetReach.PrintedRangeBeyondAdjacent:
+                        return HexDistanceQuery.Calculate(
+                            attackerOccupancy.Coordinate, candidate) > 1;
+                    default:
+                        return true;
+                }
+            }
 
             // Milestone 8.35z30. The union Silverarrow's three Red modals admit: a unit
             // beside the attacker, or a unit no unit at all stands beside. p.19's "unit" is the
@@ -107,7 +142,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                      HexDistanceQuery.Calculate(value.Coordinate, candidate) == 1));
 
             bool IsAdmitted(HexCoordinate candidate) =>
-                !StandsOnAnExcludedLine(candidate) &&
+                StandsOnAnAdmittedLine(candidate) &&
                 StandsAtAnAdmittedDistance(candidate) &&
                 IsIsolatedOrAdjacentToTheAttacker(candidate);
 

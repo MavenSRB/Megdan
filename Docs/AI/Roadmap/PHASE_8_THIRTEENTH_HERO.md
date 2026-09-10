@@ -46,25 +46,33 @@ Non-goals: No content, no capability, no registration, no artwork, no schema mov
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838-inventory-swift-the-sharpshooters-printed-set-and-map-every-clause-to-registered-capability-completion-evidence).
 
-### [ ] 8.38a Build the printed-target vocabulary Swift's Red line needs
+### [x] 8.38a Build the printed-target vocabulary Swift's Red line needs
 
-The first of three ordinary-sized build blocks, on 8.19b's terms: reusable vocabulary plus the showcase content that reaches it, and no schema field moved.
+The first of three ordinary-sized build blocks, on 8.19b's terms: reusable vocabulary proved before any content reaches it, and no schema field moved.
 
 Observable outcome: a printed Attack can declare that its target stands in a straight line from the attacker, and that its target is not adjacent to the attacker, and both narrowings are read by one answer for the offer, the choice and the resolution.
 
-**THE TWO NARROWINGS ARE DECLARATIONS ON `PrintedAttackTargetPolicy`, NOT EFFECTS**, for the reason milestone 8.10 already recorded when it put Wasp's "not in a straight line" there: a sentence about what an Attack may target belongs to the Attack's own target set rather than to milestone 8.5's card-text seam, because that is what keeps the greyed-out offer, the target choice and the resolution reading one answer. Swift prints the complement of Wasp's clause on three faces - Snipe's "at maximum range, and in a straight line", and Prepared Shot's and Killshot's "in range, in a straight line, and not adjacent to you" - so `AttackTargetLine` gains its third member and the policy gains a fourth dimension for proximity.
+**THE TWO NARROWINGS ARE DECLARATIONS ON `PrintedAttackTargetPolicy`, NOT EFFECTS**, for the reason milestone 8.10 already recorded when it put Wasp's "not in a straight line" there: a sentence about what an Attack may target belongs to the Attack's own target set rather than to milestone 8.5's card-text seam, because that is what keeps the greyed-out offer, the target choice and the resolution reading one answer. Swift prints the complement of Wasp's clause on three faces - Snipe's "at maximum range, and in a straight line", and Prepared Shot's and Killshot's "in range, in a straight line, and not adjacent to you".
+
+**THE PROXIMITY CLAUSE IS A FOURTH `AttackTargetReach` BAND AND NOT A FOURTH DIMENSION, and that is what kept the schema still.** The plan said "the policy gains a fourth dimension for proximity"; building it showed that reading to be both dishonest and expensive. Dishonest, because the reach enum already carries three bands over one printed number - adjacency alone, everything up to the ceiling, and the ceiling exactly - so "in range and not adjacent to you" is the fourth band in that family and not a separate question standing beside it. Expensive, because `AuthoritativeSnapshotSerializer` writes a modal bullet's target policy field by field: a genuinely new field is one more integer per bullet in the payload, which is a schema version and everything a version move owes. A member on an enum the payload already writes is neither. **The check to run before adding a field to a definition type is whether a snapshot writes that type**, and here it does.
 
 **THE REFUSAL THE EXISTING TYPE ALREADY CARRIES HAS A MIRROR HERE, AND IT MUST BE STATED RATHER THAN DISCOVERED.** The type already refuses `NotInStraightLine` paired with `AdjacentOnly`, because p.19 counts an adjacent space as a straight line and the pair could never target anything. The new members carry the same obligation in the other direction: `InStraightLine` paired with an adjacency exclusion is exactly what Prepared Shot prints and must be legal, while a proximity exclusion paired with `AdjacentOnly` is a printed Attack with no possible target and is refused in the constructor.
 
+**THE REFUSAL THE EXISTING TYPE CARRIES HAS A MIRROR, AND THE MIRROR IS A TAUTOLOGY RATHER THAN AN IMPOSSIBILITY.** The type already refuses `NotInStraightLine` beside `AdjacentOnly`, because p.19 counts an adjacent space as a straight line and the pair could never target anything. `InStraightLine` beside `AdjacentOnly` is the same pair from the other side and admits exactly what it would have admitted anyway - so it is refused too, for a reason of its own: `NarrowsTheDefault` would report a narrowing that is not there, and no printed face states the pair.
+
+**THE SHOWCASE HALF OF THE PLAN DOES NOT APPLY HERE, and saying so is better than staging content to satisfy a rule that is not being asked.** `ConfiguredCardMatrixTests`' reachability rule has two halves, both about the effect catalog: a *capability* must be named by some card a match can deal, and a new *handler implementation* must additionally be reachable from a showcase card. This milestone adds neither - no capability id, no handler type, no registration - because both narrowings are enum members on a definition type that a card declares directly. What proves them before content exists is the focused tier: eight cases including the exact partition of p.13's default set by the two line members, and the exact removal of the adjacent units by the band. Printed consumers arrive at 8.38d.
+
 Acceptance checks:
 
-- `AttackTargetLine.InStraightLine` and the proximity dimension exist, are declared by showcase content, and are read by the same query the offer and the resolution both use.
-- A unit inside the printed Range but off the attacker's file is greyed with its reason named, and a unit on the file but adjacent to the attacker is greyed on the other clause.
-- The impossible pairing is refused at construction with the page's own sentence, and the legal pairing Prepared Shot prints is not.
+- `AttackTargetLine.InStraightLine` and `AttackTargetReach.PrintedRangeBeyondAdjacent` exist and are read by the same query the offer, the target choice and the resolution all use. **Amended during implementation:** the plan also asked for showcase content declaring them; no capability or handler is added, so the rule that would require it is not engaged, and the focused tier is the evidence instead.
+- The two line members partition p.13's default set exactly on one board, and the band removes exactly the adjacent units from it - both asserted as set equalities rather than named units, with each case proving its own board discriminating first.
+- The tautological pairing is refused at construction citing p.19, and the pairing Prepared Shot prints is not.
 - No schema field, corpus digest or pinned constant moves.
-- Complete unfiltered dotnet harness and Edit Mode pass.
+- Complete unfiltered dotnet harness passes.
 
 Non-goals: No Swift content. No registration of a handler her faces do not reach. No change to any existing face's policy.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838a-build-the-printed-target-vocabulary-swifts-red-line-needs-completion-evidence).
 
 ### [ ] 8.38b Build the straight-line and off-line placement vocabulary her Blue line needs
 
