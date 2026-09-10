@@ -197,6 +197,8 @@ Parked by user. Outcome if reopened: separately specified stronger bot policy. D
 
 Reopened by the user on 2026-09-09 specifically for private-lobby bot tactics after the current fixes. Approved implementation and closing checks are owned by [8.36g](PHASE_8_PRIVATE_GAME_CORRECTIONS.md); this parked historical entry is not a second execution route.
 
+The user's 2026-09-10 request to record future four-round planning and five-bot modest-hardware validation is owned by [8.36i-8.36k](PHASE_8_PRIVATE_GAME_CORRECTIONS.md#future-four-round-lobby-bot-planning-parked-not-authorized). All three are parked, with no implementation authorization; do not reopen this historical entry as a duplicate route.
+
 ### [!] 8.35z79 Resolve the prepared designer-question list
 
 Blocked on user/designer communication. Outcome: reconcile answers from the private ASK-ARTY list with the rules ledger and affected future milestones. Closing check: each question has source, answer/disposition, and affected capability/card mapping. Cleanup may record the list's existence but must not send it or convert speculative answers into rules.
