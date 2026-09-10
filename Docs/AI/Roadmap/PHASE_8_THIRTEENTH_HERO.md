@@ -20,7 +20,7 @@ Milestone 8.38 owns the full inventory and the exact mapping. What the pre-autho
 
 ## Series
 
-### [ ] 8.38 Inventory Swift the Sharpshooter's printed set and map every clause to registered capability
+### [x] 8.38 Inventory Swift the Sharpshooter's printed set and map every clause to registered capability
 
 The inventory pass every hero gets before any of her content is written, on the same terms as milestones 8.1 and 8.18a-8.18e: transcribe the printed faces from the extraction, record what the scan actually prints rather than what a rule would predict, and map each clause to a registered capability or name it as owed.
 
@@ -32,6 +32,8 @@ Observable outcome: `Rules/HERO_SWIFT.md` states her nineteen faces at printed-v
 
 **SHE IS A BASE-BOX HERO, SO THE SECOND SOURCE HAS TO BE CHECKED RATHER THAN ASSUMED ABSENT.** Ursafar's and Tali's shards record that the pack has no second source and that the extraction is therefore sole authority. Swift is not from that pack, so this milestone greps the second-printing rulebook for her name and for all nineteen card names before deciding which authority governs, and records the outcome either way. [Source provenance](../RULES_LEDGER.md) still applies: the cards are third-printing playtest and the rulebook is second printing, so a mismatch is edition skew rather than an error.
 
+**AND THE CHECK CAME BACK EMPTY, WHICH IS A DIFFERENT REASON FOR THE SAME AUTHORITY.** The local second-printing PDF returns zero hits for `Swift`, zero for `Sharpshooter`, and zero for all nineteen card names; its only two hits for the substring `Snipe` are p.21's Sniper ROLE description. That book's worked examples name seven heroes - Wasp, Xargatha, Arien, Brogan, Dodger, Sabina and Tigerclaw - and nobody else, so her absence is its scope rather than evidence about her printing. The extraction is sole authority for her faces, as it is for Ursafar and Tali, and the reason is recorded as hers rather than borrowed from the pack ruling that does not apply to her.
+
 Acceptance checks:
 
 - `Rules/HERO_SWIFT.md` exists, is linked from the hero-shard index in [RULES_LEDGER.md](../RULES_LEDGER.md), and carries her printed-value table, her upgrade pairs, her starting hand, her boxed Handicap, and her transcribed text for all nineteen faces.
@@ -41,6 +43,8 @@ Acceptance checks:
 - The validator passes and no governed shard crosses a threshold.
 
 Non-goals: No content, no capability, no registration, no artwork, no schema movement. An inventory row authorizes nothing.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838-inventory-swift-the-sharpshooters-printed-set-and-map-every-clause-to-registered-capability-completion-evidence).
 
 ### [ ] 8.38a Build the printed-target vocabulary Swift's Red line needs
 
