@@ -95,8 +95,16 @@ namespace GuardsDigital.Tests.EditMode
         /// undealt hero rather than being retired, because what this case pins is the MECHANISM.</para>
         /// <para>Milestone 8.35z50 moved the stand-in again, for the third time and for the same
         /// reason: Silverarrow became real here when that milestone corrected the roster row her own
-        /// dealing had missed, so the placeholder is now Tali. That this case had been USING her
+        /// dealing had missed, so the placeholder became Tali. That this case had been USING her
         /// absence as a fixture is itself what makes the omission it corrected undeniable.</para>
+        /// <para><b>Milestone 8.37 moved it for the last time, and to a hero that does not exist.</b>
+        /// Tali was the twelfth and final hero of the package arc, so her dealing left no undealt
+        /// hero to stand in for the next one - the stand-in had been a real name three times running
+        /// precisely because there was always another hero waiting, and now there is not. Keeping a
+        /// real future name here would mean this case breaks again on the day that hero is dealt,
+        /// which is a tripwire and not a test. The id below is deliberately not a valid hero id in
+        /// any roster this project could ship, on the placeholder rule the wave-one integration
+        /// recorded, so what the case pins is the MECHANISM and nothing else.</para>
         /// <para>This is the case that would fail if anything in the stage counted the roster,
         /// cached it at construction, or hard-coded six or twelve.</para>
         /// </remarks>
@@ -107,7 +115,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(new[]
                 {
                     new RegisteredHero(
-                        "hero-tali", new HeroContentId("tali"), "Tali the Oracle")
+                        "hero-not-in-any-build", new HeroContentId("not-in-any-build"),
+                        "TEST - The Hero Tomorrow Deals")
                 })
                 .ToArray();
 
@@ -115,16 +124,16 @@ namespace GuardsDigital.Tests.EditMode
                 SixSeats(), TeamSide.Red, HeroSelectionMethod.AllPick, tomorrow);
 
             Assert.That(
-                stage.AvailableHeroes.Any(hero => hero.HeroIdValue == "hero-tali"), Is.True,
+                stage.AvailableHeroes.Any(hero => hero.HeroIdValue == "hero-not-in-any-build"), Is.True,
                 "A newly dealt hero is offered the moment the registration names it.");
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-red-1"), "hero-tali", out var refusal), Is.True,
+                stage.TryChoose(new SeatId("seat-red-1"), "hero-not-in-any-build", out var refusal), Is.True,
                 $"... and is pickable: {refusal}.");
 
             Assert.That(
-                stage.TryChoose(new SeatId("seat-blue-1"), "hero-tali", out refusal), Is.False,
-                "... and the one-copy rule applies to him exactly as to the shipped six.");
+                stage.TryChoose(new SeatId("seat-blue-1"), "hero-not-in-any-build", out refusal), Is.False,
+                "... and the one-copy rule applies to them exactly as to the shipped six.");
             Assert.That(refusal, Is.EqualTo(HeroSelectionRefusal.HeroAlreadyTaken));
 
             Assert.That(
@@ -276,8 +285,12 @@ namespace GuardsDigital.Tests.EditMode
         {
             var stage = new HeroSelectionStage(SixSeats(), TeamSide.Red);
 
+            // Milestone 8.37 dealt Tali, who had stood here as "a hero the build cannot deal" since
+            // her content was composed. She is now registered, so the refusal this case exists to
+            // prove needs a hero no roster claims - and with the twelve-hero arc complete there is no
+            // real undealt name left to borrow, so the id is deliberately synthetic.
             Assert.That(
-                stage.TryChoose(new SeatId("seat-red-1"), "hero-tali", out var refusal),
+                stage.TryChoose(new SeatId("seat-red-1"), "hero-not-in-any-build", out var refusal),
                 Is.False);
             Assert.That(refusal, Is.EqualTo(HeroSelectionRefusal.UnregisteredHero));
         }

@@ -55,7 +55,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackTarget completedAttackTarget = default,
             bool completedPlacedSelf = false,
             PendingAttackResolution cardTextRemainderResolution = null,
-            AttackResolutionOutcome cardTextRemainderOutcome = AttackResolutionOutcome.None)
+            AttackResolutionOutcome cardTextRemainderOutcome = AttackResolutionOutcome.None,
+            bool completedDefeatedMinionWithBasicAttack = false)
         {
             CardTextRemainderResolution = cardTextRemainderResolution;
             CardTextRemainderOutcome = cardTextRemainderOutcome;
@@ -73,6 +74,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CompletedInvocationContext = completedInvocationContext;
             CompletedAttackTarget = completedAttackTarget;
             CompletedPlacedSelf = completedPlacedSelf;
+            CompletedDefeatedMinionWithBasicAttack = completedDefeatedMinionWithBasicAttack;
         }
 
         public ResolutionStepKind Kind { get; }
@@ -142,7 +144,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionKind kind,
             ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
             AttackTarget completedAttackTarget = default,
-            bool placedSelf = false)
+            bool placedSelf = false,
+            bool defeatedMinionWithBasicAttack = false)
         {
             if (!sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined || !actorId.IsDefined)
             {
@@ -168,7 +171,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 completedActionKind: kind,
                 completedInvocationContext: invocationContext,
                 completedAttackTarget: completedAttackTarget,
-                completedPlacedSelf: placedSelf);
+                completedPlacedSelf: placedSelf,
+                completedDefeatedMinionWithBasicAttack: defeatedMinionWithBasicAttack);
         }
 
         /// <summary>
@@ -282,5 +286,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// whose outcomes prove it is gone.</para>
         /// </summary>
         public bool CompletedPlacedSelf { get; }
+
+        /// <summary>
+        /// Milestone 8.37. Whether an Attack that just ended defeated a minion target -
+        /// Tali's Reign of Winter's own trigger condition, "each time after you defeat a minion with
+        /// your basic attack". Stated by the resolver that raises the completion
+        /// (<see cref="AttackDefenseCardActionStrategyBackend.StepsAfterCardText"/>'s
+        /// <see cref="CardTextTiming.AfterTheAttack"/> arm, from the resolution's own target kind and
+        /// outcome it already holds) rather than inferred afterwards by re-reading a produced
+        /// <see cref="CardActionResolutionEvent"/>'s <see cref="CardActionResolutionEventKind"/> - the
+        /// exact shape <see cref="CompletedPlacedSelf"/>'s own remarks describe and
+        /// <c>ResolverEmittedCheckpointConformanceTests</c> enforces.
+        ///
+        /// <para>False on every completion step outside an Attack against a minion, which is every
+        /// completion step in this build before this trigger: no verified Ultimate before Reign of
+        /// Winter reads a consequence of the action rather than its kind.</para>
+        /// </summary>
+        public bool CompletedDefeatedMinionWithBasicAttack { get; }
     }
 }

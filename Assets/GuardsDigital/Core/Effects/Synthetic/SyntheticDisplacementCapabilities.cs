@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
@@ -223,8 +225,91 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 new DirectMoveHandler(DirectMoveV3, supportsImmunityOverrides: true),
                 new ObjectPushHandler(),
-                new PushTargetHandler()
+                new PushTargetHandler(),
+                // Milestone 8.37, the milestone that deals Tali the Spiritcaller. Cold Snap and
+                // Snowstorm are dealt primary Skills that name both, so the standing rule the
+                // deferred list below states is satisfied and they join the one registered set.
+                new ChooseDirectionHandler(),
+                new BatchDirectMoveHandler()
             };
+
+        /// <summary>
+        /// Milestone 8.37 moved <c>synthetic-choose-direction@1</c> and
+        /// <c>synthetic-batch-direct-move@1</c> into <see cref="Handlers"/> beside the dealing that
+        /// starts them. Nothing waits here now; the member survives for the offline content tests that
+        /// compose catalogs of their own from the deferred lists.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
+
+        /// <summary>
+        /// Milestone 8.37. p.19's six directions, in the same order
+        /// <see cref="HexDirection"/> declares them - the order every offer and every test reads them
+        /// in, so a printed direction has one canonical position rather than one per caller.
+        /// </summary>
+        public static readonly IReadOnlyList<HexDirection> AllDirections = Array.AsReadOnly(new[]
+        {
+            HexDirection.East, HexDirection.NorthEast, HexDirection.NorthWest,
+            HexDirection.West, HexDirection.SouthWest, HexDirection.SouthEast
+        });
+
+        public static EffectCapabilityId ChooseDirection { get; } =
+            new EffectCapabilityId("synthetic-choose-direction");
+
+        /// <summary>
+        /// "Choose a direction" - Cold Snap, Snowstorm and Blizzard's opening sentence, and the
+        /// unconstrained actor choice phase one's costed design named as the one genuinely new half of
+        /// the three faces (the batch half being p.18's own simultaneity, reused rather than
+        /// reinvented). Unlike every other direction-shaped reading in the build - Brogan's charge,
+        /// Silverarrow's line, Blink Strike's crossing - this one derives no candidate from the board at
+        /// all: p.17's six directions are always all six, whichever way the actor is facing and whatever
+        /// stands around her, because the card names no origin and no destination to constrain them.
+        /// </summary>
+        public static EffectCapabilityReference ChooseDirectionV1 =>
+            new EffectCapabilityReference(ChooseDirection, 1);
+
+        /// <summary>The direction the actor chose, published for the batch Move to bind.</summary>
+        public const string ChosenDirectionOutput = "chosenDirection";
+
+        public static EffectCapabilityId BatchDirectMove { get; } =
+            new EffectCapabilityId("synthetic-batch-direct-move");
+
+        /// <summary>
+        /// "Move each enemy unit in radius 1 space in that direction, if able" - the printed batch half
+        /// of Cold Snap, Snowstorm and Blizzard, distinct from <see cref="ObjectPushV3"/>'s batch because
+        /// the geometry is p.11's direct Move (a fixed step in a NAMED direction, the same for every
+        /// unit) rather than p.18's Push (away from a pusher) - two different rules the sentence itself
+        /// tells apart: "Move", never "Push".
+        ///
+        /// <para><b>No count is a decision and nobody is asked which units.</b> The printed sentence
+        /// names "each enemy unit in radius" outright, so - unlike Wasp's kinetic Push, which lets a
+        /// printed maximum turn the target SET into a choice - every eligible unit is affected and there
+        /// is nothing here for a player to select.</para>
+        ///
+        /// <para><b>Simultaneous, per Arty's own ruling</b> ("Since it's the same clause, it happens at
+        /// the same time"): every unit's destination is computed against the board as it stood before
+        /// this step touched anything, never against a space another unit in the same batch has already
+        /// vacated. A unit whose computed destination is off the map, obstructed at that same pre-effect
+        /// moment, or made an obstacle by a standing overlay simply does not move - the printed "if
+        /// able", read per unit rather than as a gate on the whole step, which is why the node itself is
+        /// <see cref="EffectFailurePolicy.Mandatory"/> and always applies, even against an empty
+        /// radius.</para>
+        ///
+        /// <para><b>Immunity is asked per unit</b>, exactly as every other roster selection asks it,
+        /// because this is Tali's own action affecting an enemy unit and p.18's cross-cutting rule
+        /// reaches a Move the same way it reaches a Push or a Remove.</para>
+        /// </summary>
+        public static EffectCapabilityReference BatchDirectMoveV1 =>
+            new EffectCapabilityReference(BatchDirectMove, 1);
+
+        /// <summary>The printed Radius disk this batch reads its units from.</summary>
+        public const string BatchRadiusParameterName = "radius";
+
+        /// <summary>The direction every affected unit steps in - bound from <see cref="ChooseDirectionV1"/>.</summary>
+        public const string BatchDirectionParameterName = "direction";
+
+        /// <summary>How many units this batch actually moved, published for a test or a rider to read.</summary>
+        public const string BatchMovedCountOutput = "movedCount";
 
         /// <summary>
         /// Rulebook p.11's movement written inside card text: "This movement follows the same rules and
@@ -695,6 +780,164 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 AnticipatePush(context, TryFindNamedTarget);
+        }
+
+        /// <summary>
+        /// "Choose a direction" - always all six, unconditionally, because nothing about the board or
+        /// the actor's own state can make one of p.17's six directions illegal to name.
+        /// </summary>
+        private sealed class ChooseDirectionHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => ChooseDirectionV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                outputs: new[]
+                {
+                    new EffectOutputBinding(ChosenDirectionOutput, EffectValueKind.Integer)
+                });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                // Milestone 8.37 declares the vocabulary, so the actor is offered six named
+                // DIRECTIONS rather than the digits 0 through 5.
+                EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.Actor,
+                    AllDirections.Select(direction => EffectValue.Integer((int)direction)),
+                    1,
+                    1,
+                    valueVocabulary: Rules.EffectResolution.EffectChoiceValueVocabulary.HexDirection));
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Integer)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var direction = (HexDirection)selected[0].IntegerValue;
+                if (!AllDirections.Contains(direction))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(ChosenDirectionOutput, EffectValue.Integer((int)direction))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.NeedsChoice;
+        }
+
+        /// <summary>
+        /// "Move each enemy unit in radius 1 space in that direction, if able" - see the type remarks
+        /// beside <see cref="BatchDirectMoveV1"/> for the rules this composes.
+        /// </summary>
+        private sealed class BatchDirectMoveHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => BatchDirectMoveV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[]
+                {
+                    new EffectCapabilityParameter(BatchRadiusParameterName, EffectValueKind.Integer),
+                    new EffectCapabilityParameter(
+                        BatchDirectionParameterName,
+                        EffectValueKind.Integer,
+                        integerDomain: EffectIntegerDomain.All<HexDirection>())
+                },
+                new[]
+                {
+                    new EffectOutputBinding(BatchMovedCountOutput, EffectValueKind.Integer)
+                });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                var radius = context.Input(BatchRadiusParameterName).IntegerValue;
+                var direction = (HexDirection)context.Input(BatchDirectionParameterName).IntegerValue;
+                if (board == null || context.Participants == null || radius < 0 ||
+                    !AllDirections.Contains(direction) ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // p.18's "at the same time": every candidate's own coordinate is read once, up front,
+                // before any of this batch's own moves can change what a later candidate's destination
+                // check would see. Order is stable rather than incidental, so a genuine collision - two
+                // units approaching one empty space from different directions - commits deterministically
+                // through the board's own validated displacement rather than by iteration accident.
+                var candidates = RosterPresenceQuery.FindUnitsWithin(
+                        actorAt, radius, RosterUnitKind.Unit, SourceTeamRelation.OpposingSource,
+                        context.ActorId, board, context.Participants, context.Modifications)
+                    .Where(target => !ImmunityQuery.IsImmuneTo(
+                        target.AsRuleObject(), context.EnclosingActivity,
+                        RuleObject.ForHero(context.ActorId), board, context.Participants,
+                        context.Modifications, context.ImmunityOverrides))
+                    .OrderBy(RosterPresenceQuery.Identity, StringComparer.Ordinal)
+                    .Select(target => (target, at: board.TryGetObjectCoordinate(target, out var at) ? at : (HexCoordinate?)null))
+                    .Where(pair => pair.at.HasValue)
+                    .Select(pair => (pair.target, at: pair.at.Value))
+                    .ToArray();
+
+                var moved = 0;
+                foreach (var (target, at) in candidates)
+                {
+                    var destination = StraightLineQuery.Step(at, direction, 1);
+                    if (!board.MapDefinition.PlayableCoordinates.Contains(destination) ||
+                        board.TryGetObjectAt(destination, out _) ||
+                        context.Modifications.AnyOverlayMakesAnObstacleOf(destination))
+                    {
+                        // "if able": a unit with nowhere to go simply does not move, and the batch
+                        // continues to the next one rather than stopping - the same reading p.18 gives a
+                        // Push that resolves to zero spaces.
+                        continue;
+                    }
+
+                    var committed = board.CommitValidatedDisplacement(target, destination);
+                    if (committed.Accepted)
+                    {
+                        moved++;
+                    }
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(BatchMovedCountOutput, EffectValue.Integer(moved))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// Always applies. Zero eligible units is a legitimate outcome of "each enemy unit in
+            /// radius" over an empty disk, not a failure - the same reading p.18's own unbounded Push
+            /// batch gives a pusher standing alone.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                var direction = (HexDirection)context.Input(BatchDirectionParameterName).IntegerValue;
+                return board == null || context.Participants == null ||
+                    context.Input(BatchRadiusParameterName).IntegerValue < 0 ||
+                    !AllDirections.Contains(direction) ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out _)
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
+            }
         }
 
         /// <summary>How a Push handler produces its target set. The only thing the two differ in.</summary>

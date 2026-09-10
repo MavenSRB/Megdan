@@ -336,6 +336,12 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string WhisperHeroIdValue = "hero-whisper";
 
+        /// <summary>
+        /// Milestone 8.37. Tali's own hero id - the twelfth and last hero of the package arc, and the
+        /// second from the Devoted Hero pack rather than from the base box.
+        /// </summary>
+        public const string TaliHeroIdValue = "hero-tali";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
@@ -357,7 +363,11 @@ namespace GuardsDigital.Core.Setup
                 // the rule above asks for. Her prep deliberately withheld this row until the
                 // registration flip landed: it makes her PICKABLE, and composing her match throws
                 // until her capabilities are registered.
-                (WhisperHeroIdValue, "whisper", "Whisper the Outcast")
+                (WhisperHeroIdValue, "whisper", "Whisper the Outcast"),
+                // Milestone 8.37 deals her and makes her pickable in the same commit, which is what
+                // the rule above asks for. She is the twelfth and last hero of the package arc, so
+                // with this row the selector offers every hero this build can deal.
+                (TaliHeroIdValue, "tali", "Tali the Spiritcaller")
             };
 
         /// <summary>
@@ -662,6 +672,52 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusWhisperOneVsOne() =>
             CreateOneVsOne(new HeroContentId("whisper"), "Whisper the Outcast");
+        /// <summary>
+        /// Milestone 8.37. Wasp on Red against Tali the Spiritcaller on Blue, the twelfth
+        /// hero this build deals.
+        ///
+        /// <para>She needs no ally seat for reachability - Commune with Spirits' mandatory naming
+        /// already admits herself as a candidate friendly hero, exactly as Silverarrow's Blessing does
+        /// under RULING 8 - but the ALLY-naming half of the full borrow flow needs the three-seat
+        /// staging <see cref="Participants.MatchConfiguration.CreateStagedTaliWithAllyForInternalTest"/>
+        /// builds instead, because this one-versus-one board has nobody else on her side to name
+        /// it.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusTaliOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("tali"), "Tali the Spiritcaller");
+
+        /// <summary>
+        /// Milestone 8.37. Wasp on Red against Tali and Arien on Blue - the shape
+        /// <see cref="CreateStagedWaspVersusArienAndBroganOneVsTwo"/> already proves, with the roles
+        /// swapped: there the second Blue hero is what BROGAN's faces needed a candidate for, here it is
+        /// what COMMUNE WITH SPIRITS' mandatory naming step selects, so a journey can drive an ALLY
+        /// naming the colour rather than Tali naming her own.
+        ///
+        /// <para>Distance is irrelevant to the naming step - "a friendly hero in play" reads p.19's
+        /// board membership, not p.9's Radius or Range - so the ally's spawn point is the same
+        /// <c>blue-hero-02</c> Brogan's own ally arm uses, for no reason beyond it already being a
+        /// declared Blue spawn on the official map.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusTaliWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("tali"), "Tali the Spiritcaller");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"),
+                        "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
+
         /// <summary>
         /// Milestone 8.21. Wasp on Red against Arien and Brogan on Blue, which is the smallest board
         /// on which "a friendly hero in range" is true of anybody - the clause War Drummer and Master

@@ -28,10 +28,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// snapshot pins says exactly which tokens this build can put on the board. It also avoids widening
     /// <see cref="EffectValue"/> with a token-definition arm that only content would ever supply.</para>
     ///
-    /// <para><b>Deferred, not registered</b>, on the standing roster law: the registered capability set
-    /// is serialized into every snapshot, and the only content naming these is a hero this build does
-    /// not deal. <see cref="RegisteredHandlers"/> is empty and stays empty until the dealing change.
-    /// </para>
+    /// <para><b>Registered at milestone 8.37</b>, the milestone that deals Tali. Her own six
+    /// instances are content of hers and register from <c>TaliEffectContent</c>; what registers HERE
+    /// is the pair of showcase instances milestone 7.9's gate asks for, because both classes are
+    /// handler TYPES this build had never registered and the gate refuses a type that arrives for the
+    /// first time inside a verified hero's slice. They are bound to milestone 6.2's own synthetic
+    /// hazard token rather than to a new definition, so the showcase proves the TYPE without adding a
+    /// component to the registered set that no card places.</para>
     /// </summary>
     public static class SyntheticTokenCapabilities
     {
@@ -44,9 +47,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The space a p.18 short-supply reclamation took a token back from.</summary>
         public const string ReclaimedOutput = "reclaimed";
 
-        /// <summary>Nothing here is registered; see the type remarks.</summary>
+        /// <summary>
+        /// Milestone 8.37's showcase instances of both handler types, over milestone 6.2's synthetic
+        /// hazard. The reach channel is Radius because that is the channel the showcase Skill that
+        /// names them prints, and the reclaim's supply group is the hazard's own.
+        /// </summary>
+        public static EffectCapabilityId ShowcasePlaceHazard { get; } =
+            new EffectCapabilityId("showcase-place-hero-token");
+
+        public static EffectCapabilityId ShowcaseReclaimHazard { get; } =
+            new EffectCapabilityId("showcase-reclaim-hero-token");
+
+        public static EffectCapabilityReference ShowcasePlaceHazardV1 =>
+            new EffectCapabilityReference(ShowcasePlaceHazard, 1);
+
+        public static EffectCapabilityReference ShowcaseReclaimHazardV1 =>
+            new EffectCapabilityReference(ShowcaseReclaimHazard, 1);
+
+        /// <summary>See the type remarks: the two showcase instances milestone 7.9's gate asks for.</summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new[]
+            {
+                PlaceHandler(
+                    ShowcasePlaceHazardV1,
+                    Components.Synthetic.SyntheticComponentDefinitions.HazardDefinition,
+                    PrintedValueChannel.Radius),
+                ReclaimHandler(
+                    ShowcaseReclaimHazardV1,
+                    Components.Synthetic.SyntheticComponentDefinitions.HazardDefinition)
+            };
 
         /// <summary>
         /// One placement handler for one token definition, reaching the distance that definition's

@@ -114,8 +114,19 @@ namespace GuardsDigital.Tests.EditMode
             throw new InvalidOperationException("Cannot locate the project evidence checker.");
         }
 
-        [TestCase("PLAY - Join Match.bat")]
-        [TestCase("HOST - Start Server.bat")]
+        /// <summary>
+        /// Milestone 8.36d's guarantee, on milestone 8.36h's launcher.
+        ///
+        /// <para><b>Repaired at 8.37, as a red this milestone inherited rather than caused.</b>
+        /// Milestone 8.36h replaced the two launchers this case named - `PLAY - Join Match.bat` and
+        /// `HOST - Start Server.bat` - with the single `PLAY - Host or Join.bat` that milestone 8.36g1
+        /// made possible, and did not move the cases with them. Both then failed with
+        /// `FileNotFoundException` on every run from that milestone onward. What the case proves is
+        /// unchanged and still worth proving: the packaged launcher creates a fresh per-launch log
+        /// directory, so a second launch on one machine does not overwrite the first one's evidence.
+        /// </para>
+        /// </summary>
+        [TestCase("PLAY - Host or Join.bat")]
         public void PackagedLauncherRetainsDistinctLogs(string launcher)
         {
             var root = ProjectRoot();

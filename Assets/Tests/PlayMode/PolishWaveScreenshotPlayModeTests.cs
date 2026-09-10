@@ -148,7 +148,11 @@ namespace GuardsDigital.Tests.PlayMode
                 .Concat(BroganCardContent.DealtDefinitions).Concat(SabinaCardContent.DealtDefinitions)
                 .Concat(DodgerCardContent.DealtDefinitions).Concat(MisaCardContent.DealtDefinitions)
                 .Concat(SilverarrowCardContent.DealtDefinitions).Concat(UrsafarCardContent.DealtDefinitions)
-                .Concat(WhisperCardContent.DealtDefinitions).ToDictionary(card => card.Reference);
+                .Concat(WhisperCardContent.DealtDefinitions)
+                // Milestone 8.37. The twelfth and last: this walk is driven by the artwork catalog's
+                // own entries, so a hero whose rows are in that catalog and whose definitions are
+                // not in this dictionary throws on the lookup rather than being quietly skipped.
+                .Concat(TaliCardContent.DealtDefinitions).ToDictionary(card => card.Reference);
             var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
             foreach (var hero in ConfiguredCardArtworkCatalog.Catalog.Entries.GroupBy(entry => entry.ContentSetId))
             {

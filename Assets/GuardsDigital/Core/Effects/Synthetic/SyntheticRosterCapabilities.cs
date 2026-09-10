@@ -311,6 +311,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference OwnedCardPresentV1 =>
             Reference("owned-card-present", 1);
 
+        /// <summary>
+        /// Milestone 8.37. Optional, defaulting to unbound - the reading every
+        /// composition before Guardian Spirit and Warrior Spirit already has. When bound, this
+        /// capability's candidate set narrows to exactly the one named card, and since a chooser facing
+        /// one legal answer has nothing to decide - the same reading milestone 6.5a gives "yourself" and
+        /// milestone 8.21's <see cref="DirectMoveDestinationPolicy.NamedSpace"/> gives an unambiguous
+        /// destination - it retrieves that card directly rather than opening a one-candidate prompt.
+        ///
+        /// <para>"If Guardian Spirit is in your discard, retrieve it" and Warrior Spirit's identical
+        /// second sentence are the first printed text naming a SPECIFIC card rather than asking which
+        /// one: retrieve-card@1 always offered a choice among every eligible card before this, which is
+        /// the right reading for Silverarrow's Blessing and the wrong one for a card that names
+        /// itself.</para>
+        /// </summary>
+        public const string RestrictToCardParameter = "restrictToCard";
+
         public static EffectCapabilityReference RetrieveCardV1 => Reference("retrieve-card", 1);
         public static EffectCapabilityReference GainResourceV1 => Reference("gain-resource", 1);
         public static EffectCapabilityReference TransferResourceV1 => Reference("transfer-resource", 1);
@@ -542,6 +558,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public static EffectCapabilityReference ChooseSwapSubjectV1 =>
             Reference("choose-swap-subject", 1);
+
+        /// <summary>
+        /// Milestone 8.37. <c>defended-card-color@1</c> - Ice Blast's step-3-to-step-7
+        /// span: "If the target discards a card to defend, After the attack: Another enemy hero in
+        /// radius discards a card of the same color, if able."
+        ///
+        /// <para><b>Reads a fact that already exists rather than capturing a new one.</b> Phase one's own
+        /// report named this the costed shape of 8.13's was-adjacent snapshot - "a fact produced where
+        /// step 3 already knows the answer, re-derived on restore" - and expected new plumbing. Reading
+        /// the CURRENT engine first (the discipline every dealing prep before this one has paid for)
+        /// finds <see cref="EnclosingAttackFacts.DefenseCardInstanceId"/> already carrying exactly that
+        /// fact: it was added for Whisper's own <see cref="DefendedCardForcedMoveV1"/> rider, which reads
+        /// the identical span for a different purpose (the defended card's Movement value rather than its
+        /// colour) and is proof the fact survives correctly from step 3 or 4 to step 7 and through a
+        /// restore. So the whole of phase one's costed engine debt for this face is one small reader
+        /// beside an already-shipped sibling, not new capture-and-carry plumbing.</para>
+        ///
+        /// <para><b>Two outputs on one node, so the gate and the colour are the same read.</b>
+        /// <see cref="DefendedOutput"/> is the Boolean a Conditional branches on - "If the target
+        /// discards a card to defend" - and <see cref="ColorOutput"/> is the colour a later node in the
+        /// same branch binds. One node rather than two keeps the predicate and the fact it gates from
+        /// disagreeing about which defense the sentence means.</para>
+        /// </summary>
+        public static EffectCapabilityReference DefendedCardColorV1 =>
+            Reference("defended-card-color", 1);
+
+        /// <summary>Whether the enclosing Attack's target actually defended with a card.</summary>
+        public const string DefendedOutput = "defended";
+
+        /// <summary>The colour of the card the target defended with, when <see cref="DefendedOutput"/> is true.</summary>
+        public const string ColorOutput = "color";
 
         /// <summary>
         /// Which units the adjacency arm of <see cref="ChooseSwapSubjectV1"/> admits, as a
@@ -830,6 +877,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // Whisper the Outcast is dealt, so her Gold basic's forced-move rider, her Red trio, her
             // discard-gated Conditional and her two Swaps are all cards a configured match puts in a
             // hand, and the gate that held them here is satisfied on both halves at once.
+
+            // Milestone 8.37 registered Tali's `defended-card-color` beside her own dealt Ice
+            // Blast - see `RegisteredHandlers` below. Nothing waits here now.
+            yield break;
         }
 
         /// <summary>
@@ -982,6 +1033,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
             yield return new DefendedCardForcedMoveHandler();
             yield return new EnemyHeroWithDiscardPresentHandler();
             yield return new ChooseSwapSubjectHandler();
+
+            // Milestone 8.37, the milestone that deals Tali the Spiritcaller. `defended-card-color`
+            // is her Ice Blast's rider: the colour the defender spent at p.14 step 3, read at step 7
+            // and gating the discard that follows it. It reads a fact Whisper's own dealing already
+            // captured - `EnclosingAttackFacts.DefenseCardInstanceId` - so it registers a new READER
+            // over existing plumbing rather than new capture-and-carry, and Ice Blast is a dealt
+            // basic Attack, which satisfies the gate's first half outright.
+            yield return new DefendedCardColorHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
@@ -2889,7 +2948,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             "kind",
                             EffectValueKind.Integer,
                             integerDomain: EffectIntegerDomain.AllExcept(
-                                RosterCardRetrievalKind.None))
+                                RosterCardRetrievalKind.None)),
+                        new EffectCapabilityParameter(
+                            RestrictToCardParameter, EffectValueKind.CardInstance, isRequired: false)
                     },
                     new[]
                     {
@@ -2915,21 +2976,40 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     !Enum.IsDefined(typeof(RosterCardRetrievalKind), kind))
                     return Array.Empty<CardInstance>();
                 var definitions = context.CardState.Definitions;
-                return context.CardState.Instances
-                    .Where(card => card.OwnerId.Equals(owner) && Eligible(card, kind, definitions))
-                    .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
-                    .ToArray();
+                var eligible = context.CardState.Instances
+                    .Where(card => card.OwnerId.Equals(owner) && Eligible(card, kind, definitions));
+
+                // Milestone 8.37. Guardian Spirit and Warrior Spirit name a specific
+                // card - themselves - rather than asking which one; see RestrictToCardParameter.
+                var restrict = context.Input(RestrictToCardParameter);
+                if (restrict.Kind == EffectValueKind.CardInstance)
+                {
+                    eligible = eligible.Where(card => card.Id.Equals(restrict.CardInstanceId));
+                }
+
+                return eligible.OrderBy(card => card.Id.Value, StringComparer.Ordinal).ToArray();
             }
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var candidates = Candidates(context);
                 var chooser = context.Input("chooser").HeroId;
-                return candidates.Count == 0 || !IsKnownHero(context, chooser)
-                    ? EffectExecutionResult.ImpossibleMandatory()
-                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                        EffectChooserRole.None, candidates.Select(card => EffectValue.Card(card.Id)),
-                        1, 1, chooser));
+                if (candidates.Count == 0 || !IsKnownHero(context, chooser))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Milestone 8.37, milestone 6.5a's reading of "yourself" applied to
+                // retrieval: a restriction that has already named the one legal answer has nothing to
+                // ask, so it retrieves directly rather than opening a one-candidate prompt.
+                if (context.Input(RestrictToCardParameter).Kind == EffectValueKind.CardInstance)
+                {
+                    return Resume(context, new[] { EffectValue.Card(candidates[0].Id) });
+                }
+
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.None, candidates.Select(card => EffectValue.Card(card.Id)),
+                    1, 1, chooser));
             }
 
             public EffectExecutionResult Resume(
@@ -4201,6 +4281,66 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         card.OwnerId.Equals(unit.HeroId) &&
                         card.State.Location == CardLocation.DiscardPile));
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.37. The handler behind <see cref="DefendedCardColorV1"/>. See the
+        /// type remarks there.
+        /// </summary>
+        private sealed class DefendedCardColorHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => DefendedCardColorV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(DefendedOutput, EffectValueKind.Boolean),
+                        new EffectOutputBinding(ColorOutput, EffectValueKind.Integer)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            /// <summary>
+            /// The card the target defended with, or <c>null</c> where step 3 recorded none - a
+            /// declined defense, a Hold, or no Defense window at all.
+            /// </summary>
+            private static CardDefinition DefenseCardDefinition(EffectCapabilityContext context)
+            {
+                if (!context.EnclosingAttack.IsDefined ||
+                    !context.EnclosingAttack.DefenseCardInstanceId.IsDefined ||
+                    !context.CardState.IsAvailable)
+                {
+                    return null;
+                }
+
+                var instance = context.CardState.Instances.FirstOrDefault(
+                    card => card.Id.Equals(context.EnclosingAttack.DefenseCardInstanceId));
+                return instance == null
+                    ? null
+                    : context.CardState.Definitions.FirstOrDefault(
+                        definition => definition.Reference.Equals(instance.DefinitionReference));
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var definition = DefenseCardDefinition(context);
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(DefendedOutput, EffectValue.Boolean(definition != null)),
+                    new EffectOutcomeFact(
+                        ColorOutput,
+                        EffectValue.Integer((int)(definition?.Progression.Color ?? CardColor.None)))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                EffectExecutionResultKind.Applied;
         }
 
         /// <summary>

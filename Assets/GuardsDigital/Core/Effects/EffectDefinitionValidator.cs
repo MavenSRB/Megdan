@@ -489,6 +489,22 @@ namespace GuardsDigital.Core.Effects
                 return;
             }
 
+            // Milestone 8.37. A node output may satisfy a closed vocabulary, and the check it gets is
+            // the one that can actually be made at definition time: the VOCABULARY must match, and
+            // there is no literal whose membership could be tested because the value does not exist
+            // yet. Commune with Spirits is why - an ally names the colour her borrow narrows to, at
+            // runtime - and the membership half is enforced by EffectResolutionSession when the
+            // produced value arrives, so the closed vocabulary is still closed. Everything else stays
+            // literal-only: a role binding or an undeclared node output against a closed parameter is
+            // the same fault it has always been.
+            if (parameter.IntegerDomain.IsDefined &&
+                input.SourceKind == EffectBindingSourceKind.NodeOutput &&
+                input.IntegerVocabulary.IsDefined &&
+                parameter.IntegerDomain.HasSameVocabulary(input.IntegerVocabulary))
+            {
+                return;
+            }
+
             if (!parameter.IntegerDomain.IsDefined ||
                 input.SourceKind != EffectBindingSourceKind.Literal ||
                 !input.IntegerVocabulary.IsDefined ||

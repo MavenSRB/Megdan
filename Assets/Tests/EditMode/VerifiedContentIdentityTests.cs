@@ -102,7 +102,18 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers was added in the same commit that
             // made her pickable, so the digest below is over her whole dealt set.
-            new IdentityPin("whisper", "whisper-8-36f3-rev-1", "ffab5620b82e7b1b7310fff782971a2124baf0b6b6697cd25ef113b5f525eae5")
+            new IdentityPin("whisper", "whisper-8-36f3-rev-1", "ffab5620b82e7b1b7310fff782971a2124baf0b6b6697cd25ef113b5f525eae5"),
+            // Milestone 8.37. THE TWELFTH AND LAST PIN of the package arc, arriving on exactly the
+            // terms the seventh through eleventh did: a pin is a claim about content a configured
+            // match loads, and milestone 8.35z32 composed Tali's Green line without dealing her.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
+            // deliberately wrong value and the digest read off this oracle's own failure output, with
+            // the eleven pins above confirmed byte-identical in that same run. Milestone 8.35z50's
+            // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
+            // measures the hero as contributing ZERO cards, and hers went in beside the row in
+            // EveryDealtDefinition below, in one change.
+            new IdentityPin("tali", "tali-8-37-rev-1", "265b8c5e0cc533fd9423bf109404a39eac09b3743fa200a38ae720e867076f7f")
         };
 
         [Test]
@@ -213,6 +224,12 @@ namespace GuardsDigital.Tests.EditMode
                 // oracle then fails on the count rather than on a digest, which reads like a content
                 // fault and is not one.
                 .Concat(MatchConfiguration.CreateStagedWhisperForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.37. Tali's staged configuration joins on the same terms, and this is
+                // the last row the package arc adds: with it the union covers every hero this build
+                // deals. Added in the same change as her pin, which is what the two warnings above
+                // ask for.
+                .Concat(MatchConfiguration.CreateStagedTaliForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

@@ -16,6 +16,10 @@ $sources = [ordered]@{
     silverarrow = 'randomizers-tt19__7723687__front.png'
     ursafar = 'randomizers-tt18__7723703__front.png'
     whisper = 'randomizers-tt20__7723693__front.png'
+    # Milestone 8.37. Visually verified like the eleven above: the face prints the name "Tali",
+    # three complexity stars (p.21's "Very Complex", the only hero above one star this build deals)
+    # and a Tokens role icon, which no other selection face in the set carries.
+    tali = 'randomizers-tt22__7723708__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

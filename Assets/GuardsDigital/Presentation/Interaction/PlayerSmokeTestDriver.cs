@@ -104,7 +104,8 @@ namespace GuardsDigital.Presentation.Interaction
                 (Name: "Misa", Cards: MisaCardContent.DealtDefinitions),
                 (Name: "Silverarrow", Cards: SilverarrowCardContent.DealtDefinitions),
                 (Name: "Ursafar", Cards: UrsafarCardContent.DealtDefinitions),
-                (Name: "Whisper", Cards: WhisperCardContent.DealtDefinitions)
+                (Name: "Whisper", Cards: WhisperCardContent.DealtDefinitions),
+                (Name: "Tali", Cards: TaliCardContent.DealtDefinitions)
             };
             foreach (var hero in heroes)
             {

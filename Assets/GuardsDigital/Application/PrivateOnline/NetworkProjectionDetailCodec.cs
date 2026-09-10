@@ -1270,6 +1270,7 @@ namespace GuardsDigital.Application
             writer.Write(choice.ConfirmInvocation != null);
             writer.Write(choice.DeclineInvocation != null);
             writer.Write(choice.StopInvocation != null);
+            writer.Write((int)choice.ValueVocabulary);
         }
 
         private static bool TryReadEffectChoice(BinaryReader reader, out NetworkEffectChoiceRow row)
@@ -1299,10 +1300,19 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            var hasConfirm = reader.ReadBoolean();
+            var hasDecline = reader.ReadBoolean();
+            var hasStop = reader.ReadBoolean();
+            var vocabulary = reader.ReadInt32();
+            if (!Enum.IsDefined(typeof(EffectChoiceValueVocabulary), vocabulary))
+            {
+                return false;
+            }
+
             row = new NetworkEffectChoiceRow(
                 resolutionId, choiceId, nodeId, chooserId, kind, minimum, maximum,
                 candidates, selected, unavailable,
-                reader.ReadBoolean(), reader.ReadBoolean(), reader.ReadBoolean());
+                hasConfirm, hasDecline, hasStop, vocabulary);
             return true;
         }
 

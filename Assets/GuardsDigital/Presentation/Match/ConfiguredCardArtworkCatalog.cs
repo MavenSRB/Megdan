@@ -76,7 +76,13 @@ namespace GuardsDigital.Presentation.Match
                 // This line is the FOURTH consecutive dealing to be told by the comment above rather
                 // than by a check: it is written here at the same moment as the eighteen rows, because
                 // the rows alone are what every offline tier can see.
-                { "whisper", "Whisper" }
+                { "whisper", "Whisper" },
+                // Milestone 8.37, the FIFTH consecutive dealing told by the comment above rather than
+                // by a check - and the last, because Tali is the twelfth and final hero of the arc.
+                // Written here at the same moment as the eighteen rows, for the reason those four
+                // paragraphs give: the rows alone are what every offline tier can see, and this map
+                // is what turns them into a front on a card.
+                { "tali", "Tali" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -353,6 +359,11 @@ namespace GuardsDigital.Presentation.Match
                 // exactly as Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the
                 // Distance and Ursafar's Jaws That Bite are not among theirs.
                 .Concat(WhisperCardContent.DealtDefinitions)
+                // Milestone 8.37. Tali's eighteen, on exactly the terms the rows above state. Ice
+                // Shard is p.20's Handicap card and is not among her DealtDefinitions, exactly as
+                // Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance,
+                // Ursafar's Jaws That Bite and Whisper's Vile Accusation are not among theirs.
+                .Concat(TaliCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

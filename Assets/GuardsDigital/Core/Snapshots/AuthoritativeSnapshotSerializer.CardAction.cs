@@ -1407,12 +1407,18 @@ namespace GuardsDigital.Core.Snapshots
             // payload can only ever narrow an authoritative candidate set, never invent one.
             // A confirm-or-decline choice offers nothing to pick between, so there is no candidate
             // set to re-derive and no capability to ask - the control node itself opened it.
+            // Milestone 8.37. The value vocabulary comes back with them, for the same reason and by
+            // the same route: it is the handler's own declaration about the set it just offered, so
+            // re-asking reproduces it and the payload never has to carry it. That is why declaring a
+            // vocabulary moves no schema version - it is derived on restore, exactly as the
+            // candidates it describes are.
+            var valueVocabulary = EffectChoiceValueVocabulary.None;
             var candidates =
                 choiceKind == EffectChoiceKind.ConfirmOrDecline
                     ? Array.Empty<EffectChoiceCandidate>()
                     : choiceKind == EffectChoiceKind.SelectOption
                         ? node.ChildNodeIds.Select(EffectChoiceCandidate.Option).ToArray()
-                        : DeriveCapabilityCandidates(node, restored, resolution);
+                        : DeriveCapabilityCandidates(node, restored, resolution, out valueVocabulary);
             if (selected.Any(candidate => !candidates.Contains(candidate)))
             {
                 throw Malformed(
@@ -1466,7 +1472,7 @@ namespace GuardsDigital.Core.Snapshots
                 new PendingEffectChoice(
                     new EffectResolutionId(common.ResolutionId.Value), choiceId, nodeId, chooserId,
                     choiceKind, candidates, minimum, maximum, selected, unavailable, canStop,
-                    declinableRegardlessOfMinimum));
+                    declinableRegardlessOfMinimum, valueVocabulary));
         }
 
         /// <summary>
@@ -1491,8 +1497,10 @@ namespace GuardsDigital.Core.Snapshots
         private static EffectChoiceCandidate[] DeriveCapabilityCandidates(
             EffectNodeDefinition node,
             PendingResolution restored,
-            EffectResolutionContext resolution)
+            EffectResolutionContext resolution,
+            out EffectChoiceValueVocabulary valueVocabulary)
         {
+            valueVocabulary = EffectChoiceValueVocabulary.None;
             var handler = resolution.Catalog.Load(node.Capability);
             var offered = handler.Execute(new EffectCapabilityContext(
                 node.Id,
@@ -1535,6 +1543,7 @@ namespace GuardsDigital.Core.Snapshots
                     $"Snapshot pending effect choice names node '{node.Id}', whose capability no longer requests a choice.");
             }
 
+            valueVocabulary = offered.Choice.ValueVocabulary;
             return EffectSelectionEligibilityQuery
                 .EligibleCandidates(
                     node, offered.Choice.Candidates, restored, restored.CompletedOutcomes, resolution)

@@ -45,7 +45,27 @@ namespace GuardsDigital.Core.Cards
         /// this condition: the fact behind it is derived from the definition the acting hero is
         /// resolving, and no Swap capability contributes to it.</para>
         /// </summary>
-        AfterControllerPlacesSelf = 3
+        AfterControllerPlacesSelf = 3,
+
+        /// <summary>
+        /// Milestone 8.37's <c>after-basic-attack-defeats-minion-trigger@1</c>: Tali's
+        /// Reign of Winter, "Each time after you defeat a minion with your basic attack, an enemy hero
+        /// in radius discards a card of the color of your choice, if able."
+        ///
+        /// <para><b>A fourth condition rather than a further qualifier on the two Attack-shaped ones,
+        /// because - like <see cref="AfterControllerPlacesSelf"/> before it - this reads a CONSEQUENCE
+        /// of the completed action rather than which kind it was.</b> Wasp's High Voltage and
+        /// Tigerclaw's Cloak and Daggers both ask what KIND of basic action just finished; this asks
+        /// what that basic Attack DID. A basic Attack that missed, was defended, or defeated a hero
+        /// instead must not reach this trigger, and only "defeated a minion" does.</para>
+        ///
+        /// <para><b>The fact is derived where p.13's own removal outcome is already recorded</b> -
+        /// whether the minion was actually REMOVED rather than its removal merely attempted or
+        /// prevented - and carried on <see cref="PerformedBasicAction"/> the same way
+        /// <see cref="AfterControllerPlacesSelf"/>'s own fact is: read once, at the one place a
+        /// completed action's supertype is decided, never re-derived by a second reader.</para>
+        /// </summary>
+        AfterControllerDefeatsMinionWithBasicAttack = 4
     }
 
     /// <summary>

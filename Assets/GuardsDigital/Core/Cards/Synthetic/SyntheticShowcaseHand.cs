@@ -1201,6 +1201,129 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedDefendedForcedMoveProfile });
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.37. Tali the Spiritcaller's dealing registers EIGHT handler types this build had
+        // never registered, and milestone 7.9's gate refuses a type that arrives for the first time
+        // inside a verified hero's slice. Four showcase cards cover all eight, each pairing the types
+        // whose printed sentences genuinely belong together rather than splitting one sentence over two
+        // fixtures. Every one sits outside its team's ordinary Initiative band, exactly as the earlier
+        // fixture Skills do.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.37's colour-naming Skill: a friendly hero is selected, and THAT hero - not the
+        /// actor - names a colour the actor then discards.
+        ///
+        /// <para>The two contracts are one card because they are one sentence: `name-color@1` binds its
+        /// chooser from `friendly-hero-in-play@1`'s published hero, so a fixture proving them apart
+        /// would have to invent a chooser for the naming and would then prove the wrong thing - that a
+        /// colour can be named by the actor, which is exactly the reading Commune with Spirits does not
+        /// have.</para>
+        ///
+        /// <para><b>It stops before the borrow.</b> Tali's own face follows the naming with
+        /// `borrow-primary-action@1`, whose showcase card already exists beside this one; ending here
+        /// on an ordinary colour-restricted discard keeps this fixture about the naming and leaves the
+        /// borrow proved where it was proved.</para>
+        /// </summary>
+        private static SyntheticSkillProfile RedColorNamingSkillProfile { get; } =
+            new SyntheticSkillProfile("red-spiritbinder", "Red Spiritbinder", 32);
+
+        /// <summary>
+        /// Milestone 8.37's free-direction batch Move: a direction is chosen among p.17's six, and every
+        /// enemy unit in radius moves one space that way, simultaneously.
+        ///
+        /// <para>One card for both contracts on the same reasoning as the naming Skill above: the batch
+        /// binds the direction the choice published, and a batch with a composition-time literal
+        /// direction would prove a shape no printed face has.</para>
+        /// </summary>
+        private static SyntheticSkillProfile RedDirectionBatchSkillProfile { get; } =
+            new SyntheticSkillProfile("red-galecaller", "Red Galecaller", 33);
+
+        /// <summary>
+        /// Milestone 8.37's hero-token placement and its rulebook p.18 short-supply reclamation, bound
+        /// to milestone 6.2's own synthetic hazard rather than to any verified token.
+        ///
+        /// <para>The pair is one card because p.18 makes them one step: a placement that finds the
+        /// supply empty is what a reclamation answers, so a fixture placing without the reclaim beside
+        /// it would leave the short-supply arm unreachable.</para>
+        /// </summary>
+        private static SyntheticSkillProfile RedHeroTokenSkillProfile { get; } =
+            new SyntheticSkillProfile("red-cairnwright", "Red Cairnwright", 34);
+
+        /// <summary>
+        /// Milestone 8.37's self-referential discard predicate: a Skill whose clause runs only when the
+        /// card carrying it is NOT itself standing in the discard pile.
+        ///
+        /// <para>The negated reading is the one on the card because it is the one that can be observed
+        /// from a hand: a card being played is not in the discard, so the gate holds and the clause
+        /// runs, and a fixture asserting the true arm would need the card to be resolving from the
+        /// discard - which only `borrow-primary-action@1` arranges, and which is proved on its own
+        /// card. What this proves is the PREDICATE, so the clause it governs is the ordinary optional
+        /// one-space move every fixture rider uses.</para>
+        /// </summary>
+        private static SyntheticSkillProfile RedSourceDiscardSkillProfile { get; } =
+            new SyntheticSkillProfile("red-revenant", "Red Revenant", 35);
+
+        /// <summary>
+        /// Milestone 8.37's defended-card colour reading: "After the attack:" text that asks what colour
+        /// the defender spent at rulebook p.14 step 3.
+        ///
+        /// <para>It needs an enclosing Attack to be about, for the same reason
+        /// <see cref="RedTargetSurvivedProfile"/> does - the fact it publishes belongs to that Attack's
+        /// own Defense window - which is why it is an Attack profile and not a fifth Skill.</para>
+        /// </summary>
+        private static SyntheticAttackTextProfile RedDefendedColorProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-frostblade", "Red Frostblade", 13, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false, continuation: SyntheticContinuationShape.AfterAttackDefendedColorRider);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.37's colour-naming Skill, which is how
+        /// <c>friendly-hero-in-play@1</c> and <c>name-color@1</c> become reachable from showcase content
+        /// rather than arriving for the first time inside Tali's own slice.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithColorNamingSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                colorNamingSkillProfile: RedColorNamingSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.37's free-direction batch Move, which is how
+        /// <c>synthetic-choose-direction@1</c> and <c>synthetic-batch-direct-move@1</c> become reachable
+        /// on the same terms.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithDirectionBatchSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                directionBatchSkillProfile: RedDirectionBatchSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.37's hero-token placement and short-supply
+        /// reclamation, which is how both token handler TYPES become reachable on the same terms.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithHeroTokenSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                heroTokenSkillProfile: RedHeroTokenSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.37's self-referential discard predicate, which is
+        /// how <c>synthetic-source-card-in-discard@1</c> becomes reachable on the same terms.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithSourceDiscardSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                sourceDiscardSkillProfile: RedSourceDiscardSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.37's defended-colour rider Attack, which is how
+        /// <c>defended-card-color@1</c> becomes reachable on the same terms.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithDefendedColorRiderText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedDefendedColorProfile });
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1310,6 +1433,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile borrowedActionSkillProfile = null,
             SyntheticSkillProfile discardGatedTrioSkillProfile = null,
             SyntheticSkillProfile swapSubjectSkillProfile = null,
+            SyntheticSkillProfile colorNamingSkillProfile = null,
+            SyntheticSkillProfile directionBatchSkillProfile = null,
+            SyntheticSkillProfile heroTokenSkillProfile = null,
+            SyntheticSkillProfile sourceDiscardSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1547,6 +1674,40 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateSwapSubjectSkillDefinition(swapSubjectSkillProfile),
                     swapSubjectSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            // Milestone 8.37. Tali's four showcase Skills, appended after every earlier one so no
+            // existing hand position moves.
+            if (colorNamingSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateColorNamingSkillDefinition(colorNamingSkillProfile),
+                    colorNamingSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (directionBatchSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateDirectionBatchSkillDefinition(directionBatchSkillProfile),
+                    directionBatchSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (heroTokenSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateHeroTokenSkillDefinition(heroTokenSkillProfile),
+                    heroTokenSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (sourceDiscardSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateSourceDiscardSkillDefinition(sourceDiscardSkillProfile),
+                    sourceDiscardSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -3568,6 +3729,319 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// and a fixture card that named the capability without publishing its output would prove the
         /// handler reachable while leaving that seam unexercised.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.37. A friendly hero is selected, that hero names a colour, and the actor
+        /// discards a card of it. See <see cref="RedColorNamingSkillProfile"/> for why the two new
+        /// contracts share one card and why this one stops before the borrow.
+        /// </summary>
+        private static CardDefinition CreateColorNamingSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("color-naming-root");
+            var selectFriendly = new EffectNodeId("color-naming-select-friendly");
+            var nameColor = new EffectNodeId("color-naming-name");
+            var optional = new EffectNodeId("color-naming-optional");
+            var discard = new EffectNodeId("color-naming-discard");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-37-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { selectFriendly, nameColor, optional }),
+                    new EffectNodeDefinition(
+                        selectFriendly, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticBorrowedActionCapabilities.FriendlyHeroInPlayV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticBorrowedActionCapabilities.ChosenFriendlyHeroOutput,
+                                EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        nameColor, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticBorrowedActionCapabilities.NameColorV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticBorrowedActionCapabilities.NameColorChooserParameter,
+                                selectFriendly,
+                                SyntheticBorrowedActionCapabilities.ChosenFriendlyHeroOutput,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticBorrowedActionCapabilities.NamedColorOutput,
+                                EffectValueKind.Integer)
+                        }),
+                    // The discard is declinable for the reason the borrowing Skill's own wrapper is:
+                    // a fixture hand must stay playable on any board, and a hand holding no card of
+                    // the named colour would otherwise refuse the whole action.
+                    new EffectNodeDefinition(
+                        optional, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        childNodeIds: new[] { discard },
+                        chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(
+                        discard, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                SyntheticCardStateCapabilities.HeroParameter,
+                                EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticCardStateCapabilities.ColorParameter,
+                                nameColor, SyntheticBorrowedActionCapabilities.NamedColorOutput,
+                                EffectValueKind.Integer, EffectIntegerDomain.All<CardColor>())
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticCardStateCapabilities.DiscardedOutput,
+                                EffectValueKind.CardInstance)
+                        })
+                });
+
+            return SkillCard(profile, "primary-color-naming-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.37. A direction among rulebook p.17's six, then every enemy unit in radius moved
+        /// one space that way, all at once. See <see cref="RedDirectionBatchSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateDirectionBatchSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("direction-batch-root");
+            var direction = new EffectNodeId("direction-batch-direction");
+            var batch = new EffectNodeId("direction-batch-move");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-37-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { direction, batch }),
+                    new EffectNodeDefinition(
+                        direction, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.ChooseDirectionV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.ChosenDirectionOutput,
+                                EffectValueKind.Integer)
+                        }),
+                    // The radius is a literal here rather than the card's printed icon, because what
+                    // this fixture proves is the BATCH and a fixture Skill prints no Radius of its own.
+                    new EffectNodeDefinition(
+                        batch, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticDisplacementCapabilities.BatchDirectMoveV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticDisplacementCapabilities.BatchRadiusParameterName,
+                                EffectValue.Integer(1)),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticDisplacementCapabilities.BatchDirectionParameterName,
+                                direction,
+                                SyntheticDisplacementCapabilities.ChosenDirectionOutput,
+                                EffectValueKind.Integer,
+                                EffectIntegerDomain.All<Board.HexDirection>())
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.BatchMovedCountOutput,
+                                EffectValueKind.Integer)
+                        })
+                });
+
+            return SkillCard(profile, "primary-direction-batch-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.37. One hero-token placement over milestone 6.2's synthetic hazard, with the
+        /// rulebook p.18 short-supply reclamation beside it. See <see cref="RedHeroTokenSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateHeroTokenSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("hero-token-root");
+            var reclaim = new EffectNodeId("hero-token-reclaim");
+            var place = new EffectNodeId("hero-token-place");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-37-rev-1",
+                root,
+                new[]
+                {
+                    // The reclamation runs FIRST, which is p.18's own order: a placement that finds the
+                    // supply empty is answered by taking a standing token back, so the answer has to be
+                    // available before the placement asks. Both are IfAble - a full supply reclaims
+                    // nothing and an occupied board places nothing, and neither is a refusal.
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { reclaim, place }),
+                    new EffectNodeDefinition(
+                        reclaim, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticTokenCapabilities.ShowcaseReclaimHazardV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTokenCapabilities.ReclaimedOutput, EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        place, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticTokenCapabilities.ShowcasePlaceHazardV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTokenCapabilities.PlacedOutput, EffectValueKind.Coordinate)
+                        })
+                });
+
+            return SkillCard(profile, "primary-hero-token-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.37. A clause that runs only while the card carrying it is not itself standing in
+        /// the discard pile. See <see cref="RedSourceDiscardSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateSourceDiscardSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("source-discard-root");
+            var gate = new EffectNodeId("source-discard-gate");
+            var move = new EffectNodeId("source-discard-move");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-37-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { gate }),
+                    // Negated, so the gate holds while the card is being played from hand and the
+                    // clause below it is observable. A Conditional with a then-child and no else-child
+                    // is the shape every predicate fixture in this file uses.
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticConditionCapabilities.SourceCardInDiscardV1,
+                        childNodeIds: new[] { move },
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticConditionCapabilities.NegateParameter,
+                                EffectValue.Boolean(true))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticConditionCapabilities.InDiscardOutput, EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                "mover", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted)
+                        })
+                });
+
+            return SkillCard(profile, "primary-source-discard-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.37. "After the attack:" text reading the colour the defender spent at rulebook
+        /// p.14 step 3, and discarding a card of that colour off the Attack's own target. It is Ice
+        /// Blast's rider narrowed to one subject: hers re-selects a hero in radius, and this one asks
+        /// the same question of the hero already in hand, because what the fixture proves is the
+        /// READING and not the selection beside it.
+        /// </summary>
+        private static EffectNodeDefinition[] DefendedColorRiderNodes()
+        {
+            var root = new EffectNodeId("defended-color-root");
+            var gate = new EffectNodeId("defended-color-gate");
+            var discard = new EffectNodeId("defended-color-discard");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { gate }),
+                // One node, two outputs: the Conditional branches on `defended` while its own child
+                // reads `color` off the same node, which is the shape the capability exists to give.
+                new EffectNodeDefinition(
+                    gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.DefendedCardColorV1,
+                    childNodeIds: new[] { discard },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticRosterCapabilities.DefendedOutput, EffectValueKind.Boolean),
+                        new EffectOutputBinding(
+                            SyntheticRosterCapabilities.ColorOutput, EffectValueKind.Integer)
+                    }),
+                new EffectNodeDefinition(
+                    discard, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                    SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromRole(
+                            SyntheticCardStateCapabilities.HeroParameter,
+                            EffectRoleKind.OpposingHero, EffectValueKind.Hero),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticCardStateCapabilities.ColorParameter,
+                            gate, SyntheticRosterCapabilities.ColorOutput,
+                            EffectValueKind.Integer, EffectIntegerDomain.All<CardColor>())
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticCardStateCapabilities.DiscardedOutput,
+                            EffectValueKind.CardInstance)
+                    })
+            };
+        }
+
+        /// <summary>
+        /// Milestone 8.37. The card body four of this milestone's five showcase Skills share, extracted
+        /// because they differ in exactly two things - the action id and the effect - and repeating
+        /// twenty lines four times would let one of them drift from the others silently.
+        /// </summary>
+        private static CardDefinition SkillCard(
+            SyntheticSkillProfile profile, string actionId, EffectDefinition effect) =>
+            new CardDefinition(
+                new CardDefinitionId($"placeholder-{profile.Id}"),
+                "phase-8-37-rev-1",
+                $"TEST - {profile.DisplayName}",
+                new InitiativeValue(profile.Initiative),
+                CardContentAuthority.SyntheticTestFixture,
+                CardProgressionProfile.NotStated,
+                new[]
+                {
+                    new ActionDefinition(
+                        new ActionDefinitionId(actionId),
+                        ActionKind.Skill,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        Array.Empty<PrintedValueDefinition>(),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        effect)
+                });
+
         private static CardDefinition CreateBorrowedActionSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("borrowed-action-root");
@@ -4196,7 +4670,21 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// the "if able" and nothing happens, which is RULING 16 as printed. A fixture that wrapped
             /// it in something declinable would prove a weaker contract than the one that ships.</para>
             /// </summary>
-            AfterAttackDefendedCardForcedMove = 15
+            AfterAttackDefendedCardForcedMove = 15,
+
+            /// <summary>
+            /// Milestone 8.37. Tali's Ice Blast shape: "After the attack:" text that reads the COLOUR
+            /// the defender spent at rulebook p.14 step 3 and discards a card of it.
+            ///
+            /// <para>It needs an enclosing Attack that has already passed p.14's Defense window, on
+            /// exactly the terms <see cref="AfterAttackDefendedCardForcedMove"/> does - the fact it
+            /// publishes belongs to that window - which is why it is a second-moment rider and not one
+            /// of the four Skills beside it. The capability publishes `defended` and `color` from ONE
+            /// node so a Conditional can branch on the first while its child reads the second, and the
+            /// fixture is written that way rather than as two nodes, because the single node is the
+            /// whole point of the contract.</para>
+            /// </summary>
+            AfterAttackDefendedColorRider = 16
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -4737,6 +5225,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         "phase-8-35z53-rev-1",
                         new EffectNodeId("defended-forced-move-root"),
                         DefendedCardForcedMoveRiderNodes());
+
+                case SyntheticContinuationShape.AfterAttackDefendedColorRider:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-37-rev-1",
+                        new EffectNodeId("defended-color-root"),
+                        DefendedColorRiderNodes());
 
                 case SyntheticContinuationShape.AroundTheMovement:
                     return new EffectDefinition(

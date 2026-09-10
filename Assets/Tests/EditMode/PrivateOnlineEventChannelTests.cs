@@ -585,8 +585,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(12),
-                "8.36b requires authenticated keyed departures and rejects protocol 11. " +
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(13),
+                "8.37b carries a pending effect choice's declared VALUE VOCABULARY, so a joined seat draws six named colours or six named directions rather than the digits 0 through 5 - Tali's Commune with Spirits puts one of those decisions to a hero who is not the acting seat, so the seat that must answer it is by construction a remote one. A protocol 12 peer is refused before any payload is read. SCHEMA IS UNMOVED at v41: restore re-asks the handler, which re-declares it. " +
+                "8.36b required authenticated keyed departures and rejected protocol 11. " +
                 "This case pins the CURRENT version rather than the one the event channel moved to, " +
                 "so a later move is accounted for here rather than passing unread. Milestone " +
                 "8.35z60's integration pass took it to 11 for the shared Wave-counter pool the seat " +

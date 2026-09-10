@@ -36,7 +36,8 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionId actionDefinitionId,
             ActionKind kind,
             bool wasRepeatedInstance,
-            bool placedSelf)
+            bool placedSelf,
+            bool defeatedMinionWithBasicAttack)
         {
             ActorId = actorId;
             SourceCardInstanceId = sourceCardInstanceId;
@@ -44,6 +45,7 @@ namespace GuardsDigital.Core.Cards
             Kind = kind;
             WasRepeatedInstance = wasRepeatedInstance;
             PlacedSelf = placedSelf;
+            DefeatedMinionWithBasicAttack = defeatedMinionWithBasicAttack;
         }
 
         /// <summary>
@@ -59,7 +61,8 @@ namespace GuardsDigital.Core.Cards
             ActionDefinitionId actionDefinitionId,
             ActionKind kind,
             bool wasRepeatedInstance = false,
-            bool placedSelf = false)
+            bool placedSelf = false,
+            bool defeatedMinionWithBasicAttack = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined)
             {
@@ -79,7 +82,7 @@ namespace GuardsDigital.Core.Cards
 
             return new PerformedBasicAction(
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, wasRepeatedInstance,
-                placedSelf);
+                placedSelf, defeatedMinionWithBasicAttack);
         }
 
         public HeroId ActorId { get; }
@@ -122,6 +125,21 @@ namespace GuardsDigital.Core.Cards
         /// would need the immediate interrupt <c>after-push-trigger@1</c> already has.</para>
         /// </summary>
         public bool PlacedSelf { get; }
+
+        /// <summary>
+        /// Milestone 8.37. Whether this basic Attack's own resolution actually REMOVED a
+        /// minion - Tali's Reign of Winter, "Each time after you defeat a minion with your basic attack,
+        /// an enemy hero in radius discards a card of the color of your choice, if able."
+        ///
+        /// <para>It travels beside <see cref="PlacedSelf"/> for the identical reason that one does: by
+        /// the time a trigger reads a completed action's supertype, the resolution whose own steps prove
+        /// the fact has already finished and been cleared, so the fact must be carried rather than
+        /// re-derived. It answers about REMOVAL specifically, not about a Defeat merely being staged or
+        /// attempted - a minion whose removal a totem's save or p.18's immunity stopped was not
+        /// "defeated with" the Attack in the sense this sentence reads, because the piece is still on
+        /// the board.</para>
+        /// </summary>
+        public bool DefeatedMinionWithBasicAttack { get; }
 
         public bool IsDefined => Kind != ActionKind.None;
 
@@ -211,7 +229,8 @@ namespace GuardsDigital.Core.Cards
             System.Collections.Generic.IEnumerable<CardDefinition> definitions,
             System.Collections.Generic.IEnumerable<CardInstance> instances,
             bool wasRepeatedInstance = false,
-            bool placedSelf = false)
+            bool placedSelf = false,
+            bool defeatedMinionWithBasicAttack = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined ||
                 kind == ActionKind.None || definitions == null || instances == null)
@@ -241,7 +260,7 @@ namespace GuardsDigital.Core.Cards
                     return definition.Progression.Classification == CardClassification.Basic
                         ? PerformedBasicAction.Of(
                             actorId, sourceCardInstanceId, actionDefinitionId, kind,
-                            wasRepeatedInstance, placedSelf)
+                            wasRepeatedInstance, placedSelf, defeatedMinionWithBasicAttack)
                         : PerformedBasicAction.None;
                 }
             }

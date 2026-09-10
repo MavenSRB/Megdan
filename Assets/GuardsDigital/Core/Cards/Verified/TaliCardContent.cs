@@ -8,7 +8,7 @@ namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
     /// Tali the Spiritcaller's nineteen printed faces as definition content - milestone 8.35z32,
-    /// and the ninth <see cref="CardContentAuthority.VerifiedOfficial"/> hero this project has built.
+    /// and the ninth <see cref="CardContentAuthority.VerifiedOfficial"/> hero this project composed and the twelfth it deals.
     ///
     /// <para><b>Where the numbers come from.</b> Every value, word, colour, Tier, icon and upgrade pair
     /// below is transcribed from the extracted card faces at the Tali inventory pass and recorded in
@@ -44,7 +44,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry, with the same coupling
         /// <see cref="UrsafarCardContent.ContentRevision"/> has: it moves when Tali's content does.
         /// </summary>
-        public const string ContentRevision = "tali-8-35x-tali1-rev-1";
+        public const string ContentRevision = "tali-8-37-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -509,7 +509,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         PrintedDefenseResolution.None,
                         TaliEffectContent.AttackTextTimingFor(profile.Id),
                         TargetPolicy(profile, ranged),
-                        Enumerable.Empty<RosterValueContributionDefinition>(),
+                        TaliEffectContent.RaisedAttackFor(profile.Id),
                         MinionDefenseContributionPolicy.IncludeAll,
                         DefenseOfferOriginRestriction.None,
                         PrintedBlockCondition.None,

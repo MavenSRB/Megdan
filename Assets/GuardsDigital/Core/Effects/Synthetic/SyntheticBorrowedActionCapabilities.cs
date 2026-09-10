@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Timing;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Effects.Synthetic
 {
@@ -52,19 +55,240 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string BorrowedCardOutput = "borrowedCard";
 
         /// <summary>
-        /// Milestone 8.35z50 registered this handler beside the hero whose dealt cards start it.
-        /// Shared with Tali on ledger row 25's rule - deferred only until the FIRST of its sharers is
-        /// dealt - so it crosses with Ursafar and her own dealing finds it already here.
+        /// Milestone 8.37's <c>friendly-hero-in-play@1</c>: Commune with Spirits' "A
+        /// friendly hero in play" - the mandatory selection that names WHICH friendly hero performs the
+        /// naming step below, published so <see cref="NameColorV1"/> can bind its own chooser from it.
+        ///
+        /// <para><b>Why this is a new selection rather than the printed-Radius hero family.</b> Every
+        /// existing hero selection in the build is anchored on p.9's Range or Radius icon, which
+        /// Commune with Spirits prints neither of - her whole offer set is the primary, the Defense
+        /// secondary and Hold. "In play" is p.19's own board membership, unqualified by distance:
+        /// RULING 20 reads it as ON THE BOARD, so a defeated ally awaiting respawn - who has left the
+        /// board's occupancy entirely - is not a candidate and the mandatory step cannot complete
+        /// without one, which is exactly p.10's rule for a mandatory step with no legal subject.</para>
+        ///
+        /// <para><b>"Friendly" includes the actor</b>, by the standing reading every earlier "friendly"
+        /// selection in this build already carries: unlike RULING 8's "a hero", which needed an explicit
+        /// user ruling to admit self because p.17 states a special exclusion for "friendly" that a bare
+        /// "a hero" lacks, "a friendly hero" is squarely inside the ordinary meaning that exclusion
+        /// exists to carve OUT of - so Tali naming herself needs no ruling to be legal, and is in fact
+        /// her only candidate whenever she plays this Skill alone.</para>
+        ///
+        /// <para><b>The chooser is the actor, not the named hero.</b> p.10 gives an unassigned decision
+        /// to the card's controller: which teammate performs the naming is Tali's own choice among her
+        /// legal candidates, exactly as Silverarrow's Blessing selects which hero retrieves before that
+        /// hero's own "may" takes over. What the SELECTED hero then owns is the naming itself, which
+        /// <see cref="NameColorV1"/> directs to them by binding its own <c>chooser</c> parameter from
+        /// this node's published output - the same two-step shape <c>retrieve-card@1</c> already
+        /// proves.</para>
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            new IEffectCapabilityHandler[] { new BorrowPrimaryActionHandler() };
+        public static EffectCapabilityId FriendlyHeroInPlay { get; } =
+            new EffectCapabilityId("friendly-hero-in-play");
+
+        public static EffectCapabilityReference FriendlyHeroInPlayV1 =>
+            new EffectCapabilityReference(FriendlyHeroInPlay, 1);
+
+        /// <summary>The chosen friendly hero, published for a later node to bind.</summary>
+        public const string ChosenFriendlyHeroOutput = "chosenFriendlyHero";
 
         /// <summary>
-        /// Nothing is deferred here any longer; the member survives for the offline content tests that
-        /// compose catalogs of their own from the deferred lists.
+        /// Milestone 8.37's <c>name-color@1</c>: a bound hero mandatorily names one of
+        /// p.9's six printed colours.
+        ///
+        /// <para><b>The runtime chooser is a parameter, not a role.</b> Every chooser role this build
+        /// declares - <see cref="EffectChooserRole.Actor"/>, <c>Controller</c>, <c>OpposingHero</c>,
+        /// <c>BoundHero</c> - names either a fixed party to the action or a hero a CONTROL node
+        /// identifies through its own dedicated input. A capability LEAF directs its pause to an
+        /// explicit hero the same way Whisper's <c>defended-card-forced-move@1</c> already does -
+        /// through <see cref="EffectChoiceRequest.ChooserHeroId"/>, which milestone 7.1a documented as
+        /// taking precedence over the role - so this reads its <c>chooser</c> input parameter (bound
+        /// <see cref="EffectInputBinding.FromNodeOutput"/> from <see cref="FriendlyHeroInPlayV1"/>'s own
+        /// published hero) and opens the choice to exactly that hero, never to the card's controller.</para>
+        ///
+        /// <para><b>Mandatory, not optional, per the designer's own words.</b> Arty's 8/15 ruling is
+        /// explicit: "No, discard step is optional ('may'). Naming the color is not." So this capability
+        /// is never wrapped in an <see cref="EffectFailurePolicy.May"/> or <c>IfAble</c> node, and it
+        /// offers all six colours unconditionally - not narrowed by whose hand holds what, because
+        /// "Naming the color is not [required to have cards], the action you are performing is
+        /// referring to the color" (the same ruling, second half).</para>
+        ///
+        /// <para><b>All six are offered, including the newly-inert <see cref="CardColor.Purple"/>.</b>
+        /// RULING 21 makes every one of p.9's colours nameable; nothing here reads which colours are
+        /// live in anyone's hand, because the naming step and the hand are deliberately independent
+        /// (Arty's ruling again) and because narrowing the offer would be inventing a restriction the
+        /// card does not print.</para>
+        /// </summary>
+        public static EffectCapabilityId NameColor { get; } = new EffectCapabilityId("name-color");
+
+        public static EffectCapabilityReference NameColorV1 =>
+            new EffectCapabilityReference(NameColor, 1);
+
+        /// <summary>The hero this naming step is directed to - a required parameter, never the actor.</summary>
+        public const string NameColorChooserParameter = "chooser";
+
+        /// <summary>The colour that hero named, published for the borrow node to bind.</summary>
+        public const string NamedColorOutput = "namedColor";
+
+        /// <summary>Every colour <see cref="NameColorV1"/> may offer, in p.9's own printed order.</summary>
+        public static IReadOnlyList<CardColor> AllNameableColors { get; } = Array.AsReadOnly(new[]
+        {
+            CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green, CardColor.Blue,
+            CardColor.Purple
+        });
+
+        /// <summary>
+        /// Milestone 8.35z50 registered the borrow handler beside the hero whose dealt cards start it.
+        /// Shared with Tali on ledger row 25's rule - deferred only until the FIRST of its sharers is
+        /// dealt - so it crossed with Ursafar and her own dealing finds it already here.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
+            new IEffectCapabilityHandler[]
+            {
+                new BorrowPrimaryActionHandler(),
+                // Milestone 8.37. Commune with Spirits is a dealt basic Skill, so both halves of her
+                // signature - the ally it names and the colour that ally names - are started by a
+                // printed card this build puts in a hand.
+                new FriendlyHeroInPlayHandler(),
+                new NameColorHandler()
+            };
+
+        /// <summary>
+        /// Nothing is deferred here any longer; the member survives for the offline content tests
+        /// that compose catalogs of their own from the deferred lists.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             Array.Empty<IEffectCapabilityHandler>();
+
+        /// <summary>
+        /// Every friendly hero currently on the board, actor's team, actor included - the candidate set
+        /// <see cref="FriendlyHeroInPlayV1"/> offers, exposed beside the handler for the same reason
+        /// <see cref="Candidates"/> above is: feasibility and the offer must read one function.
+        /// </summary>
+        public static IReadOnlyList<HeroId> FriendlyHeroesInPlay(EffectCapabilityContext context)
+        {
+            if (context == null || context.Components?.Board == null || context.Participants == null ||
+                !context.ActorId.IsDefined)
+            {
+                return Array.Empty<HeroId>();
+            }
+
+            var actorSide = context.Participants.GetTeamForHero(context.ActorId).Side;
+            return context.Components.Board.Occupancies
+                .Where(occupancy =>
+                    context.Participants.GetTeamForHero(occupancy.HeroId).Side == actorSide)
+                .Select(occupancy => occupancy.HeroId)
+                .OrderBy(heroId => heroId.Value, StringComparer.Ordinal)
+                .ToArray();
+        }
+
+        private sealed class FriendlyHeroInPlayHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => FriendlyHeroInPlayV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                outputs: new[]
+                {
+                    new EffectOutputBinding(ChosenFriendlyHeroOutput, EffectValueKind.Hero)
+                });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = FriendlyHeroesInPlay(context);
+                return candidates.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor, candidates.Select(EffectValue.Hero), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                var chosen = selected != null && selected.Count == 1 &&
+                    selected[0].Kind == EffectValueKind.Hero &&
+                    FriendlyHeroesInPlay(context).Contains(selected[0].HeroId)
+                        ? selected[0].HeroId
+                        : default;
+                if (!chosen.IsDefined)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(ChosenFriendlyHeroOutput, EffectValue.Hero(chosen))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                FriendlyHeroesInPlay(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+        }
+
+        private sealed class NameColorHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => NameColorV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[] { new EffectCapabilityParameter(NameColorChooserParameter, EffectValueKind.Hero) },
+                new[] { new EffectOutputBinding(NamedColorOutput, EffectValueKind.Integer) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            private static HeroId Chooser(EffectCapabilityContext context) =>
+                context.Input(NameColorChooserParameter).HeroId;
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var chooser = Chooser(context);
+                if (!chooser.IsDefined)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Milestone 8.37 declares the vocabulary, so the hero this is put to is offered six
+                // COLOURS rather than the digits 0 through 5. The chooser is not the acting seat, so
+                // this is also the first choice in the build whose labels are drawn for somebody
+                // other than the player who played the card.
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.None,
+                    AllNameableColors.Select(color => EffectValue.Integer((int)color)),
+                    1,
+                    1,
+                    chooserHeroId: chooser,
+                    valueVocabulary: Rules.EffectResolution.EffectChoiceValueVocabulary.CardColor));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.Integer)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var color = (CardColor)selected[0].IntegerValue;
+                if (!AllNameableColors.Contains(color))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(NamedColorOutput, EffectValue.Integer((int)color))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Chooser(context).IsDefined
+                    ? EffectExecutionResultKind.NeedsChoice
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
 
         /// <summary>
         /// The candidate set one borrow node would offer right now, as a function of state alone.

@@ -1267,7 +1267,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         Math.Min(result.Choice.MaximumSelections, offered.Count),
                         result.Choice.Chooser,
                         chooserHeroOverride: result.Choice.ChooserHeroId,
-                        declinableRegardlessOfMinimum: node.FailurePolicy == EffectFailurePolicy.May));
+                        declinableRegardlessOfMinimum: node.FailurePolicy == EffectFailurePolicy.May,
+                        // Milestone 8.37. Only a capability's own request can say what its integer
+                        // candidates mean, so the declaration rides from the handler to the pause and
+                        // is never re-derived. The three other BuildChoice call sites are control
+                        // nodes offering OPTIONS, which carry no vocabulary at all.
+                        valueVocabulary: result.Choice.ValueVocabulary));
 
                 case EffectExecutionResultKind.ImpossibleMandatory:
                     // Milestone 8.35z14 (the blocker-identity channel). The node just refused itself at
@@ -1404,7 +1409,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<EffectChoiceCandidate> unavailableCandidates = null,
             bool canStop = false,
             HeroId chooserHeroOverride = default,
-            bool declinableRegardlessOfMinimum = false) =>
+            bool declinableRegardlessOfMinimum = false,
+            EffectChoiceValueVocabulary valueVocabulary = EffectChoiceValueVocabulary.None) =>
             new PendingEffectChoice(
                 frame.ResolutionId,
                 new EffectChoiceId($"node-{node.Id.Value}"),
@@ -1424,7 +1430,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 null,
                 unavailableCandidates,
                 canStop,
-                declinableRegardlessOfMinimum);
+                declinableRegardlessOfMinimum,
+                valueVocabulary);
 
         /// <summary>
         /// Milestone 8.35z33. The hero a <see cref="EffectChooserRole.BoundHero"/> node names, or the
@@ -1678,10 +1685,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                     foreach (var output in source.Outputs)
                     {
-                        if (string.Equals(output.OutputName, binding.SourceOutputName, StringComparison.Ordinal))
+                        if (!string.Equals(
+                                output.OutputName, binding.SourceOutputName, StringComparison.Ordinal))
                         {
-                            return output.Value;
+                            continue;
                         }
+
+                        // Milestone 8.37. The runtime half of a DECLARED closed vocabulary on a node
+                        // output. The validator checked at definition time that this binding names the
+                        // same vocabulary the parameter declares; it could not check the value, which
+                        // did not exist. It exists now, so it is checked now - a produced integer
+                        // outside the declared domain yields nothing, and the step that reads it
+                        // reports itself impossible rather than narrowing a borrow to a colour no card
+                        // prints. Bindings that declare no vocabulary are untouched.
+                        if (binding.IntegerVocabulary.IsDefined &&
+                            (output.Value.Kind != EffectValueKind.Integer ||
+                             !binding.IntegerVocabulary.Contains(output.Value.IntegerValue)))
+                        {
+                            return default;
+                        }
+
+                        return output.Value;
                     }
 
                     return default;

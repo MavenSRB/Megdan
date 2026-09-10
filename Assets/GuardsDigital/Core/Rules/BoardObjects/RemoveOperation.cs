@@ -296,6 +296,27 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             return RemovalPreventionQuery.Offered(unit, modifications, definitions, cards);
         }
 
+        /// <summary>
+        /// Milestone 8.37. Whether a mandatory prevention already stops this removal -
+        /// Tali's totem save is the first content to use the <see cref="RemovalPreventionQuery.Automatic"/>
+        /// family. Asked ahead of the offered, card-priced family at every one of its three call sites,
+        /// because a mandatory sentence has nobody to ask and nothing to decide: if one applies, the
+        /// removal is already settled before a pause could ever be opened over it.
+        ///
+        /// <para>Immunity is still asked first, exactly as it is ahead of <see cref="OfferedPreventions"/>
+        /// - an immune subject already stays on the board and has nothing here to answer either.</para>
+        /// </summary>
+        public bool IsAutomaticallyPrevented(BoardObjectReference subject)
+        {
+            var unit = subject.AsRuleObject();
+            if (!unit.IsDefined || IsPrevented(subject))
+            {
+                return false;
+            }
+
+            return RemovalPreventionQuery.Automatic(unit, modifications).Count > 0;
+        }
+
         /// <summary>p.8's cause, asked after the piece has actually left the board.</summary>
         public LanePushQualification QualifyLanePush(BoardObjectReference subject, HexCoordinate origin) =>
             LanePushQualificationQuery.AfterRemoval(

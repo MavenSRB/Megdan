@@ -2154,10 +2154,25 @@ namespace GuardsDigital.Presentation.Match
 
         private void AddInvocation(VisualElement section, TypedInvocationViewModel invocation)
         {
-            if (invocation != null)
+            if (invocation == null)
             {
-                section.Add(HudElements.Control(invocation.Label, () => ForwardInvocation(invocation)));
+                return;
             }
+
+            var control = HudElements.Control(invocation.Label, () => ForwardInvocation(invocation));
+
+            // Milestone 8.37. A control that NAMES a printed colour wears it, through the same
+            // palette every other surface draws that colour with. The word stays and the tint is
+            // added to it rather than replacing it, so the control is still readable to anyone who
+            // cannot separate the six by hue - which matters more here than anywhere else in the HUD,
+            // because Tali's ally is asked to name a colour with no card in front of them.
+            if (invocation.Swatch != CardColor.None)
+            {
+                control.style.backgroundColor = MatchHudTheme.Face(invocation.Swatch);
+                control.style.color = MatchHudTheme.FaceText(invocation.Swatch);
+            }
+
+            section.Add(control);
         }
 
         /// <summary>

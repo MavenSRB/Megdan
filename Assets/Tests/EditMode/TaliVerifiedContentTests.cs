@@ -279,12 +279,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Faces whose whole printed debt beyond targeting is a dynamic value contribution
+        /// (<see cref="RosterValueContributionDefinition"/>) rather than an effect node - Sabina's
+        /// identically-shaped Quickdraw family is the precedent, and her own verified-content test
+        /// asserts the same exception by name rather than folding it into a general rule.
+        /// </summary>
+        private static readonly CardDefinitionId[] ComposedWithNoEffectRoot =
+        {
+            TaliCardContent.WinterDagger, TaliCardContent.WinterSpear, TaliCardContent.WinterScepter
+        };
+
+        /// <summary>
         /// The composed-versus-deferred boundary, asserted in both directions so it cannot drift.
         ///
-        /// <para>A face marked composed must actually have an effect definition, and a face listed as
-        /// owed must be marked deferred with the reason the effect content gives. The failure this
-        /// catches is the quiet one: a definition claiming its text is composed while the effect content
-        /// returns null for it, which would ship a card that silently does nothing.</para>
+        /// <para>A face marked composed must actually have an effect definition OR a dynamic value
+        /// contribution (see <see cref="ComposedWithNoEffectRoot"/>), and a face listed as owed must be
+        /// marked deferred with the reason the effect content gives. The failure this catches is the
+        /// quiet one: a definition claiming its text is composed while the effect content returns null
+        /// for it and declares no value contribution either, which would ship a card that silently does
+        /// nothing.</para>
         /// </summary>
         [Test]
         public void EveryFaceIsEitherComposedOrExplicitlyDeferred_WithNoDisagreementBetweenTheTwo()
@@ -295,8 +308,13 @@ namespace GuardsDigital.Tests.EditMode
                     .FirstOrDefault(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary);
                 if (primary == null)
                 {
-                    // The Ultimate carries its debt on the rule rather than on an action.
-                    Assert.That(definition.UltimateRule.TextComposition.IsAwaited, Is.True);
+                    // The Ultimate carries its debt on the rule rather than on an action. Milestone
+                    // 8.37 composes Reign of Winter's rule, so it too must now agree
+                    // with CompositionOwed rather than being asserted always-awaited.
+                    var ultimateOwed = TaliEffectContent.CompositionOwed.ContainsKey(definition.Id);
+                    Assert.That(definition.UltimateRule.TextComposition.IsAwaited, Is.EqualTo(ultimateOwed),
+                        $"'{definition.Id}' Ultimate rule must be marked deferred exactly when the " +
+                        "effect content lists it as owed.");
                     continue;
                 }
 
@@ -312,6 +330,15 @@ namespace GuardsDigital.Tests.EditMode
                         Is.EqualTo(TaliEffectContent.CompositionOwed[definition.Id]),
                         "The deferral names the piece the effect content says it waits on.");
                 }
+                else if (ComposedWithNoEffectRoot.Contains(definition.Id))
+                {
+                    Assert.That(primary.EffectRoot, Is.Null,
+                        $"'{definition.Id}' composes no card text: its +3 is a value contribution, " +
+                        "never a step.");
+                    Assert.That(primary.RosterValueContributions, Is.Not.Empty,
+                        $"'{definition.Id}' claims its text is composed, so its dynamic value must be " +
+                        "declared.");
+                }
                 else
                 {
                     Assert.That(primary.EffectRoot, Is.Not.Null,
@@ -321,16 +348,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ThePhaseOneCompositionsAreExactlyTheFiveTokenFaces()
+        public void TheTaliDealPrepCompositionsAreExactlyTheseSeventeenFaces()
         {
             var composed = TaliCardContent.AllDefinitions
                 .Where(definition => !TaliEffectContent.CompositionOwed.ContainsKey(definition.Id))
                 .Select(definition => definition.Id)
                 .ToArray();
 
-            Assert.That(composed, Is.EquivalentTo(TaliCardContent.PlacesTokens),
-                "Phase one composes her token line and defers the rest with named causes; every " +
-                "deferral is an engine piece rather than an unanswered rules question.");
+            Assert.That(composed, Is.EquivalentTo(new[]
+            {
+                // Phase one's Green line.
+                TaliCardContent.GlacialBarrier, TaliCardContent.WallOfFrost, TaliCardContent.PackIce,
+                TaliCardContent.AncestralTotem, TaliCardContent.VeneratedTotem,
+
+                // Milestone 8.37's twelve.
+                TaliCardContent.IceBlast, TaliCardContent.CommuneWithSpirits,
+                TaliCardContent.WinterDagger, TaliCardContent.WinterSpear, TaliCardContent.WinterScepter,
+                TaliCardContent.SpiritWolf, TaliCardContent.SpiritBear,
+                TaliCardContent.ColdSnap, TaliCardContent.Snowstorm,
+                TaliCardContent.GuardianSpirit, TaliCardContent.WarriorSpirit,
+                TaliCardContent.ReignOfWinter
+            }), "Seventeen of her nineteen faces are composed; only p.20's parked Handicap card and " +
+                "Blizzard's second, independent sentence remain deferred, each with a named, still-true " +
+                "reason in CompositionOwed.");
         }
 
         /// <summary>
@@ -390,36 +430,28 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// <b>THE ENGINE GAP RULING 21 OPENS, pinned here so it cannot be discovered twice.</b>
+        /// <b>THE ENGINE GAP RULING 21 OPENED IS NOW CLOSED, pinned here so a reader finds the closure
+        /// rather than the debt.</b>
         ///
-        /// <para><see cref="CardColor"/> has <b>five</b> members, and Purple's absence is deliberate
-        /// and argued: the enum's own remarks record that "The Ultimate's printed card carries a
-        /// swatch of its own that is none of these five, and no rule in the source reads it" - p.15
-        /// matches colours among the cards in a hand and p.16 keeps the Ultimate out of the hand - so
-        /// "a sixth member would therefore be a value no rule asks about".</para>
-        ///
-        /// <para><b>Commune with Spirits is the first content that asks about it.</b> RULING 21 says
-        /// all six of p.9's colours are nameable and Purple is inert, so the naming step must be able
-        /// to offer a colour the type cannot currently express. That is precisely the condition the
-        /// enum set for its own widening, and it is met - which makes the sixth member a decision for
-        /// the milestone that composes the naming capability rather than a silent omission here.</para>
-        ///
-        /// <para>This test asserts the gap as it stands today. It fails the moment Purple is added,
-        /// which is the point: whoever adds it reads this and the reasoning above.</para>
+        /// <para>This test used to fail the moment <see cref="CardColor.Purple"/> was added, by design -
+        /// "whoever adds it reads this and the reasoning above". Milestone 8.37 is that
+        /// milestone: <see cref="CardColor"/> now has six printed colours plus <see cref="CardColor.None"/>,
+        /// and the assertion below is the flipped form the original comment named as its own successor -
+        /// every one of p.9's six colours, Purple included, builds a legal borrow pool.</para>
         /// </summary>
         [Test]
-        public void CardColourStillHasFiveMembers_SoCommunesPurpleNamingHasNoValueToCarryYet()
+        public void CardColourNowHasSixPrintedColours_AndAllSixNameCommuneAPool()
         {
             Assert.That(
                 System.Enum.GetValues(typeof(CardColor)).Length,
-                Is.EqualTo(6),
-                "Five printed colours plus None. RULING 21 needs a sixth printed colour for " +
-                "Commune's naming step; adding it is the naming milestone's decision, and this " +
-                "assertion is what tells that milestone the type has changed under it.");
+                Is.EqualTo(7),
+                "Six printed colours plus None. RULING 21's sixth printed colour - Purple - is " +
+                "wired at milestone 8.37.");
 
             foreach (var color in new[]
             {
-                CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green, CardColor.Blue
+                CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green, CardColor.Blue,
+                CardColor.Purple
             })
             {
                 Assert.That(
@@ -428,8 +460,15 @@ namespace GuardsDigital.Tests.EditMode
                     "Arty (8/15): \"Naming the color is not [optional]. The action you are performing " +
                     "is referring to the color, not the card you may or may not have chosen to " +
                     "discard.\" So every nameable colour must build a legal pool whether or not she " +
-                    "holds one - which the five expressible ones already do.");
+                    "holds one - all six now do, RULING 21's Purple included.");
             }
+
+            Assert.That(
+                () => CardProgressionProfile.NonBasicCard(
+                    CardColor.Purple, CardTier.I, PrintedValueChannel.None),
+                Throws.ArgumentException,
+                "Purple is a colour the naming step may offer, never a colour a hand card may declare - " +
+                "see CardColor's own remarks.");
         }
 
         [Test]

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Timing;
 
@@ -51,6 +52,60 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string PresentOutput = "present";
 
         /// <summary>
+        /// Milestone 8.37's <c>synthetic-source-card-in-discard@1</c>: whether the card
+        /// whose text is currently running is itself standing in the discard pile, read live at the
+        /// moment the predicate is asked.
+        ///
+        /// <para><b>Why this is a second capability rather than a parameter on
+        /// <see cref="HeroCondition"/>.</b> That one asks about the ACTOR's own standing condition -
+        /// "if enraged" - which is a fact about a hero. This asks about the SOURCE CARD's own lifecycle
+        /// state - "if this card is (not) in the discard" - which is a fact about the card, and the two
+        /// have different subjects and different readers. Tali's set is the first to print a condition a
+        /// card asks about itself: three Winter Attacks and two Spirit Attacks read it directly, and
+        /// Guardian Spirit and Warrior Spirit each pair it with <c>retrieve-card@1</c>.</para>
+        ///
+        /// <para><b>It names no card, and it takes exactly one parameter that is not a card either.</b>
+        /// "This card" is never a choice - it is always the one card whose text is executing, which
+        /// <see cref="EffectCapabilityContext.SourceCardInstanceId"/> already names, so widening this to
+        /// ask about a card other than its own would be a reading no printed sentence needs and the
+        /// self-referential framing forbids. The one parameter it does take is
+        /// <see cref="NegateParameter"/>: her own faces print BOTH directions of the same question
+        /// ("if this card is NOT in the discard" on the three Winter Attacks and Spirit Wolf/Bear's
+        /// bullet, "if this card IS in the discard" on Guardian Spirit and Warrior Spirit) and a
+        /// <see cref="EffectNodeKind.Conditional"/> is structurally a then-branch with an OPTIONAL
+        /// else - it cannot express "run this when false, run nothing when true" without one - so the
+        /// question is asked once and read either way by the one boolean flip a Conditional cannot
+        /// itself express, rather than by a second capability duplicating the read.</para>
+        ///
+        /// <para><b>Reads <see cref="CardLocation.DiscardPile"/> off the live card state rather than off
+        /// a captured fact</b>, because Commune with Spirits' borrow performs a discarded card's own text
+        /// while that card is still standing in the discard (RULING 22): the same predicate, asked while
+        /// a borrowed Winter Dagger executes, must answer <c>true</c> even though nothing about
+        /// <em>this</em> milestone's node table changed - it is the card's own location that differs
+        /// between the two callers, not the question.</para>
+        /// </summary>
+        public static EffectCapabilityId SourceCardInDiscard { get; } =
+            new EffectCapabilityId("synthetic-source-card-in-discard");
+
+        public static EffectCapabilityReference SourceCardInDiscardV1 =>
+            new EffectCapabilityReference(SourceCardInDiscard, 1);
+
+        /// <summary>
+        /// Whether the source card is standing in the discard pile right now - or its negation, when
+        /// <see cref="NegateParameter"/> is bound true. The output name never changes with the reading:
+        /// a Conditional binds it as "the fact to branch on", whichever fact that composition asked for.
+        /// </summary>
+        public const string InDiscardOutput = "inDiscard";
+
+        /// <summary>
+        /// Optional, defaulting to false (the plain "in discard" reading). Bind
+        /// <see cref="EffectValue.Boolean"/> true for "is NOT in the discard" - Winter Dagger, Winter
+        /// Spear, Winter Scepter and both Spirit Attacks' bullet - and leave it unbound for "IS in the
+        /// discard" - Guardian Spirit and Warrior Spirit's retrieval clause.
+        /// </summary>
+        public const string NegateParameter = "negate";
+
+        /// <summary>
         /// Milestone 8.35z50 registered this file's one handler, beside the hero whose dealt cards
         /// start it.
         ///
@@ -62,15 +117,83 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// `choose-line-destination@1` already registered by Misa's.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            new IEffectCapabilityHandler[] { new HeroConditionHandler() };
+            new IEffectCapabilityHandler[]
+            {
+                new HeroConditionHandler(),
+                // Milestone 8.37, the milestone that deals Tali the Spiritcaller. Seven of her
+                // nineteen faces read their own discard state, so the predicate is now started by a
+                // dealt card and the gate that held it below is satisfied on both halves.
+                new SourceCardInDiscardHandler()
+            };
 
         /// <summary>
-        /// Nothing is deferred here any longer - milestone 8.35z50 moved this file's one handler across.
-        /// The member survives because the offline content tests compose catalogs of their own from the
-        /// deferred lists, and a hero composed but not yet dealt still needs that seam.
+        /// The handlers this file owns, for the milestone that deals Ursafar or Tali to register beside
+        /// their own content - and for the offline tests that compose a catalog of their own to prove
+        /// them. <c>hero-condition@1</c> is Ursafar's; <c>synthetic-source-card-in-discard@1</c> is
+        /// Tali's; both are deliberately generic and either hero's dealing may register whichever of the
+        /// two it needs first without waiting on the other.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             Array.Empty<IEffectCapabilityHandler>();
+
+        /// <summary>
+        /// A pure predicate over the card state the resolution was given: it mutates nothing, asks
+        /// nobody, and publishes one boolean read from the source card's own current location.
+        /// </summary>
+        private sealed class SourceCardInDiscardHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => SourceCardInDiscardV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(
+                            NegateParameter, EffectValueKind.Boolean, isRequired: false)
+                    },
+                    new[] { new EffectOutputBinding(InDiscardOutput, EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            private static bool TryFindSourceCard(EffectCapabilityContext context, out CardInstance card)
+            {
+                card = null;
+                if (!context.SourceCardInstanceId.IsDefined || !context.CardState.IsAvailable)
+                {
+                    return false;
+                }
+
+                card = context.CardState.Instances.FirstOrDefault(
+                    instance => instance.Id.Equals(context.SourceCardInstanceId));
+                return card != null;
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (!TryFindSourceCard(context, out var card))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var inDiscard = card.State.Location == CardLocation.DiscardPile;
+                var negate = context.Input(NegateParameter).BooleanValue;
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(
+                        InDiscardOutput, EffectValue.Boolean(negate ? !inDiscard : inDiscard))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                TryFindSourceCard(context, out _)
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
 
         /// <summary>
         /// A pure predicate over the match's own timing state: it mutates nothing, asks nobody, and

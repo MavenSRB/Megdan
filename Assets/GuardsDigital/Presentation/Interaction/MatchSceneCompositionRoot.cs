@@ -605,7 +605,71 @@ namespace GuardsDigital.Presentation.Interaction
         /// RULING 17's opponent-chosen modal at its widest, and Grim Reaper's raised ceiling are all
         /// reachable through a player's own input at once.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedWhisper = 59
+        VerifiedTierThreeAlternateEngagedStagedWhisper = 59,
+
+
+        /// <summary>
+        /// Milestone 8.37. The engaged staging with Tali the Spiritcaller on the Blue
+        /// seat, the twelfth hero this build deals.
+        ///
+        /// <para>She takes the Blue seat rather than joining it, for the reason the seven arms before
+        /// hers record: milestone 8.25 owns the official six-player configuration. She needs no ally
+        /// arm for reachability - Commune with Spirits' mandatory naming already admits herself as a
+        /// candidate friendly hero - but the ally-naming half of her full borrow flow is proven on
+        /// <see cref="Participants.MatchConfiguration.CreateStagedTaliWithAllyForInternalTest"/>
+        /// instead, which this enum does not need its own arm for: that configuration is reached
+        /// directly rather than through the engaged one-versus-one staging every other arm here
+        /// restages.</para>
+        ///
+        /// <para>Her Attacks are all adjacent-or-in-radius rather than banded, so the engagement serves
+        /// her the way it serves every earlier hero: it brings the two heroes to a distance her printed
+        /// Radius and Range disks can actually reach, rather than compensating for a RULING 1-style
+        /// band the way Silverarrow's own arm does.</para>
+        /// </summary>
+        VerifiedEngagedStagedTali = 60,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Tali holding the first sibling of
+        /// each colour: Winter Spear, Snowstorm and Wall of Frost - the Ice-heavy track.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedTali = 61,
+
+        /// <summary>
+        /// The Tier II staging with Tali holding the second sibling of each colour: Spirit Wolf,
+        /// Guardian Spirit and Ancestral Totem - the Totem/Spirit track, and the only Tier II arm
+        /// carrying a retrieval or the modal self-referential gate.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedTali = 62,
+
+        /// <summary>
+        /// The Tier III staging with Tali holding the first sibling of each colour - Winter Scepter,
+        /// Warrior Spirit and Pack Ice - and p.16's Ultimate unlocked on both seats.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedTali = 63,
+
+        /// <summary>
+        /// The Tier III staging with Tali holding the second sibling of each colour - Spirit Bear,
+        /// Warrior Spirit and Venerated Totem - and p.16's Ultimate unlocked on both seats. This is the
+        /// only Tier III arm carrying the totem immunity (RULING 26) and the multi-sequence "choose one,
+        /// or both" modal.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedTali = 64,
+
+        /// <summary>
+        /// Milestone 8.37. Wasp on Red against Tali <em>and</em> an ally (Arien) on Blue
+        /// - the shape <see cref="VerifiedStagedBroganWithAlly"/> already proves, with the roles
+        /// swapped: there the second Blue hero is what BROGAN's own faces needed a candidate for, here
+        /// the second Blue hero is what COMMUNE WITH SPIRITS' mandatory naming step selects, so the
+        /// journey can show an ally - not Tali herself - naming the colour.
+        ///
+        /// <para>Commune with Spirits is in her starting hand, so this is one arm rather than three:
+        /// unlike War Drummer and Master Skald, no progressed stage is needed to reach it.</para>
+        ///
+        /// <para>Not restaged, for the identical reason Brogan's own ally arm is not: neither seat's
+        /// selection reads distance, so the two Blue spawns already are wherever the naming step
+        /// needs them.</para>
+        /// </summary>
+        VerifiedStagedTaliWithAlly = 65
     }
 
     [ExecuteAlways]
@@ -1060,6 +1124,28 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedWhisperTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.WhisperUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedTali =>
+                    MatchConfiguration.CreateStagedTaliForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedTali =>
+                    MatchConfiguration.CreateStagedTaliTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TaliUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTali =>
+                    MatchConfiguration.CreateStagedTaliTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TaliUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedTali =>
+                    MatchConfiguration.CreateStagedTaliTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TaliUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTali =>
+                    MatchConfiguration.CreateStagedTaliTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.TaliUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedStagedTaliWithAlly =>
+                    MatchConfiguration.CreateStagedTaliWithAllyForInternalTest(
+                        TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1104,7 +1190,8 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedMisa(content) ||
                 IsStagedSilverarrow(content) ||
                 IsStagedUrsafar(content) ||
-                IsStagedWhisper(content))
+                IsStagedWhisper(content) ||
+                IsStagedTali(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1492,6 +1579,11 @@ namespace GuardsDigital.Presentation.Interaction
                 case SceneCardContent.ConfiguredMatch:
                     return HeroLineupComposition.Compose(plan.Format, plan.Lineup);
                 default:
+                    if (content == SceneCardContent.VerifiedStagedTaliWithAlly)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusTaliWithAllyOneVsTwo();
+                    }
+
                     if (IsBroganWithAlly(content))
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusArienAndBroganOneVsTwo();
@@ -1546,6 +1638,11 @@ namespace GuardsDigital.Presentation.Interaction
                     if (IsStagedWhisper(content))
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusWhisperOneVsOne();
+                    }
+
+                    if (IsStagedTali(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusTaliOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
@@ -1667,6 +1764,20 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedWhisper ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedWhisper ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedWhisper;
+
+        /// <summary>
+        /// Whether this content deals Tali on the Blue seat, restaged already engaged. Milestone
+        /// 8.37's five arms. Does NOT include
+        /// <see cref="SceneCardContent.VerifiedStagedTaliWithAlly"/>, which - like
+        /// <see cref="IsBroganWithAlly"/>'s own arms - is deliberately not restaged.
+        /// </summary>
+        private static bool IsStagedTali(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedTali ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedTali ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedTali ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedTali ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedTali;
+
 
         /// <summary>
         /// Whether this content deals two heroes to the Blue team with Brogan beside Arien. Milestone

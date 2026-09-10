@@ -815,7 +815,8 @@ namespace GuardsDigital.Application
             IReadOnlyList<NetworkEffectCandidateRow> unavailableCandidates,
             bool hasConfirmInvocation,
             bool hasDeclineInvocation,
-            bool hasStopInvocation)
+            bool hasStopInvocation,
+            int valueVocabulary)
         {
             ResolutionId = resolutionId;
             ChoiceId = choiceId;
@@ -830,6 +831,7 @@ namespace GuardsDigital.Application
             HasConfirmInvocation = hasConfirmInvocation;
             HasDeclineInvocation = hasDeclineInvocation;
             HasStopInvocation = hasStopInvocation;
+            ValueVocabulary = valueVocabulary;
         }
 
         public string ResolutionId { get; }
@@ -845,6 +847,15 @@ namespace GuardsDigital.Application
         public bool HasConfirmInvocation { get; }
         public bool HasDeclineInvocation { get; }
         public bool HasStopInvocation { get; }
+
+        /// <summary>
+        /// Milestone 8.37. What this choice's integer candidates mean, as
+        /// <see cref="Core.Rules.EffectResolution.EffectChoiceValueVocabulary"/>. It crosses the wire
+        /// because a JOINED seat draws the controls, and a colour named as "3" is not a control a
+        /// player can answer. The snapshot does not carry it - restore re-asks the handler - so this
+        /// moves the wire version and leaves the schema alone.
+        /// </summary>
+        public int ValueVocabulary { get; }
     }
 
     public sealed class NetworkEffectChoicePreviewRow

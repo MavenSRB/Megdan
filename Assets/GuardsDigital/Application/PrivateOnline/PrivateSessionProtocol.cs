@@ -199,7 +199,20 @@ namespace GuardsDigital.Application
         /// </remarks>
         // Version 12 requires authentication for a keyed client's forfeiting Goodbye.
         // Older peers are rejected before admission; snapshot and payload layouts are unchanged.
-        public const int Version = 12;
+        //
+        // Version 13 (milestone 8.37) carries a pending effect choice's VALUE VOCABULARY, so a joined
+        // seat can draw six colours or six directions rather than the digits 0 through 5. Tali the
+        // Spiritcaller is the first hero whose integer candidates are not counts, and Commune with
+        // Spirits puts one of those decisions to a hero who is not the acting seat - so the seat that
+        // must answer it is, by construction, a REMOTE one, and a host-only reading would have left
+        // her signature Skill unanswerable at every table this project actually plays at.
+        //
+        // SCHEMA IS UNMOVED at v41. The vocabulary is the handler's own declaration about the set it
+        // just offered, and a snapshot restore re-asks that handler, so nothing needs to persist it -
+        // it is derived on restore exactly as the candidates it describes already are. What moved is
+        // what a REMOTE READ MODEL is told, not what a payload contains: no corpus digest, pinned
+        // constant or bare version assertion moves with it.
+        public const int Version = 13;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

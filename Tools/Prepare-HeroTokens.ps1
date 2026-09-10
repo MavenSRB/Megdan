@@ -85,7 +85,7 @@
 param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
-        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper')]
+        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Check,
@@ -145,12 +145,14 @@ $declaredHeroes = @{
     # a name-matching rule would still find nothing, which is exactly why this stays a declared table.
     whisper = @{ ElementId = 8597952; ElementName = 'Outcast'; DisplayName = 'Whisper' }
 
-    # RECORDED ABSENCE - Tali. She is still being dealt (the DECISION cuts the fixed build at eleven
-    # heroes, with Whisper and without Tali), and the corpus holds her dashboard under the shared
-    # Tabletopia placeholder name `Tali` but no `VerticalTokens` standee this file can state yet. Her
-    # dealing worker declares the mapping in one line when her cut arrives; guessing it here would
-    # crop whatever happens to sit at those coordinates, which is the failure the identity check below
-    # exists to make impossible.
+    # Milestone 8.37. Closes the last recorded absence in this table: her element does not
+    # carry the bare hero name (the manifest names nothing "Tali"), it carries her epithet, exactly
+    # as Ursafar's own declared line does with "Ursafar_The_Savage" against the project's bare
+    # `ursafar`. Read directly from the bundled manifest (`elementId: 8629815, elementName:
+    # "Spiritcaller", elementType: "VerticalTokens", 302x302` - the same dimensions every other
+    # declared hero's element carries) rather than guessed; it sits immediately beside Ursafar's own
+    # 8629816 and Mrak's 8629814 in the manifest's own ordering.
+    tali = @{ ElementId = 8629815; ElementName = 'Spiritcaller'; DisplayName = 'Tali' }
 }
 
 $declared = $declaredHeroes[$Hero]

@@ -643,7 +643,9 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<EffectValue> candidates,
             int minimumSelections,
             int maximumSelections,
-            HeroId chooserHeroId = default)
+            HeroId chooserHeroId = default,
+            Rules.EffectResolution.EffectChoiceValueVocabulary valueVocabulary =
+                Rules.EffectResolution.EffectChoiceValueVocabulary.None)
         {
             if (chooser == EffectChooserRole.None && !chooserHeroId.IsDefined)
             {
@@ -673,6 +675,7 @@ namespace GuardsDigital.Core.Effects
 
             Chooser = chooser;
             ChooserHeroId = chooserHeroId;
+            ValueVocabulary = valueVocabulary;
             Candidates = new ReadOnlyCollection<EffectValue>(options);
             MinimumSelections = minimumSelections;
             MaximumSelections = maximumSelections;
@@ -695,6 +698,14 @@ namespace GuardsDigital.Core.Effects
         public IReadOnlyList<EffectValue> Candidates { get; }
         public int MinimumSelections { get; }
         public int MaximumSelections { get; }
+
+        /// <summary>
+        /// Milestone 8.37. What this request's integer candidates mean, when they mean something
+        /// other than a count - see <see cref="Rules.EffectResolution.EffectChoiceValueVocabulary"/>.
+        /// The handler is the only thing that knows, which is why it is declared here and not
+        /// inferred downstream.
+        /// </summary>
+        public Rules.EffectResolution.EffectChoiceValueVocabulary ValueVocabulary { get; }
     }
 
     /// <summary>

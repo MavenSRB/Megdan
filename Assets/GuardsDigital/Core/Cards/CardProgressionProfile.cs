@@ -183,6 +183,18 @@ namespace GuardsDigital.Core.Cards
                     "A non-Basic card states a card colour.", nameof(color));
             }
 
+            // Milestone 8.37. CardColor.Purple is p.15's HAND colours widened by one for
+            // a naming step that reaches beyond them (RULING 21) - it is never a printed swatch on a
+            // card in a hand, so no definition may claim it as its own colour, structurally rather than
+            // by convention.
+            if (color == CardColor.Purple)
+            {
+                throw new ArgumentException(
+                    "Purple is the Ultimate's naming-only colour and prints on no hand card " +
+                    "(rulebook p.15).",
+                    nameof(color));
+            }
+
             if (tier == CardTier.None)
             {
                 throw new ArgumentException(

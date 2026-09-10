@@ -210,6 +210,31 @@ namespace GuardsDigital.Tests.PlayMode
         /// <summary>p.16's item, gained from the untaken sibling and readable on the dashboard.</summary>
         ItemVisibilityAndUse,
 
+        /// <summary>
+        /// Milestone 8.37. An unconstrained choice among p.17's six directions, answered
+        /// on its own control rather than by clicking anything on the board - Tali's Cold Snap,
+        /// Snowstorm and Blizzard, "Choose a direction."
+        ///
+        /// <para>It is its own shape rather than <see cref="BoardSpaceSelection"/> because nothing about
+        /// it is a space: the six candidates exist unconditionally, wherever the actor stands and
+        /// whatever the board looks like, which no board click could be - clicking implies a place, and
+        /// this names an orientation.</para>
+        /// </summary>
+        DirectionChoice,
+
+        /// <summary>
+        /// Milestone 8.37. A hero mandatorily naming one of p.9's six printed colours,
+        /// answered on its own control - Commune with Spirits' naming step and Reign of Winter's
+        /// "colour of your choice" discard.
+        ///
+        /// <para>It is its own shape rather than <see cref="HandCardSelection"/> because the colour
+        /// named is independent of any card in any hand - Arty's own ruling is explicit that the naming
+        /// step must succeed even with an empty hand - so a row claiming a hand-card control would name
+        /// a candidate set the printed sentence does not read from.</para>
+        /// </summary>
+        ColorNamingChoice,
+
+
         // -------------------------------------------------------------------------------------
         // Component shapes. These belong to the hero rather than to any one face, and the gate
         // names every one of them. They are required of every hero's matrix by
@@ -818,7 +843,55 @@ namespace GuardsDigital.Tests.PlayMode
                 // table cannot answer, and a later face that names this one as a Capability node would
                 // fail on the id rather than on the shape. Classifying it costs nothing and leaving it
                 // out would be a trap laid for whoever prints the next discard-gated sentence.
-                ["enemy-hero-with-discard-present"] = Array.Empty<PlayerInteractionShape>()
+                ["enemy-hero-with-discard-present"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.37. Tali the Spiritcaller's new entries.
+                //
+                // Her six token capabilities - a placement and a p.18 short-supply reclamation per
+                // role - all resolve to a space clicked on the board. Both open a real choice whenever
+                // more than one candidate space exists (ReclaimHandler asks exactly the placement's own
+                // question, over standing tokens of the group rather than empty spaces), so both are
+                // BoardSpaceSelection and neither is empty - a reclaim that removes the wrong reading
+                // would claim a token vanishes by rule alone when RULING 44's own text is p.10's
+                // ordinary board click.
+                ["tali-place-ice-token"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["tali-reclaim-for-ice-token"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["tali-place-ancestral-totem"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["tali-reclaim-for-ancestral-totem"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["tali-place-venerated-totem"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["tali-reclaim-for-venerated-totem"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Commune with Spirits' "a friendly hero in play" - a hero clicked on the board, on the
+                // same terms every other hero selection here already reads. See
+                // SyntheticBorrowedActionCapabilities.FriendlyHeroInPlayV1's own remarks for why it is a
+                // new capability rather than a reuse of a printed-icon family: it is anchored on no
+                // Range or Radius icon at all.
+                ["friendly-hero-in-play"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Cold Snap, Snowstorm and Blizzard's free direction - see DirectionChoice's own
+                // remarks for why no board-anchored shape fits it.
+                ["synthetic-choose-direction"] = new[] { PlayerInteractionShape.DirectionChoice },
+
+                // Commune with Spirits' naming step and Reign of Winter's colour-of-choice discard -
+                // see ColorNamingChoice's own remarks.
+                ["name-color"] = new[] { PlayerInteractionShape.ColorNamingChoice },
+
+                // p.18's batch direct Move over every enemy unit in radius: a reading and a consequence
+                // together, over a set the printed sentence names outright ("each"), so nobody is asked
+                // which units move - the same reading `attack-sequence` and `synthetic-object-push`'s
+                // own unbounded batch already carry.
+                ["synthetic-batch-direct-move"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Ice Blast's step-3-to-step-7 rider: a reading of the defended card's own colour,
+                // doubling as the Conditional's gate. Shows a player no control of its own - the
+                // selection and the discard that follow it declare theirs separately.
+                ["defended-card-color"] = Array.Empty<PlayerInteractionShape>(),
+
+                // The source card's own discard-state predicate: a reading, gating a Conditional or
+                // scaling a dynamic value, never a control of its own.
+                ["synthetic-source-card-in-discard"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

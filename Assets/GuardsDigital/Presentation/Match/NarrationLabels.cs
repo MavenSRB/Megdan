@@ -69,6 +69,22 @@ namespace GuardsDigital.Presentation.Match
             $"{RequireName(heroDisplayName)} — TURN COMPLETE, AWAITING RELEASE";
 
         /// <summary>
+        /// Milestone 8.37. A decision that belongs to a hero who is NOT the viewer, named for the
+        /// viewer who is waiting on it.
+        ///
+        /// <para>Tali's Commune with Spirits is the first face that makes this ordinary rather than
+        /// exceptional: she plays the card and an ALLY names the colour, so the acting seat has
+        /// nothing to press and no reason given. <see cref="Own"/> would say "YOUR NAME A COLOUR" to
+        /// a player who cannot answer it, which is worse than silence. Whisper's own bound-hero modal
+        /// at 8.35z53 opened the same gap and was left to the acting seat's own patience; this closes
+        /// it for both.</para>
+        /// </summary>
+        public static string HeroDeciding(string heroDisplayName, string family) =>
+            string.IsNullOrWhiteSpace(family)
+                ? throw new ArgumentException("A waiting line names its family.", nameof(family))
+                : $"{RequireName(heroDisplayName)} — {family}";
+
+        /// <summary>
         /// The heroes still owed a public answer - a commitment, or an unanswered team-agreement
         /// participant. Every entry is a fact <see cref="IMatchReadModel"/> already publishes to
         /// every seat (<c>Commitments</c> and <c>TeamAgreement.Participants</c> are both stated public

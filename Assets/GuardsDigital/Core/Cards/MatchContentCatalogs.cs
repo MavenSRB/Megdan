@@ -129,6 +129,16 @@ namespace GuardsDigital.Core.Cards
                     // verified content to reach the `TimingCheckpoint.TurnEnded` window a card-text
                     // trigger, rather than an Ultimate's or an Active effect's own expiry, fires from.
                     SilverarrowEffectContent.TriggeredEffects(SilverarrowCardContent.ContentRevision))
+                // Milestone 8.37. Reign of Winter's own triggered effect - the colour-of-your-choice
+                // discard her Ultimate runs each time a basic Attack of hers defeats a minion. It is
+                // registered HERE rather than reached through a card node, because a p.16 permanent
+                // ability names its effect by reference and the owner walk resolves that reference
+                // against this catalog: an unregistered one is a definition the rule can name and the
+                // build cannot load, which `VerifiedContentIdentityTests` says out loud.
+                .Concat(new[]
+                {
+                    TaliEffectContent.ReignOfWinterTriggeredEffect(TaliCardContent.ContentRevision)
+                })
                 .ToArray()));
 
         /// <summary>
@@ -193,6 +203,14 @@ namespace GuardsDigital.Core.Cards
                 // `choose-swap-subject@1` - register from SyntheticRosterCapabilities rather than from
                 // here, because they are generic capabilities this build now owns rather than content
                 // of hers.
-                .Concat(WhisperActiveEffectContent.Handlers());
+                .Concat(WhisperActiveEffectContent.Handlers())
+                // Milestone 8.37, the milestone that deals Tali the Spiritcaller. Her six token
+                // handlers - a placement and a p.18 short-supply reclamation for each of the three
+                // roles of her one supply - are content of HERS rather than generic vocabulary, which
+                // is why they register from her own file the way Tigerclaw's Poison marker does and
+                // not from a Synthetic one. She declares no Active effect at all: her only
+                // Active-effect keyword is Blizzard's `End of turn:`, and Blizzard's whole face stays
+                // deferred, so the empty contribution is explicit rather than missing.
+                .Concat(TaliEffectContent.RegisteredHandlers());
     }
 }

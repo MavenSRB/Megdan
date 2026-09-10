@@ -4224,7 +4224,10 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(MisaCardContent.DealtDefinitions)
                 .Concat(SilverarrowCardContent.DealtDefinitions)
                 .Concat(UrsafarCardContent.DealtDefinitions)
-                .Concat(WhisperCardContent.DealtDefinitions).ToArray();
+                .Concat(WhisperCardContent.DealtDefinitions)
+                // Milestone 8.37. The twelfth and last, so this list and the artwork bijection it is
+                // asserted against now cover every hero the build can deal.
+                .Concat(TaliCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

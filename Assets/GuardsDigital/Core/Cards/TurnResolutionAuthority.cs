@@ -3284,6 +3284,12 @@ namespace GuardsDigital.Core.Cards
                         {
                             continue;
                         }
+                        // Milestone 8.37, corrected per
+                        // ResolverEmittedCheckpointConformanceTests: the fact is stated by the resolver
+                        // step that raises this very checkpoint
+                        // (step.CompletedDefeatedMinionWithBasicAttack, threaded from
+                        // AttackDefenseCardActionStrategyBackend.StepsAfterCardText) rather than
+                        // inferred here by re-reading a produced CardActionResolutionEvent's Kind.
                         AddCompletedAction(
                             events,
                             step.CheckpointSourceCardInstanceId,
@@ -3292,7 +3298,8 @@ namespace GuardsDigital.Core.Cards
                             step.CompletedActionKind,
                             step.CompletedInvocationContext,
                             step.CompletedAttackTarget,
-                            step.CompletedPlacedSelf);
+                            step.CompletedPlacedSelf,
+                            step.CompletedDefeatedMinionWithBasicAttack);
                         continue;
                     }
 
@@ -3372,12 +3379,14 @@ namespace GuardsDigital.Core.Cards
             ActionKind kind,
             ActionInvocationContext invocationContext = ActionInvocationContext.PrintedPrimary,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default,
-            bool placedSelf = false)
+            bool placedSelf = false,
+            bool defeatedMinionWithBasicAttack = false)
         {
             var basicAction = BasicActionQuery.ForCompletedAction(
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, definitions, instances,
                 invocationContext == ActionInvocationContext.Repeated,
-                placedSelf);
+                placedSelf,
+                defeatedMinionWithBasicAttack);
             if (basicAction.IsDefined)
             {
                 events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));

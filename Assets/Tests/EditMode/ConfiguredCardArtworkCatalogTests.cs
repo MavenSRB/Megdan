@@ -45,7 +45,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA198EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA216EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -87,15 +87,22 @@ namespace GuardsDigital.Tests.EditMode
             // structurally invisible to every offline tier, and what changed is that the map was
             // taught the hero at the same moment as the rows. Vile Accusation is p.20's Handicap card
             // and is excluded exactly as the four Handicap cards named above are.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(198));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(198));
+            //
+            // MILESTONE 8.37 TAKES IT 198 TO 216, AND IS THE LAST TIME IT MOVES FOR A DEALING: Tali
+            // is the twelfth and last hero of the package arc, so the catalog now illustrates every
+            // hero this build can put on a board. Her dealing wrote `HeroFolders`'s
+            // `{ "tali", "Tali" }` and `Configured`'s `.Concat(TaliCardContent.DealtDefinitions)` in
+            // the same edit as the eighteen JSON rows, on the instruction the paragraphs above give.
+            // Ice Shard is p.20's Handicap card and is excluded exactly as the five above it are.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(216));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(216));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(198),
+                Is.EqualTo(216),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -104,8 +111,8 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     ("arien", 18), ("brogan", 18), ("dodger", 18), ("misa", 18),
-                    ("sabina", 18), ("silverarrow", 18), ("tigerclaw", 18), ("ursafar", 18),
-                    ("wasp", 18), ("whisper", 18), ("xargatha", 18)
+                    ("sabina", 18), ("silverarrow", 18), ("tali", 18), ("tigerclaw", 18),
+                    ("ursafar", 18), ("wasp", 18), ("whisper", 18), ("xargatha", 18)
                 }));
 
             foreach (var entry in catalog.Entries)

@@ -53,6 +53,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The parameter naming the hero whose hand is read and whose decision this is.</summary>
         public const string HeroParameter = "hero";
 
+        /// <summary>
+        /// Milestone 8.37. The colour this discard is restricted to, or
+        /// <see cref="CardColor.None"/> for the unrestricted reading every declaration before Tali's
+        /// dealing already has. Optional and defaulting to <c>None</c>, so no earlier composition of
+        /// either revision changes: Wasp's Shock family and Electroblast bind nothing here and keep
+        /// their exact candidate set.
+        ///
+        /// <para>Reign of Winter's "a card of the color of your choice", Commune with Spirits' "a card
+        /// of that color" and Ice Blast's "a card of the same color" are the first three printed
+        /// sentences that narrow this step to one colour, and all three narrow it the identical way -
+        /// which is why this is a parameter on the shared handler rather than a third capability.</para>
+        /// </summary>
+        public const string ColorParameter = "color";
+
         /// <summary>The card this capability discarded, so a later node can bind it.</summary>
         public const string DiscardedOutput = "discarded";
 
@@ -90,7 +104,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 Reference = reference;
                 this.reportsInability = reportsInability;
                 Schema = new EffectCapabilityParameterSchema(
-                    new[] { new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero) },
+                    new[]
+                    {
+                        new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero),
+                        new EffectCapabilityParameter(
+                            ColorParameter,
+                            EffectValueKind.Integer,
+                            isRequired: false,
+                            integerDomain: EffectIntegerDomain.All<CardColor>())
+                    },
                     reportsInability
                         ? new[]
                         {
@@ -142,7 +164,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var offer = ColorRestrictedDiscard.Offer(
-                    Criteria(chooser),
+                    Criteria(chooser, Color(context)),
                     EffectChooserRole.None,
                     context.CardState.Definitions,
                     context.CardState.Instances,
@@ -197,7 +219,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // a card discarded, played, or otherwise moved between the offer and the answer is
                 // refused rather than discarded a second time. Nothing is mutated on that path.
                 var result = ColorRestrictedDiscard.Resolve(
-                    Criteria(chooser),
+                    Criteria(chooser, Color(context)),
                     selected[0].CardInstanceId,
                     context.CardState.Definitions,
                     context.CardState.Instances);
@@ -237,7 +259,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 return CardCharacteristicQuery
                     .FindCandidates(
-                        Criteria(chooser),
+                        Criteria(chooser, Color(context)),
                         context.CardState.Definitions,
                         context.CardState.Instances)
                     .Select(EffectValue.Card)
@@ -258,13 +280,28 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             /// <summary>
+            /// The colour this discard is restricted to, or <see cref="CardColor.None"/> for the
+            /// unrestricted reading. Unbound reads as <see cref="CardColor.None"/> - the schema's own
+            /// declared default - so no composition written before this milestone need change.
+            /// </summary>
+            private static CardColor Color(EffectCapabilityContext context) =>
+                (CardColor)context.Input(ColorParameter).IntegerValue;
+
+            /// <summary>
             /// One statement of what may be discarded, so the offer, the probe, and the commit cannot
             /// disagree. An unplayed card in that hero's own hand - the source state rulebook p.15's
-            /// discard starts from, and the state the in-hand mutation will accept.
+            /// discard starts from, and the state the in-hand mutation will accept - narrowed to one
+            /// colour where the card names one (milestone 8.37).
+            ///
+            /// <para><see cref="CardColor.Purple"/> is a legal value to narrow by and simply matches no
+            /// hand card, ever - <see cref="CardProgressionProfile"/>'s own constructors refuse it for
+            /// every printed hand definition - which is RULING 21's "Purple is inert" exactly, read here
+            /// rather than re-decided.</para>
             /// </summary>
-            private static CardCharacteristicCriteria Criteria(HeroId chooser) =>
+            private static CardCharacteristicCriteria Criteria(HeroId chooser, CardColor color) =>
                 new CardCharacteristicCriteria(
                     ownerId: chooser,
+                    colors: color == CardColor.None ? null : new[] { color },
                     locations: new[] { CardLocation.Hand },
                     hasBeenPlayed: false);
         }

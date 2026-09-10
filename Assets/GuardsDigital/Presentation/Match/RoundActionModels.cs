@@ -32,7 +32,8 @@ namespace GuardsDigital.Presentation.Match
             DirectorCommand command,
             DefenseBreakdownViewModel defenseBreakdown = null,
             TrayCardViewModel card = null,
-            CardShineSlot defenseShineSlot = CardShineSlot.None)
+            CardShineSlot defenseShineSlot = CardShineSlot.None,
+            CardColor swatch = CardColor.None)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A typed invocation requires a label.", nameof(label))
@@ -41,11 +42,25 @@ namespace GuardsDigital.Presentation.Match
             DefenseBreakdown = defenseBreakdown;
             Card = card;
             DefenseShineSlot = defenseShineSlot;
+            Swatch = swatch;
         }
 
         public string Label { get; }
         public DirectorCommand Command { get; }
         public DefenseBreakdownViewModel DefenseBreakdown { get; }
+
+        /// <summary>
+        /// Milestone 8.37. The printed colour this control NAMES, when the choice it answers declared
+        /// a card-colour vocabulary; <see cref="CardColor.None"/> on every other invocation.
+        ///
+        /// <para>Tali's Commune with Spirits hands this decision to an ALLY, who is being asked to
+        /// name a colour out of the six with no card in front of them. The word alone is answerable;
+        /// the word plus the colour it names is the control the table actually has, and the palette
+        /// it wears is the SAME one the rest of the HUD draws that colour with
+        /// (<c>MatchHudTheme.Face</c>), so a Green named here and a Green card in the tray are one
+        /// colour rather than two opinions.</para>
+        /// </summary>
+        public CardColor Swatch { get; }
 
         /// <summary>
         /// Which printed badge this Defense offer would defend with, stated by the presenter from

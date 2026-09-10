@@ -95,7 +95,13 @@ namespace GuardsDigital.Core.Components.Synthetic
 
         public static ComponentDefinitionCatalog CreateCatalog() =>
             new ComponentDefinitionCatalog(
-                new[] { HazardDefinition, WardDefinition },
+                // Milestone 8.37. Tali's Ice, Ancestral Totem and Venerated Totem join the one
+                // registered token set at the milestone that deals her, for the reason Tigerclaw's
+                // Poison marker joins the marker set below: a match registers one list of what it can
+                // put on the board and the snapshot pins that list. She is the first verified hero
+                // whose printed faces place TOKENS rather than markers.
+                new[] { HazardDefinition, WardDefinition }.Concat(
+                    GuardsDigital.Core.Cards.Verified.TaliComponentContent.Tokens()),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.

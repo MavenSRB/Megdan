@@ -265,8 +265,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SeatWireMeaning_UsesProtocolTwelve_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(12),
-                "8.36b requires authenticated keyed departures and rejects protocol 11. " +
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(13),
+                "8.37b carries a pending effect choice's declared VALUE VOCABULARY, so a joined seat draws six named colours or six named directions rather than the digits 0 through 5 - Tali's Commune with Spirits puts one of those decisions to a hero who is not the acting seat, so the seat that must answer it is by construction a remote one. A protocol 12 peer is refused before any payload is read. SCHEMA IS UNMOVED at v41: restore re-asks the handler, which re-declares it. " +
+                "8.36b required authenticated keyed departures and rejected protocol 11. " +
                 "Milestone 8.35z60's integration pass took it to 11: the seat projection now carries " +
                 "rulebook p.8's shared Wave-counter pool as a plain Int32 beside the per-team Life " +
                 "counters, so a remote seat's top strip reads the host's live count rather than the " +

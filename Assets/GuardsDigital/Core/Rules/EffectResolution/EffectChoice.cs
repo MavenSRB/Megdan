@@ -22,6 +22,37 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         ConfirmOrDecline = 3
     }
 
+    /// <summary>
+    /// Milestone 8.37. What a choice's INTEGER candidates mean, when they mean something other than a
+    /// count.
+    ///
+    /// <para><b>Why presentation cannot work this out for itself.</b> An
+    /// <see cref="EffectValueKind.Integer"/> candidate has been a printed NUMBER every time it has
+    /// appeared until now - the kinetic "3 or 4 spaces" distance - so the HUD labels one with its own
+    /// digits and calls the decision a number. Tali's Commune with Spirits offers six
+    /// <see cref="Cards.CardColor"/> members and her Cold Snap offers six
+    /// <see cref="Board.HexDirection"/> members, and both would reach a player as the buttons "0"
+    /// through "5". Inferring the meaning from the values is exactly what this codebase refuses
+    /// elsewhere - see <c>EffectChoiceCandidatePreview.ConsequenceIntent</c>, which exists so
+    /// presentation can tell a removal from every other choice "without reading a capability name,
+    /// card text, display name, target kind, or colour" - so the meaning is DECLARED by the handler
+    /// that opened the choice and carried to whoever draws it.</para>
+    ///
+    /// <para>It is not persisted in a snapshot and does not move the schema: restore re-asks the
+    /// registered handler what it offered, and the handler declares this on the way back out.</para>
+    /// </summary>
+    public enum EffectChoiceValueVocabulary
+    {
+        /// <summary>An ordinary value: a printed number, or a candidate of some non-integer kind.</summary>
+        None = 0,
+
+        /// <summary>Rulebook p.9's six printed card colours.</summary>
+        CardColor = 1,
+
+        /// <summary>Rulebook p.17's six board directions.</summary>
+        HexDirection = 2
+    }
+
     public enum EffectChoiceCandidateKind
     {
         None = 0,
@@ -199,7 +230,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<EffectChoiceCandidate> selected = null,
             IEnumerable<EffectChoiceCandidate> unavailableCandidates = null,
             bool canStop = false,
-            bool declinableRegardlessOfMinimum = false)
+            bool declinableRegardlessOfMinimum = false,
+            EffectChoiceValueVocabulary valueVocabulary = EffectChoiceValueVocabulary.None)
         {
             if (!resolutionId.IsDefined || !choiceId.IsDefined || !nodeId.IsDefined)
             {
@@ -231,6 +263,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 throw new ArgumentException(
                     "Selected effect choice candidates must be distinct offered candidates.", nameof(selected));
             }
+
+            if (valueVocabulary != EffectChoiceValueVocabulary.None &&
+                options.Any(candidate =>
+                    candidate.Kind != EffectChoiceCandidateKind.Value ||
+                    candidate.Value.Kind != EffectValueKind.Integer))
+            {
+                throw new ArgumentException(
+                    "A declared value vocabulary describes integer candidates, so every candidate must " +
+                    "be one.", nameof(valueVocabulary));
+            }
+
+            ValueVocabulary = valueVocabulary;
 
             if (kind == EffectChoiceKind.ConfirmOrDecline && options.Length != 0)
             {
@@ -368,6 +412,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public int MaximumSelections { get; }
 
         /// <summary>
+        /// Milestone 8.37. What this choice's integer candidates MEAN, declared by the handler that
+        /// offered them. See <see cref="EffectChoiceValueVocabulary"/>.
+        /// </summary>
+        public EffectChoiceValueVocabulary ValueVocabulary { get; }
+
+        /// <summary>
         /// Milestone 8.35z5. Whether <see cref="DeclineInvocation"/> is offered on the node's own
         /// `may` policy rather than on <see cref="MinimumSelections"/> being zero - the two used to
         /// be answered by the same number, which is what let an empty <see cref="ConfirmInvocation"/>
@@ -410,6 +460,6 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             new PendingEffectChoice(
                 ResolutionId, ChoiceId, NodeId, ChooserId, Kind,
                 Candidates, MinimumSelections, MaximumSelections, selected, UnavailableCandidates,
-                StopInvocation != null, DeclinableRegardlessOfMinimum);
+                StopInvocation != null, DeclinableRegardlessOfMinimum, ValueVocabulary);
     }
 }

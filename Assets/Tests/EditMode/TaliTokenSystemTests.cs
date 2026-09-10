@@ -7,6 +7,7 @@ using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
@@ -388,6 +389,61 @@ namespace GuardsDigital.Tests.EditMode
                 automatic[0].Modification.RemovalPreventionCost.Kind,
                 Is.EqualTo(RemovalPreventionCostKind.RemoveTheSourceToken),
                 "The price is the totem, not a card from anybody's hand.");
+        }
+
+        /// <summary>
+        /// Milestone 8.37. The wiring this milestone owed: a mandatory prevention now
+        /// resolves the removal directly, through the exact type
+        /// <c>AttackDefenseCardActionStrategyBackend.ResolveRemovalStage</c> asks -
+        /// <see cref="RemovalStageDecision.IsAutomaticallyPrevented"/> - rather than only being
+        /// readable off <see cref="RemovalPreventionQuery.Automatic"/> in isolation.
+        /// </summary>
+        [Test]
+        public void TheMandatoryTotemSaveIsReadByRemovalStageDecisionItself_NotOnlyByTheBareQuery()
+        {
+            var board = CreateBoard();
+            Place(board, TaliComponentContent.VeneratedTotemDefinition, TokenAt, "totem-1");
+            var minion = BoardObjectReference.ForMinion(new MinionId(MinionIdValue));
+            var stage = new RemovalStageDecision(
+                RuleActivity.Attack,
+                RuleObject.ForHero(Tali),
+                board,
+                board,
+                StagedBoardParticipants.Create(),
+                Build(board),
+                LanePushCauseKind.Defeat);
+
+            Assert.That(stage.IsAutomaticallyPrevented(minion), Is.True,
+                "The exact call ResolveRemovalStage now makes before ever offering a card-priced " +
+                "pause must see the totem's mandatory save.");
+            Assert.That(stage.OfferedPreventions(
+                    minion, Array.Empty<CardDefinition>(), Array.Empty<CardInstance>()),
+                Is.Empty,
+                "The mandatory family is never mixed into the offered, card-priced one - Offered's own " +
+                "IsPaidWithACard filter already keeps them apart, so DescribeRemovalPreventionOptions " +
+                "needed no change of its own.");
+        }
+
+        /// <summary>
+        /// The negative control the wiring test above needs: a subject nothing mandatory protects is
+        /// not automatically prevented, so the new check cannot be silently always-true.
+        /// </summary>
+        [Test]
+        public void ANonAdjacentMinionIsNotAutomaticallyPrevented()
+        {
+            var board = CreateBoard();
+            Place(board, TaliComponentContent.VeneratedTotemDefinition, FarSpace, "totem-1");
+            var minion = BoardObjectReference.ForMinion(new MinionId(MinionIdValue));
+            var stage = new RemovalStageDecision(
+                RuleActivity.Attack,
+                RuleObject.ForHero(Tali),
+                board,
+                board,
+                StagedBoardParticipants.Create(),
+                Build(board),
+                LanePushCauseKind.Defeat);
+
+            Assert.That(stage.IsAutomaticallyPrevented(minion), Is.False);
         }
 
         [Test]

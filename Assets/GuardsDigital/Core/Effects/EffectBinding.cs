@@ -377,11 +377,24 @@ namespace GuardsDigital.Core.Effects
                 parameterName, EffectBindingSourceKind.Role, valueKind, role, default, null, default);
         }
 
+        /// <summary>
+        /// Milestone 8.37. <paramref name="integerVocabulary"/> is how a runtime-produced integer
+        /// satisfies a parameter that declares a CLOSED vocabulary. Until Tali, every such parameter
+        /// was bound from a composition-time literal, so the validator could check the exact value and
+        /// refused anything else. Commune with Spirits breaks that: the colour her borrow narrows to is
+        /// named by an ALLY at runtime, so no literal exists to check. Declaring the vocabulary here
+        /// keeps the definition-time claim - this binding will carry a <c>CardColor</c> and nothing
+        /// else - and moves the value check to the moment the value exists, where
+        /// <c>EffectResolutionSession</c> refuses a produced integer outside the declared domain.
+        /// Leave it defaulted for every ordinary node output; a parameter with no domain rejects a
+        /// declared vocabulary just as it always has.
+        /// </summary>
         public static EffectInputBinding FromNodeOutput(
             string parameterName,
             EffectNodeId sourceNodeId,
             string sourceOutputName,
-            EffectValueKind valueKind)
+            EffectValueKind valueKind,
+            EffectIntegerDomain integerVocabulary = default)
         {
             RequireParameterName(parameterName);
             if (!sourceNodeId.IsDefined)
@@ -398,9 +411,16 @@ namespace GuardsDigital.Core.Effects
 
             RequireValueKind(valueKind);
             RequireRuntimeValueKind(valueKind, "node output");
+            if (integerVocabulary.IsDefined && valueKind != EffectValueKind.Integer)
+            {
+                throw new ArgumentException(
+                    "Only an integer node output can declare a closed vocabulary.",
+                    nameof(integerVocabulary));
+            }
+
             return new EffectInputBinding(
                 parameterName, EffectBindingSourceKind.NodeOutput, valueKind,
-                EffectRoleKind.None, sourceNodeId, sourceOutputName, default);
+                EffectRoleKind.None, sourceNodeId, sourceOutputName, default, integerVocabulary);
         }
 
         private static void RequireParameterName(string parameterName)

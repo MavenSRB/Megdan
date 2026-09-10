@@ -149,8 +149,9 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(12),
-                "8.36b requires authenticated keyed departures and rejects protocol 11. " +
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(13),
+                "8.37b carries a pending effect choice's declared VALUE VOCABULARY, so a joined seat draws six named colours or six named directions rather than the digits 0 through 5 - Tali's Commune with Spirits puts one of those decisions to a hero who is not the acting seat, so the seat that must answer it is by construction a remote one. A protocol 12 peer is refused before any payload is read. SCHEMA IS UNMOVED at v41: restore re-asks the handler, which re-declares it. " +
+                "8.36b required authenticated keyed departures and rejected protocol 11. " +
                 "Milestone 8.35z60's integration pass took it to 11 to carry rulebook p.8's shared " +
                 "Wave-counter pool on the seat projection, so a remote seat's top strip reads the " +
                 "host's live number instead of its own frozen starting total. A version 10 peer " +

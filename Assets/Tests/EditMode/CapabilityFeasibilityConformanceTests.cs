@@ -256,7 +256,19 @@ namespace GuardsDigital.Tests.EditMode
             // deferred list in the same commit - it is a seventh declaration over
             // `PrintedIconTargetHandler`, and this rule counts TYPES - and her one Active-effect
             // creation moves it by nothing on the sentence five dealings have now written.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(69),
+            // Milestone 8.37, the twelfth and last dealing, is the largest single move this count has
+            // seen. SIX new handler TYPES arrive with Tali's own faces - `SourceCardInDiscardHandler`
+            // (the predicate seven of her nineteen read about themselves), `FriendlyHeroInPlayHandler`
+            // and `NameColorHandler` (Commune with Spirits' ally-routed naming, the first contract
+            // whose colour is a runtime output rather than a composition-time literal),
+            // `ChooseDirectionHandler` and `BatchDirectMoveHandler` (Cold Snap's free direction and
+            // simultaneous batch) and `DefendedCardColorHandler` (Ice Blast's step-3-to-step-7
+            // reading) - and TWO more arrive with her token line, `PlaceHeroTokenHandler` and
+            // `ReclaimHeroTokenHandler`, whose showcase instances register from
+            // `SyntheticTokenCapabilities` while her six real ones register from her own content.
+            // Her six token capability IDS move this by nothing beyond those two types, because this
+            // rule counts TYPES; she declares no Active effect at all.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(77),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

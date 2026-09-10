@@ -1355,6 +1355,27 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
+                // Milestone 8.37: an integer whose choice DECLARED a vocabulary is named by that
+                // vocabulary's own word, not by its number. Tali's Commune with Spirits offers six
+                // card colours and her Cold Snap six board directions, and both reached a player as
+                // the buttons "0" through "5" under the rule below - which is unanswerable, and worse
+                // for Commune, whose decision is put to an ALLY who never saw the card. The meaning
+                // is read off the choice's own declaration rather than guessed from the values; see
+                // EffectChoiceValueVocabulary for why guessing was refused.
+                if (candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.Integer &&
+                    choice.ValueVocabulary != EffectChoiceValueVocabulary.None)
+                {
+                    invocations.Add(new TypedInvocationViewModel(
+                        EffectChoiceLabels.VocabularyLabel(
+                            choice.ValueVocabulary, candidate.Value.IntegerValue),
+                        command,
+                        swatch: choice.ValueVocabulary == EffectChoiceValueVocabulary.CardColor
+                            ? (CardColor)candidate.Value.IntegerValue
+                            : CardColor.None));
+                    continue;
+                }
+
                 // Milestone 8.15: a candidate that is a printed number is named as that number. The
                 // one production select of this shape is the kinetic "3 or 4 spaces" distance, whose
                 // two controls read `OPTION #1` and `OPTION #2` until the player-pipeline journey
@@ -1449,6 +1470,22 @@ namespace GuardsDigital.Presentation.Match
                             command));
                     }
 
+                    continue;
+                }
+
+                // Milestone 8.37b. A declared vocabulary names the take-back too, and wears the same
+                // swatch the control that offered it did.
+                if (candidate.Kind == EffectChoiceCandidateKind.Value &&
+                    candidate.Value.Kind == EffectValueKind.Integer &&
+                    choice.ValueVocabulary != EffectChoiceValueVocabulary.None)
+                {
+                    invocations.Add(new TypedInvocationViewModel(
+                        EffectChoiceLabels.DeselectLabel(
+                            choice.ValueVocabulary, candidate.Value.IntegerValue),
+                        command,
+                        swatch: choice.ValueVocabulary == EffectChoiceValueVocabulary.CardColor
+                            ? (CardColor)candidate.Value.IntegerValue
+                            : CardColor.None));
                     continue;
                 }
 
@@ -2203,6 +2240,24 @@ namespace GuardsDigital.Presentation.Match
             {
                 var subject = EffectChoicePromptLabels.SubjectOf(
                     effectChoice, projection.PendingEffectChoicePreview);
+
+                // Milestone 8.37. A pending choice reaches a seat's projection whether or not that
+                // seat owns it - AUTHORIZATION FILTER is not PROJECTION FILTER - and until Tali the
+                // two were the same in practice, because every effect choice belonged to the hero
+                // playing the card. Commune with Spirits breaks that: she plays it and an ALLY names
+                // the colour. Addressing the acting seat with "YOUR NAME A COLOUR" would name a
+                // control it does not have, so a decision owned by somebody else is narrated as
+                // theirs.
+                if (viewerHeroId.IsDefined && effectChoice.ChooserId.IsDefined &&
+                    !effectChoice.ChooserId.Equals(viewerHeroId))
+                {
+                    var chooser = projection.Setup.Heroes.SingleOrDefault(
+                        candidate => candidate.HeroId.Equals(effectChoice.ChooserId));
+                    return NarrationLabels.HeroDeciding(
+                        chooser?.DisplayName ?? effectChoice.ChooserId.Value,
+                        EffectChoicePromptLabels.SectionLabel(subject));
+                }
+
                 return NarrationLabels.Own(
                     EffectChoicePromptLabels.SectionLabel(subject),
                     EffectChoicePromptLabels.StatusLine(effectChoice, subject, projection));

@@ -69,6 +69,18 @@ namespace GuardsDigital.Presentation.Match
         public static string DeselectLabel(EffectNodeId optionNodeId, int ordinal) =>
             $"UNDO {CandidateLabel(optionNodeId, ordinal)}";
 
+        /// <summary>
+        /// Milestone 8.37b. Taking back a NAMED candidate says the name back.
+        ///
+        /// <para>The first Play Mode run of Tali's direction journey is what found this: the six
+        /// controls read EAST, NORTH EAST and so on, the status line read "Choose 1 of 6 directions" -
+        /// and the control that takes the answer back still read <c>UNDO OPTION #1</c>, because
+        /// selecting and DESELECTING were two label paths and only the first had been taught the
+        /// vocabulary. A player who has just pressed NORTH EAST is not offered "undo option 1".</para>
+        /// </summary>
+        public static string DeselectLabel(EffectChoiceValueVocabulary vocabulary, int value) =>
+            $"UNDO {VocabularyLabel(vocabulary, value)}";
+
         public const string CompletionLabel = "DONE";
         public const string AcceptLabel = "ACCEPT";
         public const string DeclineLabel = "DECLINE";
@@ -117,6 +129,70 @@ namespace GuardsDigital.Presentation.Match
         /// tray draws the same card by, and the ordinal appears only where the offered set repeats a
         /// name, the same rule the token label follows.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.37. The word a candidate wears when its choice DECLARED what its integers
+        /// mean - a card colour or a board direction - rather than the digit it wears otherwise.
+        ///
+        /// <para>Composed from the enum member's own name rather than from a per-member table, so a
+        /// colour or direction added to the rules reaches the HUD without a second edit here and can
+        /// never appear as a number by omission. `NorthEast` reads as `NORTH EAST` on the same rule:
+        /// the boundary between words is where the printed name has one.</para>
+        ///
+        /// <para>A value outside the declared vocabulary is a fault rather than a fallback: the
+        /// vocabulary is the handler's own statement about the set it offered, so a candidate outside
+        /// it means the two disagree, and drawing a digit would hide that.</para>
+        /// </summary>
+        public static string VocabularyLabel(EffectChoiceValueVocabulary vocabulary, int value)
+        {
+            string name;
+            switch (vocabulary)
+            {
+                case EffectChoiceValueVocabulary.CardColor:
+                    name = Enum.IsDefined(typeof(Core.Cards.CardColor), value)
+                        ? ((Core.Cards.CardColor)value).ToString()
+                        : null;
+                    break;
+                case EffectChoiceValueVocabulary.HexDirection:
+                    name = Enum.IsDefined(typeof(Core.Board.HexDirection), value)
+                        ? ((Core.Board.HexDirection)value).ToString()
+                        : null;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(vocabulary),
+                        "A candidate label by vocabulary requires a declared vocabulary.");
+            }
+
+            if (name == null)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    $"{value} is not a member of the declared vocabulary {vocabulary}.");
+            }
+
+            return SpaceOutWords(name).ToUpperInvariant();
+        }
+
+        /// <summary>
+        /// `NorthEast` to `North East`. The enum member is the printed name with its spaces removed,
+        /// so putting them back is a reading of the name rather than a translation of it.
+        /// </summary>
+        private static string SpaceOutWords(string name)
+        {
+            var builder = new System.Text.StringBuilder(name.Length + 4);
+            for (var index = 0; index < name.Length; index++)
+            {
+                if (index > 0 && char.IsUpper(name[index]))
+                {
+                    builder.Append(' ');
+                }
+
+                builder.Append(name[index]);
+            }
+
+            return builder.ToString();
+        }
+
         public static string CardTargetLabel(string displayName, int? ordinal) =>
             string.IsNullOrWhiteSpace(displayName)
                 ? throw new ArgumentException(
@@ -158,7 +234,20 @@ namespace GuardsDigital.Presentation.Match
         Space = 5,
 
         /// <summary>Candidates of more than one shape, so no narrower noun is true of all of them.</summary>
-        Mixed = 6
+        Mixed = 6,
+
+        /// <summary>
+        /// Milestone 8.37. Rulebook p.9's printed card colours - Tali's Commune with Spirits and
+        /// Reign of Winter. They are integers underneath, and were read as
+        /// <see cref="Number"/> until the choice began declaring what its integers MEAN.
+        /// </summary>
+        Colour = 7,
+
+        /// <summary>
+        /// Milestone 8.37. Rulebook p.17's six board directions - Tali's Cold Snap and Snowstorm. The
+        /// same story as <see cref="Colour"/>: integers whose meaning is declared, not inferred.
+        /// </summary>
+        Direction = 8
     }
 
     /// <summary>
@@ -203,6 +292,17 @@ namespace GuardsDigital.Presentation.Match
                     Array.Empty<EffectChoiceCandidatePreview>())
                 .Where(preview => preview.NamesObject)
                 .Select(preview => preview.CandidateValue));
+            // Milestone 8.37. A declared vocabulary answers this outright and takes precedence over
+            // reading the candidates: it is the handler's own statement about the set, and every
+            // candidate under one is an integer by construction.
+            switch (choice.ValueVocabulary)
+            {
+                case EffectChoiceValueVocabulary.CardColor:
+                    return EffectChoiceSubject.Colour;
+                case EffectChoiceValueVocabulary.HexDirection:
+                    return EffectChoiceSubject.Direction;
+            }
+
             var subjects = choice.Candidates
                 .Select(candidate => SubjectOfCandidate(candidate, named))
                 .Distinct()
@@ -343,6 +443,10 @@ namespace GuardsDigital.Presentation.Match
                     return "TARGET CHOICE";
                 case EffectChoiceSubject.Space:
                     return "SPACE CHOICE";
+                case EffectChoiceSubject.Colour:
+                    return "NAME A COLOUR";
+                case EffectChoiceSubject.Direction:
+                    return "CHOOSE A DIRECTION";
                 default:
                     return "CHOICE";
             }
@@ -362,6 +466,10 @@ namespace GuardsDigital.Presentation.Match
                     return count == 1 ? "target" : "targets";
                 case EffectChoiceSubject.Space:
                     return count == 1 ? "space" : "spaces";
+                case EffectChoiceSubject.Colour:
+                    return count == 1 ? "colour" : "colours";
+                case EffectChoiceSubject.Direction:
+                    return count == 1 ? "direction" : "directions";
                 default:
                     return count == 1 ? "option" : "options";
             }

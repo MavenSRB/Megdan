@@ -504,6 +504,12 @@ namespace GuardsDigital.Core.Participants
                 // exactly the terms the rows above it are on.
                 case Setup.QuickGameSetupConfiguration.WhisperHeroIdValue:
                     return Cards.Verified.WhisperCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.37. The second Devoted Hero pack hero and the twelfth this build
+                // deals, on exactly the terms the rows above are on. With her arm here the switch
+                // and the offerable roster agree over every hero this build composes, which is the
+                // first time in the arc that has been true.
+                case Setup.QuickGameSetupConfiguration.TaliHeroIdValue:
+                    return Cards.Verified.TaliCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1269,6 +1275,108 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.37. The staged Wasp-versus-Tali match, on the same `DEV-005`
+        /// terms the eight staged matches before it are on. This is the configuration that makes Tali
+        /// the tenth dealt hero.
+        ///
+        /// <para>Tali takes the Blue seat though the roster-expansion amendment has not yet placed her
+        /// in an official line-up at all, for the reason <see cref="CreateStagedBroganForInternalTest"/>
+        /// records: milestone 8.25 owns the official six-player configuration and every hero spawn it
+        /// assigns. <see cref="Create"/> - the scene a player loads - is untouched and still deals
+        /// rulebook p.5's six.</para>
+        ///
+        /// <para><b>Commune with Spirits' mandatory naming has a candidate here without an ally
+        /// seat</b>: <see cref="Effects.Synthetic.SyntheticBorrowedActionCapabilities.FriendlyHeroInPlayV1"/>
+        /// admits the actor herself, exactly as Silverarrow's Blessing does under RULING 8's reading of
+        /// "friendly" (which needs no special exclusion the way "a hero" unqualified does) - so Tali
+        /// naming her own colour is a real, reachable path on this one-Blue-hero board. What this
+        /// staging cannot show is an ALLY doing the naming; see
+        /// <see cref="CreateStagedTaliWithAllyForInternalTest"/> for that.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedTaliForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedTaliHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.37. Wasp on Red against Tali <em>and</em> an ally on Blue - the
+        /// configuration Commune with Spirits' full borrow flow needs to show an ALLY, not Tali, naming
+        /// the colour. The same shape <see cref="CreateStagedBroganWithAllyForInternalTest"/> already
+        /// proves, with the roles swapped: there the second Blue hero is the one whose faces needed a
+        /// candidate, here the SECOND Blue hero is what Commune's mandatory naming step selects.
+        ///
+        /// <para>Arien holds the ally seat, for the identical reason Brogan's own configuration gives
+        /// Arien the non-ally one: he is a hero this build already deals, so a fixture proves the
+        /// selection against real content rather than inventing a third printed set.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedTaliWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var allyId = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            return new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                CreateVerifiedTaliHand(TeamSide.Blue)(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: GuardsDigital.Core.Cards.Verified.ArienCardContent.CreateHand(
+                    allyId, "blue-ally"));
+        }
+
+        /// <summary>
+        /// Milestone 8.37. The staged Wasp-versus-Tali match at rulebook p.15's Tier II
+        /// stage, with Tali holding one Tier II card of each colour on the branch the caller names - the
+        /// same pairing rule <see cref="CreateStagedArienTierTwoForInternalTest"/> records.
+        ///
+        /// <para>Which branch a staged hand took decides which half of her surface this match contains:
+        /// see <see cref="Cards.Verified.TaliUpgradeBranch"/>'s own remarks for the Ice-heavy/Totem-Spirit
+        /// split.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedTaliTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.TaliUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedTaliHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.37. The staged Wasp-versus-Tali match at rulebook p.15's Tier III
+        /// stage with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area
+        /// and Reign of Winter in Tali's.
+        /// </summary>
+        public static MatchConfiguration CreateStagedTaliTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.TaliUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedTaliHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.TaliCardContent.ReignOfWinter)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -1665,6 +1773,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.WhisperProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.WhisperProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.37. One seat's verified Tali hand, prefixed by the seat's team
+        /// side for the reason the eight earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedTaliHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.TaliCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedTaliHand(
+            bool tierThree, Cards.Verified.TaliUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.TaliProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.TaliProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

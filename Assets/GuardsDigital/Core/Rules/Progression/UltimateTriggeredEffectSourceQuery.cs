@@ -63,6 +63,13 @@ namespace GuardsDigital.Core.Rules.Progression
                 // second paragraph watches.
                 case UltimateTriggerCondition.AfterControllerPlacesSelf:
                     return performed.PlacedSelf;
+
+                // Milestone 8.37. Tali's Reign of Winter: a second condition reading a
+                // CONSEQUENCE of the completed action, exactly as AfterControllerPlacesSelf does - here
+                // an Attack that actually removed a minion, not merely one that was performed.
+                case UltimateTriggerCondition.AfterControllerDefeatsMinionWithBasicAttack:
+                    return performed.Kind == ActionKind.Attack &&
+                        performed.DefeatedMinionWithBasicAttack;
                 default:
                     return false;
             }

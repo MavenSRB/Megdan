@@ -1305,6 +1305,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case CardTextTiming.AfterTheAttack:
                     var completed = ResolutionStep.FromFact(
                         CardActionResolutionEvent.AttackResolutionCompleted(resolution, outcome));
+                    // Milestone 8.37. Stated here, from identity this method already
+                    // holds, rather than inferred later by re-reading a produced fact's kind - see
+                    // ResolutionStep.CompletedDefeatedMinionWithBasicAttack's own remarks.
+                    var defeatedMinionWithBasicAttack =
+                        resolution.Target.Kind == AttackTargetKind.Minion &&
+                        outcome == AttackResolutionOutcome.AttackSuccessful;
                     return theActionEndsHere
                         ? Array.AsReadOnly(new[]
                         {
@@ -1315,7 +1321,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                                 resolution.ActorId,
                                 ActionKind.Attack,
                                 resolution.InvocationContext,
-                                resolution.Target)
+                                resolution.Target,
+                                defeatedMinionWithBasicAttack: defeatedMinionWithBasicAttack)
                         })
                         : Array.AsReadOnly(new[] { completed });
 
@@ -1508,6 +1515,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 LanePushCauseKind.Defeat);
 
+            // Milestone 8.37. A mandatory prevention - Tali's totem save is the first -
+            // has nobody to ask and nothing to decide, so it is asked and applied before the offered,
+            // card-priced family ever gets a chance to open a pause. Asked unconditionally: unlike the
+            // offered family below, it needs no identity to rebuild a remainder from, because nobody is
+            // ever asked to answer it.
+            if (removalStage.IsAutomaticallyPrevented(subject))
+            {
+                return CompleteRemovalStage(
+                    targetMinionId, outcome, reward, removalAttempt, removalStage, prevented: true);
+            }
+
             // Milestone 8.19c1. The removal stage's second question, asked of the same shared decision
             // the first one is asked of, so both p.13 Defeat paths reach it or neither does. A caller
             // that supplies no identity to rebuild a remainder from cannot hold a pause, so it is not
@@ -1647,7 +1665,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 answered.Reward,
                 new DefeatRemovalAttempt(answered.Defeat.Id, answered.Defeat.TargetId),
                 removalStage,
-                prevented || removalStage.IsPrevented(subject));
+                // Milestone 8.37. A mandatory prevention is asked here too, ahead of
+                // nothing since there is no pause to open over it - it can only ever ADD a reason the
+                // piece stays, never remove one a payment already bought.
+                prevented || removalStage.IsPrevented(subject) ||
+                removalStage.IsAutomaticallyPrevented(subject));
         }
 
         /// <summary>

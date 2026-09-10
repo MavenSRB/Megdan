@@ -105,7 +105,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <para>It is the first query here that reads the board's <em>map</em> rather than its
         /// occupants, and the first whose channel is Defense.</para>
         /// </summary>
-        TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius = 5
+        TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius = 5,
+
+        /// <summary>
+        /// Milestone 8.37. Whether the acting card is NOT currently standing in the
+        /// discard pile - Tali's Winter Dagger, Winter Spear and Winter Scepter, "+3 Attack if this card
+        /// is not in the discard".
+        ///
+        /// <para><b>It is the first query here that reads the card performing the action rather than
+        /// the target, the actor, or the board</b>, which is what T-11's "+" cue on an Attack value
+        /// turned out to need: p.14's worked reading (Attack Total = printed value + items + card text)
+        /// is exactly the pipeline every other member here already answers through, so a self-referential
+        /// condition is one more predicate in it rather than a new arithmetic path.</para>
+        ///
+        /// <para><b>Answers one or nothing, matching every predicate member here</b> - true when the
+        /// source card's own location is anything but the discard pile (the ordinary case: a card played
+        /// from hand is standing in the turn area while its Attack resolves), false when Commune with
+        /// Spirits is performing this very card's primary FROM the discard, per RULING 22's "the card
+        /// stays in the discard". The two Winter Attacks composed here are the roster's first to answer
+        /// differently depending on who is performing them rather than on the board.</para>
+        /// </summary>
+        SourceCardNotInDiscard = 6
     }
 
     /// <summary>
@@ -327,8 +347,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .Where(value => value.Channel == channel))
             {
                 var matches = MatchCount(
-                    declaration.Query, offer.ActorId, target, definitions, instances,
-                    participants, board, modifications, rosterState, roundIndex, turnIndex);
+                    declaration.Query, offer.ActorId, offer.SourceCardInstanceId, target, definitions,
+                    instances, participants, board, modifications, rosterState, roundIndex, turnIndex);
                 if (matches == 0) continue;
                 result.Add(new ValueContribution(
                     ValueContributionKind.CardTextModifier,
@@ -461,6 +481,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private static int MatchCount(
             RosterValueQueryKind query,
             HeroId actorId,
+            CardInstanceId sourceCardInstanceId,
             AttackTarget target,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
@@ -508,6 +529,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     return RosterPresenceQuery.FindUnitsWithin(
                         actorAt, 1, RosterUnitKind.Unit, SourceTeamRelation.OpposingSource,
                         actorId, board, participants, modifications).Count;
+
+                case RosterValueQueryKind.SourceCardNotInDiscard:
+                {
+                    if (!sourceCardInstanceId.IsDefined)
+                    {
+                        return 0;
+                    }
+
+                    var sourceCard = instances.FirstOrDefault(
+                        instance => instance != null && instance.Id.Equals(sourceCardInstanceId));
+                    return sourceCard != null && sourceCard.State.Location != CardLocation.DiscardPile
+                        ? 1
+                        : 0;
+                }
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(query), query, "Unknown roster value query.");

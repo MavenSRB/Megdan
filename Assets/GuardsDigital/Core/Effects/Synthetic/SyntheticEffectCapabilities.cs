@@ -135,6 +135,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticConditionCapabilities.RegisteredHandlers())
                 .Concat(SyntheticBorrowedActionCapabilities.RegisteredHandlers())
                 .Concat(SyntheticAttackTargetSurvivalCapabilities.RegisteredHandlers())
+                // Milestone 8.37. The two showcase instances of Tali's own token handler TYPES, so
+                // neither arrives for the first time inside her slice. Her six real ones register
+                // from her own content file, beside the definitions they are bound to.
+                .Concat(SyntheticTokenCapabilities.RegisteredHandlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

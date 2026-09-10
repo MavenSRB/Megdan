@@ -1462,3 +1462,15 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.36h | Corrected Windows host-and-play package and matching private ZIP, including tactical lobby bots; user confirmation closes the outstanding ordinary-window package check. | `milestone/8.36h-completion` |
+
+## Milestone 8.37 Deal, register and player-path gate Tali the Spiritcaller as the twelfth hero completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.37 | The twelfth and last hero of the package arc is dealt, registered, artworked, pickable and player-path gated, and twelve of the thirteen faces milestone 8.35z32 left deferred are composed. Registered-handler types 69 to 77; artwork bijection 198 to 216; her three token definitions are the first content ever to reach the component catalog. Schema unmoved at v41, sixteen corpus digests migrated for the registration growth, twelfth identity pin measured with the eleven prior pins byte-identical. Blizzard alone stays deferred, structurally; Ice Shard stays on the standing p.20 Handicap deferral. | `pending` |
+
+## Milestone 8.37b Give a named colour and a chosen direction a control a player can actually answer, and draw a placed token as its own piece completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.37b | A pending choice now declares what its integer candidates MEAN, so six card colours and six board directions reach a player as named, colour-tinted controls instead of the buttons "0" through "5" they were; a decision owned by another seat is narrated as theirs rather than addressed to the viewer; and a placed token draws its own printed face. Wire `guards-private-online/12` to `/13`, schema unmoved at v41 because restore re-asks the handler for the declaration. | `pending` |

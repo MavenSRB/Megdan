@@ -4197,6 +4197,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ///
         /// <para>It is derived rather than stored for the reason the answer re-derives: a reader that
         /// drew a stale list would offer a card the hand no longer holds.</para>
+        ///
+        /// <para><b>Milestone 8.37, checked rather than assumed.</b> This is the third of
+        /// the three sites that ask <see cref="RemovalStageDecision.OfferedPreventions"/>, and it needs no
+        /// change: <see cref="RemovalPreventionQuery.Offered"/> already skips every prevention whose price
+        /// is not a card, so a mandatory source such as a totem's save was never in this list to begin
+        /// with. The wiring that matters is upstream, at the site that decides whether a pause opens at
+        /// all - a mandatory prevention resolves the removal before this description could ever be asked
+        /// for it.</para>
         /// </summary>
         public IReadOnlyList<RemovalPreventionOption> DescribeRemovalPreventionOptions(
             IEnumerable<CardDefinition> definitions,

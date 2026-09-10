@@ -419,7 +419,21 @@ namespace GuardsDigital.Tests.EditMode
                     // ActiveEffectCreationHandler, so both are admitted by the concat below.
                     SyntheticShowcaseHand.CreateRedWithDiscardGatedTrioSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithSwapSubjectSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithDefendedForcedMoveText(owner)
+                    SyntheticShowcaseHand.CreateRedWithDefendedForcedMoveText(owner),
+                    // Milestone 8.37's EIGHT handler types on FIVE cards, the largest set any dealing
+                    // has needed and grouped on the same rule: two contracts share a card when they
+                    // share a printed SENTENCE, because a fixture that split them would prove a shape
+                    // no face has. The Spiritbinder names a friendly hero and has THAT hero name a
+                    // colour; the Galecaller chooses a direction and batch-moves along it; the
+                    // Cairnwright places a hero token and answers p.18's short supply beside it; the
+                    // Revenant reads its own discard state; and the Frostblade's second card-text body
+                    // reads the colour the defender spent, which needs p.14's Defense window to have
+                    // happened before it is about anything.
+                    SyntheticShowcaseHand.CreateRedWithColorNamingSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithDirectionBatchSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithHeroTokenSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithSourceDiscardSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithDefendedColorRiderText(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -514,6 +528,15 @@ namespace GuardsDigital.Tests.EditMode
                 // one Active-effect creation (Death Seeker's turn-long immunity) owes none either - it
                 // runs on ActiveEffectCreationHandler, the type the showcase has reached since 6.8.
                 .Concat(WhisperCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.37. Tali's nineteen faces, the twelfth and last set, on the same terms.
+                // SIX of her contracts are new HANDLER TYPES - `synthetic-source-card-in-discard@1`,
+                // `friendly-hero-in-play@1`, `name-color@1`, `synthetic-choose-direction@1`,
+                // `synthetic-batch-direct-move@1` and `defended-card-color@1` - each proved on its own
+                // showcase card above before this concat admits the faces that name it. Her six token
+                // handlers owe no showcase card of their own: they run on SyntheticTokenCapabilities'
+                // place and reclaim handlers, the types milestone 6.2's token placement proved and the
+                // showcase has reached ever since. She declares no Active effect at all.
+                .Concat(TaliCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

@@ -870,7 +870,8 @@ namespace GuardsDigital.Application
                 row.SelectedCandidates.Select(ToEffectCandidate),
                 row.UnavailableCandidates.Select(ToEffectCandidate),
                 row.HasStopInvocation,
-                row.HasDeclineInvocation);
+                row.HasDeclineInvocation,
+                (EffectChoiceValueVocabulary)row.ValueVocabulary);
             if ((result.ConfirmInvocation != null) != row.HasConfirmInvocation ||
                 (result.DeclineInvocation != null) != row.HasDeclineInvocation ||
                 (result.StopInvocation != null) != row.HasStopInvocation)
