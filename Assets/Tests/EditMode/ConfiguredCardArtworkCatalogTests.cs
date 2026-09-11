@@ -45,7 +45,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA216EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA234EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -94,15 +94,35 @@ namespace GuardsDigital.Tests.EditMode
             // `{ "tali", "Tali" }` and `Configured`'s `.Concat(TaliCardContent.DealtDefinitions)` in
             // the same edit as the eighteen JSON rows, on the instruction the paragraphs above give.
             // Ice Shard is p.20's Handicap card and is excluded exactly as the five above it are.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(216));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(216));
+            //
+            // MILESTONE 8.38e TAKES IT 216 TO 234, AND THE SENTENCE ABOVE IT - "the last time it moves
+            // for a dealing" - WAS ABOUT THE PACKAGE ARC RATHER THAN ABOUT THIS COUNT. The user
+            // re-opened the roster on 2026-09-11 and Swift is the thirteenth hero; what has to keep
+            // being true is that the catalog illustrates every hero this build can put on a board, and
+            // that is kept true by this line moving rather than by the earlier one having been right.
+            // Backup is p.20's Handicap card and is excluded exactly as the six above it are.
+            //
+            // AND THIS IS THE RED THAT PROVES THE THREE PARAGRAPHS ABOVE ARE NOT DECORATION. Milestone
+            // 8.38e wrote HeroFolders' { "swift", "Swift" }, Configured's
+            // .Concat(SwiftCardContent.DealtDefinitions) and the eighteen JSON rows in one edit, as
+            // instructed - and still shipped with this count unmoved, because this fixture is on the
+            // harness's UnityOnlyTest list and NO dotnet run can execute it. It was found by the
+            // first Unity Edit Mode run after that dealing, which is the only tier that can find it.
+            //
+            // AND IT TOOK TWO RUNS, BECAUSE THIS FIXTURE CARRIES TWO PINS AND ASSERTIONS SURFACE ONE
+            // AT A TIME. The count below failed first; the per-hero grouping further down failed only
+            // once the count was fixed. A Unity-only fixture that pins more than one thing is not
+            // green until it is RE-RUN green - the same shape milestone 8.38e's scenario digests
+            // record, where the failure message reported five of nine.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(234));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(234));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(216),
+                Is.EqualTo(234),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -111,8 +131,9 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     ("arien", 18), ("brogan", 18), ("dodger", 18), ("misa", 18),
-                    ("sabina", 18), ("silverarrow", 18), ("tali", 18), ("tigerclaw", 18),
-                    ("ursafar", 18), ("wasp", 18), ("whisper", 18), ("xargatha", 18)
+                    ("sabina", 18), ("silverarrow", 18), ("swift", 18), ("tali", 18),
+                    ("tigerclaw", 18), ("ursafar", 18), ("wasp", 18), ("whisper", 18),
+                    ("xargatha", 18)
                 }));
 
             foreach (var entry in catalog.Entries)

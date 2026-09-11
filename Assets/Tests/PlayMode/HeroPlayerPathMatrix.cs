@@ -891,7 +891,27 @@ namespace GuardsDigital.Tests.PlayMode
 
                 // The source card's own discard-state predicate: a reading, gating a Conditional or
                 // scaling a dynamic value, never a control of its own.
-                ["synthetic-source-card-in-discard"] = Array.Empty<PlayerInteractionShape>()
+                ["synthetic-source-card-in-discard"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.38f. Swift the Sharpshooter's three new entries.
+                //
+                // Her two straight-line placements are a space clicked on the board, exactly as every
+                // other Place in this table is: what the two qualifiers change is WHICH spaces the
+                // offer contains - the file through her own space, and its complement - never how the
+                // player names one. They are two rows rather than one because this table is keyed by
+                // capability id and both ids are registered; the shape they contribute is identical,
+                // which is the honest answer rather than a distinction invented to fill the column.
+                ["synthetic-place-in-radius-in-straight-line"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["synthetic-place-in-radius-off-every-straight-line"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // The enemy-scoped terrain predicate her three Green faces qualify their target by. A
+                // READING, like the actor-scoped twin above it and like every other predicate here: it
+                // narrows the set a later node offers and asks the player for nothing itself, so an
+                // empty row is what it contributes and a non-empty one would claim a control that does
+                // not exist.
+                ["subject-adjacent-terrain-presence"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
