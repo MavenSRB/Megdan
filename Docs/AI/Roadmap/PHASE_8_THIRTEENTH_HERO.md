@@ -161,7 +161,7 @@ Non-goals: No Swift content. No new `TimingCheckpoint` - none was needed. The Ul
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838c1-build-the-counted-next-turn-minion-bounty-her-two-green-faces-print-completion-evidence).
 
-### [ ] 8.38c2 Build the basic-card-resolution Ultimate trigger and per-grant target exclusion Bullet Time prints
+### [x] 8.38c2 Build the basic-card-resolution Ultimate trigger Bullet Time reads
 
 Split out of 8.38c during implementation.
 
@@ -173,15 +173,25 @@ Observable outcome: an Ultimate can trigger on a basic CARD being resolved rathe
 
 **AND ITS SECOND CLAUSE IS A RESTRICTION SCOPED TO THE GRANT, NOT TO THE TURN.** "You cannot target the same enemy hero twice in the same turn this way" forbids a repeat target only for actions taken through this Ultimate; an ordinary Attack in the same turn is untouched. The scope is declared on the grant, which is the seam milestone 8.35l used to make a restriction name its own blocker in the offer. **Open, and to be settled here rather than assumed:** whether a granted performance can itself re-trigger the Ultimate. The natural reading is no, because a grant is not a card resolution - but the clause's existence implies the designer expected repeated targets to be reachable, so it needs an answer rather than a default.
 
+**THE FACT IS FREE, WHICH THE TYPE'S OWN REMARKS PREDICTED.** `PerformedBasicAction` says of itself: "It is a fact, not state. Nothing persists it and no snapshot field holds it" - it is produced by the same accepted command that ends the action, so a replay produces it again and an Undo removes it with everything else. A new field on it therefore costs no schema revision, which is why the condition reads a purpose-built `WasCardResolution` rather than being inferred from the flags already there.
+
+**AND THE OPEN QUESTION IS ANSWERED BY THE CLASSIFICATION ITSELF: a granted performance does NOT re-trigger.** `ActionInvocationContext.TextGranted` is not a card resolution, so an action Bullet Time grants cannot fire Bullet Time. That is the natural reading, and it is now structural rather than a rule written down somewhere: the grant's own invocation context is what excludes it. The clause's per-turn target restriction is therefore about a hero taking several BASIC CARDS' grants in one turn, not about a grant chaining off itself.
+
+**THE CLASSIFICATION IS A NAMED RULE, `BasicActionQuery.IsCardResolution`, rather than an expression at its one call site.** Its switch is exhaustive over all eight invocation contexts and throws on an undeclared one, so a context added later is classified deliberately instead of falling silently into "not a resolution" - which is the one failure this Ultimate could not see, because a card resolution the engine forgot to notice looks exactly like a turn where nothing happened.
+
 Acceptance checks:
 
-- An Ultimate declaring the new condition fires on a resolved basic card and not on a basic action performed from a non-basic one, nor on a repeat.
-- The per-grant target exclusion greys a repeat target and names its own reason, and leaves an ordinary action's targets alone in the same turn.
-- Whether a granted performance re-triggers is settled, implemented and recorded.
-- Whether the schema moves is decided by measurement and recorded either way.
+- Every invocation context is classified, asserted by enumerating the enum rather than listing the ones the case happens to know, so a new context fails here.
+- A repeat, a text-granted action and a p.14 Defense reaction are each not a card resolution, named individually because each is a different reason.
+- The fact defaults to false, so every producer written before this milestone keeps its exact meaning, and it is independent of the repeat flag rather than derived from it.
+- The condition ignores the action's kind - a basic card resolved by a Hold is still resolved.
+- The fifth condition is distinct from the four before it, so a content author naming it cannot silently get Cloak and Daggers' reading.
+- No schema field, corpus digest or pinned constant moves.
 - Complete unfiltered dotnet harness passes.
 
-Non-goals: No Swift content. No change to Wasp's, Tigerclaw's or Misa's existing Ultimate triggers.
+Non-goals: No Swift content. No change to Wasp's, Tigerclaw's or Misa's existing Ultimate triggers. **The per-grant target exclusion moved to 8.38d**, and the reason is the one that split this block out of 8.38c: its enforcement point is the grant's own offer, and that offer does not exist until Bullet Time's content does. The design is settled and recorded there - a turn-scoped key in the string set `TurnResolutionRestoreState` already serializes, which is format-identical and therefore schema-neutral.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838c2-build-the-basic-card-resolution-ultimate-trigger-bullet-time-reads-completion-evidence).
 
 **"RIGHTMOST RESOLVED CARD" IS A SELECTOR, AND `borrow-primary-action@1` IS ALREADY THE VERB.** Milestone 8.35z50 registered the borrow with Ursafar, whose three faces borrow from "one of your active cards with an active effect". Reload! and Backup borrow from a different set, and p.6's turn area is what makes "rightmost" a fact rather than a presentation detail: the cards a hero has resolved this round sit in committed order. The selector is new; the borrow, its suspension of the borrowing Skill, and its resumption after the borrowed action completes are all milestone 8.36f's already-corrected machinery.
 
@@ -219,6 +229,7 @@ Acceptance checks:
 - Eighteen dealt faces compose; only Backup carries a deferral, and it names the standing p.20 reason.
 - Her corpus is added to `AttackTargetBindingConditionalChooseOfferSweepTests`' per-hero enumeration, and the sweep is run by hand once with her content in it.
 - A **non-`[Explicit]`** case asserts that enumeration covers every verified content class the build contains, derived rather than listed, so the fourteenth hero cannot reopen the gap and an ordinary suite run is what reports it.
+- **Bullet Time's per-grant target exclusion**, moved here from 8.38c2: "you cannot target the same enemy hero twice in the same turn this way" greys a repeat target through the grant and names its own reason, and leaves an ordinary action's targets in the same turn alone. It lands here because its enforcement point is the grant's own offer, which does not exist until her content does. **The design is settled**: the accumulated heroes ride a turn-scoped key in the string set `TurnResolutionRestoreState` already serializes, which is format-identical and therefore moves no schema; the window is exactly one turn, which is the clause's own. The existing `ExcludedTargets` machinery is NOT the mechanism - it accumulates inside one repeat chain, and this exclusion spans separate granted actions within a turn.
 - Each face's focused authoritative scenarios cover positive, negative, boundary, restore/replay and ordered-event arms, and the Attack faces additionally cover the enclosing combat outcome arms.
 - Her progressed hands compose, and her three upgrade lines match the printed Tier structure the inventory recorded.
 - Complete unfiltered dotnet harness and Edit Mode pass.

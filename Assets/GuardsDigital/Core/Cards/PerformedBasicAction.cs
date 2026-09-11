@@ -37,7 +37,8 @@ namespace GuardsDigital.Core.Cards
             ActionKind kind,
             bool wasRepeatedInstance,
             bool placedSelf,
-            bool defeatedMinionWithBasicAttack)
+            bool defeatedMinionWithBasicAttack,
+            bool wasCardResolution)
         {
             ActorId = actorId;
             SourceCardInstanceId = sourceCardInstanceId;
@@ -46,6 +47,7 @@ namespace GuardsDigital.Core.Cards
             WasRepeatedInstance = wasRepeatedInstance;
             PlacedSelf = placedSelf;
             DefeatedMinionWithBasicAttack = defeatedMinionWithBasicAttack;
+            WasCardResolution = wasCardResolution;
         }
 
         /// <summary>
@@ -62,7 +64,8 @@ namespace GuardsDigital.Core.Cards
             ActionKind kind,
             bool wasRepeatedInstance = false,
             bool placedSelf = false,
-            bool defeatedMinionWithBasicAttack = false)
+            bool defeatedMinionWithBasicAttack = false,
+            bool wasCardResolution = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined)
             {
@@ -82,7 +85,7 @@ namespace GuardsDigital.Core.Cards
 
             return new PerformedBasicAction(
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, wasRepeatedInstance,
-                placedSelf, defeatedMinionWithBasicAttack);
+                placedSelf, defeatedMinionWithBasicAttack, wasCardResolution);
         }
 
         public HeroId ActorId { get; }
@@ -140,6 +143,28 @@ namespace GuardsDigital.Core.Cards
         /// the board.</para>
         /// </summary>
         public bool DefeatedMinionWithBasicAttack { get; }
+
+        /// <summary>
+        /// Whether this completion was the CARD's own resolution - rulebook p.10's "resolve your card"
+        /// - rather than a second performance off a card already resolved. Milestone 8.38c2.
+        ///
+        /// <para><b>Swift's Bullet Time is what needs the distinction, and it is not the one
+        /// <see cref="WasRepeatedInstance"/> draws.</b> Her Ultimate reads "After you resolve a basic
+        /// CARD you may perform the primary action on that card", where Tigerclaw's Cloak and Daggers
+        /// reads "After you perform a basic ACTION you may repeat it once". A card is resolved once per
+        /// turn; actions are performed as often as text grants them. So a repeat, a borrowed primary
+        /// and a granted one are all basic actions and none of them is a card being resolved.</para>
+        ///
+        /// <para><b>It is true for a replacement action too</b>, and deliberately: p.7's Hold and Fast
+        /// Travel are taken INSTEAD of the card's printed action, and the card is resolved all the
+        /// same. What Bullet Time then grants is the card's printed primary, which is a different
+        /// action from the one performed - which is the second reason this could not be folded into the
+        /// repeat's condition, because a repeat has nothing to be different from.</para>
+        ///
+        /// <para>A p.14 Defense is a <see cref="ActionInvocationContext.Reaction"/> spent on somebody
+        /// else's turn and is not this hero resolving their own card, so it reads false.</para>
+        /// </summary>
+        public bool WasCardResolution { get; }
 
         public bool IsDefined => Kind != ActionKind.None;
 
@@ -221,6 +246,44 @@ namespace GuardsDigital.Core.Cards
         /// this is a fact about a card, and a completion that names none is a completion this page has
         /// nothing to say about.
         /// </summary>
+        /// <summary>
+        /// Whether an action performed under <paramref name="invocationContext"/> was rulebook p.10's
+        /// "resolve your card" rather than a second performance off a card already resolved.
+        /// Milestone 8.38c2.
+        ///
+        /// <para>The four true arms are the card's own resolution: its printed primary, either
+        /// secondary, and p.7's replacement actions, which are taken INSTEAD of the printed action and
+        /// resolve the card all the same. <see cref="ActionInvocationContext.Repeated"/> and
+        /// <see cref="ActionInvocationContext.TextGranted"/> are extra performances off a card already
+        /// resolved, and <see cref="ActionInvocationContext.Reaction"/> is a p.14 Defense spent on
+        /// somebody else's turn.</para>
+        ///
+        /// <para>It is a named rule rather than an expression at its one call site so that every
+        /// context is decided in one place and a context added later has to be classified here rather
+        /// than falling silently into "not a resolution".</para>
+        /// </summary>
+        public static bool IsCardResolution(ActionInvocationContext invocationContext)
+        {
+            switch (invocationContext)
+            {
+                case ActionInvocationContext.PrintedPrimary:
+                case ActionInvocationContext.PrintedSecondary:
+                case ActionInvocationContext.GeneralRuleSecondary:
+                case ActionInvocationContext.Replacement:
+                    return true;
+                case ActionInvocationContext.Repeated:
+                case ActionInvocationContext.TextGranted:
+                case ActionInvocationContext.Reaction:
+                case ActionInvocationContext.None:
+                    return false;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(invocationContext), invocationContext,
+                        "Every invocation context states whether it resolves the card it is performed " +
+                        "on; a new one is classified here rather than defaulting.");
+            }
+        }
+
         public static PerformedBasicAction ForCompletedAction(
             HeroId actorId,
             CardInstanceId sourceCardInstanceId,
@@ -230,7 +293,8 @@ namespace GuardsDigital.Core.Cards
             System.Collections.Generic.IEnumerable<CardInstance> instances,
             bool wasRepeatedInstance = false,
             bool placedSelf = false,
-            bool defeatedMinionWithBasicAttack = false)
+            bool defeatedMinionWithBasicAttack = false,
+            bool wasCardResolution = false)
         {
             if (!actorId.IsDefined || !sourceCardInstanceId.IsDefined || !actionDefinitionId.IsDefined ||
                 kind == ActionKind.None || definitions == null || instances == null)
@@ -260,7 +324,8 @@ namespace GuardsDigital.Core.Cards
                     return definition.Progression.Classification == CardClassification.Basic
                         ? PerformedBasicAction.Of(
                             actorId, sourceCardInstanceId, actionDefinitionId, kind,
-                            wasRepeatedInstance, placedSelf, defeatedMinionWithBasicAttack)
+                            wasRepeatedInstance, placedSelf, defeatedMinionWithBasicAttack,
+                            wasCardResolution)
                         : PerformedBasicAction.None;
                 }
             }

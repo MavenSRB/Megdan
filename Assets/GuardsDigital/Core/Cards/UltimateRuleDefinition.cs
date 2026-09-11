@@ -65,7 +65,29 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="AfterControllerPlacesSelf"/>'s own fact is: read once, at the one place a
         /// completed action's supertype is decided, never re-derived by a second reader.</para>
         /// </summary>
-        AfterControllerDefeatsMinionWithBasicAttack = 4
+        AfterControllerDefeatsMinionWithBasicAttack = 4,
+
+        /// <summary>
+        /// Milestone 8.38c2's <c>after-basic-card-resolution-trigger@1</c>: Swift's Bullet Time,
+        /// "After you resolve a basic card you may perform the primary action on that card; you cannot
+        /// target the same enemy hero twice in the same turn this way."
+        ///
+        /// <para><b>A fifth condition rather than a widening of
+        /// <see cref="AfterControllerPerformsBasicAction"/>, and the two differ on both halves of the
+        /// sentence.</b> Tigerclaw's Cloak and Daggers asks what KIND of thing just finished - any
+        /// basic action - and then repeats THAT action. Bullet Time asks whether the CARD was resolved,
+        /// which happens once a turn however many actions the turn performs, and then grants that
+        /// card's PRINTED PRIMARY, which need not be the action that was performed. Widening the fourth
+        /// member would have fired this Ultimate after a repeat, after a borrowed primary, and after
+        /// every action a grant produced - the three things "resolve a card" excludes by counting once
+        /// per turn.</para>
+        ///
+        /// <para>The fact is <see cref="PerformedBasicAction.WasCardResolution"/>, read at the one
+        /// place a completed action's supertype is decided and never re-derived by a second reader -
+        /// the same discipline <see cref="AfterControllerPlacesSelf"/> and
+        /// <see cref="AfterControllerDefeatsMinionWithBasicAttack"/> follow.</para>
+        /// </summary>
+        AfterControllerResolvesBasicCard = 5
     }
 
     /// <summary>

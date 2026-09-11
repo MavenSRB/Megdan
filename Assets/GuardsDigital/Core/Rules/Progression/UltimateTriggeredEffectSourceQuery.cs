@@ -70,6 +70,13 @@ namespace GuardsDigital.Core.Rules.Progression
                 case UltimateTriggerCondition.AfterControllerDefeatsMinionWithBasicAttack:
                     return performed.Kind == ActionKind.Attack &&
                         performed.DefeatedMinionWithBasicAttack;
+
+                // Milestone 8.38c2. Swift's Bullet Time: the CARD was resolved, which happens once a
+                // turn, rather than an action having been performed, which happens as often as text
+                // grants one. The kind is not asked at all - a basic card resolved by a Hold is still
+                // resolved, and the primary this Ultimate then grants is the card's own.
+                case UltimateTriggerCondition.AfterControllerResolvesBasicCard:
+                    return performed.WasCardResolution;
                 default:
                     return false;
             }

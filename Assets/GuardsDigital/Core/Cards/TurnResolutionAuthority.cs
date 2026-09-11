@@ -3417,7 +3417,10 @@ namespace GuardsDigital.Core.Cards
                 actorId, sourceCardInstanceId, actionDefinitionId, kind, definitions, instances,
                 invocationContext == ActionInvocationContext.Repeated,
                 placedSelf,
-                defeatedMinionWithBasicAttack);
+                defeatedMinionWithBasicAttack,
+                // Milestone 8.38c2. Which of p.10's two things just happened: the hero RESOLVED their
+                // card, or performed a second action off a card already resolved.
+                BasicActionQuery.IsCardResolution(invocationContext));
             if (basicAction.IsDefined)
             {
                 events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));
