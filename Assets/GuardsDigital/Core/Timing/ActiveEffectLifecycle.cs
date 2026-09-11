@@ -189,6 +189,57 @@ namespace GuardsDigital.Core.Timing
             return new ReadOnlyCollection<ActiveEffectLifecycleEvent>(results);
         }
 
+        /// <summary>
+        /// Ends ONE named live effect, as rulebook p.17's ordinary cancellation rather than as a new
+        /// kind of ending. Milestone 8.38c1.
+        ///
+        /// <para><b>Why one instance rather than a checkpoint.</b>
+        /// <see cref="ApplyCheckpoint"/> asks every effect the same question, which is right for every
+        /// moment the page names - a turn ends for all of them at once. Swift's two Green bounties are
+        /// the first content whose effects are consumed ONE AT A TIME by something that happens to a
+        /// third party: Hunting Season stands two of them and a single minion's Defeat spends exactly
+        /// one. A checkpoint would spend both.</para>
+        ///
+        /// <para><b>The count is instance multiplicity, which is why nothing new is persisted.</b>
+        /// A face promising two payments stands two effects and each pays once, so "how many payments
+        /// remain" is "how many of these effects are still live" - already recorded, already restored,
+        /// already undone. A remaining-uses field on the instance would have been a second place for
+        /// the same fact and a schema revision to carry it.</para>
+        ///
+        /// <para>The ending is <see cref="TimingCheckpoint.ExplicitCancellation"/>, which has existed
+        /// since the lifecycle did and is what <see cref="ActiveEffectCancellationCondition.Explicit"/>
+        /// already means. So the value this writes into a snapshot is one the format already admits,
+        /// and no version moves.</para>
+        ///
+        /// <para>Returns no event when the id names nothing live, which is the ordinary answer
+        /// rather than a fault: a bounty whose turn ended before the Defeat landed is simply not
+        /// standing to be spent.</para>
+        /// </summary>
+        public ActiveEffectLifecycleEvent? CancelOne(
+            ActiveEffectId effectId, int roundIndex, int turnIndex)
+        {
+            if (roundIndex < 1 || turnIndex < 1)
+            {
+                throw new ArgumentException(
+                    "Cancelling one effect is anchored to the round and turn it happened in.");
+            }
+
+            var effect = effects.FirstOrDefault(candidate =>
+                candidate.Id.Equals(effectId) && candidate.Phase != ActiveEffectPhase.Ended);
+            if (effect == null)
+            {
+                return null;
+            }
+
+            effect.End(TimingCheckpoint.ExplicitCancellation);
+            return new ActiveEffectLifecycleEvent(
+                ActiveEffectLifecycleEventKind.Cancelled,
+                effect.Id,
+                TimingCheckpoint.ExplicitCancellation,
+                roundIndex,
+                turnIndex);
+        }
+
         public ActiveEffectLifecycleRestoreState CaptureRestoreState() =>
             new ActiveEffectLifecycleRestoreState(effects, continuousSources);
 

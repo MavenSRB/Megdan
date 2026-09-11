@@ -77,6 +77,17 @@ namespace GuardsDigital.Tests.EditMode
                         at))
                     .ToArray());
 
+        /// <summary>
+        /// The same board with nobody standing on it, for milestone 8.38c1's case about a promise whose
+        /// controller has left the board.
+        /// </summary>
+        internal static AdjacentMoveAuthority CreateBoardWithNoHero() =>
+            new AdjacentMoveAuthority(
+                CreateMap(),
+                Array.Empty<HeroOccupancy>(),
+                Array.Empty<GuardsDigital.Core.Obstacles.ObstacleOccupancy>(),
+                Array.Empty<QuickGameMinionSetupState>());
+
         internal static MatchParticipants Participants()
         {
             var swiftPlayer = new PlayerId("swift-probe-player");

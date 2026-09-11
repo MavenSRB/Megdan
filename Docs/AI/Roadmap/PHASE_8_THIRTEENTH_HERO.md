@@ -127,7 +127,7 @@ Non-goals: No Swift content. No change to Ursafar's or Tali's borrow pools. The 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838c-build-the-rightmost-resolved-card-borrow-pool-her-gold-line-needs-completion-evidence).
 
-### [ ] 8.38c1 Build the counted next-turn minion bounty her two Green faces print
+### [x] 8.38c1 Build the counted next-turn minion bounty her two Green faces print
 
 Split out of 8.38c during implementation. Mark for Death promises one coin the first time an enemy minion in radius is defeated on her next turn; Hunting Season promises one coin each of the first two times.
 
@@ -139,15 +139,27 @@ Observable outcome: a face can promise a reward for each of the first N times a 
 
 **WHETHER IT MOVES THE SCHEMA IS TO BE DECIDED BY MEASUREMENT, and the probe is already half done.** The nearest precedent is the once-per-turn Ultimate: `TurnResolutionRestoreState.ConsumedBeforeActionTriggers` is a length-prefixed string list written by `WriteStrings`, so **adding entries to it changes bytes and not format** and a v41 reader still reads it. If the count can ride that same turn-scoped set under distinct keys - the bounty's window is exactly one turn, which is what makes it plausible - the block is schema-neutral. A second list beside it would be one more length-prefixed field and therefore a version. Take the first shape if it is faithful and record why if it is not.
 
+**AND THE PROBE PAID OFF TWICE OVER: NO CHECKPOINT WAS NEEDED, AND NO SCHEMA MOVED.** The bounty is not dispatched through the checkpoint system at all. It is spent at the site that already pays for the Defeat - `MinionDefeatBountyQuery.Spend`, called from both of p.13's minion-Defeat paths immediately after `coinLedger.Award` - so the moment already exists and nothing new observes it.
+
+**THE BLOCK'S OWN THIRD ACCEPTANCE CHECK WAS WRONG, AND p.13 IS WHAT CORRECTED IT.** It demanded the trigger fire "where p.13 actually removes the miniature, not where removal is merely attempted or prevented". That is the wrong half of the page: p.13's Bolster example prevents a minion's removal and the attacking hero **still collects the coins**, so a Defeat whose removal is stopped is a complete Defeat. "An enemy minion **is defeated**" reads the Defeat, not the removal - which is why the bounty is spent before the removal stage runs, and why a prevented removal pays it exactly as a completed one does.
+
+**THE PRINTED COUNT IS INSTANCE MULTIPLICITY, WHICH IS WHY NOTHING IS PERSISTED.** Mark for Death stands one promise and Hunting Season two; each is spent once. "How many payments remain" is "how many are still live" - a fact the lifecycle already records, restores and undoes - so no remaining-uses field was added and no counter rides the turn-scoped consumed-source set the block had sketched. `ActiveEffectLifecycle.CancelOne` is the one new primitive: it ends ONE named effect at `TimingCheckpoint.ExplicitCancellation`, a value the payload has admitted since the lifecycle existed.
+
+**THE RADIUS IS READ FROM THE SOURCE CARD, NOT RESTATED ON THE EFFECT.** An Active effect may declare a radius only when its own SCOPE is measured from one, and a bounty's scope is its controller - the disk is a measurement the promise takes, not the set of units it affects. So the reach comes from the card's printed Radius icon through `RadiusValueQuery`, which is also what makes p.16's Radius item raise the promise exactly as it raises the Skill that made it.
+
 Acceptance checks:
 
-- The bounty pays exactly its printed count and no more, pays nothing for a minion defeated outside the radius, and nothing for one defeated outside its window.
-- It survives a snapshot restore and an Undo with the same remaining count.
-- The new checkpoint fires where p.13 actually removes the miniature, not where removal is merely attempted or prevented.
-- Whether the schema moves is decided by measurement and recorded either way.
+- The bounty pays exactly its printed count and no more, pays nothing for a minion defeated outside the radius, nothing for a friendly minion, and nothing for one defeated before its window opens.
+- A dormant promise is **not spent** by a Defeat before its window - the failure that would otherwise pay the right number of coins on the wrong turn.
+- One minion's Defeat spends exactly one promise even when two cover it, because "the first two times" counts occurrences.
+- Two promises sharing a uniqueness key are suppressed to one, asserted directly so the content that stands two at 8.38d is written against a stated rule.
+- **Amended during implementation:** the third check as written contradicted p.13's Bolster example and was replaced - the bounty is spent by the Defeat, which is why no removal-stage check appears here.
+- No schema field, corpus digest or pinned constant moves.
 - Complete unfiltered dotnet harness passes.
 
-Non-goals: No Swift content. No change to any existing checkpoint's meaning. The Ultimate, which 8.38c2 owns.
+Non-goals: No Swift content. No new `TimingCheckpoint` - none was needed. The Ultimate, which 8.38c2 owns.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838c1-build-the-counted-next-turn-minion-bounty-her-two-green-faces-print-completion-evidence).
 
 ### [ ] 8.38c2 Build the basic-card-resolution Ultimate trigger and per-grant target exclusion Bullet Time prints
 

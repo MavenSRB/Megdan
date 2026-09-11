@@ -73,6 +73,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private GuardsDigital.Core.Rules.Progression.HeroItemState heroItems;
 
         /// <summary>
+        /// The match's Active-effect lifecycle, or <c>null</c> in a composition that holds none.
+        /// Milestone 8.38c1; bound after construction by <see cref="BindActiveEffects"/>.
+        /// </summary>
+        private ActiveEffectLifecycle activeEffects;
+
+        /// <summary>
         /// Milestone 7.4: the same per-hero Levels the round authority holds. p.13 prices a hero Defeat
         /// at "coins equal to that hero's level", so the reward cannot be derived without them, and a
         /// second copy would price a Defeat against a Level the match does not record.
@@ -185,6 +191,69 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindHeroItems(GuardsDigital.Core.Rules.Progression.HeroItemState items)
         {
             heroItems = items;
+        }
+
+        /// <summary>
+        /// Hands this backend the match's Active-effect lifecycle, on exactly the terms
+        /// <see cref="BindHeroItems"/> is handed the item state and for the same reason: the round
+        /// authority owns it and is built after the dispatcher this backend belongs to.
+        ///
+        /// <para>Milestone 8.38c1 needs it because a standing bounty is spent BY a Defeat - see
+        /// <see cref="MinionDefeatBountyQuery"/> - and p.13's Defeat is resolved here. A composition
+        /// that never binds one simply pays no bounties, which is every board in this build before
+        /// Swift's two Green faces exist.</para>
+        /// </summary>
+        internal void BindActiveEffects(ActiveEffectLifecycle effects)
+        {
+            activeEffects = effects;
+        }
+
+        /// <summary>
+        /// Pays whatever standing bounties this Defeat spends. Milestone 8.38c1.
+        ///
+        /// <para>Called from both of p.13's minion-Defeat paths - the Attack's and the effect-invoked
+        /// one - immediately after the page's own reward, which is the moment the Defeat is complete
+        /// and before the removal stage that may decide the miniature stays. That ordering is p.13's
+        /// own: its Bolster example prevents a removal and collects the coins in the same breath, so a
+        /// bounty on "an enemy minion is defeated" is owed by a Defeat whose removal is prevented
+        /// exactly as much as by one whose removal happens.</para>
+        ///
+        /// <para>The round and turn come from the bound roster state's newest slot, because a Defeat is
+        /// resolved inside a turn and the lifecycle records where a cancellation happened. A backend
+        /// with no roster state bound pays nothing, which is the same named absence every other
+        /// optional dependency here uses.</para>
+        /// </summary>
+        private void SpendMinionDefeatBounties(
+            GuardsDigital.Core.Units.Minions.MinionOccupancy defeatedMinion,
+            MatchParticipants participants,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances)
+        {
+            if (activeEffects == null || rosterState == null || !rosterState.IsAvailable)
+            {
+                return;
+            }
+
+            var slot = rosterState.TurnSlots
+                .OrderByDescending(candidate => candidate.RoundIndex)
+                .ThenByDescending(candidate => candidate.TurnIndex)
+                .FirstOrDefault();
+            if (slot == null)
+            {
+                return;
+            }
+
+            MinionDefeatBountyQuery.Spend(
+                activeEffects,
+                coinLedger,
+                adjacentMoveAuthority,
+                participants,
+                heroItems,
+                definitions,
+                instances,
+                defeatedMinion,
+                slot.RoundIndex,
+                slot.TurnIndex);
         }
 
         /// <summary>
@@ -1418,6 +1487,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return RejectAttack(CardActionResolutionRejectionReason.InvalidChoice);
             }
 
+            SpendMinionDefeatBounties(target, participants, definitions, instances);
+
             var removalAttempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
             var defeat = ResolveRemovalStage(
                 targetMinionId, outcome, reward, removalAttempt, participants, modifications,
@@ -1804,6 +1875,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var reward = coinLedger.Award(outcome);
             if (!reward.Accepted)
                 throw new InvalidOperationException("A triggered minion Defeat could not award its declared reward.");
+
+            SpendMinionDefeatBounties(target, participants, definitions, instances);
 
             var attempt = new DefeatRemovalAttempt(outcome.Id, outcome.TargetId);
 

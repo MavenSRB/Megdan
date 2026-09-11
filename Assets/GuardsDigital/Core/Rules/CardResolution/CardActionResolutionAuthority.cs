@@ -310,6 +310,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             triggeredEffects.BindRosterState(rosterState);
         }
 
+        /// <summary>
+        /// Forwards the match's Active-effect lifecycle to the backend that resolves p.13's Defeat, so
+        /// a standing bounty can be spent by one. Milestone 8.38c1, on the shape
+        /// <see cref="BindRosterState"/> and <c>BindHeroItems</c> already use.
+        /// </summary>
+        internal void BindActiveEffects(GuardsDigital.Core.Timing.ActiveEffectLifecycle effects)
+        {
+            attackDefenseBackend.BindActiveEffects(effects);
+        }
+
         internal AdjacentMoveAuthority Board => board;
 
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution =>

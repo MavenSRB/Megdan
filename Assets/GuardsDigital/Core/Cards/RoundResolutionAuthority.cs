@@ -186,6 +186,10 @@ namespace GuardsDigital.Core.Cards
             // the marker register has, and for the same reason.
             this.cardActions?.BindHeroItems(HeroItems);
 
+            // Milestone 8.38c1: the same arrangement a third time. p.13's Defeat is what spends a
+            // standing minion bounty, and the Defeat is resolved inside the dispatcher.
+            this.cardActions?.BindActiveEffects(timing);
+
             // Milestone 7.4: the same arrangement again, for the two states p.13's Defeat consequences
             // read and write inside the Attack that caused them.
             this.cardActions?.BindDefeatConsequenceState(HeroProgression, TeamLives);
@@ -806,6 +810,7 @@ namespace GuardsDigital.Core.Cards
                     "ledger that p.13 awarded for it.");
             }
             cardActions?.BindHeroItems(authority.HeroItems);
+            cardActions?.BindActiveEffects(authority.Timing);
             cardActions?.BindDefeatConsequenceState(authority.HeroProgression, authority.TeamLives);
             cardActions?.BindHeroDefeatHistory(authority.HeroDefeatHistory);
 
