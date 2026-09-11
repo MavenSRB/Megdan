@@ -68,6 +68,15 @@ namespace GuardsDigital.Tests.EditMode
     /// (confirmed by the sweep below). So the corpus-wide structural enumeration IS the complete
     /// board-level picture today: both heroes it affects (Whisper, Ursafar) are undealt, which is
     /// exactly why nobody has hit it in Play Mode.</para>
+    ///
+    /// <para><b>THE PARAGRAPH ABOVE HAS SINCE EXPIRED, and it is left standing rather than rewritten
+    /// because it records what was true when the sweep was built.</b> Whisper was dealt at milestone
+    /// 8.35z53 and Ursafar at 8.35z50, the shared Conditional fix landed with them, and both cards now
+    /// run through real player input: Crimson Trail's behavioural half is the `Is.True` case in
+    /// `EffectOptionFeasibilityTests`, and Claws That Catch has a journey of its own -
+    /// `UrsafarEngagedUiJourneyPlayModeTests.ClawsThatCatch_FizzlesCalmWithNoTargetAndMovesThenTargetsOnceEnraged`,
+    /// named by Ursafar's player-path gate. Recorded 2026-09-11 while discharging cleanup entry 8.35z74;
+    /// the sweep itself is unchanged and its structural enumeration still stands.</para>
     /// </summary>
     public sealed class AttackTargetBindingConditionalChooseOfferSweepTests
     {
