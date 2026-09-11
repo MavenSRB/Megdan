@@ -144,6 +144,17 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.37a. Her ONE Active effect, and the reason milestone 8.37 recorded her
                 // as declaring none: her whole set's only Active-effect keyword is Blizzard's
                 // `End of turn:`, and Blizzard was the one face that milestone left deferred.
-                .Concat(TaliActiveEffectContent.Handlers());
+                .Concat(TaliActiveEffectContent.Handlers())
+                // Milestone 8.38e. Swift's FIVE - the two "End of turn:" placements her Blue line
+                // stands and the three counted minion bounties her two Green faces promise - joining
+                // the moment her dealing milestone put them into MatchContentCatalogs, and mirrored BY
+                // HAND here for the reason Dodger's pair records: a mirror that called the production
+                // composer would agree with it by construction and prove nothing. Her ONE genuinely new
+                // contract is NOT in this list - `subject-adjacent-terrain-presence@1` is a generic
+                // capability registered from SyntheticRosterCapabilities, and this mirror is of
+                // VerifiedCapabilityHandlers alone, exactly as Silverarrow's CardTextFastTravelHandler
+                // is excluded above. Nor are her two straight-line Places, which register from
+                // SyntheticPlacementCapabilities on the same terms.
+                .Concat(SwiftActiveEffectContent.Handlers());
     }
 }

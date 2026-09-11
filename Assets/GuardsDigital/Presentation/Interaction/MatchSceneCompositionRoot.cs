@@ -670,7 +670,40 @@ namespace GuardsDigital.Presentation.Interaction
         /// selection reads distance, so the two Blue spawns already are wherever the naming step
         /// needs them.</para>
         /// </summary>
-        VerifiedStagedTaliWithAlly = 65
+        VerifiedStagedTaliWithAlly = 65,
+
+        /// <summary>
+        /// Milestone 8.38e. The engaged staging with Swift the Sharpshooter on the Blue seat, holding
+        /// rulebook p.6's five starting cards. The thirteenth hero, and the first staged after the
+        /// package arc closed.
+        /// </summary>
+        VerifiedEngagedStagedSwift = 66,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Swift holding the first sibling
+        /// of each colour: Prepared Shot, Assault Jump and Pin Down.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedSwift = 67,
+
+        /// <summary>
+        /// The Tier II staging with Swift holding the second sibling of each colour: Shotgun, Delayed
+        /// Jump and Mark for Death - the only Tier II arm that reaches an "End of turn:" face and the
+        /// only one that stands a bounty.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedSwift = 68,
+
+        /// <summary>
+        /// The Tier III staging with Swift holding the first sibling of each colour - Killshot, Drop
+        /// Trooper and Killing Ground - and Bullet Time unlocked beside her dashboard.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedSwift = 69,
+
+        /// <summary>
+        /// The Tier III staging with Swift holding the second sibling of each colour - Super-Shotgun,
+        /// Mobile Scout and Hunting Season - and Bullet Time unlocked. This is the only arm that
+        /// reaches her fast travel, her escalating discard and her two-promise bounty at once.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedSwift = 70
     }
 
     [ExecuteAlways]
@@ -1147,6 +1180,25 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedStagedTaliWithAlly =>
                     MatchConfiguration.CreateStagedTaliWithAllyForInternalTest(
                         TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedSwift =>
+                    MatchConfiguration.CreateStagedSwiftForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedSwift =>
+                    MatchConfiguration.CreateStagedSwiftTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SwiftUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSwift =>
+                    MatchConfiguration.CreateStagedSwiftTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SwiftUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedSwift =>
+                    MatchConfiguration.CreateStagedSwiftTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SwiftUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift =>
+                    MatchConfiguration.CreateStagedSwiftTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.SwiftUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //

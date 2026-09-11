@@ -300,6 +300,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The hero whose footing is being asked about - a required parameter, never the actor.</summary>
         public const string TerrainSubjectParameter = "subject";
 
+        /// <summary>
+        /// Milestone 8.38e. Inverts the answer, on the convention
+        /// <see cref="Effects.Synthetic.SyntheticConditionCapabilities"/>' own predicates set: a
+        /// negation is a property of the QUESTION, never of the gate that reads it.
+        /// </summary>
+        public const string SubjectTerrainNegateParameter = "negate";
+
         public static EffectCapabilityReference AdjacentTerrainPresenceV1 =>
             Reference("adjacent-terrain-presence", 1);
         /// <summary>
@@ -908,11 +915,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // Milestone 8.37 registered Tali's `defended-card-color` beside her own dealt Ice
             // Blast - see `RegisteredHandlers` below.
 
-            // Milestone 8.38d. Swift's three Green faces qualify the enemy they reach by that enemy's
-            // own footing, which the actor-scoped declaration above cannot answer. Held here by
-            // milestone 7.9's gate until her dealing at 8.38e, so this build's pinned capability list -
-            // and therefore every snapshot's bytes - stands still for a hero who is not in a match.
-            yield return new SubjectAdjacentTerrainPresenceHandler();
+            // Milestone 8.38d's `subject-adjacent-terrain-presence@1` HAS LEFT THIS LIST - see
+            // `RegisteredHandlers` below. Swift the Sharpshooter is dealt at milestone 8.38e, so her
+            // three Green faces, which qualify the enemy they reach by that enemy's own footing, are
+            // cards a configured match puts in a hand.
         }
 
         /// <summary>
@@ -1073,6 +1079,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // over existing plumbing rather than new capture-and-carry, and Ice Blast is a dealt
             // basic Attack, which satisfies the gate's first half outright.
             yield return new DefendedCardColorHandler();
+
+            // Milestone 8.38e, the milestone that deals Swift the Sharpshooter.
+            // `subject-adjacent-terrain-presence@1` is what her three Green faces qualify their enemy
+            // by - "an enemy hero NOT adjacent to terrain" - and it is a second reader over the same
+            // `TerrainPresenceQuery` that `adjacent-terrain-presence@1` above has read since milestone
+            // 8.23. Minted apart at 8.38d rather than added as a parameter to that one, because a
+            // shared declaration gaining a field moves every hero who already references it, and
+            // Tigerclaw does. Suppress, Pin Down and Killing Ground are dealt cards, so the gate's
+            // first half is satisfied outright. It IS a new handler type, so it owes the second half a
+            // showcase consumer, and milestone 8.38e adds one.
+            yield return new SubjectAdjacentTerrainPresenceHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
@@ -2986,7 +3003,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new EffectCapabilityParameterSchema(
                     new[]
                     {
-                        new EffectCapabilityParameter(TerrainSubjectParameter, EffectValueKind.Hero)
+                        new EffectCapabilityParameter(TerrainSubjectParameter, EffectValueKind.Hero),
+                        // Milestone 8.38e. All three of Swift's Green faces print the NEGATIVE of this
+                        // question - "an enemy hero not adjacent to terrain" - and the predicate is
+                        // where a negation belongs in this build: `synthetic-is-flagged@1` declares no
+                        // `negate` and is the wrong place for one, because a gate that could invert
+                        // its own input would let two readings of one predicate exist. Optional, so
+                        // the showcase card that asks the plain question binds nothing.
+                        new EffectCapabilityParameter(
+                            SubjectTerrainNegateParameter, EffectValueKind.Boolean,
+                            isRequired: false)
                     },
                     new[] { new EffectOutputBinding("present", EffectValueKind.Boolean) });
 
@@ -3005,7 +3031,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return null;
                 }
 
-                return TerrainPresenceQuery.IsAdjacentToTerrain(board, subjectAt, context.Modifications);
+                var present = TerrainPresenceQuery.IsAdjacentToTerrain(
+                    board, subjectAt, context.Modifications);
+                var negate = context.Input(SubjectTerrainNegateParameter);
+                return negate.Kind == EffectValueKind.Boolean && negate.BooleanValue
+                    ? !present
+                    : present;
             }
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)

@@ -537,6 +537,16 @@ namespace GuardsDigital.Tests.EditMode
                 // place and reclaim handlers, the types milestone 6.2's token placement proved and the
                 // showcase has reached ever since. She declares no Active effect at all.
                 .Concat(TaliCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.38e. Swift's eighteen dealt faces, the thirteenth set and the first
+                // after the package arc, on the same terms. ONE of her contracts is a new HANDLER TYPE
+                // - `subject-adjacent-terrain-presence@1`, the enemy-scoped reading her three Green
+                // faces qualify their target by - and it is proved on the roster-theft showcase card
+                // above, beside the actor-scoped declaration it is deliberately NOT a parameter of,
+                // before this concat admits the faces that name it. Her two straight-line Places and
+                // her Reload!'s borrow owe no showcase card of their own: they run on PlaceHandler and
+                // BorrowPrimaryActionHandler, types this build already registers, and milestone 7.9's
+                // gate asks its second half of the handler TYPE.
+                .Concat(SwiftCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

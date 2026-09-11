@@ -81,6 +81,16 @@ namespace GuardsDigital.Application.Bots
         public int AcceptedCommands { get; private set; }
         public string LastFailure { get; private set; } = string.Empty;
 
+        /// <summary>
+        /// Milestone 8.38e. What the host last REFUSED, and from which seat. The fleet tolerates a
+        /// refusal by design - it remembers the command for that version and tries another - so the
+        /// command that was refused used to be discarded unrecorded. That is exactly the fact a
+        /// dealing needs when a new hero's published offers and the host's authorization disagree,
+        /// which is the defect class this tier exists to find, so it is kept here rather than
+        /// reconstructed by instrumenting the fixture.
+        /// </summary>
+        public string LastRefusal { get; private set; } = string.Empty;
+
         public int FillOpenSeats(long ticks, double thinkSeconds = 2.0)
         {
             if (disposed) throw new ObjectDisposedException(nameof(PrivateSessionBotFleet));
@@ -191,7 +201,12 @@ namespace GuardsDigital.Application.Bots
             var result = bot.Machine.LastSubmissionResult;
             if (bot.PendingCommand == null || result == null || result.SubmissionId != bot.PendingSubmission) return;
             if (result.Accepted) AcceptedCommands++;
-            else if (result.Version == bot.RefusedVersion) bot.Refused.Add(bot.PendingCommand);
+            else
+            {
+                LastRefusal = bot.Seat.Value + " v" + result.Version + " " + bot.PendingCommand.Kind +
+                    " -> " + result.RejectionReason + "/" + result.SessionRejectionReason + " " + result.Detail;
+                if (result.Version == bot.RefusedVersion) bot.Refused.Add(bot.PendingCommand);
+            }
             bot.PendingCommand = null;
             bot.PendingSubmission = null;
         }

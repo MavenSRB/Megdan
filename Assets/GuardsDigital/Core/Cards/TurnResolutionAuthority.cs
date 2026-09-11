@@ -1341,7 +1341,31 @@ namespace GuardsDigital.Core.Cards
                 case ActionKind.Movement:
                     return StartMovementCore(resolution, offer, events);
                 case ActionKind.Attack:
-                    return StartAttackCore(resolution, offer, events, excluded);
+                    // Milestone 8.38e. A borrowed Attack with nobody in reach PERFORMS AND ACHIEVES
+                    // NOTHING; it does not refuse the command that produced it.
+                    //
+                    // <para>Rulebook p.13 says "You may attack enemy heroes and minions" and says
+                    // nothing that makes an attack with no one in range illegal - which is why this
+                    // backend already models `StopAttackWithoutATarget` for a target that vanishes
+                    // mid-page. `StartAttackCore`'s own pre-check exists for a TURN action, where
+                    // milestone 6.8's offer-not-reject discipline greys what cannot be taken; a
+                    // borrowed instance was never offered that way, because what the player chose was
+                    // a CARD.</para>
+                    //
+                    // <para><b>What this fixes is an atomicity violation, not a rules reading.</b>
+                    // Swift is the first hero whose grants name a card by POSITION rather than by what
+                    // it can reach - Reload! takes her rightmost resolved card and Bullet Time the
+                    // basic card just resolved - so she is the first who can be handed an Attack with
+                    // an empty board in front of it. Taking that offer used to reject a command that
+                    // had already mutated state, which the lobby-bot tier caught as
+                    // `AtomicityViolation` rolled back rather than as a refusal a player could read.
+                    // Found by that tier and by no other: the offline tiers never build the board it
+                    // needs.</para>
+                    return cardActions.CanAttackFindTarget(
+                            offer, definitions, instances, participants, timing, CurrentModifications(),
+                            roundIndex, turnIndex)
+                        ? StartAttackCore(resolution, offer, events, excluded)
+                        : CompleteGrantedActionThatReachedNobody(events);
                 case ActionKind.Skill:
                     return CompleteSkillStep(cardActions.StartTurnSkill(resolution, offer, definitions,
                         instances, participants, timing, CurrentModifications(), TieBreakerState,
@@ -1350,6 +1374,19 @@ namespace GuardsDigital.Core.Cards
                     throw new InvalidOperationException("A borrowed card must declare a supported primary.");
             }
         }
+
+        /// <summary>
+        /// Milestone 8.38e. The grant produced an instance that found nobody to act on, so the
+        /// instance is over and the turn carries on from where it was.
+        ///
+        /// <para>It returns <c>null</c> - "nothing is waiting" - rather than a result, which is the
+        /// same answer <see cref="TryStartOwedBorrowedAction"/> gives for a granted action that
+        /// finished without asking anything. The grant is spent either way: rulebook p.10 gives the
+        /// player the choice of whether to take a `may`, not a guarantee that taking it accomplishes
+        /// something.</para>
+        /// </summary>
+        private TurnResolutionResult? CompleteGrantedActionThatReachedNobody(
+            List<TurnResolutionEvent> events) => null;
 
         private TurnResolutionResult? TryStartOwedAfterActionRepeat(List<TurnResolutionEvent> events)
         {

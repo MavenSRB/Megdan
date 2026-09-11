@@ -135,7 +135,17 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("tali", "tali-8-37a-rev-1", "b746dfae0d337b6513bab5c8f0a06b23e4e4d7f9b49f4a36b3bfb9240a23bde0")
+            new IdentityPin("tali", "tali-8-37a-rev-1", "b746dfae0d337b6513bab5c8f0a06b23e4e4d7f9b49f4a36b3bfb9240a23bde0"),
+            // Milestone 8.38e. THE THIRTEENTH PIN, and the first added after the package arc closed.
+            // It arrives on exactly the terms the seventh through twelfth did: a pin is a claim about
+            // content a configured match loads, and milestone 8.38d composed Swift without dealing
+            // her. MEASURED, not predicted, on a COMPLETE unfiltered run, with the twelve pins above
+            // confirmed byte-identical in that same run - which for this milestone means identical to
+            // the values IT re-pinned, because 8.38d moved all twelve for a reason recorded at the top
+            // of this list. Milestone 8.35z50's trap was watched for and did not recur: her staged
+            // configuration went into EveryDealtDefinition in this same change, so the digest below is
+            // over her whole dealt set rather than over zero cards.
+            new IdentityPin("swift", "swift-8-38d-rev-1", "9e63eeb9d36737860b65f4ef6684142b21d74382c9a36ecff866c2947d09e0bb")
         };
 
         [Test]
@@ -252,6 +262,13 @@ namespace GuardsDigital.Tests.EditMode
                 // deals. Added in the same change as her pin, which is what the two warnings above
                 // ask for.
                 .Concat(MatchConfiguration.CreateStagedTaliForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.38e. Swift's staged configuration, on the same terms and added in the
+                // same change as her pin, which is what the two warnings above ask for. Tali's row
+                // called itself the last the arc adds; the roster re-opened on 2026-09-11, so what
+                // that sentence claims - the union covering every hero this build deals - is kept true
+                // by this row rather than by that one.
+                .Concat(MatchConfiguration.CreateStagedSwiftForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

@@ -304,7 +304,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PlaceHandler(
                     PlaceInRadiusBesideTwoOrMoreEnemiesV1, PrintedValueChannel.Radius,
                     PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits)
+                    PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits),
+
+                // Milestone 8.38b built these two and milestone 8.38e moves them across, which is the
+                // milestone that deals Swift: her Blue line is now cards a configured match puts in a
+                // hand, so both halves of milestone 7.9's gate are answered at once. Like Misa's pair
+                // above they owe the showcase half NOTHING and move the conformance count by nought,
+                // for the same reason stated there - both are further declarations over PlaceHandler,
+                // and that half of the gate is asked of a handler TYPE.
+                new PlaceHandler(
+                    PlaceInRadiusInStraightLineV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.OnAStraightLineFromTheActor),
+                new PlaceHandler(
+                    PlaceInRadiusOffEveryStraightLineV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.OffEveryStraightLineFromTheActor)
             };
 
         /// <summary>
@@ -316,9 +331,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// caller having to know which hero deferred it.
         ///
         /// <para>Milestone 8.35z28's two Respawns left this list at milestone 8.35z34, which deals
-        /// Dodger; milestone 8.35z29's two Places left it at milestone 8.35z38, which deals Misa. Both
-        /// pairs are now cards a match puts in a hand, and the gate that held them here is satisfied on
-        /// both halves at once - see <see cref="RegisteredHandlers"/>.</para>
+        /// Dodger; milestone 8.35z29's two Places left it at milestone 8.35z38, which deals Misa;
+        /// milestone 8.38b's two straight-line Places left it at milestone 8.38e, which deals Swift.
+        /// All three pairs are now cards a match puts in a hand, and the gate that held them here is
+        /// satisfied on both halves at once - see <see cref="RegisteredHandlers"/>.</para>
         ///
         /// <para><b>THE LIST IS EMPTY, AND IT IS KEPT RATHER THAN DELETED.</b> An empty deferral list is
         /// a statement this file should go on being able to make: the next hero worker who mints a
@@ -329,23 +345,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// composes it, so the empty case is exercised rather than assumed.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[]
-            {
-                // Milestone 8.38b. Swift's two placement clauses, built here and held out of the
-                // registered set by milestone 7.9's gate because no card this build deals names them
-                // yet: her own content is composed at 8.38d and dealt at 8.38e, and 8.38e is what
-                // moves these two lines up into RegisteredHandlers. Keeping them here is what makes
-                // this build's pinned capability list - and therefore every snapshot's bytes - stand
-                // still for a hero who is not in a match.
-                new PlaceHandler(
-                    PlaceInRadiusInStraightLineV1, PrintedValueChannel.Radius,
-                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.OnAStraightLineFromTheActor),
-                new PlaceHandler(
-                    PlaceInRadiusOffEveryStraightLineV1, PrintedValueChannel.Radius,
-                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.OffEveryStraightLineFromTheActor)
-            };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being

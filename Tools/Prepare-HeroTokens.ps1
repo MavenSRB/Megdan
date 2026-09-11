@@ -85,7 +85,7 @@
 param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
-        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali')]
+        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Check,
@@ -153,6 +153,21 @@ $declaredHeroes = @{
     # declared hero's element carries) rather than guessed; it sits immediately beside Ursafar's own
     # 8629816 and Mrak's 8629814 in the manifest's own ordering.
     tali = @{ ElementId = 8629815; ElementName = 'Spiritcaller'; DisplayName = 'Tali' }
+
+    # Milestone 8.38e. The FIRST line added since milestone 8.37 and the easiest of the thirteen,
+    # which is worth saying because the three lines above it are the hard ones: her element carries
+    # the BARE hero name, so the epithet trap Ursafar, Whisper and Tali each sprang does not apply.
+    # Read directly from the bundled manifest (`elementId: 8597511, elementName: "Swift",
+    # elementType: "VerticalTokens"`) rather than guessed, on the rule those three lines record: this
+    # stays a declared table because no name-matching rule can be right for all thirteen.
+    # Her `FieldFloor` is the one number no hero before her needed. The twelve above leave a flat
+    # team-coloured backdrop inside the ring which this tool replaces with white so the runtime can
+    # tint it - Arien's prepared Blue face is 11.3% white - and the 2% floor is what catches a crop
+    # that landed on the wrong atlas rectangle. Swift's portrait fills the disc edge to edge: her
+    # measured field is 1% and her most common interior colour, at 4.9%, is portrait. Measured on
+    # both of her faces, not assumed; what still identifies her crop is the manifest element, the
+    # ring's own team, and a portrait filling at least 30% of the interior.
+    swift = @{ ElementId = 8597511; ElementName = 'Swift'; DisplayName = 'Swift'; FieldFloor = 0.0 }
 }
 
 $declared = $declaredHeroes[$Hero]
@@ -161,6 +176,16 @@ $elementName = $declared.ElementName
 $heroLabel = $declared.DisplayName
 $elementType = 'VerticalTokens'
 $declaredFaceSize = 302
+
+# Milestone 8.38e. The flat-field floor, declared per hero because it is a fact about the ARTWORK
+# rather than a rule about standees: twelve heroes' art leaves a team-coloured backdrop for the
+# runtime to tint, and Swift's fills the disc edge to edge. Zero for her, measured rather than
+# assumed; every other hero keeps the calibrated 2%.
+$declaredFieldFloor = if ($declared.ContainsKey('FieldFloor')) {
+    [double] $declared['FieldFloor']
+} else {
+    0.02
+}
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $corpusRoot = [System.IO.Path]::Combine(
     $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
@@ -222,7 +247,8 @@ function Get-TeamFromRing([System.Drawing.Bitmap] $bitmap, [int] $faceSize) {
     return [pscustomobject]@{ Team = $team; Average = $average }
 }
 
-function Get-PreparedFace([System.Drawing.Bitmap] $square, [int] $faceSize, [string] $team) {
+function Get-PreparedFace(
+    [System.Drawing.Bitmap] $square, [int] $faceSize, [string] $team, [double] $fieldFloor = 0.02) {
     $centre = ($faceSize - 1) / 2.0
     $radius = $faceSize / 2.0
     $protectedRingStart = $radius * 0.90
@@ -296,10 +322,18 @@ function Get-PreparedFace([System.Drawing.Bitmap] $square, [int] $faceSize, [str
     $interiorArea = [Math]::PI * [Math]::Pow($protectedRingStart, 2)
     $fieldRatio = $fieldPixels / $interiorArea
     $portraitRatio = $portraitPixels / $interiorArea
-    if ($fieldRatio -lt 0.02 -or $fieldRatio -gt 0.60 -or $portraitRatio -lt 0.30) {
+    # Milestone 8.38e makes the FIELD floor a declared per-hero number and leaves the other two
+    # bounds alone. The floor exists to catch a crop that landed on the wrong atlas rectangle, and it
+    # was calibrated on twelve heroes whose standee art leaves a flat team-coloured backdrop for the
+    # runtime to tint - Arien's Blue face is 11.3% white after this replacement. SWIFT'S ART LEAVES
+    # NONE: her portrait fills the disc edge to edge, so her measured field is 1% and her most common
+    # interior colour, at 4.9%, is portrait rather than backdrop. Measured on both faces before this
+    # bound moved, and the identity she is actually checked by is unchanged: the manifest element, the
+    # ring's own team, and a portrait that fills at least 30% of the interior.
+    if ($fieldRatio -lt $fieldFloor -or $fieldRatio -gt 0.60 -or $portraitRatio -lt 0.30) {
         $token.Dispose()
         throw ("The $team face cannot distinguish its flat field from portrait/ring pixels: " +
-            "field=$([Math]::Round($fieldRatio * 100, 1))%, portrait=$([Math]::Round($portraitRatio * 100, 1))%. Nothing was written.")
+            "field=$([Math]::Round($fieldRatio * 100, 1))% (floor $([Math]::Round($fieldFloor * 100, 1))%), portrait=$([Math]::Round($portraitRatio * 100, 1))%. Nothing was written.")
     }
 
     $preparedRing = Get-TeamFromRing $token $faceSize
@@ -318,11 +352,12 @@ function Get-PreparedFace([System.Drawing.Bitmap] $square, [int] $faceSize, [str
     }
 }
 
-function Get-NeutralFace([System.Drawing.Bitmap] $square, [int] $faceSize, [string] $team) {
+function Get-NeutralFace(
+    [System.Drawing.Bitmap] $square, [int] $faceSize, [string] $team, [double] $fieldFloor = 0.02) {
     # Milestone 8.35z39. The team-baked preparation plus one step: the official team RING is
     # whitened too, so nothing team-coloured is left baked into the artwork and the piece states its
     # team entirely through the ring this project draws around it at runtime.
-    $prepared = Get-PreparedFace $square $faceSize $team
+    $prepared = Get-PreparedFace $square $faceSize $team $fieldFloor
     $token = $prepared.Bitmap
     $centre = ($faceSize - 1) / 2.0
     $radius = $faceSize / 2.0
@@ -512,9 +547,9 @@ try {
         }
 
         $facePreparation = if ($Neutral) {
-            Get-NeutralFace $square $declaredFaceSize $team
+            Get-NeutralFace $square $declaredFaceSize $team $declaredFieldFloor
         } else {
-            Get-PreparedFace $square $declaredFaceSize $team
+            Get-PreparedFace $square $declaredFaceSize $team $declaredFieldFloor
         }
 
         $square.Dispose()

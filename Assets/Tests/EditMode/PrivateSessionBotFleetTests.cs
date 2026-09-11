@@ -143,8 +143,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(wire.Machine.LatestProjection, Is.Not.Null);
             Assert.That(wire.Machine.LatestProjection.Version, Is.EqualTo(composer.Match.Version));
             Assert.That(wire.Closed, Is.False);
-            Assert.That(fleet.Host.DrainEvents().Any(record =>
-                record.Kind == PrivateSessionEventKind.SubmissionRefused), Is.False);
+            // Milestone 8.38e made this message say WHAT was refused. A bare `Is.False` reports that
+            // some bot offered something the host would not authorize and nothing about which, and
+            // this tier exists precisely because it is the one that finds a hero's offers disagreeing
+            // with the host's authorization.
+            var refusals = fleet.Host.DrainEvents()
+                .Where(record => record.Kind == PrivateSessionEventKind.SubmissionRefused)
+                .Select(record => record.Seat + "@" + record.Version + ": " + record.SubmissionRejection)
+                .ToArray();
+            Assert.That(refusals, Is.Empty,
+                "A bot offered something the host refused: " + string.Join(" | ", refusals) + " ;; lastRefusal=" + fleet.LastRefusal);
 
             fleet.Host.OnDisconnected(1);
             var paused = composer.Match.Version;

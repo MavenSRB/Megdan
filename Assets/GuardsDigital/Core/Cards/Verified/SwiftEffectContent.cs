@@ -242,14 +242,21 @@ namespace GuardsDigital.Core.Cards.Verified
                     SyntheticRosterCapabilities.ChooseTargetV2,
                     inputs: new[]
                     {
-                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Attack),
+                        // "adjacent to the TARGET" - the anchor is the enclosing Attack's own bound
+                        // target, which is what makes this a scatter rather than a second radius
+                        // clause, and `choose-target@2` names that anchor in its own origin vocabulary
+                        // rather than through a distance from her.
                         EffectInputBinding.FromClosedVocabulary(
-                            SyntheticTargetingCapabilities.TargetRelationParameterName,
-                            SourceTeamRelation.OpposingSource),
-                        EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                            SyntheticRosterCapabilities.OriginParameter,
+                            RosterQueryOrigin.EnclosingTargetBeforeConsequences),
                         EffectInputBinding.FromLiteral(
-                            EffectSelectionDeclaration.ConsumerParameterName,
-                            EffectValue.Node(discard))
+                            SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(1)),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Hero),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticRosterCapabilities.RelationParameter,
+                            SourceTeamRelation.OpposingSource),
+                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Attack)
                     },
                     outputs: new[]
                     {
@@ -357,25 +364,38 @@ namespace GuardsDigital.Core.Cards.Verified
                     // "adjacent to you" is a distance the sentence writes down, not a printed icon -
                     // Reload! prints neither Range nor Radius - which is the corrective milestone
                     // 8.35z46 recorded for Silverarrow's three Green faces.
+                    // Milestone 8.38e corrected the CAPABILITY this reaches for, and the comment above
+                    // had already written down why: `synthetic-range-minion-target@1` reads its
+                    // distance from the card's own printed Range ICON, and Reload! prints none, so a
+                    // literal `range` was never admissible there - the effect-definition validator
+                    // refuses it as an undeclared parameter, and that validator runs at MATCH
+                    // COMPOSITION, which is a tier no composition milestone reaches. Misa's Leaf on the
+                    // Wind prints the identical sentence and uses this same `choose-target@2` with an
+                    // explicit distance, which is the vocabulary an unprinted "adjacent to you" has.
                     new EffectNodeDefinition(
                         minion, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                        SyntheticTargetingCapabilities.RangeMinionTargetV1,
+                        SyntheticRosterCapabilities.ChooseTargetV2,
                         inputs: new[]
                         {
-                            EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
                             EffectInputBinding.FromClosedVocabulary(
-                                SyntheticTargetingCapabilities.TargetRelationParameterName,
-                                SourceTeamRelation.OpposingSource),
-                            EffectInputBinding.FromLiteral("range", EffectValue.Integer(1)),
+                                SyntheticRosterCapabilities.OriginParameter, RosterQueryOrigin.Actor),
                             EffectInputBinding.FromLiteral(
-                                EffectSelectionDeclaration.ConsumerParameterName,
-                                EffectValue.Node(defeat))
+                                SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(1)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Minion),
+                            // p.13 forbids defeating friendly units; the card overrides nothing, and
+                            // the Skill's own immunity checks apply on top.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                SourceTeamRelation.OpposingSource),
+                            EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill)
                         },
                         outputs: new[]
                         {
                             new EffectOutputBinding(
-                                SyntheticTargetingCapabilities.ChosenMinionOutputName,
-                                EffectValueKind.Minion)
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenMinionOutput, EffectValueKind.Minion)
                         }),
                     new EffectNodeDefinition(
                         defeat, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
@@ -384,7 +404,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             EffectInputBinding.FromNodeOutput(
                                 SyntheticConsequenceCapabilities.MinionParameter, minion,
-                                SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                                SyntheticRosterCapabilities.ChosenMinionOutput,
                                 EffectValueKind.Minion)
                         },
                         outputs: new[]
@@ -442,10 +462,7 @@ namespace GuardsDigital.Core.Cards.Verified
                                 "maximumDistance", EffectValue.Integer(2)),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.IgnoresObstaclesParameter,
-                                EffectValue.Boolean(true)),
-                            EffectInputBinding.FromLiteral(
-                                EffectSelectionDeclaration.ConsumerParameterName,
-                                EffectValue.Node(move))
+                                EffectValue.Boolean(true))
                         },
                         outputs: new[]
                         {
@@ -458,7 +475,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
-                                "subject", actorSpace, ActorSpaceOutput, EffectValueKind.Coordinate),
+                                "mover", actorSpace, ActorSpaceOutput, EffectValueKind.Coordinate),
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
                             EffectInputBinding.FromLiteral(
                                 SyntheticDisplacementCapabilities.LeastDistanceParameterName,
@@ -475,14 +492,16 @@ namespace GuardsDigital.Core.Cards.Verified
                         },
                         outputs: new[]
                         {
-                            new EffectOutputBinding("moved", EffectValueKind.Integer)
+                            new EffectOutputBinding("moved", EffectValueKind.Coordinate)
                         }),
                     new EffectNodeDefinition(
                         resolved, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticConditionCapabilities.SourceCardInDiscardV1,
                         outputs: new[]
                         {
-                            new EffectOutputBinding(PresentOutput, EffectValueKind.Boolean)
+                            new EffectOutputBinding(
+                                SyntheticConditionCapabilities.InDiscardOutput,
+                                EffectValueKind.Boolean)
                         }),
                     new EffectNodeDefinition(
                         gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
@@ -491,7 +510,8 @@ namespace GuardsDigital.Core.Cards.Verified
                         inputs: new[]
                         {
                             EffectInputBinding.FromNodeOutput(
-                                "flag", resolved, PresentOutput, EffectValueKind.Boolean)
+                                "flag", resolved, SyntheticConditionCapabilities.InDiscardOutput,
+                                EffectValueKind.Boolean)
                         },
                         outputs: new[]
                         {
@@ -558,7 +578,13 @@ namespace GuardsDigital.Core.Cards.Verified
                                 SourceTeamRelation.OpposingSource),
                             EffectInputBinding.FromLiteral(
                                 SyntheticDisplacementCapabilities.MaximumTargetsParameterName,
-                                EffectValue.Integer(maximumPushTargets))
+                                EffectValue.Integer(maximumPushTargets)),
+                            // p.18's ordinary Push: obstacles stop it. Her Blue line prints
+                            // "ignoring obstacles" on the PLACE it makes of herself, never on what it
+                            // moves of the enemy's, so this is false and the parameter is bound
+                            // rather than omitted because `synthetic-object-push@3` requires it.
+                            EffectInputBinding.FromLiteral(
+                                "ignoresObstacles", EffectValue.Boolean(false))
                         },
                         outputs: new[]
                         {
@@ -635,7 +661,12 @@ namespace GuardsDigital.Core.Cards.Verified
                         EffectInputBinding.FromNodeOutput(
                             SyntheticRosterCapabilities.TerrainSubjectParameter, subject,
                             SyntheticTargetingCapabilities.ChosenHeroOutputName,
-                            EffectValueKind.Hero)
+                            EffectValueKind.Hero),
+                        // "NOT adjacent to terrain" - the negation rides the predicate, which is where
+                        // this build puts one; `synthetic-is-flagged@1` declares none.
+                        EffectInputBinding.FromLiteral(
+                            SyntheticRosterCapabilities.SubjectTerrainNegateParameter,
+                            EffectValue.Boolean(true))
                     },
                     outputs: new[]
                     {
@@ -648,8 +679,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     inputs: new[]
                     {
                         EffectInputBinding.FromNodeOutput(
-                            "flag", terrain, PresentOutput, EffectValueKind.Boolean),
-                        EffectInputBinding.FromLiteral("negate", EffectValue.Boolean(true))
+                            "flag", terrain, PresentOutput, EffectValueKind.Boolean)
                     },
                     outputs: new[]
                     {
@@ -778,7 +808,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     inputs: new[]
                     {
                         EffectInputBinding.FromNodeOutput(
-                            "subject", subject,
+                            "mover", subject,
                             SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
                             EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
@@ -788,7 +818,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     },
                     outputs: new[]
                     {
-                        new EffectOutputBinding("moved", EffectValueKind.Integer)
+                        new EffectOutputBinding("moved", EffectValueKind.Coordinate)
                     })
             };
 

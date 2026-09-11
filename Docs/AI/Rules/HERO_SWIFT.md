@@ -247,7 +247,16 @@ which is every first turn of a round.
 count a target taken by an ordinary action earlier in the same turn?** The words "this way" scope the
 prohibition to actions performed through the Ultimate, which is the reading the contract map assumes and
 the narrower of the two. Recorded because the alternative reading would make an ordinary Attack
-constrain a later granted one.
+constrain a later granted one. **Implemented on the narrow reading at milestone 8.38d, and measurement
+there narrowed the question further**: her only two dealt basics, Reload! and Bounce, both print SKILL
+primaries, so the grant never hands back an Attack directly and the only Attack it can reach is the one
+Reload!'s own text borrows from inside the granted instance. The exclusion therefore follows the grant's
+whole CHAIN. This also retires milestone 8.38c2's closing reading that the clause was about several basic
+cards' grants in one turn - a turn resolves one card, so there are never several.
+
+**SW-Q3 IS SETTLED, AND THE ANSWER IS YES - through Bullet Time, measured at milestone 8.38e.** A driven
+turn shows the grant handing Bounce's own primary back after Bounce resolved, which is exactly the second
+performance the clause describes. The original note follows.
 
 **SW-Q3. Does Bounce's "if this card is already resolved as you perform this action" ever hold?** It is
 the same shape as Blizzard's "if Blizzard is in your discard", which milestone 8.37a settled as open
@@ -256,6 +265,24 @@ narrower and self-referential: it asks about the card being resolved rather than
 moment it asks is inside an action performed FROM that card. The likely answer is that it holds when the
 action is a borrowed or repeated performance rather than the card's own turn, which is what makes the
 clause do work beside Reload! and Bullet Time. Settled at composition, not here.
+
+**SW-12. Her dealing corrected twenty-seven capability BINDINGS across ten of her eighteen faces, and
+none of them changed what a face says.** Milestone 8.38e ran the effect-definition validator a match
+composition runs - the one tier a composition milestone cannot reach - and every violation was a guessed
+parameter or output name where the capability's own schema was there to be read: Reload! passed a literal
+`range` to a capability that reads the printed Range ICON (and Reload! prints none, so `choose-target@2`
+with an explicit distance is the vocabulary an unprinted "adjacent to you" has, exactly as Misa's Leaf on
+the Wind uses); Bounce and the two bounty faces bound `subject` where `synthetic-direct-move@3` declares
+`mover`; both Shotguns bound a distance where `choose-target@2` wants `origin`, `reach` and `unitKind`,
+with `RosterQueryOrigin.EnclosingTargetBeforeConsequences` being the anchor the scatter always meant; the
+three Jumps omitted the required `ignoresObstacles`, which is FALSE for them because "ignoring obstacles"
+is printed on the Place she makes of herself and never on what she moves of the enemy's; and the three
+Green faces put `negate` on `synthetic-is-flagged@1`, which declares none. **The negation moved onto the
+predicate**, which is where this build puts one - `subject-adjacent-terrain-presence@1` gained an optional
+`negate` on the convention `SyntheticConditionCapabilities`' own predicates set - because a gate that
+could invert its own input would let two readings of one predicate exist. No printed value, no printed
+text and no ledger reading above moved; this row records that the CONTRACT MAP's bindings were wrong and
+the inventory was not.
 
 ## Ledger rows this hero owns
 
@@ -272,6 +299,7 @@ clause do work beside Reload! and Bullet Time. Settled at composition, not here.
 | SW-09 | Her only +1 Radius item is printed on a Red card | Settled |
 | SW-10 | Fourteen of nineteen faces need nothing minted | **Corrected by SW-11** |
 | SW-11 | The audit mapped her Green terrain clause onto an actor-scoped predicate that asks a different question | Settled; `subject-adjacent-terrain-presence@1` minted at 8.38d |
+| SW-12 | Twenty-seven capability BINDINGS across ten faces named parameters and outputs their capabilities do not declare | Settled at 8.38e; no printed reading moved |
 | SW-Q1 | "Rightmost resolved card" reading | Open, non-blocking |
 | SW-Q2 | Bullet Time's target exclusion scope | Open, non-blocking |
-| SW-Q3 | Whether Bounce's self-referential gate ever holds | Open, settled at composition |
+| SW-Q3 | Whether Bounce's self-referential gate ever holds | Settled at 8.38e: YES, through Bullet Time's grant |

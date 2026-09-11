@@ -342,6 +342,12 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string TaliHeroIdValue = "hero-tali";
 
+        /// <summary>
+        /// Milestone 8.38e. Swift's own hero id - the thirteenth hero, and the first dealt after the
+        /// package arc closed, on the 2026-09-11 user direction that re-opened the roster.
+        /// </summary>
+        public const string SwiftHeroIdValue = "hero-swift";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
@@ -367,7 +373,12 @@ namespace GuardsDigital.Core.Setup
                 // Milestone 8.37 deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. She is the twelfth and last hero of the package arc, so
                 // with this row the selector offers every hero this build can deal.
-                (TaliHeroIdValue, "tali", "Tali the Spiritcaller")
+                (TaliHeroIdValue, "tali", "Tali the Spiritcaller"),
+                // Milestone 8.38e deals her and makes her pickable in the same commit, which is what
+                // the rule above asks for - and which the 8.35z46 omission recorded there is the whole
+                // reason to restate. She is the THIRTEENTH, so the sentence Tali's row above wrote -
+                // "every hero this build can deal" - stays true only because this row is here.
+                (SwiftHeroIdValue, "swift", "Swift the Sharpshooter")
             };
 
         /// <summary>

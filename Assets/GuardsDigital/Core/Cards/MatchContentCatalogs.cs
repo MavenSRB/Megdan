@@ -143,6 +143,16 @@ namespace GuardsDigital.Core.Cards
                     // reference against this catalog.
                     TaliEffectContent.BlizzardRepeatTriggeredEffect(TaliCardContent.ContentRevision)
                 })
+                .Concat(
+                    // Milestone 8.38e, the milestone that deals Swift the Sharpshooter. Three, on the
+                    // terms every group above joins by: Bullet Time's own effect, which p.16's
+                    // permanent ability names BY REFERENCE and the owner walk resolves against this
+                    // catalog, and the two "End of turn:" placements Delayed Jump and Mobile Scout
+                    // stand as Active effects. Hers is the first triggered effect in this build that
+                    // GRANTS AN ACTION - milestone 8.38d built the seam that lets a trigger do that at
+                    // all - so an unregistered one here would be a grant the rule can name and the
+                    // build cannot load.
+                    SwiftEffectContent.TriggeredEffects(SwiftCardContent.ContentRevision))
                 .ToArray()));
 
         /// <summary>
@@ -218,6 +228,16 @@ namespace GuardsDigital.Core.Cards
                 // Active-effect keyword her whole set prints. Milestone 8.37 recorded her as
                 // declaring none, which was true of the set it shipped: Blizzard was the face it
                 // left deferred.
-                .Concat(TaliActiveEffectContent.Handlers());
+                .Concat(TaliActiveEffectContent.Handlers())
+                // Milestone 8.38e, the milestone that deals Swift the Sharpshooter. Her five Active
+                // effects - the two "End of turn:" placements her Blue line stands, and the three
+                // counted minion bounties her two Green faces promise - joining on the same terms as
+                // every group above. They owe no showcase consumer: every one runs on
+                // ActiveEffectCreationHandler, the type Arien's five persistent texts proved, and
+                // milestone 7.9's deferral gate asks its second half of the handler TYPE. Her one
+                // genuinely new contract, `subject-adjacent-terrain-presence@1`, registers from
+                // SyntheticRosterCapabilities rather than from here, because it is generic vocabulary
+                // this build now owns rather than content of hers.
+                .Concat(SwiftActiveEffectContent.Handlers());
     }
 }

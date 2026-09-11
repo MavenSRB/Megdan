@@ -510,6 +510,13 @@ namespace GuardsDigital.Core.Participants
                 // first time in the arc that has been true.
                 case Setup.QuickGameSetupConfiguration.TaliHeroIdValue:
                     return Cards.Verified.TaliCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.38e. The thirteenth hero this build deals and the first after the
+                // package arc, on exactly the terms the rows above are on. The agreement Tali's arm
+                // records - switch and offerable roster covering the same heroes - is what this arm
+                // keeps true rather than establishes, which is the whole reason it goes in beside her
+                // selector row rather than after it.
+                case Setup.QuickGameSetupConfiguration.SwiftHeroIdValue:
+                    return Cards.Verified.SwiftCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1377,6 +1384,70 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.38e. The staged Wasp-versus-Swift match, on the same `DEV-005` terms the nine
+        /// staged matches before it are on. This is the configuration that makes Swift playable in a
+        /// fixture, and the thirteenth of its shape.
+        ///
+        /// <para><b>She needs no ally seat</b>, and it is worth saying why rather than leaving it to be
+        /// noticed: every selection her set makes reaches an ENEMY or a space - her Red line targets
+        /// units at range, her Blue line places herself, and her three Green faces qualify an enemy
+        /// hero by that enemy's own footing. Nothing of hers names a friendly hero, which is the one
+        /// thing a one-Blue-hero board cannot offer and the reason Brogan's staging needed a second
+        /// seat.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedSwiftForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedSwiftHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.38e. The staged Wasp-versus-Swift match at rulebook p.15's Tier II stage, with
+        /// Swift holding one Tier II card of each colour on the branch the caller names - see
+        /// <see cref="Cards.Verified.SwiftUpgradeBranch"/>'s own remarks for what each branch reaches.
+        /// </summary>
+        public static MatchConfiguration CreateStagedSwiftTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.SwiftUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedSwiftHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.38e. The staged Wasp-versus-Swift match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Bullet Time in Swift's.
+        /// </summary>
+        public static MatchConfiguration CreateStagedSwiftTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.SwiftUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedSwiftHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.SwiftCardContent.BulletTime)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -1789,6 +1860,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.TaliProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.TaliProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.38e. One seat's verified Swift hand, prefixed by the seat's team side for the
+        /// reason the twelve earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedSwiftHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.SwiftCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedSwiftHand(
+            bool tierThree, Cards.Verified.SwiftUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.SwiftProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.SwiftProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

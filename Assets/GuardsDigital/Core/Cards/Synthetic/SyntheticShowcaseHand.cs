@@ -2998,6 +2998,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
             var root = new EffectNodeId("roster-theft-root");
             var terrain = new EffectNodeId("roster-theft-terrain");
             var victim = new EffectNodeId("roster-theft-victim");
+            var subjectTerrain = new EffectNodeId("roster-theft-subject-terrain");
             var take = new EffectNodeId("roster-theft-take");
 
             var effect = new EffectDefinition(
@@ -3008,7 +3009,7 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 {
                     new EffectNodeDefinition(
                         root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                        childNodeIds: new[] { terrain, victim, take }),
+                        childNodeIds: new[] { terrain, victim, subjectTerrain, take }),
                     new EffectNodeDefinition(
                         terrain, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticRosterCapabilities.AdjacentTerrainPresenceV1,
@@ -3044,6 +3045,29 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         {
                             new EffectOutputBinding(
                                 SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero)
+                        }),
+                    // Milestone 8.38e. The showcase half of milestone 7.9's gate for
+                    // `subject-adjacent-terrain-presence@1`, which Swift's dealing registers as a new
+                    // handler TYPE. It asks the SAME page question the node above asks, of the hero the
+                    // node between them chose rather than of the actor - which is the whole difference
+                    // between the two declarations, put here on one card so a reader sees them side by
+                    // side. It gates nothing, for the reason the actor-scoped one gates nothing: a
+                    // conditional would make the transfer unreachable on a board with no terrain, and
+                    // this card exists to be reached.
+                    new EffectNodeDefinition(
+                        subjectTerrain, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.SubjectAdjacentTerrainPresenceV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticRosterCapabilities.TerrainSubjectParameter,
+                                victim,
+                                SyntheticRosterCapabilities.ChosenHeroOutput,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("present", EffectValueKind.Boolean)
                         }),
                     new EffectNodeDefinition(
                         take, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,

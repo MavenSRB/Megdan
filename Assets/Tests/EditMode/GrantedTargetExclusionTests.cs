@@ -239,18 +239,18 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(started.Accepted, Is.True);
             var choice = board.CardActions.PendingAttackTargetChoice;
             Assert.That(choice, Is.Not.Null);
-            Assert.That(choice.LegalTargetHeroIds, Does.Contain(SecondTarget),
+            Assert.That(choice.LegalTargetHeroIds, Has.Member(SecondTarget),
                 "The clause names one hero, so the rest of the board is untouched either way.");
 
             if (!alreadyReached)
             {
-                Assert.That(choice.LegalTargetHeroIds, Does.Contain(FirstTarget),
+                Assert.That(choice.LegalTargetHeroIds, Has.Member(FirstTarget),
                     "An ordinary instance offers every legal enemy, which is what the clause narrows " +
                     "and therefore what it must be measured against.");
                 return;
             }
 
-            Assert.That(choice.LegalTargetHeroIds, Does.Not.Contain(FirstTarget),
+            Assert.That(choice.LegalTargetHeroIds, Has.No.Member(FirstTarget),
                 "\"you cannot target the same enemy hero twice in the same turn this way\".");
             Assert.That(
                 board.CardActions.AnswerAttackTarget(
@@ -276,7 +276,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.StartTheAttack(excluded).Accepted, Is.True);
             Assert.That(
                 board.CardActions.PendingAttackTargetChoice.LegalTargetHeroIds,
-                Does.Contain(FirstTarget),
+                Has.Member(FirstTarget),
                 "A hero another ability reached is not a hero THIS grant reached.");
         }
 
@@ -379,7 +379,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(fixture.BorrowOffered, Is.True,
                 fixture.Trace() + " | The ability offered the primary of the card just resolved.");
-            Assert.That(fixture.BorrowCandidates, Does.Contain(fixture.BounceInstanceId),
+            Assert.That(fixture.BorrowCandidates, Has.Member(fixture.BounceInstanceId),
                 "The pool is `your rightmost resolved card`, and that is the card the trigger fired " +
                 "after.");
             Assert.That(fixture.GrantWasRunning, Is.True,

@@ -20,6 +20,11 @@ $sources = [ordered]@{
     # three complexity stars (p.21's "Very Complex", the only hero above one star this build deals)
     # and a Tokens role icon, which no other selection face in the set carries.
     tali = 'randomizers-tt22__7723708__front.png'
+    # Milestone 8.38e. Visually verified like the twelve above: the face prints the name "SWIFT",
+    # three complexity stars - she is the second hero this build deals above one star, beside Tali -
+    # and the role icons Sniper, Farming and Tactician, which is a trio no other selection face in
+    # the set carries.
+    swift = 'randomizers-tt9__7723691__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

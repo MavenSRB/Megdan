@@ -250,7 +250,7 @@ Non-goals: No registration, no artwork, no pick-screen row, no Play Mode journey
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838d-compose-swifts-eighteen-dealt-faces-and-prove-them-at-the-focused-tier-completion-evidence).
 
-### [ ] 8.38e Deal, register and artwork Swift as the thirteenth hero, and put her pick card under the cursor
+### [x] 8.38e Deal, register and artwork Swift as the thirteenth hero, and put her pick card under the cursor
 
 The registration milestone the three build blocks were sized to pay for once, plus the artwork and selector work the user asked for by name.
 
@@ -262,6 +262,16 @@ Observable outcome: a player can pick Swift the Sharpshooter in the hero selecto
 
 **A CONTENT-REVISION BUMP OWES THE ARTWORK CATALOG, and a green harness is structurally blind to it.** `ConfiguredCardArtworkCatalog.json` pins `definitionId` plus `contentRevision` per entry and its fixture is Unity-excluded, so the offline check - the catalog's revision set against the content constants - runs in this milestone rather than being discovered by the first unfiltered Edit Mode run.
 
+**THE COMPOSITION MILESTONE SHIPPED TWENTY-SEVEN PARAMETER AND OUTPUT MISMATCHES THAT EVERY OFFLINE TIER CALLED GREEN.** `MatchConfiguration.ValidateEffectDefinitions` is the one tier 8.38d could not reach - it runs when a MATCH is composed, and a composed-but-undealt hero never reaches one - so ten of her eighteen faces bound parameter names their capabilities do not declare, published outputs those capabilities do not declare, and omitted required ones. Reload! bound a literal `range` on `synthetic-range-minion-target@1`, which reads its distance from the card's printed Range ICON and Reload! prints none; Bounce bound `subject` where `synthetic-direct-move@3` declares `mover` and published `moved` as an Integer where it is a Coordinate; the two Shotguns bound a distance where `choose-target@2` wants `origin`, `reach` and `unitKind`; the three Jumps omitted `ignoresObstacles`; the three Green faces put `negate` on `synthetic-is-flagged@1`, which declares none. **Every one is a guessed name where the capability's own schema was there to read, which is the same lesson 8.38 recorded from the other direction** - read the catalog's PARAMETERS, not just its capability names.
+
+**AND A DEALING FINDS THEM ONE CARD PER TEN-MINUTE RUN, WHICH IS THE PART WORTH FIXING RATHER THAN ENDURING.** That validator throws on the FIRST failing definition, so a systematic mistake arrives as a sequence of single discoveries. `DealtCorpusCompositionValidationTests` asks the whole build in one call and reports every violation at once; it reflects over the `*CardContent` classes rather than naming thirteen, on the rule milestone 8.38d's own derived sweep guard set - a literal list closes the hole for this build and leaves it open for the fourteenth hero. **It also gives a COMPOSITION milestone the tier it was missing**: a hero composed but not yet dealt is covered by it, which is exactly the gap that let 8.38d ship green.
+
+**THE PRESENTATION PROBE CAUGHT A COMPILE BREAK THE DOTNET HARNESS ACCEPTS.** `Does.Contain(heroId)` binds to NUnit's STRING overload under the probe's resolution and to the collection overload under the harness's, so 8.38d's new cases compiled offline and would have failed the first Unity Edit Mode run. `Has.Member` / `Has.No.Member` are unambiguous. The probe is cheap and it is the only tier that sees this class; run it before every Unity run, not after.
+
+**SWIFT'S STANDEE BROKE A CALIBRATED ARTWORK ASSUMPTION AND THE TOOL WAS RIGHT TO REFUSE.** `Prepare-HeroTokens.ps1` replaces a flat team-coloured backdrop with white so the runtime can tint it, and floors that field at 2% to catch a crop that landed on the wrong atlas rectangle. Her portrait fills the disc edge to edge: measured field 1%, and her most common interior colour at 4.9% is portrait, where Arien's prepared Blue face is 11.3% white. The floor is now a DECLARED per-hero number rather than a lowered constant - she declares zero and the other twelve keep 2% - because a bound relaxed for everyone is a guard nobody has any more. What still identifies her crop is the manifest element, the ring's own team, and a portrait filling at least 30% of the interior; both faces were read before the bound moved. Her element is also the first in four dealings to carry the BARE hero name rather than an epithet.
+
+**AND THE CAPABILITY MATRIX IS NOW AT 85% OF ITS GOVERNED LIMIT** (8,229 of 9,000 words) with her section in it. The fourteenth hero's dealing owes that document the shard treatment `PHASE_8.md` got at 8.38, and finding it here is cheaper than finding it mid-ceremony.
+
 Acceptance checks:
 
 - Swift is pickable in the live hero selector, her pick card renders on hover, and a configured match composes her hand without throwing.
@@ -272,6 +282,8 @@ Acceptance checks:
 - Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision.
 
 Non-goals: No fourteenth hero. No new playtest package. No change to the twelve existing heroes' art or pins beyond re-measurement.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838e-deal-register-and-artwork-swift-as-the-thirteenth-hero-and-put-her-pick-card-under-the-cursor-completion-evidence).
 
 ### [ ] 8.38f Player-path gate Swift's whole printed set through real player input
 

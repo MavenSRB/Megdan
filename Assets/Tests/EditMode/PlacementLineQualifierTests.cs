@@ -57,13 +57,18 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Both are built and neither is registered, which is milestone 7.9's gate holding them for the
-        /// milestone that deals a card naming them. The case is written as the pair rather than as two
-        /// memberships so that 8.38e moving one and forgetting the other is a failure rather than a
-        /// half-green.
+        /// Both are registered and neither is deferred, which is milestone 7.9's gate SATISFIED: the
+        /// milestone that deals Swift is what moved them, and her Blue line is what a configured match
+        /// now puts in a hand.
+        ///
+        /// <para>Milestone 8.38b wrote this case the other way round - "both are built and neither is
+        /// registered" - and wrote it as the PAIR rather than as two memberships so that a dealing
+        /// moving one and forgetting the other would be a failure rather than a half-green. Milestone
+        /// 8.38e inverts it on the same terms and for the same reason: the claim that has to keep being
+        /// true is that these two are exactly together, whichever list they are in.</para>
         /// </summary>
         [Test]
-        public void BothLineQualifiedPlaces_AreDeferredUntilADealtCardNamesThem()
+        public void BothLineQualifiedPlaces_AreRegisteredNowThatADealtCardNamesThem()
         {
             var deferred = SyntheticPlacementCapabilities.DeferredHandlers()
                 .Select(handler => handler.Reference)
@@ -73,16 +78,24 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
             Assert.That(
-                deferred,
+                registered.Intersect(new[]
+                {
+                    SyntheticPlacementCapabilities.PlaceInRadiusInStraightLineV1,
+                    SyntheticPlacementCapabilities.PlaceInRadiusOffEveryStraightLineV1
+                }),
                 Is.EquivalentTo(new[]
                 {
                     SyntheticPlacementCapabilities.PlaceInRadiusInStraightLineV1,
                     SyntheticPlacementCapabilities.PlaceInRadiusOffEveryStraightLineV1
                 }),
-                "These two and nothing else are what this file is holding back, so the milestone " +
-                "that deals Swift knows exactly what it is moving.");
+                "Both of Swift's straight-line Places are registered, together, now that Steam Jump " +
+                "and Delayed Jump are cards a configured match deals.");
+            Assert.That(deferred, Is.Empty,
+                "and this file holds nothing back any more, which is the other half of what the " +
+                "dealing moved. The empty list is kept rather than deleted so the next hero who " +
+                "mints a placement declaration finds the name already here.");
             Assert.That(registered.Intersect(deferred), Is.Empty,
-                "and nothing is in both lists, which is what the gate means.");
+                "and nothing is in both lists, which is what the gate means either way round.");
         }
 
         // -------------------------------------------------------------------------------------------

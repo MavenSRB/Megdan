@@ -271,7 +271,16 @@ namespace GuardsDigital.Tests.EditMode
             // effect her set's one `End of turn:` prints - and moves this count by NOTHING, on the
             // sentence six dealings have now written: `ActiveEffectCreationHandler` is the type, and it
             // has been registered since milestone 6.8.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(77),
+            // Milestone 8.38e, the THIRTEENTH dealing and the first after the package arc, moves it 77 -> 78.
+            // Swift the Sharpshooter registers THREE capability ids across exactly ONE new handler
+            // TYPE: `SubjectAdjacentTerrainPresenceHandler`, the enemy-scoped reading her three Green
+            // faces qualify their target by. Her two straight-line PLACE declarations move it by
+            // NOTHING - further declarations over `PlaceHandler`, the type registered since milestone
+            // 6.6 - and `borrow-primary-action@1`, which her Reload! names, registered already at
+            // Ursafar's dealing, so her reaching it moves this by nothing on rule ledger row 25's own
+            // sentence. Her Active-effect creations move it by nothing on the sentence seven dealings
+            // have now written.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(78),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

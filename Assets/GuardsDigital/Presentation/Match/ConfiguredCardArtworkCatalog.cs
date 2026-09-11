@@ -82,7 +82,13 @@ namespace GuardsDigital.Presentation.Match
                 // Written here at the same moment as the eighteen rows, for the reason those four
                 // paragraphs give: the rows alone are what every offline tier can see, and this map
                 // is what turns them into a front on a card.
-                { "tali", "Tali" }
+                { "tali", "Tali" },
+                // Milestone 8.38e, the SIXTH consecutive dealing told by the comment above rather than
+                // by a check - and the first after the arc Tali's line called the last of. Her
+                // extraction directory spells the name plainly. Written here at the same moment as the
+                // eighteen rows, for the reason those five paragraphs give: the rows alone are what
+                // every offline tier can see, and this map is what turns them into a front on a card.
+                { "swift", "Swift" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -364,6 +370,11 @@ namespace GuardsDigital.Presentation.Match
                 // Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance,
                 // Ursafar's Jaws That Bite and Whisper's Vile Accusation are not among theirs.
                 .Concat(TaliCardContent.DealtDefinitions)
+                // Milestone 8.38e. Swift's eighteen, on exactly the terms the rows above state. Backup
+                // is p.20's Handicap card and is not among her DealtDefinitions, exactly as Dodger's
+                // Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance, Ursafar's
+                // Jaws That Bite, Whisper's Vile Accusation and Tali's Ice Shard are not among theirs.
+                .Concat(SwiftCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

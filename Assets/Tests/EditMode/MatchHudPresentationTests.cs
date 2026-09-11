@@ -4225,9 +4225,13 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(SilverarrowCardContent.DealtDefinitions)
                 .Concat(UrsafarCardContent.DealtDefinitions)
                 .Concat(WhisperCardContent.DealtDefinitions)
-                // Milestone 8.37. The twelfth and last, so this list and the artwork bijection it is
-                // asserted against now cover every hero the build can deal.
-                .Concat(TaliCardContent.DealtDefinitions).ToArray();
+                .Concat(TaliCardContent.DealtDefinitions)
+                // Milestone 8.38e. The thirteenth, and the reason the sentence milestone 8.37 wrote
+                // here - "the twelfth and LAST" - was about the package arc rather than about this
+                // list: the user re-opened the roster on 2026-09-11. The list and the artwork
+                // bijection it is asserted against cover every hero the build can deal, which is the
+                // claim that has to keep being true rather than a count that was once right.
+                .Concat(SwiftCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");
