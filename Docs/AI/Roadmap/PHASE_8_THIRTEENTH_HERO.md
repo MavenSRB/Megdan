@@ -131,9 +131,12 @@ Observable outcome: all eighteen of her dealt faces carry composed printed text 
 
 **HER BOXED HANDICAP IS THE ONE FACE THAT STAYS DEFERRED, on the standing p.20 deferral every hero's Handicap card carries** since the 2026-08-21 user decision. Backup's printed values and words ship as inventory all the same, and its relationship to Reload! is the same one Crackling Dagger has to Magnetic Dagger and Keep the Distance to Shoot and Scoot: the Handicap is the more restrictive of a pair.
 
+**AND A HERO'S CORPUS IS ENUMERATED BY NAME IN ONE FIXTURE, WHICH IS EASY TO MISS.** `AttackTargetBindingConditionalChooseOfferSweepTests` walks each hero's `AllDefinitions` through an explicit `foreach` per hero - twelve of them today - hunting a Conditional or Choose gate hiding a mandatory binding behind it. A thirteenth hero whose line is not added is a corpus the sweep silently does not cover, and because the case is `[Explicit]` no suite run will say so. Found on 2026-09-11 while checking whether milestone 8.38a's new enum members changed that sweep's output; they do not - it names no target-policy type at all - but the per-hero enumeration is a debt this milestone owes.
+
 Acceptance checks:
 
 - Eighteen dealt faces compose; only Backup carries a deferral, and it names the standing p.20 reason.
+- Her corpus is added to `AttackTargetBindingConditionalChooseOfferSweepTests`' per-hero enumeration, and the sweep is run by hand once with her content in it.
 - Each face's focused authoritative scenarios cover positive, negative, boundary, restore/replay and ordered-event arms, and the Attack faces additionally cover the enclosing combat outcome arms.
 - Her progressed hands compose, and her three upgrade lines match the printed Tier structure the inventory recorded.
 - Complete unfiltered dotnet harness and Edit Mode pass.
