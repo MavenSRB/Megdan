@@ -44,7 +44,38 @@ namespace GuardsDigital.Core.Cards
         /// would either widen the pool to every resolved card or refuse the widening the Tier IV card
         /// exists to give.</para>
         /// </summary>
-        OwnedActiveCardsWithAnActiveEffect = 2
+        OwnedActiveCardsWithAnActiveEffect = 2,
+
+        /// <summary>
+        /// Milestone 8.38c. `your rightmost resolved card` - Swift's Reload! and her p.20 Handicap
+        /// Backup, the roster's first faces to borrow from a pool defined by ORDER rather than by a
+        /// card's state.
+        ///
+        /// <para><b>It names exactly one card, and that is the whole difference.</b> The two pools
+        /// above are per-card predicates: a card is in the discard pile or it is not, it counts as
+        /// active or it does not, and the answer for one card never depends on another. This one is a
+        /// selection over an ordered set - rulebook p.6's turn area holds the cards a hero has
+        /// resolved this round in committed order, and "rightmost" picks the last of them. So the
+        /// candidate set is at most one card however many are standing there.</para>
+        ///
+        /// <para><b>It excludes the borrowing card itself.</b> Reload! is the card being resolved when
+        /// its own text asks this question, and its assignment is already in the round's turn slots -
+        /// so a selector that read the slots naively would name Reload! as its own rightmost resolved
+        /// card. What the face means is the card resolved BEFORE this one, which is why the query
+        /// takes the source instance and drops it. A borrow chain gets the same treatment for free.</para>
+        ///
+        /// <para><b>If that one card cannot supply a primary, the step is impossible rather than
+        /// falling through to an earlier card.</b> The face names one card - "your rightmost resolved
+        /// card" - and a reading that walked backwards until it found a borrowable one would be
+        /// answering a sentence the card does not print. <see cref="BorrowRefusal"/>'s four arms apply
+        /// to the selected card and nothing else, so a first turn with nothing resolved, and a
+        /// rightmost card that prints no primary, both leave the pool empty by the same route.</para>
+        ///
+        /// <para>See row SW-Q1 in the Swift shard for the recorded question this leaves open:
+        /// "rightmost" is the turn area's committed order here, because a committed order is what this
+        /// engine has and a physical layout is not something it models.</para>
+        /// </summary>
+        OwnedRightmostResolvedCard = 3
     }
 
     /// <summary>
@@ -141,6 +172,17 @@ namespace GuardsDigital.Core.Cards
         public static BorrowedPrimaryActionDeclaration FromActiveCardsWithAnActiveEffect() =>
             new BorrowedPrimaryActionDeclaration(
                 BorrowedActionPool.OwnedActiveCardsWithAnActiveEffect, CardColor.None);
+
+        /// <summary>
+        /// Milestone 8.38c. `your rightmost resolved card` - Reload!'s first bullet and Backup's whole
+        /// sentence.
+        ///
+        /// It takes no colour for the reason the pool above takes none: neither face prints one, and a
+        /// parameter no content uses is a reading nobody has checked.
+        /// </summary>
+        public static BorrowedPrimaryActionDeclaration FromRightmostResolvedCard() =>
+            new BorrowedPrimaryActionDeclaration(
+                BorrowedActionPool.OwnedRightmostResolvedCard, CardColor.None);
 
         public BorrowedActionPool Pool { get; }
 
@@ -357,7 +399,8 @@ namespace GuardsDigital.Core.Cards
             IEnumerable<CardInstance> instances,
             IEnumerable<ActiveEffectInstance> effects,
             EffectCapabilityCatalog capabilities,
-            bool resolvedCardsCountAsActive = false)
+            bool resolvedCardsCountAsActive = false,
+            IReadOnlyList<CardInstanceId> resolvedOrder = null)
         {
             if (declaration == null) throw new ArgumentNullException(nameof(declaration));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
@@ -374,8 +417,21 @@ namespace GuardsDigital.Core.Cards
                 .ToDictionary(group => group.Key, group => group.First());
             var materializedEffects = (effects ?? Enumerable.Empty<ActiveEffectInstance>()).ToArray();
 
-            return Array.AsReadOnly(instances
+            var owned = instances
                 .Where(card => card != null && card.OwnerId.Equals(borrowerId))
+                .ToArray();
+
+            // Milestone 8.38c. The ordered pool is narrowed BEFORE the per-card filters rather than
+            // after, and the difference is the whole reading: "your rightmost resolved card" names one
+            // card, so a card that cannot be borrowed from leaves the pool EMPTY instead of handing the
+            // clause the card behind it. Narrowing afterwards would have walked backwards until it
+            // found a borrowable card, which is a sentence Swift's faces do not print.
+            if (declaration.Pool == BorrowedActionPool.OwnedRightmostResolvedCard)
+            {
+                owned = Rightmost(owned, resolvedOrder);
+            }
+
+            return Array.AsReadOnly(owned
                 .Where(card => InPool(
                     declaration, card, materializedEffects, definitionsByReference, capabilities,
                     resolvedCardsCountAsActive))
@@ -385,6 +441,39 @@ namespace GuardsDigital.Core.Cards
                     MatchesColor(declaration, definition))
                 .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
                 .ToArray());
+        }
+
+        /// <summary>
+        /// The last card of <paramref name="resolvedOrder"/> that the borrower still owns, as a set of
+        /// at most one. Milestone 8.38c.
+        ///
+        /// <para>The order is supplied by the caller rather than derived here, because deriving it
+        /// needs the round's turn slots and this file deliberately knows about cards and nothing else.
+        /// <c>SyntheticBorrowedActionCapabilities</c> is where the slots are read, and it is also where
+        /// the borrowing card itself is dropped.</para>
+        ///
+        /// <para>A null or empty order is an empty pool, not an unfiltered one. That is the first-turn
+        /// case - nothing resolved yet - and it has to fail closed, because an unfiltered pool here
+        /// would silently become "any card you own".</para>
+        /// </summary>
+        private static CardInstance[] Rightmost(
+            CardInstance[] owned, IReadOnlyList<CardInstanceId> resolvedOrder)
+        {
+            if (resolvedOrder == null || resolvedOrder.Count == 0)
+            {
+                return Array.Empty<CardInstance>();
+            }
+
+            for (var index = resolvedOrder.Count - 1; index >= 0; index--)
+            {
+                var candidate = owned.FirstOrDefault(card => card.Id.Equals(resolvedOrder[index]));
+                if (candidate != null)
+                {
+                    return new[] { candidate };
+                }
+            }
+
+            return Array.Empty<CardInstance>();
         }
 
         private static bool InPool(
@@ -406,6 +495,13 @@ namespace GuardsDigital.Core.Cards
                         definitionsByReference.TryGetValue(
                             card.DefinitionReference, out var definition) &&
                         PrintsAnActiveEffect(definition, capabilities);
+
+                // Milestone 8.38c. The ordered narrowing above has already reduced this pool to the one
+                // card the face names, so there is no per-card qualifier left to apply: whichever card
+                // survived selection IS the rightmost resolved one. Stating that here rather than
+                // letting it fall to the default is what keeps the switch exhaustive.
+                case BorrowedActionPool.OwnedRightmostResolvedCard:
+                    return true;
 
                 default:
                     throw new ArgumentOutOfRangeException(

@@ -314,9 +314,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return Array.Empty<CardInstance>();
             }
 
-            var declaration = pool == BorrowedActionPool.OwnedDiscardedCards
-                ? BorrowedPrimaryActionDeclaration.FromDiscardedCards(color)
-                : BorrowedPrimaryActionDeclaration.FromActiveCardsWithAnActiveEffect();
+            BorrowedPrimaryActionDeclaration declaration;
+            switch (pool)
+            {
+                case BorrowedActionPool.OwnedDiscardedCards:
+                    declaration = BorrowedPrimaryActionDeclaration.FromDiscardedCards(color);
+                    break;
+                case BorrowedActionPool.OwnedActiveCardsWithAnActiveEffect:
+                    declaration =
+                        BorrowedPrimaryActionDeclaration.FromActiveCardsWithAnActiveEffect();
+                    break;
+                case BorrowedActionPool.OwnedRightmostResolvedCard:
+                    declaration = BorrowedPrimaryActionDeclaration.FromRightmostResolvedCard();
+                    break;
+                default:
+                    return Array.Empty<CardInstance>();
+            }
 
             return BorrowedPrimaryActionQuery.EligibleCards(
                 declaration,
@@ -327,7 +340,50 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 context.Capabilities,
                 BorrowedPrimaryActionDeclaration.ResolvedCardsCountAsActive(
                     context.ActorId,
-                    context.ActorContinuousSources));
+                    context.ActorContinuousSources),
+                ResolvedOrderFor(context));
+        }
+
+        /// <summary>
+        /// The cards the acting hero has resolved so far this round, in rulebook p.6's committed turn
+        /// order, with the card asking the question removed. Milestone 8.38c.
+        ///
+        /// <para><b>Why the source card is dropped.</b> Reload! asks "your rightmost resolved card"
+        /// while Reload! is itself the card being resolved, and its own assignment is already in the
+        /// round's turn slots by then. Reading the slots without this would name the asking card as its
+        /// own answer, which is a borrow of a card's primary off itself - exactly what
+        /// <see cref="BorrowRefusal.ActionMovesItsOwnCard"/> exists to refuse one step later, reached
+        /// by accident instead of by a printed reading.</para>
+        ///
+        /// <para><b>Why the round is filtered and the turn index is not.</b> p.6 empties the turn area
+        /// at the round boundary, so a card resolved last round is not standing there to be rightmost.
+        /// Within the round every earlier turn's card has resolved by construction - a hero takes one
+        /// turn at a time - so dropping the source instance is the whole of what "resolved" needs to
+        /// mean here, and no resolution-status field is consulted.</para>
+        ///
+        /// <para>Absent roster state yields an empty order rather than an exception, and
+        /// <see cref="BorrowedPrimaryActionQuery.EligibleCards"/> turns that into an empty pool. A
+        /// capability that cannot see the round cannot answer a question about it, and failing closed
+        /// is what keeps that from becoming "any card you own".</para>
+        /// </summary>
+        private static IReadOnlyList<CardInstanceId> ResolvedOrderFor(EffectCapabilityContext context)
+        {
+            if (context.RosterState == null || !context.RosterState.IsAvailable)
+            {
+                return Array.Empty<CardInstanceId>();
+            }
+
+            return context.RosterState.TurnSlots
+                .Where(slot => slot != null && slot.RoundIndex == context.RoundIndex)
+                .OrderBy(slot => slot.TurnIndex)
+                .SelectMany(slot => slot.Assignments)
+                .Where(assignment =>
+                    assignment != null &&
+                    assignment.HeroId.Equals(context.ActorId) &&
+                    assignment.CardInstanceId.HasValue &&
+                    !assignment.CardInstanceId.Value.Equals(context.SourceCardInstanceId))
+                .Select(assignment => assignment.CardInstanceId.Value)
+                .ToArray();
         }
 
         private sealed class BorrowPrimaryActionHandler : IEffectCapabilityHandler

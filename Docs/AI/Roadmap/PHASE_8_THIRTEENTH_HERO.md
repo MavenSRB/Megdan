@@ -98,11 +98,76 @@ Non-goals: No Swift content. No change to the existing pushes or to any placemen
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838b-build-the-straight-line-and-off-line-placement-vocabulary-her-blue-line-needs-completion-evidence).
 
-### [ ] 8.38c Build the borrow, bounty and basic-card-resolution vocabulary her Gold, Green and Ultimate lines need
+### [x] 8.38c Build the rightmost-resolved-card borrow pool her Gold line needs
 
-The third build block, and the one carrying what is genuinely new rather than compositional.
+**THIS BLOCK WAS NARROWED DURING IMPLEMENTATION, and the two clauses it shed became 8.38c1 and 8.38c2 below.** As planned it carried three genuinely-new contracts at once, which is larger than 8.19b - the size this series' own preamble commits to as the ceiling for a build block. Probing them found the three unequal in a way the audit could not see: the borrow pool is an enum member plus a selector, while the bounty needs a timing checkpoint the engine does not have and the Ultimate needs a fifth trigger condition plus a restriction scope. Splitting on that seam changes no total scope and no acceptance check - every clause still ships, in the same series, before 8.38d composes a single face.
 
-Observable outcome: a face can borrow the primary action of the rightmost card its owner has resolved this round; a face can promise a coin for each of the first one or two enemy minions defeated in its radius on the owner's next turn; and an Ultimate can trigger on a basic CARD being resolved rather than on a basic ACTION completing, and can forbid its grant from taking the same enemy hero twice in one turn.
+Observable outcome: a face can borrow the printed primary action of the rightmost card its owner has resolved this round.
+
+**"RIGHTMOST RESOLVED CARD" IS A POOL, AND `borrow-primary-action@1` IS ALREADY THE VERB.** Milestone 8.35z50 registered the borrow with Ursafar and its own remarks say the pool is an input rather than part of the capability, so Reload! and Backup add `BorrowedActionPool.OwnedRightmostResolvedCard` and nothing else. The suspension of the borrowing Skill, the resumption after the borrowed action completes, and the four `BorrowRefusal` arms are all milestone 8.36f's already-corrected machinery.
+
+**IT IS THE FIRST POOL DEFINED BY ORDER RATHER THAN BY A CARD'S STATE, and that is the whole of what was new.** The two existing pools are per-card predicates - a card is in the discard pile or it is not - so one card's answer never depends on another's. This one is a selection over rulebook p.6's turn area, which holds the cards a hero resolved this round in committed order. The order is read from `EffectRosterState.TurnSlots`, filtered to the current round because p.6 empties the turn area at its boundary; no per-card resolution-order field exists and none was added.
+
+**THE BORROWING CARD IS ITS OWN FIRST FALSE ANSWER.** Reload! asks the question while Reload! is the card being resolved, and its assignment is already in the round's turn slots by then - so a selector reading the slots naively names the asking card as its own answer, reaching `BorrowRefusal.ActionMovesItsOwnCard` one step later by accident instead of by a printed reading. The source instance is dropped, which covers a borrow chain for free.
+
+**AND A RIGHTMOST CARD THE BORROW REFUSES EMPTIES THE POOL RATHER THAN FALLING THROUGH.** The face names one card. Walking backwards until a borrowable one turned up would answer a sentence Swift does not print, so the ordered narrowing runs BEFORE the per-card filters rather than after. A hero whose last resolved card was a Block - every hero has several - simply cannot use the clause that turn.
+
+**ONE CASE FOUND A GUARANTEE LIVING SOMEWHERE OTHER THAN WHERE IT LOOKED.** A case staging another hero's assignment against a card this hero owns is unconstructible: `RoundTurnSlot` refuses it outright, so the selector's own hero filter is defence in depth rather than the thing carrying that rule. The case now asserts the invariant instead, because a reader who assumed the filter was load-bearing would be wrong about where the guarantee lives.
+
+Acceptance checks:
+
+- The pool names at most one card on any board, is empty on a turn with nothing resolved, and follows the turn area's committed order rather than any instance-id ordering - proven on a board where the two disagree.
+- The borrowing card is not its own answer, and a card resolved in an earlier round is not rightmost.
+- A rightmost card the borrow refuses empties the pool, on a board where a fall-through would have succeeded.
+- Absent roster state fails closed to an empty pool rather than an unfiltered one.
+- No schema field, corpus digest or pinned constant moves.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Swift content. No change to Ursafar's or Tali's borrow pools. The bounty and the Ultimate trigger, which 8.38c1 and 8.38c2 own.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838c-build-the-rightmost-resolved-card-borrow-pool-her-gold-line-needs-completion-evidence).
+
+### [ ] 8.38c1 Build the counted next-turn minion bounty her two Green faces print
+
+Split out of 8.38c during implementation. Mark for Death promises one coin the first time an enemy minion in radius is defeated on her next turn; Hunting Season promises one coin each of the first two times.
+
+Observable outcome: a face can promise a reward for each of the first N times a minion is defeated in its radius during a named later window, and pay exactly N.
+
+**THE ENGINE HAS NO MOMENT FOR THIS YET, WHICH IS WHY IT IS ITS OWN BLOCK.** `TimingCheckpoint` carries seventeen members and none of them is a minion being removed; `RoundHeroDefeatHistory` records hero Defeats and has no minion counterpart. Every existing face that touches a minion defeat CAUSES one - Xargatha's and Misa's both reach `DefeatMinionV1` themselves - and none reacts to one somebody else caused. So this block adds a checkpoint at the one place p.13's removal outcome is already decided, which is the highest-risk edit in the series and the reason it is not folded into a block that also does two other things.
+
+**WHETHER IT MOVES THE SCHEMA IS TO BE DECIDED BY MEASUREMENT, and the probe is already half done.** The nearest precedent is the once-per-turn Ultimate: `TurnResolutionRestoreState.ConsumedBeforeActionTriggers` is a length-prefixed string list written by `WriteStrings`, so **adding entries to it changes bytes and not format** and a v41 reader still reads it. If the count can ride that same turn-scoped set under distinct keys - the bounty's window is exactly one turn, which is what makes it plausible - the block is schema-neutral. A second list beside it would be one more length-prefixed field and therefore a version. Take the first shape if it is faithful and record why if it is not.
+
+Acceptance checks:
+
+- The bounty pays exactly its printed count and no more, pays nothing for a minion defeated outside the radius, and nothing for one defeated outside its window.
+- It survives a snapshot restore and an Undo with the same remaining count.
+- The new checkpoint fires where p.13 actually removes the miniature, not where removal is merely attempted or prevented.
+- Whether the schema moves is decided by measurement and recorded either way.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Swift content. No change to any existing checkpoint's meaning. The Ultimate, which 8.38c2 owns.
+
+### [ ] 8.38c2 Build the basic-card-resolution Ultimate trigger and per-grant target exclusion Bullet Time prints
+
+Split out of 8.38c during implementation.
+
+Observable outcome: an Ultimate can trigger on a basic CARD being resolved rather than on a basic ACTION completing, and can forbid its own grant from taking the same enemy hero twice in one turn while leaving an ordinary action's targets alone.
+
+**IT IS A FIFTH `UltimateTriggerCondition` RATHER THAN A WIDENING OF THE SECOND.** Tigerclaw's Cloak and Daggers already reads `AfterControllerPerformsBasicAction` - "After you perform a basic action you may repeat it once" - and widening that member would make Swift's Ultimate fire after a Hold or a Fast Travel spent from a basic card. Her face says "After you resolve a basic card you may perform the primary action on that card", which names the card's own resolution and then borrows that card's PRINTED PRIMARY, which need not be the action that was performed. Milestone 8.19c recorded the same reasoning for the second member: two different sentences on two different cards are two conditions.
+
+**`PerformedBasicAction` ALREADY CARRIES WHAT THE CONDITION NEEDS TO READ** - `SourceCardInstanceId` names the card and `WasRepeatedInstance` distinguishes a repeat from a card's own resolution - so the fact plumbing is probably a match rather than a new field. Probe it before assuming.
+
+**AND ITS SECOND CLAUSE IS A RESTRICTION SCOPED TO THE GRANT, NOT TO THE TURN.** "You cannot target the same enemy hero twice in the same turn this way" forbids a repeat target only for actions taken through this Ultimate; an ordinary Attack in the same turn is untouched. The scope is declared on the grant, which is the seam milestone 8.35l used to make a restriction name its own blocker in the offer. **Open, and to be settled here rather than assumed:** whether a granted performance can itself re-trigger the Ultimate. The natural reading is no, because a grant is not a card resolution - but the clause's existence implies the designer expected repeated targets to be reachable, so it needs an answer rather than a default.
+
+Acceptance checks:
+
+- An Ultimate declaring the new condition fires on a resolved basic card and not on a basic action performed from a non-basic one, nor on a repeat.
+- The per-grant target exclusion greys a repeat target and names its own reason, and leaves an ordinary action's targets alone in the same turn.
+- Whether a granted performance re-triggers is settled, implemented and recorded.
+- Whether the schema moves is decided by measurement and recorded either way.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Swift content. No change to Wasp's, Tigerclaw's or Misa's existing Ultimate triggers.
 
 **"RIGHTMOST RESOLVED CARD" IS A SELECTOR, AND `borrow-primary-action@1` IS ALREADY THE VERB.** Milestone 8.35z50 registered the borrow with Ursafar, whose three faces borrow from "one of your active cards with an active effect". Reload! and Backup borrow from a different set, and p.6's turn area is what makes "rightmost" a fact rather than a presentation detail: the cards a hero has resolved this round sit in committed order. The selector is new; the borrow, its suspension of the borrowing Skill, and its resumption after the borrowed action completes are all milestone 8.36f's already-corrected machinery.
 
