@@ -204,7 +204,7 @@ when infeasible. **Registered** means the contract is live in the default produc
 | Drop Trooper | `drop-push-set -> choose-target-set@1 (enemy units adjacent to A, max=2; May/One)`; `drop-push -> synthetic-object-push@3 over the set, distance 0..2; Batch` | set registered; the multi-subject push is **owed, 8.38b** |
 | Delayed Jump, Mobile Scout | `late-destination -> place-in-radius-off-every-line@1 (A, in printed Radius, on no file from A, same occupancy rules; M/One; TurnEnded)`; `late-place -> synthetic-place@2` | destination **owed, 8.38b**; checkpoint registered (Warning Shot) |
 | Mobile Scout | `scout-travel -> fast-travel@1 (A; May/One; after the placement)` | registered, moved across with Silverarrow at 8.35z46 |
-| Suppress, Pin Down | `pin-subject -> synthetic-radius-hero-target@1 (enemy hero in printed Radius)` narrowed by `adjacent-terrain-presence@1 (subject; false)`; `pin-discard -> synthetic-discard-chosen-card@2 (chooser=Out(pin-subject); IfAble/One)` | registered - Tigerclaw's Blend Into Shadows names the predicate |
+| Suppress, Pin Down | `pin-subject -> synthetic-radius-hero-target@1 (enemy hero in printed Radius)` narrowed by `subject-adjacent-terrain-presence@1 (subject=Out(pin-subject); false)`; `pin-discard -> synthetic-discard-chosen-card@2 (chooser=Out(pin-subject); IfAble/One)` | targeting and discard registered; the SUBJECT-scoped terrain predicate is **owed, 8.38d** - see SW-11 |
 | Killing Ground | Pin Down's nodes plus `pin-defeat -> synthetic-defeat-hero@1 (when the discard reported none)` | registered |
 | Mark for Death | `mark-subject -> synthetic-radius-minion-target@1 (enemy minion in printed Radius)`; `mark-move -> synthetic-direct-move@1 (target=Out(mark-subject), up to 3, destination in printed Radius; M/One)`; `mark-bounty -> next-turn-defeat-bounty@1 (radius from S, count=1, reward=gain-resource@1 1 coin)` | targeting and move registered; the counted bounty is **owed, 8.38c** |
 | Hunting Season | Mark for Death's nodes over `choose-target-set@1 (max=2)` with `synthetic-batch-direct-move@1`, and `count=2` on the bounty | set and batch move registered; bounty **owed, 8.38c** |
@@ -213,6 +213,17 @@ when infeasible. **Registered** means the contract is live in the default produc
 | Bounce | `bounce-move -> synthetic-direct-move@1 (A, exactly 2, straight line, ignoring obstacles; M/One)`; `bounce-repeat -> repeat-action@2 (max=1; May/One; ActionEnded)` gated on S already being resolved | move and repeat registered; the self-referential resolved gate reuses 8.37a's opt-in reading |
 | Bullet Time | Ultimate continuous source declaring `after-basic-card-resolution-trigger@1 (controller=A)`; `bullet-borrow -> borrow-primary-action@1 (card=the resolved basic card; May/One)` under a per-grant `restrict-action@2 (exception: an enemy hero already taken this turn through this grant)` | trigger condition and the per-grant restriction are **owed, 8.38c** |
 | Profile, dashboard, standee | `hero-content-definition@1 (hero-content/swift, team slot, deck, profile/dashboard references; validation-only)` and ordinary participant/setup bindings | registered. No rules component supply - SW-03 |
+
+**SW-11. SW-10's count was one contract optimistic, and composition is what found it.** The three Green
+faces' "who is not adjacent to terrain" was mapped onto `adjacent-terrain-presence@1`, which Tigerclaw's
+Blend Into Shadows already names. That capability exists and answers a **different question**: it takes
+no subject and asks whether the ACTOR stands beside terrain, as the condition for a Place he then makes.
+Hers qualifies the ENEMY her Skill may reach - a property of a candidate rather than of her own footing.
+`subject-adjacent-terrain-presence@1` is minted at milestone 8.38d and declared apart rather than added
+as a parameter, by the rule the effect catalog has followed since 8.20: a shared declaration gaining a
+field moves every hero who already referenced it. Both read the same `TerrainPresenceQuery`, so a hero
+petrified into terrain is terrain to stand beside for hers exactly as for his. **The reusable half: a
+capability whose NAME matches the printed words has still to be checked for what it actually asks.**
 
 **SW-10. Fourteen of her nineteen faces need nothing minted.** What is owed falls on three clean lines -
 two printed target narrowings, two placement destination policies plus a multi-subject push, and three
@@ -259,7 +270,8 @@ clause do work beside Reload! and Bullet Time. Settled at composition, not here.
 | SW-07 | Suppress's missing comma, transcribed as printed | Settled |
 | SW-08 | Mark for Death's lowercase "the", transcribed as printed | Settled |
 | SW-09 | Her only +1 Radius item is printed on a Red card | Settled |
-| SW-10 | Fourteen of nineteen faces need nothing minted | Settled |
+| SW-10 | Fourteen of nineteen faces need nothing minted | **Corrected by SW-11** |
+| SW-11 | The audit mapped her Green terrain clause onto an actor-scoped predicate that asks a different question | Settled; `subject-adjacent-terrain-presence@1` minted at 8.38d |
 | SW-Q1 | "Rightmost resolved card" reading | Open, non-blocking |
 | SW-Q2 | Bullet Time's target exclusion scope | Open, non-blocking |
 | SW-Q3 | Whether Bounce's self-referential gate ever holds | Open, settled at composition |

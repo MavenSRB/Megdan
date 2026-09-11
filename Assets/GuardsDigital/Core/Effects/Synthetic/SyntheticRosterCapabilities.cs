@@ -273,6 +273,33 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public static EffectCapabilityReference ActorMovedThisActionV1 =>
             Reference("actor-moved-this-action", 1);
+        /// <summary>
+        /// Milestone 8.38d. The same question asked of a SUBJECT rather than of the actor - Swift's
+        /// Suppress, Pin Down and Killing Ground, "An enemy hero in radius, <b>who is not adjacent to
+        /// terrain</b>, discards a card".
+        ///
+        /// <para><b>It is a second capability rather than a parameter on
+        /// <see cref="AdjacentTerrainPresenceV1"/>, and this catalog's own rule is why:</b> a shared
+        /// declaration gaining a field moves every hero who already referenced it, and Tigerclaw's
+        /// Blend Into Shadows references that one. It is also a genuinely different question. His asks
+        /// whether HE stands beside terrain, as the condition for a Place he then makes; hers qualifies
+        /// which enemy her Skill may reach. One is about the actor's own footing and the other is a
+        /// property of a candidate.</para>
+        ///
+        /// <para><b>Milestone 8.38's audit mapped her three Green faces onto the actor-scoped
+        /// declaration and was wrong to</b> - the capability existed and answered a different
+        /// question. Found at composition, which is where this project expects such things to surface,
+        /// and recorded rather than papered over.</para>
+        ///
+        /// <para>The terrain question itself is unchanged: <c>TerrainPresenceQuery</c> answers both, so
+        /// a hero petrified into terrain is terrain to stand beside for hers exactly as for his.</para>
+        /// </summary>
+        public static EffectCapabilityReference SubjectAdjacentTerrainPresenceV1 =>
+            Reference("subject-adjacent-terrain-presence", 1);
+
+        /// <summary>The hero whose footing is being asked about - a required parameter, never the actor.</summary>
+        public const string TerrainSubjectParameter = "subject";
+
         public static EffectCapabilityReference AdjacentTerrainPresenceV1 =>
             Reference("adjacent-terrain-presence", 1);
         /// <summary>
@@ -879,8 +906,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // hand, and the gate that held them here is satisfied on both halves at once.
 
             // Milestone 8.37 registered Tali's `defended-card-color` beside her own dealt Ice
-            // Blast - see `RegisteredHandlers` below. Nothing waits here now.
-            yield break;
+            // Blast - see `RegisteredHandlers` below.
+
+            // Milestone 8.38d. Swift's three Green faces qualify the enemy they reach by that enemy's
+            // own footing, which the actor-scoped declaration above cannot answer. Held here by
+            // milestone 7.9's gate until her dealing at 8.38e, so this build's pinned capability list -
+            // and therefore every snapshot's bytes - stands still for a hero who is not in a match.
+            yield return new SubjectAdjacentTerrainPresenceHandler();
         }
 
         /// <summary>
@@ -2922,6 +2954,85 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// not the card doing anything. Milestone 8.35l: Blend Into Shadows opens on this
             /// question, and while it counted as the card applying something, the Place it gates was
             /// never judged - so a barred Place was offered, drew no prompt, and spent the card.
+            /// </summary>
+            public bool PublishesWithoutApplying => true;
+
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                var value = Read(context);
+                return value.HasValue
+                    ? new[] { new EffectOutcomeFact("present", EffectValue.Boolean(value.Value)) }
+                    : Array.Empty<EffectOutcomeFact>();
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.38d. Whether the bound SUBJECT stands beside terrain - the qualifier Swift's
+        /// three Green faces put on the enemy hero they reach.
+        ///
+        /// <para>It shares <c>TerrainPresenceQuery</c> with the actor-scoped handler above, so the two
+        /// cannot disagree about what terrain is, and differ only in whose coordinate they read. A
+        /// subject that is not on the board answers nothing rather than false: a hero who has left the
+        /// board is not a candidate at all, and reporting "not adjacent to terrain" about them would
+        /// make an absent hero the most eligible one.</para>
+        /// </summary>
+        private sealed class SubjectAdjacentTerrainPresenceHandler
+            : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => SubjectAdjacentTerrainPresenceV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(TerrainSubjectParameter, EffectValueKind.Hero)
+                    },
+                    new[] { new EffectOutputBinding("present", EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            private static bool? Read(EffectCapabilityContext context)
+            {
+                var board = context.Components?.Board;
+                var subject = context.Input(TerrainSubjectParameter);
+                if (board == null || subject.Kind != EffectValueKind.Hero ||
+                    !subject.HeroId.IsDefined ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(subject.HeroId), out var subjectAt))
+                {
+                    return null;
+                }
+
+                return TerrainPresenceQuery.IsAdjacentToTerrain(board, subjectAt, context.Modifications);
+            }
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var value = Read(context);
+                return value.HasValue
+                    ? EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact("present", EffectValue.Boolean(value.Value))
+                    })
+                    : EffectExecutionResult.ImpossibleMandatory();
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Read(context).HasValue
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+
+            /// <summary>
+            /// Asking about a hero's footing changes nothing, exactly as the actor-scoped twin records:
+            /// publishing an answer is not the card applying something, and milestone 8.35l's defect -
+            /// a barred step offered because its gate counted as application - is the reason both say
+            /// so.
             /// </summary>
             public bool PublishesWithoutApplying => true;
 
