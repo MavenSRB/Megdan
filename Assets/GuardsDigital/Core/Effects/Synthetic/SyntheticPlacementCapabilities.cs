@@ -140,6 +140,54 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference PlaceInRadiusBesideTwoOrMoreEnemiesV1 =>
             new EffectCapabilityReference(PlaceInRadiusBesideTwoOrMoreEnemies, 1);
 
+        /// <summary>
+        /// Milestone 8.38b. The printed-Radius arm whose destinations stand on one of rulebook p.19's
+        /// straight lines through the acting hero - Swift's Steam Jump, Assault Jump and Drop Trooper,
+        /// "Place yourself into a space <b>in a straight line</b> in radius", on faces printing a
+        /// Radius icon.
+        ///
+        /// <para><b>A separate capability ID rather than a parameter, by the rule
+        /// <see cref="PlaceInRange"/> states and milestone 8.35z28 generalised:</b> a printed clause
+        /// that qualifies a declaration belongs in the identity of the thing declared, because a
+        /// shared declaration gaining a field moves every hero who already referenced it. It is also
+        /// what keeps the difference auditable from a definition alone.</para>
+        ///
+        /// <para><b>It shares its geometry with the Attacks that print the same words.</b> The
+        /// membership question is <see cref="GuardsDigital.Core.Board.StraightLineQuery"/>'s, measured
+        /// from the actor's own space, which is the same one milestone 8.38a's
+        /// <c>AttackTargetLine.InStraightLine</c> reads. Swift prints the clause on both a targeting
+        /// sentence and a placement sentence, and a build where those two meant different lines would
+        /// be a build whose own cards disagreed about p.19.</para>
+        ///
+        /// <para><b>Like the ring above, it can legally be empty.</b> Six files through a hero, cut to
+        /// the printed radius and then to empty playable spaces, is a much thinner set than the disk;
+        /// a mandatory node carrying this reports itself impossible as an ordinary outcome and the
+        /// offer machinery greys it rather than accepting and then refusing.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceInRadiusInStraightLine { get; } =
+            new EffectCapabilityId("synthetic-place-in-radius-in-straight-line");
+
+        public static EffectCapabilityReference PlaceInRadiusInStraightLineV1 =>
+            new EffectCapabilityReference(PlaceInRadiusInStraightLine, 1);
+
+        /// <summary>
+        /// Milestone 8.38b. The complement of the declaration above - Swift's Delayed Jump and Mobile
+        /// Scout, "Place yourself into a space in radius <b>not in a straight line from you</b>", on
+        /// faces printing a Radius icon.
+        ///
+        /// <para><b>Two declarations rather than one carrying a direction, for the reason the whole
+        /// file gives</b>, and with one consequence worth stating: because both read the same
+        /// membership question, the two candidate sets partition the disk exactly, and
+        /// <c>PlacementLineQualifierTests</c> asserts that partition rather than either set's contents.
+        /// A card that demanded the file and a card that forbade it could not otherwise be shown to
+        /// disagree about nothing.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceInRadiusOffEveryStraightLine { get; } =
+            new EffectCapabilityId("synthetic-place-in-radius-off-every-straight-line");
+
+        public static EffectCapabilityReference PlaceInRadiusOffEveryStraightLineV1 =>
+            new EffectCapabilityReference(PlaceInRadiusOffEveryStraightLine, 1);
+
         /// <summary>The eligible-piece parameter's name, spelled once for the reason the Push's is.</summary>
         public const string EligiblePieceParameterName = "eligiblePiece";
 
@@ -281,7 +329,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// composes it, so the empty case is exercised rather than assumed.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[]
+            {
+                // Milestone 8.38b. Swift's two placement clauses, built here and held out of the
+                // registered set by milestone 7.9's gate because no card this build deals names them
+                // yet: her own content is composed at 8.38d and dealt at 8.38e, and 8.38e is what
+                // moves these two lines up into RegisteredHandlers. Keeping them here is what makes
+                // this build's pinned capability list - and therefore every snapshot's bytes - stand
+                // still for a hero who is not in a match.
+                new PlaceHandler(
+                    PlaceInRadiusInStraightLineV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.OnAStraightLineFromTheActor),
+                new PlaceHandler(
+                    PlaceInRadiusOffEveryStraightLineV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.OffEveryStraightLineFromTheActor)
+            };
 
         /// <summary>
         /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being
@@ -303,7 +367,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// p.19's word - heroes and minions both - so an immune Heavy minion counts, p.18 making
             /// immunity irrelevant to a presence question.
             /// </summary>
-            AdjacentToTwoOrMoreEnemyUnits = 1
+            AdjacentToTwoOrMoreEnemyUnits = 1,
+
+            /// <summary>
+            /// Milestone 8.38b. Swift's three jump Skills: the destination stands on one of rulebook
+            /// p.19's six files through the acting hero's own space. Measured by
+            /// <see cref="GuardsDigital.Core.Board.StraightLineQuery"/>, which is the same question
+            /// milestone 8.38a's <c>AttackTargetLine.InStraightLine</c> asks - so a build whose cards
+            /// print the clause on both a targeting sentence and a placement sentence answers it once.
+            /// </summary>
+            OnAStraightLineFromTheActor = 2,
+
+            /// <summary>
+            /// Milestone 8.38b. The complement, which Delayed Jump and Mobile Scout print: the
+            /// destination stands on no file through the actor at all. Note what this excludes without
+            /// saying so - p.19 counts an adjacent space as a file, so every neighbour of the actor is
+            /// out, exactly as it is for the Attack clause of the same name.
+            /// </summary>
+            OffEveryStraightLineFromTheActor = 3
         }
 
         /// <summary>
@@ -581,6 +662,41 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private IReadOnlyList<HexCoordinate> QualifyingSpaces(
                 EffectCapabilityContext context, PlacePolicy policy, HexCoordinate origin)
             {
+                // Milestone 8.38b. The two line qualifiers are answered from the map alone - p.19's
+                // membership question needs no roster at all - so they are answered before the live
+                // board is asked for, and they stay answerable on a board with nobody else on it.
+                if (qualifier == PlaceDestinationQualifier.OnAStraightLineFromTheActor ||
+                    qualifier == PlaceDestinationQualifier.OffEveryStraightLineFromTheActor)
+                {
+                    var wantOnTheLine =
+                        qualifier == PlaceDestinationQualifier.OnAStraightLineFromTheActor;
+                    var lineSpaces = new List<HexCoordinate>();
+                    for (var dq = -policy.DestinationRadius; dq <= policy.DestinationRadius; dq++)
+                    {
+                        for (var dr = Math.Max(
+                                 -policy.DestinationRadius, -dq - policy.DestinationRadius);
+                            dr <= Math.Min(policy.DestinationRadius, -dq + policy.DestinationRadius);
+                            dr++)
+                        {
+                            var candidate = new HexCoordinate(origin.Q + dq, origin.R + dr);
+                            if (candidate.Equals(origin))
+                            {
+                                // The origin is the actor's own space, which no Place admits and
+                                // which p.19 would count as being on every file at once.
+                                continue;
+                            }
+
+                            if (StraightLineQuery.AreInStraightLine(origin, candidate) ==
+                                wantOnTheLine)
+                            {
+                                lineSpaces.Add(candidate);
+                            }
+                        }
+                    }
+
+                    return lineSpaces;
+                }
+
                 if (qualifier != PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits)
                 {
                     return Array.Empty<HexCoordinate>();

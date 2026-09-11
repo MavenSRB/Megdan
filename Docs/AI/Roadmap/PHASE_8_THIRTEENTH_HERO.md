@@ -17,6 +17,7 @@ Milestone 8.38 owns the full inventory and the exact mapping. What the pre-autho
 - Her set is 19 faces: one Gold basic (Reload!), one Silver basic (Bounce), five Red ranged Attacks, five Blue Skills, five Green Skills, the Purple Ultimate (Bullet Time), and one Handicap (Backup) that p.6 returns to the box. Eighteen are dealt.
 - **Most of her text is already registered vocabulary.** `adjacent-terrain-presence@1` (Tigerclaw's Blend Into Shadows) is her three "not adjacent to terrain" Green faces' predicate; `ExactlyPrintedRange` (Silverarrow's RULING 1) is Snipe's "at maximum range"; `fast-travel@1` is Mobile Scout's second sentence; `synthetic-object-push@3`, `synthetic-direct-move@1`, `synthetic-place-in-radius@1`, `synthetic-discard-chosen-card@2`, `synthetic-defeat-hero@1`, `synthetic-defeat-minion@1`, `gain-resource@1` and `borrow-primary-action@1` all already exist and all are named by her faces.
 - What is **not** registered is named by three groups of faces, and the three build milestones below are drawn on exactly those lines rather than on a word count.
+- **Measured after 8.38a and 8.38b:** two of the three groups were smaller than the audit costed them. The proximity clause is a fourth band on an enum the snapshot already writes rather than a new field, and Drop Trooper's multi-unit push was already built for Wasp. What remains genuinely new is 8.38c's three contracts.
 
 ## Series
 
@@ -74,23 +75,28 @@ Non-goals: No Swift content. No registration of a handler her faces do not reach
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838a-build-the-printed-target-vocabulary-swifts-red-line-needs-completion-evidence).
 
-### [ ] 8.38b Build the straight-line and off-line placement vocabulary her Blue line needs
+### [x] 8.38b Build the straight-line and off-line placement vocabulary her Blue line needs
 
-Observable outcome: a face can place its own actor into a space that is in radius and on a straight line from where it stands, or into a space that is in radius and deliberately off every straight line from it, and can push more than one adjacent enemy in one printed sentence.
+Observable outcome: a face can place its own actor into a space that is in radius and on a straight line from where it stands, or into a space that is in radius and deliberately off every straight line from it.
 
-**HER FIVE BLUE FACES SPLIT TWO AND THREE ON EXACTLY THIS SEAM.** Steam Jump, Assault Jump and Drop Trooper print "Place yourself into a space in a straight line in radius"; Delayed Jump and Mobile Scout print "Place yourself into a space in radius not in a straight line from you". `synthetic-place-in-radius@1` already answers the radius half and `StraightLineQuery` already answers both directions of the line half - it carries `AreInStraightLine` and its named complement `FilterOutStraightLine` - so what this block builds is the destination policy that composes them, not a new geometry.
+**HER FIVE BLUE FACES SPLIT TWO AND THREE ON EXACTLY THIS SEAM.** Steam Jump, Assault Jump and Drop Trooper print "Place yourself into a space in a straight line in radius"; Delayed Jump and Mobile Scout print "Place yourself into a space in radius not in a straight line from you". `synthetic-place-in-radius@1` already answers the radius half and `StraightLineQuery` already answers the line half in both directions, so what this block builds is the destination qualifier that composes them, not a new geometry. `synthetic-place-in-radius-in-straight-line@1` and `synthetic-place-in-radius-off-every-straight-line@1` are two declarations rather than one carrying a direction, by the rule this catalog has followed since milestone 8.20 and milestone 8.35z28 generalised: a printed clause that qualifies a declaration belongs in the identity of the thing declared, because a shared declaration gaining a field moves every hero who already referenced it.
 
-**DROP TROOPER'S "UP TO TWO ENEMY UNITS" IS A SET, AND THE MEASURED PRECEDENT IS THAT A SET IS CHEAPER THAN A REPEAT.** `choose-target-set@1` and `synthetic-batch-direct-move@1` already exist for exactly this shape. The block builds the push over a chosen set rather than repeating a single push, so the two units are displaced under one atomicity and a board that admits only one still admits the sentence.
+**BOTH ARE DEFERRED HANDLERS, WHICH IS WHAT KEEPS THIS BLOCK SCHEMA-NEUTRAL.** Milestone 7.9's gate refuses a registration no dealt card can start, and the registered set is what a snapshot serializes - so a capability built for a hero nobody deals yet moves no pinned byte. `SyntheticPlacementCapabilities.DeferredHandlers()` had been deliberately kept as an empty list against exactly this need; it now holds these two and nothing else, and milestone 8.38e is what moves them across.
+
+**AND THE PUSH HALF OF THE PLAN TURNED OUT TO BE ALREADY BUILT, which is worth recording rather than quietly dropping.** The block predicted that Drop Trooper's "Push up to two enemy units adjacent to you up to 2 spaces" needed a multi-subject push composed out of `choose-target-set@1` and a batch move. It needs neither: `synthetic-object-push@3` has carried a `maximumTargets` parameter since milestone 8.8, minted for Wasp's kinetic Skills, whose Kinetic Repulse prints "Push up to 2 enemy units adjacent to you 3 spaces" - Drop Trooper's sentence with different numbers. Reading the catalog's parameters as well as its capability names is what found it; the audit at 8.38 had read the names.
 
 Acceptance checks:
 
-- Both placement policies exist, are reachable from showcase content, and refuse a destination that is occupied, is a Spawn point, or is adjacent to an empty Spawn point on the same terms the existing placement family does.
-- The off-line policy's candidate set is the exact complement of the on-line policy's over the same radius, proven on one board rather than asserted.
-- A multi-unit adjacent push resolves as one batch, is feasible with one eligible unit, and is infeasible with none.
+- Both placement declarations exist, are held in the deferred list, and are absent from the registered one - asserted as the exact pair, so 8.38e moving one and forgetting the other is a failure rather than a half-green.
+- The two candidate sets partition the printed disk exactly on one board, and the on-file set is six files cut to the printed Radius, checked against the geometry rather than a remembered coordinate list.
+- The off-file set excludes every one of the actor's neighbours, which is p.19's adjacency rule showing through a clause that does not mention it.
+- An occupied space is a destination for neither, so the qualifier narrows the emptiness rule rather than replacing it.
 - No schema field, corpus digest or pinned constant moves.
-- Complete unfiltered dotnet harness and Edit Mode pass.
+- Complete unfiltered dotnet harness passes.
 
-Non-goals: No Swift content. No change to the existing single-target push or to any placement policy a dealt face already names.
+Non-goals: No Swift content. No change to the existing pushes or to any placement policy a dealt face already names. **Amended during implementation:** the multi-subject push this block planned to build already exists, so it builds nothing for Drop Trooper's second sentence.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838b-build-the-straight-line-and-off-line-placement-vocabulary-her-blue-line-needs-completion-evidence).
 
 ### [ ] 8.38c Build the borrow, bounty and basic-card-resolution vocabulary her Gold, Green and Ultimate lines need
 
