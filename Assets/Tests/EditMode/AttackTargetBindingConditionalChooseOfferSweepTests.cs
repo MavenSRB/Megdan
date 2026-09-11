@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
@@ -181,6 +182,46 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var card in UrsafarCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ursafar", d);
             foreach (var card in TaliCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("tali", d);
             foreach (var card in WhisperCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("whisper", d);
+            foreach (var card in SwiftCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("swift", d);
+        }
+
+        /// <summary>
+        /// The corpus above is enumerated hero by hero, by name, and the sweep that reads it is
+        /// <c>[Explicit]</c> - so a hero whose line is missing is a corpus nothing sweeps and no suite
+        /// run reports. This case is NOT <c>[Explicit]</c>, and it derives what the enumeration ought to
+        /// cover from the verified content classes the build actually contains rather than from a list.
+        /// Milestone 8.38d.
+        ///
+        /// <para><b>Swift is the first hero who could have been dealt without a line</b> - all twelve
+        /// before her were added as they went, verified at 8.38d against
+        /// <c>grep -rho "class [A-Za-z]*CardContent"</c>. Naming a thirteenth literal here would have
+        /// closed the hole for her and left it open for the fourteenth, which is why this reads the
+        /// classes instead.</para>
+        /// </summary>
+        [Test]
+        public void TheSweptCorpus_CoversEveryVerifiedContentClassTheBuildContains()
+        {
+            var declared = typeof(WaspCardContent).Assembly.GetTypes()
+                .Where(type =>
+                    type.IsClass && type.IsAbstract && type.IsSealed &&
+                    type.Namespace == typeof(WaspCardContent).Namespace &&
+                    type.Name.EndsWith("CardContent", StringComparison.Ordinal))
+                .Select(type => type.Name.Substring(0, type.Name.Length - "CardContent".Length)
+                    .ToLowerInvariant())
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+
+            var swept = WholeCorpus()
+                .Select(entry => entry.Owner)
+                .Distinct()
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(declared, Is.Not.Empty, "The reflection must find the content classes at all.");
+            Assert.That(
+                swept, Is.EquivalentTo(declared),
+                "Every verified hero's corpus is swept, and nothing is swept that is not one. A hero " +
+                "added without a line in WholeCorpus fails here rather than going silently uncovered.");
         }
 
         /// <summary>Every `EffectDefinition` one printed card composes, across all of its actions.</summary>

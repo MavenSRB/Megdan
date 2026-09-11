@@ -509,7 +509,14 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private bool endOfTurnTriggersVisited;
 
-        private readonly HashSet<string> consumedBeforeActionTriggers =
+        /// <summary>
+        /// The turn's consumed keys - milestone 8.19a's spent before-action triggers, and since
+        /// milestone 8.38d the granted-target exclusions
+        /// <see cref="GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery"/> keys into the
+        /// same set. Both are facts about THIS TURN, both are cleared by the same turn boundary, and
+        /// both are captured by the same serialized run of strings.
+        /// </summary>
+        private readonly HashSet<string> consumedTurnScopedKeys =
             new HashSet<string>(StringComparer.Ordinal);
 
         /// <summary>
@@ -753,7 +760,7 @@ namespace GuardsDigital.Core.Cards
                 initiative.CaptureRestoreState(),
                 roundIndex,
                 turnIndex,
-                consumedBeforeActionTriggers,
+                consumedTurnScopedKeys,
                 pendingTurnRelease);
 
         internal static TurnResolutionAuthority Restore(
@@ -784,7 +791,7 @@ namespace GuardsDigital.Core.Cards
                     state.TieBreakerState,
                     state.Initiative)
             };
-            authority.consumedBeforeActionTriggers.UnionWith(state.ConsumedBeforeActionTriggers);
+            authority.consumedTurnScopedKeys.UnionWith(state.ConsumedTurnScopedKeys);
             authority.pendingTurnRelease = state.PendingTurnRelease;
             // A started turn that has not ended normally has either an actor or a choice deciding who
             // acts next. Milestone 6.9 adds the third state it can legitimately be in: rulebook p.8's
@@ -1303,13 +1310,38 @@ namespace GuardsDigital.Core.Cards
                 return null;
             }
 
-            var offer = cardActions.TakeOwedBorrowedAction(definitions, instances, out var resolution);
+            var offer = cardActions.TakeOwedBorrowedAction(
+                definitions, instances, out var resolution, out var grantSourceId);
+
+            // Milestone 8.38d. An instance a PERMANENT ABILITY granted says so for as long as it runs,
+            // in the turn scoped key set - which is what lets the clause about what the grant may
+            // reach be applied to a target answered by a later command, and lets it survive a snapshot
+            // taken while that question stands.
+            if (!string.IsNullOrWhiteSpace(grantSourceId))
+            {
+                consumedTurnScopedKeys.Add(
+                    GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery
+                        .RunningGrantKey(grantSourceId));
+            }
+
+            // The narrowing follows the WHOLE chain the grant opened, not only its first instance.
+            // Swift is why that distinction is not academic: her only two basic cards print SKILL
+            // primaries, so Bullet Time never grants an Attack directly - the Attack it can reach is
+            // the one Reload!'s own text borrows from inside the instance it granted. A clause about
+            // what the grant may target that stopped at the first instance would say nothing about
+            // the only action it can actually target with.
+            var excluded = GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery
+                .ExcludedTargets(
+                    GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.RunningGrant(
+                        consumedTurnScopedKeys),
+                    consumedTurnScopedKeys);
+
             switch (ActionOfferQuery.FindActionDefinition(offer, definitions).Kind)
             {
                 case ActionKind.Movement:
                     return StartMovementCore(resolution, offer, events);
                 case ActionKind.Attack:
-                    return StartAttackCore(resolution, offer, events);
+                    return StartAttackCore(resolution, offer, events, excluded);
                 case ActionKind.Skill:
                     return CompleteSkillStep(cardActions.StartTurnSkill(resolution, offer, definitions,
                         instances, participants, timing, CurrentModifications(), TieBreakerState,
@@ -1524,6 +1556,10 @@ namespace GuardsDigital.Core.Cards
             if (cardActions?.HasBorrowedSkillParent == true)
                 return ResumeBorrowingSkill(events);
 
+            // Milestone 8.38d. An ability-granted instance has no parent to hand back to, and this is
+            // where it would have handed one back, so this is where its grant stops running.
+            ClearRunningGrant();
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -1578,6 +1614,10 @@ namespace GuardsDigital.Core.Cards
 
             if (cardActions?.HasBorrowedSkillParent == true)
                 return ResumeBorrowingSkill(events);
+
+            // Milestone 8.38d. An ability-granted instance has no parent to hand back to, and this is
+            // where it would have handed one back, so this is where its grant stops running.
+            ClearRunningGrant();
 
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
@@ -1759,6 +1799,10 @@ namespace GuardsDigital.Core.Cards
                 candidate.Id.Equals(initiative.SelectedActor.CardInstanceId));
             if (cardActions?.HasBorrowedSkillParent == true)
                 return ResumeBorrowingSkill(events);
+
+            // Milestone 8.38d. An ability-granted instance has no parent to hand back to, and this is
+            // where it would have handed one back, so this is where its grant stops running.
+            ClearRunningGrant();
 
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
@@ -2386,6 +2430,10 @@ namespace GuardsDigital.Core.Cards
             if (cardActions?.HasBorrowedSkillParent == true)
                 return ResumeBorrowingSkill(events);
 
+            // Milestone 8.38d. An ability-granted instance has no parent to hand back to, and this is
+            // where it would have handed one back, so this is where its grant stops running.
+            ClearRunningGrant();
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -2537,6 +2585,10 @@ namespace GuardsDigital.Core.Cards
             if (cardActions?.HasBorrowedSkillParent == true)
                 return ResumeBorrowingSkill(events);
 
+            // Milestone 8.38d. An ability-granted instance has no parent to hand back to, and this is
+            // where it would have handed one back, so this is where its grant stops running.
+            ClearRunningGrant();
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -2613,7 +2665,8 @@ namespace GuardsDigital.Core.Cards
         private TurnResolutionResult StartAttackCore(
             ActionResolutionId resolutionId,
             ActionOffer offer,
-            List<TurnResolutionEvent> precedingEvents)
+            List<TurnResolutionEvent> precedingEvents,
+            IReadOnlyList<GuardsDigital.Core.Rules.CardResolution.AttackTarget> excludedTargets = null)
         {
             if (!cardActions.CanAttackFindTarget(
                     offer, definitions, instances, participants, timing, CurrentModifications(),
@@ -2630,7 +2683,8 @@ namespace GuardsDigital.Core.Cards
                 definitions,
                 instances,
                 participants,
-                CurrentModifications());
+                CurrentModifications(),
+                excludedTargets);
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(
                     TurnResolutionRejectionReason.AttackActionRejected, result.RejectionReason);
@@ -2668,7 +2722,7 @@ namespace GuardsDigital.Core.Cards
 
             var triggers = GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery.Derive(
                 CurrentUltimates(), cardActions.Board, participants, offer, actionKind,
-                consumedBeforeActionTriggers,
+                consumedTurnScopedKeys,
                 // Milestone 8.35z29. Misa's three Green `Next turn:` cards open the same window
                 // from an Active effect rather than from a p.16 permanent ability, so the standing
                 // effects are asked here beside the unlocked Ultimates.
@@ -2686,7 +2740,7 @@ namespace GuardsDigital.Core.Cards
             // a repeated one, and Living Tsunami still fires once.
             if (source.Trigger.IsConsumedWhenItFires())
             {
-                consumedBeforeActionTriggers.Add(source.SourceId);
+                consumedTurnScopedKeys.Add(source.SourceId);
             }
             var started = cardActions.StartBeforeActionTrigger(
                 source, resolutionId, offer, definitions, instances, participants, timing,
@@ -2716,6 +2770,10 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.AttackCommandRejected);
             }
 
+            // Milestone 8.38d. Read before the answer, because the answer can finish the whole Attack
+            // and clear the resolution that says which instance this was - and an ability-granted
+            // instance that completed is exactly the one whose target must be recorded.
+            var answering = cardActions.PendingAttackResolution;
             var result = cardActions.AnswerAttackTarget(
                 command,
                 definitions,
@@ -2725,10 +2783,68 @@ namespace GuardsDigital.Core.Cards
             if (!result.Accepted)
                 return TurnResolutionResult.Reject(
                     TurnResolutionRejectionReason.AttackCommandRejected, result.RejectionReason);
+            RecordGrantedTargetExclusion(answering, command.Target);
             var targetEvents = MaterializeSteps(result.Steps, TurnResolutionEvent.FromAttackAction);
             return TheAttackIsOver()
                 ? CompleteAttackOrStartItsRepeat(targetEvents)
                 : TurnResolutionResult.Accept(targetEvents);
+        }
+
+        /// <summary>
+        /// Milestone 8.38d. Records that the grant currently running has reached this enemy hero, so
+        /// the next instance it produces this turn cannot reach them again - Bullet Time's "you cannot
+        /// target the same enemy hero twice in the same turn this way".
+        ///
+        /// <para><b>Three gates, and each one is a sentence of the clause.</b> A grant must be running,
+        /// which is what makes the exclusion about actions the ABILITY produced rather than about
+        /// anything this hero does; the instance answering must itself be the granted one, which is
+        /// what keeps a leaked key from reaching an ordinary Attack in the same turn; and the target
+        /// must be a HERO, because the printed clause says enemy hero and a granted Attack may take the
+        /// same minion as often as the board allows.</para>
+        /// </summary>
+        private void RecordGrantedTargetExclusion(
+            GuardsDigital.Core.Rules.CardResolution.PendingAttackResolution answering,
+            GuardsDigital.Core.Rules.CardResolution.AttackTarget target)
+        {
+            if (target.Kind != GuardsDigital.Core.Rules.CardResolution.AttackTargetKind.Hero)
+            {
+                return;
+            }
+
+            var running = GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery
+                .RunningGrant(consumedTurnScopedKeys);
+            if (string.IsNullOrWhiteSpace(running))
+            {
+                return;
+            }
+
+            if (answering == null ||
+                answering.InvocationContext != ActionInvocationContext.TextGranted)
+            {
+                return;
+            }
+
+            if (!GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.Excludes(
+                    CurrentUltimates(), answering.ActorId))
+            {
+                return;
+            }
+
+            consumedTurnScopedKeys.Add(
+                GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.ExcludedTargetKey(
+                    running, target.HeroId));
+        }
+
+        /// <summary>
+        /// Milestone 8.38d. Ends the running grant, at the same boundary a Skill-granted instance hands
+        /// its parent frame back. The exclusions it accumulated stay: they are facts about the turn,
+        /// and the turn is not over.
+        /// </summary>
+        private void ClearRunningGrant()
+        {
+            consumedTurnScopedKeys.RemoveWhere(key => key != null && key.StartsWith(
+                GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.RunningGrantPrefix,
+                StringComparison.Ordinal));
         }
 
         public TurnResolutionResult TryAnswerDefenseResponse(DefenseResponseChoiceCommand command)
@@ -2921,6 +3037,10 @@ namespace GuardsDigital.Core.Cards
             if (cardActions?.HasBorrowedSkillParent == true)
                 return ResumeBorrowingSkill(events);
 
+            // Milestone 8.38d. An ability-granted instance has no parent to hand back to, and this is
+            // where it would have handed one back, so this is where its grant stops running.
+            ClearRunningGrant();
+
             if (!CardLifecycleAuthority.TryResolveAfterAction(card))
             {
                 throw new InvalidOperationException(
@@ -2942,7 +3062,18 @@ namespace GuardsDigital.Core.Cards
         private bool IsSelectedActionSource(CardInstanceId card, HeroId actor, ActionInvocationContext invocation) =>
             initiative.SelectedActor.IsDefined && actor.Equals(initiative.SelectedActor.ActorId) &&
             (card.Equals(initiative.SelectedActor.CardInstanceId) ||
-                (invocation == ActionInvocationContext.TextGranted && cardActions.HasBorrowedSkillParent));
+                (invocation == ActionInvocationContext.TextGranted &&
+                    (cardActions.HasBorrowedSkillParent || HasRunningGrant)));
+
+        /// <summary>
+        /// Milestone 8.38d. Whether a permanent ability of this turn's hero is standing an instance it
+        /// granted. It is the ability-granted twin of <c>HasBorrowedSkillParent</c>, and it is read
+        /// from the turn scoped key set rather than from a field so that a snapshot taken while the
+        /// granted instance is waiting on a question restores a turn that still knows it is waiting.
+        /// </summary>
+        private bool HasRunningGrant =>
+            GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.RunningGrant(
+                consumedTurnScopedKeys) != null;
 
         private bool IsPendingAttackForSelectedActor()
         {

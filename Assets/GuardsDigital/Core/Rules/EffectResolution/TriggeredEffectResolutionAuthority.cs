@@ -56,6 +56,56 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public RepeatRequest? LastRepeatRequested { get; private set; }
 
+        /// <summary>
+        /// Milestone 8.38d. What the last triggered frame to finish asked to BORROW, or <c>null</c>
+        /// when none has. The exact twin of <see cref="LastRepeatRequested"/>, published at the same
+        /// two moments and read by the same holder, because a permanent ability that grants an action
+        /// off a card is asking the dispatcher for the same kind of thing a repeat asks for.
+        ///
+        /// <para>Until this milestone a triggered frame could carry a borrow node and the request went
+        /// nowhere: only the Skill and card-text altitudes read one back, so Bullet Time would have
+        /// chosen a card and granted nothing.</para>
+        /// </summary>
+        public BorrowRequest? LastBorrowRequested { get; private set; }
+
+        /// <summary>
+        /// The rule id of the granting ability behind <see cref="LastBorrowRequested"/> when that
+        /// ability narrows what its grant may target, and <c>null</c> otherwise - milestone 8.38d,
+        /// Bullet Time's "you cannot target the same enemy hero twice in the same turn this way".
+        ///
+        /// <para><b>It is derived from the unlocked set rather than held from the trigger that
+        /// started the frame</b>, and that is what makes it survive a snapshot taken while the frame
+        /// is paused: p.16 allows one Ultimate per hero, and a borrow published from inside a
+        /// TRIGGERED frame came from that hero's Ultimate by construction. A borrow published from
+        /// card text never reaches here at all, which is exactly the distinction "this way"
+        /// draws.</para>
+        /// </summary>
+        public string LastBorrowGrantSourceId { get; private set; }
+
+        /// <summary>
+        /// The hero who will perform <see cref="LastBorrowRequested"/>. It travels with the request
+        /// rather than being read off a frame afterwards, because the frame that asked is gone by the
+        /// time the holder settles it - and on the path where the trigger completes without pausing it
+        /// was never standing at all.
+        /// </summary>
+        public HeroId LastBorrowActorId { get; private set; }
+
+        /// <summary>
+        /// Takes the published borrow, so the holder that turns it into an owed action cannot be
+        /// handed the same one twice. Milestone 8.38d.
+        ///
+        /// <para>It is consumed where <see cref="LastRepeatRequested"/> is not, and the difference is
+        /// what each becomes: a settled repeat SUBJECT is the same subject however often it is settled,
+        /// while a settled borrow becomes an owed instance that the turn then starts - so a second
+        /// settle between two checkpoints would grant the action twice.</para>
+        /// </summary>
+        internal BorrowRequest? TakeLastBorrowRequested()
+        {
+            var requested = LastBorrowRequested;
+            LastBorrowRequested = null;
+            return requested;
+        }
+
         internal void BindRosterState(EffectRosterState state)
         {
             rosterState = state ?? throw new ArgumentNullException(nameof(state));
@@ -83,6 +133,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 throw new InvalidOperationException("A paused triggered effect must be answered before another checkpoint is visited.");
 
             LastRepeatRequested = null;
+            LastBorrowRequested = null;
+            LastBorrowGrantSourceId = null;
+            LastBorrowActorId = default;
 
             var definitions = (cardDefinitions ?? throw new ArgumentNullException(nameof(cardDefinitions))).ToArray();
             var instances = (cardInstances ?? throw new ArgumentNullException(nameof(cardInstances))).ToArray();
@@ -155,6 +208,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // One checkpoint can visit several abilities. A request already made stands:
                     // a later ability finishing quietly is not a decline of an earlier one.
                     LastRepeatRequested = step.RepeatRequested;
+                }
+                if (step.IsComplete && step.BorrowRequested.IsRequested)
+                {
+                    PublishBorrow(step.BorrowRequested, candidate.ControllerHeroId, definitions,
+                        instances);
                 }
                 if (PendingResolution != null)
                     break;
@@ -308,8 +366,37 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 {
                     LastRepeatRequested = step.RepeatRequested;
                 }
+
+                // Milestone 8.38d. The same moment, for the same reason: Bullet Time's borrow node
+                // pauses to ask which card, so the answer that finishes the frame is where the grant
+                // is actually decided. A decline finishes it with no request, which is the same null
+                // a trigger that never mentioned a borrow leaves behind.
+                if (step.IsComplete && step.BorrowRequested.IsRequested)
+                {
+                    PublishBorrow(
+                        step.BorrowRequested, resolving.ActorId, definitions, instances);
+                }
             }
             return step;
+        }
+
+        /// <summary>
+        /// Records a borrow a triggered frame asked for, together with the granting ability's id when
+        /// that ability narrows what its grant may target. Milestone 8.38d.
+        /// </summary>
+        private void PublishBorrow(
+            BorrowRequest requested,
+            HeroId controllerId,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances)
+        {
+            LastBorrowRequested = requested;
+            LastBorrowActorId = controllerId;
+            LastBorrowGrantSourceId =
+                GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.GrantSourceIdFor(
+                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                        definitions, instances),
+                    controllerId);
         }
     }
 }

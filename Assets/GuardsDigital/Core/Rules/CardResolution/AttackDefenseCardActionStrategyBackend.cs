@@ -324,7 +324,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             RuleModificationSet modifications,
-            bool authorizedTextGrant = false)
+            bool authorizedTextGrant = false,
+            IReadOnlyList<AttackTarget> excludedTargets = null)
         {
             var materializedDefinitions = definitions?.ToArray() ?? throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ?? throw new ArgumentNullException(nameof(instances));
@@ -342,7 +343,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedInstances,
                 participants,
                 authoritativeOffers,
-                modifications);
+                modifications,
+                excludedTargets);
         }
 
         /// <summary>
@@ -522,7 +524,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PendingAttackResolution completed, AttackTarget excludedTarget,
             IReadOnlyList<CardDefinition> definitions)
         {
-            if (!excludedTarget.IsDefined) return Array.Empty<AttackTarget>();
+            // Milestone 8.38d. What an ABILITY-GRANTED instance was born excluding is not the repeat
+            // clause's business and does not reset with it: it is the grant saying which enemy heroes
+            // it has already reached this turn, and a repeat of a granted Attack is still that grant's
+            // instance. It is carried first so both branches below keep it.
+            var granted = completed.InvocationContext == ActionInvocationContext.TextGranted
+                ? completed.ExcludedTargets
+                : (IReadOnlyList<AttackTarget>)Array.Empty<AttackTarget>();
+            if (!excludedTarget.IsDefined) return granted;
             var action = definitions.Single(value => value.Reference.Equals(completed.SourceDefinitionReference))
                 .ActionDefinitions.Single(value => value.Id.Equals(completed.ActionDefinitionId));
             var clause = CardTextRepeatChain.ProducingClause(action, CardTextRepeatChain.Mint(completed.ResolutionId));
@@ -530,7 +539,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // one-repeat clauses keep their own binding; an unbound repeat inherits no exclusion.
             return clause != null && clause.MaximumRepeats > 1
                 ? completed.ExcludedTargets.Concat(new[] { excludedTarget }).Distinct().ToArray()
-                : new[] { excludedTarget };
+                : granted.Concat(new[] { excludedTarget }).Distinct().ToArray();
         }
 
         private CardActionResolutionRejectionReason PlanRepeatedAttack(
@@ -614,7 +623,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardInstance> materializedInstances,
             MatchParticipants participants,
             IReadOnlyList<ActionOffer> authoritativeOffers,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IReadOnlyList<AttackTarget> excludedTargets = null)
         {
             if (!resolutionId.IsDefined)
             {
@@ -692,7 +702,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     AttackResolutionPhase.ApplyBeforeAttackText,
                     default(AttackTarget),
                     null,
-                    actorSpaceAtActionStart: ActorSpaceOf(offer.ActorId));
+                    actorSpaceAtActionStart: ActorSpaceOf(offer.ActorId),
+                    excludedTargets: excludedTargets);
                 pendingAttackResolution = applying;
                 pendingAttackTargetChoice = null;
                 pendingDefenseChoice = null;
@@ -722,7 +733,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionPhase.ChooseTarget,
                 default(AttackTarget),
                 null,
-                actorSpaceAtActionStart: ActorSpaceOf(offer.ActorId));
+                actorSpaceAtActionStart: ActorSpaceOf(offer.ActorId),
+                // Milestone 8.38d. The narrowing an ABILITY-GRANTED instance is born with: the enemy
+                // heroes that grant has already reached this turn. Seeded rather than accumulated -
+                // the store is the turn scoped key set, and this is only how one instance reads it,
+                // so the offer and the bind check below cannot disagree about what is excluded.
+                excludedTargets: excludedTargets);
             pendingAttackTargetChoice = CreateAttackTargetChoice(
                 pendingAttackResolution,
                 offer,

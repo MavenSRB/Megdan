@@ -143,6 +143,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private HeroId owedBorrowedActionActorId;
 
         /// <summary>
+        /// Milestone 8.38d. The rule id of the permanent ability whose trigger asked for the owed
+        /// borrow, or <c>null</c> when card text asked for it instead - which is the distinction
+        /// Bullet Time's "this way" draws, and the reason a Skill-granted borrow by the same hero in
+        /// the same turn excludes nothing.
+        ///
+        /// <para>Transient within one command, like the two fields above it: a borrow is recorded and
+        /// taken inside the command that answered for it, so nothing here crosses a snapshot.</para>
+        /// </summary>
+        private string owedBorrowedActionGrantSourceId;
+
+        /// <summary>
+        /// The offer a parentless - that is, ability-granted - borrow is authorized to start, held
+        /// only for the length of the command that takes it. Milestone 8.38d.
+        /// </summary>
+        private ActionOffer? authorizedParentlessBorrowOffer;
+
+        /// <summary>
         /// Milestone 8.19a's outer pre-action continuation, or null. It is held beside the card-action
         /// continuation rather than as one of its kinds because the two genuinely coexist: work the
         /// actor placed after a Movement waits while that Movement runs with a continuation of its own.
@@ -481,6 +498,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     binding, materializedDefinitions, materializedInstances, participants,
                     modifications, checkpoint.RoundIndex, checkpoint.TurnIndex, timing));
             SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
+            SettleTriggeredBorrow();
             return events;
         }
 
@@ -702,8 +720,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// that card forever. It is a no-op while the frame is still standing, which is what makes it
         /// safe to call at any boundary that might have finished one.</para>
         /// </summary>
-        public void SettleStandingAfterActionRepeat() =>
+        public void SettleStandingAfterActionRepeat()
+        {
             SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
+
+            // Milestone 8.38d. A borrow a trigger asked for is settled at every boundary that might
+            // have finished that trigger, for the reason the repeat above is: it is a no-op while the
+            // frame is still standing, and a request left unsettled is a grant the turn never makes.
+            SettleTriggeredBorrow();
+        }
 
         internal EffectResolutionStepResult AnswerTriggeredEffectChoice(
             EffectChoiceCommand command,
@@ -731,6 +756,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // Milestone 8.23. The answer is where a `may` repeat is decided, so it is where the held
             // subject becomes an owed instance or is dropped.
             SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
+            SettleTriggeredBorrow();
             return answered;
         }
 
@@ -1931,7 +1957,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardDefinition> definitions,
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            IReadOnlyList<AttackTarget> excludedTargets = null)
         {
             var prepared = PrepareStart(
                 resolutionId,
@@ -1956,7 +1983,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 prepared.Instances,
                 participants,
                 modifications,
-                IsAuthorizedBorrowedOffer(offer, prepared.Definitions));
+                IsAuthorizedBorrowedOffer(offer, prepared.Definitions),
+                excludedTargets);
         }
 
 
@@ -2409,6 +2437,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
             owedBorrowedActionActorId = actorId;
         }
 
+        /// <summary>
+        /// Milestone 8.38d. Records a borrow a PERMANENT ABILITY asked for, which is the third
+        /// producer and the first that has no frame to go back to: rulebook p.16 runs the trigger to
+        /// completion and the ability is not a card being resolved, so the grant leaves nothing
+        /// suspended behind it.
+        ///
+        /// <para>It is a separate method rather than a defaulted parameter on the one above because
+        /// the two differ in what they owe afterwards, not merely in who asked: this one names the
+        /// granting ability, and that name is what <see cref="TakeOwedBorrowedAction"/> hands on so a
+        /// clause about what the GRANT may reach can be applied to the instance it produces.</para>
+        /// </summary>
+        private void SettleTriggeredBorrow()
+        {
+            var requested = triggeredEffects.TakeLastBorrowRequested();
+            if (!requested.HasValue || !requested.Value.IsRequested)
+            {
+                return;
+            }
+
+            RecordOwedBorrowedAction(requested.Value, triggeredEffects.LastBorrowActorId);
+            if (HasOwedBorrowedAction)
+            {
+                owedBorrowedActionGrantSourceId = triggeredEffects.LastBorrowGrantSourceId;
+            }
+        }
+
         /// <summary>Whether a card text has asked for a borrowed primary that has not started.</summary>
         public bool HasOwedBorrowedAction => owedBorrowedActionCardId.IsDefined;
 
@@ -2669,7 +2723,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         internal ActionOffer TakeOwedBorrowedAction(
             IEnumerable<CardDefinition> definitions, IEnumerable<CardInstance> instances,
-            out ActionResolutionId resolutionId)
+            out ActionResolutionId resolutionId) =>
+            TakeOwedBorrowedAction(definitions, instances, out resolutionId, out _);
+
+        /// <summary>
+        /// The same taking, reporting which permanent ability granted the instance when one did.
+        /// Milestone 8.38d: a clause about what THE GRANT may reach needs the grant named, and the
+        /// name is gone the moment this returns.
+        /// </summary>
+        internal ActionOffer TakeOwedBorrowedAction(
+            IEnumerable<CardDefinition> definitions, IEnumerable<CardInstance> instances,
+            out ActionResolutionId resolutionId, out string grantSourceId)
         {
             if (!HasOwedBorrowedAction)
                 throw new InvalidOperationException("No borrowed primary is owed.");
@@ -2678,20 +2742,53 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var definition = definitions.Single(value => value.Reference.Equals(card.DefinitionReference));
             if (BorrowedPrimaryActionDeclaration.Refuses(definition) != BorrowRefusal.None)
                 throw new InvalidOperationException("The selected card has no borrowable primary.");
-            var parent = skillBackend.SuspendForBorrow();
-            borrowedSkillParents.Add(parent);
+
+            // Milestone 8.38d. A card text asked from inside its own resolution, so that resolution is
+            // suspended and resumed around the instance. A PERMANENT ABILITY asked from a trigger that
+            // has already run to completion, so there is nothing to suspend and nothing to come back
+            // to - the instance simply happens, and the turn finishes the card it was already
+            // finishing. Which of the two this is decided by whether a Skill frame is standing, never
+            // by the content that asked.
+            var granting = owedBorrowedActionGrantSourceId;
+            var parent = skillBackend.HasPendingResolution ? skillBackend.SuspendForBorrow() : null;
+            if (parent != null)
+            {
+                borrowedSkillParents.Add(parent);
+            }
+
             owedBorrowedActionCardId = default;
             owedBorrowedActionActorId = default;
+            owedBorrowedActionGrantSourceId = null;
+            grantSourceId = parent == null ? granting : null;
             var primary = definition.ActionDefinitions.Single(value => value.Origin == ActionDefinitionOrigin.PrintedPrimary);
-            resolutionId = new ActionResolutionId(parent.ResolutionId.Value + ":borrow:" +
-                parent.CompletedOutcomes.Count + ":" + card.Id.Value);
-            return new ActionOffer(card.Id, definition.Reference, primary.Id, actor,
+            resolutionId = parent == null
+                ? BorrowedResolutionIdFor(card.Id, actor)
+                : new ActionResolutionId(parent.ResolutionId.Value + ":borrow:" +
+                    parent.CompletedOutcomes.Count + ":" + card.Id.Value);
+            var offer = new ActionOffer(card.Id, definition.Reference, primary.Id, actor,
                 ActionInvocationContext.TextGranted, true, primary.AttackRange, primary.SourceCardStateTransition);
+            authorizedParentlessBorrowOffer = parent == null ? offer : (ActionOffer?)null;
+            return offer;
         }
 
         private bool IsAuthorizedBorrowedOffer(ActionOffer offer, IReadOnlyList<CardDefinition> definitions)
         {
-            if (offer.InvocationContext != ActionInvocationContext.TextGranted || !HasBorrowedSkillParent)
+            if (offer.InvocationContext != ActionInvocationContext.TextGranted)
+                return false;
+
+            // Milestone 8.38d. An ability-granted instance has no parent frame to check the request
+            // against, so what authorizes it is the taking itself: this authority minted the offer one
+            // step ago, in this command, from a request a trigger published. Equality is the whole
+            // check - a payload that named a different card, action or actor is not the offer that was
+            // taken, and nothing else in the build can put a value here.
+            // It is asked more than once inside one start - the preparation asks it and the backend
+            // asks it again - so it is a predicate rather than a consumable. What keeps an
+            // ability-granted instance authorized across the COMMANDS that follow, and what stops a
+            // replayed one once the grant has ended, is the turn's own running-grant key.
+            if (authorizedParentlessBorrowOffer.HasValue)
+                return authorizedParentlessBorrowOffer.Value.Equals(offer);
+
+            if (!HasBorrowedSkillParent)
                 return false;
             var parent = borrowedSkillParents[borrowedSkillParents.Count - 1];
             var root = SkillCardActionStrategyBackend.FindEffectRoot(definitions, parent);

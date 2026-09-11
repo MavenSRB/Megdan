@@ -23,7 +23,7 @@ namespace GuardsDigital.Core.Cards
             InitiativeResolutionRestoreState initiative,
             int roundIndex,
             int turnIndex,
-            IEnumerable<string> consumedBeforeActionTriggers = null,
+            IEnumerable<string> consumedTurnScopedKeys = null,
             PendingTurnRelease pendingTurnRelease = null)
         {
             IsStarted = isStarted;
@@ -32,8 +32,8 @@ namespace GuardsDigital.Core.Cards
             Initiative = initiative ?? throw new ArgumentNullException(nameof(initiative));
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
-            ConsumedBeforeActionTriggers = Array.AsReadOnly(
-                (consumedBeforeActionTriggers ?? Enumerable.Empty<string>()).ToArray());
+            ConsumedTurnScopedKeys = Array.AsReadOnly(
+                (consumedTurnScopedKeys ?? Enumerable.Empty<string>()).ToArray());
             PendingTurnRelease = pendingTurnRelease;
         }
 
@@ -45,11 +45,21 @@ namespace GuardsDigital.Core.Cards
         public int TurnIndex { get; }
 
         /// <summary>
-        /// Milestone 8.19a. The `before-action-trigger@1` sources that have already fired this turn, by
-        /// stable source identity, in the order they fired. Empty on every turn in which none has -
-        /// which is every turn in this build before a hero unlocks one.
+        /// The keys a turn has consumed, in the order they were taken. Two kinds of fact ride here,
+        /// and both are true of THE TURN rather than of any resolution inside it, which is why one set
+        /// holds them.
+        ///
+        /// <para>Milestone 8.19a wrote the first: the `before-action-trigger@1` sources that have
+        /// already fired this turn, by stable source identity. Milestone 8.38d added the second:
+        /// <see cref="GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery"/>'s
+        /// granted-target exclusions, which namespace their keys so the two readers cannot collide.
+        /// Sharing the set is what keeps the second kind format-identical on the wire, and so free of
+        /// a snapshot revision.</para>
+        ///
+        /// <para>Empty on every turn that consumed neither, which is every turn in a build whose
+        /// heroes unlock no such ability.</para>
         /// </summary>
-        public IReadOnlyList<string> ConsumedBeforeActionTriggers { get; }
+        public IReadOnlyList<string> ConsumedTurnScopedKeys { get; }
 
         /// <summary>
         /// Milestone 8.35g. The finished turn this state was captured waiting to hand on, or

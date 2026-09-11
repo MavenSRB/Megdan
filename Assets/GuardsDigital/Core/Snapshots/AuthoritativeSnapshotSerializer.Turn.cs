@@ -36,7 +36,11 @@ namespace GuardsDigital.Core.Snapshots
             // already spent. Nothing about a restored board says so - the ability is permanent and its
             // hero is still standing - and Living Tsunami prints "Once per turn", so a hero who saved
             // between the trigger and the Attack it precedes would otherwise be given it twice.
-            WriteStrings(writer, state.ConsumedBeforeActionTriggers);
+            // Milestone 8.38d writes a second kind of key into the same run - the granted-target
+            // exclusions Bullet Time accumulates within a turn - and moves no schema by doing so:
+            // the format is this same length-prefixed run of strings, and both kinds are facts about
+            // the turn that the board cannot be asked for either.
+            WriteStrings(writer, state.ConsumedTurnScopedKeys);
 
             // Milestone 8.35g, schema v35. The finished turn this capture was taken waiting to
             // hand on. It cannot be re-derived: acknowledging the resolved card is what clears the

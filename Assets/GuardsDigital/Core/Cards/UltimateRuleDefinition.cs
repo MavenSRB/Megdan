@@ -148,8 +148,10 @@ namespace GuardsDigital.Core.Cards
             UltimateTriggerCondition triggerCondition = UltimateTriggerCondition.None,
             BeforeActionTrigger beforeAction = default,
             GuardsDigital.Core.Rules.Consequences.MinionBattleRuleDeclaration minionBattleRule = null,
-            AfterPushTrigger afterPush = default)
+            AfterPushTrigger afterPush = default,
+            GrantedTargetExclusion grantedTargetExclusion = GrantedTargetExclusion.None)
         {
+            GrantedTargetExclusion = grantedTargetExclusion;
             BeforeAction = beforeAction;
             AfterPush = afterPush;
             MinionBattleRule = minionBattleRule;
@@ -362,10 +364,12 @@ namespace GuardsDigital.Core.Cards
             UltimateTriggerCondition triggerCondition,
             IEnumerable<TimingCheckpoint> triggerCheckpoints,
             IEnumerable<PrintedValueDefinition> printedValues,
-            IEnumerable<RuleModification> standingRules = null) =>
+            IEnumerable<RuleModification> standingRules = null,
+            GrantedTargetExclusion grantedTargetExclusion = GrantedTargetExclusion.None) =>
             new UltimateRuleDefinition(
                 ruleId, ruleKind, standingRules, PrintedTextComposition.None, printedValues,
-                triggeredEffect, triggerCheckpoints, triggerCondition);
+                triggeredEffect, triggerCheckpoints, triggerCondition,
+                grantedTargetExclusion: grantedTargetExclusion);
 
         /// <summary>
         /// Milestone 8.19a. A permanent Ultimate ability that runs before its controller performs an
@@ -500,6 +504,14 @@ namespace GuardsDigital.Core.Cards
         public UltimateTriggerCondition TriggerCondition { get; }
 
         public IReadOnlyList<TimingCheckpoint> TriggerCheckpoints { get; }
+
+        /// <summary>
+        /// Milestone 8.38d. The narrowing this ability puts on the targets of the actions it GRANTS,
+        /// and on nothing else - Bullet Time's "you cannot target the same enemy hero twice in the same
+        /// turn this way". <see cref="GrantedTargetExclusion.None"/> for every other ability in this
+        /// build, which is what the enum's own doc records.
+        /// </summary>
+        public GrantedTargetExclusion GrantedTargetExclusion { get; }
 
         /// <summary>
         /// Milestone 8.19a. `before-action-trigger@1`, or <see cref="BeforeActionTrigger.None"/> on
