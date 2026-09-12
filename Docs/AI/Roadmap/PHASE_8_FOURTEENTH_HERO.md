@@ -65,7 +65,7 @@ Non-goals: No content, no capability, no registration, no artwork, no schema mov
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839-inventory-cutter-the-sky-pirates-printed-set-and-map-every-clause-to-registered-capability-completion-evidence).
 
-### [ ] 8.39a Build the directional attack vocabulary her Red line needs
+### [x] 8.39a Build the directional attack vocabulary her Red line needs
 
 The first of the build blocks, on 8.19b's terms: reusable vocabulary proved before any content reaches it, and no schema field moved.
 
@@ -83,6 +83,18 @@ Observable outcome: a printed Attack can narrow its target set to the continuati
 
 **THE DEGENERATE CASES ARE THE POINT OF THE FOCUSED TIER HERE.** A one-space move fixes a heading unambiguously; a move p.19 stops early may not have travelled its printed distance; and the second branch of each lunge ("Target a unit adjacent to you") performs no move at all and so has no heading to read. The block settles each and records the reading rather than leaving it to the composing milestone.
 
+**AND THE PROBE THIS BLOCK ORDERED CHANGED WHERE BOTH CLAUSES LAND, WHICH IS WHY IT ORDERED ONE.** The prediction above was "another optional parameter on the declaration that already returns the pair". `choose-charge-line@1` does **not** return the pair: its internal option record holds the units beside each destination, but its only declared output binding is `destination`, and Brogan composes "then target that unit" as a SEPARATE radius-1 `choose-target@2` node asked after the Move. So the narrowing belongs on the selection that offers the target, not on the line that offers the destination.
+
+**AND THE LUNGE'S MOVE IS NOT A CHARGE LINE AT ALL, WHICH THIS CATALOG HAD ALREADY SETTLED IN WRITING.** Brogan prints "Move 2 spaces in a straight line **to a space adjacent to an enemy unit**"; Cutter prints "Move 1 space in a straight line" and no destination clause whatever. `choose-line-destination@1`'s own remarks decide which declaration a sentence with no clause takes - "It is not `ChooseChargeLineV1` with a flag ... these sentences print no clause at all, so every space the line reaches is offered. A parameter that switched the clause off would put a card's words into a capability's options." So her three lunges take `choose-line-destination@1`, **`choose-charge-line@1` is untouched by this block**, and the byte-identity this block owes Brogan is owed on `choose-target@2` instead - which he binds on all three charges, and which is asserted here over his definitions rather than over a remembered list.
+
+**THE OPPOSITE-DIRECTION MOVE COMPOSED OUT OF THE EXISTING DECLARATION, EXACTLY AS THE BLOCK TOLD IT TO PROBE FOR.** `choose-line-destination@1` already walks all six of p.19's files out to a maximum and already stops where p.19 stops; "in the opposite direction" names one of those six rather than adding a geometry. No declaration was minted.
+
+**SO BOTH HALVES ARE ONE OPTIONAL PARAMETER OF THE SAME NAME, `continuedLineFrom`, READING ONE NEW QUERY.** `ContinuedLineQuery` answers the single question both sentences ask - a line ran from a named space, through the actor, and carries on - and the two clauses differ only in what stands at the far end and what the continuation is used for. The lunge binds the space she left and reads the continuation for a target; the retreat binds the space she attacked and reads it for a destination. One name, because two names would have been two geometries that could drift apart. The parameter is optional on both declarations and unbound by default, so `choose-target@2`'s twenty-one existing bindings and `choose-line-destination@1`'s keep their exact candidate sets.
+
+**THE DEGENERATE CASES ARE SETTLED AS THE BLOCK REQUIRED, AND ALL THREE FALL OUT OF THE QUERY RATHER THAN BEING WRITTEN BESIDE IT.** A line of no length names no heading, so a branch that performed no move narrows to the EMPTY set rather than falling back to the unnarrowed one - which is the whole difference between "in the direction of the move" and "adjacent", and a fallback would silently turn the first into the second. A move p.19 stopped early still fixes the heading it travelled, because the query reads the two ends the move actually has rather than the distance it was aimed at; one-, two- and three-space travels along one file answer alike. And the retreat's narrowing is applied to the WALKED ROUTE rather than to the six headings, so a unit or an obstacle two spaces along still ends it after one.
+
+**ONE CORRECTION TO THIS SHARD, FOUND WHILE ASSERTING BROGAN'S THREE FACES.** Milestone 8.39e below names his charges as "Mad Dash, Bullrush and Throwing Axe". Throwing Axe is one of his two modal Ranged Attacks; the third charge is **Furious Charge**, and `BroganEffectContent.AttackTextFor` composes all three through one `CreateCharge`. The acceptance check there is corrected to name it.
+
 Acceptance checks:
 
 - An Attack declaring the direction narrowing offers exactly the hero on the continuation of the heading just travelled, asserted as a set equality on a board where the unnarrowed adjacent set holds several heroes.
@@ -94,6 +106,8 @@ Acceptance checks:
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Cutter content. No change to any existing face's target policy. No new Attack primary. No new move capability where an existing one takes a parameter.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839a-build-the-directional-attack-vocabulary-her-red-line-needs-completion-evidence).
 
 ### [ ] 8.39b Build the obstacle-target and grapple-move vocabulary her Silver basic needs
 
@@ -192,7 +206,7 @@ Acceptance checks:
 - The charge line admits exactly the destinations at a distance within the printed bounds, on a straight line, and adjacent to an enemy hero - asserted as a set equality on a board where each condition excludes a different candidate.
 - The exact-distance arm offers nothing where no destination at exactly that distance qualifies, rather than falling back to a shorter move.
 - Binding `ignoresObstacles` true changes the reachable set and does not change the adjacency requirement; leaving it unbound reproduces today's behaviour exactly.
-- **Brogan's Mad Dash, Bullrush and Throwing Axe candidate sets are byte-identical**, asserted rather than assumed, because this block edits the declaration they depend on.
+- **Brogan's Mad Dash, Bullrush and Furious Charge candidate sets are byte-identical**, asserted rather than assumed, because this block edits the declaration they depend on.
 - The hero the destination was chosen against is the one the consequence reads, on a destination adjacent to two enemy heroes.
 - No schema field, corpus digest or pinned constant moves.
 - Complete unfiltered dotnet harness passes.

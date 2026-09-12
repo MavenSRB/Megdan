@@ -1100,6 +1100,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// not: whether the line's own text crosses p.18's obstacles.
         /// </summary>
         public const string IgnoresObstaclesParameter = "ignoresObstacles";
+        /// <summary>
+        /// Milestone 8.39a. The far end of a line an earlier step of this action already travelled,
+        /// which narrows the declaration binding it to the continuation of that line past the actor.
+        ///
+        /// <para><b>One name because it is one question, asked by two clauses that read as
+        /// opposites.</b> Cutter's three lunges print "Before the attack: Move 1 space in a straight
+        /// line. Target a hero adjacent to you <b>in the direction of the move</b>", and this parameter
+        /// carries the space she left; her two ranged Reds print "After the attack: Move up to 2 spaces
+        /// <b>in the opposite direction</b>", and it carries the space she attacked. In both the line
+        /// runs from the bound space, through the actor, and on - so
+        /// <see cref="GuardsDigital.Core.Board.ContinuedLineQuery"/> is the single query the offer, the
+        /// answer and a restored pause all read, which is what keeps the two clauses from drifting
+        /// apart into two geometries.</para>
+        ///
+        /// <para><b>A bound space equal to the actor's own narrows to nothing, deliberately.</b> A
+        /// lunge branch that performed no move fixed no heading, and a clause that narrows to the
+        /// continuation of a line nobody travelled offers no candidate rather than falling back to the
+        /// unnarrowed set. That is the whole difference between "in the direction of the move" and
+        /// "adjacent", and a fallback would silently turn the first into the second.</para>
+        ///
+        /// <para>Optional and unbound by default, so every declaration written before this milestone
+        /// keeps its exact candidate set.</para>
+        /// </summary>
+        public const string ContinuedLineFromParameter = "continuedLineFrom";
+
 
         /// <summary>
         /// The hero a <c>retrieve-card@1</c> node actually retrieved for, published only on success -
@@ -1130,7 +1155,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     {
                         new EffectCapabilityParameter("maximumDistance", EffectValueKind.Integer),
                         new EffectCapabilityParameter(
-                            IgnoresObstaclesParameter, EffectValueKind.Boolean, isRequired: false)
+                            IgnoresObstaclesParameter, EffectValueKind.Boolean, isRequired: false),
+
+                        // Milestone 8.39a. Cutter's Evasive Shot and Tumble Shot, "After the attack:
+                        // Move up to 2 spaces in the opposite direction". The line ran from the space
+                        // she attacked, through where she stands, and the retreat continues it - so
+                        // "the opposite direction" is one of the six this offer already walks, named
+                        // by the Attack rather than chosen again.
+                        new EffectCapabilityParameter(
+                            ContinuedLineFromParameter, EffectValueKind.Coordinate,
+                            isRequired: false)
                     },
                     new[]
                     {
@@ -1186,6 +1220,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var maximum = context.Input("maximumDistance").IntegerValue;
                 var crosses = context.Inputs.ContainsKey(IgnoresObstaclesParameter) &&
                     context.Input(IgnoresObstaclesParameter).BooleanValue;
+
+                // Milestone 8.39a. "In the opposite direction" names one of the six files this offer
+                // already walks; it does not change how far the line reaches or what stops it.
+                var continuesFrom = context.Inputs.ContainsKey(ContinuedLineFromParameter)
+                    ? context.Input(ContinuedLineFromParameter).Coordinate
+                    : (HexCoordinate?)null;
                 if (board == null || maximum < 1 || !board.TryGetObjectCoordinate(
                         BoardObjectReference.ForHero(context.ActorId), out var actorAt))
                 {
@@ -1201,6 +1241,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         !StraightLineQuery.TryGetDirection(
                             actorAt, route.Destination, out var direction, out var distance) ||
                         distance != route.Cost || !IsStraightRoute(actorAt, direction, route.Route))
+                    {
+                        continue;
+                    }
+
+                    // The narrowing is applied to the walked route rather than to the six headings,
+                    // so a retreat still stops at the first thing p.19 stops it at - and a bound
+                    // space the actor is standing on names no heading and keeps nothing.
+                    if (continuesFrom.HasValue && !ContinuedLineQuery.ContinuesTheLine(
+                            continuesFrom.Value, actorAt, route.Destination))
                     {
                         continue;
                     }
@@ -1539,7 +1588,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(
                         PlayedAttackThisTurnParameter, EffectValueKind.Boolean, isRequired: false),
                     new EffectCapabilityParameter(
-                        AdjacentToFriendlyMinionParameter, EffectValueKind.Boolean, isRequired: false)
+                        AdjacentToFriendlyMinionParameter, EffectValueKind.Boolean, isRequired: false),
+
+                    // Milestone 8.39a. Cutter's three lunges, "Target a hero adjacent to you in the
+                    // direction of the move". It sits beside the three narrowings above for the reason
+                    // they sit here: the clause is part of WHO may be picked, so a hero standing off
+                    // the line is not one to offer and then refuse.
+                    new EffectCapabilityParameter(
+                        ContinuedLineFromParameter, EffectValueKind.Coordinate, isRequired: false)
                 },
                 new[]
                 {
@@ -1568,6 +1624,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (context.Input(AdjacentToFriendlyMinionParameter).BooleanValue)
                 {
                     declared = AdjacentToAFriendlyMinion(context, declared);
+                }
+
+                // Milestone 8.39a, and it is bound rather than flagged because the clause carries a
+                // space rather than a yes: the space an earlier step of this action started from.
+                if (context.Inputs.ContainsKey(ContinuedLineFromParameter))
+                {
+                    declared = AlongTheContinuedLine(context, declared);
                 }
 
                 if (!context.Input(PlayedAttackThisTurnParameter).BooleanValue)
@@ -1606,6 +1669,46 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// including the effective-type overlays that let a piece count as a minion, which p.17
             /// allows and which a raw occupancy scan would silently miss.</para>
             /// </summary>
+            /// <summary>
+            /// Milestone 8.39a. The candidates standing on the continuation of a line an earlier step
+            /// of this action already travelled - Cutter's lunges, "Target a hero adjacent to you in
+            /// the direction of the move".
+            ///
+            /// <para>The line runs from the bound space, through where the actor is standing NOW, and
+            /// on; <see cref="ContinuedLineQuery"/> answers it, and this filter does nothing else. The
+            /// distance the clause reaches is still the selection's own <c>reach</c>, which is what
+            /// makes "adjacent to you in the direction of the move" exactly one space where the
+            /// unnarrowed clause admits up to six.</para>
+            ///
+            /// <para><b>A heading the actor never travelled admits nobody.</b> The bound space equal to
+            /// the actor's own, an actor the board cannot place, and a pair of spaces sharing no file
+            /// all name no direction, and each answers with the empty set rather than with the
+            /// unnarrowed one.</para>
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> AlongTheContinuedLine(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
+            {
+                var board = context.Components?.Board;
+                if (board == null || !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var from = context.Input(ContinuedLineFromParameter).Coordinate;
+                var kept = new List<BoardObjectReference>();
+                foreach (var target in declared)
+                {
+                    if (board.TryGetObjectCoordinate(target, out var targetAt) &&
+                        ContinuedLineQuery.ContinuesTheLine(from, actorAt, targetAt))
+                    {
+                        kept.Add(target);
+                    }
+                }
+
+                return kept;
+            }
+
             private static IReadOnlyList<BoardObjectReference> AdjacentToAFriendlyMinion(
                 EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
             {
