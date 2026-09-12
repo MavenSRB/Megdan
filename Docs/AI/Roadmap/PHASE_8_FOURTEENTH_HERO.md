@@ -31,7 +31,7 @@ So this series expects a schema move in exactly one block, and **8.39g is sequen
 
 ## Series
 
-### [ ] 8.39 Inventory Cutter the Sky Pirate's printed set and map every clause to registered capability
+### [x] 8.39 Inventory Cutter the Sky Pirate's printed set and map every clause to registered capability
 
 The inventory pass every hero gets before any of her content is written, on the same terms as milestones 8.1, 8.18a-8.18e and 8.38: transcribe the printed faces from the extraction, record what the scan actually prints rather than what a rule would predict, and map each clause to a registered capability or name it as owed.
 
@@ -47,6 +47,10 @@ Observable outcome: `Rules/HERO_CUTTER.md` states her nineteen faces at printed-
 
 **AND THE DECK-BACK SENTENCE MUST BE MEASURED RATHER THAN COPIED.** Swift's shard says all nineteen of her faces share one deck back. The corpus-reading note records that nine heroes have TWO distinct deck-back hashes and names Cutter as one of them, so the sentence that is true of Swift is false of her and copying it would ship a wrong fact. Hash the backs.
 
+**AND EVERY MEASURED CHECK CAME BACK AS HER SHARD STATES IT**, re-run at closing rather than taken from the drafting pass. The local second-printing PDF returns zero hits for `Cutter`, zero for `Sky Pirate` and zero for all nineteen card names, so the extraction is sole authority for Swift's reason rather than Ursafar's. Her nineteen deck backs hash to exactly two values - fourteen alike and five alike differently, the five being Daring Strike, Bold Thrust, Fearless Lunge, Legend of the Skies and Few More Steps - so the one-back sentence that is true of Swift is false of her, exactly as the corpus-reading note predicted. Grappling Bolt prints one secondary, drawn at the boot's height and shaped as a riveted shield: Defense 2 with no secondary Movement, resolved in one image against Walk the Plank's and Daring Strike's shield-over-boot pairs. `cards/hero-selection/randomizers-tt15__7723688__front.png` and `_selection-cards/Cutter__front.png` share one SHA-256. And the bundled manifest's element 8583041 `Airship_Captain` is a `VerticalTokens` element carrying exactly two 302x302 sprites, at (3249,2526) and (3553,2526) in `Image_0_Atlas`, which is the invariant `Prepare-HeroTokens.ps1` declares as `$declaredFaceSize = 302`.
+
+**THE OWED SET IS STATED AS A SET RATHER THAN ASSERTED AS ONE.** Five of the shard's owed rows carried a bare `owed` when this block closed, which left the "exactly what 8.39a-8.39g build" check unverifiable from the shard alone; each now names its block, and the owed rows read 8.39a, 8.39a, 8.39b, 8.39b, 8.39c, 8.39d, 8.39d, 8.39e, 8.39f and 8.39g - the seven build blocks and no eighth.
+
 Acceptance checks:
 
 - `Rules/HERO_CUTTER.md` exists, is linked from the hero-shard index in [RULES_LEDGER.md](../RULES_LEDGER.md), and carries her printed-value table, her upgrade pairs, her starting hand, her boxed Handicap, and her transcribed text for all nineteen faces.
@@ -58,6 +62,8 @@ Acceptance checks:
 - The validator passes and no governed shard crosses a threshold.
 
 Non-goals: No content, no capability, no registration, no artwork, no schema movement. An inventory row authorizes nothing.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839-inventory-cutter-the-sky-pirates-printed-set-and-map-every-clause-to-registered-capability-completion-evidence).
 
 ### [ ] 8.39a Build the directional attack vocabulary her Red line needs
 

@@ -227,7 +227,7 @@ victory sentence - is larger than everything else in the set put together.
 | --- | --- | --- |
 | Walk the Plank, Few More Steps | `push -> synthetic-object-push@3 (A, enemy hero adjacent to A; maximumTargets=1, spaces=4/3)` | registered |
 | Walk the Plank, Few More Steps | `crossing -> after-push-trigger@1 (subject=EnemyHero)` at `TimingCheckpoint.ObjectPushApplied` | registered (Sabina's Big Sodding Gun) |
-| Walk the Plank, Few More Steps | the zone test the trigger is qualified by - the pushed hero's origin and destination zones differ | **owed** |
+| Walk the Plank, Few More Steps | the zone test the trigger is qualified by - the pushed hero's origin and destination zones differ | **owed, 8.39c** |
 | Walk the Plank, Few More Steps | `consequence -> discard-chosen-card@2 (chooser=pushed hero) or defeat` | registered (Whisper's Greater Good prints the same "discards a card, or is defeated") |
 | Walk the Plank | `minion -> synthetic-remove@2 (A, enemy minion adjacent to A)` | registered |
 | Grappling Bolt | an obstacle as the thing targeted, rather than one of p.19's units | **owed, 8.39b** - the one genuinely unbuilt contract on this face |
@@ -239,12 +239,12 @@ victory sentence - is larger than everything else in the set put together.
 | Daring Strike, Bold Thrust, Fearless Lunge | `+2 Attack` on the moved branch only | registered (`modify-value@2`) |
 | Daring Strike, Bold Thrust, Fearless Lunge | second branch: `attack-target@2` adjacency-only unit target | registered |
 | Evasive Shot, Tumble Shot | Target policy `reach=PrintedRange, line=InStraightLine` | registered as of milestone 8.38a (Swift's Red line) |
-| Evasive Shot, Tumble Shot | "After the attack: Move up to 2/3 spaces **in the opposite direction**" - a move along the reverse of the attack's own line | **owed** (near miss: `attacked-target-space@1` already binds the attacked space, which is the half that names the line) |
+| Evasive Shot, Tumble Shot | "After the attack: Move up to 2/3 spaces **in the opposite direction**" - a move along the reverse of the attack's own line | **owed, 8.39a** (near miss: `attacked-target-space@1` already binds the attacked space, which is the half that names the line) |
 | Bombardment, Barrage, Broadside | `subject -> radius enemy hero selection (S radius 3/4/4)` | registered (`synthetic-radius-unit-target@1` family) |
-| Bombardment, Barrage, Broadside | "adjacent to another enemy unit" - the subject narrowed by adjacency to a unit of the SUBJECT's own team | **owed**, and the near miss is exact: Sabina's `adjacentToFriendlyMinion` parameter narrows the same selection by adjacency measured from the ACTOR's team and restricted to minions. Cutter's clause measures from the target's team and says unit, so it is a sibling parameter on a declaration that already carries one, not a new selection. |
+| Bombardment, Barrage, Broadside | "adjacent to another enemy unit" - the subject narrowed by adjacency to a unit of the SUBJECT's own team | **owed, 8.39d**, and the near miss is exact: Sabina's `adjacentToFriendlyMinion` parameter narrows the same selection by adjacency measured from the ACTOR's team and restricted to minions. Cutter's clause measures from the target's team and says unit, so it is a sibling parameter on a declaration that already carries one, not a new selection. |
 | Bombardment, Barrage, Broadside | "and not adjacent to you" | registered (`target-is-not-adjacent@1`) |
 | Bombardment, Barrage, Broadside | `discard -> discard-chosen-card@2 (chooser=subject; IfAble)` | registered |
-| Broadside | "May repeat once on a different target" - p.10's repeat with the first subject excluded | **owed** (the repeat is registered; the per-repeat subject exclusion is the new half, and milestone 8.38c2's per-grant target exclusion is the nearest shape) |
+| Broadside | "May repeat once on a different target" - p.10's repeat with the first subject excluded | **owed, 8.39d** (the repeat is registered; the per-repeat subject exclusion is the new half, and milestone 8.38c2's per-grant target exclusion is the nearest shape) |
 | X Marks the Spot, A Fistful of Coins | `chooser -> an enemy hero in radius, who answers the modal` | registered (Whisper's Lesser Evil and Greater Good) |
 | X Marks the Spot, A Fistful of Coins | branch 1: `synthetic-place-in-radius@1 (subject=chooser, destination in S radius)` | registered |
 | X Marks the Spot, A Fistful of Coins | branch 2: `gain-resource@1 (A, coins=2/3)` | registered |
@@ -255,7 +255,7 @@ victory sentence - is larger than everything else in the set put together.
 | Outmaneuver, Outsmart | `swap -> synthetic-swap-actor@1 + choose-swap-subject@1 (A, enemy minion in S radius)` | registered (Misa's two Swap Skills) |
 | Outmaneuver, Outsmart | `then -> synthetic-direct-move@1 (subject=Out(swap), up to 2/3 spaces; May)` | registered |
 | Legend of the Skies | `trigger -> an Ultimate firing the first time each turn after a primary action completes` | registered in shape (`ultimate-unlocked@1`, `around-primary-action@1`, and Tigerclaw's `AfterControllerPerformsBasicAction`); the "first time each turn" bound is the once-per-turn machinery milestone 8.38c1 exercised |
-| Legend of the Skies | `borrow -> borrow-primary-action@1 (pool = a card in the PREVIOUS turn slot)` | verb registered (Ursafar); **the pool is owed**, and it is the direct sibling of milestone 8.38c's `BorrowedActionPool.OwnedRightmostResolvedCard` - the same `EffectRosterState.TurnSlots` ordering read one slot back instead of rightmost |
+| Legend of the Skies | `borrow -> borrow-primary-action@1 (pool = a card in the PREVIOUS turn slot)` | verb registered (Ursafar); **the pool is owed, 8.39f**, and it is the direct sibling of milestone 8.38c's `BorrowedActionPool.OwnedRightmostResolvedCard` - the same `EffectRosterState.TurnSlots` ordering read one slot back instead of rightmost |
 
 **CU-13. "That hero discards a card, or is defeated" is already settled and is not an open question
 here.** Rule-system ledger question 13 settled it on Arien's identical sentence and Whisper's Greater
