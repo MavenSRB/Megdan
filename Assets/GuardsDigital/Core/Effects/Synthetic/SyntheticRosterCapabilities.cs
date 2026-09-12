@@ -754,6 +754,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// keeps its exact candidate set.</para>
         /// </summary>
         public const string AdjacentToFriendlyMinionParameter = "adjacentToFriendlyMinion";
+        /// <summary>
+        /// Milestone 8.39d. Whether the selection admits only candidates standing next to another unit
+        /// of their OWN side - Cutter's Bombardment, Barrage and Broadside, "An enemy hero adjacent to
+        /// another enemy unit and not adjacent to you discards a card, if able."
+        ///
+        /// <para><b>It is the sibling of <see cref="AdjacentToFriendlyMinionParameter"/> and not a
+        /// widening of it</b>, which is what the 8.38b lesson predicted and what reading Sabina's
+        /// filter confirmed. Hers narrows the same radius-hero selection by adjacency measured from the
+        /// ACTOR's team and restricted to p.19's minions; this one measures from the SUBJECT's team and
+        /// admits any unit. Two parameter differences on one clause, so re-expressing hers through a
+        /// shared pair would change her node's inputs and move a shipped digest - a second boolean
+        /// costs nothing and says what it means.</para>
+        ///
+        /// <para><b>"Another" is doing real work here where it did not for Sabina.</b> Her remarks
+        /// record that a minion cannot be standing on an enemy hero, so nothing needed excluding. This
+        /// clause measures a disk around the candidate for units on the candidate's OWN side, and the
+        /// candidate is one - so the candidate is excluded from its own neighbourhood explicitly, or
+        /// every enemy hero on the board would qualify by standing next to itself.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every declaration written before this milestone
+        /// keeps its exact candidate set.</para>
+        /// </summary>
+        public const string AdjacentToAnotherEnemyUnitParameter = "adjacentToAnotherEnemyUnit";
+
 
         /// <summary>
         /// Milestone 8.22. The count <c>presence-count@1</c>'s <c>present</c> answer is measured
@@ -1590,6 +1614,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new EffectCapabilityParameter(
                         AdjacentToFriendlyMinionParameter, EffectValueKind.Boolean, isRequired: false),
 
+                    // Milestone 8.39d. Cutter's three Blue discards, "An enemy hero adjacent to
+                    // another enemy unit". A second boolean rather than a shared pair, because
+                    // re-expressing Sabina's would change her node's inputs.
+                    new EffectCapabilityParameter(
+                        AdjacentToAnotherEnemyUnitParameter, EffectValueKind.Boolean,
+                        isRequired: false),
+
                     // Milestone 8.39a. Cutter's three lunges, "Target a hero adjacent to you in the
                     // direction of the move". It sits beside the three narrowings above for the reason
                     // they sit here: the clause is part of WHO may be picked, so a hero standing off
@@ -1624,6 +1655,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (context.Input(AdjacentToFriendlyMinionParameter).BooleanValue)
                 {
                     declared = AdjacentToAFriendlyMinion(context, declared);
+                }
+
+                if (context.Input(AdjacentToAnotherEnemyUnitParameter).BooleanValue)
+                {
+                    declared = AdjacentToAnotherUnitOfItsOwnSide(context, declared);
                 }
 
                 // Milestone 8.39a, and it is bound rather than flagged because the clause carries a
@@ -1701,6 +1737,54 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     if (board.TryGetObjectCoordinate(target, out var targetAt) &&
                         ContinuedLineQuery.ContinuesTheLine(from, actorAt, targetAt))
+                    {
+                        kept.Add(target);
+                    }
+                }
+
+                return kept;
+            }
+
+            /// <summary>
+            /// Milestone 8.39d. The candidates standing beside at least one OTHER unit on their own
+            /// side - the clause Cutter's three Blue discards print as "adjacent to another enemy
+            /// unit".
+            ///
+            /// <para>"Enemy" is read from the ACTOR, as every relation in this catalog is, so a unit
+            /// that opposes the actor is on the candidate's own side by construction - the candidate
+            /// opposes the actor too. That is why this asks the same <c>OpposingSource</c> question
+            /// Sabina's asks with <c>AlliedWithSource</c>, rather than inventing a relation measured
+            /// from the subject.</para>
+            ///
+            /// <para><b>The candidate is excluded from its own neighbourhood.</b> p.9 measures a disk
+            /// inclusively, so a radius of one around an enemy hero contains that hero - who is an
+            /// enemy unit. Without this exclusion the clause would admit every enemy hero on the
+            /// board, which is the opposite of what "another" says.</para>
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> AdjacentToAnotherUnitOfItsOwnSide(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
+            {
+                var board = context.Components?.Board;
+                if (board == null || context.Participants == null)
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var kept = new List<BoardObjectReference>();
+                foreach (var target in declared)
+                {
+                    if (!board.TryGetObjectCoordinate(target, out var targetAt)) continue;
+                    var beside = RosterPresenceQuery.FindUnitsWithin(
+                        targetAt,
+                        1,
+                        RosterUnitKind.Unit,
+                        SourceTeamRelation.OpposingSource,
+                        context.ActorId,
+                        board,
+                        context.Participants,
+                        context.Modifications);
+
+                    if (beside.Any(unit => !unit.Equals(target)))
                     {
                         kept.Add(target);
                     }
