@@ -149,8 +149,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(13),
-                "8.37b carries a pending effect choice's declared VALUE VOCABULARY, so a joined seat draws six named colours or six named directions rather than the digits 0 through 5 - Tali's Commune with Spirits puts one of those decisions to a hero who is not the acting seat, so the seat that must answer it is by construction a remote one. A protocol 12 peer is refused before any payload is read. SCHEMA IS UNMOVED at v41: restore re-asks the handler, which re-declares it. " +
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(14),
+                "8.39g carries a SOLO ending. Every projected outcome before it named a winning TEAM and a losing team, because all three of the rulebook's victory sentences are about teams; Cutter's A Fistful of Coins awards the match to one HERO and leaves that hero's own team-mates among the losers, so the outcome row gained a hero field and the two team fields became the named absence for that shape. A protocol 13 peer reads the hero id where it expects the next record and mis-decodes the remainder, so it is refused from the bounded header. SCHEMA MOVED WITH IT to v42, which is the only time these two have moved together: a solo winner is the one victory fact this build cannot re-derive on restore. 8.37b carries a pending effect choice's declared VALUE VOCABULARY, so a joined seat draws six named colours or six named directions rather than the digits 0 through 5 - Tali's Commune with Spirits puts one of those decisions to a hero who is not the acting seat, so the seat that must answer it is by construction a remote one. A protocol 12 peer is refused before any payload is read. At 8.37b the schema was UNMOVED at v41: restore re-asks the handler, which re-declares it. " +
                 "8.36b required authenticated keyed departures and rejected protocol 11. " +
                 "Milestone 8.35z60's integration pass took it to 11 to carry rulebook p.8's shared " +
                 "Wave-counter pool on the seat projection, so a remote seat's top strip reads the " +
@@ -170,7 +170,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSnapshotSchema_DidNotMoveBecauseAFormatIsValuesAndNotShape()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(41),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(42),
                 "The Wave total, each team's Life counters and the participant list have all been " +
                 "counted values in the payload for many versions, so a 2v2 payload is a v38 payload " +
                 "of different numbers rather than of a different shape. The version itself has moved " +

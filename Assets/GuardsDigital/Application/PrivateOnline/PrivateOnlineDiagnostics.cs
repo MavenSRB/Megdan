@@ -44,7 +44,7 @@ namespace GuardsDigital.Application
             return OutcomeMarker + seat +
                 " version=" + version.ToString(CultureInfo.InvariantCulture) +
                 " cause=" + outcome.Cause +
-                " winner=" + outcome.WinningTeamId.Value;
+                " winner=" + (outcome.HasSoloWinner ? outcome.WinningHeroId.Value + " (alone)" : outcome.WinningTeamId.Value);
         }
     }
 }

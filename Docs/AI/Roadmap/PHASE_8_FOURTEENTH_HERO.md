@@ -223,7 +223,7 @@ Non-goals: No Cutter content. No change to `PerformedBasicAction`'s own definedn
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839f1-build-the-after-a-primary-action-ultimate-trigger-her-ultimate-fires-on-completion-evidence).
 
-### [ ] 8.39g Build the solo victory condition A Fistful of Coins prints
+### [x] 8.39g Build the solo victory condition A Fistful of Coins prints
 
 **This is the block the series preamble singles out, and the only one that is expected to move the schema.** The user settled the reading on 2026-09-11 with the contract cost stated: implement the printed sentence faithfully.
 
@@ -258,7 +258,17 @@ Acceptance checks:
 - The wire protocol move is stated with its cause and a solo ending projects correctly to a losing seat.
 - Complete unfiltered dotnet harness and Edit Mode pass.
 
+**THE THREE QUESTIONS, ANSWERED.** (1) **The winner's team-mates lose.** The printed word is "alone", and this is the first ending in the build where two heroes on one team do not share a result - asserted on a 2v2 where the winner has a team-mate the sentence never mentions. (2) **`UndeclaredOutcomeTeams` is exactly as strict for the three team causes**, and the solo ending got its own fault (`UndeclaredSoloWinner`) rather than a widening: loosening the old guard to admit an ending with no teams at all would have removed the thing it exists for, and a one-team composition is still refused by it. (3) **A solo claim landing with a team ending is refused, not preferred** - `ConflictingVictoryPaths`, on the terms milestone 7.7 set, asserted against both p.8's push and p.13's counters.
+
+**THE RE-ENTRANCY QUESTION, ANSWERED BY THE CHOKEPOINT RATHER THAN AROUND IT.** `TryRecordSoloVictory` writes the fact and then calls `EndGame(null)` - the same nullable-stage shape milestone 7.7 gave p.8's mid-turn push, so "where did the match end" is answered with where it ended. `StopResolutionForGameEnd()` stops the turn's in-flight resolution, which is the one that caused the ending, and NOTHING IS CLEARED, because the position the match ended in is what the payload keeps and what a retained-prefix Undo truncated before the ending needs to still be there. The block was right that the work was `ReadOutcome` and not the ending machinery.
+
+**THE SHAPE OF THE OUTCOME, AND THE ONE THING EVERY READER NOW OWES.** `MatchOutcome.WonAlone` names a hero and NO teams - there is no winning side, and no single losing team either, because every team has a loser in it. So `WinningTeamId` and `LosingTeamId` are the named absence for this shape, and every reader that wants a side asks `HasSoloWinner` first. Nine sites read those fields; the one that would have THROWN is the player-facing headline, which asked `Participants.GetTeam(WinningTeamId)`, and it now names the hero.
+
+**THE SCHEMA MOVED 41 -> 42 AND THE WIRE 13 -> 14, AND THE DELTA IS MEASURED RATHER THAN ASSERTED**: **+1 authoritative byte per snapshot** (`setup` 11,122 -> 11,123; `verified-hand-setup` 10,221 -> 10,222), which is the empty-string length prefix every match that did not end alone writes. Measured in a throwaway worktree at the pre-change SHA, as the ledger requires. Sixteen corpus fixtures renamed and re-pinned from one measuring run, four bare assertions moved, the six pinned docs re-stated in their own wordings, and the two narrative pins EXTENDED rather than renumbered - `CardAggregateInvarianceTests` for a cause none of its notes had recorded before, the snapshot FORMAT growing a field rather than the registered list moving.
+
 Non-goals: No Cutter content - the face that reaches this is composed at 8.39h. No new victory condition for any other hero. No change to p.8's or p.13's endings beyond the re-measurement this block forces.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839g-build-the-solo-victory-condition-a-fistful-of-coins-prints-completion-evidence).
 
 ### [ ] 8.39h Compose Cutter's eighteen dealt faces and prove them at the focused tier
 

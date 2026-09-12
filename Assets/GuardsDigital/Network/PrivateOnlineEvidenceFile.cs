@@ -64,7 +64,7 @@ namespace GuardsDigital.Network
                     " bot=" + Encode(Seats(botSeats)));
             writer.WriteLine("GD_EVIDENCE_END run=" + Encode(RunId) + " process=" + process +
                 " version=" + version.ToString(CultureInfo.InvariantCulture) +
-                " cause=" + Encode(outcome.Cause.ToString()) + " winner=" + Encode(outcome.WinningTeamId.Value));
+                " cause=" + Encode(outcome.Cause.ToString()) + " winner=" + Encode(outcome.HasSoloWinner ? outcome.WinningHeroId.Value + " (alone)" : outcome.WinningTeamId.Value));
             closed = true;
             writer.Dispose();
         }

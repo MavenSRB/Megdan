@@ -342,7 +342,7 @@ namespace GuardsDigital.Core.Snapshots
         // the next free number rather than the next number leaves the claim intact and costs nothing:
         // the guard is an equality test, so 39 being unused is not a hole a reader can fall into - a
         // payload claiming it is refused exactly as one claiming 38 is.
-        public const int CurrentSchemaVersion = 41;
+        public const int CurrentSchemaVersion = 42;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

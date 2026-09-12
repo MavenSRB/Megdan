@@ -562,10 +562,18 @@ namespace GuardsDigital.Application
                 row.ItemBonuses.Select(value => new KeyValuePair<PrintedValueChannel, int>(
                     (PrintedValueChannel)value.Key, value.Value)))).ToArray());
 
+        /// <summary>
+        /// Milestone 8.39g. A seat reads the ending it was sent, in whichever of the two shapes it
+        /// was sent in: an ending that names a hero is a solo ending, and one that names teams is one
+        /// of the rulebook's three team sentences. A losing seat reads the same row the winner does.
+        /// </summary>
         public MatchOutcome Outcome => wire?.Outcome == null || wire.Outcome.Cause == 0
             ? MatchOutcome.Unfinished
-            : MatchOutcome.Won((MatchVictoryCause)wire.Outcome.Cause,
-                new TeamId(wire.Outcome.WinningTeamId), new TeamId(wire.Outcome.LosingTeamId));
+            : string.IsNullOrEmpty(wire.Outcome.WinningHeroId)
+                ? MatchOutcome.Won((MatchVictoryCause)wire.Outcome.Cause,
+                    new TeamId(wire.Outcome.WinningTeamId), new TeamId(wire.Outcome.LosingTeamId))
+                : MatchOutcome.WonAlone((MatchVictoryCause)wire.Outcome.Cause,
+                    new HeroId(wire.Outcome.WinningHeroId));
 
         public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds => wire == null
             ? trusted.ActiveEffectSourceCardInstanceIds

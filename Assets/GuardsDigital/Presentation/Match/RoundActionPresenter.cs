@@ -2156,6 +2156,16 @@ namespace GuardsDigital.Presentation.Match
             if (projection.Phase == RoundResolutionPhase.GameEnded)
             {
                 var outcome = projection.Outcome;
+
+                // Milestone 8.39g. A solo ending has no winning TEAM to look up, and asking for one
+                // would throw rather than read oddly. It names the hero instead, which is the whole
+                // of what "you alone win the game" awards.
+                if (outcome.HasSoloWinner)
+                {
+                    return outcome.WinningHeroId.Value.ToUpperInvariant() + " WINS ALONE: " +
+                        FormatVictoryCause(outcome.Cause) + ".";
+                }
+
                 var side = projection.Participants.GetTeam(outcome.WinningTeamId).Side;
                 return MinionChoiceLabels.TeamLabel(side) + " wins: " +
                     FormatVictoryCause(outcome.Cause) + ".";

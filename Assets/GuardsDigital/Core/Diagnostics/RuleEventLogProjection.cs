@@ -133,8 +133,8 @@ namespace GuardsDigital.Core.Diagnostics
                         "Round.GameEnded",
                         JoinReferences(
                             roundReference,
-                            $"winner={ruleEvent.MatchOutcome.WinningTeamId.Value}",
-                            $"loser={ruleEvent.MatchOutcome.LosingTeamId.Value}"),
+                            $"winner={WinnerOf(ruleEvent.MatchOutcome)}",
+                            $"loser={LoserOf(ruleEvent.MatchOutcome)}"),
                         ruleEvent.EndOfRoundStage.HasValue
                             ? $"cause={ruleEvent.MatchOutcome.Cause};stage={ruleEvent.EndOfRoundStage}"
                             : $"cause={ruleEvent.MatchOutcome.Cause}");
@@ -434,6 +434,18 @@ namespace GuardsDigital.Core.Diagnostics
                 JoinReferences(roundReference, $"effect={ruleEvent.EffectId.Value}"),
                 $"checkpoint={ruleEvent.Checkpoint}");
         }
+
+        /// <summary>
+        /// Who won, in whichever shape the ending has. Milestone 8.39g: a solo ending awards the
+        /// match to a HERO and leaves every team with a loser in it, so a log line that could only
+        /// print team ids would print two empty ones - and the user's standing directive is that the
+        /// game be obvious from the logs.
+        /// </summary>
+        private static string WinnerOf(GuardsDigital.Core.Rules.Victory.MatchOutcome outcome) =>
+            outcome.HasSoloWinner ? outcome.WinningHeroId.Value : outcome.WinningTeamId.Value;
+
+        private static string LoserOf(GuardsDigital.Core.Rules.Victory.MatchOutcome outcome) =>
+            outcome.HasSoloWinner ? "everyone else" : outcome.LosingTeamId.Value;
 
         private static string JoinReferences(params string[] references)
         {

@@ -35,6 +35,15 @@ namespace GuardsDigital.Core.Snapshots
             writer.Write(turnIndex);
             writer.Write((int)phase);
             writer.Write((int)tieBreakerState.RevealedSide);
+
+            // Milestone 8.39g, and the reason the schema moved to v42. Every other victory fact in
+            // this payload is re-derived on restore from state that was already authoritative; a solo
+            // ending has no such source, so it is written here beside the phase that records it. The
+            // empty string is the named absence, which is what every match that did not end this way
+            // writes.
+            writer.Write(state.Cursor.SoloVictoryHeroId.IsDefined
+                ? state.Cursor.SoloVictoryHeroId.Value
+                : string.Empty);
             WriteSlots(writer, state.History.TurnSlots);
             WriteHeroDefeatHistory(writer, state.History.HeroDefeats);
         }
@@ -109,6 +118,10 @@ namespace GuardsDigital.Core.Snapshots
             var phase = SnapshotEnumReader.Read<RoundResolutionPhase>(reader, "round resolution phase");
             var tieBreaker = new TieBreakerState(
                 SnapshotEnumReader.Read<TeamSide>(reader, "round tie-breaker revealed side"));
+            var soloVictoryHeroIdValue = reader.ReadString();
+            var soloVictoryHeroId = string.IsNullOrEmpty(soloVictoryHeroIdValue)
+                ? default(GuardsDigital.Core.Units.Heroes.HeroId)
+                : new GuardsDigital.Core.Units.Heroes.HeroId(soloVictoryHeroIdValue);
             var slots = ReadSlots(reader, cards, participants);
             var heroDefeats = ReadHeroDefeatHistory(reader);
             var completed = ReadMany(reader, "completed rounds", () =>
@@ -259,7 +272,8 @@ namespace GuardsDigital.Core.Snapshots
                 cards,
                 participants,
                 new RoundResolutionRestoreState(
-                    new RoundCursorRestoreState(roundIndex, turnIndex, phase, tieBreaker),
+                    new RoundCursorRestoreState(
+                        roundIndex, turnIndex, phase, tieBreaker, soloVictoryHeroId),
                     new RoundHistoryRestoreState(slots, heroDefeats, completed),
                     new EndOfRoundRestoreState(
                         stage,

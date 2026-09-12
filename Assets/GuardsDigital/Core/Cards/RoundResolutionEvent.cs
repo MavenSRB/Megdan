@@ -334,7 +334,11 @@ namespace GuardsDigital.Core.Cards
                 roundIndex,
                 turnIndex,
                 endOfRoundStage: stage,
-                teamId: outcome.LosingTeamId,
+
+                // Milestone 8.39g. A solo ending names no losing team, because every team has a loser
+                // in it - so the event's team field is the named absence rather than an arbitrary one
+                // of them. The outcome itself carries the winner either way.
+                teamId: outcome.HasSoloWinner ? default : outcome.LosingTeamId,
                 matchOutcome: outcome);
         }
 

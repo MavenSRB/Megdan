@@ -402,11 +402,51 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome => ReadOutcome().Outcome;
 
+        /// <summary>
+        /// The hero who won the match alone, or the named absence. Milestone 8.39g: the one victory
+        /// fact this build records rather than derives - see
+        /// <see cref="RoundCursorRestoreState.SoloVictoryHeroId"/> for why it has to be.
+        /// </summary>
+        public GuardsDigital.Core.Units.Heroes.HeroId SoloVictoryHeroId { get; private set; }
+
+        /// <summary>
+        /// Records that one hero has won the match alone, and ends it. Milestone 8.39g, and Cutter's
+        /// A Fistful of Coins is the only sentence that calls it.
+        ///
+        /// <para><b>It goes through <see cref="EndGame"/> like every other ending</b>, passing no
+        /// end-of-round stage - which is exactly the shape milestone 7.7 gave that parameter for p.8's
+        /// mid-turn push, so that "where did the match end" is answered with where it ended rather
+        /// than with a stage it never reached. The turn's in-flight resolution is stopped by the same
+        /// chokepoint, and nothing is cleared, because the position the match ended in is what the
+        /// payload keeps.</para>
+        ///
+        /// <para>A second claim is refused rather than layered: the phase already records an ending,
+        /// and two endings cannot both be the ending.</para>
+        /// </summary>
+        public bool TryRecordSoloVictory(
+            GuardsDigital.Core.Units.Heroes.HeroId winningHeroId,
+            out RoundResolutionEvent gameEnded)
+        {
+            gameEnded = default;
+            if (!winningHeroId.IsDefined ||
+                Phase == RoundResolutionPhase.GameEnded ||
+                SoloVictoryHeroId.IsDefined ||
+                !participants.Heroes.Any(hero => hero.Id.Equals(winningHeroId)))
+            {
+                return false;
+            }
+
+            SoloVictoryHeroId = winningHeroId;
+            gameEnded = EndGame(null);
+            return true;
+        }
+
         private GuardsDigital.Core.Rules.Victory.MatchOutcomeReading ReadOutcome(
             bool gameIsRecordedAsEnded)
         {
             var reading = GuardsDigital.Core.Rules.Victory.MatchOutcomeQuery.Read(
-                participants, lanePush?.LanePush, TeamLives, gameIsRecordedAsEnded);
+                participants, lanePush?.LanePush, TeamLives, gameIsRecordedAsEnded,
+                SoloVictoryHeroId);
             if (!reading.IsCoherent)
             {
                 throw new InvalidOperationException(
@@ -728,7 +768,8 @@ namespace GuardsDigital.Core.Cards
                 ? HeroCoinLedgerRestoreStateHolder.Absent()
                 : HeroCoinLedgerRestoreStateHolder.Present(CardActions.CoinLedger.CaptureRestoreState());
             return new RoundResolutionRestoreState(
-                new RoundCursorRestoreState(RoundIndex, TurnIndex, Phase, TieBreakerState),
+                new RoundCursorRestoreState(
+                    RoundIndex, TurnIndex, Phase, TieBreakerState, SoloVictoryHeroId),
                 new RoundHistoryRestoreState(
                     TurnSlots,
                     HeroDefeatHistory.CaptureRestoreState(),
@@ -782,6 +823,11 @@ namespace GuardsDigital.Core.Cards
             {
                 throw new ArgumentException("Restored round cursor is invalid.");
             }
+
+            // Milestone 8.39g. The one victory fact this build records rather than derives, put back
+            // before anything asks for the outcome - a restored match that had ended alone must read
+            // the same ending it ended with.
+            authority.SoloVictoryHeroId = state.Cursor.SoloVictoryHeroId;
 
             authority.HeroProgression = GuardsDigital.Core.Rules.Progression.HeroProgressionState.Restore(
                 participants, state.HeroProgression);

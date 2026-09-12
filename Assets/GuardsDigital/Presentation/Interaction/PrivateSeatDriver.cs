@@ -392,7 +392,7 @@ namespace GuardsDigital.Presentation.Interaction
                 if (!outcomeSeenUtc.HasValue)
                 {
                     outcomeSeenUtc = DateTime.UtcNow;
-                    Marker("outcome cause=" + outcome.Cause + " winner=" + outcome.WinningTeamId.Value);
+                    Marker("outcome cause=" + outcome.Cause + " winner=" + (outcome.HasSoloWinner ? outcome.WinningHeroId.Value + " (alone)" : outcome.WinningTeamId.Value));
                 }
 
                 if (machine.State == PrivateSessionClientState.Disconnected ||

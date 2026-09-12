@@ -212,7 +212,12 @@ namespace GuardsDigital.Application
         // it is derived on restore exactly as the candidates it describes already are. What moved is
         // what a REMOTE READ MODEL is told, not what a payload contains: no corpus digest, pinned
         // constant or bare version assertion moves with it.
-        public const int Version = 13;
+        // Version 14 (milestone 8.39g) carries a SOLO ending. Every projected outcome before it named
+        // a winning team and a losing team, because every one of the rulebook's three victory
+        // sentences is about teams; Cutter's A Fistful of Coins awards the match to one HERO and
+        // leaves that hero's own team-mates among the losers, so an outcome row that could only name
+        // teams could not state it to any seat - least of all to a seat that lost to it.
+        public const int Version = 14;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

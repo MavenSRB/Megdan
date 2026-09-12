@@ -13,18 +13,34 @@ namespace GuardsDigital.Core.Cards
             int roundIndex,
             int turnIndex,
             RoundResolutionPhase phase,
-            TieBreakerState tieBreakerState)
+            TieBreakerState tieBreakerState,
+            GuardsDigital.Core.Units.Heroes.HeroId soloVictoryHeroId = default)
         {
             RoundIndex = roundIndex;
             TurnIndex = turnIndex;
             Phase = phase;
             TieBreakerState = tieBreakerState;
+            SoloVictoryHeroId = soloVictoryHeroId;
         }
 
         public int RoundIndex { get; }
         public int TurnIndex { get; }
         public RoundResolutionPhase Phase { get; }
         public TieBreakerState TieBreakerState { get; }
+
+        /// <summary>
+        /// The hero who won the match alone, or the named absence. Milestone 8.39g.
+        ///
+        /// <para><b>This is the one victory fact in the build that is RECORDED rather than derived,
+        /// and it sits beside the phase because the phase is the other half of the same sentence.</b>
+        /// The three team endings are re-read on restore from the Lane-Push transition and p.13's life
+        /// counters, which is what <c>MatchOutcomeQuery</c>'s own remarks say a fourth record would
+        /// only be able to agree with or be wrong about. Cutter's A Fistful of Coins has no such
+        /// source: thirteen coins is not a hero who won - coins are farmed by everyone and spent back
+        /// down at p.15's Level Up - so what won the match is that this hero RESOLVED that branch while
+        /// holding thirteen or more, and nothing else in the match records it.</para>
+        /// </summary>
+        public GuardsDigital.Core.Units.Heroes.HeroId SoloVictoryHeroId { get; }
 
         public void Deconstruct(
             out int roundIndex,

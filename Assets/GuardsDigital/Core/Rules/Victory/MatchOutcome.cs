@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.LanePush;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.Victory
 {
@@ -34,7 +35,28 @@ namespace GuardsDigital.Core.Rules.Victory
         /// p.13: "If the last counter is spent, the game ends and the team with no Life counters left,
         /// loses the game."
         /// </summary>
-        LifeCountersExhausted = 3
+        LifeCountersExhausted = 3,
+
+        /// <summary>
+        /// Milestone 8.39g. Cutter's A Fistful of Coins: "If you have 13 or more coins, you alone win
+        /// the game."
+        ///
+        /// <para><b>The first ending in this build that is not a team sentence, and the user settled
+        /// that reading on 2026-09-11 with the contract cost stated.</b> The three causes above are
+        /// rulebook sentences about teams, and every one of them can be re-derived on restore from
+        /// state that was already authoritative - the Lane-Push transition, and p.13's counters. This
+        /// one names a HERO, and its winning fact has no other home: thirteen coins is not a hero who
+        /// won, because coins are farmed by everyone and spent back down at p.15's Level Up. What won
+        /// the match is that this hero RESOLVED that branch while holding thirteen or more, and
+        /// nothing else in the match records it. So it is written, and writing it is what moved the
+        /// snapshot schema at this milestone.</para>
+        ///
+        /// <para><b>"Alone" is load-bearing.</b> In 2v2 and 3v3 the winner has team-mates the printed
+        /// sentence does not mention, and they lose with everybody else - see
+        /// <see cref="MatchOutcome.WinningHeroId"/>. It is the first ending in this build where two
+        /// heroes on one team do not share a result.</para>
+        /// </summary>
+        CoinHoardClaimed = 4
     }
 
     /// <summary>
@@ -67,7 +89,18 @@ namespace GuardsDigital.Core.Rules.Victory
         UnexplainedGameEnd = 3,
 
         /// <summary>A victory path ended the match and the match is not recorded as ended.</summary>
-        UnrecordedGameEnd = 4
+        UnrecordedGameEnd = 4,
+
+        /// <summary>
+        /// Milestone 8.39g. A solo ending names no hero, or names a hero this match does not have.
+        ///
+        /// <para>It is a fifth fault rather than a widening of <see cref="UndeclaredOutcomeTeams"/>,
+        /// and deliberately so: that one exists to catch a team ending that does not resolve to one
+        /// team each way, and loosening it to admit an ending with no teams at all would have removed
+        /// the guard for the three causes it was written for. The two faults are asked of different
+        /// endings and neither has been made weaker.</para>
+        /// </summary>
+        UndeclaredSoloWinner = 5
     }
 
     /// <summary>
@@ -80,11 +113,13 @@ namespace GuardsDigital.Core.Rules.Victory
     /// </summary>
     public readonly struct MatchOutcome : IEquatable<MatchOutcome>
     {
-        private MatchOutcome(MatchVictoryCause cause, TeamId winningTeamId, TeamId losingTeamId)
+        private MatchOutcome(
+            MatchVictoryCause cause, TeamId winningTeamId, TeamId losingTeamId, HeroId winningHeroId)
         {
             Cause = cause;
             WinningTeamId = winningTeamId;
             LosingTeamId = losingTeamId;
+            WinningHeroId = winningHeroId;
         }
 
         /// <summary>A match that is still being played.</summary>
@@ -106,21 +141,72 @@ namespace GuardsDigital.Core.Rules.Victory
                     "An ended match names two different teams as its winner and its loser.");
             }
 
-            return new MatchOutcome(cause, winningTeamId, losingTeamId);
+            return new MatchOutcome(cause, winningTeamId, losingTeamId, default);
+        }
+
+        /// <summary>
+        /// An ending with one hero as its winner and everybody else - team-mates included - as its
+        /// losers. Milestone 8.39g, and Cutter's A Fistful of Coins is the only sentence that reaches
+        /// it.
+        ///
+        /// <para><b>It names no teams at all, and that is the reading rather than an omission.</b>
+        /// "You alone win the game" leaves the winner's team-mates on the losing side of it, so there
+        /// is no winning TEAM to name and no single losing team either - every team has a loser in it.
+        /// A reader that wants a side must ask <see cref="HasSoloWinner"/> first;
+        /// <see cref="WinningTeamId"/> and <see cref="LosingTeamId"/> are the named absence here, in
+        /// the shape this codebase uses everywhere for a fact that does not apply.</para>
+        /// </summary>
+        public static MatchOutcome WonAlone(MatchVictoryCause cause, HeroId winningHeroId)
+        {
+            if (cause == MatchVictoryCause.None)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(cause), "An ended match names the sentence that ended it.");
+            }
+
+            if (!winningHeroId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A solo ending names the one hero who won it.", nameof(winningHeroId));
+            }
+
+            return new MatchOutcome(cause, default, default, winningHeroId);
         }
 
         public MatchVictoryCause Cause { get; }
 
+        /// <summary>
+        /// The team that won, or the named absence for a solo ending. See
+        /// <see cref="HasSoloWinner"/>.
+        /// </summary>
         public TeamId WinningTeamId { get; }
 
+        /// <summary>
+        /// The team that lost, or the named absence for a solo ending - where every team has a loser
+        /// in it. See <see cref="HasSoloWinner"/>.
+        /// </summary>
         public TeamId LosingTeamId { get; }
 
+        /// <summary>
+        /// The hero who won alone, or the named absence for one of the three team endings. Milestone
+        /// 8.39g.
+        /// </summary>
+        public HeroId WinningHeroId { get; }
+
         public bool HasEnded => Cause != MatchVictoryCause.None;
+
+        /// <summary>
+        /// Whether this ending awards the match to one hero rather than to a team. Every reader that
+        /// wants a side must ask this first, because the two team fields are the named absence when it
+        /// is true. Milestone 8.39g.
+        /// </summary>
+        public bool HasSoloWinner => WinningHeroId.IsDefined;
 
         public bool Equals(MatchOutcome other) =>
             Cause == other.Cause &&
             WinningTeamId.Equals(other.WinningTeamId) &&
-            LosingTeamId.Equals(other.LosingTeamId);
+            LosingTeamId.Equals(other.LosingTeamId) &&
+            WinningHeroId.Equals(other.WinningHeroId);
 
         public override bool Equals(object obj) => obj is MatchOutcome other && Equals(other);
 
@@ -130,13 +216,18 @@ namespace GuardsDigital.Core.Rules.Victory
             {
                 var hashCode = (int)Cause;
                 hashCode = (hashCode * 397) ^ WinningTeamId.GetHashCode();
-                return (hashCode * 397) ^ LosingTeamId.GetHashCode();
+                hashCode = (hashCode * 397) ^ LosingTeamId.GetHashCode();
+                return (hashCode * 397) ^ WinningHeroId.GetHashCode();
             }
         }
 
-        public override string ToString() => HasEnded
-            ? $"{WinningTeamId.Value} won ({Cause})"
-            : "unfinished";
+        public override string ToString()
+        {
+            if (!HasEnded) return "unfinished";
+            return HasSoloWinner
+                ? $"{WinningHeroId.Value} won alone ({Cause})"
+                : $"{WinningTeamId.Value} won ({Cause})";
+        }
     }
 
     /// <summary>An outcome and whatever stops it from being one.</summary>
@@ -196,13 +287,15 @@ namespace GuardsDigital.Core.Rules.Victory
             MatchParticipants participants,
             LanePushTransitionAuthority lanePush,
             TeamLifeState teamLives,
-            bool gameIsRecordedAsEnded) =>
+            bool gameIsRecordedAsEnded,
+            HeroId soloVictoryHeroId = default) =>
             Read(
                 participants,
                 lanePush?.GameEndingCause ?? LanePushGameEndingCause.None,
                 lanePush?.WinningSide ?? TeamSide.None,
                 teamLives,
-                gameIsRecordedAsEnded);
+                gameIsRecordedAsEnded,
+                soloVictoryHeroId);
 
         /// <summary>
         /// The same reading over the two facts themselves, so a caller holding a restored payload's
@@ -213,7 +306,8 @@ namespace GuardsDigital.Core.Rules.Victory
             LanePushGameEndingCause lanePushCause,
             TeamSide lanePushWinningSide,
             TeamLifeState teamLives,
-            bool gameIsRecordedAsEnded)
+            bool gameIsRecordedAsEnded,
+            HeroId soloVictoryHeroId = default)
         {
             if (participants == null) throw new ArgumentNullException(nameof(participants));
             if (teamLives == null) throw new ArgumentNullException(nameof(teamLives));
@@ -227,12 +321,22 @@ namespace GuardsDigital.Core.Rules.Victory
                 .ToArray();
             var lifeEnding = eliminated.Length > 0;
             var pushEnding = lanePushCause != LanePushGameEndingCause.None;
-            if ((pushEnding && lifeEnding) || eliminated.Length > 1)
+
+            // Milestone 8.39g. The fourth ending is read from the one fact that records it, and it is
+            // exactly as much of a second ending as the other two are of each other: two endings
+            // cannot both be THE ending, whether or not they happen to agree about who won. p.8's own
+            // tie-break paragraph settles two TEAM endings that land together; a solo claim landing
+            // with either is an engine defect rather than a rules outcome, and is refused here rather
+            // than resolved by preference - which is what ConflictingVictoryPaths has existed for
+            // since milestone 7.7.
+            var soloEnding = soloVictoryHeroId.IsDefined;
+            if ((pushEnding && lifeEnding) || eliminated.Length > 1 ||
+                (soloEnding && (pushEnding || lifeEnding)))
             {
                 return MatchOutcomeReading.Faulted(MatchOutcomeFault.ConflictingVictoryPaths);
             }
 
-            if (!pushEnding && !lifeEnding)
+            if (!pushEnding && !lifeEnding && !soloEnding)
             {
                 return gameIsRecordedAsEnded
                     ? MatchOutcomeReading.Faulted(MatchOutcomeFault.UnexplainedGameEnd)
@@ -244,10 +348,33 @@ namespace GuardsDigital.Core.Rules.Victory
                 return MatchOutcomeReading.Faulted(MatchOutcomeFault.UnrecordedGameEnd);
             }
 
+            if (soloEnding) return ReadSoloEnding(participants, soloVictoryHeroId);
+
             return pushEnding
                 ? ReadPushEnding(participants, lanePushCause, lanePushWinningSide)
                 : ReadLifeEnding(participants, eliminated[0]);
         }
+
+        /// <summary>
+        /// Milestone 8.39g. The ending Cutter's A Fistful of Coins reaches: one hero wins and everybody
+        /// else loses.
+        ///
+        /// <para><b>The only thing checked here is that the hero is one this match has</b>, because
+        /// that is the only thing that can be wrong about a fact the match itself wrote. A payload
+        /// claiming a winner nobody is playing is refused rather than resolved by preference, which is
+        /// the terms milestone 7.7 set for every other malformed ending - and the fault is its own,
+        /// so the three team causes keep exactly the guard they were written with.</para>
+        ///
+        /// <para>No team is named, and no team is checked: "you alone win the game" is an ending in
+        /// which the winner's own team-mates lose, so there is no winning side and no single losing
+        /// one.</para>
+        /// </summary>
+        private static MatchOutcomeReading ReadSoloEnding(
+            MatchParticipants participants, HeroId winningHeroId) =>
+            participants.Heroes.Any(hero => hero.Id.Equals(winningHeroId))
+                ? MatchOutcomeReading.Coherent(
+                    MatchOutcome.WonAlone(MatchVictoryCause.CoinHoardClaimed, winningHeroId))
+                : MatchOutcomeReading.Faulted(MatchOutcomeFault.UndeclaredSoloWinner);
 
         private static MatchOutcomeReading ReadPushEnding(
             MatchParticipants participants, LanePushGameEndingCause cause, TeamSide winningSide)

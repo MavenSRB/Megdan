@@ -603,7 +603,7 @@ namespace GuardsDigital.Presentation.Interaction
                     "REHEARSAL_OUTCOME version=" +
                     projection.Version.ToString(CultureInfo.InvariantCulture) +
                     " cause=" + projection.Outcome.Cause +
-                    " winner=" + projection.Outcome.WinningTeamId.Value);
+                    " winner=" + (projection.Outcome.HasSoloWinner ? projection.Outcome.WinningHeroId.Value + " (alone)" : projection.Outcome.WinningTeamId.Value));
                 return;
             }
 
@@ -762,7 +762,7 @@ namespace GuardsDigital.Presentation.Interaction
                     PrivateOnlineMarkers.Log(
                         "REHEARSAL_OUTCOME seat=" + options.Seat.Value + " version=" +
                         machine.LatestProjection.Version.ToString(CultureInfo.InvariantCulture) +
-                        " cause=" + outcome.Cause + " winner=" + outcome.WinningTeamId.Value);
+                        " cause=" + outcome.Cause + " winner=" + (outcome.HasSoloWinner ? outcome.WinningHeroId.Value + " (alone)" : outcome.WinningTeamId.Value));
                 }
                 if (machine.State == PrivateSessionClientState.Disconnected ||
                     (DateTime.UtcNow - outcomeSeenUtc.Value).TotalSeconds >=

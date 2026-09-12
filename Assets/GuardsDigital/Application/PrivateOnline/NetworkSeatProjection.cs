@@ -203,16 +203,24 @@ namespace GuardsDigital.Application
 
     public sealed class NetworkOutcomeRecord
     {
-        public NetworkOutcomeRecord(int cause, string winningTeamId, string losingTeamId)
+        public NetworkOutcomeRecord(
+            int cause, string winningTeamId, string losingTeamId, string winningHeroId = "")
         {
             Cause = cause;
             WinningTeamId = winningTeamId;
             LosingTeamId = losingTeamId;
+            WinningHeroId = winningHeroId ?? string.Empty;
         }
 
         public int Cause { get; }
         public string WinningTeamId { get; }
         public string LosingTeamId { get; }
+
+        /// <summary>
+        /// The hero who won alone, or the empty string for one of the rulebook's three team endings.
+        /// Milestone 8.39g, protocol 14.
+        /// </summary>
+        public string WinningHeroId { get; }
     }
 
     public sealed class NetworkDecisionOwnerRecord
@@ -527,8 +535,21 @@ namespace GuardsDigital.Application
                 if (projection.Outcome.HasEnded)
                 {
                     writer.Write((int)projection.Outcome.Cause);
-                    writer.Write(projection.Outcome.WinningTeamId.Value);
-                    writer.Write(projection.Outcome.LosingTeamId.Value);
+
+                    // Milestone 8.39g. A solo ending names no teams at all - "you alone win the game"
+                    // leaves the winner's own team-mates losing with everybody else - so the two team
+                    // fields are written as the named absence and the hero is written beside them.
+                    // Both halves are always on the wire, so a reader does not have to know which
+                    // shape it is before it can parse the row.
+                    writer.Write(projection.Outcome.HasSoloWinner
+                        ? string.Empty
+                        : projection.Outcome.WinningTeamId.Value);
+                    writer.Write(projection.Outcome.HasSoloWinner
+                        ? string.Empty
+                        : projection.Outcome.LosingTeamId.Value);
+                    writer.Write(projection.Outcome.HasSoloWinner
+                        ? projection.Outcome.WinningHeroId.Value
+                        : string.Empty);
                 }
 
                 writer.Write(projection.TeamLifeCounters.Count);
@@ -746,16 +767,27 @@ namespace GuardsDigital.Application
                         var cause = reader.ReadInt32();
                         var winner = reader.ReadString();
                         var loser = reader.ReadString();
-                        if (cause == 0 || string.IsNullOrWhiteSpace(winner) || string.IsNullOrWhiteSpace(loser))
+                        var soloWinner = reader.ReadString();
+
+                        // Milestone 8.39g. Exactly one of the two shapes, and a row carrying neither
+                        // or both is refused rather than resolved by preference: a solo ending names
+                        // one hero and no team, and a team ending names two teams and no hero.
+                        var solo = !string.IsNullOrWhiteSpace(soloWinner);
+                        var team = !string.IsNullOrWhiteSpace(winner) &&
+                            !string.IsNullOrWhiteSpace(loser);
+                        if (cause == 0 || solo == team ||
+                            (team && !string.IsNullOrWhiteSpace(soloWinner)))
                         {
                             return false;
                         }
 
-                        outcome = new NetworkOutcomeRecord(cause, winner, loser);
+                        outcome = solo
+                            ? new NetworkOutcomeRecord(cause, string.Empty, string.Empty, soloWinner)
+                            : new NetworkOutcomeRecord(cause, winner, loser);
                     }
                     else
                     {
-                        outcome = new NetworkOutcomeRecord(0, null, null);
+                        outcome = new NetworkOutcomeRecord(0, null, null, null);
                     }
 
                     if (!TryReadCount(reader, out var counterCount))
