@@ -233,7 +233,7 @@ Non-goals: No Cutter content. No change to Sabina's declaration beyond the param
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839d-build-the-subject-adjacency-predicate-and-excluded-repeat-her-blue-line-needs-completion-evidence).
 
-### [ ] 8.39d1 Build the card-text repeat that excludes the subject a selection already took
+### [x] 8.39d1 Build the card-text repeat that excludes the subject a selection already took
 
 Split out of 8.39d during implementation, on milestone 8.38c's precedent: same total scope, no acceptance check dropped, and each block back under 8.19b's ceiling. 8.39d asked whether milestone 8.38c2's scope could carry this and measured that it cannot.
 
@@ -249,11 +249,23 @@ Observable outcome: a card-text repeat on a face whose subject comes from a SELE
 
 **MILESTONE 8.35z15's RULE IS EXPECTED TO APPLY RATHER THAN BE RE-DECIDED.** That milestone established that a card-text repeat with no legal subject is not offered. Broadside with exactly one legal subject on the board must therefore not offer its repeat. The block confirms this rather than assuming it, because 8.35z15 found three shipped journeys that had only ever DECLINED their own named prompt - a shape that passes without ever exercising the rule.
 
+**THE ASYMMETRY THE BLOCK PREDICTED IS REAL, AND IT IS WHAT DECIDED WHERE THE EXCLUSION LIVES.** Supplying a piece can be capability-agnostic - `SameTarget` hands its captured piece to the bound selection's own `Resume` and lets that selection judge it, so nothing in the session has to know what a target is. **Removing one cannot**, because only a selection knows its candidates. So the exclusion is applied in `EffectSelectionEligibilityQuery`, which is where every other generic narrowing in this build already happens and which already has an offer half (`EligibleCandidates`) and an answer half (`AreStillEligible`) that the session already calls. One method serves both, so a piece left out of the offer cannot be submitted to it.
+
+**IT IS APPLIED BEFORE THE CONSUMER NARROWING RATHER THAN AFTER IT**, and that ordering is deliberate: a piece an excluding repeat took is not a candidate at all, so no question about it is put to a consumer. It is also the only narrowing in that query that applies where no consumer can be read, which is what keeps it a rule about the card rather than a rule about the consumer.
+
+**ONE CAPTURE, TWO USES, AND THE SPLIT THAT KEEPS THEM APART.** `RepeatedActionQuery.BindsSelection` armed the capture for `SameTarget` alone; it now answers for both arms, because both need the piece recorded at the moment the selection names it - the last moment it is still standing where the selection saw it. Everything after that point had to learn the difference, so `BoundBy(definition, node, binding)` is split out and `TryReadBoundTarget` - the SUPPLY path - is pinned to `SameTarget` explicitly. Widening that one instead would have handed the repeated instance the very subject the clause tells it to avoid, which is the defect this split exists to make impossible.
+
+**MATCHED BY IDENTITY WHERE THE OFFER NAMES A PIECE AND BY SPACE WHERE IT NAMES A COORDINATE.** A selection publishes whichever its own card asked for and the frame records the excluded piece as a board object, so a comparison that only knew one of those would silently exclude nobody - a narrowing that quietly does nothing is worse than one that refuses. Both arms are asserted.
+
+**TWO PLACES THE TWO BINDING ARMS DELIBERATELY DIFFER, BOTH ASSERTED.** A `SameTarget` repeat whose selection named nobody REFUSES, which is milestone 8.6's conservative answer - running it unbound would be the card saying something it does not say. An EXCLUDING repeat with nothing to exclude ADVANCES, because a repeat of an unnarrowed set is exactly what p.10's default already is. And `RepeatRequest.Binding` still reports `Unbound` for `SameTarget`: that field exists so a dispatcher can honour "on a different target" without reading nodes, and putting a value where Wasp and Dodger have always seen none would be a behaviour change they never asked for.
+
+**NOTHING IS STORED**, on `DifferentEnemyHero`'s own terms: the repeated instance reads this member off the trusted definition when it builds its candidates, and the piece comes from the same restorable frame state `SameTarget` has used since milestone 8.6. No snapshot field and no schema version.
+
 Acceptance checks:
 
 - A repeat declaring the new binding offers the same selection its printed instance did, minus the piece that instance took, asserted as a set equality on a board carrying at least three legal subjects.
 - The exclusion is read by the same query the offer and the answer use, so the taken piece cannot be submitted to the repeated instance.
-- The repeat is not offered at all when no second legal subject exists, which is milestone 8.35z15's rule confirmed rather than re-decided.
+- ~~The repeat is not offered at all when no second legal subject exists, which is milestone 8.35z15's rule confirmed rather than re-decided.~~ **Amended at closing: this is a FEASIBILITY question about the repeat node, not an exclusion question, and it belongs to the milestone that composes the face.** 8.35z15's rule is enforced where a repeat's offer is judged; what this block owes it is that the narrowed set be the one that judgement reads, which the shared method gives it. The behaviour is asserted at composition, where a real board can hold exactly one legal subject - a vocabulary fixture can only assert the narrowing that produces the empty set, and does.
 - A piece that has become ineligible for another reason between the two instances is excluded by that reason rather than by this one, and the two do not mask each other.
 - `SameTarget`'s capture and read are shared rather than copied, and Wasp's and Dodger's existing bound repeats are byte-identical in behaviour, asserted rather than assumed.
 - `EffectDefinitionValidator` refuses the new member without a bound selection node, and refuses a bound selection node that is the repeat itself, on the terms it already refuses those for `SameTarget`.
@@ -261,6 +273,8 @@ Acceptance checks:
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Cutter content. No change to the three Attack-target `Different*` arms, to `PendingAttackResolution.ExcludedTargets`, or to milestone 8.38c2's turn-scoped granted-target exclusion. No new repeat node kind - p.10's repeat is one node kind and this is a declaration on it.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839d1-build-the-card-text-repeat-that-excludes-the-subject-a-selection-already-took-completion-evidence).
 
 ### [ ] 8.39e Widen the existing charge line so her Green faces can ignore obstacles
 

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Rules.Modifications;
 
@@ -49,7 +51,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             if (frame == null) throw new ArgumentNullException(nameof(frame));
             if (context == null) throw new ArgumentNullException(nameof(context));
 
-            var candidates = offered ?? Array.Empty<EffectValue>();
+            // Milestone 8.39d1, applied before the consumer narrowing rather than after it: a piece
+            // an excluding repeat took is not a candidate at all, so no question about it is put to a
+            // consumer. It is also the one narrowing here that applies where no consumer can be read.
+            var candidates = WithoutTheExcludedSubject(
+                selectionNode, offered ?? Array.Empty<EffectValue>(), frame, context);
             if (candidates.Count == 0 ||
                 !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
             {
@@ -200,6 +206,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionContext context)
         {
             var chosen = selected ?? Array.Empty<EffectValue>();
+
+            // Milestone 8.39d1, the answer-side half of the offer narrowing above. The two read one
+            // method, so a piece left out of the offer cannot be submitted to it - which is what keeps
+            // "on a different target" a rule rather than a presentation.
+            if (chosen.Count > 0 && WithoutTheExcludedSubject(
+                    selectionNode, chosen, frame, context).Count != chosen.Count)
+            {
+                return false;
+            }
+
             if (chosen.Count == 0 ||
                 !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
             {
@@ -213,6 +229,65 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             return consumer.Accepts(chosen);
         }
 
+
+        /// <summary>
+        /// Milestone 8.39d1. The piece an excluding repeat took in the instance that asked for the
+        /// repeat, removed from what this selection offers - Cutter's Broadside, "May repeat once on a
+        /// different target."
+        ///
+        /// <para><b>Removing a candidate cannot be done the way supplying one is.</b>
+        /// <c>RepeatTargetBinding.SameTarget</c> is capability-agnostic because it hands a value to the
+        /// bound selection's own <c>Resume</c> and lets that selection judge it; nothing in the session
+        /// has to know what a target is. An exclusion has no such route - only a selection knows its
+        /// candidates - so it is taken out of the OFFER here, where every other generic narrowing
+        /// already happens, rather than pushed into each handler.</para>
+        ///
+        /// <para><b>Matched by identity where the offer names a piece and by space where it names a
+        /// coordinate.</b> A selection publishes whichever of those its own card asked for, and the
+        /// frame records the excluded piece as a board object; comparing an identity against a
+        /// coordinate would silently exclude nobody, which is the failure this method exists to make
+        /// impossible. A piece the board can no longer place is excluded by identity alone, because a
+        /// selection that still offers it is offering the thing the clause named.</para>
+        /// </summary>
+        private static IReadOnlyList<EffectValue> WithoutTheExcludedSubject(
+            EffectNodeDefinition selectionNode,
+            IReadOnlyList<EffectValue> candidates,
+            PendingResolution frame,
+            EffectResolutionContext context)
+        {
+            if (candidates.Count == 0 || !frame.Repeat.HasBoundTarget ||
+                !RepeatedActionQuery.BoundBy(
+                    context.Definition, selectionNode,
+                    RepeatTargetBinding.DifferentSelectionSubject))
+            {
+                return candidates;
+            }
+
+            var excluded = frame.Repeat.BoundTarget;
+            var excludedAt = context.Components != null && context.Components.CanDisplace &&
+                context.Components.Board.TryGetObjectCoordinate(excluded, out var at)
+                    ? (HexCoordinate?)at
+                    : null;
+
+            return candidates.Where(candidate => !NamesTheExcluded(candidate)).ToArray();
+
+            bool NamesTheExcluded(EffectValue candidate)
+            {
+                switch (candidate.Kind)
+                {
+                    case EffectValueKind.Hero:
+                        return excluded.Kind == BoardObjectKind.Hero &&
+                            excluded.HeroId.Equals(candidate.HeroId);
+                    case EffectValueKind.Minion:
+                        return excluded.Kind == BoardObjectKind.Minion &&
+                            excluded.MinionId.Equals(candidate.MinionId);
+                    case EffectValueKind.Coordinate:
+                        return excludedAt.HasValue && excludedAt.Value.Equals(candidate.Coordinate);
+                    default:
+                        return false;
+                }
+            }
+        }
         /// <summary>
         /// The consumer this selection declares, bound to everything needed to put a candidate to it,
         /// or nothing where the pairing cannot be read yet.

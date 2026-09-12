@@ -133,7 +133,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 }
 
                 var completedRepeats = frame.Repeat.CompletedRepeats + 1;
-                if (node.RepeatTargetBinding != RepeatTargetBinding.SameTarget)
+
+                // Milestone 8.39d1. Two arms carry a piece into the next instance, for opposite
+                // reasons: `on the same target` so it can be supplied, and this one so it can be
+                // taken out of the offer. Everything else advances unbound.
+                if (node.RepeatTargetBinding != RepeatTargetBinding.SameTarget &&
+                    node.RepeatTargetBinding != RepeatTargetBinding.DifferentSelectionSubject)
                 {
                     return RepeatRequest.For(
                         RepeatContinuation.Next(completedRepeats), node.RepeatTargetBinding);
@@ -141,10 +146,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                 // The piece was recorded onto the frame when the selection named it, because that is
                 // the last moment it is still standing where the selection saw it.
-                return frame.Repeat.HasBoundTarget
+                if (!frame.Repeat.HasBoundTarget)
+                {
+                    // `on the same target` with no piece is a repeat that would run unbound, which is
+                    // the card saying something it does not say. An EXCLUDING repeat with no piece has
+                    // nothing to exclude, and a repeat of an unnarrowed set is exactly what p.10's
+                    // default already is - so it advances rather than refusing.
+                    return node.RepeatTargetBinding == RepeatTargetBinding.DifferentSelectionSubject
+                        ? RepeatRequest.For(
+                            RepeatContinuation.Next(completedRepeats), node.RepeatTargetBinding)
+                        : RepeatRequest.None;
+                }
+
+                // `on the same target` carried no binding before milestone 8.39d1 and carries none
+                // now: `RepeatRequest.Binding` exists so a dispatcher can honour "on a different
+                // target" without reading nodes, and putting a value where Wasp and Dodger have
+                // always seen `Unbound` would be a behaviour change they never asked for.
+                return node.RepeatTargetBinding == RepeatTargetBinding.SameTarget
                     ? RepeatRequest.For(RepeatContinuation.NextBoundTo(
                         completedRepeats, frame.Repeat.BoundTarget))
-                    : RepeatRequest.None;
+                    : RepeatRequest.For(
+                        RepeatContinuation.NextBoundTo(completedRepeats, frame.Repeat.BoundTarget),
+                        node.RepeatTargetBinding);
             }
 
             return RepeatRequest.None;
@@ -161,8 +184,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         {
             if (definition == null) throw new ArgumentNullException(nameof(definition));
             if (node == null) throw new ArgumentNullException(nameof(node));
+            return BoundBy(definition, node, RepeatTargetBinding.SameTarget) ||
+                BoundBy(definition, node, RepeatTargetBinding.DifferentSelectionSubject);
+        }
+
+        /// <summary>
+        /// Whether this node is the selection a repeat of the named binding declares against it.
+        ///
+        /// <para>Milestone 8.39d1 split this out of <see cref="BindsSelection"/> because two arms now
+        /// bind a selection and they do OPPOSITE things with the piece: one supplies it back, one takes
+        /// it out. A single "is bound" answer is right for arming the capture - both need the piece
+        /// recorded - and wrong for every reader after that.</para>
+        /// </summary>
+        public static bool BoundBy(
+            EffectDefinition definition, EffectNodeDefinition node, RepeatTargetBinding binding)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            if (node == null) throw new ArgumentNullException(nameof(node));
             return definition.Nodes.Any(candidate =>
-                candidate.RepeatTargetBinding == RepeatTargetBinding.SameTarget &&
+                candidate.RepeatTargetBinding == binding &&
                 candidate.BoundSelectionNodeId.Equals(node.Id));
         }
 
@@ -223,8 +263,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             if (frame == null) throw new ArgumentNullException(nameof(frame));
 
             boundTarget = default;
+
+            // Milestone 8.39d1. The SUPPLY path is `on the same target` alone: an excluding repeat
+            // records the identical piece by the identical route and hands it to nobody, so widening
+            // this would make the repeated instance take the subject it is meant to avoid.
             if (!frame.Repeat.HasBoundTarget || components == null || !components.CanDisplace ||
-                !BindsSelection(definition, node))
+                !BoundBy(definition, node, RepeatTargetBinding.SameTarget))
             {
                 return false;
             }

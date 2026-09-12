@@ -94,7 +94,45 @@ namespace GuardsDigital.Core.Effects
         /// stored: this member moves no snapshot field and no schema version, exactly as
         /// <see cref="DifferentEnemyHero"/> does not.</para>
         /// </summary>
-        DifferentEnemyMinion = 4
+        DifferentEnemyMinion = 4,
+
+        /// <summary>
+        /// Milestone 8.39d1. `on a different target`, where the target is the subject a card-text
+        /// SELECTION node chose rather than the action's own - Cutter's Broadside, "An enemy hero
+        /// adjacent to another enemy unit and not adjacent to you discards a card, if able. <b>May
+        /// repeat once on a different target.</b>"
+        ///
+        /// <para><b>It is not <see cref="DifferentTarget"/> with a node id, and the difference is which
+        /// state carries the exclusion.</b> That member's own remarks say it "prints it about the
+        /// Attack it repeats rather than about a selection node - which is why the exclusion is carried
+        /// by the repeated Attack instance rather than bound to a node id", and the store is
+        /// <c>PendingAttackResolution.ExcludedTargets</c>. Broadside is a Skill. It has no attack
+        /// target, so there is nothing there to exclude and nowhere to keep the exclusion; what it has
+        /// is a selection node whose subject the repeated instance must not take again.</para>
+        ///
+        /// <para><b>It is <see cref="SameTarget"/>'s capture with the opposite use, which is why the
+        /// two share one binding and one capture.</b> That member records the piece the bound selection
+        /// named, onto the frame, at the moment the selection applied - the last moment it is still
+        /// standing where the selection saw it - and hands it to the repeated instance's own
+        /// <c>Resume</c>. This one records the identical piece by the identical route and hands it to
+        /// nobody: the repeated instance asks its ordinary question, of a set with that piece taken
+        /// out.</para>
+        ///
+        /// <para><b>The exclusion is applied where every other generic narrowing is.</b>
+        /// <see cref="GuardsDigital.Core.Rules.EffectResolution.EffectSelectionEligibilityQuery"/>
+        /// already narrows an offer without knowing what a target is, and already has an answer-side
+        /// twin, so the offer and the answer cannot come to disagree about who is excluded. Supplying a
+        /// value can be capability-agnostic by handing it over; REMOVING one cannot, because only a
+        /// selection knows its candidates - so it is removed from the offer rather than from inside the
+        /// handler.</para>
+        ///
+        /// <para><b>The narrowing is derived, never stored</b>, exactly as
+        /// <see cref="DifferentEnemyHero"/>'s remarks record: the repeated instance reads this member
+        /// off the trusted definition when it builds its candidates, and the piece it reads comes from
+        /// the same restorable frame state <see cref="SameTarget"/> has used since milestone 8.6. So
+        /// this member moves no snapshot field and no schema version either.</para>
+        /// </summary>
+        DifferentSelectionSubject = 5
     }
 
     /// <summary>

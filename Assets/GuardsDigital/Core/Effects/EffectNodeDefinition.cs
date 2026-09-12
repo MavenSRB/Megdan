@@ -335,6 +335,14 @@ namespace GuardsDigital.Core.Effects
                         !BoundSelectionNodeId.IsDefined)
                         throw new ArgumentException(
                             "A same-target repeat names the selection node whose target it binds.");
+                    // Milestone 8.39d1. The one Different arm that is about a SELECTION rather than
+                    // about the action's own target names its node for the same reason the same-target
+                    // arm does: the piece it excludes is that node's published subject.
+                    if (RepeatTargetBinding == RepeatTargetBinding.DifferentSelectionSubject &&
+                        !BoundSelectionNodeId.IsDefined)
+                        throw new ArgumentException(
+                            "A different-selection-subject repeat names the selection node whose " +
+                            "subject it excludes.");
                     if (RepeatTargetBinding == RepeatTargetBinding.Unbound &&
                         BoundSelectionNodeId.IsDefined)
                         throw new ArgumentException(
