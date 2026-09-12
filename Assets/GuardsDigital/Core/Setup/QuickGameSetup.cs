@@ -521,6 +521,21 @@ namespace GuardsDigital.Core.Setup
             CreateOneVsOne(new HeroContentId("brogan"), "Brogan");
 
         /// <summary>
+        /// Milestone 8.38f. The same board with Swift the Sharpshooter on the Blue seat, for the
+        /// fixtures whose subject is her printed set.
+        ///
+        /// <para><b>Milestone 8.38e added her five <c>SceneCardContent</c> members and her three
+        /// <c>MatchConfiguration</c> stagings but not this arm, so every staged Swift scene fell
+        /// through <c>SelectSetupConfiguration</c>.s default to Arien.s setup.</b> The configuration
+        /// deals her hand to whichever hero the setup puts on Blue - <c>CreateVerifiedSwiftHand</c>
+        /// takes the owner id rather than naming one - so the scene composed her cards onto a seat
+        /// whose content id was <c>arien</c>, and any fixture selecting her seat by content identity
+        /// found none. No Edit Mode tier can see it: the fall-through is in scene composition.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusSwiftOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("swift"), "Swift");
+
+        /// <summary>
         /// Milestone 8.22. The same board with Sabina on the Blue seat, for the fixtures whose subject
         /// is her printed set.
         ///

@@ -285,7 +285,7 @@ Non-goals: No fourteenth hero. No new playtest package. No change to the twelve 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838e-deal-register-and-artwork-swift-as-the-thirteenth-hero-and-put-her-pick-card-under-the-cursor-completion-evidence).
 
-### [ ] 8.38f Player-path gate Swift's whole printed set through real player input
+### [x] 8.38f Player-path gate Swift's whole printed set through real player input
 
 **MILESTONE 8.38f OPENED EARLY AND ITS SPECIFICATION IS BANKED, WHICH IS WHY THIS BLOCK IS NOT STARTING FROM NOTHING.** Her whole gate table was derived offline at `tmp/8-38f-shape-probe/` - the technique milestone 8.24 added and every hero since copies - and `SwiftPlayerPathGateTests.cs` was written FROM that derivation, 615 lines, with **all nine offline guards passing**, including the one that is the gate's actual claim: rows declare exactly the shapes her printed content introduces. **The finding is that she introduces NO new interaction shape at all**, the first hero in a while for whom that is true: her novelty is in which spaces an offer contains and what may be reached through a grant, and neither changes how a player names one. Three new capability ids, zero new shapes. Her item row was MEASURED rather than claimed - twelve icons covering all six of p.16's kinds - because milestone 8.37's own item row is the recorded case of a gate asserting an absence that was false.
 
@@ -308,8 +308,12 @@ Observable outcome: `SwiftPlayerPathGateTests` derives her interaction shapes fr
 Acceptance checks:
 
 - Every interaction shape her declarations produce is bound by name to an active journey; none is `[Explicit]`, none self-skips, and Backup is declared unreachable with the standing p.20 reason.
-- The journeys drive real controls through the UI player driver, including the borrowed primary, the counted bounty across a turn boundary, the off-line placement, the multi-unit push, and the Ultimate's per-turn target exclusion.
+- The journeys drive real controls through the UI player driver, including the borrowed primary, the counted bounty across a turn boundary, the off-line placement, the multi-unit push, and the Ultimate's per-turn target exclusion. **Amended during implementation, and the amendment is about WHERE two of those are proven rather than whether.** The gate table binds the multi-unit push and the per-turn target exclusion to the FOCUSED tier by name - Drop Trooper's row proves its interaction shapes through the Steam Jump journey and hands the two-unit fact to `SwiftPrintedSetTests.OnlyDropTrooper_DeclaresATwoUnitPush`, and Bullet Time's row hands the exclusion to `GrantedTargetExclusionTests.TheGrantedInstance_IsNarrowedByWhatTheGrantHasAlreadyReached`. That is the gate's own design: it binds interaction SHAPES, and a printed number that changes no shape is proven where it is cheap to prove. Both named companions resolve, which the gate's own guard asserts.
 - Undo and snapshot restore are exercised inside at least one journey of each shape.
 - Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision, and the Play Mode total is re-baselined with its cause stated.
 
+**ONE OPEN QUESTION THE JOURNEYS RAISED, AGAINST 8.38c1 RATHER THAN AGAINST THIS BLOCK.** Delayed Jump's standing End-of-turn promise registers as an Active effect source on its own card, and its journey asserts exactly that. Mark for Death's next-turn bounty does NOT: `ActiveEffectSourceCardInstanceIds` is empty while the card sits in the turn area with its promise standing, so a player reading her board cannot see that the next Defeat in radius will pay. 8.38c1 records why the DISPATCH differs - the bounty is spent at p.13's own reward site rather than through the checkpoint system - but the READING is a separate question from the dispatch, and the gate binds `ActiveEffectReading` to that journey. The journey asserts the measured state so the asymmetry is recorded rather than papered over, and will fail loudly if it is ever fixed; what it proves positively is that the promise survives and pays across the turn boundary.
+
 Non-goals: No new content and no new capability. A journey that needs one is a defect report against 8.38c or 8.38d, not a widening here.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-838f-player-path-gate-swifts-whole-printed-set-through-real-player-input-completion-evidence).

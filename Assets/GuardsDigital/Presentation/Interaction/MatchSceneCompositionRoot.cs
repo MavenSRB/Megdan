@@ -1244,7 +1244,8 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedSilverarrow(content) ||
                 IsStagedUrsafar(content) ||
                 IsStagedWhisper(content) ||
-                IsStagedTali(content))
+                IsStagedTali(content) ||
+                IsStagedSwift(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1698,6 +1699,11 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusTaliOneVsOne();
                     }
 
+                    if (IsStagedSwift(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusSwiftOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -1824,6 +1830,18 @@ namespace GuardsDigital.Presentation.Interaction
         /// <see cref="SceneCardContent.VerifiedStagedTaliWithAlly"/>, which - like
         /// <see cref="IsBroganWithAlly"/>'s own arms - is deliberately not restaged.
         /// </summary>
+        /// <summary>
+        /// Whether this content is one of milestone 8.38e.s five staged Swift scenes. Milestone 8.38f
+        /// added this arm: without it all five fell through to Arien.s setup, which put Arien.s
+        /// content identity on the Blue seat and dealt Swift.s cards to it.
+        /// </summary>
+        private static bool IsStagedSwift(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedSwift ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedSwift ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSwift ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedSwift ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift;
+
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||
             content == SceneCardContent.VerifiedTierTwoEngagedStagedTali ||

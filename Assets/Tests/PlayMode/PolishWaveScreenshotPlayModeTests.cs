@@ -152,7 +152,15 @@ namespace GuardsDigital.Tests.PlayMode
                 // Milestone 8.37. The twelfth and last: this walk is driven by the artwork catalog's
                 // own entries, so a hero whose rows are in that catalog and whose definitions are
                 // not in this dictionary throws on the lookup rather than being quietly skipped.
-                .Concat(TaliCardContent.DealtDefinitions).ToDictionary(card => card.Reference);
+                .Concat(TaliCardContent.DealtDefinitions)
+                // Milestone 8.38f. The THIRTEENTH, added because this tripwire caught her absence
+                // exactly as the note above predicted: 8.38e put her rows in the artwork catalog and
+                // left her definitions out of this dictionary, and the lookup threw
+                // `KeyNotFoundException` on `swift-reload`. Only a Play Mode run can see it, which is
+                // the debt 8.38e moved here. A FOURTEENTH hero will trip it again - the list is hand
+                // written where 8.38d.s corpus sweep is now derived, and that is the fix this note
+                // leaves for whoever adds her.
+                .Concat(SwiftCardContent.DealtDefinitions).ToDictionary(card => card.Reference);
             var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
             foreach (var hero in ConfiguredCardArtworkCatalog.Catalog.Entries.GroupBy(entry => entry.ContentSetId))
             {
