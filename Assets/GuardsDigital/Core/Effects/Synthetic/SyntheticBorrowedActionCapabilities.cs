@@ -327,6 +327,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 case BorrowedActionPool.OwnedRightmostResolvedCard:
                     declaration = BorrowedPrimaryActionDeclaration.FromRightmostResolvedCard();
                     break;
+                case BorrowedActionPool.PreviousTurnSlotCard:
+                    declaration = BorrowedPrimaryActionDeclaration.FromPreviousTurnSlotCard();
+                    break;
                 default:
                     return Array.Empty<CardInstance>();
             }
@@ -341,7 +344,83 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 BorrowedPrimaryActionDeclaration.ResolvedCardsCountAsActive(
                     context.ActorId,
                     context.ActorContinuousSources),
-                ResolvedOrderFor(context));
+                PositionsFor(context, pool));
+        }
+
+        /// <summary>
+        /// The card positions the declared pool reads, which are two different questions about
+        /// rulebook p.6's turn area and not one. Milestone 8.39f.
+        ///
+        /// <para>Swift's Reload! asks for an ORDER - every card the hero has resolved this round, so
+        /// that "rightmost" can name its last entry. Cutter's Legend of the Skies asks for one SLOT.
+        /// Handing the ordered form to the slot reading would let it walk back past a slot the hero
+        /// passed in, which is a sentence her card does not print.</para>
+        /// </summary>
+        private static IReadOnlyList<CardInstanceId> PositionsFor(
+            EffectCapabilityContext context, BorrowedActionPool pool)
+        {
+            switch (pool)
+            {
+                case BorrowedActionPool.OwnedRightmostResolvedCard:
+                    return ResolvedOrderFor(context);
+                case BorrowedActionPool.PreviousTurnSlotCard:
+                    return PreviousTurnSlotFor(context);
+                default:
+                    // The two state-shaped pools read no position at all, and an empty list is what
+                    // BorrowedPrimaryActionQuery ignores for them rather than narrows by.
+                    return Array.Empty<CardInstanceId>();
+            }
+        }
+
+        /// <summary>
+        /// The borrower's own card standing in the turn slot before this one, as a list of at most one.
+        /// Milestone 8.39f.
+        ///
+        /// <para><b>The slot is the borrower's, because a turn slot is printed on a hero's own
+        /// dashboard</b> - p.6 step 6, "place your card Faceup on the current Turn slot of your hero
+        /// dashboard". <c>RoundTurnSlot</c> carries one assignment for every configured hero because it
+        /// records a whole turn of the round at once; reading only the borrower's assignment out of it
+        /// is what recovers the six separate dashboards the table actually has. See
+        /// <see cref="BorrowedActionPool.PreviousTurnSlotCard"/> for the full reading and the shard row
+        /// it closes.</para>
+        ///
+        /// <para><b>A slot index below the first is no slot</b>, which is the first turn of a round:
+        /// p.6 empties the turn area at the round boundary, so there is nothing standing behind turn 1.
+        /// <b>An assignment carrying no card is no card</b>, which is a turn the hero passed in with an
+        /// empty hand. Both leave the pool empty rather than unfiltered.</para>
+        ///
+        /// <para>The source instance is dropped for the reason <see cref="ResolvedOrderFor"/> drops it:
+        /// a borrow of a card's primary off itself is what <c>BorrowRefusal.ActionMovesItsOwnCard</c>
+        /// exists to refuse one step later, and reaching it by accident rather than by a printed
+        /// reading is not the same thing. It cannot arise from the printed face - the card being
+        /// resolved stands in the CURRENT slot - so this is a guard rather than a filter.</para>
+        /// </summary>
+        private static IReadOnlyList<CardInstanceId> PreviousTurnSlotFor(
+            EffectCapabilityContext context)
+        {
+            if (context.RosterState == null || !context.RosterState.IsAvailable)
+            {
+                return Array.Empty<CardInstanceId>();
+            }
+
+            var previousTurnIndex = context.TurnIndex - 1;
+            if (previousTurnIndex < 1)
+            {
+                return Array.Empty<CardInstanceId>();
+            }
+
+            return context.RosterState.TurnSlots
+                .Where(slot => slot != null &&
+                    slot.RoundIndex == context.RoundIndex &&
+                    slot.TurnIndex == previousTurnIndex)
+                .SelectMany(slot => slot.Assignments)
+                .Where(assignment =>
+                    assignment != null &&
+                    assignment.HeroId.Equals(context.ActorId) &&
+                    assignment.CardInstanceId.HasValue &&
+                    !assignment.CardInstanceId.Value.Equals(context.SourceCardInstanceId))
+                .Select(assignment => assignment.CardInstanceId.Value)
+                .ToArray();
         }
 
         /// <summary>

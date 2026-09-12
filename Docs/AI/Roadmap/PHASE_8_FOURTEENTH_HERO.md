@@ -35,138 +35,13 @@ So this series expects a schema move in exactly one block, and **8.39g is sequen
 
 Complete. Its definition moved verbatim to [the seventh completed shard](PHASE_8_COMPLETED_7.md#x-839-inventory-cutter-the-sky-pirates-printed-set-and-map-every-clause-to-registered-capability) during milestone 8.39e's required warning-threshold review. The inventory it produced is [her rules shard](../Rules/HERO_CUTTER.md), which is the authority every block below is sized against.
 
-### [x] 8.39a Build the directional attack vocabulary her Red line needs
+### 8.39a Build the directional attack vocabulary her Red line needs
 
-The first of the build blocks, on 8.19b's terms: reusable vocabulary proved before any content reaches it, and no schema field moved.
+### 8.39b Build the obstacle-target and grapple-move vocabulary her Silver basic needs
 
-Observable outcome: a printed Attack can narrow its target set to the continuation of a line its own earlier step travelled, and a printed Attack can move its actor back along the reverse of its own attack line afterwards.
+### 8.39c Build the zone-crossing push consequence her Gold line needs
 
-**THE TWO CLAUSES ARE ABOUT A LINE THE ACTION ITSELF ESTABLISHED, WHICH IS WHY THEY BELONG IN ONE BLOCK.** Daring Strike, Bold Thrust and Fearless Lunge print "Before the attack: Move 1 space in a straight line. Target a hero adjacent to you **in the direction of the move**"; Evasive Shot and Tumble Shot print "After the attack: Move up to 2 spaces **in the opposite direction**." Neither is a property of the board or of the target - each reads a heading an earlier step of the same action fixed.
-
-**HALF OF THE LUNGE IS ALREADY BUILT, AND 8.39e's RE-SCOPE IS WHY THIS BLOCK SAYS SO UP FRONT.** `choose-charge-line@1` already carries `minimumDistance` and `maximumDistance` as separate integers, so "Move 1 space" is `min 1, max 1`, "Move 1 or 2 spaces" is `min 1, max 2` and "Move 1, 2 or 3 spaces" is `min 1, max 3` - the enumerated distances need nothing. It already returns both a `destination` and the unit the line was chosen against, which is the shape the lunge's target needs. **Read that schema before minting anything**, because the first draft of this block and of 8.39e both assumed a move-destination narrowing did not exist, and it does.
-
-**WHAT IS ACTUALLY NEW IS THE NARROWING FROM "ADJACENT" TO "ALONG THE SAME LINE".** Brogan's Mad Dash lets the destination be adjacent to an enemy unit in any of p.19's six directions and targets that unit. Cutter's faces are a strict subset: after moving along heading D, the target must be adjacent **and** on the continuation of D, which is exactly one space. So the candidate set is one where Brogan's is up to six, and that narrowing is the block's real work - probably another optional parameter on the declaration that already returns the pair, on 8.39e's discipline of defaulting to the behaviour every existing declaration has today.
-
-**THE OPPOSITE-DIRECTION MOVE IS THE GENUINELY UNBUILT HALF, AND ITS NEAR MISS IS REAL.** `attacked-target-space@1` already captures the target's space before p.14's consequences run - Brogan's step-7 walk uses it to move the attacker INTO that space - so the actor's space and the attacked space together already name the line. What does not exist is travelling the reverse of it. Probe whether that composes out of the existing pair plus a direct move before minting a declaration.
-
-**`actor-moved-this-action@1` IS NOT THE ANSWER AND THE BLOCK SHOULD NOT REACH FOR IT.** It is Tigerclaw's Combat Reflexes predicate - a boolean saying the attacker stands somewhere other than where the Attack started. It carries no heading, so it cannot narrow anything by direction.
-
-**THE DEGENERATE CASES ARE THE POINT OF THE FOCUSED TIER HERE.** A one-space move fixes a heading unambiguously; a move p.19 stops early may not have travelled its printed distance; and the second branch of each lunge ("Target a unit adjacent to you") performs no move at all and so has no heading to read. The block settles each and records the reading rather than leaving it to the composing milestone.
-
-**AND THE PROBE THIS BLOCK ORDERED CHANGED WHERE BOTH CLAUSES LAND, WHICH IS WHY IT ORDERED ONE.** The prediction above was "another optional parameter on the declaration that already returns the pair". `choose-charge-line@1` does **not** return the pair: its internal option record holds the units beside each destination, but its only declared output binding is `destination`, and Brogan composes "then target that unit" as a SEPARATE radius-1 `choose-target@2` node asked after the Move. So the narrowing belongs on the selection that offers the target, not on the line that offers the destination.
-
-**AND THE LUNGE'S MOVE IS NOT A CHARGE LINE AT ALL, WHICH THIS CATALOG HAD ALREADY SETTLED IN WRITING.** Brogan prints "Move 2 spaces in a straight line **to a space adjacent to an enemy unit**"; Cutter prints "Move 1 space in a straight line" and no destination clause whatever. `choose-line-destination@1`'s own remarks decide which declaration a sentence with no clause takes - "It is not `ChooseChargeLineV1` with a flag ... these sentences print no clause at all, so every space the line reaches is offered. A parameter that switched the clause off would put a card's words into a capability's options." So her three lunges take `choose-line-destination@1`, **`choose-charge-line@1` is untouched by this block**, and the byte-identity this block owes Brogan is owed on `choose-target@2` instead - which he binds on all three charges, and which is asserted here over his definitions rather than over a remembered list.
-
-**THE OPPOSITE-DIRECTION MOVE COMPOSED OUT OF THE EXISTING DECLARATION, EXACTLY AS THE BLOCK TOLD IT TO PROBE FOR.** `choose-line-destination@1` already walks all six of p.19's files out to a maximum and already stops where p.19 stops; "in the opposite direction" names one of those six rather than adding a geometry. No declaration was minted.
-
-**SO BOTH HALVES ARE ONE OPTIONAL PARAMETER OF THE SAME NAME, `continuedLineFrom`, READING ONE NEW QUERY.** `ContinuedLineQuery` answers the single question both sentences ask - a line ran from a named space, through the actor, and carries on - and the two clauses differ only in what stands at the far end and what the continuation is used for. The lunge binds the space she left and reads the continuation for a target; the retreat binds the space she attacked and reads it for a destination. One name, because two names would have been two geometries that could drift apart. The parameter is optional on both declarations and unbound by default, so `choose-target@2`'s twenty-one existing bindings and `choose-line-destination@1`'s keep their exact candidate sets.
-
-**THE DEGENERATE CASES ARE SETTLED AS THE BLOCK REQUIRED, AND ALL THREE FALL OUT OF THE QUERY RATHER THAN BEING WRITTEN BESIDE IT.** A line of no length names no heading, so a branch that performed no move narrows to the EMPTY set rather than falling back to the unnarrowed one - which is the whole difference between "in the direction of the move" and "adjacent", and a fallback would silently turn the first into the second. A move p.19 stopped early still fixes the heading it travelled, because the query reads the two ends the move actually has rather than the distance it was aimed at; one-, two- and three-space travels along one file answer alike. And the retreat's narrowing is applied to the WALKED ROUTE rather than to the six headings, so a unit or an obstacle two spaces along still ends it after one.
-
-**ONE CORRECTION TO THIS SHARD, FOUND WHILE ASSERTING BROGAN'S THREE FACES.** Milestone 8.39e below names his charges as "Mad Dash, Bullrush and Throwing Axe". Throwing Axe is one of his two modal Ranged Attacks; the third charge is **Furious Charge**, and `BroganEffectContent.AttackTextFor` composes all three through one `CreateCharge`. The acceptance check there is corrected to name it.
-
-Acceptance checks:
-
-- An Attack declaring the direction narrowing offers exactly the hero on the continuation of the heading just travelled, asserted as a set equality on a board where the unnarrowed adjacent set holds several heroes.
-- The narrowing is read by the same query the offer, the target choice and the resolution all use.
-- A move stopped early still fixes the heading it travelled, and the branch that performs no move offers no directional target rather than offering all of them.
-- Brogan's three charge faces are byte-identical in candidate set, asserted rather than assumed, if this block touches the declaration they share.
-- The opposite-direction move travels only along the reverse of the attack's own line, stops at the first thing p.19 stops it at, and is declinable where the card prints "up to".
-- No schema field, corpus digest or pinned constant moves.
-- Complete unfiltered dotnet harness passes.
-
-Non-goals: No Cutter content. No change to any existing face's target policy. No new Attack primary. No new move capability where an existing one takes a parameter.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839a-build-the-directional-attack-vocabulary-her-red-line-needs-completion-evidence).
-
-### [x] 8.39b Build the obstacle-target and grapple-move vocabulary her Silver basic needs
-
-Observable outcome: a printed face can target an obstacle rather than one of p.19's units, require the line to it to be clear, ignore the immunity that would otherwise protect it, and travel that line until it stands adjacent.
-
-**GRAPPLING BOLT IS THE ONLY FACE IN THE DEALT ROSTER THAT TARGETS SOMETHING THAT IS NOT A UNIT**, and that is the one genuinely new thing in this block. Every existing target declaration selects among p.19's units. `ObstacleQuery` knows what an obstacle is, but as a rule about whether a space may be ENTERED rather than as a thing that can be chosen.
-
-**THE OTHER THREE CLAUSES HAVE MORE MACHINERY BEHIND THEM THAN THE FIRST DRAFT OF THIS BLOCK CREDITED, AND THE BLOCK MUST PROBE BEFORE IT MINTS.** The re-scope of 8.39a and 8.39e came from reading schemas rather than names, and the same reading changes this block's shape too:
-
-- **"Ignore immunity" is an existing declaration mechanism, not a new one.** `EffectNodeDefinition.ImmunityOverrides` lets a node declare the activities it overrides immunity for; `IEffectImmunityOverrideCapabilityHandler.SupportedImmunityOverrideActivities` is how a handler declares which it accepts; and `EffectDefinitionValidator` already rejects the mismatch as `UnsupportedImmunityOverride`. Swap and direct move both support it today behind a `supportsImmunityOverrides` flag. `RuleActivity.All` is documented as "p.18's unqualified 'if a unit is immune'", which is the arm this clause most likely names. **So the cost here is the new handler implementing an interface that already exists**, not a mechanism.
-- **"Move towards that obstacle until you are adjacent" is charge-line semantics.** `choose-charge-line@1` already chooses a straight-line destination that is adjacent to a named thing, between a `minimumDistance` and a `maximumDistance`, and returns both the destination and the thing. Grappling Bolt's destination is exactly "the space on this line adjacent to the target". The blocker is that its `unitKind` parameter ranges over `RosterUnitKind`, whose members are Hero, Minion and Unit. **Probe whether an `Obstacle` member on that enum is the honest reading and what it costs** - Swift's 8.38a measured that a member on an enum the payload already writes is free where a new field is a schema version, and this is the same question.
-- **"With no obstacles between you" may compose rather than be built.** `StraightLineQuery` answers the line and `ObstacleQuery` answers what stands on it. Check whether any existing declaration already requires a clear line before minting a predicate.
-
-**SO THIS BLOCK'S REAL SIZE IS UNKNOWN UNTIL IT PROBES, AND IT SHOULD PROBE FIRST.** If the three reductions above hold, it is one new target declaration plus an enum member plus an interface implementation, which is ordinary. If they do not, it is four contracts and exceeds 8.19b, the ceiling this series inherits - and then it sheds its tail into **8.39b1** the way 8.38c shed 8.38c1 and 8.38c2, changing no total scope and no acceptance check.
-
-**"IGNORE IMMUNITY" IS STILL AN OPEN READING AND THIS BLOCK SETTLES IT.** p.18's immunity is about units, and an obstacle is not a unit, so either the clause is defensive boilerplate that does nothing here or it reaches whatever protection an obstacle carries. Her shard records it as CU-Q2. Note that the mechanism existing does not settle the reading - it only makes whichever reading wins cheap to express.
-
-**"UNTIL YOU ARE ADJACENT" DOES NOT GUARANTEE ARRIVAL.** p.19 stops a move at the first thing that stops it, so a unit standing in the line ends the move early and the actor never reaches the obstacle. The block proves that rather than assuming the clause promises arrival.
-
-**AND THE PROBE THIS BLOCK DEMANDED SETTLED BOTH OPEN READINGS OUT OF THE RULEBOOK RATHER THAN OUT OF A JUDGEMENT CALL.** The block was right that it should probe first, and wrong about what it would find. p.18's own Obstacle entry reads: "**Units, terrain (including printed on the board), tokens, as well as any objects represented by miniatures, are obstacles. There can never be more than one obstacle in any one space. Ever. No exceptions.**" Every question this block was scoped to litigate falls out of those two sentences.
-
-**CU-Q2 IS SETTLED AND THE CLAUSE DOES REAL WORK.** "Ignore immunity" is not defensive boilerplate. Because an obstacle may BE a unit, the thing Grappling Bolt targets may be a hero or a minion, and a unit may be immune - and p.18's Immune keyword is written to be overridden in exactly these words: "If a unit is immune, you cannot target that unit, and that unit is not affected by your actions, **unless the card text says otherwise**." This sentence is the card text that keyword anticipates. Terrain and tokens are obstacles that are not units and carry no immunity for it to reach, so the clause reaches precisely the arm that needs it.
-
-**IT COST ONE NEW `ImmunityOverrideReason` MEMBER, WHICH IS THE ONE THING THE BLOCK DID NOT PREDICT.** The existing override system is narrower than the block credited: `ImmunityOverrideReason` had exactly one non-`None` member, `PrintedHeavyMinionImmunity`, whose own remarks say it "bypasses only the standing Heavy-minion rule; an independently declared immunity to the same activity still applies". Cutter's clause qualifies nothing and therefore names both protections, so `PrintedUnqualifiedImmunity` is minted beside it rather than widening it - two sentences, two reasons. `ImmunityQuery` gains one arm and the Heavy arm is left byte-identical, which is asserted rather than assumed because Sabina and Xargatha both declare it.
-
-**NO ENUM GAINED AN OBSTACLE MEMBER, AND THE BLOCK'S PROBE QUESTION IS ANSWERED NO.** It asked what an `Obstacle` member on `RosterUnitKind` would cost. The answer is that it would also need one on `BoardObjectKind` and `EffectValueKind`, because terrain is a property of the map rather than an object standing on it - and that none of it is necessary. p.18's one-obstacle-per-space rule names an obstacle one-to-one by where it stands, and p.19's own Target keyword is "Target (Unit / Token / **Space**)", so a Coordinate-valued target is rulebook fidelity rather than a workaround. The selection publishes a space.
-
-**"WITH NO OBSTACLES BETWEEN YOU" IS A PRINTED NARROWING OF A DEFAULT THAT ADMITS EVERYTHING**, and p.9 states that default in as many words: "There are no 'line of sight' rules. You can target units through obstacles, as long as they are in range/radius." Its arithmetic consequence is that each of p.19's six files offers **at most one** candidate - the first obstacle along it, because a second has the first between it and the actor. An immune unit the node may not target still occupies its file: it is an obstacle whether or not it can be chosen, so nothing behind it is offered either.
-
-**AND "UNTIL YOU ARE ADJACENT" TURNS OUT TO GUARANTEE ARRIVAL ON THIS CARD, WHICH IS THE OPPOSITE OF WHAT THIS BLOCK EXPECTED.** The block said p.19 stops a move at the first thing that stops it and told the milestone to prove that rather than assume arrival. The proof comes out the other way: the same sentence prints the clear-line clause, and p.18's obstacles include units, so a line this selection admits has nothing standing on it to stop her. Every space the approach crosses is empty by construction. The one degenerate case is an obstacle already adjacent, which publishes the actor's own space as the approach - "until you are adjacent" is satisfied where she stands, and the Move it feeds is a move of no spaces rather than an impossible step.
-
-**OFF THE MAP IS NOT AN OBSTACLE, AND THAT IS WHY THIS BLOCK DOES NOT REUSE `ObstacleQuery`.** That query answers enterability - `!IsPlayable || IsOccupied || overlay` - which folds the void past the board's edge in with terrain. p.19 makes terrain an obstacle "including the water spaces surrounding the board", and `choose-line-destination@1` already records that off the map is the absence of a space rather than something to cross. The selection states p.18's three kinds directly instead, so a file that runs out of board offers nothing rather than offering its edge.
-
-**IT IS ONE NEW DECLARATION AND IT IS DEFERRED, WHICH IS MILESTONE 7.9's GATE IN BOTH HALVES.** `synthetic-range-obstacle-target@1` reads the printed Range through the same `RangeValueQuery` the printed-icon family reads - so an item that widens her Range widens this line with it - but it is its own handler rather than an eighth arm of `PrintedIconTargetHandler`, because that handler's candidates are `BoardObjectReference`s and these are spaces. Being a new handler TYPE it owes the gate both halves: it stays in `DeferredHandlers` until a dealt card starts it, and it owes a showcase consumer, which the dealing at 8.39i adds - exactly the terms milestone 8.38b took for Swift's two placement qualifiers.
-
-**ONE SHIPPED DEFECT THE FIRST COMPLETE RUN FOUND, AND IT IS A DEFECT CLASS THIS PROJECT HAS MET BEFORE.** `ImmunityOverrideDeclaration`'s constructor validates its reason against a hard-coded literal - `if (reason != PrintedHeavyMinionImmunity) throw` - so the new enum member compiled, registered and read correctly everywhere and was still inert: every attempt to construct a declaration carrying it threw `An immunity override requires a supported printed reason`. **A closed vocabulary enforced at runtime as well as at compile time is invisible to the compiler and to every tier that does not construct the value**, which is the class milestone 8.37 recorded for Tali. The guard is widened to name both reasons and the comment says why, so the next reason added fails loudly at the guard rather than silently at the offer.
-
-**SO THE BLOCK DID NOT SHED A TAIL.** Its own contingency was that four contracts would exceed 8.19b's ceiling and force an 8.39b1. The measured total is one new declaration, one enum member and one query arm, because three of the four clauses turned out to be readings rather than mechanisms.
-
-Acceptance checks:
-
-- A face declaring the obstacle target offers exactly the obstacles in range, on a straight line, with a clear intervening line - asserted as a set equality against a board where each of those three conditions excludes a different candidate.
-- An obstacle behind another obstacle is not offered, which is what "with no obstacles between you" means.
-- The immunity reading is settled, implemented through the existing override declaration, and recorded with its reason.
-- The move travels the line and stops adjacent to the target, and stops earlier where p.19 stops it, leaving the actor short of the obstacle rather than teleporting it. **Amended at closing: the second half is unreachable on this card and the milestone proves that instead.** The printed clear-line clause and p.18's definition of an obstacle together leave nothing on an admitted line to stop her, so "stops earlier" has no board state on this face; the approach is asserted to be clear by construction, and the degenerate case that does exist - an obstacle already adjacent - is asserted to publish the actor's own space rather than an impossible step.
-- If `RosterUnitKind` gains a member, the payload cost is measured and stated, and every existing declaration over that parameter is byte-identical.
-- No schema field, corpus digest or pinned constant moves.
-- Complete unfiltered dotnet harness passes.
-
-Non-goals: No Cutter content. No change to `ObstacleQuery`'s enterability rule. No general widening of unit targeting to non-units beyond the declaration this block mints.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839b-build-the-obstacle-target-and-grapple-move-vocabulary-her-silver-basic-needs-completion-evidence).
-
-### [x] 8.39c Build the zone-crossing push consequence her Gold line needs
-
-Observable outcome: a face that pushes an enemy hero can make a consequence conditional on the push having carried that hero out of the zone it started in.
-
-**THE MOMENT AND THE TRIGGER BOTH ALREADY EXIST, AND ONLY THE QUALIFIER IS NEW.** Walk the Plank and Few More Steps print "Push an enemy hero adjacent to you up to 4 spaces; **if that hero is pushed into another zone**, that hero discards a card, or is defeated." `after-push-trigger@1` with `AfterPushTriggerSubject.EnemyHero` is Sabina's Big Sodding Gun and is exactly the declaration this needs; `TimingCheckpoint.ObjectPushApplied` is the moment. `BoardMapDefinition.GetZoneForSpace` answers which zone a space is in, and `AdjacentMoveAuthority` already compares an origin zone against a destination zone. **Nothing here is a new observation point.**
-
-**THE QUALIFIER MUST NOT BE A FIELD ON `AfterPushTrigger`.** Sabina references that type today, and the rule this catalog has followed since 8.20 - generalised at 8.35z28 and re-stated at 8.38b - is that a shared declaration gaining a field moves every hero who already referenced it. The zone test is a predicate beside the trigger, not a widening of it.
-
-**IT FIRES ON DISPLACEMENT, NOT ON THE ATTEMPT, AND THE EXISTING TYPE ALREADY SAYS SO.** `AfterPushTrigger`'s own remarks record that p.18's "if you push" is what happened rather than what was tried, so a push that moved nothing reaches no trigger. The zone test inherits that for free and the block asserts it rather than restating it: a hero pushed zero spaces has not been pushed into another zone.
-
-**"DISCARDS A CARD, OR IS DEFEATED" IS ALREADY SETTLED AND IS NOT PART OF THIS BLOCK'S NEW WORK.** Rule-system ledger question 13 settled it on Arien's identical sentence and Whisper's Greater Good composes it unchanged: one mandatory step with two ways to complete. This block reuses that composition and proves it reaches the pushed hero rather than the actor.
-
-**AND THIS BLOCK'S CENTRAL PREMISE WAS WRONG, WHICH THE PROBE FOUND BEFORE ANYTHING WAS BUILT.** The block says `after-push-trigger@1` "is exactly the declaration this needs" and that `TimingCheckpoint.ObjectPushApplied` is the moment. It is neither. `AfterPushTriggerQuery`'s own summary reads "Which unlocked **Ultimates** have declared that they run after a Push that has just applied": the declaration exists so a p.16 permanent ability can watch a push **some other card performed**. Sabina's Big Sodding Gun is her Purple Tier IV Ultimate - "If you push an enemy hero, that hero discards a card, or is defeated" - and performs no push of its own, which is exactly why it needs a watcher and a checkpoint.
-
-**CUTTER'S CLAUSE IS WASP'S KINETIC REPULSE SHAPE, AND THAT IS WHAT SIZED THIS BLOCK.** Walk the Plank pushes and then reads a rider about the hero it pushed, on one card, in sequence. Wasp's Kinetic Repulse already prints that shape: "Push up to 2 enemy units adjacent to you 3 spaces; **if a pushed hero is stopped by an obstacle**, that hero discards a card, if able" - and `synthetic-object-push@3` already answers it by publishing an ordered pair, `firstStoppedHero` and `firstHeroWasStopped`, with a second pair beside them for the two units that card can push. So the zone test is **a sibling output pair on the push itself**, not a predicate beside a trigger and not a checkpoint. Her shard's mapping row cited the trigger too and is corrected in the same commit; left alone it would have cost a wrong composition at 8.39h.
-
-**PUBLISHING IS OPT-IN, WHICH IS WHY THIS COSTS EXISTING CONSUMERS NOTHING.** Every fact the push emits is already gated by `context.Publishes(name)`, so a node that does not declare `firstZoneCrossingHero` is published nothing new and its outcome facts are byte-identical. That is asserted directly rather than argued: a push node declaring only the old outputs is shown to emit exactly those and no others.
-
-**ONE PAIR, NOT TWO.** The stop causes carry a second pair because Kinetic Repulse pushes up to two units and asks about both. Every printed sentence that reads a zone crossing pushes one hero, so one pair is what this milestone publishes; a later card pushing two and asking about both adds the second the way the stop causes gained theirs.
-
-**THE READING, STATED AS THE BLOCK REQUIRED: ORIGIN AGAINST FINAL DESTINATION, NEVER THE SPACES BETWEEN.** p.18's Push travels one file directly away from the pusher, so a path can leave a zone and re-enter it wherever the map's zones interleave along that file. A hero who ends where they began has not been "pushed into another zone", whatever they crossed on the way. The fixture's zones are banded ACROSS the push axis and deliberately interleaved so that exactly this board state exists, and the case that proves the reading is a three-space push that ends back in the zone it started in.
-
-**AND IT IS READ FROM THE RESOLVED PATH RATHER THAN FROM THE BOARD AFTERWARDS**, in the targets' own order, for the same reason the stop causes are: p.18 resolves a batch against one pre-effect state, so a later commit in the same push must not be able to change what this push did to an earlier target.
-
-Acceptance checks:
-
-- The consequence fires when and only when the pushed hero's origin and destination zones differ, proven on one board with a push that crosses and a push of the same distance that does not.
-- A push that displaces nothing fires nothing.
-- A push that crosses a zone boundary and comes back within the same push is judged on origin versus final destination, and the block states that reading explicitly.
-- Sabina's existing after-push declaration is byte-identical in behaviour, asserted rather than assumed. **Amended at closing: it is untouched rather than preserved.** The probe found that `after-push-trigger@1` is the wrong contract for this face - it is how an Ultimate watches another card's push - so this milestone never reaches it. What it does touch is `synthetic-object-push@3`, which Wasp, Sabina and Whisper all bind, and the byte-identity owed there is asserted instead: a push node declaring none of the new outputs emits exactly the facts it did before.
-- No schema field, corpus digest or pinned constant moves.
-- Complete unfiltered dotnet harness passes.
-
-Non-goals: No Cutter content. No change to `AfterPushTrigger`'s shape. No new push capability - `synthetic-object-push@3` already carries the distances both faces print.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839c-build-the-zone-crossing-push-consequence-her-gold-line-needs-completion-evidence).
+All three complete. Their definitions moved verbatim to [the eighth completed shard](PHASE_8_COMPLETED_8.md) during milestone 8.39f's required warning-threshold review, as one contiguous run: they are the series' three obstacle-and-geometry blocks, each one a vocabulary contract proved before any content named it, and 8.39b's deferred `synthetic-range-obstacle-target@1` is the one thing below that reads back to them - the dealing at 8.39i owes it a showcase consumer.
 
 ### [x] 8.39d Build the subject-adjacency predicate and excluded repeat her Blue line needs
 
@@ -280,7 +155,7 @@ Non-goals: No Cutter content. No change to `choose-line-destination@1`. No new m
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839e-widen-the-existing-charge-line-so-her-green-faces-can-ignore-obstacles-completion-evidence).
 
-### [ ] 8.39f Build the previous-turn-slot borrow pool her Ultimate needs
+### [x] 8.39f Build the previous-turn-slot borrow pool her Ultimate needs
 
 Observable outcome: a face can borrow the printed primary action of a card sitting in the turn slot before the one being resolved.
 
@@ -289,6 +164,12 @@ Observable outcome: a face can borrow the printed primary action of a card sitti
 **EVERY LESSON 8.38c MEASURED APPLIES UNCHANGED AND MUST BE RE-PROVED RATHER THAN ASSUMED INHERITED.** Narrow the ordered set BEFORE the per-card filters, so a previous-slot card the borrow refuses empties the pool rather than falling through to the slot behind it - the face names one slot. The borrowing card is its own first false answer. `RoundTurnSlot` already refuses an assignment naming another hero's card, so a hero filter is defence in depth rather than the guarantee. Absent roster state fails closed to an empty pool.
 
 **WHAT IS ACTUALLY OPEN IS WHOSE SLOT IT IS, AND THE BLOCK SETTLES IT.** The face says "**a** card in the previous turn slot", not "**your** card - which is her shard's CU-Q3. 8.38c's pool is owner-scoped and `RoundTurnSlot`'s refusal points the same way, but pointing is not settling. Take a reading, record it, and prove it on a board where the two readings differ.
+
+**BOTH PROBES THIS BLOCK ORDERED CAME BACK AGAINST IT, AND ONE OF THEM SPLITS IT.**
+
+**The owner scope is settled by the rulebook, not by the engine's shape, and it is settled OWNER-SCOPED.** The block expected to reason from 8.38c's pool and `RoundTurnSlot`'s refusal. Neither is the authority and neither would have been enough: `RoundTurnSlot` carries one assignment for EVERY configured hero, the card state a borrow is handed really does contain the other heroes' instances, and a table-wide reading was therefore both grammatically available and mechanically implementable. **p.6 step 6 answers it outright: "place your card Faceup on the current Turn slot of your hero dashboard."** A turn slot is printed on a dashboard. There is no table-wide slot to read; the engine's per-turn record is an aggregate of the six that exist. So "a" rather than "your" is not a widening - "your" is already carried by "turn slot". CU-Q3 closes.
+
+**The trigger half is NOT registered in shape, and no existing condition can absorb it - so it splits out as 8.39f1.** Her shard's mapping row claimed Tigerclaw's `AfterControllerPerformsBasicAction` covered it. It cannot, and neither can Swift's `AfterControllerResolvesBasicCard`: **every Ultimate trigger in this build hangs on `PerformedBasicAction`, and `BasicActionQuery.ForCompletedAction` returns `None` unless the source card's classification is `Basic`** - p.9's supertype, which is the Gold and Silver cards alone. Cutter's Ultimate fires after a PRIMARY action, which every card in her deck has, and her Tier IV is unlocked when most of what she plays is not basic. Reaching it means carrying a fact where the one production site carries none today, and that fact type is read by nineteen files including the snapshot serializer and p.10's repeat machinery - so widening it would change what Wasp's, Tigerclaw's, Misa's, Tali's and Swift's Ultimates see, which **this block's own non-goals forbid**. Split on milestone 8.38c's and 8.39d's precedent: same total scope, no acceptance check dropped, each block back under 8.19b's ceiling.
 
 **AND TURN 1 HAS NO PREVIOUS SLOT.** p.6's turn area is emptied at the round boundary, so the first turn of a round offers this clause nothing. That is the same "empty pool rather than fall through" answer as above and the block asserts it directly.
 
@@ -299,11 +180,38 @@ Acceptance checks:
 - The pool names at most one card, is empty on the first turn of a round, and follows the turn area's committed order rather than any instance-id ordering, proven on a board where the two disagree.
 - A previous-slot card the borrow refuses empties the pool, on a board where a fall-through would have succeeded.
 - The owner scope is settled, implemented and recorded, and proven on a board where the two readings differ.
-- The trigger fires once per turn and not twice, and fires after a primary action rather than after a basic card.
+- ~~The trigger fires once per turn and not twice, and fires after a primary action rather than after a basic card.~~ **Moved to 8.39f1**, which this milestone split out after measuring that no existing Ultimate trigger can reach a non-basic card at all. Nothing is dropped: the check is restated there with four more beside it.
 - No schema field, corpus digest or pinned constant moves.
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Cutter content. No change to Ursafar's, Swift's or Tali's borrow pools, nor to any existing Ultimate trigger.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839f-build-the-previous-turn-slot-borrow-pool-her-ultimate-needs-completion-evidence).
+
+### [ ] 8.39f1 Build the after-a-primary-action Ultimate trigger her Ultimate fires on
+
+Split out of 8.39f during implementation, on milestone 8.38c's and 8.39d's precedent: same total scope, no acceptance check dropped, and each block back under 8.19b's ceiling. 8.39f probed whether an existing `UltimateTriggerCondition` covered this and measured that none can.
+
+Observable outcome: an unlocked Ultimate can fire the first time each turn after its controller performs a primary action, whatever card that action came off.
+
+**NO EXISTING CONDITION CAN REACH IT, AND THE REASON IS ONE LINE OF `BasicActionQuery`.** All five members of `UltimateTriggerCondition` are matched against a `PerformedBasicAction`, and `BasicActionQuery.ForCompletedAction` returns `PerformedBasicAction.None` unless the source card's `Progression.Classification` is `CardClassification.Basic`. `UltimateTriggeredEffectSourceQuery.Derive` then returns an empty source list for an undefined fact, so a non-basic card reaches no Ultimate trigger at all. Tigerclaw's "any basic action" and Swift's "you resolve a basic card" are both inside that gate. Legend of the Skies prints "after you perform a primary action", and every card prints a primary.
+
+**SO THE FACT IS THE WORK, NOT THE ENUM MEMBER.** `TurnResolutionAuthority.AddCompletedAction` is the ONE place a completed action is recorded, and it already knows the `ActionInvocationContext` - so it already knows a printed primary from a repeat, a Hold or a granted action. What it does not do is carry anything when the card is not basic. **Widening `PerformedBasicAction` itself is the shape to avoid**: nineteen files read that type, including `AuthoritativeSnapshotSerializer`, `PendingAfterActionRepeat` and p.10's repeat machinery, and a fact that became defined for non-basic cards would change what five shipped Ultimates and the repeat rule see. The block should carry the primary-action fact BESIDE it rather than through it, and assert the five existing conditions byte-identical rather than assume it.
+
+**"THE FIRST TIME EACH TURN" IS MILESTONE 8.38c1's MACHINERY** over a primary action rather than 8.38c2's basic card, and is expected to be reused rather than rebuilt. A turn performs as many primary actions as text grants; the clause fires on the first and not the rest.
+
+**AND A BORROWED PRIMARY IS ITSELF A PRIMARY ACTION**, which is the loop this bound has to close: the action the Ultimate grants must not re-arm the Ultimate. State the reading and assert it, rather than relying on the once-per-turn bound to hide it.
+
+Acceptance checks:
+
+- The trigger fires once per turn and not twice, and fires after a primary action rather than after a basic card - proven on a turn whose primary action comes off a card that is NOT basic, which no existing condition can see.
+- The five existing conditions are byte-identical in behaviour, asserted rather than assumed, on the boards that distinguish them.
+- A repeat, a Hold, a Fast Travel and a borrowed primary each either arm the trigger or do not, by a recorded reading, and the granted action does not re-arm it.
+- Absent or undefined action facts fail closed to no trigger.
+- No schema field, corpus digest or pinned constant moves.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Cutter content. No change to `PerformedBasicAction`'s own definedness rule, to p.10's repeat machinery, or to any of the five existing Ultimate trigger conditions.
 
 ### [ ] 8.39g Build the solo victory condition A Fistful of Coins prints
 

@@ -75,7 +75,46 @@ namespace GuardsDigital.Core.Cards
         /// "rightmost" is the turn area's committed order here, because a committed order is what this
         /// engine has and a physical layout is not something it models.</para>
         /// </summary>
-        OwnedRightmostResolvedCard = 3
+        OwnedRightmostResolvedCard = 3,
+
+        /// <summary>
+        /// Milestone 8.39f. `a card in the previous turn slot` - Cutter's Legend of the Skies, "The
+        /// first time each turn after you perform a primary action, you may perform the primary action
+        /// of a card in the previous turn slot."
+        ///
+        /// <para><b>A turn slot is printed on a hero's OWN dashboard, and that is what settles the
+        /// scope this face leaves open.</b> The card says "<em>a</em> card" where every other borrow in
+        /// this build says "one of <em>your</em> cards", which reads as though the slot might be a
+        /// table-wide position holding six heroes' cards - and the engine's own
+        /// <c>RoundTurnSlot</c> reinforces the impression, because it carries one assignment for every
+        /// configured hero. The rulebook settles it outright at p.6 step 6: "place your card Faceup on
+        /// the current Turn slot of <b>your hero dashboard</b>." There is no table-wide turn slot to
+        /// read. Each hero has their own, the engine's per-turn record is an aggregate of the six, and
+        /// "the previous turn slot" can only be the borrower's. So the possessive is absent from the
+        /// printed sentence because "your" is already carried by "turn slot", not because the clause
+        /// reaches across the table. Recorded as row CU-Q3 in the Cutter shard.</para>
+        ///
+        /// <para><b>It names a SLOT, where milestone 8.38c's pool names a POSITION IN AN ORDER, and
+        /// that is why it is a fourth member rather than a second reading of the third.</b> "Your
+        /// rightmost resolved card" walks back through the cards you have resolved this round and takes
+        /// the last one still yours; this reads one slot by its index and takes whatever is standing in
+        /// it. On the boards a match ordinarily reaches the two name the same card, because a hero
+        /// commits one card per turn - but a slot the borrower passed in holds no card of theirs, and
+        /// the two readings part company there: this pool is EMPTY, where Swift's would hand back the
+        /// card from the slot before. Sharing the member would have made Cutter's face print Swift's
+        /// sentence.</para>
+        ///
+        /// <para><b>Turn 1 of a round has no previous slot</b>, so the pool is empty - p.6 empties the
+        /// turn area at the round boundary, and a clause naming a slot that is not there offers
+        /// nothing. That is the same fail-closed answer milestone 8.38c gave the first turn, reached by
+        /// naming a slot index below the first rather than by finding an empty order.</para>
+        ///
+        /// <para><b>If the card standing in that slot cannot supply a primary, the pool is empty rather
+        /// than falling through to the slot behind it.</b> The face names one slot.
+        /// <see cref="BorrowRefusal"/>'s arms apply to that card and nothing else, exactly as milestone
+        /// 8.38c decided for the card its own face names.</para>
+        /// </summary>
+        PreviousTurnSlotCard = 4
     }
 
     /// <summary>
@@ -183,6 +222,16 @@ namespace GuardsDigital.Core.Cards
         public static BorrowedPrimaryActionDeclaration FromRightmostResolvedCard() =>
             new BorrowedPrimaryActionDeclaration(
                 BorrowedActionPool.OwnedRightmostResolvedCard, CardColor.None);
+
+        /// <summary>
+        /// Milestone 8.39f. `a card in the previous turn slot` - Legend of the Skies' whole borrow.
+        ///
+        /// It takes no colour for the reason the two pools above take none: the face prints none, and a
+        /// parameter no content uses is a reading nobody has checked.
+        /// </summary>
+        public static BorrowedPrimaryActionDeclaration FromPreviousTurnSlotCard() =>
+            new BorrowedPrimaryActionDeclaration(
+                BorrowedActionPool.PreviousTurnSlotCard, CardColor.None);
 
         public BorrowedActionPool Pool { get; }
 
@@ -431,6 +480,16 @@ namespace GuardsDigital.Core.Cards
                 owned = Rightmost(owned, resolvedOrder);
             }
 
+            // Milestone 8.39f. The same discipline for a pool that names a SLOT rather than a position
+            // in an order, and a separate narrowing rather than a second caller of Rightmost: that one
+            // walks backwards until it finds a card the borrower still owns, which is right for "the
+            // rightmost card you have resolved" and wrong for "the card in the previous turn slot",
+            // where there is nothing behind the named slot to walk to.
+            else if (declaration.Pool == BorrowedActionPool.PreviousTurnSlotCard)
+            {
+                owned = TheNamedSlotsCard(owned, resolvedOrder);
+            }
+
             return Array.AsReadOnly(owned
                 .Where(card => InPool(
                     declaration, card, materializedEffects, definitionsByReference, capabilities,
@@ -476,6 +535,31 @@ namespace GuardsDigital.Core.Cards
             return Array.Empty<CardInstance>();
         }
 
+        /// <summary>
+        /// The one card the named turn slot holds, if the borrower still owns it. Milestone 8.39f.
+        ///
+        /// <para>A slot holds exactly one assignment per hero and the caller has already narrowed to
+        /// the borrower's, so anything but exactly one card id is a slot that names no card of theirs -
+        /// the first turn of a round, which has no previous slot at all, and a slot they passed in with
+        /// an empty hand, which holds an assignment and no card. Both are an empty pool rather than an
+        /// unfiltered one, for the reason <see cref="Rightmost"/> records: an unfiltered pool here
+        /// would silently become "any card you own".</para>
+        ///
+        /// <para><b>It does not walk backwards.</b> That is the whole difference from
+        /// <see cref="Rightmost"/> and the whole of what "the previous turn slot" means.</para>
+        /// </summary>
+        private static CardInstance[] TheNamedSlotsCard(
+            CardInstance[] owned, IReadOnlyList<CardInstanceId> slotContents)
+        {
+            if (slotContents == null || slotContents.Count != 1)
+            {
+                return Array.Empty<CardInstance>();
+            }
+
+            var candidate = owned.FirstOrDefault(card => card.Id.Equals(slotContents[0]));
+            return candidate == null ? Array.Empty<CardInstance>() : new[] { candidate };
+        }
+
         private static bool InPool(
             BorrowedPrimaryActionDeclaration declaration,
             CardInstance card,
@@ -501,6 +585,12 @@ namespace GuardsDigital.Core.Cards
                 // survived selection IS the rightmost resolved one. Stating that here rather than
                 // letting it fall to the default is what keeps the switch exhaustive.
                 case BorrowedActionPool.OwnedRightmostResolvedCard:
+                    return true;
+
+                // Milestone 8.39f. Same reason as the arm above: the slot narrowing has already reduced
+                // this pool to the one card the face names, so whichever card survived selection IS the
+                // card in the previous turn slot and there is no per-card qualifier left to apply.
+                case BorrowedActionPool.PreviousTurnSlotCard:
                     return true;
 
                 default:
