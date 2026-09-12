@@ -188,7 +188,7 @@ Non-goals: No Cutter content. No change to Ursafar's, Swift's or Tali's borrow p
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839f-build-the-previous-turn-slot-borrow-pool-her-ultimate-needs-completion-evidence).
 
-### [ ] 8.39f1 Build the after-a-primary-action Ultimate trigger her Ultimate fires on
+### [x] 8.39f1 Build the after-a-primary-action Ultimate trigger her Ultimate fires on
 
 Split out of 8.39f during implementation, on milestone 8.38c's and 8.39d's precedent: same total scope, no acceptance check dropped, and each block back under 8.19b's ceiling. 8.39f probed whether an existing `UltimateTriggerCondition` covered this and measured that none can.
 
@@ -202,6 +202,14 @@ Observable outcome: an unlocked Ultimate can fire the first time each turn after
 
 **AND A BORROWED PRIMARY IS ITSELF A PRIMARY ACTION**, which is the loop this bound has to close: the action the Ultimate grants must not re-arm the Ultimate. State the reading and assert it, rather than relying on the once-per-turn bound to hide it.
 
+**WHAT THE BLOCK PREDICTED AND WHAT IT MEASURED - AND FOR ONCE THE BLOCK WAS RIGHT ABOUT ALL OF IT.** The fact was the work, the enum member was one line, `AddCompletedAction` already knew the `ActionInvocationContext`, and widening `PerformedBasicAction` would have been the wrong shape. `PerformedPrimaryAction` is carried beside it, produced at the same single site, consulting no card definition at all - which is the whole difference from p.9's basic supertype, a fact about the CARD. The five existing conditions are matched against the old fact exactly as they were and are asserted byte-identical in behaviour on the boards that distinguish them.
+
+**THE FIVE INVOCATION CONTEXTS THAT DO NOT ARM IT, EACH FOR ITS OWN REASON.** The two secondaries are not the primary band. A p.14 Defense is a `Reaction`, and every printed-primary Block is classified as one before it reaches the question. **A replacement is not the printed primary**, and this build had already settled that in as many words - `BeforeActionTriggerQuery`'s own remark says "p.7's Fast Travel and p.13's Clear are replacements rather than the printed primary the sentence names" - so the same sentence shape gets the same answer at both ends of the action. **And a repeat does not arm it, because the fact needed to decide is not recorded**: `ActionInvocationContext.Repeated` REPLACES the original context rather than qualifying it, so a completed repeat cannot say whether what it repeated was the printed primary. Answering "yes" would have been inventing that. It is moot on every reachable board, because a repeat follows the action it repeats and that action already armed the clause - but the reading is taken on what the build can see rather than on the mootness.
+
+**`TextGranted` DOES arm it**, which is the loop, and the bound is what closes it: the clause fires on the FIRST primary action of the turn, and a grant can only follow a firing. Asserted directly rather than argued, including the premise that the borrow's own declared invocation context is the one that arms.
+
+**THE BOUND REUSES THE TURN'S EXISTING CONSUMED-KEY SET** - milestone 8.19a's spent before-action triggers and milestone 8.38d's granted-target exclusions already share it, it is already serialized, and the turn boundary already clears it - under a prefix of this milestone's own, so a spent after-action trigger cannot be mistaken for the same Ultimate's spent before-action one. Nothing new is persisted and the schema does not move. Only a condition whose printed sentence bounds it is keyed, asserted by showing that an unbounded one fires repeatedly and writes nothing into the turn at all.
+
 Acceptance checks:
 
 - The trigger fires once per turn and not twice, and fires after a primary action rather than after a basic card - proven on a turn whose primary action comes off a card that is NOT basic, which no existing condition can see.
@@ -212,6 +220,8 @@ Acceptance checks:
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Cutter content. No change to `PerformedBasicAction`'s own definedness rule, to p.10's repeat machinery, or to any of the five existing Ultimate trigger conditions.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839f1-build-the-after-a-primary-action-ultimate-trigger-her-ultimate-fires-on-completion-evidence).
 
 ### [ ] 8.39g Build the solo victory condition A Fistful of Coins prints
 

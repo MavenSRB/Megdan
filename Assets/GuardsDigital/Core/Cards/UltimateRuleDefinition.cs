@@ -87,7 +87,36 @@ namespace GuardsDigital.Core.Cards
         /// the same discipline <see cref="AfterControllerPlacesSelf"/> and
         /// <see cref="AfterControllerDefeatsMinionWithBasicAttack"/> follow.</para>
         /// </summary>
-        AfterControllerResolvesBasicCard = 5
+        AfterControllerResolvesBasicCard = 5,
+
+        /// <summary>
+        /// Milestone 8.39f1. Cutter's Legend of the Skies, "The first time each turn after you perform
+        /// a primary action, you may perform the primary action of a card in the previous turn slot."
+        ///
+        /// <para><b>A sixth condition because no existing one can reach a non-basic card at all, and
+        /// that is a fact about the FACT rather than about the five readings.</b> Every member above is
+        /// matched against a <see cref="GuardsDigital.Core.Cards.PerformedBasicAction"/>, and
+        /// <c>BasicActionQuery.ForCompletedAction</c> returns the named absence unless the source
+        /// card's classification is <see cref="CardClassification.Basic"/> - p.9's Gold and Silver
+        /// alone. So <see cref="AfterControllerPerformsBasicAction"/> is not a wider version of this
+        /// one that merely says "basic": it is structurally unable to see the cards this clause is
+        /// mostly played off, and a Tier IV Ultimate is unlocked exactly when most of its controller's
+        /// deck is upgraded.</para>
+        ///
+        /// <para><b>So this member reads its own fact</b>,
+        /// <see cref="GuardsDigital.Core.Cards.PerformedPrimaryAction"/>, produced at the same single
+        /// site from the same inputs. `PerformedBasicAction` keeps meaning exactly what it meant, which
+        /// is what keeps Wasp's, Tigerclaw's, Misa's, Tali's and Swift's Ultimates - and p.10's repeat
+        /// machinery, and the authoritative snapshot - reading an unchanged value.</para>
+        ///
+        /// <para><b>"The first time each turn" is the trigger's frequency, and it is enforced where
+        /// milestone 8.19a's once-per-turn before-action triggers are enforced</b> - the turn's
+        /// consumed-key set, which is already serialized and already cleared by the turn boundary. A
+        /// turn performs as many primary actions as its text grants; this clause fires on the first.
+        /// It is the only member here that is bounded at all, because it is the only one whose printed
+        /// sentence bounds it.</para>
+        /// </summary>
+        AfterControllerPerformsPrimaryAction = 6
     }
 
     /// <summary>

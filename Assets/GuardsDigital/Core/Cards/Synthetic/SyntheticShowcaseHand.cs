@@ -661,6 +661,16 @@ namespace GuardsDigital.Core.Cards.Synthetic
         public static ConfiguredHand CreateRedWithAfterBasicSkillUltimate(HeroId ownerId) =>
             Create(ownerId, RedProfiles, AfterBasicSkillUltimateProfile, null);
 
+        /// <summary>Milestone 8.39f1's primary-action condition, on the same synthetic hand.</summary>
+        private static SyntheticUltimateProfile AfterPrimaryActionUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-skyborne-ultimate", "Red Skyborne Ultimate",
+                SyntheticUltimateShape.AfterPrimaryActionTrigger);
+
+        /// <summary>The five ordinary cards with milestone 8.39f1's after-primary-action Ultimate.</summary>
+        public static ConfiguredHand CreateRedWithAfterPrimaryActionUltimate(HeroId ownerId) =>
+            Create(ownerId, RedProfiles, AfterPrimaryActionUltimateProfile, null);
+
         /// <summary>
         /// Milestone 8.19c's five-mode persistent-source Skill cards. They sit outside their team's
         /// ordinary Initiative band for the reason every earlier fixture Skill pair does, so a fixture
@@ -7054,7 +7064,19 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// Milestone 8.19c1: `after-push-trigger@1`, Sabina's Big Sodding Gun shape - the ability
             /// that runs the moment one of its controller's Pushes has applied to an enemy hero.
             /// </summary>
-            AfterPushTrigger = 6
+            AfterPushTrigger = 6,
+
+            /// <summary>
+            /// Milestone 8.39f1: Cutter's Legend of the Skies shape - the after-action trigger that
+            /// fires on a PRIMARY action rather than on a basic one, and the first that can fire off a
+            /// card p.9 does not call basic.
+            ///
+            /// <para>It sits beside <see cref="AfterBasicActionTrigger"/> for the reason that one sits
+            /// beside <see cref="AfterBasicSkillTrigger"/>: so one fixture can ask both and show that
+            /// the older reading is untouched. The narrow ones must still see nothing when the card is
+            /// not basic, which is the whole difference.</para>
+            /// </summary>
+            AfterPrimaryActionTrigger = 7
         }
 
         private sealed class SyntheticUltimateProfile
@@ -7212,6 +7234,21 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             "SyntheticAfterBasicAction",
                             BeforeActionTriggeredEffect.Reference,
                             UltimateTriggerCondition.AfterControllerPerformsBasicAction,
+                            new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
+                            Array.Empty<PrintedValueDefinition>());
+
+                    case SyntheticUltimateShape.AfterPrimaryActionTrigger:
+                        // Milestone 8.39f1. Cutter's Legend of the Skies shape: "The first time each
+                        // turn after you perform a primary action, you may perform the primary action
+                        // of a card in the previous turn slot." The declaration differs from Cloak and
+                        // Daggers' in one member - the condition - and that member is what moves the
+                        // question from p.9's basic supertype, which is a fact about the CARD, to which
+                        // band of the card the action came from, which every card has.
+                        return UltimateRuleDefinition.TriggeredAbility(
+                            "after-primary-action",
+                            "SyntheticAfterPrimaryAction",
+                            BeforeActionTriggeredEffect.Reference,
+                            UltimateTriggerCondition.AfterControllerPerformsPrimaryAction,
                             new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
                             Array.Empty<PrintedValueDefinition>());
 

@@ -138,6 +138,10 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// The fifth condition exists and is distinct from the four before it, so a content author
         /// naming it cannot silently get Cloak and Daggers' reading.
+        ///
+        /// <para>Milestone 8.39f1 extended the count rather than renumbering it: a sixth condition
+        /// arrived - Cutter's "after you perform a primary action" - and this case is the tripwire that
+        /// is supposed to notice one. <c>PrimaryActionTriggerTests</c> owns what the sixth means.</para>
         /// </summary>
         [Test]
         public void TheFifthTriggerCondition_IsDistinctFromTheFourBeforeIt()
@@ -147,7 +151,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(5));
+            Assert.That(conditions.Length, Is.EqualTo(6),
+                "Five at milestone 8.38c2, six since 8.39f1. A new condition is classified in " +
+                "UltimateTriggeredEffectSourceQuery and proved in its own fixture.");
             Assert.That(
                 conditions, Does.Contain(UltimateTriggerCondition.AfterControllerResolvesBasicCard));
             Assert.That(

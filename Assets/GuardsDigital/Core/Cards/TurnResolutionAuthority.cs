@@ -3594,9 +3594,18 @@ namespace GuardsDigital.Core.Cards
                 events.Add(TurnResolutionEvent.BasicActionPerformed(basicAction));
             }
 
+            // Milestone 8.39f1. The other question about the action that just finished, decided here
+            // because here is where the answer is already in hand: was this the performance of the
+            // card's PRIMARY action? p.9's basic supertype above is a fact about the card and is
+            // absent for every card that is not Gold or Silver; this is a fact about which band the
+            // action came from, and every card has a primary. Cutter's Legend of the Skies is the
+            // first printed sentence to ask it.
+            var primaryAction = PrimaryActionQuery.ForCompletedAction(
+                actorId, sourceCardInstanceId, actionDefinitionId, kind, invocationContext);
+
             AddTiming(
                 events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId, basicAction,
-                completedAttackTarget);
+                completedAttackTarget, primaryAction);
         }
 
         private void AddTiming(
@@ -3605,7 +3614,8 @@ namespace GuardsDigital.Core.Cards
             HeroId affectedHeroId = default,
             CardInstanceId sourceCardInstanceId = default,
             PerformedBasicAction basicAction = default,
-            GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default)
+            GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default,
+            PerformedPrimaryAction primaryAction = default)
         {
             if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
                 affectedHeroId = initiative.SelectedActor.ActorId;
@@ -3627,21 +3637,47 @@ namespace GuardsDigital.Core.Cards
                 ? cardActions.ApplyTriggeredActionEnded(
                     timing, context, initiative.TieBreakerState, definitions, instances,
                     participants, CurrentModifications(),
-                    ContinuousTriggersFor(basicAction),
+                    ContinuousTriggersFor(basicAction, primaryAction),
                     basicAction,
                     completedAttackTarget)
                 : timing.ApplyCheckpoint(context, initiative.TieBreakerState);
             foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));
         }
 
+        /// <summary>
+        /// The permanent triggered sources one completed action reaches.
+        ///
+        /// <para><b>Milestone 8.39f1 adds the turn bound, and it is applied here for the reason
+        /// <see cref="TryInterceptWithBeforeActionTrigger"/> applies its own here: "once per turn" is a
+        /// fact about the turn, and this is the turn.</b> Legend of the Skies prints "The FIRST TIME
+        /// each turn after you perform a primary action", and a turn performs as many primary actions
+        /// as its text grants - the printed one, and every one a grant produces. So a source derived
+        /// for that condition is dropped when its key is already in the turn's consumed set, and its
+        /// key is written the moment it is handed on to run.</para>
+        ///
+        /// <para>The key is the source's own stable id - the card instance beside the dashboard plus
+        /// the ability's rule id - carried under a prefix of this milestone's own, so it cannot
+        /// collide with milestone 8.19a's spent before-action triggers or milestone 8.38d's
+        /// granted-target exclusions, which share the set. Nothing new is persisted: that set is
+        /// already serialized and already cleared by the turn boundary.</para>
+        ///
+        /// <para><b>This is also what stops the clause looping.</b> The Ultimate grants a borrowed
+        /// primary, a borrowed primary IS the performance of a primary action, and the completed grant
+        /// therefore comes back through this method - to find the source already spent.</para>
+        /// </summary>
         private IEnumerable<ContinuousTriggeredEffectSource> ContinuousTriggersFor(
-            PerformedBasicAction basicAction)
+            PerformedBasicAction basicAction,
+            PerformedPrimaryAction primaryAction = default)
         {
             if (cardActions == null)
                 return Array.Empty<ContinuousTriggeredEffectSource>();
 
-            return GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.Derive(
-                CurrentUltimates(), cardActions.Board, participants, basicAction);
+            var ultimates = CurrentUltimates();
+            return GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.ArmUnspent(
+                ultimates,
+                GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.Derive(
+                    ultimates, cardActions.Board, participants, basicAction, primaryAction),
+                consumedTurnScopedKeys);
         }
 
         // p.17: resolving a face-up played card preserves its Active effect. Action completion
