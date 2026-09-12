@@ -161,7 +161,7 @@ Non-goals: No Cutter content. No change to `ObstacleQuery`'s enterability rule. 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839b-build-the-obstacle-target-and-grapple-move-vocabulary-her-silver-basic-needs-completion-evidence).
 
-### [ ] 8.39c Build the zone-crossing push consequence her Gold line needs
+### [x] 8.39c Build the zone-crossing push consequence her Gold line needs
 
 Observable outcome: a face that pushes an enemy hero can make a consequence conditional on the push having carried that hero out of the zone it started in.
 
@@ -173,16 +173,30 @@ Observable outcome: a face that pushes an enemy hero can make a consequence cond
 
 **"DISCARDS A CARD, OR IS DEFEATED" IS ALREADY SETTLED AND IS NOT PART OF THIS BLOCK'S NEW WORK.** Rule-system ledger question 13 settled it on Arien's identical sentence and Whisper's Greater Good composes it unchanged: one mandatory step with two ways to complete. This block reuses that composition and proves it reaches the pushed hero rather than the actor.
 
+**AND THIS BLOCK'S CENTRAL PREMISE WAS WRONG, WHICH THE PROBE FOUND BEFORE ANYTHING WAS BUILT.** The block says `after-push-trigger@1` "is exactly the declaration this needs" and that `TimingCheckpoint.ObjectPushApplied` is the moment. It is neither. `AfterPushTriggerQuery`'s own summary reads "Which unlocked **Ultimates** have declared that they run after a Push that has just applied": the declaration exists so a p.16 permanent ability can watch a push **some other card performed**. Sabina's Big Sodding Gun is her Purple Tier IV Ultimate - "If you push an enemy hero, that hero discards a card, or is defeated" - and performs no push of its own, which is exactly why it needs a watcher and a checkpoint.
+
+**CUTTER'S CLAUSE IS WASP'S KINETIC REPULSE SHAPE, AND THAT IS WHAT SIZED THIS BLOCK.** Walk the Plank pushes and then reads a rider about the hero it pushed, on one card, in sequence. Wasp's Kinetic Repulse already prints that shape: "Push up to 2 enemy units adjacent to you 3 spaces; **if a pushed hero is stopped by an obstacle**, that hero discards a card, if able" - and `synthetic-object-push@3` already answers it by publishing an ordered pair, `firstStoppedHero` and `firstHeroWasStopped`, with a second pair beside them for the two units that card can push. So the zone test is **a sibling output pair on the push itself**, not a predicate beside a trigger and not a checkpoint. Her shard's mapping row cited the trigger too and is corrected in the same commit; left alone it would have cost a wrong composition at 8.39h.
+
+**PUBLISHING IS OPT-IN, WHICH IS WHY THIS COSTS EXISTING CONSUMERS NOTHING.** Every fact the push emits is already gated by `context.Publishes(name)`, so a node that does not declare `firstZoneCrossingHero` is published nothing new and its outcome facts are byte-identical. That is asserted directly rather than argued: a push node declaring only the old outputs is shown to emit exactly those and no others.
+
+**ONE PAIR, NOT TWO.** The stop causes carry a second pair because Kinetic Repulse pushes up to two units and asks about both. Every printed sentence that reads a zone crossing pushes one hero, so one pair is what this milestone publishes; a later card pushing two and asking about both adds the second the way the stop causes gained theirs.
+
+**THE READING, STATED AS THE BLOCK REQUIRED: ORIGIN AGAINST FINAL DESTINATION, NEVER THE SPACES BETWEEN.** p.18's Push travels one file directly away from the pusher, so a path can leave a zone and re-enter it wherever the map's zones interleave along that file. A hero who ends where they began has not been "pushed into another zone", whatever they crossed on the way. The fixture's zones are banded ACROSS the push axis and deliberately interleaved so that exactly this board state exists, and the case that proves the reading is a three-space push that ends back in the zone it started in.
+
+**AND IT IS READ FROM THE RESOLVED PATH RATHER THAN FROM THE BOARD AFTERWARDS**, in the targets' own order, for the same reason the stop causes are: p.18 resolves a batch against one pre-effect state, so a later commit in the same push must not be able to change what this push did to an earlier target.
+
 Acceptance checks:
 
 - The consequence fires when and only when the pushed hero's origin and destination zones differ, proven on one board with a push that crosses and a push of the same distance that does not.
 - A push that displaces nothing fires nothing.
 - A push that crosses a zone boundary and comes back within the same push is judged on origin versus final destination, and the block states that reading explicitly.
-- Sabina's existing after-push declaration is byte-identical in behaviour, asserted rather than assumed.
+- Sabina's existing after-push declaration is byte-identical in behaviour, asserted rather than assumed. **Amended at closing: it is untouched rather than preserved.** The probe found that `after-push-trigger@1` is the wrong contract for this face - it is how an Ultimate watches another card's push - so this milestone never reaches it. What it does touch is `synthetic-object-push@3`, which Wasp, Sabina and Whisper all bind, and the byte-identity owed there is asserted instead: a push node declaring none of the new outputs emits exactly the facts it did before.
 - No schema field, corpus digest or pinned constant moves.
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Cutter content. No change to `AfterPushTrigger`'s shape. No new push capability - `synthetic-object-push@3` already carries the distances both faces print.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839c-build-the-zone-crossing-push-consequence-her-gold-line-needs-completion-evidence).
 
 ### [ ] 8.39d Build the subject-adjacency predicate and excluded repeat her Blue line needs
 

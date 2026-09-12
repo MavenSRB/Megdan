@@ -208,6 +208,45 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>Whether an obstacle stopped the first hero this push moved. See <see cref="FirstStoppedHeroOutputName"/>.</summary>
         public const string FirstHeroWasStoppedOutputName = "firstHeroWasStopped";
 
+
+        /// <summary>
+        /// Milestone 8.39c. The first hero this push carried out of the zone it started in, and
+        /// whether there was one - Cutter's Walk the Plank and Few More Steps, "Push an enemy hero
+        /// adjacent to you up to 4 spaces; <b>if that hero is pushed into another zone</b>, that hero
+        /// discards a card, or is defeated."
+        ///
+        /// <para><b>It is the exact sibling of <see cref="FirstStoppedHeroOutputName"/>, and that is
+        /// the whole design.</b> Wasp's Kinetic Repulse prints "Push up to 2 enemy units adjacent to
+        /// you 3 spaces; if a pushed hero is stopped by an obstacle, that hero discards a card, if
+        /// able" - a push and a rider about a hero the push did something to, read off the push itself.
+        /// Cutter's sentence is that shape with a different rider, so it is a second pair here rather
+        /// than a predicate somewhere else.</para>
+        ///
+        /// <para><b>It is NOT <c>after-push-trigger@1</c>, which is the near miss worth naming.</b>
+        /// That declaration is how an unlocked ULTIMATE watches a push some other card performed -
+        /// Sabina's Big Sodding Gun, "If you push an enemy hero, that hero discards a card, or is
+        /// defeated", a p.16 permanent ability with no push of its own. Cutter's clause is a
+        /// consequence on the same card that does the pushing, so it needs no watcher and no
+        /// checkpoint.</para>
+        ///
+        /// <para><b>Judged on origin against final destination, never on the spaces between.</b> p.18's
+        /// Push travels one file directly away from the pusher, so a path may leave a zone and re-enter
+        /// it where the map's zones interleave along that file; a hero who ends where they began is not
+        /// "pushed into another zone", whatever they crossed on the way. Read from the resolved path
+        /// rather than from the board afterwards, for the reason the stopped pair is: a later commit in
+        /// the same batch must not be able to change what this push did.</para>
+        ///
+        /// <para>Published only for heroes, and only for a push that actually displaced one - p.18's
+        /// "if you push" is what happened rather than what was tried, so a hero the geometry left
+        /// standing still has crossed nothing.</para>
+        /// </summary>
+        public const string FirstZoneCrossingHeroOutputName = "firstZoneCrossingHero";
+
+        /// <summary>
+        /// Whether this push carried a hero out of the zone it started in. See
+        /// <see cref="FirstZoneCrossingHeroOutputName"/>.
+        /// </summary>
+        public const string FirstHeroCrossedAZoneOutputName = "firstHeroCrossedAZone";
         /// <summary>The second stopped hero, in commit order. See <see cref="FirstStoppedHeroOutputName"/>.</summary>
         public const string SecondStoppedHeroOutputName = "secondStoppedHero";
 
@@ -979,7 +1018,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new EffectOutputBinding("distance", EffectValueKind.Integer),
                 new EffectOutputBinding("moved", EffectValueKind.Integer),
                 new EffectOutputBinding(FirstStoppedHeroOutputName, EffectValueKind.Hero),
-                new EffectOutputBinding(FirstHeroWasStoppedOutputName, EffectValueKind.Boolean)
+                new EffectOutputBinding(FirstHeroWasStoppedOutputName, EffectValueKind.Boolean),
+
+                // Milestone 8.39c. Optional in the only sense an output can be: a node that does not
+                // declare it is published nothing, so every push written before this milestone
+                // produces byte-identical facts.
+                new EffectOutputBinding(FirstZoneCrossingHeroOutputName, EffectValueKind.Hero),
+                new EffectOutputBinding(FirstHeroCrossedAZoneOutputName, EffectValueKind.Boolean)
             };
 
             if (!named)
@@ -1315,6 +1360,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Select(entry => entry.Key.HeroId)
                 .ToList();
 
+            // Milestone 8.39c, read in the same order and from the same resolved paths as the stop
+            // causes above. Origin against final endpoint: a path that leaves a zone and re-enters it
+            // has carried nobody anywhere, whatever it crossed on the way. A target the geometry left
+            // standing is excluded by `Moves`, because p.18's "if you push" is the displacement.
+            var crossedAZone = resolved
+                .Where(entry =>
+                    entry.Key.Kind == BoardObjectKind.Hero && entry.Value.Moves &&
+                    LeavesItsZone(board, entry.Value.Origin, entry.Value.Endpoint))
+                .Select(entry => entry.Key.HeroId)
+                .ToList();
+
             // Phase three: commit farthest-from-the-pusher first. Every target travels directly away
             // along its own file, so working outwards means a space is always vacated before
             // anything is asked to enter it, and the batch never refuses itself.
@@ -1344,7 +1400,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             return EffectExecutionResult.Applied(
-                StopCauseFacts(context, distance, moved, stopped), appliedPushes: displaced);
+                PushOutcomeFacts(context, distance, moved, stopped, crossedAZone),
+                appliedPushes: displaced);
         }
 
         /// <summary>
@@ -1357,8 +1414,42 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// fact behind <see cref="EffectCapabilityContext.Publishes"/>: the node's declaration is the
         /// exact output set a handler may persist, not merely a type-checking subset of its schema.
         /// </summary>
-        private static IReadOnlyList<EffectOutcomeFact> StopCauseFacts(
-            EffectCapabilityContext context, int distance, int moved, IReadOnlyList<HeroId> stopped)
+
+        /// <summary>
+        /// Milestone 8.39c. Whether a resolved push path ends in a different zone from the one it
+        /// started in - rulebook p.19's zones, read through the map's own spaces.
+        ///
+        /// <para>A space with no zone is terrain, which a push can never end on, so a pair this
+        /// cannot resolve is not a crossing rather than an unknown. Origin and endpoint only: see
+        /// <see cref="FirstZoneCrossingHeroOutputName"/> for why the spaces between do not count.</para>
+        /// </summary>
+        private static bool LeavesItsZone(
+            IBoardDisplacementAuthority board, HexCoordinate origin, HexCoordinate endpoint) =>
+            TryGetZone(board, origin, out var from) &&
+            TryGetZone(board, endpoint, out var to) &&
+            !from.Equals(to);
+
+        private static bool TryGetZone(
+            IBoardDisplacementAuthority board, HexCoordinate at, out ZoneId zoneId)
+        {
+            foreach (var space in board.MapDefinition.Spaces)
+            {
+                if (space.Coordinate.Equals(at) && space.ZoneId.HasValue)
+                {
+                    zoneId = space.ZoneId.Value;
+                    return true;
+                }
+            }
+
+            zoneId = default;
+            return false;
+        }
+        private static IReadOnlyList<EffectOutcomeFact> PushOutcomeFacts(
+            EffectCapabilityContext context,
+            int distance,
+            int moved,
+            IReadOnlyList<HeroId> stopped,
+            IReadOnlyList<HeroId> crossedAZone)
         {
             var facts = new List<EffectOutcomeFact>();
             if (context.Publishes("distance"))
@@ -1382,6 +1473,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 facts.Add(new EffectOutcomeFact(
                     SecondStoppedHeroOutputName, EffectValue.Hero(stopped[1])));
+            }
+
+            // Milestone 8.39c. One pair, because the only printed sentence that reads it pushes one
+            // hero; a card pushing two and asking about both adds the second pair the way the stop
+            // causes gained theirs.
+            if (context.Publishes(FirstHeroCrossedAZoneOutputName))
+            {
+                facts.Add(new EffectOutcomeFact(
+                    FirstHeroCrossedAZoneOutputName, EffectValue.Boolean(crossedAZone.Count > 0)));
+            }
+
+            if (crossedAZone.Count > 0 && context.Publishes(FirstZoneCrossingHeroOutputName))
+            {
+                facts.Add(new EffectOutcomeFact(
+                    FirstZoneCrossingHeroOutputName, EffectValue.Hero(crossedAZone[0])));
             }
 
             return facts;
