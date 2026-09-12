@@ -31,39 +31,9 @@ So this series expects a schema move in exactly one block, and **8.39g is sequen
 
 ## Series
 
-### [x] 8.39 Inventory Cutter the Sky Pirate's printed set and map every clause to registered capability
+### 8.39 Inventory Cutter the Sky Pirate's printed set and map every clause to registered capability
 
-The inventory pass every hero gets before any of her content is written, on the same terms as milestones 8.1, 8.18a-8.18e and 8.38: transcribe the printed faces from the extraction, record what the scan actually prints rather than what a rule would predict, and map each clause to a registered capability or name it as owed.
-
-Observable outcome: `Rules/HERO_CUTTER.md` states her nineteen faces at printed-value fidelity - Initiative, both secondary icons, colour, Tier, primary action and value, Range or Radius, item icon, upgrade pair and transcribed text - and her capability contracts are mapped at the same node-and-parameter fidelity [ROSTER_CAPABILITY_MATRIX.md](../Rules/ROSTER_CAPABILITY_MATRIX.md) uses, with every owed contract named.
-
-**THE SLOT-POSITION TRAP HAS ONE INSTANCE IN HER SET AND IT IS THE FIRST THING THE INVENTORY MUST GET RIGHT.** Milestone 8.35z20 cost four rounds of litigation because a single secondary icon was read by its slot POSITION rather than its glyph SHAPE, and Swift's Bounce repeated the shape at 8.38. Sixteen of Cutter's faces print both secondaries with the shield above the boot. **Grappling Bolt prints exactly one, and it sits in the LOWER slot - the boot's position - while its glyph is a riveted shield.** It is a Defense 2 with no secondary Movement at all. The inventory records the glyph-shape verification, not the position.
-
-**HER ITEM ICONS ARE IDENTIFIED AGAINST KNOWN FACES, NEVER BY EYE.** Twelve of her faces are Tier II or III and print a p.16 item icon. The recorded technique is a montage of the candidate beside faces whose channel this project has already declared in code, and Silverarrow supplies one reference for each of the six channels - Opportunity Shot (Defense), Long Shot (Initiative), Clear Shot (Radius), Warning Shot (Attack), Treetop Sentinel (Range) and Lead Astray (Movement).
-
-**HER STAT BARS ARE CALIBRATED AGAINST A HERO WHOSE VALUES THIS PROJECT ALREADY STATES, NOT AGAINST A REMEMBERED PITCH.** Brogan's shard records Initiative 1 and Defense 8 - the minimum and maximum of p.21's scale - so his profile card fixes both the pixel pitch and the bar origin from known values, and every other bar is then read against that. A colour-based classifier does not generalise across heroes, because the frame tint bleeds into the fill; a luminance-against-trough reading does.
-
-**SHE IS A BASE-BOX HERO, SO THE SECOND SOURCE HAS TO BE CHECKED RATHER THAN ASSUMED ABSENT**, on exactly Swift's terms. This milestone greps the second-printing rulebook for her name, her epithet and all nineteen card names before deciding which authority governs, and records the outcome either way. [Source provenance](../RULES_LEDGER.md) still applies: the cards are third-printing playtest and the rulebook is second printing, so a mismatch is edition skew rather than an error.
-
-**AND THE DECK-BACK SENTENCE MUST BE MEASURED RATHER THAN COPIED.** Swift's shard says all nineteen of her faces share one deck back. The corpus-reading note records that nine heroes have TWO distinct deck-back hashes and names Cutter as one of them, so the sentence that is true of Swift is false of her and copying it would ship a wrong fact. Hash the backs.
-
-**AND EVERY MEASURED CHECK CAME BACK AS HER SHARD STATES IT**, re-run at closing rather than taken from the drafting pass. The local second-printing PDF returns zero hits for `Cutter`, zero for `Sky Pirate` and zero for all nineteen card names, so the extraction is sole authority for Swift's reason rather than Ursafar's. Her nineteen deck backs hash to exactly two values - fourteen alike and five alike differently, the five being Daring Strike, Bold Thrust, Fearless Lunge, Legend of the Skies and Few More Steps - so the one-back sentence that is true of Swift is false of her, exactly as the corpus-reading note predicted. Grappling Bolt prints one secondary, drawn at the boot's height and shaped as a riveted shield: Defense 2 with no secondary Movement, resolved in one image against Walk the Plank's and Daring Strike's shield-over-boot pairs. `cards/hero-selection/randomizers-tt15__7723688__front.png` and `_selection-cards/Cutter__front.png` share one SHA-256. And the bundled manifest's element 8583041 `Airship_Captain` is a `VerticalTokens` element carrying exactly two 302x302 sprites, at (3249,2526) and (3553,2526) in `Image_0_Atlas`, which is the invariant `Prepare-HeroTokens.ps1` declares as `$declaredFaceSize = 302`.
-
-**THE OWED SET IS STATED AS A SET RATHER THAN ASSERTED AS ONE.** Five of the shard's owed rows carried a bare `owed` when this block closed, which left the "exactly what 8.39a-8.39g build" check unverifiable from the shard alone; each now names its block, and the owed rows read 8.39a, 8.39a, 8.39b, 8.39b, 8.39c, 8.39d, 8.39d, 8.39e, 8.39f and 8.39g - the seven build blocks and no eighth.
-
-Acceptance checks:
-
-- `Rules/HERO_CUTTER.md` exists, is linked from the hero-shard index in [RULES_LEDGER.md](../RULES_LEDGER.md), and carries her printed-value table, her upgrade pairs, her starting hand, her boxed Handicap, and her transcribed text for all nineteen faces.
-- Every printed clause is mapped to a named capability at node-and-parameter fidelity, and each is marked registered or owed; the owed set is exactly what milestones 8.39a-8.39g build.
-- The one single-secondary face is recorded with its glyph-shape verification, and every item icon with the reference face it was montaged against.
-- The rulebook second-source check is run and its outcome recorded, whichever way it comes out.
-- The deck-back grouping is measured by hash and stated as measured.
-- Her standee element and her selection card are identified from the bundled manifest and by SHA-256 respectively, not by eye, and her standee's two 302x302 faces are confirmed against `Prepare-HeroTokens.ps1`'s invariant.
-- The validator passes and no governed shard crosses a threshold.
-
-Non-goals: No content, no capability, no registration, no artwork, no schema movement. An inventory row authorizes nothing.
-
-Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839-inventory-cutter-the-sky-pirates-printed-set-and-map-every-clause-to-registered-capability-completion-evidence).
+Complete. Its definition moved verbatim to [the seventh completed shard](PHASE_8_COMPLETED_7.md#x-839-inventory-cutter-the-sky-pirates-printed-set-and-map-every-clause-to-registered-capability) during milestone 8.39e's required warning-threshold review. The inventory it produced is [her rules shard](../Rules/HERO_CUTTER.md), which is the authority every block below is sized against.
 
 ### [x] 8.39a Build the directional attack vocabulary her Red line needs
 
@@ -276,7 +246,7 @@ Non-goals: No Cutter content. No change to the three Attack-target `Different*` 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839d1-build-the-card-text-repeat-that-excludes-the-subject-a-selection-already-took-completion-evidence).
 
-### [ ] 8.39e Widen the existing charge line so her Green faces can ignore obstacles
+### [x] 8.39e Widen the existing charge line so her Green faces can ignore obstacles
 
 **THIS BLOCK WAS RE-SCOPED BEFORE IT RAN, AND THE RE-SCOPE IS THE POINT.** It was drafted as "build a destination-constrained move", on the reading that the catalog could narrow a p.18 Place by its destination's neighbours but not a p.19 Move. That reading was wrong, and reading the catalog's PARAMETERS rather than its capability names is what found it - the same lesson milestone 8.38b measured and the second time it has paid.
 
@@ -292,17 +262,23 @@ Observable outcome: the charge line her three Green faces need travels while ign
 
 **THE HERO THE DESTINATION WAS BESIDE IS STILL A QUESTION, AND IT IS THE ONLY DESIGN WORK LEFT HERE.** Brogan's sentence says "then target **that** unit", so his composition takes the unit the destination was chosen against. Cutter's says "**that hero** discards a card", which reads the same way - but a destination adjacent to two enemy heroes is a board state his faces already reach and hers will too. Settle it, record the reading, and prove it; the natural answer is that the charge line is chosen against a named unit and that unit is the output, so the ambiguity never arises.
 
+**SETTLED, AND NOT THE WAY THIS BLOCK PREDICTED - WHICH IS THE FIFTH TIME RUNNING IN THIS SERIES.** The charge line names no unit and cannot be made to without undoing a shipped decision. Its offer is a set of DESTINATIONS: `Options` keeps the qualifying units only long enough to decide whether a destination is offered at all, and `Destinations` then collapses them away with `.Distinct()`, so the one destination beside two enemy heroes is offered ONCE and answering it publishes a space and nothing else. **The subject is named afterwards, by the ordinary radius-1 `choose-target@2` Brogan's own composition has asked since milestone 8.35p** - measured from where the hero now stands, which the handler's remarks already prove is the same disk the charge measured. On a destination beside two enemy heroes that selection offers both and the mover chooses, which is what the printed text leaves to the player.
+
+**THE PREDICTED ANSWER IS REFUSED FOR A STATED REASON RATHER THAN FOR A PREFERENCE.** Having the charge choose against a named unit and publish it is precisely the second question milestone 8.35p TOOK OUT of this node, on the user's rule that "they move as soon as they select, and then they attack": asking it again would name the victim while the hero authoritatively still stood on his starting space. An adverb's ambiguity is not worth reopening that. The reading is recorded in the handler's own remarks and asserted as its own case.
+
 Acceptance checks:
 
 - The charge line admits exactly the destinations at a distance within the printed bounds, on a straight line, and adjacent to an enemy hero - asserted as a set equality on a board where each condition excludes a different candidate.
 - The exact-distance arm offers nothing where no destination at exactly that distance qualifies, rather than falling back to a shorter move.
 - Binding `ignoresObstacles` true changes the reachable set and does not change the adjacency requirement; leaving it unbound reproduces today's behaviour exactly.
 - **Brogan's Mad Dash, Bullrush and Furious Charge candidate sets are byte-identical**, asserted rather than assumed, because this block edits the declaration they depend on.
-- The hero the destination was chosen against is the one the consequence reads, on a destination adjacent to two enemy heroes.
+- ~~The hero the destination was chosen against is the one the consequence reads, on a destination adjacent to two enemy heroes.~~ **Restated to the settled reading**, because the check's premise is false: this node names no unit. Asserted on exactly that board - the destination is offered ONCE rather than once per hero beside it, answering it publishes `destination` and nothing else, and the radius-1 selection that follows the Move offers both heroes.
 - No schema field, corpus digest or pinned constant moves.
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Cutter content. No change to `choose-line-destination@1`. No new move capability - this block was drafted to mint one and must not, now that the existing one has been read properly.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839e-widen-the-existing-charge-line-so-her-green-faces-can-ignore-obstacles-completion-evidence).
 
 ### [ ] 8.39f Build the previous-turn-slot borrow pool her Ultimate needs
 

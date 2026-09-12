@@ -2335,7 +2335,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// no answer can strand the hero on a space with nobody to attack; and because a direct Move
         /// of the actor removes no unit and moves no other, the set beside the destination before the
         /// Move is the same set beside the actor after it. That equality is asserted directly rather
-        /// than argued - see <c>ChargeReorderEquivalenceTests</c>.</para>
+        /// than argued - see
+        /// <c>RosterTargetGeometryCapabilityTests.ChargeLine_OffersOnlyDestinationsWhoseTargetSetSurvivesTheMove</c>.</para>
+        ///
+        /// <para><b>Milestone 8.39e: this node names no unit, and that is the settled reading of
+        /// "that unit" and "that hero".</b> The offer is a set of destinations - <see cref="Options"/>
+        /// keeps the qualifying units only long enough to decide whether a destination is offered at
+        /// all, and <see cref="Destinations"/> then collapses them away. So on a destination adjacent
+        /// to two enemy heroes there is no "the hero the destination was chosen against" to read: the
+        /// subject is named afterwards by the ordinary radius-1 <c>choose-target@2</c> that Brogan's
+        /// "then target that unit" already uses, which offers both and lets the mover choose. That is
+        /// what the printed text leaves to the player, and it is the only answer available without
+        /// putting a second question back inside this node - which is exactly what the 8.35p split
+        /// took out, on the user's rule that they move as soon as they select and only then
+        /// attack.</para>
+        ///
+        /// <para><b>Obstacles are the declaring card's business</b> - see
+        /// <see cref="IgnoresObstaclesParameter"/>, optional here since milestone 8.39e and unbound by
+        /// every declaration written before it.</para>
         /// </summary>
         private sealed class ChargeLineHandler : TargetingHandler, IEffectCapabilityHandler
         {
@@ -2351,7 +2368,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectCapabilityParameter(
                             UnitKindParameter,
                             EffectValueKind.Integer,
-                            integerDomain: EffectIntegerDomain.AllExcept(RosterUnitKind.None))
+                            integerDomain: EffectIntegerDomain.AllExcept(RosterUnitKind.None)),
+
+                        // Milestone 8.39e. Cutter's three Green charges print "Move 3 spaces in a
+                        // straight line, IGNORING OBSTACLES, to a space adjacent to an enemy hero".
+                        // Optional and unbound by default, so Brogan's and Ursafar's declarations
+                        // keep the exact candidate set they had before this milestone - the same
+                        // discipline `choose-line-destination@1` has carried since Misa.
+                        new EffectCapabilityParameter(
+                            IgnoresObstaclesParameter, EffectValueKind.Boolean, isRequired: false)
                     },
                     new[]
                     {
@@ -2415,11 +2440,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var actor = BoardObjectReference.ForHero(context.ActorId);
                 var result = new List<ChargeOption>();
-                // Brogan's charge prints no crossing, so it walks p.18's obstacles the way every
-                // Move did before milestone 8.23 - the declaration is the card's, and this card
-                // makes none.
+
+                // Obstacles are the declaring card's business, exactly as they are on
+                // `choose-line-destination@1`. Brogan's three charges and Ursafar's Gold print no
+                // crossing, so an unbound parameter walks p.18's obstacles the way every Move did
+                // before milestone 8.23; Cutter's three Greens print "ignoring obstacles" and bind
+                // it. The permission reaches the transit predicate and nothing else, so p.18's
+                // second sentence still forbids stopping on one - which is why the adjacency this
+                // node measures is asked of a destination the mover could legally occupy either
+                // way.
+                var crosses = context.Inputs.ContainsKey(IgnoresObstaclesParameter) &&
+                    context.Input(IgnoresObstaclesParameter).BooleanValue;
                 foreach (var route in board.FindDirectMoveDestinations(
-                    actor, maximum, context.Modifications, moveIgnoresObstacles: false))
+                    actor, maximum, context.Modifications, moveIgnoresObstacles: crosses))
                 {
                     if (route.Cost < minimum || route.Cost > maximum ||
                         !StraightLineQuery.TryGetDirection(

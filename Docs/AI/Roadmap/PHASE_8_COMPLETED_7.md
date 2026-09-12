@@ -353,3 +353,39 @@ Acceptance checks:
 Non-goals: no schema or wire movement; no Tali work; no second playtest package.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z53-deal-register-and-player-path-gate-whisper-the-outcast-as-the-eleventh-hero-completion-evidence).
+
+Milestone **8.39** followed them here at milestone 8.39e, during the fourteenth hero's own required warning-threshold review - **proactive** for the eighth time in this phase. `PHASE_8_FOURTEENTH_HERO.md` crossed its 12,750 warning line on 8.39e's own settled-reading paragraphs, reaching 12,984 of its 15,000 limit with five definitions still to land - and 8.39g, the solo-victory block, is the largest of them. This shard was the destination on the same arithmetic every earlier review in this phase used: at 11,183 words it has 1,567 words of room, which is the only completed shard that can take a whole block, and the block is the series' oldest and the most self-contained in it - a pure corpus reading whose entire output is [her rules shard](../Rules/HERO_CUTTER.md), so nothing below it in the series reads the definition rather than the inventory. Its `Historical evidence:` link resolves unchanged, because both shards sit in one directory. `PHASE_8_FOURTEENTH_HERO.md` keeps 8.39a onward and lands at roughly 12,080. **8.39a is the next run to move**, and at 1,385 words it will not fit here once this block lands, so the review the next warning forces should expect to open an eighth shard.
+
+### [x] 8.39 Inventory Cutter the Sky Pirate's printed set and map every clause to registered capability
+
+The inventory pass every hero gets before any of her content is written, on the same terms as milestones 8.1, 8.18a-8.18e and 8.38: transcribe the printed faces from the extraction, record what the scan actually prints rather than what a rule would predict, and map each clause to a registered capability or name it as owed.
+
+Observable outcome: `Rules/HERO_CUTTER.md` states her nineteen faces at printed-value fidelity - Initiative, both secondary icons, colour, Tier, primary action and value, Range or Radius, item icon, upgrade pair and transcribed text - and her capability contracts are mapped at the same node-and-parameter fidelity [ROSTER_CAPABILITY_MATRIX.md](../Rules/ROSTER_CAPABILITY_MATRIX.md) uses, with every owed contract named.
+
+**THE SLOT-POSITION TRAP HAS ONE INSTANCE IN HER SET AND IT IS THE FIRST THING THE INVENTORY MUST GET RIGHT.** Milestone 8.35z20 cost four rounds of litigation because a single secondary icon was read by its slot POSITION rather than its glyph SHAPE, and Swift's Bounce repeated the shape at 8.38. Sixteen of Cutter's faces print both secondaries with the shield above the boot. **Grappling Bolt prints exactly one, and it sits in the LOWER slot - the boot's position - while its glyph is a riveted shield.** It is a Defense 2 with no secondary Movement at all. The inventory records the glyph-shape verification, not the position.
+
+**HER ITEM ICONS ARE IDENTIFIED AGAINST KNOWN FACES, NEVER BY EYE.** Twelve of her faces are Tier II or III and print a p.16 item icon. The recorded technique is a montage of the candidate beside faces whose channel this project has already declared in code, and Silverarrow supplies one reference for each of the six channels - Opportunity Shot (Defense), Long Shot (Initiative), Clear Shot (Radius), Warning Shot (Attack), Treetop Sentinel (Range) and Lead Astray (Movement).
+
+**HER STAT BARS ARE CALIBRATED AGAINST A HERO WHOSE VALUES THIS PROJECT ALREADY STATES, NOT AGAINST A REMEMBERED PITCH.** Brogan's shard records Initiative 1 and Defense 8 - the minimum and maximum of p.21's scale - so his profile card fixes both the pixel pitch and the bar origin from known values, and every other bar is then read against that. A colour-based classifier does not generalise across heroes, because the frame tint bleeds into the fill; a luminance-against-trough reading does.
+
+**SHE IS A BASE-BOX HERO, SO THE SECOND SOURCE HAS TO BE CHECKED RATHER THAN ASSUMED ABSENT**, on exactly Swift's terms. This milestone greps the second-printing rulebook for her name, her epithet and all nineteen card names before deciding which authority governs, and records the outcome either way. [Source provenance](../RULES_LEDGER.md) still applies: the cards are third-printing playtest and the rulebook is second printing, so a mismatch is edition skew rather than an error.
+
+**AND THE DECK-BACK SENTENCE MUST BE MEASURED RATHER THAN COPIED.** Swift's shard says all nineteen of her faces share one deck back. The corpus-reading note records that nine heroes have TWO distinct deck-back hashes and names Cutter as one of them, so the sentence that is true of Swift is false of her and copying it would ship a wrong fact. Hash the backs.
+
+**AND EVERY MEASURED CHECK CAME BACK AS HER SHARD STATES IT**, re-run at closing rather than taken from the drafting pass. The local second-printing PDF returns zero hits for `Cutter`, zero for `Sky Pirate` and zero for all nineteen card names, so the extraction is sole authority for Swift's reason rather than Ursafar's. Her nineteen deck backs hash to exactly two values - fourteen alike and five alike differently, the five being Daring Strike, Bold Thrust, Fearless Lunge, Legend of the Skies and Few More Steps - so the one-back sentence that is true of Swift is false of her, exactly as the corpus-reading note predicted. Grappling Bolt prints one secondary, drawn at the boot's height and shaped as a riveted shield: Defense 2 with no secondary Movement, resolved in one image against Walk the Plank's and Daring Strike's shield-over-boot pairs. `cards/hero-selection/randomizers-tt15__7723688__front.png` and `_selection-cards/Cutter__front.png` share one SHA-256. And the bundled manifest's element 8583041 `Airship_Captain` is a `VerticalTokens` element carrying exactly two 302x302 sprites, at (3249,2526) and (3553,2526) in `Image_0_Atlas`, which is the invariant `Prepare-HeroTokens.ps1` declares as `$declaredFaceSize = 302`.
+
+**THE OWED SET IS STATED AS A SET RATHER THAN ASSERTED AS ONE.** Five of the shard's owed rows carried a bare `owed` when this block closed, which left the "exactly what 8.39a-8.39g build" check unverifiable from the shard alone; each now names its block, and the owed rows read 8.39a, 8.39a, 8.39b, 8.39b, 8.39c, 8.39d, 8.39d, 8.39e, 8.39f and 8.39g - the seven build blocks and no eighth.
+
+Acceptance checks:
+
+- `Rules/HERO_CUTTER.md` exists, is linked from the hero-shard index in [RULES_LEDGER.md](../RULES_LEDGER.md), and carries her printed-value table, her upgrade pairs, her starting hand, her boxed Handicap, and her transcribed text for all nineteen faces.
+- Every printed clause is mapped to a named capability at node-and-parameter fidelity, and each is marked registered or owed; the owed set is exactly what milestones 8.39a-8.39g build.
+- The one single-secondary face is recorded with its glyph-shape verification, and every item icon with the reference face it was montaged against.
+- The rulebook second-source check is run and its outcome recorded, whichever way it comes out.
+- The deck-back grouping is measured by hash and stated as measured.
+- Her standee element and her selection card are identified from the bundled manifest and by SHA-256 respectively, not by eye, and her standee's two 302x302 faces are confirmed against `Prepare-HeroTokens.ps1`'s invariant.
+- The validator passes and no governed shard crosses a threshold.
+
+Non-goals: No content, no capability, no registration, no artwork, no schema movement. An inventory row authorizes nothing.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839-inventory-cutter-the-sky-pirates-printed-set-and-map-every-clause-to-registered-capability-completion-evidence).
