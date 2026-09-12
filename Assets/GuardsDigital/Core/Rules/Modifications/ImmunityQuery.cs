@@ -87,9 +87,16 @@ namespace GuardsDigital.Core.Rules.Modifications
                     nameof(overrideActivity));
             }
 
+            // Milestone 8.39b. p.18's Immune keyword is written to be overridden - "you cannot
+            // target that unit ... unless the card text says otherwise" - and a card whose text says
+            // so without qualifying it says so about both protections below. Cutter's Grappling Bolt
+            // prints exactly that, because p.18's obstacles include units.
+            var unqualified = Declares(
+                overrides, overrideActivity, ImmunityOverrideReason.PrintedUnqualifiedImmunity);
+
             if (HasDeclaredImmunity(target, activity, actingUnit, participants, modifications))
             {
-                return true;
+                return !unqualified;
             }
 
             var standingHeavy = HasStandingHeavyImmunity(
@@ -99,10 +106,18 @@ namespace GuardsDigital.Core.Rules.Modifications
                 return false;
             }
 
-            return !(overrides ?? Array.Empty<ImmunityOverrideDeclaration>()).Any(value =>
-                value.Activity == overrideActivity &&
-                value.Reason == ImmunityOverrideReason.PrintedHeavyMinionImmunity);
+            // The Heavy arm is unchanged: a card naming p.22's rule bypasses p.22's rule and nothing
+            // else, which is what its own reason has always meant.
+            return !(unqualified || Declares(
+                overrides, overrideActivity, ImmunityOverrideReason.PrintedHeavyMinionImmunity));
         }
+
+        private static bool Declares(
+            System.Collections.Generic.IReadOnlyList<ImmunityOverrideDeclaration> overrides,
+            RuleActivity overrideActivity,
+            ImmunityOverrideReason reason) =>
+            (overrides ?? Array.Empty<ImmunityOverrideDeclaration>()).Any(value =>
+                value.Activity == overrideActivity && value.Reason == reason);
 
         /// <summary>
         /// Whether a source has declared this target immune to this actor's activity.

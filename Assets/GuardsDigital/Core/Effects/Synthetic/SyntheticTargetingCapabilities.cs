@@ -204,6 +204,67 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string ChosenMinionSpaceOutputName = "chosenMinionSpace";
 
+
+        /// <summary>
+        /// Milestone 8.39b. The obstacle a printed-Range sentence grapples to, and the space along
+        /// that line the actor ends up on - Cutter's Silver basic Grappling Bolt, "Target an obstacle
+        /// in range and in a straight line, with no obstacles between you; ignore immunity. Move in a
+        /// straight line towards that obstacle until you are adjacent."
+        ///
+        /// <para><b>It publishes a SPACE rather than a unit, and that is rulebook fidelity rather than
+        /// a workaround.</b> p.18 defines an obstacle as "Units, terrain (including printed on the
+        /// board), tokens, as well as any objects represented by miniatures", and it is emphatic about
+        /// the consequence - "There can never be more than one obstacle in any one space. Ever. No
+        /// exceptions." So an obstacle is named one-to-one by where it stands, and p.19's own Target
+        /// keyword is "Target (Unit / Token / <b>Space</b>)". Nothing here needs a new
+        /// <see cref="RosterUnitKind"/> member, a new <c>BoardObjectKind</c> or a new
+        /// <c>EffectValueKind</c>: a heap of terrain is not a unit, and the coordinate says
+        /// everything the following Move needs.</para>
+        ///
+        /// <para><b>"Ignore immunity" does real work, and p.18 is what says so.</b> The Immune keyword
+        /// reads "If a unit is immune, you cannot target that unit ... <em>unless the card text says
+        /// otherwise</em>" - and because an obstacle may BE a unit, this sentence is the card text that
+        /// keyword anticipates. So the declaration implements
+        /// <see cref="IEffectImmunityOverrideCapabilityHandler"/> and a node that prints the clause
+        /// declares the override; one that does not still cannot reach an immune unit. That settles
+        /// CU-Q2 out of the rulebook rather than out of a reading.</para>
+        ///
+        /// <para><b>"With no obstacles between you" is a printed narrowing of a default that admits
+        /// everything.</b> p.9 states the default in as many words - "There are no 'line of sight'
+        /// rules. You can target units through obstacles, as long as they are in range/radius" - so the
+        /// clause is the card's own restriction and not a rule this selection would have applied
+        /// anyway. Its arithmetic consequence is that each of p.19's six files offers AT MOST ONE
+        /// candidate, the first obstacle along it, because a second one has the first between it and
+        /// the actor. An immune unit the node may not target still occupies its file: it is an obstacle
+        /// whether or not it can be chosen, so nothing behind it is offered either.</para>
+        ///
+        /// <para><b>Off the map is not an obstacle.</b> It is the absence of a space, which is the
+        /// reading <c>choose-line-destination@1</c> already records; terrain IS one, by p.19's own
+        /// definition - "Any board space without a full grid outline counts as terrain and is an
+        /// obstacle, including the water spaces surrounding the board" - so the walk stops at the map's
+        /// edge and offers the terrain ring it reaches first.</para>
+        ///
+        /// <para>The approach space is published beside the target for the reason
+        /// <c>choose-charge-line@1</c> and <c>choose-through-target-line@1</c> publish theirs: the
+        /// sentence that names the target is the same sentence that names where it takes you, and
+        /// re-deriving the line in a later node would be a second source of truth about one step.</para>
+        /// </summary>
+        public static EffectCapabilityId RangeObstacleTarget { get; } =
+            new EffectCapabilityId("synthetic-range-obstacle-target");
+
+        public static EffectCapabilityReference RangeObstacleTargetV1 =>
+            new EffectCapabilityReference(RangeObstacleTarget, 1);
+
+        /// <summary>The chosen obstacle's space.</summary>
+        public const string ChosenObstacleSpaceOutputName = "chosenObstacleSpace";
+
+        /// <summary>
+        /// The space on the chosen obstacle's own file that leaves the actor adjacent to it - one step
+        /// back along the line the selection walked. An obstacle already adjacent publishes the actor's
+        /// own space, because "until you are adjacent" is satisfied where she stands and the Move it
+        /// feeds is then a move of no spaces rather than an impossible step.
+        /// </summary>
+        public const string ObstacleApproachSpaceOutputName = "obstacleApproachSpace";
         public static EffectCapabilityId HeroAdjacentToMinion { get; } =
             new EffectCapabilityId("synthetic-hero-adjacent-to-minion");
 
@@ -365,9 +426,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// into <see cref="RegisteredHandlers"/> below. It is a declaration over a handler this build
         /// already registers six times, not a new handler type, so the gate's second half - a new
         /// handler must be reachable from a showcase card - had nothing to ask of it.</para>
+        ///
+        /// <para>Milestone 8.39b refills it with one. Cutter's Grappling Bolt is the only face in the
+        /// corpus that targets an obstacle, she is not dealt until milestone 8.39i, and this IS a new
+        /// handler type - so it owes the gate both halves: it stays out of the registered list until a
+        /// dealt card starts it, and it owes a showcase consumer, which the dealing adds. The list is
+        /// kept rather than deleted for the same reason 8.35z53 kept it empty.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[] { new RangeObstacleTargetHandler() };
 
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[]
@@ -526,6 +593,236 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     activity);
         }
 
+
+        /// <summary>
+        /// Milestone 8.39b. See <see cref="RangeObstacleTarget"/>.
+        ///
+        /// <para>It is its own handler rather than an eighth arm of
+        /// <see cref="PrintedIconTargetHandler"/> because that handler's candidates are
+        /// <see cref="BoardObjectReference"/>s and these are spaces: p.18's obstacles include terrain,
+        /// which is a property of the map rather than an object standing on it. What it does share is
+        /// the printed total - <see cref="RangeValueQuery"/>, items and all - so p.9's icon is still
+        /// read in one place and an item that widens her Range widens this line with it.</para>
+        /// </summary>
+        private sealed class RangeObstacleTargetHandler
+            : IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler
+        {
+            private static readonly HexDirection[] Directions =
+            {
+                HexDirection.East, HexDirection.NorthEast, HexDirection.NorthWest,
+                HexDirection.West, HexDirection.SouthWest, HexDirection.SouthEast
+            };
+
+            /// <summary>
+            /// p.18's unqualified "if a unit is immune", which is the arm Grappling Bolt's bare
+            /// "ignore immunity" names: the sentence qualifies no activity, so neither does this.
+            /// </summary>
+            public IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities { get; } =
+                Array.AsReadOnly(new[] { RuleActivity.All });
+
+            public EffectCapabilityReference Reference => RangeObstacleTargetV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(
+                            "activity",
+                            EffectValueKind.Integer,
+                            integerDomain: EffectIntegerDomain.AllExcept(RuleActivity.None))
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding(
+                            ChosenObstacleSpaceOutputName, EffectValueKind.Coordinate),
+                        new EffectOutputBinding(
+                            ObstacleApproachSpaceOutputName, EffectValueKind.Coordinate)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var options = Options(context);
+                return options.Count == 0
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                        EffectChooserRole.Actor,
+                        options.Select(option => EffectValue.Space(option.Obstacle)), 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                var chosen = selected != null && selected.Count == 1 &&
+                    selected[0].Kind == EffectValueKind.Coordinate
+                        ? Options(context).FirstOrDefault(
+                            option => option.Obstacle.Equals(selected[0].Coordinate))
+                        : null;
+                if (chosen == null)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact(
+                        ChosenObstacleSpaceOutputName, EffectValue.Space(chosen.Obstacle)),
+                    new EffectOutcomeFact(
+                        ObstacleApproachSpaceOutputName, EffectValue.Space(chosen.Approach))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Options(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// Derived on every ask - the offer, the answer and a restored pause - for the reason every
+            /// other selection here re-derives: a unit that has moved since the question opened has
+            /// changed which space is the first obstacle on its file.
+            /// </summary>
+            private static IReadOnlyList<GrappleOption> Options(EffectCapabilityContext context)
+            {
+                var components = context.Components;
+                if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
+                {
+                    return Array.Empty<GrappleOption>();
+                }
+
+                var activity = (RuleActivity)context.Input("activity").IntegerValue;
+                if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
+                {
+                    return Array.Empty<GrappleOption>();
+                }
+
+                var board = components.Board;
+                var actor = BoardObjectReference.ForHero(context.ActorId);
+                if (board == null || !board.TryGetObjectCoordinate(actor, out var actorAt))
+                {
+                    return Array.Empty<GrappleOption>();
+                }
+
+                var printed = RangeValueQuery.Calculate(
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.Definitions,
+                    context.ActorId,
+                    context.HeroItems,
+                    context.Modifications,
+                    ActionValueApplicabilityQuery.For(
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions));
+                if (printed.Total <= 0)
+                {
+                    // A card printing no Range icon has no such bound and p.16 does not give it one,
+                    // which is the reading the printed-icon family already records.
+                    return Array.Empty<GrappleOption>();
+                }
+
+                var found = new List<GrappleOption>();
+                foreach (var direction in Directions)
+                {
+                    for (var step = 1; step <= printed.Total; step++)
+                    {
+                        var at = StraightLineQuery.Step(actorAt, direction, step);
+                        if (!TryClassifySpace(board, at, out var isTerrain))
+                        {
+                            // Off the map is the absence of a space rather than an obstacle, so the
+                            // walk ends without offering anything further along this file.
+                            break;
+                        }
+
+                        // p.18 names the three kinds in one sentence: "Units, terrain (including
+                        // printed on the board), tokens". Stated here rather than borrowed from
+                        // ObstacleQuery, whose enterability reading folds "off the map" in with
+                        // terrain - a distinction this clause has to keep.
+                        if (!isTerrain && !board.TryGetObjectAt(at, out _) &&
+                            !context.Modifications.AnyOverlayMakesAnObstacleOf(at))
+                        {
+                            continue;
+                        }
+
+                        // The first obstacle on this file, and therefore the only candidate it can
+                        // ever offer - anything beyond it has this one "between you". That holds
+                        // whether or not this one may be targeted, which is why the loop breaks
+                        // either way: an immune unit still occupies its file.
+                        if (MayBeTargeted(context, board, at, actor, activity))
+                        {
+                            found.Add(new GrappleOption(
+                                at, StraightLineQuery.Step(actorAt, direction, step - 1)));
+                        }
+
+                        break;
+                    }
+                }
+
+                return found.OrderBy(option => option.Obstacle.Q)
+                    .ThenBy(option => option.Obstacle.R)
+                    .ToArray();
+            }
+
+            /// <summary>
+            /// Whether a coordinate is a space this map declares at all - playable or terrain. p.19
+            /// makes terrain an obstacle "including the water spaces surrounding the board", so the
+            /// ring is a legal thing to grapple to; the void past it is not a thing at all.
+            /// </summary>
+            private static bool TryClassifySpace(
+                IBoardDisplacementAuthority board, HexCoordinate at, out bool isTerrain)
+            {
+                foreach (var space in board.MapDefinition.Spaces)
+                {
+                    if (space.Coordinate.Equals(at))
+                    {
+                        isTerrain = space.Kind == BoardMapSpaceKind.Terrain;
+                        return true;
+                    }
+                }
+
+                isTerrain = false;
+                return false;
+            }
+
+            /// <summary>
+            /// p.18's immunity, asked only of the obstacles that can carry it. Terrain and tokens are
+            /// obstacles that are not units, and the Immune keyword is a rule about units, so nothing
+            /// is asked on their behalf.
+            /// </summary>
+            private static bool MayBeTargeted(
+                EffectCapabilityContext context,
+                IBoardDisplacementAuthority board,
+                HexCoordinate at,
+                BoardObjectReference actor,
+                RuleActivity activity) =>
+                !board.TryGetObjectAt(at, out var standing) ||
+                standing.Kind == BoardObjectKind.Token ||
+                !ImmunityQuery.IsImmuneTo(
+                    standing.AsRuleObject(),
+                    activity,
+                    actor.AsRuleObject(),
+                    board,
+                    context.Participants,
+                    context.Modifications,
+                    context.ImmunityOverrides,
+                    activity);
+
+            private sealed class GrappleOption
+            {
+                public GrappleOption(HexCoordinate obstacle, HexCoordinate approach)
+                {
+                    Obstacle = obstacle;
+                    Approach = approach;
+                }
+
+                public HexCoordinate Obstacle { get; }
+
+                public HexCoordinate Approach { get; }
+            }
+        }
         /// <summary>
         /// Milestone 7.2b's printed-icon selection: the same chooser-owned target selection, whose
         /// bound is the acting card's Radius or Range Total rather than an integer the definition

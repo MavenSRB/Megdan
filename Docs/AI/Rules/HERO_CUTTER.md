@@ -294,13 +294,16 @@ owes an answer for the losing side, for the winner's team-mates, and for the two
 contract that all thirteen previously dealt heroes share - so it is sequenced as a block of its own and
 is the one place in this series where a schema move is expected rather than avoided.
 
-**CU-Q2. Grappling Bolt says "ignore immunity", and the thing it targets is not a unit.** p.18's immunity
-is about units - the heavy minion immunity the rulebook describes, and the push immunity `immunity@2`
-models. An obstacle is not a unit and has no immunity in those terms. Two readings fit the words: the
-clause is defensive boilerplate carried over from a targeting template and does nothing here, or
-"immunity" extends to whatever protection an obstacle may carry (a terrain rule, or another card's
-standing modification). Recorded rather than guessed; the build milestone that mints obstacle targeting
-settles it and records which reading it took.
+**CU-Q2 (SETTLED at 8.39b, by the rulebook rather than by a reading). "Ignore immunity" does real work,
+because an obstacle may BE a unit.** This entry was opened on the premise that "the thing it targets is
+not a unit". p.18's own Obstacle keyword says otherwise - "Units, terrain (including printed on the
+board), tokens, as well as any objects represented by miniatures, are obstacles" - so Grappling Bolt may
+target a hero or a minion, and a unit may be immune. p.18's Immune keyword is then written to be
+overridden in exactly these words: "If a unit is immune, you cannot target that unit ... **unless the
+card text says otherwise**." This sentence is that card text. Terrain and tokens are obstacles that are
+not units and carry no immunity for the clause to reach, so it reaches precisely the arm that needs it.
+Implemented as `ImmunityOverrideReason.PrintedUnqualifiedImmunity`, minted beside the Heavy-minion
+reason rather than widening it, because the two sentences say different things.
 
 **CU-Q3. What is "the previous turn slot" on the first turn of a round?** Legend of the Skies borrows
 "the primary action of a card in the previous turn slot". p.6's turn area holds up to four slots and the

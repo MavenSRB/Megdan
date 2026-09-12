@@ -109,7 +109,7 @@ Non-goals: No Cutter content. No change to any existing face's target policy. No
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839a-build-the-directional-attack-vocabulary-her-red-line-needs-completion-evidence).
 
-### [ ] 8.39b Build the obstacle-target and grapple-move vocabulary her Silver basic needs
+### [x] 8.39b Build the obstacle-target and grapple-move vocabulary her Silver basic needs
 
 Observable outcome: a printed face can target an obstacle rather than one of p.19's units, require the line to it to be clear, ignore the immunity that would otherwise protect it, and travel that line until it stands adjacent.
 
@@ -127,17 +127,39 @@ Observable outcome: a printed face can target an obstacle rather than one of p.1
 
 **"UNTIL YOU ARE ADJACENT" DOES NOT GUARANTEE ARRIVAL.** p.19 stops a move at the first thing that stops it, so a unit standing in the line ends the move early and the actor never reaches the obstacle. The block proves that rather than assuming the clause promises arrival.
 
+**AND THE PROBE THIS BLOCK DEMANDED SETTLED BOTH OPEN READINGS OUT OF THE RULEBOOK RATHER THAN OUT OF A JUDGEMENT CALL.** The block was right that it should probe first, and wrong about what it would find. p.18's own Obstacle entry reads: "**Units, terrain (including printed on the board), tokens, as well as any objects represented by miniatures, are obstacles. There can never be more than one obstacle in any one space. Ever. No exceptions.**" Every question this block was scoped to litigate falls out of those two sentences.
+
+**CU-Q2 IS SETTLED AND THE CLAUSE DOES REAL WORK.** "Ignore immunity" is not defensive boilerplate. Because an obstacle may BE a unit, the thing Grappling Bolt targets may be a hero or a minion, and a unit may be immune - and p.18's Immune keyword is written to be overridden in exactly these words: "If a unit is immune, you cannot target that unit, and that unit is not affected by your actions, **unless the card text says otherwise**." This sentence is the card text that keyword anticipates. Terrain and tokens are obstacles that are not units and carry no immunity for it to reach, so the clause reaches precisely the arm that needs it.
+
+**IT COST ONE NEW `ImmunityOverrideReason` MEMBER, WHICH IS THE ONE THING THE BLOCK DID NOT PREDICT.** The existing override system is narrower than the block credited: `ImmunityOverrideReason` had exactly one non-`None` member, `PrintedHeavyMinionImmunity`, whose own remarks say it "bypasses only the standing Heavy-minion rule; an independently declared immunity to the same activity still applies". Cutter's clause qualifies nothing and therefore names both protections, so `PrintedUnqualifiedImmunity` is minted beside it rather than widening it - two sentences, two reasons. `ImmunityQuery` gains one arm and the Heavy arm is left byte-identical, which is asserted rather than assumed because Sabina and Xargatha both declare it.
+
+**NO ENUM GAINED AN OBSTACLE MEMBER, AND THE BLOCK'S PROBE QUESTION IS ANSWERED NO.** It asked what an `Obstacle` member on `RosterUnitKind` would cost. The answer is that it would also need one on `BoardObjectKind` and `EffectValueKind`, because terrain is a property of the map rather than an object standing on it - and that none of it is necessary. p.18's one-obstacle-per-space rule names an obstacle one-to-one by where it stands, and p.19's own Target keyword is "Target (Unit / Token / **Space**)", so a Coordinate-valued target is rulebook fidelity rather than a workaround. The selection publishes a space.
+
+**"WITH NO OBSTACLES BETWEEN YOU" IS A PRINTED NARROWING OF A DEFAULT THAT ADMITS EVERYTHING**, and p.9 states that default in as many words: "There are no 'line of sight' rules. You can target units through obstacles, as long as they are in range/radius." Its arithmetic consequence is that each of p.19's six files offers **at most one** candidate - the first obstacle along it, because a second has the first between it and the actor. An immune unit the node may not target still occupies its file: it is an obstacle whether or not it can be chosen, so nothing behind it is offered either.
+
+**AND "UNTIL YOU ARE ADJACENT" TURNS OUT TO GUARANTEE ARRIVAL ON THIS CARD, WHICH IS THE OPPOSITE OF WHAT THIS BLOCK EXPECTED.** The block said p.19 stops a move at the first thing that stops it and told the milestone to prove that rather than assume arrival. The proof comes out the other way: the same sentence prints the clear-line clause, and p.18's obstacles include units, so a line this selection admits has nothing standing on it to stop her. Every space the approach crosses is empty by construction. The one degenerate case is an obstacle already adjacent, which publishes the actor's own space as the approach - "until you are adjacent" is satisfied where she stands, and the Move it feeds is a move of no spaces rather than an impossible step.
+
+**OFF THE MAP IS NOT AN OBSTACLE, AND THAT IS WHY THIS BLOCK DOES NOT REUSE `ObstacleQuery`.** That query answers enterability - `!IsPlayable || IsOccupied || overlay` - which folds the void past the board's edge in with terrain. p.19 makes terrain an obstacle "including the water spaces surrounding the board", and `choose-line-destination@1` already records that off the map is the absence of a space rather than something to cross. The selection states p.18's three kinds directly instead, so a file that runs out of board offers nothing rather than offering its edge.
+
+**IT IS ONE NEW DECLARATION AND IT IS DEFERRED, WHICH IS MILESTONE 7.9's GATE IN BOTH HALVES.** `synthetic-range-obstacle-target@1` reads the printed Range through the same `RangeValueQuery` the printed-icon family reads - so an item that widens her Range widens this line with it - but it is its own handler rather than an eighth arm of `PrintedIconTargetHandler`, because that handler's candidates are `BoardObjectReference`s and these are spaces. Being a new handler TYPE it owes the gate both halves: it stays in `DeferredHandlers` until a dealt card starts it, and it owes a showcase consumer, which the dealing at 8.39i adds - exactly the terms milestone 8.38b took for Swift's two placement qualifiers.
+
+**ONE SHIPPED DEFECT THE FIRST COMPLETE RUN FOUND, AND IT IS A DEFECT CLASS THIS PROJECT HAS MET BEFORE.** `ImmunityOverrideDeclaration`'s constructor validates its reason against a hard-coded literal - `if (reason != PrintedHeavyMinionImmunity) throw` - so the new enum member compiled, registered and read correctly everywhere and was still inert: every attempt to construct a declaration carrying it threw `An immunity override requires a supported printed reason`. **A closed vocabulary enforced at runtime as well as at compile time is invisible to the compiler and to every tier that does not construct the value**, which is the class milestone 8.37 recorded for Tali. The guard is widened to name both reasons and the comment says why, so the next reason added fails loudly at the guard rather than silently at the offer.
+
+**SO THE BLOCK DID NOT SHED A TAIL.** Its own contingency was that four contracts would exceed 8.19b's ceiling and force an 8.39b1. The measured total is one new declaration, one enum member and one query arm, because three of the four clauses turned out to be readings rather than mechanisms.
+
 Acceptance checks:
 
 - A face declaring the obstacle target offers exactly the obstacles in range, on a straight line, with a clear intervening line - asserted as a set equality against a board where each of those three conditions excludes a different candidate.
 - An obstacle behind another obstacle is not offered, which is what "with no obstacles between you" means.
 - The immunity reading is settled, implemented through the existing override declaration, and recorded with its reason.
-- The move travels the line and stops adjacent to the target, and stops earlier where p.19 stops it, leaving the actor short of the obstacle rather than teleporting it.
+- The move travels the line and stops adjacent to the target, and stops earlier where p.19 stops it, leaving the actor short of the obstacle rather than teleporting it. **Amended at closing: the second half is unreachable on this card and the milestone proves that instead.** The printed clear-line clause and p.18's definition of an obstacle together leave nothing on an admitted line to stop her, so "stops earlier" has no board state on this face; the approach is asserted to be clear by construction, and the degenerate case that does exist - an obstacle already adjacent - is asserted to publish the actor's own space rather than an impossible step.
 - If `RosterUnitKind` gains a member, the payload cost is measured and stated, and every existing declaration over that parameter is byte-identical.
 - No schema field, corpus digest or pinned constant moves.
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Cutter content. No change to `ObstacleQuery`'s enterability rule. No general widening of unit targeting to non-units beyond the declaration this block mints.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839b-build-the-obstacle-target-and-grapple-move-vocabulary-her-silver-basic-needs-completion-evidence).
 
 ### [ ] 8.39c Build the zone-crossing push consequence her Gold line needs
 
