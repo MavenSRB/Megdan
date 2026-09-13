@@ -34,8 +34,10 @@ namespace GuardsDigital.Core.Cards.Verified
     /// snapshot pins both, so registering either before a dealt card can start it moves pinned bytes
     /// and fails milestone 7.9's reachability gate. Milestone 8.40j deals him and moves both across in
     /// the same change; <c>BainMarkerDefeatCostTests</c> asserts the deferral from both sides so that
-    /// dealing cannot register one half and forget the other. The handler TYPE is Tigerclaw's, already
-    /// registered and already showcased, so this instance owes no showcase consumer.</para>
+    /// dealing cannot register one half and forget the other. Of the three capabilities
+    /// <see cref="DeferredHandlers"/> holds, two run on handler types already registered and
+    /// showcased; the transfer milestone 8.40b built is a new type and owes a showcase consumer at the
+    /// dealing.</para>
     /// </summary>
     public static class BainComponentContent
     {
@@ -84,8 +86,30 @@ namespace GuardsDigital.Core.Cards.Verified
         public static EffectCapabilityId GiveBounty { get; } =
             new EffectCapabilityId("bain-give-bounty-marker");
 
+        /// <summary>
+        /// Close Call's "that hero gives the marker to you". Milestone 8.40b, and a capability of its
+        /// own rather than an arm of the give, because BA-D5 makes the difference between the two a
+        /// printed rule: his Ultimate fires on a give HE performs, and a marker another hero hands him
+        /// is not one.
+        /// </summary>
+        public static EffectCapabilityId TransferBounty { get; } =
+            new EffectCapabilityId("bain-transfer-bounty-marker");
+
+        /// <summary>
+        /// Narrow Escape's "retrieve the marker" - the rulebook's word for returning one to the supply,
+        /// performed early by card text about a marker this face never gave. Milestone 8.40b.
+        /// </summary>
+        public static EffectCapabilityId ReturnBounty { get; } =
+            new EffectCapabilityId("bain-return-bounty-marker");
+
         public static EffectCapabilityReference GiveBountyV1 =>
             new EffectCapabilityReference(GiveBounty, 1);
+
+        public static EffectCapabilityReference TransferBountyV1 =>
+            new EffectCapabilityReference(TransferBounty, 1);
+
+        public static EffectCapabilityReference ReturnBountyV1 =>
+            new EffectCapabilityReference(ReturnBounty, 1);
 
         /// <summary>
         /// His one marker definition, for the catalog milestone 8.40j registers it into. It is NOT in
@@ -110,15 +134,27 @@ namespace GuardsDigital.Core.Cards.Verified
             Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
-        /// The give itself, waiting for the dealing. One capability per marker, exactly as Tigerclaw's
-        /// two are and for the same reason: the definition is bound to the handler rather than named on
-        /// the wire, so a payload can name a node but never a different marker.
+        /// The three marker operations his set prints, waiting for the dealing. One capability per
+        /// operation per marker, exactly as Tigerclaw's two gives are and for the same reason: the
+        /// definition is bound to the handler rather than named on the wire, so a payload can name a
+        /// node but never a different marker.
+        ///
+        /// <para>Two of the three run on handler TYPES this build already registers and showcases -
+        /// <c>MarkerGivingHandler</c> is Tigerclaw's, and <c>ReturnMarkerHandler</c> is milestone
+        /// 6.2's, which milestone 8.40b taught a second, definition-bound reading rather than
+        /// replacing - so those two owe no showcase consumer. <c>MarkerTransferHandler</c> is a NEW
+        /// type, and milestone 7.9's deferral gate asks its second half of the type: it owes a
+        /// showcase consumer at milestone 8.40j, which is where it registers.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new SyntheticComponentCapabilities.MarkerGivingHandler(
-                    GiveBountyV1, BountyDefinition)
+                    GiveBountyV1, BountyDefinition),
+                new SyntheticComponentCapabilities.MarkerTransferHandler(
+                    TransferBountyV1, BountyDefinition),
+                new SyntheticComponentCapabilities.ReturnMarkerHandler(
+                    ReturnBountyV1, BountyDefinition)
             };
     }
 }

@@ -88,7 +88,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheNamedMembers_Resolve()
         {
-            Assert.That(PerformingMembers(), Has.Length.EqualTo(17),
+            Assert.That(PerformingMembers(), Has.Length.EqualTo(18),
                 "A named member no longer resolves. Correct the rule rather than deleting it; a rule " +
                 "that names nothing protects nothing.");
             // Milestone 6.6a registers p.19's Swap a second time, with the acting hero as its first
@@ -430,6 +430,12 @@ namespace GuardsDigital.Tests.EditMode
                 typeof(MarkerAttachmentRegister), nameof(MarkerAttachmentRegister.Give)),
             ILConformanceScanner.Method(
                 typeof(MarkerAttachmentRegister), nameof(MarkerAttachmentRegister.Return)),
+            // Milestone 8.40b's third mutating marker operation. It is named here at the milestone
+            // that builds it rather than at the one that registers a handler reaching it, because the
+            // rule protects nothing it does not name: the give already reaches it on BA-D1's move arm,
+            // and that handler is registered today.
+            ILConformanceScanner.Method(
+                typeof(MarkerAttachmentRegister), nameof(MarkerAttachmentRegister.Transfer)),
             ILConformanceScanner.Method(
                 typeof(ActiveEffectLifecycle), nameof(ActiveEffectLifecycle.Create)),
             ILConformanceScanner.Method(

@@ -73,6 +73,14 @@ namespace GuardsDigital.Core.Components
             attachments.Where(attachment => attachment.SourceCardInstanceId.Equals(sourceCardInstanceId));
 
         /// <summary>
+        /// Every attachment of one declared definition, wherever it sits and whatever card gave it.
+        /// Milestone 8.40b, and the third finder rather than a widening of either existing one: a card
+        /// that says "the marker" names a kind of marker, not a giver and not a holder.
+        /// </summary>
+        public IEnumerable<MarkerAttachment> OfDefinition(MarkerDefinitionReference reference) =>
+            attachments.Where(attachment => attachment.Definition.Reference.Equals(reference));
+
+        /// <summary>
         /// How many of this marker are still in the supply, derived from the trusted definition's total
         /// rather than from a stored counter. There is no second number to drift.
         /// </summary>
@@ -123,6 +131,58 @@ namespace GuardsDigital.Core.Components
             var returned = attachments[index];
             attachments.RemoveAt(index);
             return returned;
+        }
+
+        /// <summary>
+        /// Moves one attached marker from the hero holding it to another hero, as ONE operation.
+        /// Milestone 8.40b, for Bain's Close Call - "that hero gives the marker to you".
+        ///
+        /// <para><b>Not a <see cref="Return"/> followed by a <see cref="Give"/>, and the reason is a
+        /// printed card.</b> A give is what his Ultimate watches, and it watches for a give BAIN
+        /// performs, so a composition that ran one would fire it on a sentence that never says "you
+        /// give". The identity is the second reason: <see cref="MarkerAttachment.Id"/> is what a
+        /// restore rebinds against and what every operation that names a marker names it by, so the
+        /// physical piece that moves across the table has to keep the one it already has.</para>
+        ///
+        /// <para>The supply is untouched by construction: the count held is derived from the
+        /// attachments, and this replaces one attachment with one attachment. Moving a marker onto the
+        /// hero already holding it is a legal no-op rather than a refusal - a card that says "give it
+        /// to you" when you already hold it asks for nothing.</para>
+        /// </summary>
+        public MarkerAttachment Transfer(MarkerInstanceId markerInstanceId, HeroId holderHeroId)
+        {
+            if (!holderHeroId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A transfer names the hero the marker moves to; a marker held by nobody is in the supply.",
+                    nameof(holderHeroId));
+            }
+
+            var index = attachments.FindIndex(attachment => attachment.Id.Equals(markerInstanceId));
+            if (index < 0)
+            {
+                throw new InvalidOperationException("No marker with that instance ID is currently attached.");
+            }
+
+            var moving = attachments[index];
+            if (moving.HolderHeroId.Equals(holderHeroId))
+            {
+                return moving;
+            }
+
+            // Everything but the holder is carried over, so the attachment that arrives is the one that
+            // left: same instance identity, same owning supply, same giving card and action. Its
+            // property sources are re-derived from the new holder by the constructor, which is what
+            // makes "whose values the marker changes" move with it without this method saying so.
+            var moved = new MarkerAttachment(
+                moving.Id,
+                moving.Definition,
+                moving.OwnerHeroId,
+                holderHeroId,
+                moving.SourceCardInstanceId,
+                moving.SourceActionDefinitionId);
+            attachments[index] = moved;
+            return moved;
         }
 
         public MarkerAttachmentRestoreState CaptureRestoreState() =>

@@ -327,6 +327,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// <summary>The hero a card that already chose one binds here. Milestone 8.23.</summary>
             public const string HolderParameterName = "holder";
 
+            /// <summary>
+            /// BA-D1's arm, and milestone 8.40b. Optional and default-off: a node that binds
+            /// <see cref="EffectValue.Boolean"/> true says that when the supply is empty because the
+            /// one copy is already on the board, giving it MOVES it rather than reporting impossible -
+            /// which is what happens at a physical table, and what Bain's Dead or Alive needs from its
+            /// second turn onwards with a supply of one.
+            ///
+            /// <para>Every node written before this parameter binds nothing and is unaffected, and the
+            /// move arm still refuses wherever the marker that would move is ambiguous, so Tigerclaw's
+            /// six-copy Poison keeps today's refusal even if a later face were to bind it.</para>
+            /// </summary>
+            public const string MovesWhenSupplyIsEmptyParameterName = "movesWhenSupplyIsEmpty";
+
             private readonly MarkerDefinition definition;
 
             public MarkerGivingHandler(
@@ -356,7 +369,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new[]
                 {
                     new EffectCapabilityParameter(
-                        HolderParameterName, EffectValueKind.Hero, isRequired: false)
+                        HolderParameterName, EffectValueKind.Hero, isRequired: false),
+                    new EffectCapabilityParameter(
+                        MovesWhenSupplyIsEmptyParameterName,
+                        EffectValueKind.Boolean,
+                        isRequired: false)
                 },
                 new[] { new EffectOutputBinding("holder", EffectValueKind.Hero) });
 
@@ -411,7 +428,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (components.Catalog.CountAvailableMarkers(
                         reference, components.Markers.Attachments) < 1)
                 {
-                    return EffectExecutionResult.ImpossibleMandatory();
+                    // BA-D1's arm, milestone 8.40b. The supply is empty because the copy this node
+                    // would give is already on the board, so the give moves that copy - keeping its
+                    // instance identity, because it is the same physical piece changing hands. It is
+                    // still a give, which is what makes the Ultimate's "after YOU give" read it and
+                    // the transfer beside it not.
+                    var held = MovesWhenSupplyIsEmpty(context)
+                        ? TheOneAttachmentOf(definition, components)
+                        : null;
+                    if (held == null)
+                    {
+                        return EffectExecutionResult.ImpossibleMandatory();
+                    }
+
+                    components.Markers.Transfer(held.Id, holder);
+                    return EffectExecutionResult.Applied(given);
                 }
 
                 components.Markers.Give(new MarkerAttachment(
@@ -445,7 +476,193 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 if (components.Catalog.CountAvailableMarkers(
-                        definition.Reference, components.Markers.Attachments) < 1)
+                        definition.Reference, components.Markers.Attachments) < 1 &&
+                    !(MovesWhenSupplyIsEmpty(context) &&
+                        TheOneAttachmentOf(definition, components) != null))
+                {
+                    return false;
+                }
+
+                candidates = context.Participants.Heroes
+                    .Select(hero => hero.Id)
+                    .OrderBy(hero => hero.Value, StringComparer.Ordinal)
+                    .Select(EffectValue.Hero)
+                    .ToArray();
+                return candidates.Length > 0;
+            }
+
+            private static bool MovesWhenSupplyIsEmpty(EffectCapabilityContext context)
+            {
+                var declared = context.Input(MovesWhenSupplyIsEmptyParameterName);
+                return declared.Kind == EffectValueKind.Boolean && declared.BooleanValue;
+            }
+        }
+
+        /// <summary>
+        /// The one attachment of a declared definition currently on the board, or <c>null</c> where
+        /// there is none - or where there is more than one. Milestone 8.40b, and the single reading the
+        /// three operations that say "<b>the</b> marker" share.
+        ///
+        /// <para><b>Ambiguity refuses rather than picks.</b> Every printed sentence these operations
+        /// serve is singular - "the marker", "retrieve the marker", "that hero gives the marker to
+        /// you" - because the supply behind them is one. Choosing among several would state a rule no
+        /// face prints and open no decision for the player to make, so a definition with two copies out
+        /// is declined here and the node reports impossible, which is exactly what a six-copy supply
+        /// already did before this milestone.</para>
+        /// </summary>
+        private static MarkerAttachment TheOneAttachmentOf(
+            MarkerDefinition definition, MatchComponents components)
+        {
+            var held = components.Markers.OfDefinition(definition.Reference).Take(2).ToArray();
+            return held.Length == 1 ? held[0] : null;
+        }
+
+        /// <summary>
+        /// Moves one attached marker of a declared definition from the hero holding it to another hero,
+        /// as ONE operation. Milestone 8.40b, for Bain's Close Call: "If a hero in play has a bounty
+        /// marker, block the attack and <b>that hero gives the marker to you</b>."
+        ///
+        /// <para><b>It is deliberately not a give, and not a return followed by one.</b> His Ultimate
+        /// fires "after <em>you</em> give a hero the bounty marker" (BA-D5), and Close Call's sentence
+        /// is another hero giving it to him, so a composition that ran a give would fire a permanent
+        /// ability on a clause that never says he gave anything. Running one would also mint a second
+        /// <see cref="MarkerInstanceIdentity"/> for a piece that never left the table, and that identity
+        /// is what a restore rebinds against.</para>
+        ///
+        /// <para>Like the give, who receives it is the node's decision unless the card's own sentence
+        /// already bound a hero - Close Call's is the defender - and unlike the give it takes nothing
+        /// from the supply, because what it moves is already out of it.</para>
+        /// </summary>
+        public sealed class MarkerTransferHandler : IEffectCapabilityHandler
+        {
+            /// <summary>The hero the marker moves TO, where the card's own sentence names one.</summary>
+            public const string HolderParameterName = "holder";
+
+            /// <summary>The hero it moved FROM, published beside the hero it moved to.</summary>
+            public const string PreviousHolderOutputName = "previousHolder";
+
+            private readonly MarkerDefinition definition;
+
+            public MarkerTransferHandler(
+                EffectCapabilityReference reference, MarkerDefinition definition)
+            {
+                if (!reference.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "A marker-transfer capability requires a defined reference.", nameof(reference));
+                }
+
+                Reference = reference;
+                this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
+                new[]
+                {
+                    new EffectCapabilityParameter(
+                        HolderParameterName, EffectValueKind.Hero, isRequired: false)
+                },
+                new[]
+                {
+                    new EffectOutputBinding("holder", EffectValueKind.Hero),
+                    new EffectOutputBinding(PreviousHolderOutputName, EffectValueKind.Hero)
+                });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var named = context.Input(HolderParameterName);
+                if (named.Kind == EffectValueKind.Hero && named.HeroId.IsDefined)
+                {
+                    return Resume(context, new[] { named });
+                }
+
+                if (!CanTransfer(context, out var candidates))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.NeedsChoice(
+                    new EffectChoiceRequest(EffectChooserRole.Actor, candidates, 1, 1));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                var components = context.Components;
+                if (components == null || !components.IsLive || selected == null || selected.Count != 1)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var holder = selected[0].HeroId;
+                if (!holder.IsDefined)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Re-read rather than trust the paused choice: the marker this node asked about may
+                // have been returned before the answer arrived, which is the same discipline the token
+                // placement takes with a space.
+                var moving = TheOneAttachmentOf(definition, components);
+                if (moving == null)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var previousHolder = moving.HolderHeroId;
+                components.Markers.Transfer(moving.Id, holder);
+
+                var facts = new List<EffectOutcomeFact>();
+                if (context.Publishes("holder"))
+                {
+                    facts.Add(new EffectOutcomeFact("holder", EffectValue.Hero(holder)));
+                }
+
+                if (context.Publishes(PreviousHolderOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        PreviousHolderOutputName, EffectValue.Hero(previousHolder)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
+            }
+
+            /// <summary>
+            /// What <see cref="Execute"/> would do, without doing it: a bound recipient applies, an
+            /// unbound one asks, and a definition with no single attachment out cannot do either.
+            /// </summary>
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                if (!CanTransfer(context, out _))
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                var named = context.Input(HolderParameterName);
+                return named.Kind == EffectValueKind.Hero && named.HeroId.IsDefined
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.NeedsChoice;
+            }
+
+            /// <summary>
+            /// Whether a marker of this definition can move at all, and to whom. Extracted so the probe
+            /// reads the register and the hero set exactly as the execution does.
+            /// </summary>
+            private bool CanTransfer(EffectCapabilityContext context, out EffectValue[] candidates)
+            {
+                candidates = Array.Empty<EffectValue>();
+                var components = context.Components;
+                if (components == null || !components.IsLive || context.Participants == null)
+                {
+                    return false;
+                }
+
+                if (TheOneAttachmentOf(definition, components) == null)
                 {
                     return false;
                 }
@@ -469,10 +686,44 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// It is the return *operation*, not a cleanup trigger. Wiring it to end of round belongs to
         /// milestone 6.12, and the defeat return on p.13 is unwired for the same reason; the attachment's
         /// <see cref="MarkerReturnCondition"/> is what records that both are still owed.
+        ///
+        /// <para><b>Milestone 8.40b gives it a second reading, bound to a definition rather than to a
+        /// giving card.</b> Bain's Narrow Escape prints "retrieve the marker" - the rulebook's own word
+        /// for returning one to the supply, p.8's "Return all markers back into the supply" and p.13's
+        /// "Any markers they had are returned" - about a marker that face never gave. An instance
+        /// constructed with a definition therefore returns the one attachment of THAT definition
+        /// wherever it sits; the parameterless instance milestone 6.2 registered is unchanged and still
+        /// returns what its own source card gave. Which reading an instance takes is fixed by its
+        /// constructor and can never be named by a payload, exactly as the give's definition is.</para>
         /// </summary>
-        private sealed class ReturnMarkerHandler : IEffectCapabilityHandler
+        public sealed class ReturnMarkerHandler : IEffectCapabilityHandler
         {
-            public EffectCapabilityReference Reference => ReturnMarkerV1;
+            private readonly MarkerDefinition definition;
+
+            /// <summary>Milestone 6.2's reading: the marker this source card gave.</summary>
+            public ReturnMarkerHandler()
+            {
+                Reference = ReturnMarkerV1;
+            }
+
+            /// <summary>
+            /// Milestone 8.40b's reading: the one marker of this definition on the board, whatever card
+            /// gave it.
+            /// </summary>
+            public ReturnMarkerHandler(
+                EffectCapabilityReference reference, MarkerDefinition definition)
+            {
+                if (!reference.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "A marker-return capability requires a defined reference.", nameof(reference));
+                }
+
+                Reference = reference;
+                this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            }
+
+            public EffectCapabilityReference Reference { get; }
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 outputs: new[] { new EffectOutputBinding("returned", EffectValueKind.Hero) });
@@ -509,8 +760,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.Applied;
 
-            /// <summary>The attachment this card would take back, or null when it gave none.</summary>
-            private static MarkerAttachment FindAttachment(EffectCapabilityContext context)
+            /// <summary>
+            /// The attachment this node would take back: the one of its declared definition wherever
+            /// it sits, or - for milestone 6.2's parameterless instance, which declares none - the
+            /// marker this source card gave. Null when there is nothing to return.
+            /// </summary>
+            private MarkerAttachment FindAttachment(EffectCapabilityContext context)
             {
                 var components = context.Components;
                 if (components == null || !components.IsLive)
@@ -518,10 +773,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return null;
                 }
 
-                return components.Markers
-                    .GivenBy(context.SourceCardInstanceId)
-                    .OrderBy(candidate => candidate.Id.Value, StringComparer.Ordinal)
-                    .FirstOrDefault();
+                return definition == null
+                    ? components.Markers
+                        .GivenBy(context.SourceCardInstanceId)
+                        .OrderBy(candidate => candidate.Id.Value, StringComparer.Ordinal)
+                        .FirstOrDefault()
+                    : TheOneAttachmentOf(definition, components);
             }
         }
     }

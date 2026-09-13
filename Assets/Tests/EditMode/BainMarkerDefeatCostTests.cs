@@ -524,21 +524,30 @@ namespace GuardsDigital.Tests.EditMode
                 "He is not dealt, and the registered capability list is serialized into every " +
                 "snapshot.");
 
+            // Milestone 8.40b adds his two marker MOVEMENTS beside the give, and this assertion is
+            // widened rather than duplicated: the list it pins is the list that dealing has to move.
             var deferred = BainComponentContent.DeferredHandlers().ToArray();
             Assert.That(deferred.Select(handler => handler.Reference),
-                Is.EqualTo(new[] { BainComponentContent.GiveBountyV1 }));
-            Assert.That(deferred.Single(),
+                Is.EqualTo(new[]
+                {
+                    BainComponentContent.GiveBountyV1,
+                    BainComponentContent.TransferBountyV1,
+                    BainComponentContent.ReturnBountyV1
+                }));
+            Assert.That(deferred[0],
                 Is.InstanceOf<GuardsDigital.Core.Effects.Synthetic.SyntheticComponentCapabilities
                     .MarkerGivingHandler>(),
                 "The handler TYPE is Tigerclaw's, already registered and already showcased, so this " +
                 "instance owes no showcase consumer at the dealing.");
             Assert.That(BainComponentContent.Handlers().Select(handler => handler.Reference),
-                Is.EqualTo(new[] { BainComponentContent.GiveBountyV1 }));
+                Is.EqualTo(deferred.Select(handler => handler.Reference)));
 
             var capabilities = MatchContentCatalogs.ForThisBuild().Capabilities;
             Assert.That(capabilities.IsRegistered(BainComponentContent.GiveBountyV1), Is.False,
                 "HALF ONE: the capability. Registering it before a dealt card can start it moves " +
                 "pinned bytes and fails milestone 7.9's reachability gate.");
+            Assert.That(capabilities.IsRegistered(BainComponentContent.TransferBountyV1), Is.False);
+            Assert.That(capabilities.IsRegistered(BainComponentContent.ReturnBountyV1), Is.False);
 
             var components = SyntheticComponentDefinitions.CreateCatalog();
             Assert.That(components.IsRegistered(BainComponentContent.BountyDefinition.Reference),

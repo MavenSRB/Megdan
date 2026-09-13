@@ -310,7 +310,7 @@ Non-goals: No Bain card content and no registration - his marker definition is w
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840a-build-the-bounty-markers-defeat-cost-charged-to-the-hero-who-wears-it-completion-evidence).
 
-### [ ] 8.40b Build the marker movements his Green Blocks and his Gold basic need
+### [x] 8.40b Build the marker movements his Green Blocks and his Gold basic need
 
 Observable outcome: a declared marker can be taken from one hero and given to another as ONE operation,
 can be returned to the supply by a card that did not give it, and can be moved by a give when the supply
@@ -341,6 +341,60 @@ names rather than on any attachment on the board - a hero wearing Tigerclaw's Po
 bounty, and a card that took either would be stating a rule no face prints. Assert it on a board
 carrying both.
 
+**THE PROBE FOUND THE ATTACHMENT WAS ALREADY THE RIGHT SHAPE, AND THAT IS WHY THE BLOCK IS SMALL.**
+`MarkerAttachment` carries instance identity, trusted definition, owner, holder, giving card and giving
+action, and it is IMMUTABLE - its `PropertySources` are derived from the holder in its constructor, which
+is what makes "whose values the marker changes" move with the piece without any operation saying so. The
+register could attach, return, find by holder and find by giver, and the snapshot already persists the
+holder as an ordinary field. So a transfer is one method that replaces one attachment with one carrying
+the same six anchors and a different holder: **no persisted field, no schema version, and nothing to
+rebind that a restore did not already rebind.** A third finder, `OfDefinition`, joins the two that
+existed, because a card saying "the marker" names a KIND rather than a giver or a holder.
+
+**"WHATEVER WATCHES A GIVE" IS NOTHING AT ALL TODAY, WHICH CHANGES HOW THE NEGATIVE IS PROVED.** No
+`TimingCheckpoint` member is a marker moment; the only marker events in the build are p.8's end-of-round
+return and p.13's defeated-holder return; and the give declares no checkpoint on its result, so the
+channel 8.40h will use is empty at both ends. The trace a give leaves is therefore its STATE: a new
+attachment carrying the identity `MarkerInstanceIdentity` composes for that activation, and one fewer copy
+in the supply. The case runs a give and a transfer as two nodes of ONE resolution through
+`EffectResolutionSession` and reads the recorded per-node event stream: both applied, the give left both
+traces, the transfer left neither, and no second attachment ever stood - which is what a return-then-give
+composition would have shown mid-way. **8.40h must key its trigger on the give capability**, which is a
+different capability id from the transfer by construction.
+
+**TWO OF THE THREE ARE NOT NEW CONTRACTS, AND SAYING WHICH IS THE POINT.** The transfer is a new handler
+TYPE, `MarkerTransferHandler`, because nothing in the catalog moved an attachment - it publishes `holder`
+and `previousHolder`, both guarded by the node's own declaration on milestone 8.20's rule. The return is
+NOT: `ReturnMarkerHandler` gained a definition-bound constructor beside milestone 6.2's parameterless one,
+so one type carries two readings and which one an instance takes is fixed by its constructor and can never
+be named by a payload - the same discipline the give's definition already had. And the give's move arm is
+an optional default-off `movesWhenSupplyIsEmpty` parameter rather than a second capability, on this
+series' own measurement that an added optional parameter cannot move a digest and needs no showcase
+consumer. Whether a default-off parameter really leaves earlier declarations alone is SWEPT rather than
+argued: every node of every dealt face in the build is walked and none binds it, which keeps the guard
+true for the sixteenth hero as well as this one. **So the block's showcase debt is exactly one type**,
+named in 8.40j's paragraph rather than left to be rediscovered there.
+
+**THE ACCEPTANCE CHECK THAT COULD NOT BE STAGED, AND THE PROOF THAT IT CANNOT.** "A give with the supply
+empty and no marker out is still impossible" describes a configuration that is unreachable by
+construction: a marker supply is DERIVED - the trusted total minus what is held - and `MarkerDefinition`
+refuses a total below one, so for a supply of one "the supply is empty" and "a copy is held" are the same
+fact. The refusal the arm must not swallow is proved in the two forms that ARE reachable, and both are
+asserted: a node that does not bind the arm keeps milestone 6.2's refusal exactly, probe included; and a
+definition whose empty supply has no SINGLE copy to move refuses too. That second one is Tigerclaw's, and
+it is why the arm is safe to add to a shared capability: **with his six copies out, a face that DID bind
+the arm still refuses**, because choosing among six would state a rule no text prints and open no decision
+the player could make. Ambiguity refuses rather than picks, in all three operations.
+
+**UNDO AND REPLAY ARE ONE MECHANISM HERE, AND THE EVIDENCE IS BYTES.** This build's Undo is a
+retained-prefix re-derivation rather than an inverse operation, so what the check asks for is two
+measurements: the persisted marker stream captured before the move restores to the previous holder with
+the same instance identity, and re-running the same operation from that restored state reproduces the
+moved stream BYTE for byte. Both run through the snapshot serializer's own private `WriteMarkers` and
+`ReadMarkers`, reached by reflection, so what round-trips is the shipped codec rather than a re-statement
+of it. **No split was needed**, and the block's three contract rows in HERO_BAIN.md were corrected from
+"owed" to what was actually built, word-neutrally: the shard lost four words.
+
 Acceptance checks:
 
 - A transfer moves one attachment from one holder to another, keeps its instance identity, changes
@@ -358,6 +412,8 @@ Acceptance checks:
 
 Non-goals: No Bain card content. No change to `synthetic-give-marker@1`'s existing behaviour when the
 supply can pay. No marker rendering.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840b-build-the-marker-movements-his-green-blocks-and-his-gold-basic-need-completion-evidence).
 
 ### [ ] 8.40c Build the marker predicates his whole set reads
 
@@ -811,7 +867,11 @@ that rather than assume it: it is the first time that claim can be tested.
 
 **AND THIS DEALING REGISTERS A MARKER-GIVING CAPABILITY, WHICH IS A SECOND ENTRY ON A PROVED TYPE.**
 `MarkerGivingHandler` is Tigerclaw's; Bain's instance owes no showcase consumer, and the genuinely new
-handler TYPES 8.40b-8.40h mint each owe one here, on milestone 7.9's gate.
+handler TYPES 8.40b-8.40h mint each owe one here, on milestone 7.9's gate. **8.40b minted exactly one
+and it is named rather than left to be rediscovered**: `SyntheticComponentCapabilities.MarkerTransferHandler`,
+which this milestone registers as `bain-transfer-bounty-marker@1` and owes a showcase consumer. His other
+two marker capabilities - `bain-give-bounty-marker@1` and `bain-return-bounty-marker@1` - run on
+`MarkerGivingHandler` and `ReturnMarkerHandler`, both already registered and showcased, so they owe none.
 
 Acceptance checks:
 
