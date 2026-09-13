@@ -146,7 +146,35 @@ namespace GuardsDigital.Core.Cards
         /// not there. No printed face states the pair; refusing it is the alternative to this file
         /// deciding what it would have meant.</para>
         /// </summary>
-        InStraightLine = 2
+        InStraightLine = 2,
+
+        /// <summary>
+        /// Milestone 8.40d. The member above with a clearance clause under it, and the narrowing
+        /// three of Bain's five Red Attacks print word for word: Light Crossbow's, Heavy Crossbow's
+        /// and Arbalest's "Target a unit in a straight line and in range <em>with no units, or
+        /// terrain, between you</em>". The file is the same file <see cref="InStraightLine"/>
+        /// demands - one <see cref="GuardsDigital.Core.Board.StraightLineQuery"/> membership
+        /// question, so the two cannot disagree about what a file is - and what this member adds is
+        /// a walk of the spaces strictly between the two ends of it.
+        ///
+        /// <para><b>It is deliberately narrower than rulebook p.18's obstacle list, and the proof is
+        /// in the same hero's deck.</b> Get over here! prints "with no <em>obstacles</em> between you
+        /// and the target"; p.18 makes that list "Units, terrain (including printed on the board),
+        /// tokens, as well as any objects represented by miniatures". These three faces name two of
+        /// those four kinds, so a token standing on the file blocks the pull and does not block the
+        /// shot, and neither does a miniature-object. One hero printing both halves of the
+        /// distinction is as strong a signal as this corpus gives that the narrower wording is
+        /// deliberate; that reading is his shard's BA-03, and collapsing the two sentences into one
+        /// clearance rule is exactly what it forbids.</para>
+        ///
+        /// <para><b>Why it is a member here rather than a page p.9 gained.</b> That page states the
+        /// default in as many words - "There are no 'line of sight' rules. You can target units
+        /// through obstacles, as long as they are in range/radius" - so the clearance is a printed
+        /// narrowing of a default that admits everything, which is a fact about the card and belongs
+        /// beside the card's other two targeting dimensions. Nothing about an Attack that does not
+        /// print it changes.</para>
+        /// </summary>
+        InStraightLineClearOfUnitsAndTerrain = 3
     }
 
     /// <summary>
@@ -264,6 +292,22 @@ namespace GuardsDigital.Core.Cards
                     nameof(line));
             }
 
+            // Milestone 8.40d. The clearance member carries the line clause above it, so the refusal
+            // above holds of it for the same p.19 reason - and it holds twice over. No space lies
+            // strictly between an attacker and a unit beside it, so an adjacent-only Attack demanding
+            // a CLEAR file demands nothing of a file it never walks. It is refused rather than
+            // accepted-and-ignored: NarrowsTheDefault would otherwise report a narrowing that is not
+            // there, and none of the three faces printing this clause is adjacent-only.
+            if (line == AttackTargetLine.InStraightLineClearOfUnitsAndTerrain &&
+                reach == AttackTargetReach.AdjacentOnly)
+            {
+                throw new ArgumentException(
+                    "Rulebook p.19 counts an adjacent space as a straight line and leaves no space " +
+                    "between the two ends of it, so an Attack reaching only adjacent units narrows " +
+                    "nothing by demanding a file clear of units and terrain.",
+                    nameof(line));
+            }
+
             // Milestone 8.35z30. The modal's first bullet says "a unit in range", so the
             // union is only writable over p.13's ceiling. Paired with AdjacentOnly it would be an
             // Attack whose first arm has no range to be in; paired with the exact band it would be a
@@ -362,6 +406,18 @@ namespace GuardsDigital.Core.Cards
         public PrintedAttackTargetPolicy RestrictedToTheStraightLine() =>
             new PrintedAttackTargetPolicy(
                 TargetableUnits, Reach, AttackTargetLine.InStraightLine, Binding);
+
+        /// <summary>
+        /// Milestone 8.40d. The same policy narrowed to p.19's straight line AND to a file with no
+        /// unit and no terrain standing between its two ends, which is what Light Crossbow, Heavy
+        /// Crossbow and Arbalest print: "in a straight line and in range with no units, or terrain,
+        /// between you". A token on the file is not one of the two kinds the sentence names - see
+        /// <see cref="AttackTargetLine.InStraightLineClearOfUnitsAndTerrain"/>.
+        /// </summary>
+        public PrintedAttackTargetPolicy RestrictedToTheStraightLineClearOfUnitsAndTerrain() =>
+            new PrintedAttackTargetPolicy(
+                TargetableUnits, Reach,
+                AttackTargetLine.InStraightLineClearOfUnitsAndTerrain, Binding);
 
         /// <summary>
         /// Milestone 8.38a. The same printed-Range ceiling with p.19's separation-of-one taken out

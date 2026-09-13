@@ -471,7 +471,7 @@ Acceptance checks:
 
 Non-goals: No Bain content. No widening of `hero-condition@1`. No predicate about tokens.
 
-### [ ] 8.40d Build the unit-and-terrain clear line his five crossbows print
+### [x] 8.40d Build the unit-and-terrain clear line his five crossbows print
 
 Observable outcome: a printed Attack can require its file to be clear of units and terrain while
 allowing a token to stand on it, and every Attack written before this milestone keeps its exact target
@@ -507,6 +507,67 @@ arrives the same way so the composition calls a method rather than constructing 
 new dimension must also reach `attack-sequence@1`, whose `line` parameter is declared over this very
 enum, because Hand Crossbow's and Hunter-Seeker's ranged bullets print the crossbow clause too.
 
+**THE PARAGRAPH ABOVE PUT THE CLAUSE ON FIVE FACES AND THE CORPUS HAS IT ON THREE, WHICH IS THE ONE
+CORRECTION THIS BLOCK OWED.** This block's own "the five crossbows print" and its last sentence,
+BA-03's "all five crossbows", and the shard's contract row all put the clearance clause on the two
+modal faces as well as on the three plain ones. It is not there on the modals, and the fronts were
+read rather than remembered: Hand Crossbow prints "**Choose one —** • Target a hero in range with a
+bounty marker. • Target a unit adjacent to you", Hunter-Seeker prints those same two
+bullets under "Choose one, or both", and neither prints a line clause of any kind - which is exactly
+what the shard's own verbatim transcription already said. **Light Crossbow, Heavy Crossbow and
+Arbalest print it and nothing else in his set does**; corrected here, in BA-03 and in the contract
+row. **The bullet reach was built and asserted anyway, and it is not scope the correction left
+behind.** `attack-sequence@1` declares its `line` parameter over `EffectIntegerDomain.All<AttackTargetLine>()`,
+so a member of a shared enum that one of its two consumers could not express would be a trap for
+whichever composition reached for it first. It cost four assertions and no production code.
+
+**THE GEOMETRY IS REUSED AND THE WALK IS NEW.** `AttackTargetLine.InStraightLine` asks one membership
+question and stops, and nothing in the build asked what stands ON a file, because p.9 says there is
+nothing to ask. The fourth member, `InStraightLineClearOfUnitsAndTerrain`, asks that same membership
+question through the same `StraightLineQuery` and then walks the direction it reports from the actor
+to the target, over the spaces STRICTLY between the two ends. Neither endpoint is walked, so a unit is
+not an obstacle to itself and the attacker is not one to his own shot, and an adjacent target has
+nothing to walk at all - which falls out of the loop rather than being written as a second rule.
+`synthetic-range-obstacle-target@1` was read for its geometry and not copied: it walks OUTWARD to find
+a first obstacle, which is a different question from whether anything stands between two named spaces,
+and 8.40e still owns its blocking set unchanged.
+
+**WHICH QUERIES IT ASKS, STATED BECAUSE THE BLOCK ASKED FOR IT.** A unit is the board's own occupancy
+narrowed to heroes and minions - `TryGetObjectAt` reports tokens too, and the token is the whole of
+BA-03. Terrain is `TerrainPresenceQuery.IsTerrain`, the build's one terrain owner, which already folds
+the map's printed terrain together with 8.19c's `EffectiveTypeOverlay`. **That overlay cannot change an
+answer here and is consulted anyway.** Xargatha's Stone Gaze makes enemy HEROES count as terrain, an
+overlay names a `RuleObject`, and every object one can name is already a unit that stops this walk - so
+the choice is invisible on every board this build can produce, and it is made because "what counts as
+terrain" having two owners is how two owners come to disagree. `ObstacleQuery` is the query
+deliberately NOT asked: it answers p.18's wider word, which is precisely the word these three faces
+decline to print while Get over here! prints it. Off the map is therefore neither a unit nor terrain
+and does not block - 8.39b's reading of the same void, pinned here on a board with a hole in it, and
+unreachable on a configured map where p.19 makes the surrounding water declared terrain.
+
+**TEN CASES ON ONE FEATURELESS BOARD, AND THE BOARD IS ASSERTED BEFORE THE ANSWER IS.** A radius-4
+playable disk carries one printed sentence per p.19 direction: a token one space out, a minion one
+space out, a terrain space one space out, a clear file, a target beside the actor, a near minion with a
+hero behind it, and a seventh candidate on no file at all. The token and the terrain space are asserted
+to BE where the fixture says before anything is asserted about targets, because a token that silently
+failed to place would make this milestone's own claim pass for nothing. The three answers are literal
+set equalities and they differ from each other, so each condition is measured rather than argued, and a
+deliberate mutation - tokens added to the blocking set - fails exactly the one case that names them.
+
+**THE CORPUS CASE COMPARES THE QUERY AGAINST THE PAGES RATHER THAN AGAINST ITSELF.** Every sealed
+static `*CardContent` class in the verified namespace is found by reflection, on 8.38d's rule that a
+list of hero names closes the hole for the heroes on it and leaves it open for the next one, and every
+Attack action's policy plus every `attack-sequence@1` bullet's declared line is collected out of it.
+Each is asked of the discriminating board and compared with p.13's reach, p.13's unit narrowing,
+p.19's file membership and 8.35z30's isolation union written out again in the test. Fourteen heroes,
+and not one declaration moved.
+
+**NOTHING MOVED THAT A MEMBER CANNOT MOVE.** The three existing members keep their values, the payload
+already writes this enum as an integer through `SnapshotEnumReader`, and no field, property or schema
+version was added - so `SnapshotCompatibilityCorpusTests` and `VerifiedContentIdentityTests` pass
+untouched. That is 8.38d's measured rule read in the cheap direction for once, and it is asserted
+rather than assumed: the enum's four values and its member count are pinned by a case of their own.
+
 Acceptance checks:
 
 - The clause admits a target whose file carries a token and refuses one whose file carries a unit or
@@ -522,6 +583,8 @@ Acceptance checks:
 
 Non-goals: No Bain content. No change to `synthetic-range-obstacle-target@1`'s blocking set - 8.40e owns
 that family. No general line-of-sight rule: this is one printed narrowing, not p.9 gaining a page.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840d-build-the-unit-and-terrain-clear-line-his-five-crossbows-print-completion-evidence).
 
 ### [ ] 8.40e Build the pull his Silver basic prints
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Modifications;
@@ -81,9 +82,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // p.19 makes adjacency the separation-of-one case of a file, so the single membership
             // question already answers it, and a second adjacency test would be a second rule.
             // Milestone 8.38a reads the complement from the same membership question, so a card that
-            // demands the file and a card that forbids it cannot disagree about what one is. The
-            // switch is exhaustive on purpose: a fourth member added later fails to compile here
-            // rather than silently admitting everything.
+            // demands the file and a card that forbids it cannot disagree about what one is.
+            // Milestone 8.40d's fourth member asks that same question and then walks what stands on
+            // the file, so all four readings of "which file" are still one query. The switch is
+            // exhaustive on purpose: a fifth member added later reaches the refusal below rather than
+            // silently admitting everything.
             bool StandsOnAnAdmittedLine(HexCoordinate candidate)
             {
                 switch (policy.Line)
@@ -96,12 +99,77 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     case AttackTargetLine.InStraightLine:
                         return StraightLineQuery.AreInStraightLine(
                             attackerOccupancy.Coordinate, candidate);
+                    case AttackTargetLine.InStraightLineClearOfUnitsAndTerrain:
+                        return StraightLineQuery.AreInStraightLine(
+                                attackerOccupancy.Coordinate, candidate) &&
+                            NoUnitOrTerrainStandsBetween(
+                                attackerOccupancy.Coordinate, candidate);
                     default:
                         throw new ArgumentOutOfRangeException(
                             nameof(policy), policy.Line,
                             "A printed Attack target policy states whether it excludes, demands or " +
                             "ignores rulebook p.19's straight line.");
                 }
+            }
+
+            // Milestone 8.40d. "with no units, or terrain, between you" - Light Crossbow's, Heavy
+            // Crossbow's and Arbalest's clearance clause, walked over the spaces STRICTLY between the
+            // two ends of the file and neither endpoint. p.19's own words are "between you and the
+            // target", so the attacker's space and the target's space are the ends of the line rather
+            // than places on it: a unit is not an obstacle to itself, and the attacker is not one to
+            // his own shot. An adjacent target therefore has nothing between it and the shooter and is
+            // unaffected, which falls out of the loop rather than being written as a second rule.
+            //
+            // WHICH TWO QUESTIONS ARE ASKED, AND WHICH THIRD IS DELIBERATELY NOT.
+            // "Unit" is p.19's type-insensitive union of both registers, asked of the board's
+            // occupancy: a hero or a minion standing on the space, and nothing else the index holds.
+            // A token is an occupant and is not a unit, which is the whole of BA-03; so is p.18's
+            // fourth kind, "any objects represented by miniatures", which this sentence names no more
+            // than it names tokens.
+            //
+            // "Terrain" is TerrainPresenceQuery's question rather than a second reading of the map,
+            // and that is the deliberate part. That query folds the map's printed terrain together
+            // with milestone 8.19c's EffectiveTypeOverlay, so a card that makes something count as
+            // terrain reaches this clause without this file knowing the card exists. Today the
+            // overlay cannot change an answer here - Xargatha's Stone Gaze makes enemy HEROES count
+            // as terrain, and a hero standing between is already a unit stopping the walk - so the
+            // choice is invisible on every board this build can produce and is made anyway, because
+            // "what counts as terrain" having two owners is how the two come to disagree.
+            //
+            // What is NOT asked is p.18's obstacle classification. ObstacleQuery answers the wider
+            // word - tokens, the void past the map's edge, and milestone 8.7's ConditionalObstacleOverlay
+            // among them - and the wider word is precisely the one these three faces decline to print
+            // while Get over here! prints it. Off the map is therefore neither a unit nor terrain and
+            // does not block, which is milestone 8.39b's recorded reading of the same void ("the
+            // absence of a space") and is unreachable on a configured map anyway, because p.19 makes
+            // the water around the board declared terrain rather than nothing.
+            bool NoUnitOrTerrainStandsBetween(HexCoordinate from, HexCoordinate to)
+            {
+                if (!StraightLineQuery.TryGetDirection(from, to, out var direction, out var distance))
+                {
+                    // p.19's degenerate line - a space with itself - has no space between its ends.
+                    // Unreachable here, because no attacker is his own enemy; answered rather than
+                    // left to a walk that would read an undefined direction.
+                    return true;
+                }
+
+                for (var step = 1; step < distance; step++)
+                {
+                    var between = StraightLineQuery.Step(from, direction, step);
+                    if (TerrainPresenceQuery.IsTerrain(board, between, modifications))
+                    {
+                        return false;
+                    }
+
+                    if (board.TryGetObjectAt(between, out var standing) &&
+                        (standing.Kind == BoardObjectKind.Hero ||
+                            standing.Kind == BoardObjectKind.Minion))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
             }
 
             // Milestone 8.35z30, RULING 1. "at maximum range" is a band and "in range" is
