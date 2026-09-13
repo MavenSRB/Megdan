@@ -314,6 +314,46 @@ Evidence: complete unfiltered dotnet harness **2,886/2,886 passed, 0 failed, 0 s
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839g1-build-the-seam-a-printed-card-claims-the-solo-victory-through-completion-evidence).
 
+### [x] 8.39g2 Build the moved-branch attack bonus her three lunges print
+
+**The second split out of 8.39h's pre-composition probe, on the same terms as 8.39g1 above.** Same total scope, no acceptance check dropped, and it runs before 8.39h because the composition names what it builds.
+
+Observable outcome: a printed Attack can raise its own value on the branch that moved before it, and only on that branch.
+
+**THE CLAUSE, AND WHY IT HAS NOWHERE TO GO TODAY.** Daring Strike, Bold Thrust and Fearless Lunge each print "**Choose one —** • Before the attack: Move 1[/2/3] space[s] in a straight line. Target a hero adjacent to you in the direction of the move; **+2 Attack**. • Target a unit adjacent to you." The `+2` is inside bullet one and belongs to bullet one, which is what the printed `Attack 4+` and `5+` of CU-07 announce.
+
+**EVERY PRINTED `+N` IN THIS BUILD IS A `RosterValueContributionDefinition` DECLARED ON THE ACTION**, scaled by a `RosterValueQueryKind` - Tigerclaw's Backstab, Sabina's Quickdraw trio, Tali's three Winter Attacks. An action-level declaration cannot be arm-conditional. And **`RosterValueQueryKind` has exactly six members**, none of which asks whether the actor moved. **There is no node-level value grant at all**: `SyntheticModificationCapabilities` offers a Defense bonus, a fast-travel restriction, an obstacle permission, a push immunity and a count-as-minion, and `SyntheticValueCapabilities` publishes only `CardRadiusV1`. So there is no way to compose this clause, and 8.39h would have had to invent one mid-composition.
+
+**THE ROUTE NOT TAKEN, RECORDED BECAUSE IT IS CHEAPER AND WRONG.** Arm one could create an Active effect declaring `RuleModification.ForValue(Attack, 2, ...)`, reusing `ActiveEffectCreationHandler` and needing no new vocabulary - Misa's "This turn: Gain +N Defense" shape. But `RuleValueApplicability` carries only `Always`, `ControllerBasicAttackAction` and `ControllerBasicAction`, **nothing scoped to one action**, so a turn-scoped effect would also raise a repeat of this Attack or an Attack granted later in the same turn. That is a rule the card does not print, and the whole discipline of this catalog is that a shared label must not attach a rule the printed text does not carry.
+
+**THE READING IS `actor-moved-this-action@1`'s, ASKED IN A SECOND PLACE RATHER THAN RE-DECIDED.** Milestone 8.23 minted that capability for Tigerclaw's Combat Reflexes and answers it by comparing `AttackActionResolutionState.ActorSpaceAtActionStart` against where the hero stands now. This block asks the identical question from the value pipeline, because a second reading of "did you move" is exactly the kind of divergence the Middlefinger/Enfeeblement lesson forbids. **It is equivalent to "arm one was taken" only because the Move inside arm one is mandatory** - CU-Q4's natural answer, which this block settles in the same breath.
+
+**AND THE FACT HAS TO BE PLUMBED, WHICH IS THE ACTUAL COST.** `RosterDynamicValueQuery.MatchCount` is handed the actor's CURRENT space, the board, the participants, the bound target, the round and turn, the roster state, the definitions and the instances - and **not the action-start space**, which is the one fact this query needs. All four `CalculateAttackValue` call sites have a resolution in scope carrying it (`resolution`, `pendingAttackResolution` twice, `pendingResolution`), so the parameter is threaded rather than derived.
+
+**ONE EDGE THE BLOCK MUST STATE RATHER THAN DISCOVER.** The attack value is RE-DERIVED at three verification sites and compared against the stored one, so a question whose answer moved mid-attack rejects the continuation. A defender's card text can move the attacker - Whisper's `defended-card-forced-move@1` - so an attacker pushed back onto exactly the space the lunge started from would flip this answer. That is inherited from `actor-moved-this-action@1` rather than introduced here, the failure is a refusal rather than a wrong total, and taking a different reading for the value pipeline would make the two disagree. Stated, and asserted.
+
+Acceptance checks:
+
+- An Attack declaring the query contributes its printed amount when the actor has moved since the action started, and nothing when it has not - asserted both ways on one board.
+- An Attack whose resolution records no action-start space contributes nothing, which is `actor-moved-this-action@1`'s own reading of an Attack that never asked.
+- The capability and the value query answer the SAME question on the same board, asserted directly rather than by inspection.
+- The six existing query kinds are unchanged in behaviour, and a declaration binding none of them is unaffected.
+- ~~The Range channel is untouched: its call site passes no action-start space and its declarations cannot reach this query.~~ **THIS CHECK HAD A FALSE PREMISE AND THE REPLACEMENT IS STRONGER**, which is 8.39e's lesson arriving in this block: the refusal is not at the call site at all. `RosterValueContributionDefinition`'s own constructor admits ONLY `EnemyUnitsAdjacentToActor` on the Range channel - "dynamic Range is derived before an Attack target exists" - so a Range declaration naming this query **cannot be constructed**, let alone evaluated, and the call site needs no defence because the combination is unrepresentable. That is the closed-vocabulary-at-runtime discipline 8.39b recorded, already in place here. Asserted in its corrected form, both ways.
+- No schema field, corpus digest or pinned constant moves.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Cutter content - the faces that declare this are composed at 8.39h. No change to `actor-moved-this-action@1`, which keeps its own callers and its own shape. No new `RuleValueApplicability` member; the one-action scope this clause would want is not built, because the query answers the question without it.
+
+**THE BLOCK'S PREDICTIONS HELD EXCEPT THE ONE ABOVE**, and the exception is the useful kind: it predicted a weaker protection than the build already has.
+
+**THE PLUMBING WAS THE WHOLE COST, EXACTLY AS PREDICTED.** The enum member and its case are eight lines; threading `HexCoordinate? actorSpaceAtActionStart` from four `CalculateAttackValue` call sites through `Contributions` into `MatchCount` is the rest. **It is threaded from each caller's own resolution rather than read off the backend's `pendingAttackResolution` field**, and that is not a style choice: three of the four callers are RE-DERIVATION sites verifying a stored total, and each must ask the question against the resolution it is verifying rather than against whichever one the backend happens to be holding.
+
+**THE OPTIONAL PARAMETER IS WHY NOTHING ELSE MOVED.** Absent it the new query answers nothing, so the Range call site, the Defense entry point and every caller written before this milestone keep their exact contributions - asserted by running a declaration bound to one of the six older kinds with the fact supplied and withheld and comparing the amounts.
+
+Evidence: complete unfiltered dotnet harness ****2,893/2,893 passed, 0 failed, 0 skipped**** - the 2,886 baseline plus exactly this milestone's seven cases. No schema field, corpus digest or pinned constant moved. No Cutter content.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839g2-build-the-moved-branch-attack-bonus-her-three-lunges-print-completion-evidence).
+
 ### [ ] 8.39h Compose Cutter's eighteen dealt faces and prove them at the focused tier
 
 Observable outcome: all eighteen of her dealt faces carry composed printed text with no `PrintedTextComposition.DeferredUntil`, and her focused authoritative rule tests resolve every branch each face states.

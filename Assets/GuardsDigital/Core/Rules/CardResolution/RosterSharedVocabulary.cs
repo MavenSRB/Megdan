@@ -125,7 +125,39 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// stays in the discard". The two Winter Attacks composed here are the roster's first to answer
         /// differently depending on who is performing them rather than on the board.</para>
         /// </summary>
-        SourceCardNotInDiscard = 6
+        SourceCardNotInDiscard = 6,
+
+        /// <summary>
+        /// Milestone 8.39g2. Whether the acting hero has left the space this Attack started from -
+        /// Cutter's Daring Strike, Bold Thrust and Fearless Lunge, whose first bullet reads "Before the
+        /// attack: Move 1[/2/3] space[s] in a straight line. Target a hero adjacent to you in the
+        /// direction of the move; <b>+2 Attack</b>."
+        ///
+        /// <para><b>It exists because a printed <c>+N</c> has exactly one home in this build and that
+        /// home cannot be arm-conditional.</b> Every one of them is a
+        /// <see cref="RosterValueContributionDefinition"/> declared on the ACTION, and these three
+        /// print the bonus inside one bullet of a modal. The alternative was an Active effect created
+        /// by the bullet, which needs no new vocabulary and is wrong: <see cref="RuleValueApplicability"/>
+        /// has no member scoped to one action, so a turn-scoped effect would also raise a repeat of
+        /// this Attack or an Attack granted later in the same turn - a rule the card does not
+        /// print.</para>
+        ///
+        /// <para><b>The question is <c>actor-moved-this-action@1</c>'s, asked in a second place rather
+        /// than re-decided.</b> Milestone 8.23 minted that capability for Tigerclaw's Combat Reflexes
+        /// and answers it by comparing the Attack's recorded
+        /// <c>AttackActionResolutionState.ActorSpaceAtActionStart</c> against where the hero stands
+        /// now; this member is that comparison reached from the value pipeline. Two readings of "did
+        /// you move" would be exactly the divergence a shared label must never hide.</para>
+        ///
+        /// <para><b>It is equivalent to "the moving bullet was taken" only because that bullet's Move
+        /// is mandatory</b>, which is what makes the composition faithful rather than approximate: an
+        /// arm that could decline its Move and still take its target would need a different fact.</para>
+        ///
+        /// <para>Answers one or nothing, matching every predicate member here. An Attack whose
+        /// resolution recorded no action-start space - which is every Attack whose card never asks -
+        /// answers nothing, on the same reading the capability takes of the same absence.</para>
+        /// </summary>
+        ActorMovedThisAction = 7
     }
 
     /// <summary>
@@ -333,7 +365,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             EffectRosterState rosterState,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            // Milestone 8.39g2. The space the enclosing Attack recorded when it started, which is the
+            // one fact `ActorMovedThisAction` needs and the only one this method was never handed.
+            // Optional, so the Range call site and every caller written before that milestone keep
+            // their exact contributions - and absent it, that query answers nothing rather than
+            // guessing from a current position with nothing to compare against.
+            HexCoordinate? actorSpaceAtActionStart = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
@@ -348,7 +386,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 var matches = MatchCount(
                     declaration.Query, offer.ActorId, offer.SourceCardInstanceId, target, definitions,
-                    instances, participants, board, modifications, rosterState, roundIndex, turnIndex);
+                    instances, participants, board, modifications, rosterState, roundIndex, turnIndex,
+                    actorSpaceAtActionStart);
                 if (matches == 0) continue;
                 result.Add(new ValueContribution(
                     ValueContributionKind.CardTextModifier,
@@ -490,7 +529,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             EffectRosterState rosterState,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            HexCoordinate? actorSpaceAtActionStart)
         {
             if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out var actorAt))
                 return 0;
@@ -543,6 +583,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         ? 1
                         : 0;
                 }
+
+                // Milestone 8.39g2. The same comparison `actor-moved-this-action@1` makes, reached from
+                // the value pipeline: the space the Attack recorded at its start against the space the
+                // hero occupies now. An Attack that recorded none never asked, and answers nothing.
+                case RosterValueQueryKind.ActorMovedThisAction:
+                    return actorSpaceAtActionStart.HasValue &&
+                        !actorAt.Equals(actorSpaceAtActionStart.Value)
+                        ? 1
+                        : 0;
 
                 default:
                     throw new ArgumentOutOfRangeException(nameof(query), query, "Unknown roster value query.");

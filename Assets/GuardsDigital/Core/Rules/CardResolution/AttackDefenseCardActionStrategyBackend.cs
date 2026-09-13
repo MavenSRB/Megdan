@@ -995,7 +995,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 materializedInstances,
                 participants,
-                modifications);
+                modifications,
+                resolution.ActorSpaceAtActionStart);
             var defenseResolution = new PendingAttackResolution(
                 resolution.ResolutionId,
                 resolution.SourceCardInstanceId,
@@ -1955,7 +1956,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 materializedInstances,
                 participants,
-                modifications);
+                modifications,
+                pendingAttackResolution.ActorSpaceAtActionStart);
 
             // Milestone 8.35z24. What p.14's step 3 needs is a target still STANDING, not a
             // target still reachable - the same narrowing milestone 8.23 made at step 6 in
@@ -2153,7 +2155,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 materializedInstances,
                 participants,
-                modifications);
+                modifications,
+                pendingAttackResolution.ActorSpaceAtActionStart);
             // Milestone 8.23. What p.14's comparison needs is a target still STANDING, not a target
             // still reachable. The page names its target at step 2 and never names it again; step 4
             // is the defender's own card text, and Tigerclaw's Sidestep and Evade are the first
@@ -2606,7 +2609,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions,
                     materializedInstances,
                     participants,
-                    modifications);
+                    modifications,
+                    pendingResolution.ActorSpaceAtActionStart);
                 if (verifiedTargetChoice != null ||
                     !PrintedValuesMatch(pendingResolution.AttackValue, expectedAttackValue))
                 {
@@ -2910,7 +2914,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            // Milestone 8.39g2. Threaded from the caller's own resolution rather than read off the
+            // backend's field, because three of the four callers are RE-DERIVATION sites verifying a
+            // stored total and each must ask the question against the resolution it is verifying.
+            HexCoordinate? actorSpaceAtActionStart = null)
         {
             var composed = AttackValueQuery.Calculate(offer, definitions, heroItems, modifications);
             var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
@@ -2927,7 +2935,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 rosterState,
                 current?.RoundIndex ?? 0,
-                current?.TurnIndex ?? 0);
+                current?.TurnIndex ?? 0,
+                actorSpaceAtActionStart);
             // Milestone 8.19c moved the printed/item/source composition into AttackValueQuery, so what
             // is left here is p.14's card-text contribution alone - the half that needs the bound
             // target and this turn's own history. The composition still happens once, at every one of
