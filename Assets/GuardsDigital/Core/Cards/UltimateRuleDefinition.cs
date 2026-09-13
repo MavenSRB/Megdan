@@ -116,7 +116,37 @@ namespace GuardsDigital.Core.Cards
         /// It is the only member here that is bounded at all, because it is the only one whose printed
         /// sentence bounds it.</para>
         /// </summary>
-        AfterControllerPerformsPrimaryAction = 6
+        AfterControllerPerformsPrimaryAction = 6,
+
+        /// <summary>
+        /// Milestone 8.40h. Bain's A Complicated Profession, "After you give a hero the [bounty] bounty
+        /// marker that hero discards a card, if able."
+        ///
+        /// <para><b>A seventh condition, and the first that is not about an action at all.</b> The six
+        /// above are matched against a completed <see cref="GuardsDigital.Core.Cards.PerformedBasicAction"/>
+        /// or <see cref="GuardsDigital.Core.Cards.PerformedPrimaryAction"/>, both of which are facts the
+        /// action boundary produces. This one is matched against a give that has already attached its
+        /// marker, INSIDE the effect that gave it - Dead or Alive's give sits in an "After the attack:"
+        /// clause, so the enclosing action has not ended and may never end in a way that names the
+        /// recipient. What is watched is therefore <see cref="GuardsDigital.Core.Timing.TimingCheckpoint.MarkerGivenToHero"/>,
+        /// and the condition is carried in <see cref="UltimateRuleDefinition.TriggerCheckpoints"/> for
+        /// the reason milestone 8.19c1 gives for keeping the two apart: a checkpoint is a position in
+        /// the rules, and which objects at that position concern a card is the card's own words.</para>
+        ///
+        /// <para><b>It says "you", and nothing else.</b> The printed sentence's only qualifier on the
+        /// give is the giver, so the declaration narrows the giver to the controller and narrows the
+        /// RECIPIENT not at all - "a hero" on this card set's conventions is every hero, Bain included.
+        /// That is why this condition needs no subject enum beside it, where
+        /// <see cref="AfterPushTriggerSubject"/> needed one for "an enemy hero": the subject the
+        /// ability learns is a fact the give produces rather than a choice the card makes.</para>
+        ///
+        /// <para><b>What it excludes, and why the exclusion is structural.</b> Milestone 8.40b's
+        /// TRANSFER and RETURN are different capabilities, and only the give reports a recipient, so a
+        /// marker arriving by either route reaches nothing here - and a give another hero performed is
+        /// that hero's give, read exactly as <see cref="AfterPushTrigger"/> reads "if YOU push" on
+        /// Sabina's. BA-D5.</para>
+        /// </summary>
+        AfterControllerGivesMarker = 7
     }
 
     /// <summary>
@@ -248,7 +278,7 @@ namespace GuardsDigital.Core.Cards
                     (isCheckpointTriggered || beforeAction.IsDeclared || afterPush.IsDeclared) ||
                 isCheckpointTriggered != (triggerCondition != UltimateTriggerCondition.None) ||
                 (triggeredEffect.HasValue && !triggeredEffect.Value.IsDefined) ||
-                TriggerCheckpoints.Any(value => value != TimingCheckpoint.ActionEnded) ||
+                TriggerCheckpoints.Any(value => value != WatchedMomentOf(triggerCondition)) ||
                 TriggerCheckpoints.Distinct().Count() != TriggerCheckpoints.Count)
             {
                 throw new ArgumentException(
@@ -351,6 +381,22 @@ namespace GuardsDigital.Core.Cards
         /// tenth that no query asked would be a rule the seam conformance could not find a consumer
         /// for.</para>
         /// </summary>
+        /// <summary>
+        /// The one moment a condition watches. Milestone 8.40h.
+        ///
+        /// <para>It pairs the two halves of a triggered declaration rather than admitting a list, and
+        /// that is the whole of the widening this milestone makes to the guard above: before it, every
+        /// condition in this file was matched against a completed action and
+        /// <see cref="TimingCheckpoint.ActionEnded"/> was the only checkpoint any of them could name.
+        /// <see cref="UltimateTriggerCondition.AfterControllerGivesMarker"/> is matched against a give
+        /// that happened inside a running effect, so it names a different moment - and naming the wrong
+        /// one is refused here rather than discovered by a trigger that never fires.</para>
+        /// </summary>
+        private static TimingCheckpoint WatchedMomentOf(UltimateTriggerCondition condition) =>
+            condition == UltimateTriggerCondition.AfterControllerGivesMarker
+                ? TimingCheckpoint.MarkerGivenToHero
+                : TimingCheckpoint.ActionEnded;
+
         public static UltimateRuleDefinition PermanentDeclaration(string ruleId, string ruleKind) =>
             new UltimateRuleDefinition(
                 ruleId,
@@ -399,6 +445,38 @@ namespace GuardsDigital.Core.Cards
                 ruleId, ruleKind, standingRules, PrintedTextComposition.None, printedValues,
                 triggeredEffect, triggerCheckpoints, triggerCondition,
                 grantedTargetExclusion: grantedTargetExclusion);
+
+        /// <summary>
+        /// Milestone 8.40h. A permanent Ultimate ability that runs immediately after its controller has
+        /// given a hero a marker - Bain's A Complicated Profession, "After you give a hero the [bounty]
+        /// bounty marker that hero discards a card, if able."
+        ///
+        /// <para><b>It is a convenience over <see cref="TriggeredAbility"/> rather than a sixth
+        /// factory, and that is the measured point of this milestone.</b> Milestone 8.38d added
+        /// <c>GrantedTargetExclusion</c> to this type and it was the first change ever to move all
+        /// twelve corpus digests, because the identity oracle walks every public instance property of
+        /// every object it reaches. A give-watching declaration expressed as a new property here would
+        /// have moved all fifteen for a fact fourteen of them do not carry. It is expressed instead as
+        /// one new member of <see cref="UltimateTriggerCondition"/> and one new member of
+        /// <see cref="TimingCheckpoint"/> carried in the collection this type already publishes, and an
+        /// added enum member changes no existing declaration's value - so no hero's digest moves and no
+        /// revision string follows.</para>
+        ///
+        /// <para>It carries standing rules for the reason <see cref="AfterPushAbility"/> does: p.16
+        /// gives the card one permanent ability, and a printed face may state it as a value sentence
+        /// plus a trigger sentence. Bain's prints only the trigger.</para>
+        /// </summary>
+        public static UltimateRuleDefinition AfterMarkerGivenAbility(
+            string ruleId,
+            string ruleKind,
+            EffectDefinitionReference triggeredEffect,
+            IEnumerable<PrintedValueDefinition> printedValues,
+            IEnumerable<RuleModification> standingRules = null) =>
+            new UltimateRuleDefinition(
+                ruleId, ruleKind, standingRules, PrintedTextComposition.None, printedValues,
+                triggeredEffect,
+                new[] { TimingCheckpoint.MarkerGivenToHero },
+                UltimateTriggerCondition.AfterControllerGivesMarker);
 
         /// <summary>
         /// Milestone 8.19a. A permanent Ultimate ability that runs before its controller performs an

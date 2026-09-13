@@ -2078,6 +2078,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // watched since 8.19c1; this one did not, so an after-push trigger could never fire
                 // from an Attack's own rider, which is the only push her set prints.
                 watchesAppliedPushes: WatchesAppliedPushes(materializedDefinitions, instances),
+                // Milestone 8.40h. The same statement for the moment a marker is given, and this
+                // altitude is the one Bain's own give needs: Dead or Alive is a basic ATTACK whose give
+                // sits in an "After the attack:" clause, so his Ultimate's moment happens inside
+                // rulebook p.14's card text rather than inside a Skill.
+                watchesMarkerGives: WatchesMarkerGives(materializedDefinitions, instances),
                 // Milestone 8.25d. Rulebook p.10: "You cannot repeat a repeated action!" A
                 // `RepeatAction` node reached inside p.14 asks to repeat the attack this text is
                 // running inside - `RecordOwedAttackRepeat` owes the request to that attack and to no
@@ -2183,12 +2188,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     modifications);
             }
 
-            RunCardTextPushTriggers(
-                result, step.CardTextActorId, step.CheckpointSourceCardInstanceId,
-                step.CardTextActionDefinitionId, step.CardTextTiming,
-                step.CardTextRemainderResolution, step.CardTextRemainderOutcome,
-                materializedDefinitions, instances, participants, timing, tieBreaker,
-                roundIndex, turnIndex, steps);
+            if (!RunCardTextPushTriggers(
+                    result, step.CardTextActorId, step.CheckpointSourceCardInstanceId,
+                    step.CardTextActionDefinitionId, step.CardTextTiming,
+                    step.CardTextRemainderResolution, step.CardTextRemainderOutcome,
+                    materializedDefinitions, instances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex, steps))
+            {
+                // Milestone 8.40h. The give's own moment, asked where the push's is and only where the
+                // push's did not stand. No printed face pushes and gives at one node.
+                RunCardTextMarkerGiveTrigger(
+                    result, step.CardTextActorId, step.CheckpointSourceCardInstanceId,
+                    step.CardTextActionDefinitionId, step.CardTextTiming,
+                    step.CardTextRemainderResolution, step.CardTextRemainderOutcome,
+                    materializedDefinitions, instances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex, steps);
+            }
 
             // Milestone 8.19a. Rulebook p.14's step 1 is the one moment whose remainder is the rest of
             // the page rather than a list of facts, so when the text finishes without asking anything
@@ -3170,6 +3185,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 heroItems: skillBackend.HeroItems,
                 enclosingAttack: EnclosingAttackOf(pendingCardText.Attack, materializedDefinitions, board),
                 rosterState: rosterState,
+                // Milestone 8.40h, the resume half of the same statement the start half makes, and the
+                // half Bain's own face needs: Dead or Alive's clause SELECTS the hero it gives to, so
+                // the text pauses on that question and the give itself happens on this pass. A start
+                // half alone would have watched the moment on every composition except the one the
+                // printed card actually has.
+                watchesMarkerGives: WatchesMarkerGives(materializedDefinitions, materializedInstances),
                 // Milestone 8.25d, the resume half of the same bound the start half states: a frame
                 // that comes back to a `RepeatAction` node after answering an earlier question is
                 // still running inside the same attack, and p.10 bars a repeat of a repeat wherever
@@ -3250,6 +3271,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RecordImmediateLanePush(
                 step.LanePushCause, paused.Attack.ResolutionId, participants, modifications);
             if (RunCardTextPushTriggers(
+                    step, paused.Frame.ActorId, paused.Frame.SourceCardInstanceId,
+                    paused.Frame.ActionDefinitionId, paused.Moment, paused.Attack, paused.Outcome,
+                    materializedDefinitions, instances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex, facts))
+            {
+                return CardActionResolutionResult.Accept(false, null, null, facts);
+            }
+
+            // Milestone 8.40h, the resume half. Dead or Alive's clause asks which enemy hero in radius
+            // receives the marker, so the give happens on THIS pass and the moment his Ultimate watches
+            // is produced here rather than where the text started.
+            if (RunCardTextMarkerGiveTrigger(
                     step, paused.Frame.ActorId, paused.Frame.SourceCardInstanceId,
                     paused.Frame.ActionDefinitionId, paused.Moment, paused.Attack, paused.Outcome,
                     materializedDefinitions, instances, participants, timing, tieBreaker,
@@ -3778,7 +3811,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ref LanePushCauseKind lanePushCause)
         {
             if (!result.Accepted || board == null ||
-                ((appliedPushes == null || appliedPushes.Count == 0) && skillBackend.StagedMinionDefeats.Count == 0))
+                ((appliedPushes == null || appliedPushes.Count == 0) &&
+                    skillBackend.StagedMinionDefeats.Count == 0 &&
+                    !skillBackend.StagedMarkerGive.IsDefined))
             {
                 return result;
             }
@@ -3786,7 +3821,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var steps = new List<ResolutionStep>(result.Steps);
             var pushes = appliedPushes ?? Array.Empty<RuleObject>();
             var complete = result.IsComplete;
-            while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0)
+            while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0 ||
+                skillBackend.StagedMarkerGive.IsDefined)
             {
                 var interrupted = skillBackend.PendingResolution;
                 if (interrupted == null || interrupted.PendingChoice != null)
@@ -3817,7 +3853,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     if (defeat.LanePush.Cause != LanePushCauseKind.None) lanePushCause = defeat.LanePush.Cause;
                 }
 
-                if (minionDefeats.Count > 0 || !TryStartAfterPushTrigger(interrupted, pushes, boundary, steps))
+                // Milestone 8.40h. The give's own trigger joins this moment rather than forming a
+                // second one, because it is the same shape: the effect stopped at a node it finished,
+                // a source that watches that node's fact runs, and the effect carries on from exactly
+                // where it is. It is asked only where the push trigger did not stand, so the two never
+                // interleave - no printed face in this build pushes and gives at one node, and a face
+                // that did would still have the pushes it owed run first, in the order the page
+                // produced them.
+                var markerGivenTo = skillBackend.StagedMarkerGive;
+                if (minionDefeats.Count > 0 ||
+                    (!TryStartAfterPushTrigger(interrupted, pushes, boundary, steps) &&
+                        !TryStartMarkerGivenTrigger(
+                            interrupted.ActorId, interrupted.ResolutionId, markerGivenTo, boundary,
+                            steps)))
                 {
                     var continued = skillBackend.ContinueAfterInterrupt(
                         boundary.Definitions, boundary.Instances, boundary.Participants,
@@ -3978,6 +4026,135 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 opposingHeroId: IntrinsicKindQuery.Of(source.PushedObject) == RuleObjectKind.Hero
                     ? source.PushedObject.HeroId
                     : default,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
+
+        /// <summary>
+        /// Milestone 8.40h. Starts the trigger owed for a marker this hero has just given, and reports
+        /// whether it is still standing when this returns.
+        ///
+        /// <para>The exact counterpart of <see cref="TryStartAfterPushTrigger(HeroId,
+        /// GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId,
+        /// IReadOnlyList{RuleObject}, ActionBoundaryContext, List{ResolutionStep})"/>, with one
+        /// difference the rules make: a Push displaces a batch and owes a run per object, and a give
+        /// gives one marker to one hero, so there is no queue and nothing is ever left owed.</para>
+        /// </summary>
+        private bool TryStartMarkerGivenTrigger(
+            HeroId givingHeroId,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            HeroId recipientId,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (!recipientId.IsDefined || board == null)
+            {
+                return false;
+            }
+
+            var sources = GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerQuery.Derive(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    boundary.Definitions, boundary.Instances),
+                board,
+                givingHeroId,
+                recipientId);
+            for (var index = 0; index < sources.Count; index++)
+            {
+                if (RunOneMarkerGivenTrigger(
+                        sources[index], interruptedResolutionId, boundary, steps))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// One source's effect, run for the hero one give put a marker on. Returns whether it paused; a
+        /// trigger that resolved in a single pass has already published its facts and left nothing
+        /// standing - which is what "discards a card, <b>if able</b>" does when that hero's hand is
+        /// empty.
+        /// </summary>
+        private bool RunOneMarkerGivenTrigger(
+            GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerSource source,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (!ContentCatalogs.TriggeredEffects.TryGet(source.TriggeredEffect, out var effect))
+            {
+                throw new InvalidOperationException(
+                    $"After-marker-given trigger effect '{source.TriggeredEffect}' is not configured.");
+            }
+
+            var step = EffectResolutionSession.Start(
+                new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                    source.ResolutionIdValue),
+                source.SourceCardInstanceId,
+                source.SourceDefinitionReference,
+                source.SourceActionDefinitionId,
+                source.ControllerId,
+                source.ControllerId,
+                ActionInvocationContext.PrintedPrimary,
+                MarkerGivenTriggerContext(effect, source, boundary));
+            if (!step.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A configured after-marker-given trigger was refused by its own effect frame.");
+            }
+
+            steps.AddRange(PreActionFacts(
+                step, source.SourceCardInstanceId, source.SourceActionDefinitionId,
+                source.ControllerId, CardTextTiming.None));
+            if (step.Frame?.PendingChoice == null)
+            {
+                AppendSkillRequestedHeroDefeats(
+                    step.RequestedHeroDefeats,
+                    new ActionResolutionId(source.ResolutionIdValue),
+                    source.SourceCardInstanceId,
+                    source.SourceActionDefinitionId,
+                    source.ControllerId,
+                    boundary,
+                    steps);
+                return false;
+            }
+
+            pendingEffectInterrupt =
+                new GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt(
+                    step.Frame,
+                    GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind
+                        .AfterMarkerGivenTrigger,
+                    RuleObject.ForHero(source.RecipientId),
+                    interruptedResolutionId);
+            return true;
+        }
+
+        /// <summary>
+        /// The frame context an after-marker-given trigger runs under. Its opposing hero is the hero
+        /// who received the marker, because "that hero" is the whole subject of the printed rider and
+        /// the frame's own vocabulary for the other side of a moment is this slot - the same slot
+        /// milestone 8.19c1 hands the pushed hero.
+        ///
+        /// <para><b>"Opposing" names the position rather than the side.</b> Bain's sentence says "a
+        /// hero", so an ally of his - or Bain himself, whom BA-D5 puts inside "a hero in play" - can be
+        /// the one who received it, and the trigger is still about that hero.</para>
+        /// </summary>
+        private EffectResolutionContext MarkerGivenTriggerContext(
+            EffectDefinition effect,
+            GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerSource source,
+            ActionBoundaryContext boundary) =>
+            new EffectResolutionContext(
+                effect,
+                ContentCatalogs.Capabilities,
+                boundary.Participants,
+                boundary.Timing,
+                boundary.RoundIndex,
+                boundary.TurnIndex,
+                CurrentModificationsFor(boundary, source.ControllerId),
+                EffectCardState.Of(boundary.Definitions, boundary.Instances),
+                ActionKind.Skill,
+                opposingHeroId: source.RecipientId,
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 rosterState: rosterState);
@@ -4241,6 +4418,68 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.40h. Runs the trigger owed for a marker rulebook p.14's card text has just
+        /// given, and reports whether it is standing.
+        ///
+        /// <para><b>Why this altitude and not only the Skill's.</b> Bain's Dead or Alive is a basic
+        /// Attack whose give is printed in an "After the attack:" clause, so the one give his dealt set
+        /// performs happens here. The Skill altitude carries the same moment for a face that gives from
+        /// a Skill - his boxed Side Quest's shape - and both reach the identical query, frame and
+        /// interrupt, because a second copy is how two altitudes come to disagree about when a give is
+        /// a give.</para>
+        ///
+        /// <para><b>What it inherits from the push trigger, stated rather than discovered.</b> A
+        /// trigger standing here stops the page, and the text's own remaining nodes are not resumed -
+        /// <see cref="pendingCardTextAwaitingInterrupt"/> holds the rest of p.14 and nothing holds the
+        /// rest of the clause. That is milestone 8.19c1's shape unchanged, and it costs this hero
+        /// nothing because both of his giving sentences end on the give. A later face that gave and
+        /// then did something else in one clause would need the card-text altitude to gain a
+        /// continue-after-interrupt the push moment does not have either.</para>
+        /// </summary>
+        /// <returns>Whether a trigger is standing, which stops the page.</returns>
+        private bool RunCardTextMarkerGiveTrigger(
+            EffectResolutionStepResult result,
+            HeroId actorId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            CardTextTiming moment,
+            PendingAttackResolution remainderAttack,
+            AttackResolutionOutcome remainderOutcome,
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            TieBreakerState tieBreaker,
+            int roundIndex,
+            int turnIndex,
+            List<ResolutionStep> steps)
+        {
+            if (pendingCardText != null || board == null || !result.MarkerGivenTo.IsDefined)
+            {
+                return false;
+            }
+
+            var boundary = new ActionBoundaryContext(
+                definitions, instances, participants, timing, tieBreaker, roundIndex, turnIndex);
+            if (!TryStartMarkerGivenTrigger(
+                    actorId,
+                    new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                        $"card-text-{sourceCardInstanceId.Value}-" +
+                        $"{actionDefinitionId.Value}-{moment}"),
+                    result.MarkerGivenTo,
+                    boundary,
+                    steps))
+            {
+                return false;
+            }
+
+            pendingCardTextAwaitingInterrupt = remainderAttack == null
+                ? null
+                : new PendingAttackCardTextRemainder(moment, remainderAttack, remainderOutcome);
+            return pendingCardTextAwaitingInterrupt != null;
+        }
+
+        /// <summary>
         /// Whether any unlocked Ultimate is watching rulebook p.18's Pushes. The effect session only
         /// reports the objects a step displaced when something is listening, so this is asked wherever
         /// an effect is started - the same derivation the Skill altitude makes.
@@ -4250,6 +4489,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances) =>
             GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances)
                 .Ultimates.Any(ultimate => ultimate.Rule.AfterPush.IsDeclared);
+
+        /// <summary>
+        /// Milestone 8.40h. Whether any unlocked Ultimate is watching the moment a marker is given. The
+        /// effect session only reports a give when something is listening, so this is asked wherever an
+        /// effect that could give one is started or resumed - the same derivation the Skill altitude
+        /// makes, for the same reason.
+        /// </summary>
+        private static bool WatchesMarkerGives(
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerQuery.AnyWatching(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    definitions, instances));
 
         private void AppendSkillRequestedHeroDefeats(
             IReadOnlyList<HeroId> requestedHeroDefeats,

@@ -96,6 +96,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             Array.Empty<GuardsDigital.Core.Setup.MinionId>();
 
         /// <summary>
+        /// Milestone 8.40h. The hero this call's walk gave a marker to and stopped on, or the undefined
+        /// id whenever it gave none or nobody was watching.
+        ///
+        /// <para>It is a transient output of this call, published the way
+        /// <see cref="StagedMinionDefeats"/> is rather than as a fifth <c>out</c> parameter on five
+        /// methods: the authority reads it from the backend at exactly the moment it reads the staged
+        /// Defeats, and both of them describe the one node the frame is standing after.</para>
+        /// </summary>
+        internal HeroId StagedMarkerGive { get; private set; }
+
+        /// <summary>
         /// Milestone 8.19c1. Whether any unlocked Ultimate in these cards declares an
         /// `after-push-trigger@1`, which is what makes the resolver stop at a Push that applied.
         ///
@@ -110,6 +121,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances) =>
             GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(definitions, instances)
                 .Ultimates.Any(ultimate => ultimate.Rule.AfterPush.IsDeclared);
+
+        /// <summary>
+        /// Milestone 8.40h. Whether any unlocked Ultimate in these cards watches the moment a marker is
+        /// given, which is what makes the resolver stop at a give that attached one.
+        ///
+        /// <para>The coarse question, exactly as <see cref="WatchesAppliedPushes"/> is: whether the
+        /// giver is the one the source is about is
+        /// <c>AfterMarkerGivenTriggerQuery</c>'s, asked by the authority that holds the board and the
+        /// participants. A match whose source turns out not to apply resumes immediately and reaches
+        /// the same nodes in the same order.</para>
+        /// </summary>
+        private static bool WatchesMarkerGives(
+            IReadOnlyList<CardDefinition> definitions,
+            IEnumerable<CardInstance> instances) =>
+            GuardsDigital.Core.Rules.Progression.AfterMarkerGivenTriggerQuery.AnyWatching(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    definitions, instances));
 
         internal SkillBackendRestoreState CaptureRestoreState() =>
             pendingResolution == null ? null : new SkillBackendRestoreState(pendingResolution);
@@ -171,6 +199,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 stagesMinionDefeats: true, stagesBorrowedActions: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances),
+                watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -263,6 +293,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 stagesMinionDefeats: true, stagesBorrowedActions: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances),
+                watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
@@ -421,6 +453,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 stagesMinionDefeats: true, stagesBorrowedActions: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances),
+                watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
@@ -507,6 +541,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 components: components, heroItems: heroItems, rosterState: rosterState,
                 stagesMinionDefeats: true, stagesBorrowedActions: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
+                    materializedDefinitions, materializedInstances),
+                watchesMarkerGives: WatchesMarkerGives(
                     materializedDefinitions, materializedInstances));
             var step = EffectResolutionSession.Continue(pendingResolution, context);
             if (!step.Accepted)
@@ -617,6 +653,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             pendingResolution = step.Frame;
             StagedMinionDefeats = step.IsComplete
                 ? Array.Empty<GuardsDigital.Core.Setup.MinionId>() : step.RequestedMinionDefeats;
+
+            // Milestone 8.40h. A give a source is watching stops the walk without completing it, so a
+            // completed step has none by construction; saying so keeps the stale report of a previous
+            // call from being read as this one's.
+            StagedMarkerGive = step.IsComplete ? default : step.MarkerGivenTo;
 
             var steps = new List<ResolutionStep>();
             if (isStart)

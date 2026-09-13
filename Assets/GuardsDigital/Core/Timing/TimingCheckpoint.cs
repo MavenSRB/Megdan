@@ -71,6 +71,27 @@ namespace GuardsDigital.Core.Timing
         /// already runs on - including that machinery's spent latch, which is what makes the clause
         /// fire once.</para>
         /// </summary>
-        BeforePrimaryAction = 18
+        BeforePrimaryAction = 18,
+
+        /// <summary>
+        /// Milestone 8.40h. Immediately after a marker has been GIVEN to a hero, naming the hero who
+        /// received it. Bain's A Complicated Profession is the verified text that reads it - "After you
+        /// give a hero the [bounty] bounty marker that hero discards a card, if able."
+        ///
+        /// <para><b>It is the give and only the give.</b> Milestone 8.40b built two other ways a marker
+        /// changes hands and neither reaches this moment: a TRANSFER moves an attachment that already
+        /// stands - Close Call's "that hero gives the marker to you", which is another hero giving - and
+        /// a RETURN puts one back in the supply, which is not a give at all. The producer is the giving
+        /// capability itself, reporting the hero it gave to, so the exclusion is by construction rather
+        /// than by a check on anybody's name. A give that MOVED an already-held copy because the supply
+        /// was empty is still a give the actor performed and still reaches here - BA-D1.</para>
+        ///
+        /// <para><b>It is not raised as an ordinary lifecycle checkpoint</b>, exactly as
+        /// <see cref="ObjectPushApplied"/> and <see cref="BeforePrimaryAction"/> are not. Nothing calls
+        /// <c>ApplyCheckpoint</c> with it and no Active effect declares it; it is the name a rule source
+        /// writes into its own trigger declaration to say which moment it is watching, and the moment is
+        /// produced by the handler that performed the give.</para>
+        /// </summary>
+        MarkerGivenToHero = 19
     }
 }

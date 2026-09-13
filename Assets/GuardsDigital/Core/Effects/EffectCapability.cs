@@ -585,7 +585,8 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<TimingCheckpoint> checkpointsAfter,
             EffectChoiceRequest choice,
             IEnumerable<RuleObject> appliedPushes = null,
-            IEnumerable<RevealedCard> revealedCards = null)
+            IEnumerable<RevealedCard> revealedCards = null,
+            HeroId markerGivenTo = default)
         {
             var revealed = (revealedCards ?? Enumerable.Empty<RevealedCard>()).ToArray();
             if (revealed.Length > 0 && kind != EffectExecutionResultKind.Applied)
@@ -596,6 +597,13 @@ namespace GuardsDigital.Core.Effects
             }
 
             RevealedCards = new ReadOnlyCollection<RevealedCard>(revealed);
+            if (markerGivenTo.IsDefined && kind != EffectExecutionResultKind.Applied)
+            {
+                throw new ArgumentException(
+                    "Only a handler that applied can report a marker it gave.", nameof(markerGivenTo));
+            }
+
+            MarkerGivenTo = markerGivenTo;
             var pushed = (appliedPushes ?? Enumerable.Empty<RuleObject>()).ToArray();
             if (pushed.Any(subject => !subject.IsDefined))
             {
@@ -668,15 +676,35 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public IReadOnlyList<RevealedCard> RevealedCards { get; }
 
+        /// <summary>
+        /// Milestone 8.40h. The hero this handler GAVE a marker to, or the undefined id for every
+        /// handler that gave none - which is every handler in this build but the giving one.
+        ///
+        /// <para>It is a typed report rather than an <see cref="EffectOutcomeFact"/> for the reason
+        /// <see cref="AppliedPushes"/> is: card text already reads the recipient through the give's
+        /// published <c>holder</c> output, and this is read by the resolver so it can hand the moment
+        /// to whatever declared <see cref="TimingCheckpoint.MarkerGivenToHero"/>. The two are not the
+        /// same fact, and keeping them apart is what makes the exclusions structural - a TRANSFER
+        /// publishes <c>holder</c> too and reports nothing here, so a trigger keyed on this cannot see
+        /// it however a face composes it.</para>
+        ///
+        /// <para>One hero rather than a list, because one give gives one marker to one hero. p.18's
+        /// batch push has no counterpart here: nothing in the rules gives several markers at once, and
+        /// a node re-executed inside its own resolution reports nothing at all, which is what bounds
+        /// the moment to once per give.</para>
+        /// </summary>
+        public HeroId MarkerGivenTo { get; }
+
         public static EffectExecutionResult Applied(
             IEnumerable<EffectOutcomeFact> outcomes = null,
             IEnumerable<TimingCheckpoint> checkpointsBefore = null,
             IEnumerable<TimingCheckpoint> checkpointsAfter = null,
             IEnumerable<RuleObject> appliedPushes = null,
-            IEnumerable<RevealedCard> revealedCards = null) =>
+            IEnumerable<RevealedCard> revealedCards = null,
+            HeroId markerGivenTo = default) =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
-                appliedPushes, revealedCards);
+                appliedPushes, revealedCards, markerGivenTo);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(

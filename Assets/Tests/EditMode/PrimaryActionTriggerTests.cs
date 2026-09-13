@@ -299,6 +299,11 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// The sixth condition exists and is distinct from the five before it, so a content author
         /// naming it cannot silently get Cloak and Daggers' reading.
+        ///
+        /// <para>Milestone 8.40h extended the count rather than renumbering it, on this fixture's own
+        /// precedent: a seventh condition arrived - Bain's "after you give a hero the bounty marker" -
+        /// and <c>MarkerGivenTriggerTests</c> owns what it means. It is the first that reads neither of
+        /// the two completed-action facts, which is why nothing else here moved.</para>
         /// </summary>
         [Test]
         public void TheSixthTriggerCondition_IsDistinctFromTheFiveBeforeIt()
@@ -308,7 +313,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(6));
+            Assert.That(conditions.Length, Is.EqualTo(7));
             Assert.That(
                 conditions,
                 Does.Contain(UltimateTriggerCondition.AfterControllerPerformsPrimaryAction));

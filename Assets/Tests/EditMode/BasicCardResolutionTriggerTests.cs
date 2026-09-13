@@ -142,6 +142,12 @@ namespace GuardsDigital.Tests.EditMode
         /// <para>Milestone 8.39f1 extended the count rather than renumbering it: a sixth condition
         /// arrived - Cutter's "after you perform a primary action" - and this case is the tripwire that
         /// is supposed to notice one. <c>PrimaryActionTriggerTests</c> owns what the sixth means.</para>
+        ///
+        /// <para>Milestone 8.40h extended it again, and the tripwire did its job: a seventh condition
+        /// arrived - Bain's "after you give a hero the bounty marker" - and it is the first that is not
+        /// matched against a completed action at all, which is why
+        /// <c>UltimateTriggeredEffectSourceQuery</c> answers it <c>false</c> and
+        /// <c>MarkerGivenTriggerTests</c> owns what it means.</para>
         /// </summary>
         [Test]
         public void TheFifthTriggerCondition_IsDistinctFromTheFourBeforeIt()
@@ -151,9 +157,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(6),
-                "Five at milestone 8.38c2, six since 8.39f1. A new condition is classified in " +
-                "UltimateTriggeredEffectSourceQuery and proved in its own fixture.");
+            Assert.That(conditions.Length, Is.EqualTo(7),
+                "Five at milestone 8.38c2, six since 8.39f1, seven since 8.40h. A new condition is " +
+                "classified in UltimateTriggeredEffectSourceQuery and proved in its own fixture.");
             Assert.That(
                 conditions, Does.Contain(UltimateTriggerCondition.AfterControllerResolvesBasicCard));
             Assert.That(

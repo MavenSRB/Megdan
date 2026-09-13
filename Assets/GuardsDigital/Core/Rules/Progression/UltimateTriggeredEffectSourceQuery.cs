@@ -203,6 +203,16 @@ namespace GuardsDigital.Core.Rules.Progression
                 // the switch is exhaustive and a reader is not left wondering whether it was missed.
                 case UltimateTriggerCondition.AfterControllerPerformsPrimaryAction:
                     return false;
+
+                // Milestone 8.40h. Bain's A Complicated Profession reads a moment INSIDE a running
+                // effect - a marker having been given - so no completed action can meet it and this
+                // query must never build a source for it. Stated rather than left to the default for
+                // the reason the line above is: the switch stays exhaustive, and the negative is a
+                // decision rather than an omission. `AfterMarkerGivenTriggerQuery` is what derives it,
+                // off the give's own report; `ContinuousTriggeredEffectSource` would refuse the
+                // checkpoint such a rule names, which is the second guard keeping the two apart.
+                case UltimateTriggerCondition.AfterControllerGivesMarker:
+                    return false;
                 default:
                     return false;
             }

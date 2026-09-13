@@ -421,6 +421,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // its own resolution is a legal no-op rather than a second give - the same shape
                     // the Active-effect creators use. It must precede the supply test, because what
                     // the supply is short of at this point is this activation's own copy.
+                    //
+                    // Milestone 8.40h: it reports NO give, and that is what bounds the moment to once
+                    // per give rather than once per execution. The marker did not change hands here -
+                    // it was already on this hero when the node ran again - so a permanent ability
+                    // watching `TimingCheckpoint.MarkerGivenToHero` would otherwise fire a second time
+                    // for a give that happened once.
                     return EffectExecutionResult.Applied(given);
                 }
 
@@ -442,7 +448,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
 
                     components.Markers.Transfer(held.Id, holder);
-                    return EffectExecutionResult.Applied(given);
+                    return EffectExecutionResult.Applied(given, markerGivenTo: holder);
                 }
 
                 components.Markers.Give(new MarkerAttachment(
@@ -453,7 +459,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.SourceCardInstanceId,
                     context.ActionDefinitionId));
 
-                return EffectExecutionResult.Applied(given);
+                // Milestone 8.40h. The give's own report of the hero it gave to, published only once
+                // the attachment stands: this is the moment A Complicated Profession watches, and it
+                // is reported by the capability that performed the give rather than derived afterwards
+                // from a board that cannot say who put the marker there or by what operation. The move
+                // arm above reports it too - BA-D1's move is still a give the actor performed - and
+                // `MarkerTransferHandler` and `ReturnMarkerHandler` report it nowhere, which is what
+                // makes BA-D5's two exclusions structural.
+                return EffectExecutionResult.Applied(given, markerGivenTo: holder);
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>

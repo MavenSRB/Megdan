@@ -113,8 +113,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
                 null,
             bool placedActingHero = false,
-            BorrowRequest borrowRequested = default)
+            BorrowRequest borrowRequested = default,
+            HeroId markerGivenTo = default)
         {
+            MarkerGivenTo = markerGivenTo;
             BorrowRequested = borrowRequested;
             AppliedPushes =
                 new ReadOnlyCollection<GuardsDigital.Core.Rules.Modifications.RuleObject>(
@@ -238,6 +240,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public IReadOnlyList<GuardsDigital.Core.Rules.Modifications.RuleObject> AppliedPushes { get; }
 
         /// <summary>
+        /// Milestone 8.40h. The hero a marker was GIVEN to at the node this step stopped on, or the
+        /// undefined id on every step where no give was watched.
+        ///
+        /// <para>It is the exact counterpart of <see cref="AppliedPushes"/> and is nonempty in exactly
+        /// the same one shape: a frame that stopped WITHOUT a pending choice, so that whatever declared
+        /// <see cref="TimingCheckpoint.MarkerGivenToHero"/> can run before the next node does. The
+        /// resolver knows nothing about triggers - it is told, through
+        /// <see cref="EffectResolutionContext.WatchesMarkerGives"/>, that somebody is watching, and
+        /// stopping is all it does about it.</para>
+        /// </summary>
+        public HeroId MarkerGivenTo { get; }
+
+        /// <summary>
         /// Milestone 8.35z27. The plan a completed modal Attack's step-1 frame named -
         /// which bullets of "choose one, or both" the actor chose and whether the card forbids
         /// pointing two of them at one unit - or <c>null</c> on every frame that named none, which is
@@ -283,12 +298,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             GuardsDigital.Core.Rules.CardResolution.AttackSequencePlan requestedAttackSequences =
                 null,
             bool placedActingHero = false,
-            BorrowRequest borrowRequested = default) =>
+            BorrowRequest borrowRequested = default,
+            HeroId markerGivenTo = default) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
                 boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences,
-                placedActingHero, borrowRequested);
+                placedActingHero, borrowRequested, markerGivenTo);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -326,12 +342,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EnclosingAttackFacts enclosingAttack = default,
             EffectRosterState rosterState = null,
             bool watchesAppliedPushes = false,
+            bool watchesMarkerGives = false,
             bool repeatIsUnavailable = false,
             Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
             bool stagesMinionDefeats = false,
             bool stagesBorrowedActions = false)
         {
             WatchesAppliedPushes = watchesAppliedPushes;
+            WatchesMarkerGives = watchesMarkerGives;
             StagesMinionDefeats = stagesMinionDefeats;
             StagesBorrowedActions = stagesBorrowedActions;
             RepeatIsUnavailable = repeatIsUnavailable;
@@ -417,6 +435,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// so a match with no such source cannot pay for one.</para>
         /// </summary>
         public bool WatchesAppliedPushes { get; }
+
+        /// <summary>
+        /// Milestone 8.40h. Whether any live rule source has declared that it runs after its controller
+        /// has given a hero a marker.
+        ///
+        /// <para>A boolean rather than the sources themselves, and false by default, for the reason
+        /// <see cref="WatchesAppliedPushes"/> is one: the resolver's whole part in the moment is to stop
+        /// at it. Which source applies, and what its effect does about the hero who received the marker,
+        /// are the caller's questions. A match with no such source walks exactly as it did before this
+        /// milestone, which is what keeps every Tigerclaw Poison give in this build byte-identical.</para>
+        /// </summary>
+        public bool WatchesMarkerGives { get; }
         public bool StagesMinionDefeats { get; }
         public bool StagesBorrowedActions { get; }
 
@@ -1350,6 +1380,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         return EffectResolutionStepResult.Accept(
                             Rebuild(frame, continuation, outcomes, choices), false, events,
                             appliedPushes: result.AppliedPushes);
+                    }
+
+                    // Milestone 8.40h. The same stop for the same reason, at the moment a marker was
+                    // given: the node is finished and its facts are recorded before the walk stops, so
+                    // what the caller resumes is the effect standing exactly after the give and a later
+                    // node binding the give's published holder still finds it. The attachment already
+                    // stands when this is reached, which is what "after you give" means - a permanent
+                    // ability that read the board here sees the marker on the hero it is about.
+                    if (context.WatchesMarkerGives && result.MarkerGivenTo.IsDefined)
+                    {
+                        return EffectResolutionStepResult.Accept(
+                            Rebuild(frame, continuation, outcomes, choices), false, events,
+                            markerGivenTo: result.MarkerGivenTo);
                     }
 
                     return null;

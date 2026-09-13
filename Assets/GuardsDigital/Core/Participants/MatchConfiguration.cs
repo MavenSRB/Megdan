@@ -2077,6 +2077,21 @@ namespace GuardsDigital.Core.Participants
                 SyntheticShowcaseHand.CreateBlue);
         }
 
+        /// <summary>
+        /// Milestone 8.40h. Red's Ultimate watches a marker being given and Red's Attack gives one in
+        /// its "After the attack:" text, which is the pair Bain's own set has - his Gold basic Attack
+        /// is the only face of his that gives, so his Ultimate's moment is reached through rulebook
+        /// p.14's card text rather than through a Skill.
+        /// </summary>
+        public static MatchConfiguration CreateForMarkerGivingAttackTextFixture(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SyntheticShowcaseHand.CreateRedWithMarkerGivingAttackText,
+                SyntheticShowcaseHand.CreateBlueWithAttackText);
+        }
+
         public static MatchConfiguration CreateForInternalTest(
             TeamSide initialTieBreakerSide)
         {

@@ -481,7 +481,7 @@ resolution kind.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840g-build-the-board-conditioned-block-his-three-green-defenses-print-completion-evidence).
 
-### [ ] 8.40h Build the after-a-marker-is-given trigger his Ultimate fires on
+### [x] 8.40h Build the after-a-marker-is-given trigger his Ultimate fires on
 
 Observable outcome: an unlocked Ultimate can fire immediately after its controller gives a declared
 marker, learning which hero received it, and fires on no other way a marker changes hands.
@@ -515,6 +515,76 @@ edge worth stating rather than leaving to fall out.
 **THE CONSEQUENCE IS REGISTERED.** `synthetic-discard-chosen-card@1` is the `if able` arm that declines
 silently, which is exactly what "discards a card, if able" prints, with the recipient as `hero`.
 
+**THE CHEAPER HOME EXISTS, AND THE PROBE MEASURED IT RATHER THAN ARGUING IT.** The moment is a twentieth
+`TimingCheckpoint` member, `MarkerGivenToHero`, carried in the `TriggerCheckpoints` collection this type
+already publishes, beside a seventh `UltimateTriggerCondition`, `AfterControllerGivesMarker`. **No public
+property joined `UltimateRuleDefinition`, so no hero's corpus digest moved and no revision string
+followed** - `VerifiedContentIdentityTests` measured all fourteen pins byte-identical with the change in
+place, which is the isolation probe run as a confirmation rather than as a diagnosis. The subject needed
+no enum beside the condition either, and that is a fact about the printed sentence rather than a saving:
+Sabina's "an enemy hero" narrows WHICH push fires her ability, while Bain's "a hero" narrows nothing -
+his clause's only qualifier is "you", the giver.
+
+**THE COLLECTION IS A CLOSED VOCABULARY GUARDED IN TWO PLACES, AND ONLY ONE OF THEM WAS WIDENED.**
+`UltimateRuleDefinition`'s own constructor refused every checkpoint but `ActionEnded`, and so does
+`ContinuousTriggeredEffectSource`'s - the type `UltimateUnlock.TriggeredSource` builds. The first is now
+a PAIRING rather than a list: a declaration names the one moment its condition watches, so a marker
+condition with `ActionEnded` and an action condition with `MarkerGivenToHero` are both refused. The
+second was left exactly as it was, because a marker-watching Ultimate must never become a source at an
+action boundary - `UltimateTriggeredEffectSourceQuery` answers the new condition `false` before the
+question is asked, and the case asserts that a completed basic action of the watching hero's derives
+nothing. `MarkerGivenToHero` is named but never raised through `ApplyCheckpoint`, which is
+`ObjectPushApplied`'s and `BeforePrimaryAction`'s precedent exactly.
+
+**THE PRODUCER IS THE GIVE, AND THAT IS WHAT MAKES TWO OF THE THREE EXCLUSIONS STRUCTURAL.**
+`EffectExecutionResult` gained one typed report, `MarkerGivenTo`, the exact counterpart of milestone
+8.19c1's `AppliedPushes`; `MarkerGivingHandler` publishes it on both arms that actually attached a marker
+- BA-D1's supply-empty MOVE included, because that is still a give the actor performed - and
+`MarkerTransferHandler` and `ReturnMarkerHandler` publish it nowhere. A transfer publishes `holder` just
+as the give does, so reading the published facts could never have told them apart; the separate channel
+is what does. The third exclusion is the only one a query decides: `AfterMarkerGivenTriggerQuery` matches
+the giver against the controller, so a give another hero performs - Close Call's sentence - reaches
+nothing even when it puts the marker on the watching hero himself.
+
+**ONCE PER GIVE IS ENFORCED WHERE A GIVE IS PERFORMED, NOT WHERE THE MOMENT IS COUNTED.** The give's
+existing re-execution arm - the node that finds this activation's marker already attached and applies as
+a legal no-op - reports NO give, so a node re-entered inside its own resolution cannot fire the ability a
+second time. That needed no latch, no turn-scoped key and no state: the bound falls out of the fact that
+the marker did not change hands. An Ultimate still in the deck contributes no member to
+`UltimateUnlockQuery`'s set, so a locked card fires not at all, asserted end to end rather than by
+inspection.
+
+**THE ALTITUDE HIS OWN FACE USES IS THE CARD-TEXT ONE, AND THE RESUME HALF IS THE HALF THAT MATTERS.**
+Dead or Alive is a basic ATTACK whose give sits in an "After the attack:" clause, so the moment happens
+inside rulebook p.14's card text rather than inside a Skill - and that clause SELECTS its recipient, so
+the page pauses on the selection and the give lands on the pass the ANSWER arrives on. Both card-text
+contexts are told to watch, and a start-half-only wiring would have watched every composition except the
+printed one. Both altitudes are proven: the Skill one through `CardActionResolutionAuthority` directly,
+and the card-text one through a whole `MatchSession` playing a showcase Attack whose step-7 text gives.
+**One bound is inherited and stated rather than discovered at 8.40i**: a trigger standing at the
+card-text altitude stops the page and the rest of that clause is not resumed, exactly as an after-push
+trigger there already does not resume it. Both of Bain's giving sentences end on the give, so it costs
+him nothing; a later face that gave and then did something else in one clause would need that altitude to
+gain a continue-after-interrupt neither moment has.
+
+**WHAT THE CORPUS SWEEP CORRECTED.** The acceptance check below said "five" trigger declarations and
+"both" moment-watchers; the build carries SIX `TriggeredAbility` declarations - Wasp's, Tigerclaw's,
+Misa's, Tali's, Swift's and Cutter's - one after-push (Sabina's) and TWO before-action (Arien's Living
+Tsunami and Silverarrow's Wild Hunt). All nine are measured unchanged, every one of the six still naming
+the action window, which is the half the widened constructor guard could have loosened and did not. **No
+split was needed**, and the two owed rows in HERO_BAIN.md were corrected to what was actually built: the
+shard lost eight words.
+
+**AND TWO SHIPPED TRIPWIRES FIRED, WHICH IS WHAT THEY ARE FOR.** Both
+`BasicCardResolutionTriggerTests.TheFifthTriggerCondition_IsDistinctFromTheFourBeforeIt` and
+`PrimaryActionTriggerTests.TheSixthTriggerCondition_IsDistinctFromTheFiveBeforeIt` pin the count of
+`UltimateTriggerCondition` members, and both failed with "Expected: 6, But was: 7" on the first complete
+run. Both are extended rather than renumbered, on 8.39f1's own precedent. Evidence: seventeen cases in
+`Assets/Tests/EditMode/MarkerGivenTriggerTests.cs`, and a complete unfiltered dotnet harness of
+**3,036/3,036 passed, 0 failed, 0 skipped** - the 3,019 baseline this block's base commit leaves plus
+exactly those seventeen. No schema field, wire version or pinned constant moved; schema stays v42 and the
+wire /14.
+
 Acceptance checks:
 
 - The trigger fires after a give its controller performed, publishes the receiving hero, and the
@@ -523,14 +593,17 @@ Acceptance checks:
 - It fires on a give that moved an already-held marker.
 - It fires once per give and not once per checkpoint, and an Ultimate that is not unlocked fires not at
   all.
-- The five existing Ultimate trigger declarations and both existing moment-watching declarations are
-  byte-identical in behaviour.
+- The **six** existing Ultimate trigger declarations and the **three** existing moment-watching ones are
+  byte-identical in behaviour. (Corrected at completion: this check said "five" and "both", and the
+  corpus carries six `TriggeredAbility` declarations, one after-push and TWO before-action.)
 - The digest cost is measured with the isolation probe before any pin is touched, stated with its cause,
   and no hero's content REVISION string moves.
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Bain content. No change to `after-push-trigger@1` or `before-action-trigger@1`. No new
 Ultimate trigger condition for any other hero.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840h-build-the-after-a-marker-is-given-trigger-his-ultimate-fires-on-completion-evidence).
 
 ### [ ] 8.40i Compose Bain's eighteen dealt faces and prove them at the focused tier
 

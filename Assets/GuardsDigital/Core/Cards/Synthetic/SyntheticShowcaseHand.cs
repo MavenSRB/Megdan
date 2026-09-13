@@ -1453,6 +1453,52 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, AfterPushUltimateProfile, null,
                 displacementSkillProfile: RedDisplacementSkillProfile);
 
+        private static SyntheticUltimateProfile AfterMarkerGivenUltimateProfile { get; } =
+            new SyntheticUltimateProfile(
+                "red-bounty-ultimate", "Red Bounty Ultimate",
+                SyntheticUltimateShape.AfterMarkerGivenTrigger);
+
+        /// <summary>
+        /// Milestone 8.40h. The five ordinary cards with the after-marker-given Ultimate and the Skill
+        /// that gives a marker, which is the pair the trigger needs: one card to perform the give and
+        /// one permanent ability watching for it.
+        ///
+        /// <para>The giving card is the component Skill milestone 6.2 already deals here, unchanged.
+        /// Its give offers every hero as a recipient - it binds no <c>holder</c> - so one fixture can
+        /// give to an enemy, to an ally and to the giver himself and see the same trigger fire for each,
+        /// which is what "a hero" means on Bain's face.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithAfterMarkerGivenUltimate(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, AfterMarkerGivenUltimateProfile, null,
+                componentSkillProfile: RedComponentSkillProfile);
+
+        /// <summary>
+        /// The same pair for the Blue hero, so a fixture can put a watching Ultimate on one hero and
+        /// have the OTHER hero perform the give - which is the third of BA-D5's exclusions and the only
+        /// one that is decided by a query rather than by which capability ran.
+        /// </summary>
+        public static ConfiguredHand CreateBlueWithMarkerGivingSkill(HeroId ownerId) =>
+            Create(
+                ownerId, BlueProfiles, BlueUltimateProfile, null,
+                componentSkillProfile: BlueComponentSkillProfile);
+
+        /// <summary>Dead or Alive's shape: a basic-sized Attack whose step-7 text gives a marker.</summary>
+        private static SyntheticAttackTextProfile RedMarkerGiveTextProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-bounty", "Red Bounty", 5, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, true, continuation: SyntheticContinuationShape.AfterAttackGiveMarker);
+
+        /// <summary>
+        /// Milestone 8.40h. The after-marker-given Ultimate with an ATTACK whose "After the attack:"
+        /// text gives the marker, which is the pair Bain's own set has: his Ultimate watches a give and
+        /// the only face of his that gives is his Gold basic Attack.
+        /// </summary>
+        public static ConfiguredHand CreateRedWithMarkerGivingAttackText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, AfterMarkerGivenUltimateProfile, null,
+                attackTextProfiles: new[] { RedMarkerGiveTextProfile });
+
         public static ConfiguredHand CreateRedWithContinuationText(HeroId ownerId)
         {
             return Create(
@@ -4916,7 +4962,21 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// fixture is written that way rather than as two nodes, because the single node is the
             /// whole point of the contract.</para>
             /// </summary>
-            AfterAttackDefendedColorRider = 16
+            AfterAttackDefendedColorRider = 16,
+
+            /// <summary>
+            /// Milestone 8.40h. Bain's Dead or Alive shape: "After the attack:" text whose whole
+            /// content is a GIVE, with the recipient chosen rather than named.
+            ///
+            /// <para>It exists because his Ultimate's moment happens at THIS altitude and not at the
+            /// Skill's: Dead or Alive is a basic Attack, so the one give his dealt set performs is
+            /// printed in an "After the attack:" clause and reaches rulebook p.14's card text rather
+            /// than an effect a Skill started. The clause selects its recipient, so the page pauses on
+            /// that question and the give lands on the resume pass - which is the half of the
+            /// card-text altitude a text that gave to a hero named in advance would never have
+            /// visited.</para>
+            /// </summary>
+            AfterAttackGiveMarker = 17
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -5430,6 +5490,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new EffectNodeId("vacated-root"),
                         VacatedSpaceNodes());
 
+                case SyntheticContinuationShape.AfterAttackGiveMarker:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-40h-rev-1",
+                        MarkerGiveTextRootNodeId,
+                        MarkerGiveTextNodes());
+
                 case SyntheticContinuationShape.AfterAttackAdjacencyRiders:
                     return new EffectDefinition(
                         new EffectDefinitionId($"placeholder-{id}-text"),
@@ -5713,6 +5780,30 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// and the Move names it as its destination rather than choosing among the spaces one step
         /// away.
         /// </summary>
+        /// <summary>The root of the marker-giving After-the-attack text. Milestone 8.40h.</summary>
+        public static EffectNodeId MarkerGiveTextRootNodeId { get; } =
+            new EffectNodeId("marker-give-text-root");
+
+        /// <summary>
+        /// Milestone 8.40h. An "After the attack:" text whose whole content is a give - Bain's Dead or
+        /// Alive shape, "After the attack: You may give an enemy hero in radius a [bounty] bounty
+        /// marker".
+        ///
+        /// <para><b>It binds no holder, which is the half that matters.</b> His printed clause SELECTS
+        /// the hero it gives to, so rulebook p.14's page pauses on that question and the give itself
+        /// happens when the answer arrives - on the resume pass rather than where the text started. A
+        /// showcase text that gave to a hero named in advance would have proved the start half of the
+        /// card-text altitude and left the only half his card actually uses unproven.</para>
+        /// </summary>
+        private static EffectNodeDefinition[] MarkerGiveTextNodes() => new[]
+        {
+            new EffectNodeDefinition(
+                MarkerGiveTextRootNodeId, EffectNodeKind.Capability,
+                EffectFailurePolicy.Mandatory,
+                SyntheticComponentCapabilities.GiveMarkerV1,
+                outputs: new[] { new EffectOutputBinding("holder", EffectValueKind.Hero) })
+        };
+
         private static EffectNodeDefinition[] VacatedSpaceNodes()
         {
             var root = new EffectNodeId("vacated-root");
@@ -7274,7 +7365,20 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// the older reading is untouched. The narrow ones must still see nothing when the card is
             /// not basic, which is the whole difference.</para>
             /// </summary>
-            AfterPrimaryActionTrigger = 7
+            AfterPrimaryActionTrigger = 7,
+
+            /// <summary>
+            /// Milestone 8.40h: Bain's A Complicated Profession shape - the ability that runs the
+            /// moment its controller has GIVEN a hero a marker, and makes that hero discard a card if
+            /// able.
+            ///
+            /// <para>It sits beside <see cref="AfterPushTrigger"/> because the two are the same kind of
+            /// moment and the only two of their kind: both happen inside an effect that is still
+            /// running, both name the hero the moment concerned, and both resume the interrupted effect
+            /// at the exact node it left. What separates them is the fact watched, and one fixture asks
+            /// both so that neither can quietly start seeing the other's.</para>
+            /// </summary>
+            AfterMarkerGivenTrigger = 8
         }
 
         private sealed class SyntheticUltimateProfile
@@ -7460,6 +7564,19 @@ namespace GuardsDigital.Core.Cards.Synthetic
                             new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
                             Array.Empty<PrintedValueDefinition>());
 
+                    case SyntheticUltimateShape.AfterMarkerGivenTrigger:
+                        // Milestone 8.40h. Bain's A Complicated Profession shape: "After you give a
+                        // hero the bounty marker that hero discards a card, if able." The declaration
+                        // names no subject beside the moment, because the printed sentence's only
+                        // qualifier is the giver - and what it runs is the printed consequence itself,
+                        // `synthetic-discard-chosen-card@1` about the hero who received it, because
+                        // what this shape has to show is that the trigger LEARNS that hero.
+                        return UltimateRuleDefinition.AfterMarkerGivenAbility(
+                            "after-marker-given-rider",
+                            "SyntheticAfterMarkerGiven",
+                            AfterMarkerGivenTriggeredEffect.Reference,
+                            Array.Empty<PrintedValueDefinition>());
+
                     case SyntheticUltimateShape.AfterPushTrigger:
                         // Milestone 8.19c1. Sabina's Big Sodding Gun shape: "If you push an enemy hero,
                         // that hero discards a card, or is defeated." The declaration names the pushed
@@ -7504,6 +7621,65 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 "phase-8-19a-rev-1",
                 new EffectNodeId("may-move"),
                 MayMoveAnotherUnitNodes("may-move", includeSelf: true));
+        }
+
+        /// <summary>
+        /// Milestone 8.40h. What an after-marker-given trigger runs: "that hero discards a card, if
+        /// able", about the hero the give put the marker on.
+        ///
+        /// <para><b>It is the printed consequence rather than the shared two-question table the other
+        /// pause altitudes use, and that is deliberate.</b> What every earlier trigger shape had to
+        /// prove was the WINDOW, so the text could be anything that asks a question. What this one has
+        /// to prove is that the window carries a SUBJECT the effect can name, so the effect has to be
+        /// one that names it - <see cref="EffectRoleKind.OpposingHero"/> bound to a discard whose
+        /// chooser is that hero and nobody else.</para>
+        ///
+        /// <para>Revision 1 of the discard is the `if able` arm: a hero with no card to give gives
+        /// none, the step declines, and nothing downstream is told - which is exactly where Bain's
+        /// printed sentence ends.</para>
+        /// </summary>
+        public static class AfterMarkerGivenTriggeredEffect
+        {
+            public static EffectDefinitionReference Reference => Definition.Reference;
+
+            /// <summary>
+            /// The one node this effect has, named so a fixture can read its event back.
+            ///
+            /// <para>Declared BEFORE <see cref="Definition"/> deliberately: a static field initializer
+            /// runs in declaration order, and the node id read by an earlier one would be the default -
+            /// which presents as "An effect node requires a stable ID" from a type initializer and is
+            /// the same static-order trap this series' standing lessons record for a content
+            /// class.</para>
+            /// </summary>
+            public static EffectNodeId DiscardNodeId { get; } =
+                new EffectNodeId("after-marker-given-discard");
+
+            public static EffectDefinition Definition { get; } = new EffectDefinition(
+                new EffectDefinitionId("synthetic-after-marker-given-discard"),
+                "phase-8-40h-rev-1",
+                DiscardNodeId,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        DiscardNodeId, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticCardStateCapabilities
+                            .DiscardChosenCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                GuardsDigital.Core.Effects.Synthetic.SyntheticCardStateCapabilities
+                                    .HeroParameter,
+                                EffectRoleKind.OpposingHero,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                GuardsDigital.Core.Effects.Synthetic.SyntheticCardStateCapabilities
+                                    .DiscardedOutput,
+                                EffectValueKind.CardInstance)
+                        })
+                });
         }
 
         /// <summary>

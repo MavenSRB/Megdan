@@ -91,6 +91,13 @@ namespace GuardsDigital.Core.Cards
                     // than the text, and the text is the same two questions either way.
                     GuardsDigital.Core.Effects.Synthetic.SyntheticPausingSourceCapabilities
                         .PausingTriggeredEffect.Definition,
+                    // Milestone 8.40h. The effect an after-marker-given trigger runs. It is a second
+                    // synthetic definition rather than a third user of the one above because what this
+                    // window has to prove is different: the other two prove WHEN a trigger runs and
+                    // could run any text, and this one proves that the window carries the hero the
+                    // marker was given to - so its text has to be one that names that hero.
+                    GuardsDigital.Core.Cards.Synthetic.SyntheticShowcaseHand
+                        .AfterMarkerGivenTriggeredEffect.Definition,
                     // Milestone 8.20. What Arien's Living Tsunami runs before an Attack action. It
                     // joins this catalog rather than forming a second, for the reason High Voltage's
                     // does: a match registers one set and the snapshot compares one.

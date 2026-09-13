@@ -17,7 +17,22 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// on - Sabina's Big Sodding Gun, "If you push an enemy hero, that hero discards a card, or is
         /// defeated".
         /// </summary>
-        AfterPushTrigger = 1
+        AfterPushTrigger = 1,
+
+        /// <summary>
+        /// Milestone 8.40h. A marker was GIVEN to a hero by a trusted rule source's controller, and
+        /// that source's effect is running before the effect that gave it carries on - Bain's A
+        /// Complicated Profession, "After you give a hero the bounty marker that hero discards a card,
+        /// if able".
+        ///
+        /// <para>A second kind on the one shape rather than a second shape: everything
+        /// <see cref="PendingEffectInterrupt"/> holds is already what this moment needs - the trigger's
+        /// frame, the hero the moment named, and the identity of the resolution it interrupted. What
+        /// differs is only which moment it was, which is exactly what this enum is for. Its
+        /// <see cref="PendingEffectInterrupt.RemainingSubjects"/> is always empty: p.18 pushes a batch
+        /// at the same time, and nothing in the rules gives several markers at once.</para>
+        /// </summary>
+        AfterMarkerGivenTrigger = 2
     }
 
     /// <summary>
