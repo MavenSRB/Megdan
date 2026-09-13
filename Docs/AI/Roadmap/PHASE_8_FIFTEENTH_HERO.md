@@ -216,7 +216,7 @@ authorizes nothing.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840-inventory-bain-the-bounty-hunters-printed-set-and-map-every-clause-to-registered-capability-completion-evidence).
 
-### [ ] 8.40a Build the bounty marker's defeat cost, charged to the hero who wears it
+### [x] 8.40a Build the bounty marker's defeat cost, charged to the hero who wears it
 
 Observable outcome: a hero holding a declared marker spends one Life counter more than rulebook p.13's
 schedule charges when that hero is defeated, wherever the defeat is resolved from, and a hero holding
@@ -250,6 +250,47 @@ Attack.
 count is **BA-D1** and this block implements the recorded reading. Registration waits for the dealing
 on milestone 7.9's gate; the handler TYPE is already proved, so it owes no showcase consumer.
 
+**THE FIRST PARAGRAPH ABOVE WAS HALF RIGHT, AND THE PROBE IT ORDERED IS WHAT FOUND OUT WHICH HALF.** The
+declaration does land on the right object. What does not follow is that one family may be read about
+both subjects, and the proof is a board rather than an argument: `FromHeldMarkers` affects the holder
+*whoever the holder is*, so a bounty-wearing hero who **defeats** somebody would have charged their own
+victim an extra counter - a sentence no printed face carries. The failing case was written before the
+cause was understood and is kept as the pin. So the marker declares a **twelfth** family,
+`AdditionalDefeatLifeCostWhenDefeated`, beside the eleventh, which is untouched; p.13's spend reads the
+eleventh about the attacker and the twelfth about the defeated hero and composes both into one number,
+so two declarations still charge two. **A member and not a property**, because a new public property on
+`RuleModification` would move the content digest of every hero whose declarations reach it - 8.38d's
+measurement - while an added enum member no earlier declaration names moves nothing. This is the same
+scope built on the right contract rather than new scope, on 8.39a's precedent, so **no split was
+needed**; the block's own Non-goal, "no change to what `AdditionalDefeatLifeCost` means for the
+attacker", is exactly what the split keeps. Corrected here and in HERO_BAIN.md's contract row, BA-13 and
+BA-Q4.
+
+**BA-Q4 IS SETTLED YES, AND THE ENUMERATION IS WHY IT COST NOTHING.** The reading taken is the printed
+one - "when defeated" attaches no cause - and the sites were counted rather than assumed:
+`HeroDefeatRewardSchedule.LifeCounters` has exactly one production caller and `TeamLifeState.TrySpend`
+exactly one, both inside `ResolveHeroDefeat`. That one method has two entrances, p.14's step 6 and
+milestone 8.22's `ResolveEffectInvokedHeroDefeat`, and every card-text Defeat - from an Attack's text,
+from a Skill, or from a trigger's own frame - arrives through the second. There is no Minion Battle or
+end-of-round hero-defeat path, because p.13's list has been one chain since 6.6b. A read placed at the
+one computation therefore covers every doorway by construction, and a Defeat a Skill asked for is
+asserted directly rather than inferred.
+
+**THE ORDER CAME OUT RIGHT ALREADY AND IS NOW PINNED.** The set is derived at the command boundary
+before p.13's list starts, and inside the list the cost is computed at the top while the marker return
+is spliced in at the page's third line - so the bounty a Defeat removes still charges for the Defeat
+that removed it, which the event stream shows directly, the return standing between the removal and the
+counters it did not reduce.
+
+**SEVENTEEN CASES ON A FEATURELESS BOARD, AND THE SET THEY USE IS DERIVED RATHER THAN STUBBED.** A
+radius-3 disk with two heroes and nothing else, on `DefeatMarkerReturnTests`' terms; every whole-defeat
+case passes the set `CardActionResolutionAuthority.CurrentModifications` produces from the live marker
+register and the live Active-effect lifecycle, which is the set a configured match hands the spend site.
+Tear is stood up from `UrsafarActiveEffectContent`'s own definition rather than hand-assembled, so "two
+declarations charge two" is an assertion about the shipped card. The deferral is asserted from **both**
+sides - the capability absent from `MatchContentCatalogs` and the marker definition absent from
+`SyntheticComponentDefinitions.CreateCatalog` - so 8.40j cannot register one half and forget the other.
+
 Acceptance checks:
 
 - A hero wearing the marker spends Tier + 1 when defeated and a hero wearing none spends Tier, asserted
@@ -266,6 +307,8 @@ Acceptance checks:
 
 Non-goals: No Bain card content and no registration - his marker definition is written here and dealt at
 8.40j. No change to what `AdditionalDefeatLifeCost` means for the attacker. No new Life-counter rule.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840a-build-the-bounty-markers-defeat-cost-charged-to-the-hero-who-wears-it-completion-evidence).
 
 ### [ ] 8.40b Build the marker movements his Green Blocks and his Gold basic need
 

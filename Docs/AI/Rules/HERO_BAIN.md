@@ -225,6 +225,11 @@ for the opposite subject - "if you defeated a hero, that hero spends 1 additiona
 2026-09-06 ruling settled, so a marker on a hero Ursafar defeats charges two by construction and
 neither card has to say so.
 
+**BA-13 named the right subject and the wrong vocabulary.** 8.40a measured two FAMILIES rather than one
+read twice: a marker affects its holder whoever that hero is, so asking Tear's family about the defeated
+hero would charge a bounty-wearing ATTACKER's own victim. Tear is untouched and p.13's one spend
+composes both, so two declarations charge two.
+
 **BA-14. Both marker-giving faces make the give conditional in different ways, and neither condition is
 about the recipient.** Dead or Alive's is p.10's `may` and sits inside an "After the attack:" clause;
 Side Quest's is mandatory but gated on "If you are adjacent to an enemy unit", a fact about Bain rather
@@ -279,7 +284,7 @@ the eight build blocks 8.40a-8.40h are exactly the blocks those rows name.**
 | --- | --- | --- |
 | Dead or Alive, Side Quest, Hand Crossbow, Hunter-Seeker, the five Greens, the Ultimate | the bounty marker itself - a `MarkerDefinition` with `MarkerReturnCondition.GeneralCleanup` and a `MarkerGivingHandler` bound to it | **registered in mechanism; hero content.** `SyntheticComponentCapabilities.MarkerGivingHandler` is a public constructor taking a reference and a definition, and `TigerclawComponentContent` registers two instances of it from his own file. Bain's is a `BainComponentContent` beside it, registering at his dealing on milestone 7.9's gate. The handler TYPE is proved, so it owes no showcase consumer. |
 | Dead or Alive, Side Quest | `give -> synthetic-give-marker@<his id> (holder = Out of the radius selection)` | registered - the optional `holder` parameter (Hero, not required) is exactly "a card whose own sentence bounds the recipient binds the hero its selection chose", which is Tigerclaw's shape. The selections themselves are `synthetic-radius-hero-target@1` with `relation` bound. |
-| Dead or Alive, Side Quest | "a hero with a bounty marker spends 1 additional [life] life counter when defeated" - the cost charged to the DEFEATED HOLDER | **owed, 8.40a.** The family exists (`RuleModificationKind.AdditionalDefeatLifeCost`) and a marker property can carry it, because `RuleModificationQuery.FromHeldMarkers` makes every marker property affect `RuleObject.ForHero(marker.HolderHeroId)`. What does not exist is the READ: p.13's spend is computed at one site and asks `modifications.AdditionalDefeatLifeCost(RuleObject.ForHero(completedResolution.ActorId))` - the attacker and nobody else - so a marker's declaration is invisible there today. See BA-13. |
+| Dead or Alive, Side Quest | "a hero with a bounty marker spends 1 additional [life] life counter when defeated" - the cost charged to the DEFEATED HOLDER | **BUILT at 8.40a, and NOT the way this row predicted.** The row said only the READ was missing; BA-13 records what the probe measured instead. The marker declares a TWELFTH family, `AdditionalDefeatLifeCostWhenDefeated`, and p.13's one spend site reads the eleventh about the attacker and the twelfth about the defeated hero, composing both into one number. See BA-Q4. |
 | Side Quest | "If you are adjacent to an enemy unit" - a gate on the ACTOR's own adjacency | registered (`presence-count@1`, the radius-0 form Wasp's and Sabina's faces already ask, read through a `Conditional`) |
 | Close Call | "that hero gives the marker to you" - the marker MOVES from its current holder to the defender | **owed, 8.40b.** Nothing transfers a marker. `synthetic-give-marker@1` mints a NEW attachment from the supply and refuses when the supply is empty; `synthetic-return-marker@1` detaches and returns. A transfer is neither, and composing it as return-then-give would mint a new instance identity and re-run whatever watches a give - which is precisely the Ultimate. |
 | Narrow Escape | "retrieve the marker" - return whichever bounty marker is on the board, whatever card gave it | **owed, 8.40b.** `synthetic-return-marker@1` returns a marker **this source card gave**: its finder is `components.Markers.GivenBy(context.SourceCardInstanceId)`. Narrow Escape gives no marker at all, so it has nothing to return by that reading, and the sentence is about the one on the board. |
@@ -326,7 +331,8 @@ reports impossible when the marker is already held, and Dead or Alive would sile
 own printed clause from the second turn onwards. At a physical table the marker would simply be taken
 off the first hero and pinned on the second. **Recorded for the user to overrule**; if the supply were
 six instead, the transfer at 8.40b would still be owed for Close Call and the movement reading would
-become unreachable rather than wrong.
+become unreachable rather than wrong. 8.40a implements the count as
+`BainComponentContent.BountySupplyCount`; 8.40b builds the move.
 
 **BA-D2. The guess domain is the set of p.9 colours that PUBLIC information cannot rule out of the
 chooser's hand.** A Game of Chance's parenthetical says "You can only guess colors that could be in
@@ -390,7 +396,14 @@ it.
 Attack?** p.13's Defeat is reached from card effects as well as from p.14's step 6, and the one site
 that composes the additional cost today is inside the Attack backend. The printed sentence says "when
 defeated" with no cause attached, so the natural answer is that the cost is charged wherever p.13's
-spend is computed. 8.40a records the reading it takes and names every site it had to reach.
+spend is computed.
+
+**SETTLED at 8.40a: YES, and it cost nothing.** Counted rather than assumed:
+`HeroDefeatRewardSchedule.LifeCounters` and `TeamLifeState.TrySpend` each have one production caller,
+both inside `ResolveHeroDefeat`, whose two entrances are p.14's step 6 and 8.22's
+`ResolveEffectInvokedHeroDefeat` - through which every card-text Defeat arrives, from an Attack's text,
+a Skill or a trigger's frame. p.13's list has been one chain since 6.6b, so no Minion Battle or
+end-of-round path exists. A Skill-caused Defeat is asserted.
 
 ## Components and prepared artwork sources
 

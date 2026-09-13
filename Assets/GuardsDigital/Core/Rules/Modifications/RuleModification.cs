@@ -170,7 +170,34 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// already been paid for, and a second payment there would be the two-spend reading the ruling
         /// rejects.</para>
         /// </summary>
-        AdditionalDefeatLifeCost = 11
+        AdditionalDefeatLifeCost = 11,
+
+        /// <summary>
+        /// Milestone 8.40a. The affected object, <em>when it is itself defeated</em>, spends one Life
+        /// counter more than rulebook p.13's schedule charges - Bain's bounty marker, "a hero with a
+        /// [bounty] bounty marker spends 1 additional [life] life counter when defeated".
+        ///
+        /// <para><b>It is a twelfth family rather than the eleventh read about a second object, and the
+        /// probe that built it is what found out why.</b> The two sentences name different subjects of
+        /// the same p.13 spend: Ursafar's Tear declares it about the hero who <em>defeated</em>, and
+        /// Bain's marker about the hero who <em>is defeated</em>. Reading one kind about both subjects
+        /// looks equivalent and is not, because one object is both at different moments - a hero
+        /// wearing the bounty who defeats somebody would have charged their victim an extra counter,
+        /// which is a rule no printed face carries. A shared label that attached a rule the text does
+        /// not print is exactly the split this project's reuse-first discipline calls for.</para>
+        ///
+        /// <para><b>It carries no amount, for the eleventh's reason exactly</b>: one printed face says
+        /// "1 additional", so the family says one and two declarations charge two. The two families are
+        /// counted together into a single spend, so a hero wearing the bounty who is defeated by
+        /// Ursafar while Tear stands charges two, by construction and without either card saying
+        /// so.</para>
+        ///
+        /// <para>A member rather than a discriminating property, deliberately: a new public property on
+        /// <see cref="RuleModification"/> would move the content digest of every hero whose declarations
+        /// reach this type, which milestone 8.38d measured on a shared type at the cost of all twelve
+        /// pins at once. An added enum member no earlier declaration names moves nothing.</para>
+        /// </summary>
+        AdditionalDefeatLifeCostWhenDefeated = 12
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -763,6 +790,23 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static RuleModification ForAdditionalDefeatLifeCost() =>
             new RuleModification(
                 RuleModificationKind.AdditionalDefeatLifeCost,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+
+        /// <summary>
+        /// Milestone 8.40a. One extra Life counter charged when this object is itself defeated.
+        /// See <see cref="RuleModificationKind.AdditionalDefeatLifeCostWhenDefeated"/> for why it is a
+        /// second family rather than the first one read about a second object.
+        /// </summary>
+        public static RuleModification ForAdditionalDefeatLifeCostWhenDefeated() =>
+            new RuleModification(
+                RuleModificationKind.AdditionalDefeatLifeCostWhenDefeated,
                 Array.Empty<RuleActivity>(),
                 RulePermissionKind.None,
                 PrintedValueChannel.None,

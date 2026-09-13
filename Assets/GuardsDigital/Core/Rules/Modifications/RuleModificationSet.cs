@@ -376,6 +376,43 @@ namespace GuardsDigital.Core.Rules.Modifications
                         RuleModificationKind.AdditionalDefeatLifeCost)
                 : 0;
 
+        /// <summary>
+        /// Milestone 8.40a. The whole additional charge rulebook p.13's spend carries, from BOTH of the
+        /// families that can declare one: Ursafar's Tear, declared about the hero who
+        /// <paramref name="attacker"/> is, and Bain's bounty marker, declared about the hero
+        /// <paramref name="defeatedHero"/> is.
+        ///
+        /// <para><b>Two families rather than one read twice, and the difference is a rule.</b> Reading
+        /// <see cref="RuleModificationKind.AdditionalDefeatLifeCost"/> about the defeated hero as well
+        /// looks equivalent and is not: a hero wearing the bounty who <em>defeats</em> somebody would
+        /// then charge their victim an extra counter, which is a sentence no printed face carries.
+        /// <c>RuleModificationQuery.FromHeldMarkers</c> has affected
+        /// <c>RuleObject.ForHero(marker.HolderHeroId)</c> since milestone 8.23, so a marker's
+        /// declaration always landed on the right object; what was missing was a family that means
+        /// "when this object is defeated" and a read that asks for it.</para>
+        ///
+        /// <para><b>It counts DECLARATIONS and composes them into one number.</b> The 2026-09-06 ruling
+        /// behind the older family says the charge is computed once as Tier + 1 and spent once, and
+        /// that counting rather than flagging is what keeps a second source from being silently
+        /// swallowed - so a hero wearing the bounty who is defeated by Ursafar while Tear stands
+        /// charges two, by construction and without either card saying so. The two kinds are disjoint,
+        /// so a hero who is somehow both subjects - <c>synthetic-defeat-hero@1</c> takes a hero
+        /// parameter and attaches no cause - still pays once per declaration.</para>
+        ///
+        /// <para>An undefined subject contributes nothing rather than matching everything, which is the
+        /// single-subject overload's rule restated for two.</para>
+        /// </summary>
+        public int AdditionalDefeatLifeCost(RuleObject attacker, RuleObject defeatedHero) =>
+            Modifications.Count(modification =>
+                (attacker.IsDefined &&
+                    modification.Modification.Kind ==
+                        RuleModificationKind.AdditionalDefeatLifeCost &&
+                    modification.AffectedObject.Equals(attacker)) ||
+                (defeatedHero.IsDefined &&
+                    modification.Modification.Kind ==
+                        RuleModificationKind.AdditionalDefeatLifeCostWhenDefeated &&
+                    modification.AffectedObject.Equals(defeatedHero)));
+
         public bool CountsAs(RuleObject affectedObject, EffectiveUnitKind effectiveUnitKind)
         {
             if (effectiveUnitKind == EffectiveUnitKind.None)

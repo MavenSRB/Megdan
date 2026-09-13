@@ -2299,10 +2299,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // the count here rather than spent again later because the ruling that admits it says the
             // charge is computed once and paid once; a hero with no such declaration reads exactly the
             // number the page prints, which is what makes this change invisible to every other face.
+            //
+            // Milestone 8.40a adds the second subject, and the addition is one argument because
+            // there is only one place where p.13's cost is produced. Bain's bounty marker prints the
+            // mirror of Tear's sentence - "a hero with a bounty marker spends 1 additional [Life] life
+            // counter when defeated" - which is a rule about the DEFEATED HOLDER, and a held marker's
+            // property already affects the holder. It is a SECOND declaration family rather than the
+            // first one read about a second object, because a bounty-wearing hero who defeats somebody
+            // must not charge their victim: see RuleModificationKind's two members.
+            //
+            // THE READ IS TAKEN HERE, BEFORE p.13's OWN MARKER RETURN BELOW, and the order is the
+            // printed one rather than a convenience: the page prices the Defeat and then returns the
+            // defeated hero's markers, so the bounty a defeat removes still charges for the defeat
+            // that removed it. The set itself is derived at the command boundary before this list
+            // starts, which makes the ordering structural rather than positional.
             var additionalLifeCounters = modifications == null
                 ? 0
                 : modifications.AdditionalDefeatLifeCost(
-                    RuleObject.ForHero(completedResolution.ActorId));
+                    RuleObject.ForHero(completedResolution.ActorId),
+                    RuleObject.ForHero(defeatedHeroId));
             var lifeCounters = hasTier
                 ? HeroDefeatRewardSchedule.LifeCounters(lowestTier, additionalLifeCounters)
                 : 0;
