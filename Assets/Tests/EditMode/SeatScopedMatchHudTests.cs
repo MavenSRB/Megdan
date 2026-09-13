@@ -469,6 +469,59 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.39j. EVERY CAUSE HAS A SENTENCE THE HUD CAN SAY, and this is a derived guard
+        /// rather than one member's case because the failure it closes was exactly a member added
+        /// without one.
+        ///
+        /// <para><b>What happened.</b> Milestone 8.39g added <c>CoinHoardClaimed</c> and taught
+        /// <c>RoundActionPresenter.FormatStatus</c> to name a solo winner, and left the switch that
+        /// turns a cause into words at p.8's three team sentences. So the instant A Fistful of Coins
+        /// ended a match the round panel threw <c>An ended match requires one rulebook victory
+        /// cause</c>, the HUD stopped refreshing, and the win was never announced to anybody - found
+        /// at milestone 8.39j by a Play Mode journey that drove the card to its own ending, which no
+        /// offline tier could have done because no offline tier draws a panel.</para>
+        ///
+        /// <para>The formatter is private, deliberately: what it returns is presentation and only the
+        /// status line consumes it. Reflecting on it here is what lets the guard walk the ENUM rather
+        /// than a list somebody has to remember to extend.</para>
+        /// </summary>
+        [Test]
+        public void EveryVictoryCause_HasAWordedSentenceTheStatusLineCanSay()
+        {
+            var formatter = typeof(RoundActionPresenter)
+                .GetMethod(
+                    "FormatVictoryCause",
+                    BindingFlags.NonPublic |
+                    BindingFlags.Static);
+            Assert.That(formatter, Is.Not.Null,
+                "The status line's own cause formatter is what this guard walks; a rename belongs " +
+                "here rather than in a panel that throws at the moment somebody wins.");
+
+            var unworded = Enum.GetValues(typeof(GuardsDigital.Core.Rules.Victory.MatchVictoryCause))
+                .Cast<GuardsDigital.Core.Rules.Victory.MatchVictoryCause>()
+                .Where(cause => cause != GuardsDigital.Core.Rules.Victory.MatchVictoryCause.None)
+                .Where(cause =>
+                {
+                    try
+                    {
+                        return string.IsNullOrWhiteSpace(
+                            (string)formatter.Invoke(null, new object[] { cause }));
+                    }
+                    catch (Exception)
+                    {
+                        return true;
+                    }
+                })
+                .Select(cause => cause.ToString())
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(unworded, Is.Empty,
+                "A cause the HUD cannot word is a match that ends with a thrown panel instead of a " +
+                "winner: " + string.Join(", ", unworded));
+        }
+
+        /// <summary>
         /// Milestone 8.30c's demonstrated HUD/prompt defect. The terminal projection already offered
         /// no controls, but its narration fell through to "Waiting for the match to continue". An
         /// ended match now reads as ended, identically and safely from all six seat perspectives.

@@ -329,16 +329,25 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, DiscardLineJourney),
                         Prove(BoardSpaceSelection, DiscardLineJourney),
-                        // THE THREE BELOW ARE PROVED ON THE SIBLING CONTRACT, not on this face, and
+                        // THE TWO BELOW ARE PROVED ON THE SIBLING CONTRACT, not on this face, and
                         // that is stated rather than hidden. Sudden Breeze drives the traversal
-                        // selection and its `may` on the SAME two contracts this face names, and
-                        // Swoop In drives a hand-card selection on the live surface; what this
-                        // face's own journey could not drive is the WALK behind them, which
-                        // milestone 8.35z38 recorded as a named follow-up after seven Play Mode
-                        // runs. A weaker attribution said out loud is worth more than a strong one
-                        // that is not true.
+                        // selection on the SAME contract this face names, and Swoop In drives a
+                        // hand-card selection on the live surface; what this face's own journey
+                        // could not drive is the WALK behind them, which milestone 8.35z38
+                        // recorded as a named follow-up after seven Play Mode runs. A weaker
+                        // attribution said out loud is worth more than a strong one that is not
+                        // true.
+                        //
+                        // MILESTONE 8.39j REMOVED A THIRD. This row used to declare
+                        // `ConfirmOrDecline` from its `up to` line-destination node, and no such
+                        // control is ever drawn there: `choose-line-destination` offers 1..N
+                        // spaces and keeps a floor of one, so the printed optionality lives in the
+                        // offer rather than in a button - which Silverarrow's own nought-distance
+                        // journey already says in as many words, "the zero-distance answer is the
+                        // occupied origin on the board, not a decline button". The derivation now
+                        // reads it the way it has always read a Direct Move's `up to`, and this
+                        // row follows the content rather than the other way round.
                         Prove(BoardUnitSelection, LineJourney),
-                        Prove(ConfirmOrDecline, LineJourney),
                         Prove(HandCardSelection, SwoopJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
@@ -370,16 +379,25 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, DiscardLineJourney),
                         Prove(BoardSpaceSelection, DiscardLineJourney),
-                        // THE THREE BELOW ARE PROVED ON THE SIBLING CONTRACT, not on this face, and
+                        // THE TWO BELOW ARE PROVED ON THE SIBLING CONTRACT, not on this face, and
                         // that is stated rather than hidden. Sudden Breeze drives the traversal
-                        // selection and its `may` on the SAME two contracts this face names, and
-                        // Swoop In drives a hand-card selection on the live surface; what this
-                        // face's own journey could not drive is the WALK behind them, which
-                        // milestone 8.35z38 recorded as a named follow-up after seven Play Mode
-                        // runs. A weaker attribution said out loud is worth more than a strong one
-                        // that is not true.
+                        // selection on the SAME contract this face names, and Swoop In drives a
+                        // hand-card selection on the live surface; what this face's own journey
+                        // could not drive is the WALK behind them, which milestone 8.35z38
+                        // recorded as a named follow-up after seven Play Mode runs. A weaker
+                        // attribution said out loud is worth more than a strong one that is not
+                        // true.
+                        //
+                        // MILESTONE 8.39j REMOVED A THIRD. This row used to declare
+                        // `ConfirmOrDecline` from its `up to` line-destination node, and no such
+                        // control is ever drawn there: `choose-line-destination` offers 1..N
+                        // spaces and keeps a floor of one, so the printed optionality lives in the
+                        // offer rather than in a button - which Silverarrow's own nought-distance
+                        // journey already says in as many words, "the zero-distance answer is the
+                        // occupied origin on the board, not a decline button". The derivation now
+                        // reads it the way it has always read a Direct Move's `up to`, and this
+                        // row follows the content rather than the other way round.
                         Prove(BoardUnitSelection, LineJourney),
-                        Prove(ConfirmOrDecline, LineJourney),
                         Prove(HandCardSelection, SwoopJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)

@@ -2162,7 +2162,11 @@ namespace GuardsDigital.Presentation.Match
                 // of what "you alone win the game" awards.
                 if (outcome.HasSoloWinner)
                 {
-                    return outcome.WinningHeroId.Value.ToUpperInvariant() + " WINS ALONE: " +
+                    // Milestone 8.39j names them the way every other line on this panel does. The
+                    // raw seat identity read `BLUE-TEST-HERO WINS ALONE` on the one board that can
+                    // reach this sentence, which is a seat id rather than a hero.
+                    return HeroDisplayName(projection.Setup.Heroes, outcome.WinningHeroId)
+                            .ToUpperInvariant() + " WINS ALONE: " +
                         FormatVictoryCause(outcome.Cause) + ".";
                 }
 
@@ -2401,6 +2405,18 @@ namespace GuardsDigital.Presentation.Match
                     return "the enemy Throne was captured";
                 case MatchVictoryCause.LifeCountersExhausted:
                     return "the opposing team ran out of Life counters";
+
+                // Milestone 8.39j. THE FOURTH CAUSE, and the one sentence that was missing when the
+                // match it ends actually ended. Milestone 8.39g added the solo winner to the status
+                // line above and left this switch at p.8's three team sentences, so the very moment A
+                // Fistful of Coins won the game the round panel threw
+                // `An ended match requires one rulebook victory cause` and the HUD stopped refreshing
+                // - the win was never announced to anybody. Measured in Play Mode at this milestone
+                // by driving the card: 26 of 27 journeys green and this one red on the panel's own
+                // error. It is a card sentence rather than a rulebook one, which is why it reads as
+                // the card rather than as a page.
+                case MatchVictoryCause.CoinHoardClaimed:
+                    return "thirteen coins were hoarded";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(cause), cause, "An ended match requires one rulebook victory cause.");

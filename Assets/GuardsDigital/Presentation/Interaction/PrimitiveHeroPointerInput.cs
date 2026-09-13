@@ -256,9 +256,28 @@ namespace GuardsDigital.Presentation.Interaction
                 return null;
             }
 
+            // Milestone 8.39j. EVERY DRAWN TILE, not the playable ones alone.
+            //
+            // <para><b>The defect this closes, found by driving a card rather than by reading one.</b>
+            // Cutter's Grappling Bolt is the first content in the build whose offer can name a space
+            // that is not playable: p.18 makes terrain an obstacle, and "target an obstacle in range
+            // and in a straight line" therefore lights terrain hexes as real candidates. This search
+            // filtered them out before the match was ever asked, so the ray found no tile, the
+            // destination intent was never forwarded, and a lit candidate answered nothing at all -
+            // an offer the input could not reach, which is the inverse of the offer-admits-more-than-
+            // the-answer-can-perform class this project already tracks. Measured in Play Mode at this
+            // milestone before it was changed: the click reported false with the ray passing through
+            // no piece.</para>
+            //
+            // <para><b>Legality is the arbiter, exactly as this method's caller already documents.</b>
+            // A tile that is not a legal answer is refused by
+            // <c>TryForwardDestinationIntent</c> - which asks the match what the click could mean -
+            // and the chain then falls through to the tray-pointing pass precisely as it did when this
+            // search returned null. So the only behaviour that changes is the one that was broken:
+            // a click on a non-playable space the match is actually offering now reaches it.</para>
             var hitPoint = pointerRay.GetPoint(enter);
             return tiles
-                .Where(tile => tile != null && tile.IsPlayable)
+                .Where(tile => tile != null)
                 .OrderBy(tile => Vector3.Distance(tile.transform.position, hitPoint))
                 .FirstOrDefault(tile =>
                 {

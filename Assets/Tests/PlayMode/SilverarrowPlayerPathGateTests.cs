@@ -363,7 +363,14 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, RealisedDistance),
-                        Prove(ConfirmOrDecline, RealisedDistanceOfNought),
+                        // MILESTONE 8.39j: this was `ConfirmOrDecline` and the journey it names
+                        // says in its own words why it never was one - "the zero-distance answer
+                        // is the occupied origin on the board, not a decline button".
+                        // `choose-line-destination` keeps a floor of one and expresses the
+                        // printed `up to` inside the spaces it offers, exactly as a Direct Move's
+                        // does, so what this journey proves is the board answer and it is bound
+                        // to that shape now.
+                        Prove(BoardSpaceSelection, RealisedDistanceOfNought),
                         Prove(BoardUnitSelection, RealisedDistance),
                         Prove(BoardSpaceSelection, RealisedDistance),
                         Prove(SecondaryDefenseOffer, NumericDefense),
@@ -396,7 +403,14 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, RealisedDistance),
-                        Prove(ConfirmOrDecline, RealisedDistanceOfNought),
+                        // MILESTONE 8.39j: this was `ConfirmOrDecline` and the journey it names
+                        // says in its own words why it never was one - "the zero-distance answer
+                        // is the occupied origin on the board, not a decline button".
+                        // `choose-line-destination` keeps a floor of one and expresses the
+                        // printed `up to` inside the spaces it offers, exactly as a Direct Move's
+                        // does, so what this journey proves is the board answer and it is bound
+                        // to that shape now.
+                        Prove(BoardSpaceSelection, RealisedDistanceOfNought),
                         Prove(BoardUnitSelection, RealisedDistance),
                         Prove(BoardSpaceSelection, RealisedDistance),
                         Prove(SecondaryDefenseOffer, NumericDefense),

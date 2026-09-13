@@ -185,6 +185,87 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(StillEligible(definition, frame, EffectValue.Hero(Spare)), Is.True);
         }
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.39j. What ARMS the capture, which is the half nothing written at 8.39d1 drove
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// <b>A selection that publishes only a PIECE still named one.</b> Milestone 8.39j's Play Mode
+        /// run is what found this: Broadside's subject node declares one output - the chosen hero -
+        /// because nothing downstream of it consumes a space, so the capture found no coordinate fact,
+        /// reported nothing captured, and the exclusion below silently narrowed nothing. The live
+        /// consequence was the printed rule not happening: the repeated instance offered the very hero
+        /// the first instance had taken, and one player lost two cards to "a different target".
+        ///
+        /// <para>Every case at milestone 8.39d1 handed the frame a bound piece directly, which is why
+        /// the whole exclusion could be green while nothing ever armed it.</para>
+        /// </summary>
+        [Test]
+        public void TheCapture_ArmsFromTheHeroASelectionPublished_WhenItPublishesNoSpace()
+        {
+            var definition = DefinitionWith(RepeatTargetBinding.DifferentSelectionSubject);
+            var selection = definition.Nodes.Single(node => node.Id.Equals(SelectionNodeId));
+            var applied = EffectExecutionResult.Applied(new[]
+            {
+                new EffectOutcomeFact("chosenHero", EffectValue.Hero(Taken))
+            });
+
+            Assert.That(
+                RepeatedActionQuery.TryCaptureBoundTarget(
+                    definition, selection, applied, Components(), out var captured),
+                Is.True,
+                "A hero-valued selection names a piece, and a capture that reads only coordinates " +
+                "records nothing for it - which is the whole of what Broadside got wrong.");
+            Assert.That(captured.Kind, Is.EqualTo(BoardObjectKind.Hero));
+            Assert.That(captured.HeroId, Is.EqualTo(Taken));
+        }
+
+        /// <summary>The same for a minion-valued selection, which no content names yet and might.</summary>
+        [Test]
+        public void TheCapture_ArmsFromAMinionASelectionPublished()
+        {
+            var definition = DefinitionWith(RepeatTargetBinding.DifferentSelectionSubject);
+            var selection = definition.Nodes.Single(node => node.Id.Equals(SelectionNodeId));
+            var minion = new MinionId("excluded-subject-minion");
+            var applied = EffectExecutionResult.Applied(new[]
+            {
+                new EffectOutcomeFact("chosenMinion", EffectValue.Minion(minion))
+            });
+
+            Assert.That(
+                RepeatedActionQuery.TryCaptureBoundTarget(
+                    definition, selection, applied, Components(), out var captured),
+                Is.True);
+            Assert.That(captured.Kind, Is.EqualTo(BoardObjectKind.Minion));
+            Assert.That(captured.MinionId, Is.EqualTo(minion));
+        }
+
+        /// <summary>
+        /// <b>And the SPACE still wins where a selection publishes one</b>, which is what keeps every
+        /// bound selection written before milestone 8.39j capturing byte-identically: Wasp's Orbit, its
+        /// showcase twin and Dodger's rebinding pair all publish a coordinate, so none of them reaches
+        /// the fallback above at all.
+        /// </summary>
+        [Test]
+        public void TheCapture_StillPrefersTheSpaceWhereASelectionPublishesOne()
+        {
+            var definition = DefinitionWith(RepeatTargetBinding.DifferentSelectionSubject);
+            var selection = definition.Nodes.Single(node => node.Id.Equals(SelectionNodeId));
+            var applied = EffectExecutionResult.Applied(new[]
+            {
+                new EffectOutcomeFact("chosen", EffectValue.Space(SpareAt)),
+                new EffectOutcomeFact("chosenHero", EffectValue.Hero(Taken))
+            });
+
+            Assert.That(
+                RepeatedActionQuery.TryCaptureBoundTarget(
+                    definition, selection, applied, Components(), out var captured),
+                Is.True);
+            Assert.That(captured.HeroId, Is.EqualTo(Spare),
+                "The coordinate names whoever is standing there, which is the rule every existing " +
+                "bound selection has always been read by.");
+        }
+
         /// <summary>
         /// An excluding repeat whose asking instance captured nothing narrows nothing, and advances
         /// rather than refusing: a repeat of an unnarrowed set is exactly p.10's default, so there is

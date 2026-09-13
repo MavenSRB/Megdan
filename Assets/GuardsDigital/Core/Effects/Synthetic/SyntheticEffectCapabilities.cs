@@ -198,7 +198,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectExecutionResultKind.Applied;
         }
 
-        /// <summary>Applies unconditionally and publishes the actor, so a later node can bind it.</summary>
+        /// <summary>
+        /// Applies unconditionally and publishes the actor, so a later node can bind it.
+        ///
+        /// <para><b>It declares NO checkpoint, and milestone 8.39j is why that had to be said.</b> It
+        /// used to ask for <c>ActionStarted</c> before itself and <c>ActionEnded</c> after, and the
+        /// second of those is a step the resolution refuses by construction:
+        /// <c>ResolutionStep.AtCheckpoint</c> throws on the completion checkpoint because "the
+        /// completion checkpoint names the action it completes", and the Skill backend turns a node's
+        /// declared checkpoints into exactly that factory. So ANY live resolution reaching this node
+        /// threw an <c>ArgumentException</c> and the command was refused - which nothing noticed while
+        /// the only content naming it was the showcase hand, and which Cutter's A Fistful of Coins
+        /// made reachable by printing "You gain N coins" with a named recipient. Measured in Play Mode
+        /// at milestone 8.39j: confirming the coin bullet was refused with that exact message and the
+        /// printed victory sentence could not be reached at all.</para>
+        ///
+        /// <para>Both were wrong on their own terms as well as on the factory's. An action's start and
+        /// end are the ACTION's moments and the backend already emits them around the whole
+        /// resolution; a node that publishes who is acting is a fact, not a moment, and re-raising the
+        /// action's own boundaries from inside it would dispatch every timing subscriber twice.</para>
+        /// </summary>
         private sealed class NoteActorHandler : IEffectCapabilityHandler
         {
             public EffectCapabilityReference Reference => NoteActorV1;
@@ -211,9 +230,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context) =>
                 EffectExecutionResult.Applied(
-                    new[] { new EffectOutcomeFact("hero", EffectValue.Hero(context.ActorId)) },
-                    checkpointsBefore: new[] { TimingCheckpoint.ActionStarted },
-                    checkpointsAfter: new[] { TimingCheckpoint.ActionEnded });
+                    new[] { new EffectOutcomeFact("hero", EffectValue.Hero(context.ActorId)) });
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>

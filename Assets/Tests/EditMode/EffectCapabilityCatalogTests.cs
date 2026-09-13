@@ -44,6 +44,79 @@ namespace GuardsDigital.Tests.EditMode
                 "missing one, and a restore must be able to tell a player which.");
         }
 
+        /// <summary>
+        /// Milestone 8.39j. NO REGISTERED HANDLER MAY DECLARE THE COMPLETION CHECKPOINT, because the
+        /// resolution refuses it by construction and the refusal arrives as a thrown
+        /// <c>ArgumentException</c> that turns into a silently rejected command.
+        ///
+        /// <para><b>The defect this closes.</b> <c>synthetic-note-actor@1</c> declared
+        /// <c>ActionStarted</c> before itself and <c>ActionEnded</c> after it. The Skill backend turns
+        /// a node's declared checkpoints into <c>ResolutionStep.AtCheckpoint</c>, and that factory
+        /// throws on <c>ActionEnded</c> - "use AtActionEnded: the completion checkpoint names the
+        /// action it completes" - so every live resolution reaching such a node refused its own
+        /// command. Nothing noticed while the only content naming it was the showcase hand; Cutter's
+        /// A Fistful of Coins made it reachable, and its printed victory sentence could not be
+        /// reached at all until milestone 8.39j's Play Mode run drove it.</para>
+        ///
+        /// <para>This is a corpus-wide guard rather than one handler's case, for the reason every
+        /// derived guard in this project exists: the next handler to copy those two lines fails here
+        /// instead of shipping a command nobody can take.</para>
+        /// </summary>
+        [Test]
+        public void NoRegisteredHandler_DeclaresACheckpointTheResolutionRefusesToStep()
+        {
+            var catalog = SyntheticEffectCapabilities.CreateCatalog();
+            var offenders = catalog.Registered
+                .Select(reference => catalog.Load(reference))
+                .Select(handler => (handler, result: TryExecute(handler)))
+                .Where(pair => pair.result != null &&
+                    pair.result.CheckpointsBefore
+                        .Concat(pair.result.CheckpointsAfter)
+                        .Any(checkpoint =>
+                            checkpoint == GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded))
+                .Select(pair => pair.handler.Reference.ToString())
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(offenders, Is.Empty,
+                "ResolutionStep.AtCheckpoint refuses the completion checkpoint, and a node's " +
+                "declared checkpoints go straight to it - so a handler naming it makes its own " +
+                "command unacceptable: " + string.Join(", ", offenders));
+        }
+
+        /// <summary>
+        /// Executes a handler that needs nothing from the board, and returns null for every one that
+        /// does. The point of the guard above is the DECLARATION a handler makes when it applies, and
+        /// a handler this cannot run is one whose declaration this fixture cannot read - which is the
+        /// honest answer rather than a fabricated context that would make the reading a guess.
+        /// </summary>
+        private static EffectExecutionResult TryExecute(IEffectCapabilityHandler handler)
+        {
+            try
+            {
+                return handler.Execute(new EffectCapabilityContext(
+                    new EffectNodeId("checkpoint-probe-node"),
+                    EffectFailurePolicy.Mandatory,
+                    new GuardsDigital.Core.Units.Heroes.HeroId("checkpoint-probe-actor"),
+                    new GuardsDigital.Core.Units.Heroes.HeroId("checkpoint-probe-controller"),
+                    new GuardsDigital.Core.Cards.CardInstanceId("checkpoint-probe-card"),
+                    default,
+                    new GuardsDigital.Core.Cards.ActionDefinitionId("checkpoint-probe-action"),
+                    new Dictionary<string, EffectValue>(StringComparer.Ordinal),
+                    1,
+                    1,
+                    null,
+                    null,
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                    EffectCardState.Absent,
+                    GuardsDigital.Core.Cards.ActionKind.Skill));
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         [Test]
         public void Registered_IsOrderedDeterministicallySoASnapshotCanCompareIt()
         {

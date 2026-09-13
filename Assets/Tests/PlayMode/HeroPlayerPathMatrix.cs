@@ -911,7 +911,35 @@ namespace GuardsDigital.Tests.PlayMode
                 // narrows the set a later node offers and asks the player for nothing itself, so an
                 // empty row is what it contributes and a non-empty one would claim a control that does
                 // not exist.
-                ["subject-adjacent-terrain-presence"] = Array.Empty<PlayerInteractionShape>()
+                ["subject-adjacent-terrain-presence"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.39j. Cutter the Sky Pirate's three new entries, and she introduces no
+                // new SHAPE either - which is the same finding Swift's dealing recorded one hero
+                // earlier and is worth stating rather than leaving as an absence.
+                //
+                // THE OBSTACLE TARGET IS A BOARD SPACE, on the capability's own terms rather than on
+                // a convenience. `synthetic-range-obstacle-target@1` publishes a COORDINATE, because
+                // p.18 allows at most one obstacle in any one space - "Ever. No exceptions." - so an
+                // obstacle is named one-to-one by where it stands and p.19's own Target keyword
+                // already reads "Target (Unit / Token / Space)". A player answers it by clicking a hex
+                // exactly as they answer every Place in this table; what differs is which hexes the
+                // offer contains, which is the candidate-set-versus-shape line milestone 8.35z38 drew
+                // for Misa's ring. Classifying it as a unit selection would claim the piece is the
+                // subject, and a heap of terrain is not a piece.
+                ["synthetic-range-obstacle-target"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // The solo-victory claim asks nobody anything: it reads the controller's own coin
+                // ledger at the branch the card always reaches and writes the winner when the printed
+                // thirteen is met. A player sees the match end, which is not a control they operate -
+                // the same classification `gain-resource@1` carries two dozen lines above for the
+                // grant that fed it.
+                ["claim-solo-victory"] = Array.Empty<PlayerInteractionShape>(),
+
+                // And the actor note is a publication rather than a question - it applies
+                // unconditionally and puts the acting hero on the frame so the grant beside it can
+                // bind a recipient. Nothing is offered and nothing is picked.
+                ["synthetic-note-actor"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -1168,12 +1196,21 @@ namespace GuardsDigital.Tests.PlayMode
             // Direct Move expresses its up-to distance inside the destination-space selection itself:
             // it never opens a separate confirm-or-decline control. Milestone 8.25e5f1 made that
             // distinction observable by separating Siren's Call's IfAble wrapper from its UpTo move.
+            //
+            // Milestone 8.39j generalised the Direct Move exception into the sentence the resolver
+            // already documents, having measured that it is one case of two rather than one of one.
+            // `EffectResolutionSession`'s own remarks state the rule: <i>"`up to` needs no change: a
+            // handler that admits the printed `up to` already declares a floor of zero itself"</i> -
+            // so an UpTo node draws a control of its own exactly where its handler lowers its floor,
+            // and where the handler keeps a floor of one the optionality lives in the OFFER instead.
+            // `choose-line-destination@1` is the second such handler: it offers 1..N spaces, declares
+            // a floor of one, and turns a refused or empty offer into a step not taken through the
+            // node's policy rather than through a control. Measured in Play Mode at this milestone -
+            // Cutter's retreat stands as `Choose 1 of 1 space` with no confirm and no decline drawn -
+            // and the same is true of every line-destination face in the build.
             if (node.FailurePolicy == EffectFailurePolicy.May ||
                 (node.FailurePolicy == EffectFailurePolicy.UpTo &&
-                    (!node.Capability.IsDefined || !string.Equals(
-                        node.Capability.CapabilityId.Value,
-                        SyntheticDisplacementCapabilities.DirectMove.Value,
-                        StringComparison.Ordinal))))
+                    !OffersItsUpToInsideItsOwnSelection(node)))
             {
                 shapes.Add(PlayerInteractionShape.ConfirmOrDecline);
             }
@@ -1236,10 +1273,31 @@ namespace GuardsDigital.Tests.PlayMode
                 shapes.Add(shape);
             }
 
-            if (string.Equals(
-                    capabilityId,
-                    SyntheticDisplacementCapabilities.ObjectPush.Value,
-                    StringComparison.Ordinal) &&
+            // Milestone 8.39j. BOTH of this build's Pushes, rather than the batch alone.
+            //
+            // <para>The distance question belongs to the DECLARATION and not to which push capability
+            // asks it: `synthetic-object-push@3` and `synthetic-push-target@3` read the same two
+            // literals (`distance` and `leastDistance`), and both hand the player an integer control
+            // when the two differ - <c>PushOrAskDistance</c> is one shared helper in
+            // <see cref="SyntheticDisplacementCapabilities"/> and it is what asks. Keying the shape on
+            // the batch id alone was an accident of which hero had been dealt: every
+            // `synthetic-push-target` in the build until now named ONE distance, so the question was
+            // never asked and the omission was invisible.</para>
+            //
+            // <para>Cutter's Walk the Plank is the first to print "up to 4 spaces" on the named-target
+            // push, and its player really is shown the distance. <b>The refinement leaves every
+            // earlier hero byte-identical</b>, which is the test of a generalisation rather than a
+            // re-fit: Sabina's Point Blank and Ricochet are the only other verified faces naming this
+            // capability and both declare `distance` 1 against `leastDistance` 1, so the predicate is
+            // false for them exactly as it was before.</para>
+            if ((string.Equals(
+                        capabilityId,
+                        SyntheticDisplacementCapabilities.ObjectPush.Value,
+                        StringComparison.Ordinal) ||
+                    string.Equals(
+                        capabilityId,
+                        SyntheticDisplacementCapabilities.PushTarget.Value,
+                        StringComparison.Ordinal)) &&
                 NamesMoreThanOnePushDistance(node))
             {
                 shapes.Add(PlayerInteractionShape.PushDistanceChoice);
@@ -1269,6 +1327,43 @@ namespace GuardsDigital.Tests.PlayMode
         /// classification keyed on the capability alone would give Brogan's Onslaught a board click it
         /// never produces.</para>
         /// </summary>
+        /// <summary>
+        /// Whether an <c>up to</c> node's own handler expresses the printed optionality inside the
+        /// selection it offers rather than in a control beside it. Milestone 8.39j.
+        ///
+        /// <para>Three handlers in this build do, and they were measured rather than guessed at:</para>
+        /// <list type="bullet">
+        /// <item><description><c>synthetic-direct-move@3</c>, which milestone 8.25e5f1 separated from
+        /// Siren's Call's IfAble wrapper.</description></item>
+        /// <item><description><c>choose-line-destination@1</c>, which offers every distance from one
+        /// to the printed maximum and keeps a floor of one. Silverarrow's own nought-distance journey
+        /// states the consequence in as many words - "the zero-distance answer is the occupied origin
+        /// on the board, not a decline button".</description></item>
+        /// <item><description><c>synthetic-push-target@3</c>, whose printed "up to N spaces" is drawn
+        /// as the INTEGERS nought to N and answered by picking one. That is
+        /// <see cref="PlayerInteractionShape.PushDistanceChoice"/>, which the same node already
+        /// declares, so counting it twice would put two controls on a row where a player meets
+        /// one.</description></item>
+        /// </list>
+        /// <para>The batch <c>synthetic-object-push@3</c> is deliberately NOT here: it declares a
+        /// floor of nought for its own "up to", which is the sentence
+        /// <c>EffectResolutionSession</c> names, so its offer really does carry a decline.</para>
+        /// </summary>
+        private static bool OffersItsUpToInsideItsOwnSelection(EffectNodeDefinition node) =>
+            node.Capability.IsDefined &&
+            (string.Equals(
+                    node.Capability.CapabilityId.Value,
+                    SyntheticDisplacementCapabilities.DirectMove.Value,
+                    StringComparison.Ordinal) ||
+                string.Equals(
+                    node.Capability.CapabilityId.Value,
+                    SyntheticDisplacementCapabilities.PushTarget.Value,
+                    StringComparison.Ordinal) ||
+                string.Equals(
+                    node.Capability.CapabilityId.Value,
+                    "choose-line-destination",
+                    StringComparison.Ordinal));
+
         private static bool NamesItsOwnDestination(EffectNodeDefinition node) =>
             string.Equals(
                 node.Capability.CapabilityId.Value,

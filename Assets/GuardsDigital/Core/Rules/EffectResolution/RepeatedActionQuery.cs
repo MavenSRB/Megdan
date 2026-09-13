@@ -237,6 +237,39 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 }
             }
 
+            // Milestone 8.39j. A SELECTION THAT PUBLISHES ONLY A PIECE STILL NAMED ONE, and reading
+            // the space alone silently captured nothing for it.
+            //
+            // <para><b>The defect this closes, found by driving the card rather than by reading it.</b>
+            // Cutter's Broadside prints "May repeat once on a DIFFERENT target", and its subject node
+            // declares one output - the chosen hero - because nothing downstream of it consumes a
+            // space. The loop above therefore found no coordinate fact, the capture reported false,
+            // and <see cref="RepeatDeclaration.HasBoundTarget"/> stayed false; the exclusion in
+            // <c>EffectSelectionEligibilityQuery.WithoutTheExcludedSubject</c> is gated on exactly that
+            // flag, so the repeated instance offered the hero the first instance had just taken and
+            // the card took two cards off one player. Measured in Play Mode at milestone 8.39j before
+            // this was written: the second instance's offer named `primitive-hero` again.</para>
+            //
+            // <para><b>The space is still preferred, so nothing that worked before changes.</b> Every
+            // other bound selection in the build - Wasp's Orbit, its showcase twin, and Dodger's
+            // rebinding pair - publishes a coordinate, so it takes the branch above and captures
+            // byte-identically. This fallback is reached only where no coordinate fact exists at all,
+            // which today is Broadside alone.</para>
+            foreach (var fact in result.Outcomes)
+            {
+                if (fact.Value.Kind == EffectValueKind.Hero && fact.Value.HeroId.IsDefined)
+                {
+                    boundTarget = BoardObjectReference.ForHero(fact.Value.HeroId);
+                    return true;
+                }
+
+                if (fact.Value.Kind == EffectValueKind.Minion && fact.Value.MinionId.IsDefined)
+                {
+                    boundTarget = BoardObjectReference.ForMinion(fact.Value.MinionId);
+                    return true;
+                }
+            }
+
             return false;
         }
 

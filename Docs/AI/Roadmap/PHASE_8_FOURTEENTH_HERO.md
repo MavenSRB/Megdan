@@ -375,7 +375,7 @@ Evidence: complete unfiltered dotnet harness **2,938/2,938 passed, 0 failed, 0 s
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839i-deal-register-and-artwork-cutter-as-the-fourteenth-hero-and-put-her-pick-card-under-the-cursor-completion-evidence).
 
-### [ ] 8.39j Player-path gate Cutter's whole printed set through real player input
+### [x] 8.39j Player-path gate Cutter's whole printed set through real player input
 
 The permanent content-derived gate every dealt hero carries, and the milestone that answers the user's "make sure you do everything a hero needs" on the terms this project can actually prove.
 
@@ -397,3 +397,43 @@ Acceptance checks:
 - Complete unfiltered dotnet harness, Edit Mode and Play Mode pass at the final revision, and the Play Mode total is re-baselined with its cause stated.
 
 Non-goals: No new content and no new capability. A journey that needs one is a defect report against 8.39a-8.39h, not a widening here.
+
+**THREE SHIPPED DEFECTS, AND NONE OF THEM WAS FINDABLE ANYWHERE BUT HERE.** Each was measured before it was
+changed, and each is the class the gate exists for - the band between what a tier composes and what a pointer
+meets.
+
+1. **THE PRINTED VICTORY SENTENCE COULD NOT BE REACHED AT ALL.** `synthetic-note-actor@1` declared
+   `ActionEnded` as a checkpoint after itself, and the Skill backend turns a node's declared checkpoints into
+   `ResolutionStep.AtCheckpoint`, which refuses the completion checkpoint by construction. So confirming A
+   Fistful of Coins' coin bullet threw `ArgumentException: Use AtActionEnded ...` and the command was refused
+   with the modal still standing. Closed by declaring no checkpoint plus a derived guard over the
+   registered catalog.
+2. **AND THE MOMENT IT COULD, THE HUD COULD NOT SAY SO.** 8.39g added the fourth `MatchVictoryCause` and the
+   solo-winner status branch and left the switch that words a cause at p.8's three team sentences, so the very
+   frame the match ended on threw `An ended match requires one rulebook victory cause` and the round panel
+   stopped refreshing: nobody was ever told who won. Closed with the fourth sentence, a derived guard walking
+   the enum through the formatter, and the winner named by hero rather than by raw seat id.
+3. **A REPEAT THAT PRINTS "ON A DIFFERENT TARGET" REPEATED ON THE SAME ONE.**
+   `RepeatedActionQuery.TryCaptureBoundTarget` captured the excluded piece only from a COORDINATE fact and
+   Broadside's subject publishes a hero, so 8.39d1's exclusion narrowed nothing and one player lost two cards.
+   Closed with a piece-valued fallback that still prefers the space, leaving every earlier bound selection
+   byte-identical.
+4. **AND THE FOURTH WAS IN THE POINTER ITSELF.** `FindTileUnderPointer` filtered to PLAYABLE tiles before the
+   match was asked what a click could mean, and p.18 makes terrain an obstacle - so Grappling Bolt's offer lit
+   terrain hexes that answered nothing. It now considers every drawn tile and lets
+   `TryForwardDestinationIntent` refuse what is not legal, which is what that method's own remarks say
+   arbitrates.
+
+**THE DERIVATION GAINED ONE REFINEMENT AND IT CORRECTED FIVE SHIPPED ROWS.** An `up to` node draws a control
+of its own exactly where its handler lowers its floor - `EffectResolutionSession`'s own sentence - so
+`choose-line-destination@1` and `synthetic-push-target@3` join `synthetic-direct-move@3` in expressing the
+printed optionality inside their own offer. Measured rather than argued: Cutter's retreat stands as `Choose 1
+of 1 space` with neither confirm nor decline drawn, and Silverarrow's nought-distance journey already said so
+- "the zero-distance answer is the occupied origin on the board, not a decline button". Walk the Plank keeps
+`PushDistanceChoice`, the control a player really presses; Misa's Dash and Slash and Death from Above and
+Silverarrow's Divert Attention and Lead Astray lose a claim nothing proved, and that journey is re-bound to
+the board answer it does prove. Every other row of all thirteen earlier heroes is byte-identical.
+
+Evidence: `CutterPlayerPathGateTests` carries her nineteen rows and its ten guards, and **SEVENTEEN journeys drive them - none `[Explicit]`, none self-skipping, and every step that finds no control fails**. Complete unfiltered dotnet harness **2,942/2,942 passed, 0 failed, 0 skipped**. Unity **Edit Mode 3,834 total, 3,798 passed, 0 failed, 36 skipped**. Unity **Play Mode 530/530, 0 failed, ZERO skips** - re-baselined from 503 by exactly this milestone's twenty-seven cases: ten gate guards and seventeen journeys. Her derived table introduces **no new interaction SHAPE at all** and exactly three capability ids join `CapabilityShapes` - `synthetic-range-obstacle-target` as a board SPACE (p.18 allows one obstacle per space and p.19's Target keyword already reads Space), and `claim-solo-victory` and `synthetic-note-actor` as readings. Few More Steps is the one unreachable face, on the standing p.20 reason. **The journeys drive every shape the acceptance names**: the grapple to terrain three away, the directional lunge narrowing six neighbours to one, the opposite-direction retreat, the zone-crossing push at a distance the player picks, the enemy-chosen modal answered from the enemy's own seat on BOTH bullets across two journeys, the minion swap, the borrowed previous-turn-slot primary, and the solo victory that ends the match inside the journey. **Undo and snapshot restore run on a board that deals her** - the arm 8.39h could not reach - through the drawer's own UNDO and RESET, and the restore additionally inside a live resolution, capturing at Walk the Plank's standing subject question and landing back on the same node. No schema field, corpus digest, pinned constant, content revision or wire version moved.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839j-player-path-gate-cutters-whole-printed-set-through-real-player-input-completion-evidence).
