@@ -931,7 +931,7 @@ pins beyond re-measurement.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840j-deal-register-and-artwork-bain-as-the-fifteenth-hero-and-put-his-pick-card-under-the-cursor-completion-evidence).
 
-### [ ] 8.40k Player-path gate Bain's whole printed set through real player input
+### [x] 8.40k Player-path gate Bain's whole printed set through real player input
 
 The permanent content-derived gate every dealt hero carries, and the milestone that answers the user's
 "Keep pushing them until hero is fully implemented and tested" on the terms this project can actually
@@ -969,7 +969,10 @@ Acceptance checks:
   discard, the hidden card choice answered from the enemy's own seat, the colour guess, the reveal seen
   from a third seat, the marker-conditioned Block from the defender's seat, the transfer and the return,
   the pull of a token, the clear-line shot past a token, the one-or-both modal, and the conditional
-  movement bonus.
+  movement bonus. (Corrected at completion: every item is driven EXCEPT the two naming a TOKEN, which
+  no journey in this build can reach and which are recorded as a bounded limitation below rather than
+  quietly dropped. The pull and the clear line are each driven on their UNIT half - the same shape with
+  a different candidate set - and each additionally proves the NEGATIVE its line clause exists for.)
 - Each journey is audited to prove it actually exercises the shape its row binds, and the audit is
   recorded.
 - Undo and snapshot restore are exercised inside at least one journey of each shape, including one taken
@@ -979,3 +982,54 @@ Acceptance checks:
 
 Non-goals: No new content and no new capability. A journey that needs one is a defect report against
 8.40a-8.40i, not a widening here.
+
+**HE IS THE FIRST HERO IN FIVE TO INTRODUCE A NEW INTERACTION SHAPE, AND IT IS A READING.**
+`PublicCardRevealReading` joins the table for "then reveal the card", on 8.23a's `HeldMarkerReading`
+terms: the capability opens no control and what it leaves behind is a thing every seat must SEE. It is
+not folded into the hand-card selection beside it, because a row claiming only the selection would be
+satisfied by a journey driven entirely from the CHOOSER's seat - the one journey that cannot tell a
+working reveal from one that reached nobody else. Five more ids join `CapabilityShapes` and introduce no
+shape: his four marker operations are readings (the RETURN is that same reading from the other side, the
+row GONE, which is why it is not classified empty), and `bain-bounty-marker-held@1` is a board
+predicate. **Every row of the fourteen heroes before him is byte-identical**, measured by dumping seven
+composed corpora through the pre-change and post-change derivation: the twelve differing lines are his.
+
+**NO SHIPPED DEFECT, WHICH IS A FINDING RATHER THAN AN ABSENCE.** Arien's gate found five, Brogan's
+three, Cutter's four. Each of those lived in a seam a dealing reached first; this series spent eight
+build blocks in those seams before composition, and 8.40j then drove a complete p.14 for four Attack
+faces and the rail for his marker - so what was left for a pointer to find was ground already walked.
+**Six of the eight red results were in the JOURNEYS**, and each is now a lesson in their own remarks: a
+hero-valued selection is drawn as a board TARGET and never as a labelled control; one board click on an
+effect candidate is TWO accepted commands, so a retained-prefix Undo takes two presses; a `Choose` whose
+second select fills its printed ceiling closes with no confirm, while one taking a single bullet leaves
+the NEXT node's confirm standing to be reached past; and a Tier III board fires his Ultimate on a setup
+arm's own give, so a setup that leaves the recipient's discard unanswered cannot turn the round over.
+
+**TWO PLAYER-FACING GAPS ARE RAISED RATHER THAN PAPERED OVER, BOTH MEASURED INSIDE A JOURNEY.** (1) The
+one surface that NAMES a reveal closes itself at the moment the reveal is written into it: 8.35z7's
+click-away rule shuts the match-log drop-down on any pointer-down that is not its own, and the colour
+control is one. The journey asserts the measured state so a narrowing would say so; changing a
+user-directed affordance shared by every drop-down is its own milestone. (2) A TOKEN can be neither
+pulled nor shot past in any journey this build can compose - both line clauses name tokens, no content
+dealt into a Wasp-versus-Bain match places one, and `SandboxStagingDescription` refuses to stage one BY
+NAME on `ComponentLifetimeOwnershipConformanceTests`'s governed rule. `PullLineTargetTests` and his
+printed-set fixture own both halves authoritatively; the journeys drive the UNIT halves plus each
+clause's own negative - the pull refuses what stands behind the first obstacle and refuses to NAME the
+terrain blocking its own file, and the crossbow refuses the unit two along a file a unit occupies.
+
+**Evidence.** `BainPlayerPathGateTests` carries twenty-three rows and TWELVE guards, and **TWENTY-TWO
+journeys drive them - none `[Explicit]`, none self-skipping, every step that finds no control failing**:
+seven on p.6's starting staging, four on the component staging, and eleven across the four progressed
+ones. **The audit was run mechanically and then read** - the journey-to-shape map is extracted from the
+table's own `Prove` calls (`tmp/8-40k-journey-shape-map.txt`), and the three bindings it showed as
+read-only were strengthened before the final run. **Undo and snapshot restore run on a board that deals
+him**: the drawer's UNDO twice inside Dead or Alive's live resolution, and a snapshot captured BETWEEN
+the enemy's hidden pick and the reveal, restoring onto the same colour question with an identical offer
+- which is what says the hidden answer came back with the payload. Complete unfiltered dotnet harness
+**3,149/3,149, 0 failed, 0 skipped**, the 8.40j baseline unmoved because no harness-visible file changed.
+Unity **Edit Mode 4,041 total / 4,005 passed / 0 failed / 36 skipped**, unmoved: this touches the Play
+Mode assembly alone. Unity **Play Mode 565/565, 0 failed, ZERO skips** - re-baselined from 531 by exactly
+twelve gate guards and twenty-two journeys. No schema field, corpus digest, pinned constant, content
+revision or wire version moved, and no production file was touched: schema **v42**, wire **`/15`**.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840k-player-path-gate-bains-whole-printed-set-through-real-player-input-completion-evidence).

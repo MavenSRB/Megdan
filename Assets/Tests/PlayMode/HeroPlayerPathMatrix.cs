@@ -326,7 +326,31 @@ namespace GuardsDigital.Tests.PlayMode
         /// property affects its controller, and the whole point of drawing one is that the player
         /// whose values dropped can see why.</para>
         /// </summary>
-        HeldMarkerReading
+        HeldMarkerReading,
+
+        /// <summary>
+        /// Milestone 8.40k. A card turned face up for the WHOLE table by card text, mid-resolution -
+        /// Bain's three guessing Blues, "then reveal the card".
+        ///
+        /// <para><b>It is a reading rather than an input</b>, on exactly the terms
+        /// <see cref="HeldMarkerReading"/> is: nobody is asked anything and
+        /// <c>synthetic-reveal-chosen-card@1</c> opens no control, but what it leaves behind is a
+        /// thing every seat must be able to see. The capability's own remarks say so - the handler
+        /// reports a <c>RevealedCard</c>, the backend writes one seat-public log row naming hero and
+        /// card, and <c>SeatProjection.IsPublic</c>'s hand arm then makes that card nameable in every
+        /// seat.</para>
+        ///
+        /// <para><b>Why it is its own shape and not folded into the hand-card selection beside
+        /// it.</b> The selection is answered by ONE seat and is hidden from the rest until this
+        /// moment; the reveal is the moment the other seats learn the answer. A row claiming only the
+        /// selection would be satisfied by a journey driven entirely from the chooser's seat, which is
+        /// precisely the journey that cannot tell a working reveal from a reveal that never reached
+        /// anybody else - so the shape exists to force a journey that reads a LOSING seat's
+        /// projection. Milestone 8.23a added <see cref="HeldMarkerReading"/> for the same reason and
+        /// recorded the same sentence: a hero whose content reveals a card owes a journey where
+        /// somebody else reads one.</para>
+        /// </summary>
+        PublicCardRevealReading
     }
 
     /// <summary>
@@ -939,7 +963,56 @@ namespace GuardsDigital.Tests.PlayMode
                 // And the actor note is a publication rather than a question - it applies
                 // unconditionally and puts the acting hero on the frame so the grant beside it can
                 // bind a recipient. Nothing is offered and nothing is picked.
-                ["synthetic-note-actor"] = Array.Empty<PlayerInteractionShape>()
+                ["synthetic-note-actor"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.40k. Bain the Bounty Hunter's six new entries, and he introduces exactly
+                // ONE new shape - the reveal below - where the two heroes before him introduced none.
+                //
+                // HIS FOUR MARKER OPERATIONS ARE READINGS, on the terms Tigerclaw's two gives have
+                // carried since milestone 8.23a: the hero a marker lands on, leaves, or comes off is
+                // named by a selection node or derived from the board, so none of the four asks a
+                // player for anything - and what each leaves behind is a row on a rail that a player
+                // has to be able to read, because three of his five Green faces do nothing else.
+                //
+                // The GIVE and the TRANSFER are the same reading Tigerclaw's Poison is: after it, one
+                // named hero wears the bounty and their own rail says so. The RETURN is the same
+                // reading taken from the other side - the row is GONE - which is a reading and not an
+                // absence of one: a player who cannot see the bounty leave cannot tell whether Narrow
+                // Escape did anything at all, and every Green face of his that follows reads the same
+                // board fact. Classifying it empty would let his second Green Block be proved by a
+                // journey that never looked at a rail.
+                ["bain-give-bounty-marker"] = new[] { PlayerInteractionShape.HeldMarkerReading },
+                ["bain-transfer-bounty-marker"] = new[] { PlayerInteractionShape.HeldMarkerReading },
+                ["bain-return-bounty-marker"] = new[] { PlayerInteractionShape.HeldMarkerReading },
+
+                // And the predicate all five of his Greens and both Movement primaries gate on is a
+                // reading of the board answered by the rules, on exactly the terms `presence-count@1`
+                // and `enemy-hero-with-discard-present@1` carry. His content reaches it only as a
+                // `Conditional`, which this table does not walk, so nothing consults this entry today
+                // - it is declared for the reason the dictionary's own header gives, and for the
+                // reason Whisper's discard predicate was declared: a later face naming it as a
+                // Capability node must fail on the shape rather than on the id.
+                ["bain-bounty-marker-held"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Milestone 8.40f's two hidden-information contracts, and the split between them is
+                // the difference between what a player SUPPLIES and what a player SEES.
+                //
+                // The hidden pick is a card chosen from a hand on its whole face, which is the same
+                // input `discard-owned-card@1` and `retrieve-card@1` already ask for - the 8.15a
+                // contract, unchanged. What is new about it is WHO is asked and who may see the
+                // answer, and neither is a shape: `EffectChoiceRequest.ChooserHeroId` has directed a
+                // pause at a named hero since milestone 7.1a, and Whisper's `defended-card-forced-move`
+                // already established that a different chooser answering the same kind of control is
+                // the same shape. The privacy is a projection property, asserted inside the journey
+                // from a seat that must NOT see it.
+                ["synthetic-hidden-card-choice"] =
+                    new[] { PlayerInteractionShape.HandCardSelection },
+
+                // The reveal asks nobody anything and is still a thing every seat has to be shown -
+                // see PublicCardRevealReading's own remarks for why it is not folded into the
+                // selection above it.
+                ["synthetic-reveal-chosen-card"] =
+                    new[] { PlayerInteractionShape.PublicCardRevealReading }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
