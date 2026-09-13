@@ -529,6 +529,49 @@ namespace GuardsDigital.Core.Effects
     }
 
     /// <summary>
+    /// Milestone 8.40f. One card a handler turned face up for the whole table, and the hero whose
+    /// card it is.
+    /// </summary>
+    /// <remarks>
+    /// <para>It is a typed report rather than an <see cref="EffectOutcomeFact"/>, for the reason
+    /// <see cref="EffectExecutionResult.AppliedPushes"/> is one: nothing binds it. What reads it is
+    /// the backend that turns a node's facts into the ordered event stream, so that the seat-public
+    /// match log carries one row naming hero and card - and that row is the whole publication
+    /// mechanism, because <c>SeatProjection.IsPublic</c> already admits a HAND card to every seat
+    /// exactly when the bounded log names it.</para>
+    /// <para>The hero is the card's OWNER and never the actor. A reveal that named the acting hero
+    /// would print somebody else's name beside the card they turned over, and the owner is also what
+    /// the surface needs to draw it beside the right dashboard.</para>
+    /// </remarks>
+    public readonly struct RevealedCard : IEquatable<RevealedCard>
+    {
+        public RevealedCard(HeroId ownerHeroId, CardInstanceId cardInstanceId)
+        {
+            if (!ownerHeroId.IsDefined || !cardInstanceId.IsDefined)
+            {
+                throw new ArgumentException("A reveal names an owning hero and a card instance.");
+            }
+
+            OwnerHeroId = ownerHeroId;
+            CardInstanceId = cardInstanceId;
+        }
+
+        public HeroId OwnerHeroId { get; }
+        public CardInstanceId CardInstanceId { get; }
+        public bool IsDefined => OwnerHeroId.IsDefined && CardInstanceId.IsDefined;
+
+        public bool Equals(RevealedCard other) =>
+            OwnerHeroId.Equals(other.OwnerHeroId) && CardInstanceId.Equals(other.CardInstanceId);
+
+        public override bool Equals(object obj) => obj is RevealedCard other && Equals(other);
+
+        public override int GetHashCode() =>
+            (OwnerHeroId.GetHashCode() * 397) ^ CardInstanceId.GetHashCode();
+
+        public override string ToString() => OwnerHeroId + ":" + CardInstanceId;
+    }
+
+    /// <summary>
     /// One handler outcome: its kind, the typed facts it published, and the timing checkpoints it
     /// declares around itself. The checkpoints become resolver steps, so an effect raises timing the
     /// same way milestone 6.1ap made every other action raise it.
@@ -541,8 +584,18 @@ namespace GuardsDigital.Core.Effects
             IEnumerable<TimingCheckpoint> checkpointsBefore,
             IEnumerable<TimingCheckpoint> checkpointsAfter,
             EffectChoiceRequest choice,
-            IEnumerable<RuleObject> appliedPushes = null)
+            IEnumerable<RuleObject> appliedPushes = null,
+            IEnumerable<RevealedCard> revealedCards = null)
         {
+            var revealed = (revealedCards ?? Enumerable.Empty<RevealedCard>()).ToArray();
+            if (revealed.Length > 0 && kind != EffectExecutionResultKind.Applied)
+            {
+                throw new ArgumentException(
+                    "Only a handler that applied can report a card it revealed.",
+                    nameof(revealedCards));
+            }
+
+            RevealedCards = new ReadOnlyCollection<RevealedCard>(revealed);
             var pushed = (appliedPushes ?? Enumerable.Empty<RuleObject>()).ToArray();
             if (pushed.Any(subject => !subject.IsDefined))
             {
@@ -609,14 +662,21 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public IReadOnlyList<RuleObject> AppliedPushes { get; }
 
+        /// <summary>
+        /// Milestone 8.40f. The cards this handler turned face up for the whole table, and empty for
+        /// every handler that revealed nothing. See <see cref="RevealedCard"/>.
+        /// </summary>
+        public IReadOnlyList<RevealedCard> RevealedCards { get; }
+
         public static EffectExecutionResult Applied(
             IEnumerable<EffectOutcomeFact> outcomes = null,
             IEnumerable<TimingCheckpoint> checkpointsBefore = null,
             IEnumerable<TimingCheckpoint> checkpointsAfter = null,
-            IEnumerable<RuleObject> appliedPushes = null) =>
+            IEnumerable<RuleObject> appliedPushes = null,
+            IEnumerable<RevealedCard> revealedCards = null) =>
             new EffectExecutionResult(
                 EffectExecutionResultKind.Applied, outcomes, checkpointsBefore, checkpointsAfter, null,
-                appliedPushes);
+                appliedPushes, revealedCards);
 
         public static EffectExecutionResult NeedsChoice(EffectChoiceRequest choice) =>
             new EffectExecutionResult(

@@ -443,6 +443,34 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string HasCardInDiscardParameterName = "hasCardInDiscard";
 
         /// <summary>
+        /// Milestone 8.40f. The fewest cards a printed-Radius hero selection's candidate must be
+        /// holding - Bain's three guessing Skills, "An enemy hero in radius <b>with two or more cards
+        /// in hand</b> chooses one of those cards".
+        ///
+        /// <para>It narrows the candidates rather than gating what happens to the chosen one, which
+        /// is the identical reading <see cref="HasCardInDiscardParameterName"/> records for the same
+        /// grammar: "with two or more" is part of who may be picked, so a hero holding one card is
+        /// not one to offer and then refuse. It is the COUNT form of that flag, and the threshold is
+        /// the card's own printed number declared at the call site rather than compared in a
+        /// definition - <c>presence-count@1</c>'s <c>minimumPresent</c> is the precedent, and the
+        /// recorded reason it exists is that "every card that printed a different number would
+        /// declare the comparison again".</para>
+        ///
+        /// <para><b>It discloses nothing, and that is measurable rather than argued.</b> Hand SIZE is
+        /// already table-public: <c>SeatProjection.SeatHandSummary</c> publishes every hero's hand and
+        /// deck count to every seat and has crossed the wire since milestone 8.30a, so any client can
+        /// verify this greying for itself. Both readings ask
+        /// <see cref="GuardsDigital.Core.Cards.HeroHandQuery"/>, so the count a seat is shown and the
+        /// count this narrows by cannot come apart.</para>
+        ///
+        /// <para>Optional, and an unbound parameter is no narrowing at all, so every hero selection
+        /// composed before Bain keeps its exact candidate set without naming it. Declared on the
+        /// Radius arm alone, by the rule this file already follows - his three faces print "in
+        /// radius" and no face in the corpus pairs the clause with a Range icon.</para>
+        /// </summary>
+        public const string MinimumCardsInHandParameterName = "minimumCardsInHand";
+
+        /// <summary>
         /// Milestone 8.35z28. Whether a printed-icon hero selection admits only heroes standing beside an
         /// empty minion Spawn point of the current Battle Zone - Dodger's Death Trap, "An enemy hero in
         /// radius <b>who is adjacent to an empty spawn point in the battle zone</b> discards a card, if
@@ -1033,6 +1061,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // candidate.
                     parameters.Add(new EffectCapabilityParameter(
                         IncludeSelfParameterName, EffectValueKind.Boolean, isRequired: false));
+
+                    // Milestone 8.40f. Bain's "with two or more cards in hand", on the Radius arm
+                    // alone because that is the icon his three guessing faces print. Optional and
+                    // unbound everywhere else, so every earlier hero selection is untouched.
+                    if (channel == PrintedValueChannel.Radius)
+                    {
+                        parameters.Add(new EffectCapabilityParameter(
+                            MinimumCardsInHandParameterName,
+                            EffectValueKind.Integer,
+                            isRequired: false));
+                    }
                 }
                 else
                 {
@@ -1464,6 +1503,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var requiresAnEmptySpawnPointBeside = channel == PrintedValueChannel.Radius &&
                     context.Input(AdjacentToEmptyMinionSpawnPointParameterName).BooleanValue;
 
+                // Milestone 8.40f. Bain's hand-size narrowing, read only on the arm that declares it.
+                // An unbound optional parameter is zero, which HeroHandQuery answers as no narrowing
+                // at all, so every hero selection written before him keeps its exact candidate set.
+                var minimumCardsInHand = channel == PrintedValueChannel.Radius
+                    ? context.Input(MinimumCardsInHandParameterName).IntegerValue
+                    : 0;
+
                 // Derived once for the whole offer rather than per candidate: the qualifying points are
                 // a property of the board and the map, and asking six times would answer identically
                 // six times.
@@ -1520,6 +1566,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         (!context.CardState.IsAvailable ||
                             !HeroDiscardPileQuery.HasAnyCard(
                                 context.CardState.Instances, target.HeroId)))
+                    {
+                        continue;
+                    }
+
+                    // "with two or more cards in hand" - the candidate's OWN hand, counted the same
+                    // way every seat's published hand summary counts it, so a player can check the
+                    // greying against a number they are already shown. Milestone 8.40f.
+                    if (minimumCardsInHand > 0 &&
+                        (!context.CardState.IsAvailable ||
+                            !GuardsDigital.Core.Cards.HeroHandQuery.HasAtLeast(
+                                context.CardState.Instances, target.HeroId, minimumCardsInHand)))
                     {
                         continue;
                     }

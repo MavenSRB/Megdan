@@ -109,7 +109,29 @@ namespace GuardsDigital.Core.Diagnostics
         /// which card was eaten is private commitment content this channel does not carry - the
         /// same line <see cref="CardRevealed"/> draws.</para>
         /// </summary>
-        HeroCardResolvedWithoutAction = 30
+        HeroCardResolvedWithoutAction = 30,
+
+        /// <summary>
+        /// Milestone 8.40f. A card of a hero's was turned face up by card text, naming that hero and
+        /// that card - Bain's three guessing Skills, "then reveal the card".
+        ///
+        /// <para><b>Why this is not <see cref="CardRevealed"/>, measured rather than argued.</b> Both
+        /// rows say a card was turned over, and every CONSUMER of the older one reads it as p.7's
+        /// turn-card commitment: the HUD's flip cue borrows the hero's current-card slot to play it
+        /// at, the reveal batch is re-staged in printed-Initiative order because the commitment flow
+        /// emits its reveals in roster order, and the channel's own one-for-one ledger asserts
+        /// exactly as many rows of that kind as <c>Commitment.CardRevealed</c> events occurred. A
+        /// card turned over out of a HAND mid-resolution is in neither place and has no second
+        /// producer to fold into that ledger, so reusing the member would have attached three rules
+        /// the printed sentence does not carry.</para>
+        ///
+        /// <para><b>It is a hero row AND a card row, and that is the point.</b> The row is what makes
+        /// the card nameable: <c>SeatProjection.IsPublic</c> admits a hand card to every seat exactly
+        /// when the bounded public log names it, which is the same memory a retrieved card already
+        /// uses - so the reveal is permanent, and the card stays readable after it goes back into a
+        /// hand everybody has now seen it in.</para>
+        /// </summary>
+        CardRevealedByCardText = 31
     }
 
     /// <summary>

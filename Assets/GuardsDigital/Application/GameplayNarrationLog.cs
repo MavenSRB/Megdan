@@ -163,6 +163,9 @@ namespace GuardsDigital.Application
 
                 case MatchLogEntryKind.CardRevealed:
                     return hero + " revealed " + Card(entry);
+                // Milestone 8.40f. Card text turned a card out of a hand face up for the table.
+                case MatchLogEntryKind.CardRevealedByCardText:
+                    return hero + " revealed " + Card(entry) + " from their hand";
                 case MatchLogEntryKind.Move:
                     return hero + " moved" + Journey(entry);
                 case MatchLogEntryKind.FastTravel:

@@ -67,6 +67,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string ColorParameter = "color";
 
+        /// <summary>
+        /// Milestone 8.40f. The one card this discard is restricted to, or unbound for the
+        /// ask-which-one reading every declaration before Bain's Blue line already has. Optional, so
+        /// no earlier composition of either revision changes - exactly as
+        /// <see cref="ColorParameter"/> was added to both live revisions at 8.37 without minting a
+        /// third.
+        ///
+        /// <para>"If you guessed correctly, <b>discard that card</b>" names the card rather than
+        /// asking which one, and the card was named two nodes earlier by a hero who has since had it
+        /// turned face up. A restriction that has already named the one legal answer has nothing to
+        /// ask, so this discards directly rather than opening a one-candidate prompt - which is
+        /// <c>retrieve-card@1</c>'s <c>restrictToCard</c> reading word for word, and milestone 6.5a's
+        /// reading of "yourself" before it. Opening a prompt here would let the chooser decline a
+        /// discard the guesser has already earned, or pick a different card.</para>
+        ///
+        /// <para>It narrows the SAME criteria the unrestricted reading uses rather than bypassing it,
+        /// so a named card that is no longer an unplayed card in that hero's hand is refused instead
+        /// of discarded from wherever it has got to.</para>
+        /// </summary>
+        public const string RestrictToCardParameter = "restrictToCard";
+
         /// <summary>The card this capability discarded, so a later node can bind it.</summary>
         public const string DiscardedOutput = "discarded";
 
@@ -111,7 +132,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             ColorParameter,
                             EffectValueKind.Integer,
                             isRequired: false,
-                            integerDomain: EffectIntegerDomain.All<CardColor>())
+                            integerDomain: EffectIntegerDomain.All<CardColor>()),
+                        new EffectCapabilityParameter(
+                            RestrictToCardParameter,
+                            EffectValueKind.CardInstance,
+                            isRequired: false)
                     },
                     reportsInability
                         ? new[]
@@ -161,6 +186,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (!chooser.IsDefined)
                 {
                     return EffectExecutionResult.DeclinedOptional();
+                }
+
+                // Milestone 8.40f. A sentence that has already named the card has nothing to ask, so
+                // it discards directly rather than opening a one-candidate prompt - see
+                // RestrictToCardParameter. The named card is still checked against the SAME criteria
+                // an unrestricted discard offers from, so a card that has left the hand falls through
+                // to the empty-hand arms below and is answered by this revision's own reading of them
+                // rather than discarded from wherever it has got to.
+                var restriction = Restriction(context);
+                if (restriction.IsDefined)
+                {
+                    return AnticipateCandidates(context).Any(candidate =>
+                            candidate.CardInstanceId.Equals(restriction))
+                        ? Resume(context, new[] { EffectValue.Card(restriction) })
+                        : reportsInability
+                            ? EffectExecutionResult.Applied(new[]
+                            {
+                                new EffectOutcomeFact(
+                                    UnableToDiscardOutput, EffectValue.Boolean(true))
+                            })
+                            : EffectExecutionResult.DeclinedOptional();
                 }
 
                 var offer = ColorRestrictedDiscard.Offer(
@@ -215,6 +261,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                // Milestone 8.40f. A restricted node has exactly one legal answer, and an answer
+                // naming a different card against one is stale or tampered rather than a decision.
+                var restriction = Restriction(context);
+                if (restriction.IsDefined && !restriction.Equals(selected[0].CardInstanceId))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
                 // Re-derived, not trusted. The answer is checked against the hand as it stands now, so
                 // a card discarded, played, or otherwise moved between the offer and the answer is
                 // refused rather than discarded a second time. Nothing is mutated on that path.
@@ -244,10 +298,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return EffectExecutionResult.Applied(facts);
             }
 
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                AnticipateCandidates(context).Count == 0
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                var candidates = AnticipateCandidates(context);
+
+                // Milestone 8.40f. A restricted node opens no choice on either arm, so reporting
+                // NeedsChoice here would be the probe describing a pause Execute never creates -
+                // exactly the offer/resolution divergence the probe-fidelity rule exists to stop.
+                if (Restriction(context).IsDefined)
+                {
+                    return candidates.Count == 0
+                        ? EffectExecutionResultKind.DeclinedOptional
+                        : EffectExecutionResultKind.Applied;
+                }
+
+                return candidates.Count == 0
                     ? EffectExecutionResultKind.DeclinedOptional
                     : EffectExecutionResultKind.NeedsChoice;
+            }
 
             public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context)
             {
@@ -257,13 +325,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<EffectValue>();
                 }
 
-                return CardCharacteristicQuery
+                var candidates = CardCharacteristicQuery
                     .FindCandidates(
                         Criteria(chooser, Color(context)),
                         context.CardState.Definitions,
                         context.CardState.Instances)
-                    .Select(EffectValue.Card)
-                    .ToArray();
+                    .AsEnumerable();
+
+                // Milestone 8.40f. The restriction narrows the SAME set the offer derives, so the
+                // probe, the offer and the commit stay one reading of one question.
+                var restriction = Restriction(context);
+                if (restriction.IsDefined)
+                {
+                    candidates = candidates.Where(card => card.Equals(restriction));
+                }
+
+                return candidates.Select(EffectValue.Card).ToArray();
             }
 
             /// <summary>One card, which is what the discard offer requests. Milestone 8.35l.</summary>
@@ -286,6 +363,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             private static CardColor Color(EffectCapabilityContext context) =>
                 (CardColor)context.Input(ColorParameter).IntegerValue;
+
+            /// <summary>
+            /// The one card this discard is restricted to, or the undefined instance for the
+            /// ask-which-one reading. Milestone 8.40f; see
+            /// <see cref="RestrictToCardParameter"/>.
+            /// </summary>
+            private static CardInstanceId Restriction(EffectCapabilityContext context)
+            {
+                var named = context.Input(RestrictToCardParameter);
+                return named.Kind == EffectValueKind.CardInstance ? named.CardInstanceId : default;
+            }
 
             /// <summary>
             /// One statement of what may be discarded, so the offer, the probe, and the commit cannot

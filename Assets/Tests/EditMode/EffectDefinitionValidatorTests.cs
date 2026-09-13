@@ -52,6 +52,20 @@ namespace GuardsDigital.Tests.EditMode
                 "maximumDistance",
                 "maximumTargets",
                 "minimum",
+                // Milestone 8.40f. The printed count Bain's three guessing Skills narrow their
+                // selection by - "An enemy hero in radius with two or more cards in hand". It is an
+                // ordinary quantity in every sense this list means: it is compared against a hand
+                // size, a card printing a different number costs a binding rather than a capability,
+                // and there is no closed set of legal thresholds to enumerate. It is named the way
+                // this list's own precedent names a qualified bound, beside `maximumCounted` and
+                // `minimumDistance`: WHAT is counted is said in the name, because the same handler's
+                // other bounds count entirely different things.
+                //
+                // It reaches this rule immediately rather than at a dealing, unlike the two entries
+                // below and above it that record the opposite: the handler it joins is already
+                // REGISTERED, so an added parameter is inside the registered set the moment it is
+                // written. That is worth recording beside them as the other half of the same class.
+                "minimumCardsInHand",
                 "minimumDistance",
                 "radius",
                 "range",

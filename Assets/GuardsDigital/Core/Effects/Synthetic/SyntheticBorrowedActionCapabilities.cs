@@ -112,11 +112,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// "Naming the color is not [required to have cards], the action you are performing is
         /// referring to the color" (the same ruling, second half).</para>
         ///
-        /// <para><b>All six are offered, including the newly-inert <see cref="CardColor.Purple"/>.</b>
-        /// RULING 21 makes every one of p.9's colours nameable; nothing here reads which colours are
-        /// live in anyone's hand, because the naming step and the hand are deliberately independent
-        /// (Arty's ruling again) and because narrowing the offer would be inventing a restriction the
-        /// card does not print.</para>
+        /// <para><b>All six are offered by default, including the newly-inert
+        /// <see cref="CardColor.Purple"/>.</b> RULING 21 makes every one of p.9's colours nameable,
+        /// and Commune with Spirits narrows nothing: the naming step and the hand are deliberately
+        /// independent there (Arty's ruling again), so narrowing ITS offer would be inventing a
+        /// restriction that card does not print.</para>
+        ///
+        /// <para><b>Which card asks which question, stated because the two readings sit side by
+        /// side.</b> Milestone 8.40f adds <see cref="RestrictToColorsOwnedByParameter"/> for a card
+        /// that DOES print one - Bain's A Game of Chance, "(You can only guess colors that could be
+        /// in that player's hand)". The paragraph above is Tali's ruling about Tali's sentence rather
+        /// than a property of this capability, and the narrowing is optional and unbound for her, so
+        /// her offer is unchanged. What the narrowing reads is still never a hand: see
+        /// <see cref="GuessableColors"/>.</para>
         /// </summary>
         public static EffectCapabilityId NameColor { get; } = new EffectCapabilityId("name-color");
 
@@ -129,12 +137,99 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>The colour that hero named, published for the borrow node to bind.</summary>
         public const string NamedColorOutput = "namedColor";
 
+        /// <summary>
+        /// Milestone 8.40f. The hero whose OWN deck bounds the offer, or unbound for the
+        /// all-six reading every declaration before Bain's Blue line has. Optional, so Commune with
+        /// Spirits keeps its exact candidate set without naming it.
+        ///
+        /// <para>A parameter rather than a sibling <c>guess-color@1</c>, on catalog rule 11: the
+        /// semantics are identical - a bound hero names one of p.9's colours - and only the admitted
+        /// set differs, which is what <c>synthetic-discard-chosen-card</c>'s optional <c>color</c>
+        /// and <c>retrieve-card@1</c>'s optional <c>restrictToCard</c> already are. A sibling would
+        /// also move the serialized registered-handler count and every pinned corpus digest, which a
+        /// parameter cannot.</para>
+        /// </summary>
+        public const string RestrictToColorsOwnedByParameter = "restrictToColorsOwnedBy";
+
         /// <summary>Every colour <see cref="NameColorV1"/> may offer, in p.9's own printed order.</summary>
         public static IReadOnlyList<CardColor> AllNameableColors { get; } = Array.AsReadOnly(new[]
         {
             CardColor.Gold, CardColor.Silver, CardColor.Red, CardColor.Green, CardColor.Blue,
             CardColor.Purple
         });
+
+        /// <summary>
+        /// Milestone 8.40f. The colours a guess against <paramref name="target"/> may name - p.9's
+        /// six narrowed to those PUBLIC information cannot rule out of that hero's hand.
+        ///
+        /// <para><b>It never reads a hand, and that is the whole clause.</b> A Game of Chance prints
+        /// "(You can only guess colors that could be in that player's hand)", and the tempting
+        /// implementation - offer the colours actually in the hand - would leak, from the authority
+        /// to the guesser, the exact fact the reveal exists to sell. The offer is a projection and
+        /// the colours in a hand are hidden information, so an offer derived from them is an
+        /// authorization filter doing a projection filter's job. Milestone 8.35u's lesson, stated on
+        /// the sharpest case this roster has.</para>
+        ///
+        /// <para><b>What it reads instead is the subtraction any player can do at the table.</b> A
+        /// hero's printed deck is public, and every zone but the hand, the deck and a facedown card
+        /// is open - so a colour is guessable exactly when that hero owns more cards of it than the
+        /// open zones currently account for. <see cref="Cards.PublicCardZoneQuery"/> is the same
+        /// reading <c>SeatProjection.IsPublic</c> uses, asked here rather than restated, because a
+        /// zone the two disagreed about would be a colour ruled out that no seat can see.</para>
+        ///
+        /// <para><b>Purple is never guessable</b>, and it is excluded by construction rather than by
+        /// name: p.16's Ultimate sits in the Ultimate area, which is an open zone, so a hero holding
+        /// theirs has it fully accounted for - and one whose Ultimate is still in the deck is caught
+        /// by the explicit exclusion below, because p.9's Purple never enters a hand at all.</para>
+        ///
+        /// <para><b>Set aside counts as hidden</b>, which is the conservative direction: p.15 tucks
+        /// the untaken card of an upgrade pair under the dashboard facedown, so the open zones do not
+        /// account for it and its colour stays guessable. Ruling it out would name a card nobody can
+        /// read.</para>
+        /// </summary>
+        public static IReadOnlyList<CardColor> GuessableColors(
+            EffectCapabilityContext context, HeroId target)
+        {
+            // A narrowing that cannot read the cards narrows by the one thing that is a rule rather
+            // than a board fact - p.9's Purple never enters a hand - and by nothing else. Widening is
+            // always safe here and narrowing on an unreadable board would not be: a colour ruled out
+            // by a state this function could not see is a colour ruled out on no evidence.
+            var everyGuessable = Array.AsReadOnly(AllNameableColors
+                .Where(color => color != CardColor.Purple)
+                .ToArray());
+            if (context == null || !context.CardState.IsAvailable || !target.IsDefined)
+            {
+                return everyGuessable;
+            }
+
+            var owned = context.CardState.Instances
+                .Where(card => card != null && card.OwnerId.Equals(target))
+                .ToArray();
+            if (owned.Length == 0)
+            {
+                return Array.Empty<CardColor>();
+            }
+
+            var definitions = context.CardState.Definitions;
+            return Array.AsReadOnly(everyGuessable
+                .Where(color =>
+                {
+                    var ofColor = owned
+                        .Where(card => ColorOf(card, definitions) == color)
+                        .ToArray();
+                    return ofColor.Length >
+                        ofColor.Count(Cards.PublicCardZoneQuery.IsPubliclyVisible);
+                })
+                .ToArray());
+        }
+
+        private static CardColor ColorOf(
+            CardInstance card, IEnumerable<CardDefinition> definitions)
+        {
+            var definition = definitions?.FirstOrDefault(
+                value => value.Reference.Equals(card.DefinitionReference));
+            return definition?.Progression.Color ?? CardColor.None;
+        }
 
         /// <summary>
         /// Milestone 8.35z50 registered the borrow handler beside the hero whose dealt cards start it.
@@ -233,7 +328,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectCapabilityReference Reference => NameColorV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                new[] { new EffectCapabilityParameter(NameColorChooserParameter, EffectValueKind.Hero) },
+                new[]
+                {
+                    new EffectCapabilityParameter(NameColorChooserParameter, EffectValueKind.Hero),
+                    new EffectCapabilityParameter(
+                        RestrictToColorsOwnedByParameter, EffectValueKind.Hero, isRequired: false)
+                },
                 new[] { new EffectOutputBinding(NamedColorOutput, EffectValueKind.Integer) });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -242,21 +342,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private static HeroId Chooser(EffectCapabilityContext context) =>
                 context.Input(NameColorChooserParameter).HeroId;
 
+            /// <summary>
+            /// The colours this node may offer right now. Milestone 8.40f: ONE function, asked by the
+            /// offer, the probe and the resume, so a domain that narrowed for one of them cannot
+            /// widen for another.
+            /// </summary>
+            private static IReadOnlyList<CardColor> Offered(EffectCapabilityContext context)
+            {
+                var bound = context.Input(RestrictToColorsOwnedByParameter);
+                return bound.Kind == EffectValueKind.Hero && bound.HeroId.IsDefined
+                    ? GuessableColors(context, bound.HeroId)
+                    : AllNameableColors;
+            }
+
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
                 var chooser = Chooser(context);
-                if (!chooser.IsDefined)
+                var offered = Offered(context);
+                if (!chooser.IsDefined || offered.Count == 0)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                // Milestone 8.37 declares the vocabulary, so the hero this is put to is offered six
+                // Milestone 8.37 declares the vocabulary, so the hero this is put to is offered
                 // COLOURS rather than the digits 0 through 5. The chooser is not the acting seat, so
                 // this is also the first choice in the build whose labels are drawn for somebody
                 // other than the player who played the card.
                 return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
                     EffectChooserRole.None,
-                    AllNameableColors.Select(color => EffectValue.Integer((int)color)),
+                    offered.Select(color => EffectValue.Integer((int)color)),
                     1,
                     1,
                     chooserHeroId: chooser,
@@ -272,8 +386,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                // Milestone 8.40f. Checked against the NARROWED set, re-derived rather than trusted,
+                // so an answer naming a colour the domain excludes is refused however it arrived.
                 var color = (CardColor)selected[0].IntegerValue;
-                if (!AllNameableColors.Contains(color))
+                if (!Offered(context).Contains(color))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -285,7 +401,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Chooser(context).IsDefined
+                Chooser(context).IsDefined && Offered(context).Count > 0
                     ? EffectExecutionResultKind.NeedsChoice
                     : EffectExecutionResultKind.ImpossibleMandatory;
         }

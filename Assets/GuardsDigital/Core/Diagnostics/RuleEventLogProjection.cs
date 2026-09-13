@@ -359,6 +359,13 @@ namespace GuardsDigital.Core.Diagnostics
                 ruleEvent.BlockingHeroId.IsDefined ? $"blockingHero={ruleEvent.BlockingHeroId.Value}" : null,
                 ruleEvent.BlockingCardInstanceId.IsDefined
                     ? $"blockingCard={ruleEvent.BlockingCardInstanceId.Value}"
+                    : null,
+                // Milestone 8.40f. Present only on the fact a reveal produces. It is a reference and
+                // not detail because the derived seat-public row reads it, and because
+                // `SeatProjection.IsPublic` makes a hand card nameable to every seat exactly when a
+                // log row names it - so this string is the publication itself.
+                ruleEvent.RevealedCardInstanceId.IsDefined
+                    ? $"revealedCard={ruleEvent.RevealedCardInstanceId.Value}"
                     : null);
 
             var detailParts = new List<string> { $"step={ruleEvent.StepId.Value}" };

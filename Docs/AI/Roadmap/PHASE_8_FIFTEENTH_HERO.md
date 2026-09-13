@@ -165,7 +165,7 @@ Complete. Its definition moved verbatim to [the ninth completed shard](PHASE_8_C
 
 Complete. Its definition moved verbatim to [the ninth completed shard](PHASE_8_COMPLETED_9.md#x-840e-build-the-pull-his-silver-basic-prints) during the warning-threshold ownership review that followed the first parallel wave's integration.
 
-### [ ] 8.40f Build the hidden card choice, the reveal and the public guess domain his Blue line prints
+### [x] 8.40f Build the hidden card choice, the reveal and the public guess domain his Blue line prints
 
 **This is the block the series preamble singles out, and it is expected to be larger than the other
 seven put together.**
@@ -217,6 +217,88 @@ one printed sentence asks for it, and a visibility field on every request would 
 has asked for. It must not widen `IsPublic`'s fail-closed switch. And nothing it writes may reach a
 projection before the reveal, asserted from a LOSING seat's projection rather than from the host's state.
 
+**THE OFFER HALF WAS ALREADY BUILT AND THE ANSWER HALF LEAKED ON SHIPPED CONTENT, WHICH IS THE ONE
+FINDING THIS BLOCK DID NOT PREDICT.** Re-verified before a line was written: a foreign-chooser card
+choice already reaches only the chooser's seat, because `PendingEffectChoice` and `DecisionContract`
+are owner-scoped and `IsPublic` withholds a hand. What was never closed is the FRAME.
+`SeatPendingSurface` published `PendingSkillResolution` on `ownsDecision || isActor`, and that frame
+carries the standing pause - so the acting player's own screen has held every card in an opponent's
+hand since milestone 7.1a, on Whisper's, Misa's and Dodger's dealt faces, while the wire carried none
+of it and a remote seat was already safe. One seat seeing what another cannot is a defect class of its
+own. The fix is one application-layer arm: a seat is handed the pause only where it owns the decision,
+and a card-instance fact naming a card that seat may not already name is dropped from the published
+frame. Identity, continuation, actor, controller and repeat state are untouched, so a bot's own intent
+and every surface read still work. `EffectChoiceRequest` gained no visibility field and `IsPublic`'s
+fail-closed switch is unchanged - the rule here is a CONSEQUENCE of its answer rather than a second
+opinion about it, and it is asserted as an invariant over a driven six-seat walk as well as on the one
+board that poses it.
+
+**THE REVEAL MINTED A LOG KIND AND PAID THE WIRE, AND THE MEASUREMENT IS WHY.** Reuse was preferred
+and refused on evidence: every consumer of `MatchLogEntryKind.CardRevealed` reads it as p.7's
+turn-card commitment. The HUD's flip cue borrows the hero's CURRENT CARD SLOT to play it at, the
+reveal batch is re-staged in printed-Initiative order because the commitment flow emits its reveals in
+roster order, and the channel's own one-for-one ledger asserts exactly as many rows of that kind as
+`Commitment.CardRevealed` events occurred. A card turned face up out of a HAND mid-resolution is in
+neither place and has no second producer to fold into that ledger, so reuse would have animated the
+wrong card and falsified a declared ledger - three rules the printed sentence does not carry, bought
+to save a version number. So `CardRevealedByCardText` is minted and `guards-private-online/14` becomes
+**`/15`**, because `NetworkMatchLog`'s decoder validates every row's kind with `Enum.IsDefined` and a
+version 14 peer meeting the new number refuses the whole FRAME. **The row itself grew no bytes** and
+**the schema stays v42**: the reveal's memory is the derived seat-public log, re-derived from the
+retained rule-event log on restore, replay and Undo, which is also why an Undo taken before the reveal
+puts the card back out of reach with nothing here having to know about Undo. The largest complete
+six-seat projection on a wire walk measures **14,347 bytes** against the 32,747-byte sealed-frame bound
+and its half-of-it ratchet, measured rather than estimated. **Presentation gained one arm and
+deliberately not two**: the match-log line prints "X REVEALED \<card\>" in every seat, and no kinetic
+cue was added, because the existing flip borrows the hero's turn-card slot and a hand card has no
+anchor there - a cue for it is 8.40j's or 8.40k's to place, beside the control that draws the card.
+
+**THE GUESS DOMAIN NEVER READS A HAND, AND THE CASE THAT PROVES IT RUNS THE SAME BOARD TWICE.** It is
+an optional `restrictToColorsOwnedBy` parameter on `name-color@1` rather than a sibling capability, on
+catalog rule 11 and because a sibling moves the registered-handler count and every pinned digest. The
+set is the chooser's printed deck minus the colours the OPEN zones fully account for, minus Purple
+always - and the open zones are `PublicCardZoneQuery`'s list, which `IsPublic` now asks rather than
+restating, so a zone the two disagreed about cannot rule out a colour no seat can see. Tali's Commune
+with Spirits binds nothing and keeps all six, Purple included. Two proofs that a hand was not read: the
+domain is identical whichever card is hidden, and Purple is excluded twice over - no printed definition
+in the build carries a Purple progression at all, and the narrowing names it anyway.
+
+**AND A PARAMETER ADDED TO A REGISTERED DECLARATION IS CONFORMANCE-CHECKED THE MOMENT IT IS WRITTEN,
+WHICH IS THE OTHER HALF OF A CLASS THIS PROJECT HAS ONLY RECORDED ONE SIDE OF.** Two entries on
+`EffectDefinitionValidatorTests`' ordinary-quantity list record that a rule scoped to the REGISTERED
+capability set is silent about a deferred declaration until a dealing registers it. The mirror bit is
+that a parameter joining an ALREADY-registered handler is inside that set immediately: adding the
+integer `minimumCardsInHand` to the printed-icon hero selection failed the closed-vocabulary guard on
+the first complete run, correctly, and it is named there beside `maximumCounted` and `threshold` as the
+ordinary printed count it is. A block adding an integer parameter to a registered declaration should
+expect that check rather than discover it.
+
+**THE MODAL SHIPPED INSIDE THIS BLOCK AND THE PROBE IT OWED CAME BACK YES.** A `RepeatAction` inside a
+`Choose` branch is legal at runtime and nothing forbade it: the Choose pushes the chosen branch onto
+the continuation and the repeat arm executes from it exactly as it would under a Sequence, asking
+p.10's confirm-or-decline and requesting one further instance. That is one synthetic definition and one
+headless walk, run before the modal was costed. **One feasibility arm changed and only for a bullet**:
+milestone 6.7's rule that a repeat is `Verdict.Empty` is exactly right when the walk is judging the
+ACTION a repeat would re-run, and says nothing about a bullet that SPENDS the player's answer - so a
+repeat offered as a Choose option is greyed when no second instance could run, asked in
+`FindUnperformableOptions` alone, leaving the whole-action walk and every repeat written before it
+byte-identical.
+
+**BA-Q2 IS SETTLED BY THE PRINTED SENTENCE AND EACH READING IS PROVEN ON A BOARD WHERE THEY DIFFER.**
+"Otherwise may repeat once" names no hero and no exclusion, so a second run re-asks every question the
+first one asked: it MAY pick a different enemy hero, it is not required to, and the now-revealed card
+is not excluded from a second choice by the same hero. Cards are the definition, and each alternative
+would be a rule no printed word carries; 8.39d1's per-selection exclusion is a parameter a card asks
+for rather than a property every repeat has. Recorded in his shard.
+
+**WHAT THE LOBBY-BOT TIER STILL OWES, MEASURED AND NOT BUILT HERE.** `CardChoiceIntent` reads
+`PendingSkillResolution` and a remote client's is null, so every lobby bot already scores card
+candidates at zero - pre-existing, and not Bain's doing; an Integer candidate under a declared
+vocabulary has no scoring arm at all, so a bot Tali already names a colour arbitrarily. Neither stops a
+bot ANSWERING either prompt, and neither can make one cheat: a bot reads its own seat frame. No arm was
+built, because no dealt card starts these capabilities until 8.40j and no fleet test can reach them;
+8.40j owes the minimal arms beside the showcase consumers it already owes.
+
 Acceptance checks:
 
 - The selection admits exactly the enemy heroes in radius holding two or more hand cards, asserted at
@@ -239,11 +321,25 @@ Acceptance checks:
 Non-goals: No Bain content - the faces that declare this are composed at 8.40i. No general hidden-choice
 vocabulary beyond the one printed sentence. No change to p.7's turn-card commitment flow.
 
-### [ ] 8.40f1 Build the failure modal We're Not Done Yet! prints
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840f-build-the-hidden-card-choice-the-reveal-and-the-public-guess-domain-his-blue-line-prints-completion-evidence).
+
+### [x] 8.40f1 Build the failure modal We're Not Done Yet! prints
 
 Named in advance rather than left to be discovered, on the precedent this project set four times in the
 fourteenth-hero series. **It exists only if 8.40f measures the modal as a separate seam**; if that block
 ships it inside itself, this entry closes as discharged rather than executed, with the reason recorded.
+
+**DISCHARGED RATHER THAN EXECUTED, AND THE MEASUREMENT IS THE REASON.** 8.40f shipped the modal inside
+itself because it is the SAME seam: it mints no capability, adds no parameter, needs no projection arm
+and persists no field, and it is one `Choose` node over a `RepeatAction` and a `gain-resource@1` grant,
+reached from the else-branch of the Conditional that block already builds. What it genuinely owed was
+the structural PROBE - nothing in the corpus puts a repeat inside a Choose branch and nothing forbade
+it - and that probe was run before the modal was costed, which is the split's whole purpose served
+without a second block. **Every acceptance check below was met there rather than dropped**, including
+the greying: an offered repeat bullet is refused when no second instance could run, through one arm
+added to `FindUnperformableOptions` and to nothing else, so the whole-action feasibility walk and every
+repeat written before this one keep their exact verdicts. BA-Q2's three readings are settled in his
+shard and each is proven on a board where the alternatives differ.
 
 Observable outcome: the failure branch of a guess offers a choice between repeating the whole clause once
 and taking the printed coins, and a repeat with no legal subject is not offered at all.
@@ -264,6 +360,8 @@ Acceptance checks:
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Bain content. No change to p.10's repeat machinery.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840f1-build-the-failure-modal-were-not-done-yet-prints-completion-evidence).
 
 ### [ ] 8.40g Build the board-conditioned Block his three Green Defenses print
 
@@ -460,6 +558,16 @@ and it is named rather than left to be rediscovered**: `SyntheticComponentCapabi
 which this milestone registers as `bain-transfer-bounty-marker@1` and owes a showcase consumer. His other
 two marker capabilities - `bain-give-bounty-marker@1` and `bain-return-bounty-marker@1` - run on
 `MarkerGivingHandler` and `ReturnMarkerHandler`, both already registered and showcased, so they owe none.
+8.40c's `bain-bounty-marker-held@1` (`MarkerHolderHandler`) and 8.40f's two hidden-information contracts are new
+types too, each deferred with the deferral asserted from both sides, so each owes one here.
+
+**THIS DEALING ALSO OWES TWO MINIMAL BOT ARMS, MEASURED AT 8.40f AND DELIBERATELY NOT BUILT THERE.**
+`CardChoiceIntent` reads `PendingSkillResolution`, which a remote client's read model reports as null,
+so every lobby bot already scores a card candidate at zero; and an Integer candidate under a declared
+value vocabulary has no scoring arm at all, so a bot naming a colour - Tali's today, Bain's here -
+answers by the conductor's tiebreak. Neither stops a bot ANSWERING, and neither can make one cheat,
+because a bot reads its own seat frame. They are owed here because this is the first milestone at
+which a fleet test can reach either prompt.
 
 Acceptance checks:
 

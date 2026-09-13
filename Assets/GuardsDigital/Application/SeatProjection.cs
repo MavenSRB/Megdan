@@ -187,7 +187,11 @@ namespace GuardsDigital.Application
     public sealed class SeatPendingSurface
     {
         internal SeatPendingSurface(
-            MatchSessionProjection source, MatchSeat seat, bool ownsDecision, bool isActor)
+            MatchSessionProjection source,
+            MatchSeat seat,
+            bool ownsDecision,
+            bool isActor,
+            IReadOnlyCollection<CardInstanceId> nameableCardIds = null)
         {
             var standing = source.DecisionContract != null;
             var resolving = ownsDecision || isActor;
@@ -235,7 +239,34 @@ namespace GuardsDigital.Application
 
             MovementResolution = resolving ? source.PendingMovementResolution : null;
             AttackResolution = resolving ? source.PendingAttackResolution : null;
-            SkillResolution = resolving ? source.PendingSkillResolution : null;
+
+            // Milestone 8.40f. `resolving` is the right predicate for WHETHER a seat sees the frame
+            // and the wrong one for WHAT it sees, and Bain's Blue line is the sentence that makes the
+            // difference matter: the hero who is acting is handed the live frame, and a frame that
+            // has recorded an enemy's answer carries that enemy's card instance id in
+            // CompletedOutcomes and AcceptedChoices - and, while the pause stands, the enemy's whole
+            // HAND in PendingChoice.Candidates. Bain guesses a colour against a card his own screen
+            // already named.
+            //
+            // It is narrowed rather than withheld, because the acting seat genuinely needs the frame
+            // (its identity is what a bot's own intent reads, and what tells a surface a resolution
+            // is running). Two rules, both derived from what this seat may already name:
+            //
+            // (1) the pause travels only to the seat that OWNS it. A non-owner is handed no
+            //     PendingEffectChoice on the line above and no DecisionContract at all, so a copy of
+            //     the same pause riding inside the frame is duplication that could only leak.
+            // (2) a card-instance fact naming a card this seat may not see is dropped. The set is
+            //     exactly this seat's own OwnCards + PublicCards, so the frame can name nothing the
+            //     projection does not already name - which is why the reveal alone is what makes the
+            //     card readable, in every seat at once, and why an Undo taken before the reveal puts
+            //     it back out of reach without anything here having to know about Undo.
+            //
+            // This is an application-layer arm for one printed shape. EffectChoiceRequest gains no
+            // visibility field, and IsPublic's fail-closed switch is untouched: the rule here is a
+            // CONSEQUENCE of IsPublic's answer rather than a second opinion about it.
+            SkillResolution = resolving
+                ? NarrowResolution(source.PendingSkillResolution, ownsDecision, nameableCardIds)
+                : null;
 
             TurnActions = offering
                 ? source.AvailableTurnActions
@@ -248,6 +279,89 @@ namespace GuardsDigital.Application
                 : Array.Empty<ClearOptionProjection>();
             HoldOffer = offering ? source.AvailableHoldOffer : null;
         }
+
+        /// <summary>
+        /// Milestone 8.40f. The running effect frame as this seat may see it: its standing pause only
+        /// where this seat owns the decision, and no card-instance fact naming a card this seat's own
+        /// projection does not already name.
+        /// </summary>
+        /// <remarks>
+        /// <para>It is a NARROWING and not a summary, deliberately: identity, continuation, actor,
+        /// controller and repeat state are untouched, so everything a surface or a bot reads off this
+        /// frame today still reads. What is dropped is exactly what a seat could not have learned any
+        /// other way.</para>
+        /// <para><b>An unbounded set means "narrow nothing", which is what a caller that has not
+        /// derived one gets.</b> The set is the seat's own <c>OwnCards + PublicCards</c>, derived once
+        /// in <see cref="SeatProjectionFactory.ForSeat"/> and handed down rather than recomputed, so
+        /// the cards the frame may name and the cards <see cref="SeatProjection.Cards"/> holds are one
+        /// list rather than two that can disagree.</para>
+        /// </remarks>
+        internal static GuardsDigital.Core.Rules.EffectResolution.PendingResolution NarrowResolution(
+            GuardsDigital.Core.Rules.EffectResolution.PendingResolution frame,
+            bool ownsDecision,
+            IReadOnlyCollection<CardInstanceId> nameableCardIds)
+        {
+            if (frame == null)
+            {
+                return null;
+            }
+
+            var pause = ownsDecision ? frame.PendingChoice : null;
+
+            // The ordinary case - a frame naming nothing this seat may not see - is answered with the
+            // frame itself, so this arm allocates nothing on every path it has nothing to say about.
+            if (ReferenceEquals(pause, frame.PendingChoice) &&
+                (nameableCardIds == null || NamesOnly(frame, nameableCardIds)))
+            {
+                return frame;
+            }
+
+            var outcomes = frame.CompletedOutcomes;
+            var choices = frame.AcceptedChoices;
+            if (nameableCardIds != null)
+            {
+                outcomes = frame.CompletedOutcomes
+                    .Select(outcome => new GuardsDigital.Core.Rules.EffectResolution.EffectNodeOutcome(
+                        outcome.NodeId,
+                        outcome.ResultKind,
+                        outcome.Outputs.Where(output => MayName(output.Value, nameableCardIds))))
+                    .ToArray();
+                choices = frame.AcceptedChoices
+                    .Select(choice => new GuardsDigital.Core.Rules.EffectResolution.EffectChoiceRecord(
+                        choice.NodeId,
+                        choice.ChoiceId,
+                        choice.ResolvedBy,
+                        choice.Selected.Where(candidate =>
+                            MayName(candidate.Value, nameableCardIds))))
+                    .ToArray();
+            }
+
+            return frame.With(frame.Continuation, outcomes, choices, pause);
+        }
+
+        /// <summary>
+        /// Whether this frame's recorded facts already name nothing outside
+        /// <paramref name="nameableCardIds"/>, which is true of every frame in the build but the one
+        /// Bain's Blue line stands inside.
+        /// </summary>
+        private static bool NamesOnly(
+            GuardsDigital.Core.Rules.EffectResolution.PendingResolution frame,
+            IReadOnlyCollection<CardInstanceId> nameableCardIds) =>
+            frame.CompletedOutcomes.All(outcome =>
+                outcome.Outputs.All(output => MayName(output.Value, nameableCardIds))) &&
+            frame.AcceptedChoices.All(choice =>
+                choice.Selected.All(candidate => MayName(candidate.Value, nameableCardIds)));
+
+        /// <summary>
+        /// Whether a published fact may be named to a seat holding <paramref name="nameableCardIds"/>.
+        /// Every value that is not a card is unaffected - a hero, a space, a number or a flag is not
+        /// hidden information, and dropping one would break a reader for no privacy gain.
+        /// </summary>
+        private static bool MayName(
+            GuardsDigital.Core.Effects.EffectValue value,
+            IReadOnlyCollection<CardInstanceId> nameableCardIds) =>
+            value.Kind != GuardsDigital.Core.Effects.EffectValueKind.CardInstance ||
+            nameableCardIds.Contains(value.CardInstanceId);
 
         /// <summary>
         /// Milestone 8.35u. The paused step as this seat may see it: its own open item and nothing
@@ -661,14 +775,22 @@ namespace GuardsDigital.Application
             var handSummaries = source.Participants.Heroes
                 .Select(hero => new SeatHandSummary(
                     hero.Id,
-                    source.Cards.Count(card => card.OwnerId.Equals(hero.Id) &&
-                        card.State.Location == CardLocation.Hand),
+                    // Milestone 8.40f. The count a printed hand-size narrowing reads is THIS count,
+                    // asked of one query rather than written twice, so a player can check a greyed
+                    // candidate against the number their own screen already shows them.
+                    HeroHandQuery.Count(source.Cards, hero.Id),
                     source.Cards.Count(card => card.OwnerId.Equals(hero.Id) &&
                         card.State.Location == CardLocation.Deck)))
                 .ToArray();
 
             var isActor = source.IsTurnActive && source.SelectedActor.IsDefined &&
                 seat.Owns(source.SelectedActor.ActorId);
+
+            // Milestone 8.40f. The cards this seat may name, derived once here and handed to the
+            // pending surface rather than recomputed there: the running effect frame published to a
+            // seat may name nothing this list does not. See SeatPendingSurface.NarrowResolution.
+            var nameableCardIds = new HashSet<CardInstanceId>(
+                ownCards.Concat(publicCards).Select(card => card.Id));
             return new SeatProjection(
                 seat,
                 source.Version,
@@ -679,7 +801,7 @@ namespace GuardsDigital.Application
                 owner,
                 ownsDecision ? NarrowContract(source.DecisionContract, seat) : null,
                 AuthorizedCommands(source, seat, owner),
-                new SeatPendingSurface(source, seat, ownsDecision, isActor),
+                new SeatPendingSurface(source, seat, ownsDecision, isActor, nameableCardIds),
                 teamAgreement,
                 isSeatUndoAvailable,
                 undoMarker);
@@ -1070,13 +1192,19 @@ namespace GuardsDigital.Application
                 return false;
             }
 
+            // Milestone 8.40f. The four open zones are asked of `PublicCardZoneQuery` rather than
+            // relisted, because a second reader now needs the identical list: `name-color@1`'s guess
+            // domain subtracts what the open zones account for from a hero's printed deck, and a zone
+            // the two disagreed about would rule out a colour no seat can actually see. The list is
+            // the same four members; nothing is added and nothing removed, and the switch below is
+            // still fail-closed, so a location this rule has not considered withholds the card.
+            if (PublicCardZoneQuery.IsAnOpenZone(card.State.Location))
+            {
+                return true;
+            }
+
             switch (card.State.Location)
             {
-                case CardLocation.TurnArea:
-                case CardLocation.DiscardPile:
-                case CardLocation.ItemSlot:
-                case CardLocation.UltimateArea:
-                    return true;
                 case CardLocation.Hand:
                     // A retrieved card remains known at the physical table after p.8 returns it.
                     // Retrieval resets lifecycle state so the card can be played again; the bounded

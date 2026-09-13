@@ -641,6 +641,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     effectEvent.Blocking?.ControllerHeroId ?? default,
                     effectEvent.Blocking?.SourceCardInstanceId ?? default)));
 
+                // Milestone 8.40f. A node that turned a card face up for the table writes its own
+                // row after the node's applied fact, because the reveal is something the node DID
+                // rather than a property of the node's result - and the seat-public log derived from
+                // this stream is the whole publication mechanism.
+                foreach (var reveal in CardActionResolutionEvent.RevealedCardFacts(
+                    resolutionId, card, action, actor, effectEvent))
+                {
+                    steps.Add(ResolutionStep.FromFact(reveal));
+                }
+
                 foreach (var checkpoint in effectEvent.CheckpointsAfter)
                 {
                     steps.Add(ResolutionStep.AtCheckpoint(checkpoint));

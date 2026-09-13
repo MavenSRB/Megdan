@@ -94,6 +94,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// fact; what the payment bought is reported by the Defeat's own
         /// <see cref="MinionRemovalPrevented"/>, exactly as it is when p.18's immunity stops one.
         /// </summary>
-        RemovalPreventionPaid = 51
+        RemovalPreventionPaid = 51,
+
+        /// <summary>
+        /// Milestone 8.40f: a node of card text turned one card face up for the whole table - the
+        /// "then reveal the card" half of Bain's three guessing Skills.
+        ///
+        /// <para>It is a kind of its own rather than the commitment flow's <c>CardRevealed</c>
+        /// because the two say different things about where the card is. p.7's reveal turns over the
+        /// card a hero committed to this turn, and every consumer of that fact reads it that way -
+        /// the HUD's flip cue borrows the hero's CURRENT CARD SLOT for it, and the channel's own
+        /// one-for-one ledger asserts exactly as many revealed rows as commitment reveals occurred.
+        /// A card turned over out of a HAND mid-resolution is in neither place, so inheriting those
+        /// two rules would animate the wrong card and falsify a declared ledger.</para>
+        ///
+        /// <para>The fact names the card's OWNER through <c>TargetHeroId</c> - the hero whose hand it
+        /// came from, never the acting hero whose text asked for it - and the card itself through
+        /// <c>RevealedCardInstanceId</c>, because <c>SourceCardInstanceId</c> is already spoken for
+        /// by the card the text is printed on.</para>
+        /// </summary>
+        CardTextRevealedCard = 52
     }
 }

@@ -76,6 +76,12 @@ namespace GuardsDigital.Core.Diagnostics
             ActionPrefix + nameof(CardActionResolutionEventKind.SkillEffectNodeStopped);
         private static readonly string CardTextApplied =
             ActionPrefix + nameof(CardActionResolutionEventKind.CardTextApplied);
+
+        // Milestone 8.40f. The one card-text fact this channel carries, because it is the only one
+        // whose whole purpose is to be seen by every seat: a reveal that nothing published would be a
+        // card nobody but the host knew had been turned over.
+        private static readonly string CardTextRevealedCard =
+            ActionPrefix + nameof(CardActionResolutionEventKind.CardTextRevealedCard);
         private static readonly string MinionDefeatRecorded =
             ActionPrefix + nameof(CardActionResolutionEventKind.MinionDefeatRecorded);
         private static readonly string MinionRemovalCompleted =
@@ -463,6 +469,18 @@ namespace GuardsDigital.Core.Diagnostics
                         subjectHeroId: Hero(references, entry),
                         subjectCardInstanceId: Card(references));
 
+                // Milestone 8.40f. THE SUBJECT IS THE TARGET AND THE CARD IS THE REVEALED ONE, and
+                // both differ from the arm above for the same reason: on a card-action fact `hero` is
+                // the acting hero and `card` is the card the text is printed on, so reading either
+                // would print Bain's name beside Bain's own Skill card on a row about somebody else's
+                // hand. `target` is the card's owner and `revealedCard` is the card turned over.
+                case MatchLogEntryKind.CardRevealedByCardText:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(references, "target", value => new HeroId(value)),
+                        subjectCardInstanceId: Optional(
+                            references, "revealedCard", value => new CardInstanceId(value)));
+
                 // Milestone 8.35z61. THE SUBJECT IS THE TARGET, NOT THE ACTOR. On every
                 // card-action event `hero` is the acting hero and `target` is the hero the action was
                 // about, and this row is about the hero who was defeated and thereby passed over -
@@ -545,6 +563,7 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == TurnEnded) return MatchLogEntryKind.TurnEnded;
             if (type == GameEnded) return MatchLogEntryKind.GameEnded;
             if (type == CardRevealed) return MatchLogEntryKind.CardRevealed;
+            if (type == CardTextRevealedCard) return MatchLogEntryKind.CardRevealedByCardText;
             return MatchLogEntryKind.None;
         }
 

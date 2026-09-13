@@ -518,6 +518,20 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
+                // Milestone 8.40f. The same sentence for the same fact, and a separate arm because
+                // the two rows are separate kinds - see MatchLogEntryKind.CardRevealedByCardText for
+                // the three turn-card rules this one deliberately does not inherit. The card resolves
+                // by name in EVERY seat, because the row itself is what made it nameable.
+                case MatchLogEntryKind.CardRevealedByCardText:
+                {
+                    var shown = CardNameOrNull(projection, entry.SubjectCardInstanceId);
+                    lines.Add(Line(entry,
+                        shown == null
+                            ? $"{HeroName(projection, entry.SubjectHeroId)} REVEALED A CARD"
+                            : $"{HeroName(projection, entry.SubjectHeroId)} REVEALED {shown}"));
+                    return;
+                }
+
                 default:
                     // MatchLogEntryKind.None never reaches an entry (the type throws on it), and every
                     // other member is handled above - a closed switch over a closed vocabulary.

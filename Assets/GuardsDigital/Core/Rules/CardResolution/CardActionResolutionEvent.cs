@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.Consequences;
@@ -86,7 +88,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int lifeCountersSpent = 0,
             int remainingLifeCounters = 0,
             HeroId blockingHeroId = default,
-            CardInstanceId blockingCardInstanceId = default)
+            CardInstanceId blockingCardInstanceId = default,
+            CardInstanceId revealedCardInstanceId = default)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -148,9 +151,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RemainingLifeCounters = remainingLifeCounters;
             BlockingHeroId = blockingHeroId;
             BlockingCardInstanceId = blockingCardInstanceId;
+            RevealedCardInstanceId = revealedCardInstanceId;
         }
 
         public CardActionResolutionEventKind Kind { get; }
+
+        /// <summary>
+        /// Milestone 8.40f. On a
+        /// <see cref="CardActionResolutionEventKind.CardTextRevealedCard"/> fact, the card the text
+        /// turned face up; <c>default</c> on every other fact.
+        ///
+        /// <para>A field of its own rather than <see cref="SourceCardInstanceId"/>, which every
+        /// card-action fact already spends on the card the text is PRINTED on, and rather than
+        /// <see cref="ResolvedCardInstanceId"/>, which is p.13's own sentence about a defeated hero's
+        /// unresolved card.</para>
+        /// </summary>
+        public CardInstanceId RevealedCardInstanceId { get; }
 
         public ActionResolutionId ResolutionId { get; }
 
@@ -728,7 +744,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 LifeCountersSpent == other.LifeCountersSpent &&
                 RemainingLifeCounters == other.RemainingLifeCounters &&
                 BlockingHeroId.Equals(other.BlockingHeroId) &&
-                BlockingCardInstanceId.Equals(other.BlockingCardInstanceId);
+                BlockingCardInstanceId.Equals(other.BlockingCardInstanceId) &&
+                RevealedCardInstanceId.Equals(other.RevealedCardInstanceId);
         }
 
         public override bool Equals(object obj)
@@ -767,7 +784,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 hashCode = (hashCode * 397) ^ LifeCountersSpent;
                 hashCode = (hashCode * 397) ^ RemainingLifeCounters;
                 hashCode = (hashCode * 397) ^ BlockingHeroId.GetHashCode();
-                return (hashCode * 397) ^ BlockingCardInstanceId.GetHashCode();
+                hashCode = (hashCode * 397) ^ BlockingCardInstanceId.GetHashCode();
+                return (hashCode * 397) ^ RevealedCardInstanceId.GetHashCode();
             }
         }
 
@@ -883,6 +901,48 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // attaches the blocking modification to, so this is read rather than re-derived.
                 node.Blocking?.ControllerHeroId ?? default,
                 node.Blocking?.SourceCardInstanceId ?? default);
+
+        /// <summary>
+        /// Milestone 8.40f: the facts one node's reveals produce, in the order the handler committed
+        /// them, and none at all for the every node that revealed nothing.
+        ///
+        /// <para><b>One helper rather than four copies</b>, called from every altitude that turns an
+        /// effect node's facts into the ordered stream - the Skill backend and the three card-text
+        /// sites. A reveal that reached only one of them would be a card that becomes public inside a
+        /// Skill and stays hidden inside an Attack's text, which is a difference no printed sentence
+        /// asks for.</para>
+        ///
+        /// <para>The step id names the node and the card, so two reveals inside one node are two
+        /// distinguishable lines rather than one line written twice.</para>
+        /// </summary>
+        public static IEnumerable<CardActionResolutionEvent> RevealedCardFacts(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId actorId,
+            EffectResolutionEvent node) =>
+            (node ?? throw new ArgumentNullException(nameof(node))).RevealedCards
+                .Select(revealed => new CardActionResolutionEvent(
+                    CardActionResolutionEventKind.CardTextRevealedCard,
+                    resolutionId,
+                    sourceCardInstanceId,
+                    actionDefinitionId,
+                    default,
+                    actorId,
+                    // The card's OWNER rides the target field, which every card-action fact already
+                    // uses for "the hero this was about" - the same reading milestone 8.35z61 records
+                    // for the defeated hero's own row.
+                    revealed.OwnerHeroId,
+                    new ActionResolutionStepId(
+                        node.NodeId.Value + ":reveal:" + revealed.CardInstanceId.Value),
+                    0,
+                    0,
+                    default,
+                    0,
+                    AttackResolutionOutcome.None,
+                    default,
+                    default,
+                    revealedCardInstanceId: revealed.CardInstanceId));
 
         public static CardActionResolutionEvent SkillChoiceRequested(
             ActionResolutionId resolutionId,

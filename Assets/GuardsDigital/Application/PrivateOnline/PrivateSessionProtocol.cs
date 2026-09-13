@@ -217,7 +217,31 @@ namespace GuardsDigital.Application
         // sentences is about teams; Cutter's A Fistful of Coins awards the match to one HERO and
         // leaves that hero's own team-mates among the losers, so an outcome row that could only name
         // teams could not state it to any seat - least of all to a seat that lost to it.
-        public const int Version = 14;
+        //
+        // Version 15 (milestone 8.40f) carries a REVEAL that card text performed. The seat-public
+        // match log gained one member - `MatchLogEntryKind.CardRevealedByCardText` - and
+        // `NetworkMatchLog.TryRead` validates every row's kind with `Enum.IsDefined`, so a version 14
+        // peer meeting the new number does not mis-read the row: it refuses the whole FRAME and the
+        // seat goes dark. That is why this moves rather than being absorbed, and it is the one kind
+        // of change this ratchet exists for.
+        //
+        // THE ROW ITSELF GREW NO BYTES. `MatchLogEntry` has carried `SubjectHeroId` and
+        // `SubjectCardInstanceId` since milestone 8.35r, and this member spends exactly those two, so
+        // the layout is byte-identical and only the VOCABULARY widened.
+        //
+        // WHY A NEW MEMBER RATHER THAN `CardRevealed`, measured rather than argued. Every consumer of
+        // that member reads it as rulebook p.7's turn-card commitment: the HUD's flip cue borrows the
+        // hero's CURRENT CARD SLOT to animate it at, the reveal batch is re-staged in printed-Initiative
+        // order because the commitment flow emits its reveals in roster order, and the channel's own
+        // one-for-one ledger asserts exactly as many rows of that kind as `Commitment.CardRevealed`
+        // events occurred. A card turned face up out of a HAND mid-resolution is in neither place, so
+        // reuse would have animated the wrong card and falsified a declared ledger - three rules the
+        // printed sentence does not carry, bought to save a version number.
+        //
+        // SCHEMA IS UNMOVED at v42. The reveal's memory is the DERIVED seat-public log, re-derived
+        // from the retained rule-event log on restore, replay and Undo exactly as every other row of
+        // it is; nothing new is persisted, and no corpus digest or pinned constant moves with it.
+        public const int Version = 15;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

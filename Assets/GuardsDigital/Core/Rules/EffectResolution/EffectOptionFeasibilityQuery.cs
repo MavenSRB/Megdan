@@ -107,6 +107,28 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             var refused = new List<EffectChoiceCandidate>();
             foreach (var option in chooseNode.ChildNodeIds)
             {
+                // Milestone 8.40f. A repeat offered as one BULLET of a modal is the one shape where
+                // the walk's own rule leaves a real question unanswered. Milestone 6.7's
+                // <see cref="Verdict.Empty"/> for a repeat is exactly right when the walk is judging
+                // the ACTION the repeat would re-run - "calling it performable would let an action
+                // that can do nothing be offered on the strength of being able to do nothing twice" -
+                // and says nothing about a bullet. We're Not Done Yet! prints "may repeat once OR
+                // gain 2 coins", so choosing the repeat SPENDS the answer: a bullet whose second
+                // instance cannot run has to be greyed rather than taken and then skipped in
+                // silence, which is 8.25e's "an offer is an offer" read one node higher.
+                //
+                // It is asked here and nowhere else, of a Choose node's own child, so the
+                // whole-action walk below is untouched and every repeat written before this one
+                // keeps its exact verdict.
+                if (context.Definition.TryGetNode(option, out var node) &&
+                    node.Kind == EffectNodeKind.RepeatAction &&
+                    (!RepeatedActionQuery.CanRepeat(frame, node) ||
+                        context.RepeatIsUnavailableFor(node.RepeatTargetBinding)))
+                {
+                    refused.Add(EffectChoiceCandidate.Option(option));
+                    continue;
+                }
+
                 var budget = MaximumNodesPerOption;
                 if (Walk(option, frame, completed, context, ref budget) == Verdict.Blocked)
                 {

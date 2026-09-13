@@ -38,7 +38,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<EffectOutcomeFact> outputs = null,
             IEnumerable<TimingCheckpoint> checkpointsBefore = null,
             IEnumerable<TimingCheckpoint> checkpointsAfter = null,
-            AppliedRuleModification blocking = null)
+            AppliedRuleModification blocking = null,
+            IEnumerable<RevealedCard> revealedCards = null)
         {
             NodeId = nodeId;
             ResultKind = resultKind;
@@ -49,6 +50,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             CheckpointsAfter = new ReadOnlyCollection<TimingCheckpoint>(
                 (checkpointsAfter ?? Enumerable.Empty<TimingCheckpoint>()).ToArray());
             Blocking = blocking;
+            RevealedCards = new ReadOnlyCollection<RevealedCard>(
+                (revealedCards ?? Enumerable.Empty<RevealedCard>()).ToArray());
         }
 
         public EffectNodeId NodeId { get; }
@@ -56,6 +59,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public IReadOnlyList<EffectOutcomeFact> Outputs { get; }
         public IReadOnlyList<TimingCheckpoint> CheckpointsBefore { get; }
         public IReadOnlyList<TimingCheckpoint> CheckpointsAfter { get; }
+
+        /// <summary>
+        /// Milestone 8.40f. The cards this node turned face up for the whole table - see
+        /// <see cref="RevealedCard"/>. Empty for every node that revealed nothing, which is every
+        /// node in the build but one.
+        ///
+        /// <para>Transient in the same sense <see cref="Blocking"/> is: it travels only as far as the
+        /// fact stream a backend turns into a
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.CardActionResolutionEvent"/>, and it is
+        /// never written onto <see cref="EffectNodeOutcome"/> or any other part of
+        /// <see cref="PendingResolution"/> that a snapshot persists. The reveal's MEMORY is the
+        /// derived seat-public log the row produces, which is re-derived from the retained rule-event
+        /// log on restore, replay and Undo rather than persisted a second time.</para>
+        /// </summary>
+        public IReadOnlyList<RevealedCard> RevealedCards { get; }
 
         /// <summary>
         /// Milestone 8.35z14 (the blocker-identity channel). The standing rule modification that
@@ -1728,7 +1746,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             outcomes.Add(new EffectNodeOutcome(nodeId, kind, result?.Outcomes));
             events.Add(new EffectResolutionEvent(
                 nodeId, kind, result?.Outcomes, result?.CheckpointsBefore, result?.CheckpointsAfter,
-                blocking));
+                blocking, result?.RevealedCards));
         }
 
         private static void AdvanceTop(IList<EffectContinuationFrame> continuation) =>

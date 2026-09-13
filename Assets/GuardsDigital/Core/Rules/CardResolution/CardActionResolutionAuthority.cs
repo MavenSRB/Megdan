@@ -2145,9 +2145,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     step.CardTextRemainderOutcome);
             }
 
+            // Milestone 8.40f. `SelectMany` rather than `Select`, so a node that turned a card face
+            // up writes its reveal row beside its applied fact here exactly as it does at the Skill
+            // altitude - one helper, four call sites, no altitude where a reveal goes unpublished.
             var steps = result.Events
-                .Select(value => CardActionResolutionEvent.CardTextApplied(
-                    card.Id, action.Id, step.CardTextActorId, step.CardTextTiming, value))
+                .SelectMany(value => new[]
+                    {
+                        CardActionResolutionEvent.CardTextApplied(
+                            card.Id, action.Id, step.CardTextActorId, step.CardTextTiming, value)
+                    }
+                    .Concat(CardActionResolutionEvent.RevealedCardFacts(
+                        new ActionResolutionId(
+                            "card-text-" + card.Id.Value + "-" + action.Id.Value),
+                        card.Id, action.Id, step.CardTextActorId, value)))
                 .Select(ResolutionStep.FromFact)
                 .ToList();
             AppendRequestedHeroDefeats(
@@ -3197,12 +3207,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var paused = pendingCardText;
             var facts = step.Events
-                .Select(value => CardActionResolutionEvent.CardTextApplied(
-                    paused.Frame.SourceCardInstanceId,
-                    paused.Frame.ActionDefinitionId,
-                    paused.Frame.ActorId,
-                    paused.Moment,
-                    value))
+                .SelectMany(value => new[]
+                    {
+                        CardActionResolutionEvent.CardTextApplied(
+                            paused.Frame.SourceCardInstanceId,
+                            paused.Frame.ActionDefinitionId,
+                            paused.Frame.ActorId,
+                            paused.Moment,
+                            value)
+                    }
+                    // Milestone 8.40f. See the resolving site above: the reveal row travels with the
+                    // node's own fact at every altitude that publishes one.
+                    .Concat(CardActionResolutionEvent.RevealedCardFacts(
+                        new ActionResolutionId(
+                            "card-text-" + paused.Frame.SourceCardInstanceId.Value + "-" +
+                            paused.Frame.ActionDefinitionId.Value),
+                        paused.Frame.SourceCardInstanceId,
+                        paused.Frame.ActionDefinitionId,
+                        paused.Frame.ActorId,
+                        value)))
                 .Select(ResolutionStep.FromFact)
                 .ToList();
 
@@ -4434,8 +4457,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId actorId,
             CardTextTiming timing) =>
             Array.AsReadOnly(result.Events
-                .Select(value => CardActionResolutionEvent.CardTextApplied(
-                    sourceCardInstanceId, actionDefinitionId, actorId, timing, value))
+                .SelectMany(value => new[]
+                    {
+                        CardActionResolutionEvent.CardTextApplied(
+                            sourceCardInstanceId, actionDefinitionId, actorId, timing, value)
+                    }
+                    // Milestone 8.40f. The third of the three card-text altitudes; see the two above.
+                    .Concat(CardActionResolutionEvent.RevealedCardFacts(
+                        new ActionResolutionId(
+                            "card-text-" + sourceCardInstanceId.Value + "-" +
+                            actionDefinitionId.Value),
+                        sourceCardInstanceId, actionDefinitionId, actorId, value)))
                 .Select(ResolutionStep.FromFact)
                 .ToArray());
 
