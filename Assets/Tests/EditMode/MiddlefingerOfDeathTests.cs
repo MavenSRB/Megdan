@@ -217,16 +217,21 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     (int)AttackSequenceSubjectNarrowing.None,
                     (int)AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard,
-                    (int)AttackSequenceSubjectNarrowing.HasAnEmptyDiscard
+                    (int)AttackSequenceSubjectNarrowing.HasAnEmptyDiscard,
+                    (int)AttackSequenceSubjectNarrowing.HoldsTheActorsMarker
                 }.OrderBy(value => value).ToArray()),
-                "Three members as of milestone 8.35z53. The second printed clause - " +
+                "FOUR members as of milestone 8.40c. The second printed clause - " +
                 "Whisper's Swift Justice prints the COMPLEMENT, \"a hero in range with an EMPTY " +
                 "discard\" - arrived as exactly the member and nothing more this comment predicted, " +
                 "which is the whole reason this is an enum rather than a capability reference: the " +
-                "next one costs no schema move. Because `EffectIntegerDomain.All<T>()` reads the enum " +
-                "TYPE, the parameter's own domain admitted the new member automatically; this " +
-                "assertion is the one place that has to be told by hand, and being told is the point " +
-                "- a domain that silently grew would be a domain nobody was watching.");
+                "next one costs no schema move. The fourth is Bain the Bounty Hunter's Hunter-Seeker, " +
+                "\"a hero in range with a bounty marker\", and it cost none either - the enum grew by " +
+                "one at the end and the three above it kept their values, so no payload written " +
+                "earlier decodes as a different predicate. Because `EffectIntegerDomain.All<T>()` " +
+                "reads the enum TYPE, the parameter's own domain admitted each new member " +
+                "automatically; this assertion is the one place that has to be told by hand, and " +
+                "being told is the point - a domain that silently grew would be a domain nobody was " +
+                "watching.");
         }
 
         // -------------------------------------------------------------------------------------------

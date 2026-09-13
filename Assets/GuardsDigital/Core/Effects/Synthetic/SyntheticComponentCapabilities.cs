@@ -677,6 +677,108 @@ namespace GuardsDigital.Core.Effects.Synthetic
         }
 
         /// <summary>
+        /// Milestone 8.40c. Whether ANY hero in play is wearing a declared marker, and WHICH hero -
+        /// Bain the Bounty Hunter's five Green faces, "If a hero in play has a [bounty] bounty marker".
+        ///
+        /// <para><b>It publishes a hero beside its boolean, and that is not a convenience.</b> Close
+        /// Call's consequence is about <em>that</em> hero - "that hero gives the marker to you" - so a
+        /// predicate answering only true or false would leave the transfer with nothing to bind, and a
+        /// second selection asked afterwards would let a player name a hero the sentence never chose.
+        /// A <see cref="EffectNodeKind.Conditional"/> branches on any true Boolean outcome, so the
+        /// second fact costs the branch nothing; a later node binds it with
+        /// <c>EffectInputBinding.FromNodeOutput</c>, and it is published only when the declaring node
+        /// asked for it, on <c>chosenSpace</c>'s terms.</para>
+        ///
+        /// <para><b>The definition is bound to the handler rather than named on the wire</b>, exactly as
+        /// <see cref="MarkerGivingHandler"/>'s is and for the same reason: a payload can name a node but
+        /// never a different marker. That is also what makes the answer definition-scoped rather than
+        /// "any attachment" - a hero wearing Tigerclaw's Poison is not wearing a bounty - and the
+        /// reading itself is <see cref="HeldMarkerQuery.HoldersOf"/>'s, shared with the two selection
+        /// narrowings this milestone adds so that one printed clause cannot come to mean two things.</para>
+        ///
+        /// <para><b>It asks nobody and mutates nothing.</b> The marker register is the whole of its
+        /// input, and an absent one is reported as an impossible step rather than answered <c>false</c>:
+        /// a silent no would look exactly like a board with no marker out, which is the failure
+        /// <c>EffectCardState.Absent</c> exists to refuse elsewhere.</para>
+        /// </summary>
+        public sealed class MarkerHolderHandler : IEffectCapabilityHandler
+        {
+            /// <summary>Whether any hero in play is wearing it - what a Conditional branches on.</summary>
+            public const string PresentOutputName = "present";
+
+            /// <summary>
+            /// Which hero is wearing it, published only where the declaring node asked for it. The
+            /// supply of a marker this predicate is asked about may be more than one, so the answer is
+            /// the first holder in <see cref="HeldMarkerQuery"/>'s stable order rather than an
+            /// arbitrary one; Bain's own supply is one (BA-D1), so on his faces there is never a
+            /// second.
+            /// </summary>
+            public const string HolderOutputName = "holder";
+
+            private readonly MarkerDefinition definition;
+
+            public MarkerHolderHandler(
+                EffectCapabilityReference reference, MarkerDefinition definition)
+            {
+                if (!reference.IsDefined)
+                {
+                    throw new ArgumentException(
+                        "A marker-presence capability requires a defined reference.", nameof(reference));
+                }
+
+                Reference = reference;
+                this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
+            }
+
+            public EffectCapabilityReference Reference { get; }
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(PresentOutputName, EffectValueKind.Boolean),
+                        new EffectOutputBinding(HolderOutputName, EffectValueKind.Hero)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var markers = context.Components?.Markers;
+                if (markers == null)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var holders = HeldMarkerQuery.HoldersOf(
+                    markers.Attachments, definition.Reference);
+                var facts = new List<EffectOutcomeFact>
+                {
+                    new EffectOutcomeFact(
+                        PresentOutputName, EffectValue.Boolean(holders.Count > 0))
+                };
+
+                if (holders.Count > 0 && context.Publishes(HolderOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        HolderOutputName, EffectValue.Hero(holders[0])));
+                }
+
+                return EffectExecutionResult.Applied(facts);
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                context.Components?.Markers == null
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
+        }
+
+        /// <summary>
         /// Detaches a marker this source card gave and returns it to the supply.
         ///
         /// Deliberately not a choice. A return is a transition, not a decision - the rulebook's returns

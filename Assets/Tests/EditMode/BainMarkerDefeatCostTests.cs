@@ -532,9 +532,15 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     BainComponentContent.GiveBountyV1,
                     BainComponentContent.TransferBountyV1,
-                    BainComponentContent.ReturnBountyV1
+                    BainComponentContent.ReturnBountyV1,
+                    // Milestone 8.40c's marker-presence predicate, deferred beside the give it reads.
+                    // Its own deferral - and the showcase consumer it owes where the give owes none -
+                    // is asserted in BainMarkerPredicateTests.
+                    BainComponentContent.BountyHeldV1
                 }));
-            Assert.That(deferred[0],
+            Assert.That(
+                deferred.Single(handler =>
+                    handler.Reference.Equals(BainComponentContent.GiveBountyV1)),
                 Is.InstanceOf<GuardsDigital.Core.Effects.Synthetic.SyntheticComponentCapabilities
                     .MarkerGivingHandler>(),
                 "The handler TYPE is Tigerclaw's, already registered and already showcased, so this " +

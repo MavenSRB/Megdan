@@ -112,6 +112,23 @@ namespace GuardsDigital.Core.Cards.Verified
             new EffectCapabilityReference(ReturnBounty, 1);
 
         /// <summary>
+        /// Milestone 8.40c. The predicate all five of his Green faces open with - "If a hero in play has
+        /// a [bounty] bounty marker" - and the hero it publishes, which is the subject Close Call's
+        /// "that hero gives the marker to you" and Perfect Getaway's Block are about.
+        ///
+        /// <para>It is one capability per marker for the reason the give is: the definition is bound to
+        /// the handler rather than named on the wire, so a payload can name a node but never a
+        /// different marker. The handler TYPE is new at 8.40c - nothing in the catalog read marker
+        /// state as a question before it - so unlike the give, this instance DOES owe a showcase
+        /// consumer at the dealing, on milestone 7.9's gate.</para>
+        /// </summary>
+        public static EffectCapabilityId BountyHeld { get; } =
+            new EffectCapabilityId("bain-bounty-marker-held");
+
+        public static EffectCapabilityReference BountyHeldV1 =>
+            new EffectCapabilityReference(BountyHeld, 1);
+
+        /// <summary>
         /// His one marker definition, for the catalog milestone 8.40j registers it into. It is NOT in
         /// the registered component catalog yet - see the type's own remarks.
         /// </summary>
@@ -134,17 +151,19 @@ namespace GuardsDigital.Core.Cards.Verified
             Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
-        /// The three marker operations his set prints, waiting for the dealing. One capability per
+        /// The four marker operations his set prints - the give, the predicate that reads it, the
+        /// transfer and the definition-bound return - waiting for the dealing. One capability per
         /// operation per marker, exactly as Tigerclaw's two gives are and for the same reason: the
         /// definition is bound to the handler rather than named on the wire, so a payload can name a
         /// node but never a different marker.
         ///
-        /// <para>Two of the three run on handler TYPES this build already registers and showcases -
-        /// <c>MarkerGivingHandler</c> is Tigerclaw's, and <c>ReturnMarkerHandler</c> is milestone
-        /// 6.2's, which milestone 8.40b taught a second, definition-bound reading rather than
-        /// replacing - so those two owe no showcase consumer. <c>MarkerTransferHandler</c> is a NEW
-        /// type, and milestone 7.9's deferral gate asks its second half of the type: it owes a
-        /// showcase consumer at milestone 8.40j, which is where it registers.</para>
+        /// <para>They owe the dealing different things and the difference is recorded here rather
+        /// than remembered. <c>MarkerGivingHandler</c> is Tigerclaw's proved and showcased TYPE, and
+        /// <c>ReturnMarkerHandler</c> is milestone 6.2's, which milestone 8.40b taught a second,
+        /// definition-bound reading rather than replacing - so neither owes a showcase consumer.
+        /// <c>MarkerTransferHandler</c> (milestone 8.40b) and <c>MarkerHolderHandler</c> (milestone
+        /// 8.40c) are NEW types, and milestone 7.9's deferral gate asks its second half of each: both
+        /// owe a showcase consumer at milestone 8.40j, which is where they register.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
@@ -154,7 +173,9 @@ namespace GuardsDigital.Core.Cards.Verified
                 new SyntheticComponentCapabilities.MarkerTransferHandler(
                     TransferBountyV1, BountyDefinition),
                 new SyntheticComponentCapabilities.ReturnMarkerHandler(
-                    ReturnBountyV1, BountyDefinition)
+                    ReturnBountyV1, BountyDefinition),
+                new SyntheticComponentCapabilities.MarkerHolderHandler(
+                    BountyHeldV1, BountyDefinition)
             };
     }
 }

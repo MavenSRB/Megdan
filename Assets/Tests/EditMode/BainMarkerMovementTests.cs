@@ -702,7 +702,8 @@ namespace GuardsDigital.Tests.EditMode
             {
                 BainComponentContent.GiveBountyV1,
                 BainComponentContent.TransferBountyV1,
-                BainComponentContent.ReturnBountyV1
+                BainComponentContent.ReturnBountyV1,
+                BainComponentContent.BountyHeldV1
             }));
             Assert.That(BainComponentContent.RegisteredHandlers(), Is.Empty);
 
@@ -716,7 +717,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(deferred[1],
                 Is.InstanceOf<SyntheticComponentCapabilities.MarkerTransferHandler>(),
-                "THE ONE NEW TYPE. Milestone 7.9's deferral gate asks its second half of the handler " +
+                "ONE OF THE TWO NEW TYPES (8.40c's predicate is the other). Milestone 7.9's deferral gate asks its second half of the handler " +
                 "TYPE, so this one owes a showcase consumer at milestone 8.40j; the give's type is " +
                 "Tigerclaw's and the return's is milestone 6.2's, and neither does.");
             Assert.That(deferred[0],

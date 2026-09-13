@@ -841,6 +841,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
             SyntheticTargetingCapabilities.ExcludeAdjacentParameterName;
 
         /// <summary>
+        /// Milestone 8.40c. Whether the selection admits only candidates wearing a marker the ACTOR's
+        /// own content put out - Bain the Bounty Hunter's Hand Crossbow, "Target a hero in range with a
+        /// [bounty] bounty marker".
+        ///
+        /// <para>It narrows the candidates for the reason
+        /// <see cref="PlayedAttackThisTurnParameter"/> does: the clause is part of who may be picked, so
+        /// a hero wearing nothing is not one to offer and then refuse.</para>
+        ///
+        /// <para><b>It says "the actor's" because no value kind can say "the bounty".</b>
+        /// <see cref="EffectValueKind"/> names booleans, quantities, heroes, minions, cards, spaces and
+        /// nodes, and none of them is a marker - so a declaration that wanted to name a DEFINITION here
+        /// could only do it by putting a component id into a payload, which is the sketch
+        /// <c>AttackSequenceSubjectNarrowing</c>'s own remarks measured and refused. What a declaration
+        /// CAN name is a hero, and the hero whose content owns the marker is the actor on every face
+        /// that prints the clause. <see cref="HeldMarkerQuery.HoldersOfAMarkerDeclaredBy"/> is where
+        /// that is turned back into a definition, so this narrowing, the bullet's
+        /// <c>AttackSequenceSubjectNarrowing.HoldsTheActorsMarker</c> and the marker-presence predicate
+        /// all read one method and cannot come to disagree about one printed sentence.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every declaration written before this milestone
+        /// keeps its exact candidate set.</para>
+        /// </summary>
+        public const string HoldsTheActorsMarkerParameter = "holdsTheActorsMarker";
+
+        /// <summary>
         /// Milestone 8.22. The count <c>presence-count@1</c>'s <c>present</c> answer is measured
         /// against - Sabina's Steady Advance and Unwavering Resolve, "If there are two or more
         /// friendly minions in radius".
@@ -1713,7 +1738,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // they sit here: the clause is part of WHO may be picked, so a hero standing off
                     // the line is not one to offer and then refuse.
                     new EffectCapabilityParameter(
-                        ContinuedLineFromParameter, EffectValueKind.Coordinate, isRequired: false)
+                        ContinuedLineFromParameter, EffectValueKind.Coordinate, isRequired: false),
+
+                    // Milestone 8.40c. Bain's Hand Crossbow, "Target a hero in range with a [bounty]
+                    // bounty marker" - the seventh narrowing and the first about a COMPONENT rather
+                    // than about the board, the geometry or a candidate's own cards.
+                    new EffectCapabilityParameter(
+                        HoldsTheActorsMarkerParameter, EffectValueKind.Boolean, isRequired: false)
                 },
                 new[]
                 {
@@ -1762,6 +1793,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (context.Inputs.ContainsKey(ContinuedLineFromParameter))
                 {
                     declared = AlongTheContinuedLine(context, declared);
+                }
+
+                // Milestone 8.40c, and it filters in its turn for the reason the clauses above do: a
+                // card printing two of them means both.
+                if (context.Input(HoldsTheActorsMarkerParameter).BooleanValue)
+                {
+                    declared = WearingAMarkerTheActorDeclared(context, declared);
                 }
 
                 if (!context.Input(PlayedAttackThisTurnParameter).BooleanValue)
@@ -1816,6 +1854,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// all name no direction, and each answers with the empty set rather than with the
             /// unnarrowed one.</para>
             /// </summary>
+            /// <summary>
+            /// Milestone 8.40c. The candidates wearing a marker the actor's own content put out -
+            /// Bain's Hand Crossbow, "Target a hero in range with a [bounty] bounty marker".
+            ///
+            /// <para>A minion is dropped rather than admitted, on
+            /// <c>AttackDefenseCardActionStrategyBackend.AdmitsTheSubject</c>'s reading: p.18 gives
+            /// markers to heroes, so a clause narrowed by one that let every minion through would be
+            /// reading the sentence as if it were not there.</para>
+            ///
+            /// <para>An absent marker register admits nobody rather than everybody, which is the same
+            /// answer <see cref="AlongTheContinuedLine"/> gives an absent board: the two silent
+            /// alternatives are a widened offer and a card greyed for nothing, and only one of them is
+            /// a refusal the player can see.</para>
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> WearingAMarkerTheActorDeclared(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
+            {
+                var markers = context.Components?.Markers;
+                if (markers == null)
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var holders = HeldMarkerQuery.HoldersOfAMarkerDeclaredBy(
+                    markers.Attachments, context.ActorId);
+                return declared
+                    .Where(target => target.Kind == BoardObjectKind.Hero &&
+                        holders.Any(holder => holder.Equals(target.HeroId)))
+                    .ToArray();
+            }
+
             private static IReadOnlyList<BoardObjectReference> AlongTheContinuedLine(
                 EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
             {

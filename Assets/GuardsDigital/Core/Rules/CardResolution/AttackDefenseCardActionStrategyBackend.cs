@@ -3181,7 +3181,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     adjacentMoveAuthority,
                     modifications);
 
-                return NarrowedToTheBulletsSubject(admitted, sequenceBullet, cardInstances);
+                return NarrowedToTheBulletsSubject(
+                    admitted, sequenceBullet, cardInstances, attackerId, markers);
             }
 
             // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what
@@ -3216,20 +3217,50 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// minion IS dropped rather than admitted, because a bullet that narrowed by a hero fact and
         /// then let every minion through would be reading the clause as if it were not there.</para>
         ///
-        /// <para><b>The absence of card state is loud.</b> A bullet declaring a predicate that reaches
-        /// this without cards has been asked a question it cannot answer, and the two silent answers -
-        /// admit everybody, or admit nobody - are a widened offer and a card greyed for nothing. Both
-        /// look exactly like a board position, which is the failure
-        /// <c>EffectCardState.Absent</c> exists to refuse; it is refused the same way here.</para>
+        /// <para><b>The absence of the state a predicate reads is loud.</b> A bullet declaring a
+        /// predicate that reaches this without cards has been asked a question it cannot answer, and the
+        /// two silent answers - admit everybody, or admit nobody - are a widened offer and a card greyed
+        /// for nothing. Both look exactly like a board position, which is the failure
+        /// <c>EffectCardState.Absent</c> exists to refuse; it is refused the same way here. Milestone
+        /// 8.40c's marker predicate is refused on the same terms when the register is absent, which is
+        /// every composition outside a live match.</para>
+        ///
+        /// <para><b>The marker register is a field this backend already held</b>, bound at construction
+        /// since milestone 6.12 so that p.13's "any markers they had are returned" happens where the
+        /// Defeat is recorded. Reading it here needed no widened signature and no component port: the
+        /// evaluation site simply asks the register the round authority owns, which is the same one the
+        /// give and the return mutate.</para>
         /// </summary>
         private static IReadOnlyList<AttackTarget> NarrowedToTheBulletsSubject(
             IReadOnlyList<AttackTarget> admitted,
             AttackSequenceBullet bullet,
-            IEnumerable<CardInstance> cardInstances)
+            IEnumerable<CardInstance> cardInstances,
+            HeroId attackerId,
+            MarkerAttachmentRegister markers)
         {
             if (!bullet.NarrowsItsSubject)
             {
                 return admitted;
+            }
+
+            if (bullet.SubjectNarrowing == AttackSequenceSubjectNarrowing.HoldsTheActorsMarker)
+            {
+                if (markers == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The modal Attack bullet '{bullet.BulletId}' prints " +
+                        $"'{bullet.SubjectNarrowing}', which is a predicate about a component the " +
+                        "candidate is wearing, and this target derivation was given no marker " +
+                        "register to read. Supply the match's register at the call site rather than " +
+                        "letting the narrowing silently admit or silently exclude every candidate.");
+                }
+
+                var holders = HeldMarkerQuery.HoldersOfAMarkerDeclaredBy(
+                    markers.Attachments, attackerId);
+                return admitted
+                    .Where(target => target.Kind == AttackTargetKind.Hero &&
+                        holders.Any(holder => holder.Equals(target.HeroId)))
+                    .ToArray();
             }
 
             if (cardInstances == null)

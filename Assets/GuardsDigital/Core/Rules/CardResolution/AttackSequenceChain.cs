@@ -79,7 +79,28 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <see cref="GuardsDigital.Core.Cards.HeroDiscardPileQuery"/> as its complement, so "empty" and
         /// "one or more" cannot come to disagree about the same pile.</para>
         /// </summary>
-        HasAnEmptyDiscard = 2
+        HasAnEmptyDiscard = 2,
+
+        /// <summary>
+        /// "Target a hero in range <b>with a [bounty] bounty marker</b>" - the first bullet of Bain the
+        /// Bounty Hunter's Hunter-Seeker, milestone 8.40c.
+        ///
+        /// <para><b>The first member of this vocabulary about a COMPONENT rather than about a pile</b>,
+        /// and the reason it is a member at all is the one this type was minted for: a persisted bullet
+        /// cannot name the marker, because the only thing it could name is a component id, and a payload
+        /// that named content the reader has to resolve is the sketch the remarks above record as
+        /// refused. So the member says whose marker instead - the ACTOR's, which is who "a bounty
+        /// marker" belongs to on every face that prints the clause - and
+        /// <see cref="GuardsDigital.Core.Components.HeldMarkerQuery.HoldersOfAMarkerDeclaredBy"/> turns
+        /// that back into a definition. The same method answers <c>choose-target@2</c>'s
+        /// <c>holdsTheActorsMarker</c> narrowing and Bain's marker-presence predicate, so one printed
+        /// sentence has one reading in all three places - the discipline the two members above keep
+        /// with <c>HeroDiscardPileQuery</c>.</para>
+        ///
+        /// <para>Its value is 3 and the three members above keep theirs, so no payload written before
+        /// this milestone decodes as a different predicate.</para>
+        /// </summary>
+        HoldsTheActorsMarker = 3
     }
 
     /// <summary>

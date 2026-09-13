@@ -415,7 +415,7 @@ supply can pay. No marker rendering.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840b-build-the-marker-movements-his-green-blocks-and-his-gold-basic-need-completion-evidence).
 
-### [ ] 8.40c Build the marker predicates his whole set reads
+### [x] 8.40c Build the marker predicates his whole set reads
 
 Observable outcome: a card can ask whether any hero in play holds a declared marker and learn WHICH
 hero, can narrow a written-distance target selection to marker holders, and can narrow a p.14 attack
@@ -455,6 +455,73 @@ records the reading (any hero on the board, Bain included, holding his own marke
 and the narrowing give the same answer on the same board, because two readings of one clause is exactly
 the divergence a shared label must never hide.
 
+**EVERY PARAGRAPH ABOVE HELD, WHICH IS THE FIRST TIME IN THIS SERIES A BLOCK PREDICTED ITS CONTRACTS
+EXACTLY - so no split was needed and none is owed.** The sweep the block asserted came back as stated
+and is now a guard rather than a claim: across the **171** capabilities this build registers, the only
+parameter or output named after a marker at all is the `holder` the three marker-GIVING handlers take
+and publish, and nothing anywhere asked whether one is worn.
+
+**ONE CLAUSE, THREE DECLARATIONS THAT CARRY DIFFERENT THINGS, AND THE PROBE IS WHAT SETTLED HOW THEY
+AGREE.** A handler may be handed a `MarkerDefinition` at construction, which is how the give already
+keeps a payload from naming a different marker. A `choose-target@2` declaration may not:
+`EffectValueKind` names booleans, quantities, heroes, minions, cards, spaces and nodes, and none of them
+is a marker - so a declaration wanting to name a DEFINITION could only put a component id into a
+payload, which is the sketch `AttackSequenceSubjectNarrowing`'s own remarks measured and REFUSED. A
+persisted enum member may carry nothing at all. So the two narrowings name the one thing all three sites
+do carry - the ACTOR, who is whose marker it is on every face that prints the clause - and
+`HeldMarkerQuery` turns that back into a definition, with `HoldersOf` the single method that decides
+what "holds it" means and the actor-derived members composed from it rather than written beside it.
+BA-D5's "his own" is therefore read off the attachment's `OwnerHeroId`, the hero whose card put the
+marker out, corrected into his shard in this same change along with all three contract rows.
+
+**THE HERO OUTPUT HAS A COMPOSITION SHAPE 8.40b AND 8.40g MUST USE, AND THE PROBE FOUND IT BEFORE THEY
+DID.** A capability publishes a Hero beside a Boolean as a second `EffectOutcomeFact`, emitted only
+where the node declared the output; `EffectDefinitionValidator` admits any capability declaring a
+Boolean output as a `Conditional` predicate and the session branches on any true Boolean outcome, so
+Perfect Getaway's condition-only face names the predicate directly. **But a `Conditional`'s own branch
+cannot bind that `Conditional`'s output.** The validator's guaranteed-predecessor rule contributes only
+through a Sequence, and a branch child inherits what its PARENT already guaranteed rather than the
+parent itself - so a face whose consequence is about *that* hero runs the predicate as an ordinary
+Capability node standing first in a Sequence and branches with `synthetic-is-flagged@1`, which is
+exactly the shape that capability was minted for. All three shapes are cases here, the refused one
+included, so the next two blocks inherit a proof rather than a hint.
+
+**THE BULLET'S EVALUATION SITE WAS ALREADY HOLDING WHAT IT NEEDED.** The narrowing is evaluated in
+`AttackDefenseCardActionStrategyBackend.NarrowedToTheBulletsSubject`, where a bullet's target set is
+derived, and it is handed card state and participants and no components at all - but that backend has
+held the match's own `MarkerAttachmentRegister` as a field since milestone 6.12, so that p.13's "any
+markers they had are returned" happens where the Defeat is recorded. Reading it needed no widened
+signature, no component port and no new constructor argument; `choose-target@2` reaches the same
+register the ordinary way, through `EffectCapabilityContext.Components`. An absent register is refused
+loudly on the card-state clause's own terms rather than silently admitting or excluding everybody.
+
+**WHAT WAS BUILT.** `bain-bounty-marker-held@1` on a NEW handler type,
+`SyntheticComponentCapabilities.MarkerHolderHandler`, deferred in `BainComponentContent` beside 8.40a's
+give and asserted deferred from the registered catalog as well - and because the TYPE is new where the
+give's was Tigerclaw's, this instance DOES owe a showcase consumer at 8.40j, which that block's own
+paragraph already demands of every type these blocks mint. A seventh optional narrowing,
+`holdsTheActorsMarker`, on `choose-target@2` - the first of its seven about a COMPONENT. And a fourth
+`AttackSequenceSubjectNarrowing` member, `HoldsTheActorsMarker`, valued 3 with the three above it
+keeping their values and their behaviour, asserted by putting a marker on the board and observing that
+the two pile-reading members do not notice it.
+
+**THE THREE AGREE ON ONE BOARD, ASSERTED FROM BOTH SIDES.** On a featureless radius-3 disk carrying a
+bounty on one enemy hero and a Poison of Tigerclaw's on the other, the predicate publishes the bounty's
+holder, the selection admits exactly that hero and the bullet admits exactly that hero; on the same
+board with nothing out, all three answer empty. The unnarrowed forms of both narrowings still reach
+both enemies on the very same board, so each difference is the clause and nothing else.
+
+**Evidence.** Focused `BainMarkerPredicateTests` 17/17, plus the directly affected
+`VerifiedContentIdentityTests`, `MiddlefingerOfDeathTests`, `BainMarkerDefeatCostTests`,
+`ContinuedLineNarrowingTests` and `ChooseTargetCapabilityTests` at 51/51. Complete unfiltered dotnet
+harness **2,975 passed / 0 failed / 0 skipped in 13 m 18 s**, which reconciles as 8.40a's 2,958 plus
+exactly the 17 cases this milestone adds. Two existing cases were EDITED rather than added and neither changes the
+count: `MiddlefingerOfDeathTests`' enum-domain pin, which its own remarks say is "the one place that
+has to be told by hand", and 8.40a's paired deferral assertion, which now names both deferred handlers.
+No schema field, corpus digest or pinned constant moved. Edit Mode and Play Mode are unrun and this
+milestone is pure Core with no Unity-side change: the work is a query, a capability handler, one
+optional capability parameter and one enum member, and the worktree it was built in has no Unity.
+
 Acceptance checks:
 
 - The predicate answers true and publishes the holder when one hero wears the declared marker, answers
@@ -470,6 +537,8 @@ Acceptance checks:
 - Complete unfiltered dotnet harness passes.
 
 Non-goals: No Bain content. No widening of `hero-condition@1`. No predicate about tokens.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840c-build-the-marker-predicates-his-whole-set-reads-completion-evidence).
 
 ### [x] 8.40d Build the unit-and-terrain clear line his five crossbows print
 
