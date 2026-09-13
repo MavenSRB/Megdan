@@ -94,7 +94,13 @@ namespace GuardsDigital.Presentation.Match
                 // Tali's before her. Written here at the same moment as the eighteen rows, for the
                 // reason those six paragraphs give: the rows alone are what every offline tier can
                 // see, and this map is what turns them into a front on a card.
-                { "cutter", "Cutter" }
+                { "cutter", "Cutter" },
+                // Milestone 8.40j, the EIGHTH consecutive dealing told by the comment above rather
+                // than by a check. His extraction directory spells the name plainly, like Cutter's,
+                // Swift's and Tali's before him. Written here at the same moment as the eighteen
+                // rows, for the reason those seven paragraphs give: the rows alone are what every
+                // offline tier can see, and this map is what turns them into a front on a card.
+                { "bain", "Bain" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -387,6 +393,12 @@ namespace GuardsDigital.Presentation.Match
                 // Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard and Swift's
                 // Backup are not among theirs.
                 .Concat(CutterCardContent.DealtDefinitions)
+                // Milestone 8.40j. Bain's eighteen, on exactly the terms the rows above state. Side
+                // Quest is p.20's Handicap card and is not among his DealtDefinitions, exactly as
+                // Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance,
+                // Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard, Swift's
+                // Backup and Cutter's Few More Steps are not among theirs.
+                .Concat(BainCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

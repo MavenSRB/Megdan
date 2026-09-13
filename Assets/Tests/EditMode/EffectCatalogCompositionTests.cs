@@ -155,6 +155,23 @@ namespace GuardsDigital.Tests.EditMode
                 // VerifiedCapabilityHandlers alone, exactly as Silverarrow's CardTextFastTravelHandler
                 // is excluded above. Nor are her two straight-line Places, which register from
                 // SyntheticPlacementCapabilities on the same terms.
-                .Concat(SwiftActiveEffectContent.Handlers());
+                .Concat(SwiftActiveEffectContent.Handlers())
+                // Milestone 8.40j. Bain's NINE - his five Active-effect creations (two obstacle
+                // permissions, two Movement raises and Another One!'s End-of-turn repeat) and his
+                // four marker operations (the give, the transfer, the definition-bound return and
+                // the holder predicate his five Green faces read) - joining the moment his dealing
+                // milestone put them into MatchContentCatalogs, and mirrored BY HAND here for the
+                // reason Dodger's pair records: a mirror that called the production composer would
+                // agree with it by construction and prove nothing. He is the second hero whose
+                // contribution here is not ONLY an Active-effect list, on Tali's terms and
+                // Tigerclaw's: his four marker operations are content of HIS, bound to his own marker
+                // definition. His FOUR genuinely generic contracts are NOT in this list -
+                // `synthetic-hidden-card-choice@1` and `synthetic-reveal-chosen-card@1` register from
+                // SyntheticHiddenChoiceCapabilities and the two showcase marker instances
+                // (`synthetic-transfer-marker@1`, `synthetic-marker-held@1`) from
+                // SyntheticComponentCapabilities, and this mirror is of VerifiedCapabilityHandlers
+                // alone, exactly as Silverarrow's CardTextFastTravelHandler is excluded above.
+                .Concat(BainActiveEffectContent.Handlers())
+                .Concat(BainComponentContent.Handlers());
     }
 }

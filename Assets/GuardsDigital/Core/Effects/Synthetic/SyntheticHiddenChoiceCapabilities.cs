@@ -104,19 +104,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string MatchedOutput = "matched";
 
         /// <summary>
-        /// Nothing here is registered by this build: no dealt card prints either sentence yet. The
-        /// member exists so the offline content fixtures can compose a catalog of their own, exactly
-        /// as every other deferred list in this folder is used.
+        /// Both are registered by milestone 8.40j, the dealing at which Bain's three guessing Blue
+        /// faces first print these sentences. Each took a showcase consumer in the same change - the
+        /// Sharper's hidden pick and the Cardsharp's reveal in <c>SyntheticShowcaseHand</c> - so
+        /// neither handler TYPE arrives for the first time inside a verified hero's slice.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new HiddenCardChoiceHandler(),
                 new RevealChosenCardHandler()
             };
+
+        /// <summary>
+        /// Empty since milestone 8.40j moved both across. The member stays so the fixtures that
+        /// assert the move from both sides keep asking a question rather than failing to compile.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             RegisteredHandlers().Concat(DeferredHandlers());

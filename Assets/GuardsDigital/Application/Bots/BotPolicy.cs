@@ -778,8 +778,50 @@ namespace GuardsDigital.Application.Bots
                 var utility = CardTacticalUtility(
                     DefinitionOf(readModel, candidateValue.CardInstanceId));
                 var intent = CardChoiceIntent(readModel);
-                return intent == CardChoiceTacticalIntent.Retrieve ? utility + 20 :
-                    intent == CardChoiceTacticalIntent.Discard ? -utility : 0;
+                if (intent == CardChoiceTacticalIntent.None)
+                {
+                    // Milestone 8.40j, the first of two bot arms milestone 8.40f measured and left
+                    // here because no dealt card started these prompts until this dealing.
+                    //
+                    // THE INTENT ABOVE IS UNREADABLE FROM A REMOTE SEAT, AND THAT IS DELIBERATE
+                    // RATHER THAN MISSING. `CardChoiceIntent` needs the running effect DEFINITION,
+                    // which it reaches through `PendingSkillResolution` - and a network client
+                    // reports that as null on purpose: the frame is what carries the pause, and
+                    // milestone 8.40f's privacy arm is the reason the wire never carries it. So a
+                    // remote lobby bot scored every card candidate at ZERO and answered by the
+                    // conductor's tiebreak, on Whisper's, Misa's and Dodger's shipped faces as much
+                    // as on Bain's hidden pick.
+                    //
+                    // WHAT REPLACES IT IS READ FROM THE BOT'S OWN FRAME AND LEAKS NOTHING. A card a
+                    // seat is asked to name is a card that seat may already name, so its LOCATION is
+                    // in that seat's own projection: a candidate sitting in a discard pile is being
+                    // retrieved and a candidate sitting in a hand is being given up. That
+                    // reproduces exactly what the definition walk answers for every dealt face in
+                    // the build, without the frame and without one card of anybody else's.
+                    var location = LocationOf(readModel, candidateValue.CardInstanceId);
+                    return location == CardLocation.DiscardPile ? utility + 20 :
+                        location == CardLocation.Hand ? -utility : 0;
+                }
+
+                return intent == CardChoiceTacticalIntent.Retrieve ? utility + 20 : -utility;
+            }
+
+            if (candidateValue.Kind == EffectValueKind.Integer &&
+                choice.ValueVocabulary != EffectChoiceValueVocabulary.None)
+            {
+                // Milestone 8.40j, the second arm. An integer candidate under a DECLARED value
+                // vocabulary - rulebook p.9's six colours today, through `name-color@1` - reached no
+                // branch above at all, so every candidate scored zero and the conductor's tiebreak
+                // named the colour. Tali has been answering that way since her dealing and Bain's
+                // guess is the first prompt where the answer decides an outcome.
+                //
+                // THE PREFERENCE IS PUBLIC INFORMATION AND THE BOT'S OWN, WHICH IS THE WHOLE POINT.
+                // The offered domain is already narrowed by `restrictToColorsOwnedBy` to what public
+                // zones admit (BA-D2); among what is left, a colour this seat can see lying face up
+                // in a discard pile, a turn area, an item slot or an Ultimate area is a colour less
+                // likely to be in the hidden hand, so it is scored down. Nothing here reads another
+                // hero's hand: a seat's projection does not contain one.
+                return 25 - SeenInOpenZones(readModel, candidateValue.IntegerValue);
             }
 
             if (invocation.Candidate.Kind == EffectChoiceCandidateKind.Option)
@@ -788,6 +830,44 @@ namespace GuardsDigital.Application.Bots
             }
 
             return 0;
+        }
+
+        /// <summary>
+        /// Milestone 8.40j. Where a card the reader may name currently sits, or
+        /// <see cref="CardLocation.None"/> when this reader may not name it at all.
+        /// </summary>
+        private static CardLocation LocationOf(
+            IMatchReadModel readModel, CardInstanceId cardInstanceId)
+        {
+            var card = (readModel.Cards ?? Array.Empty<CardInstance>())
+                .FirstOrDefault(value => value != null && value.Id.Equals(cardInstanceId));
+            return card?.State.Location ?? CardLocation.None;
+        }
+
+        /// <summary>
+        /// Milestone 8.40j. How many cards of one printed colour this reader can see in a zone every
+        /// player can see. A seat's own hand and deck are deliberately NOT counted: they are this
+        /// seat's private information rather than the table's, and counting them would make a bot's
+        /// guess depend on which seat happened to be asking.
+        /// </summary>
+        private static int SeenInOpenZones(IMatchReadModel readModel, int colorValue)
+        {
+            var color = (CardColor)colorValue;
+            if (color == CardColor.None)
+            {
+                return 0;
+            }
+
+            var definitions = readModel.Definitions ?? Array.Empty<CardDefinition>();
+            return (readModel.Cards ?? Array.Empty<CardInstance>())
+                .Count(card => card != null &&
+                    (card.State.Location == CardLocation.DiscardPile ||
+                        card.State.Location == CardLocation.TurnArea ||
+                        card.State.Location == CardLocation.ItemSlot ||
+                        card.State.Location == CardLocation.UltimateArea) &&
+                    definitions.Any(definition => definition != null &&
+                        definition.Reference.Equals(card.DefinitionReference) &&
+                        definition.Progression.Color == color));
         }
 
         private static int PreviewDelta(

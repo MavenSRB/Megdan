@@ -27,17 +27,19 @@ namespace GuardsDigital.Core.Cards.Verified
     /// are, and <c>RuleModificationQuery.FromHeldMarkers</c> makes it affect
     /// <c>RuleObject.ForHero(marker.HolderHeroId)</c> without this file saying so.</para>
     ///
-    /// <para><b>Deferred, not registered, and both halves are deferred together.</b> Neither
-    /// <see cref="Markers"/> nor <see cref="DeferredHandlers"/> is reachable from
-    /// <c>SyntheticComponentDefinitions.CreateCatalog</c> or <c>MatchContentCatalogs</c>: a match
+    /// <para><b>Registered at milestone 8.40j, and both halves moved together.</b> Both
+    /// <see cref="Markers"/> and <see cref="RegisteredHandlers"/> are now reachable from
+    /// <c>SyntheticComponentDefinitions.CreateCatalog</c> and <c>MatchContentCatalogs</c>: a match
     /// registers one list of what it can put on a dashboard and one list of what it can run, and a
-    /// snapshot pins both, so registering either before a dealt card can start it moves pinned bytes
-    /// and fails milestone 7.9's reachability gate. Milestone 8.40j deals him and moves both across in
-    /// the same change; <c>BainMarkerDefeatCostTests</c> asserts the deferral from both sides so that
-    /// dealing cannot register one half and forget the other. Of the three capabilities
-    /// <see cref="DeferredHandlers"/> holds, two run on handler types already registered and
-    /// showcased; the transfer milestone 8.40b built is a new type and owes a showcase consumer at the
-    /// dealing.</para>
+    /// snapshot pins both, so neither could be registered before a dealt card could start it - that
+    /// moves pinned bytes and fails milestone 7.9's reachability gate. The dealing moved both across
+    /// in one change; <c>BainMarkerDefeatCostTests</c> asserts the registration from both sides, as
+    /// the same case asserted the deferral from both sides before it, so no later edit can move one
+    /// half and forget the other. Of the four capabilities <see cref="RegisteredHandlers"/> holds,
+    /// two run on handler types already registered and showcased; the transfer milestone 8.40b built
+    /// and the holder predicate milestone 8.40c built are new types and each took a showcase consumer
+    /// at the dealing - <c>synthetic-transfer-marker@1</c> and <c>synthetic-marker-held@1</c>, bound
+    /// to the fixture's own Focus marker exactly as <c>synthetic-give-marker@1</c> is.</para>
     /// </summary>
     public static class BainComponentContent
     {
@@ -129,8 +131,8 @@ namespace GuardsDigital.Core.Cards.Verified
             new EffectCapabilityReference(BountyHeld, 1);
 
         /// <summary>
-        /// His one marker definition, for the catalog milestone 8.40j registers it into. It is NOT in
-        /// the registered component catalog yet - see the type's own remarks.
+        /// His one marker definition, registered into the build's one component catalog by milestone
+        /// 8.40j - see the type's own remarks.
         /// </summary>
         public static IEnumerable<MarkerDefinition> Markers() => new[] { BountyDefinition };
 
@@ -142,30 +144,22 @@ namespace GuardsDigital.Core.Cards.Verified
             RegisteredHandlers().Concat(DeferredHandlers());
 
         /// <summary>
-        /// Deliberately empty until milestone 8.40j deals him, for the reason
-        /// <c>SyntheticConditionCapabilities</c> states: the registered capability list is serialized
-        /// into every snapshot, so registering a capability before its hero is dealt moves pinned bytes
-        /// and reads at the far end like a serialization defect rather than like content arriving.
-        /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>
-        /// The four marker operations his set prints - the give, the predicate that reads it, the
-        /// transfer and the definition-bound return - waiting for the dealing. One capability per
-        /// operation per marker, exactly as Tigerclaw's two gives are and for the same reason: the
-        /// definition is bound to the handler rather than named on the wire, so a payload can name a
-        /// node but never a different marker.
+        /// The four marker operations his set prints - the give, the transfer, the definition-bound
+        /// return and the predicate that reads the board - registered by milestone 8.40j, the
+        /// milestone that deals him. One capability per operation per marker, exactly as Tigerclaw's
+        /// two gives are and for the same reason: the definition is bound to the handler rather than
+        /// named on the wire, so a payload can name a node but never a different marker.
         ///
-        /// <para>They owe the dealing different things and the difference is recorded here rather
+        /// <para>They owed the dealing different things and the difference is recorded here rather
         /// than remembered. <c>MarkerGivingHandler</c> is Tigerclaw's proved and showcased TYPE, and
         /// <c>ReturnMarkerHandler</c> is milestone 6.2's, which milestone 8.40b taught a second,
-        /// definition-bound reading rather than replacing - so neither owes a showcase consumer.
+        /// definition-bound reading rather than replacing - so neither owed a showcase consumer.
         /// <c>MarkerTransferHandler</c> (milestone 8.40b) and <c>MarkerHolderHandler</c> (milestone
         /// 8.40c) are NEW types, and milestone 7.9's deferral gate asks its second half of each: both
-        /// owe a showcase consumer at milestone 8.40j, which is where they register.</para>
+        /// took one at milestone 8.40j, on the fixture's own Focus marker rather than on his bounty,
+        /// which is the shape <c>synthetic-give-marker@1</c> set for <c>MarkerGivingHandler</c>.</para>
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new SyntheticComponentCapabilities.MarkerGivingHandler(
@@ -177,5 +171,13 @@ namespace GuardsDigital.Core.Cards.Verified
                 new SyntheticComponentCapabilities.MarkerHolderHandler(
                     BountyHeldV1, BountyDefinition)
             };
+
+        /// <summary>
+        /// Empty since milestone 8.40j moved all four across. The member stays so the fixtures that
+        /// assert the move from both sides keep asking a question rather than failing to compile, and
+        /// so the "registered or deferred" sweeps that concatenate both lists keep their shape.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
     }
 }

@@ -5,11 +5,12 @@
 Canonical planning map for milestone 8.19. Return to [CARD_COVERAGE.md](CARD_COVERAGE.md). Source truth and
 exact face text remain in the hero shards; this file owns only capability classification, effect-node
 contracts, dependency order, and source-linked scenario IDs for every hero added after Wasp - the five
-milestone 8.19 planned, and Dodger, Misa, Silverarrow, Ursafar, Whisper, Tali, Swift and Cutter, added at
-milestones 8.35z34, 8.35z38, 8.35z46, 8.35z50, 8.35z53, 8.37, 8.38e and 8.39i from outside that line-up.
-Whisper is the first from the Devoted Hero pack rather than from the base box and Tali the second; with Tali
-the whole six-hero content wave is dealt, and Swift and Cutter are the two heroes added after that arc
-closed - both on the 2026-09-11 user direction that re-opened the roster.
+milestone 8.19 planned, and Dodger, Misa, Silverarrow, Ursafar, Whisper, Tali, Swift, Cutter and Bain,
+added at milestones 8.35z34, 8.35z38, 8.35z46, 8.35z50, 8.35z53, 8.37, 8.38e, 8.39i and 8.40j from outside
+that line-up. Whisper is the first from the Devoted Hero pack rather than from the base box and Tali the
+second; with Tali the whole six-hero content wave is dealt, and Swift, Cutter and Bain are the three heroes
+added after that arc closed - the first two on the 2026-09-11 user direction that re-opened the roster and
+Bain on the 2026-09-13 one that named him.
 
 ## Reading the matrix
 
@@ -38,7 +39,7 @@ revision: `synthetic-direct-move@1`, `synthetic-object-push@3`, `synthetic-place
 `synthetic-range-target@1`, `synthetic-radius-target@1`, `synthetic-choose-target@1`, and
 `repeat-action@1`. New or refined identities must be introduced by an approved dependency slice and registered before verified content can use them.
 
-Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete; milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34 - milestone 8.35z38 an EIGHTH on the same terms, Misa, composed at 8.35z29 and dealt at 8.35z38 - and milestone 8.35z46 a NINTH, Silverarrow, composed at 8.35z30 and dealt at 8.35z46. Milestone 8.35z50 added a TENTH, Ursafar, composed at 8.35z31 and dealt at 8.35z50, milestone 8.35z53 an ELEVENTH, Whisper, composed at 8.35z33 and dealt at 8.35z53, and milestone 8.37 a TWELFTH, Tali, whose Green line was composed at 8.35z32 and whose other twelve composable faces were composed in her own dealing. **Ursafar's own capability section is still owed here**: his dealing added the hero-composition/gate row and the registrations but never wrote his section into this file, which is recorded rather than quietly filled because writing it is content authoring against his printed set rather than a restatement of this milestone's work. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v42 (milestone 8.39g took it there; this line read v40 until 8.39i corrected it) and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Every composed hero is now dealt** as of milestone 8.39i; milestone 8.37a composed the one FACE that remained of the arc - Blizzard's End-of-turn repeat - milestone 8.38e dealt Swift, the THIRTEENTH hero and the first after it, whose three contracts had been held out of the registered set by milestone 7.9's gate since 8.38a, and milestone 8.39i dealt Cutter, the FOURTEENTH, whose two - `synthetic-range-obstacle-target@1` and `claim-solo-victory@1` - had been held out since 8.39b and 8.39g1. So nothing in the build carries an engine deferral, and the only parked faces are the fourteen p.20 Handicap cards p.6 returns to the box at setup. Milestone 8.35z38 recorded the one way that rule reads differently for a SHARED declaration: `choose-line-destination@1` is Misa's and Silverarrow's both, so dealing Misa registered it and Silverarrow's phase-one claim to it expired - a shared contract is deferred only until the FIRST of its sharers is dealt. Milestone 8.35z46 moved her own remaining contract, `fast-travel@1`, across on the ordinary half of the rule: a card a configured match now deals starts it.
+Current implementation status: dependency steps 1-4a and all six hero-composition/gate rows are complete; milestone 8.35z34 added a seventh - Dodger, composed at 8.35z28 and dealt, registered and gated at 8.35z34 - milestone 8.35z38 an EIGHTH on the same terms, Misa, composed at 8.35z29 and dealt at 8.35z38 - and milestone 8.35z46 a NINTH, Silverarrow, composed at 8.35z30 and dealt at 8.35z46. Milestone 8.35z50 added a TENTH, Ursafar, composed at 8.35z31 and dealt at 8.35z50, milestone 8.35z53 an ELEVENTH, Whisper, composed at 8.35z33 and dealt at 8.35z53, and milestone 8.37 a TWELFTH, Tali, whose Green line was composed at 8.35z32 and whose other twelve composable faces were composed in her own dealing. **Ursafar's own capability section is still owed here**: his dealing added the hero-composition/gate row and the registrations but never wrote his section into this file, which is recorded rather than quietly filled because writing it is content authoring against his printed set rather than a restatement of this milestone's work. Every capability a configured face names is registered in the default production catalog; deliberately synthetic-only fixtures remain bounded and are not presented as roster consumers. Snapshot schema is v42 (milestone 8.39g took it there; this line read v40 until 8.39i corrected it) and pins the complete registered contract set used by restore, which is why a dealing milestone moves every corpus digest and says why. **Every composed hero is now dealt** as of milestone 8.40j; milestone 8.37a composed the one FACE that remained of the arc - Blizzard's End-of-turn repeat - milestone 8.38e dealt Swift, the THIRTEENTH hero and the first after it, whose three contracts had been held out of the registered set by milestone 7.9's gate since 8.38a, milestone 8.39i dealt Cutter, the FOURTEENTH, whose two - `synthetic-range-obstacle-target@1` and `claim-solo-victory@1` - had been held out since 8.39b and 8.39g1, and milestone 8.40j dealt Bain, the FIFTEENTH, whose six - his four marker operations and 8.40f's `synthetic-hidden-card-choice@1` and `synthetic-reveal-chosen-card@1` - had been held out since 8.40a. So nothing in the build carries an engine deferral, and the only parked faces are the fifteen p.20 Handicap cards p.6 returns to the box at setup. Milestone 8.35z38 recorded the one way that rule reads differently for a SHARED declaration: `choose-line-destination@1` is Misa's and Silverarrow's both, so dealing Misa registered it and Silverarrow's phase-one claim to it expired - a shared contract is deferred only until the FIRST of its sharers is dealt. Milestone 8.35z46 moved her own remaining contract, `fast-travel@1`, across on the ordinary half of the rule: a card a configured match now deals starts it.
 
 **Swift the Sharpshooter is inventoried at milestone 8.38 and her capability contract map lives in [HERO_SWIFT.md](HERO_SWIFT.md#capability-contract-map) rather than here**, in this file's own notation and readable beside these sections. The reason is a threshold rather than a preference: this shard sits close enough to its 9,000-word warning line that a thirteenth hero's section would cross it, and an ownership review is a milestone of its own rather than a side effect of an inventory pass. Fourteen of her nineteen faces name contracts already registered here; what she is owed falls on three lines that milestones 8.38a-8.38c build.
 
@@ -338,6 +339,22 @@ new handler TYPES: `synthetic-range-obstacle-target@1`, the p.18 obstacle her Gr
 its candidates are SPACES rather than board objects, because obstacles include terrain and p.18 allows
 only one per space - and `claim-solo-victory@1`, the only reader in this build that ends a match for ONE
 hero, which is the clause that took the snapshot schema to v42 and the wire to /14 at `8.39g`.
+
+## Bain
+
+Source: [HERO_BAIN.md](HERO_BAIN.md), and **his capability contract map lives in that shard rather than
+here**, on the threshold this file already records for Swift and Cutter.
+
+Bain is the **fifteenth hero**, inventoried at `8.40`, composed at `8.40i` and dealt at `8.40j`, with his
+vocabulary built across `8.40a` through `8.40h`. **His set names twenty-one contracts and mints none.** His
+dealing registers ELEVEN of his own capability ids - four marker operations, five Active-effect creations
+and `8.40f`'s two - plus TWO showcase instances over the fixture's Focus marker, across FOUR new handler
+TYPES: the widest gap between ids and types any dealing has had, because five of the eleven are
+Active-effect creations and two more run on marker types this build already showcased. Registered handler
+types **80 -> 84**. The four new ones are `MarkerTransferHandler` (`8.40b`), `MarkerHolderHandler` (`8.40c`) and
+`8.40f`'s two: the first contracts in this build to hold a card-valued answer PRIVATE to the chooser's seat
+and then make one card public to every seat, which is the clause that took the wire to `/15` at `8.40f`.
+The schema stays v42.
 
 ## Delta register and dependency order
 

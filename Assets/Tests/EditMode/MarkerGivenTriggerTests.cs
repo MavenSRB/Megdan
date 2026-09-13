@@ -708,7 +708,7 @@ namespace GuardsDigital.Tests.EditMode
                         .Concat(BainComponentContent.Markers()));
                 components = new MatchComponents(catalog, board, Markers, board, board, board);
 
-                var handlers = BainComponentContent.DeferredHandlers().ToArray();
+                var handlers = BainComponentContent.Handlers().ToArray();
                 give = handlers.Single(handler =>
                     handler.Reference.Equals(BainComponentContent.GiveBountyV1));
                 transfer = handlers.Single(handler =>
@@ -810,7 +810,7 @@ namespace GuardsDigital.Tests.EditMode
                     ActionInvocationContext.PrintedPrimary,
                     new EffectResolutionContext(
                         definition,
-                        new EffectCapabilityCatalog(BainComponentContent.DeferredHandlers()),
+                        new EffectCapabilityCatalog(BainComponentContent.Handlers()),
                         participants,
                         null,
                         1,

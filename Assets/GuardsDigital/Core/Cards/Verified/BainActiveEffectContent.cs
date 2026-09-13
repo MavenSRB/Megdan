@@ -211,19 +211,15 @@ namespace GuardsDigital.Core.Cards.Verified
             RegisteredHandlers().Concat(DeferredHandlers());
 
         /// <summary>
-        /// Deliberately empty until milestone 8.40j deals him, for the reason
+        /// His five creations, all on the proved <c>ActiveEffectCreationHandler</c> type, registered
+        /// by milestone 8.40j - the milestone that deals him - for the reason
         /// <see cref="BainComponentContent"/> states: the registered capability list is serialized into
         /// every snapshot, so registering a capability before its hero is dealt moves pinned bytes and
-        /// fails milestone 7.9's reachability gate.
+        /// fails milestone 7.9's reachability gate. None of the five owes a showcase consumer:
+        /// <c>ActiveEffectCreationHandler</c> is the type Arien's five persistent texts proved at
+        /// milestone 6.8, and the gate's second half is asked of the handler TYPE.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>
-        /// His five creations, all on the proved <c>ActiveEffectCreationHandler</c> type, waiting for
-        /// the dealing that registers them.
-        /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             MovementRaises.Keys
                 .Select(cardId => (IEffectCapabilityHandler)new ActiveEffectCreationHandler(
                     IgnoreObstaclesFor(cardId), IgnoreObstaclesDefinitionFor(cardId)))
@@ -235,6 +231,13 @@ namespace GuardsDigital.Core.Cards.Verified
                     new ActiveEffectCreationHandler(
                         AnotherOneEndOfTurnRepeatV1, AnotherOneRepeatDefinition)
                 });
+
+        /// <summary>
+        /// Empty since milestone 8.40j moved all five across. The member stays so the fixtures that
+        /// assert the move keep asking a question rather than failing to compile.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         private static void RequireMovementFace(CardDefinitionId cardId)
         {

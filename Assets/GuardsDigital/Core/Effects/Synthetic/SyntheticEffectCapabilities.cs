@@ -139,6 +139,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // neither arrives for the first time inside her slice. Her six real ones register
                 // from her own content file, beside the definitions they are bound to.
                 .Concat(SyntheticTokenCapabilities.RegisteredHandlers())
+                // Milestone 8.40j, the milestone that deals Bain the Bounty Hunter. Milestone 8.40f
+                // built this file's two contracts and deliberately left them out of the catalog on
+                // the same half of the rule every line above states: no dealt card printed either
+                // sentence, and the reachability gate refuses a registration no card can start. His
+                // three guessing Blue faces are the cards that change that, and each handler TYPE
+                // took a showcase consumer in the same change.
+                .Concat(SyntheticHiddenChoiceCapabilities.RegisteredHandlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

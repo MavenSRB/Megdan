@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA252EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA270EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -126,15 +126,21 @@ namespace GuardsDigital.Tests.EditMode
             // second comparison and the one thing that makes the revision half of this file provable
             // without a Unity launch. Few More Steps is p.20's Handicap card and is excluded exactly
             // as the seven Handicap cards named above are.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(252));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(252));
+            //
+            // MILESTONE 8.40j TAKES IT 252 TO 270, and it ran the offline revision check the
+            // paragraph above names BEFORE launching an Editor rather than after: the catalog's
+            // fifteen `contentRevision` values equal the fifteen `ContentRevision` constants as sets,
+            // which is the half of this file a green harness is otherwise structurally blind to.
+            // Side Quest is p.20's Handicap card and is excluded exactly as the eight named above are.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(270));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(270));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(252),
+                Is.EqualTo(270),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -142,8 +148,8 @@ namespace GuardsDigital.Tests.EditMode
                     .OrderBy(group => group.Hero),
                 Is.EqualTo(new[]
                 {
-                    ("arien", 18), ("brogan", 18), ("cutter", 18), ("dodger", 18), ("misa", 18),
-                    ("sabina", 18), ("silverarrow", 18), ("swift", 18), ("tali", 18),
+                    ("arien", 18), ("bain", 18), ("brogan", 18), ("cutter", 18), ("dodger", 18),
+                    ("misa", 18), ("sabina", 18), ("silverarrow", 18), ("swift", 18), ("tali", 18),
                     ("tigerclaw", 18), ("ursafar", 18), ("wasp", 18), ("whisper", 18),
                     ("xargatha", 18)
                 }));

@@ -16,12 +16,10 @@ because his dashboard and both standee faces show a man. It uses "he".
 
 ## Bain content ledger
 
-His printed set is inventoried at milestone 8.40. Composition, registration, dealing and the permanent
-player-path gate are later milestones in the
-[fifteenth-hero shard](../Roadmap/PHASE_8_FIFTEENTH_HERO.md); the vocabulary the text names as owed is
-built by the lettered build blocks between them. **Nothing in this shard authorizes implementation.** An
-inventory row records what the printed face says and which contract would carry it, and that is all it
-does.
+His printed set is inventoried at 8.40, composed at 8.40i and dealt at 8.40j; the permanent player-path
+gate is 8.40k, in the
+[fifteenth-hero shard](../Roadmap/PHASE_8_FIFTEENTH_HERO.md). **Nothing here authorizes
+implementation.** A row records what the face says and which contract carries it, and that is all.
 
 ## Source authority
 
@@ -111,9 +109,9 @@ no such icon, so that secondary action is unavailable from it.
 | `bain18` | 7348630 | A Complicated Profession | Purple `P` | IV | - | - | - | Ultimate | - | - | - |
 
 **BA-05. SIX of his faces print exactly one secondary icon, and all six draw it in the SAME slot while
-carrying three of one glyph and three of the other.** This is milestone 8.35z20's trap at the largest
-scale the roster has produced - Swift's Bounce and Cutter's Grappling Bolt each had one instance, and
-Bain has six. Get over here!, Close Call, Narrow Escape, Vantage Point, Perfect Getaway and High Ground
+carrying three of one glyph and three of the other.** This is milestone 8.35z20's trap at the roster's
+largest scale: Swift's Bounce and Cutter's Grappling Bolt had one instance each, and Bain has six.
+Get over here!, Close Call, Narrow Escape, Vantage Point, Perfect Getaway and High Ground
 each print one icon, and **every one of the six sits in the LOWER band - the boot's position on the
 twelve faces that print both**. The glyphs are:
 
@@ -138,8 +136,8 @@ pair to swap and that Range's arrow and Radius's circling arrows are the other. 
 were Silverarrow's Opportunity Shot (Defense), Long Shot (Initiative), Clear Shot (Radius), Warning
 Shot (Attack), Treetop Sentinel (Range) and Lead Astray (Movement). His twelve item-bearing faces
 resolve to **three Defense, three Initiative, three Attack, one Movement, one Range and one Radius**,
-with no candidate left ambiguous. **All six p.16 channels appear in one hero's set**, which is worth
-naming because a reader checking for a missing channel would find none.
+with none left ambiguous, and **all six p.16 channels appear in one hero's set** - worth naming because
+a reader checking for a missing channel finds none.
 
 **BA-07. Dead or Alive's lower-right glyph is a RADIUS, not a Range, and this was the one printed value
 the pre-inventory read could not settle.** The face is a non-Ranged `BASIC ATTACK` whose printed target
@@ -163,11 +161,11 @@ marker.
 
 **BA-10. His stat profile is read, not estimated, and two of the four bars carry brighter conditional
 sections.** On p.21's stated 1-to-8 scale: **Attack 5, Defense 4 with two brighter conditional
-sections, Initiative 4, and Movement 5 with one brighter conditional section.** The measurement was
-calibrated against Brogan's profile card rather than a remembered pitch, because his shard already
-states Attack 7, Defense 8, Initiative 1 and Movement 2-with-two-brighter - which fixes the pixel pitch
-and both bar origins from known values at both ends of the scale - and a luminance-against-trough scan
-was used rather than a colour classifier, because his violet frame bleeds into the fill. p.21 states
+sections, Initiative 4, and Movement 5 with one brighter conditional section.** Calibrated against
+Brogan's recorded Attack 7, Defense 8, Initiative 1 and Movement 2-with-two-brighter, which fixes the
+pixel pitch and both bar origins from known values at each end of the scale, and read by a
+luminance-against-trough scan rather than a colour classifier because his violet frame bleeds into the
+fill. p.21 states
 what the brighter sections mean: "Brighter colored sections of the stat bars are conditional. They
 depend on your level-up choices and triggering specific card texts." **He is a TWO-star hero on p.21's
 complexity scale**, which makes him the simplest hero dealt since the package arc - Swift, Tali and
@@ -208,29 +206,26 @@ reminder text the cards print in italic.
 **BA-11. The three guessing faces differ from one another in exactly three places, and one of them is
 a word that reads like a typo and is not.** A Game of Chance prints "Guess **the** card's color"; Dead
 Man's Hand and We're Not Done Yet! print "Guess **that** card's color". The transcription keeps each as
-printed. The other two differences are the reward on a wrong guess (1 coin, 2 coins, or a modal choice
-between repeating once and 2 coins) and the printed Radius (2, 3, 3). **A Game of Chance alone prints
-the parenthetical reminder** about the legal guess domain; the two upgrades drop it while keeping the
-rule it describes, which is the ordinary behaviour of a reminder rather than a rules difference.
+printed. The other two are the wrong-guess reward (1 coin, 2 coins, or a modal choice between repeating
+once and 2 coins) and the Radius (2, 3, 3). **A Game of Chance alone prints the parenthetical
+reminder** about the legal guess domain; the upgrades drop it and keep the rule, which is what a
+reminder is rather than a rules difference.
 
-**BA-12. Drinking Buddies and Another One! print byte-identical first sentences and differ only in the
-printed Radius and Another One!'s extra keyword sentence.** Both are Radius 3, so unlike Cutter's
-Bombardment/Barrage pair the Tier difference is entirely in the added "End of turn: May repeat once."
-Recorded because the composition must not collapse them.
+**BA-12. Drinking Buddies and Another One! print byte-identical first sentences and differ only in
+Another One!'s extra keyword sentence.** Both are Radius 3, so unlike Cutter's Bombardment/Barrage pair
+the Tier difference is entirely the added "End of turn: May repeat once." Recorded because the
+composition must not collapse them.
 
 **BA-13. "Spends 1 additional life counter when defeated" is a rule about the DEFEATED HOLDER, and the
 one declaration this build already has for that sentence is about the ATTACKER.** Dead or Alive and
 Side Quest both attach the cost to the hero wearing the marker. Ursafar's Tear prints the same number
 for the opposite subject - "if you defeated a hero, that hero spends 1 additional Life counter" - and
 `RuleModificationKind.AdditionalDefeatLifeCost`'s own remarks record that it "is declared about the
-*attacker*". The family says "one" and two declarations charge two, which is already the reading the
-2026-09-06 ruling settled, so a marker on a hero Ursafar defeats charges two by construction and
-neither card has to say so.
-
-**BA-13 named the right subject and the wrong vocabulary.** 8.40a measured two FAMILIES rather than one
-read twice: a marker affects its holder whoever that hero is, so asking Tear's family about the defeated
-hero would charge a bounty-wearing ATTACKER's own victim. Tear is untouched and p.13's one spend
-composes both, so two declarations charge two.
+*attacker*". **This row named the right subject and the wrong vocabulary.** 8.40a measured two
+FAMILIES rather than one read twice: a marker affects its holder whoever that hero is, so asking Tear's
+family about the defeated hero would charge a bounty-wearing ATTACKER's own victim. Tear is untouched
+and p.13's one spend composes both, so two declarations charge two - the 2026-09-06 ruling's own
+reading, which makes a marker on a hero Ursafar defeats cost two without either card saying so.
 
 **BA-14. Both marker-giving faces make the give conditional in different ways, and neither condition is
 about the recipient.** Dead or Alive's is p.10's `may` and sits inside an "After the attack:" clause;
@@ -266,8 +261,8 @@ records the same pair of facts about Tumble Shot and Crashland.
 ## Capability contract map
 
 **This section is Bain's, not the matrix's.** [ROSTER_CAPABILITY_MATRIX.md](ROSTER_CAPABILITY_MATRIX.md)
-owns the cross-hero mapping and sits close enough to its own threshold that a fifteenth hero's section
-would push it over; the notation below is that file's, unchanged, so the two read alike.
+owns the cross-hero mapping and is too close to its own threshold to hold a fifteenth section; the
+notation below is that file's, so the two read alike.
 
 `A`, `S`, `T`, `C` and `X` bind the actor, source card, chosen target, chooser and enclosing action
 facts. `Out(n)` binds a typed output from node `n`. `M` means an impossible mandatory step preserves
@@ -275,12 +270,10 @@ earlier applied nodes and stops the remainder, `May` may be declined, and `IfAbl
 when infeasible. **Registered** means the contract is live in the default production catalog today;
 **owed** names the build milestone that mints it.
 
-**The audit below is why this hero's series is the size it is, and it corrected the pre-authorization
-read in seven places.** Most of his text lands on contracts that already exist, and two clauses that
-looked new are parameters on declarations this build has carried for milestones. What is genuinely
-unbuilt is concentrated in eight places, and one of them - the hidden-information guessing game - is
-larger than the other seven put together. **Every owed row below names exactly one build block, and
-the eight build blocks 8.40a-8.40h are exactly the blocks those rows name.**
+**The audit below is why this series is the size it is, and it corrected the pre-authorization read in
+seven places.** Most of his text lands on contracts that exist, and two clauses that looked new are
+parameters on long-carried declarations. What was unbuilt fell in eight places, one of them - the
+guessing game - larger than the other seven together, and blocks 8.40a-8.40h are exactly those rows.
 
 | Faces | Contract | State |
 | --- | --- | --- |
@@ -440,4 +433,13 @@ this project has found.** `BountyMarker` (1421888) sits immediately beside Tiger
 atlas. Its face is a **"WANTED" poster nailed to a board inside a riveted steel ring**, which the
 inline `[bounty]` glyph on his cards is a small rendering of. Recorded as a source fact rather than as
 work: this build renders a held marker on the hero rail rather than on a hex, so the dealing owes a rail
-caption and not a board sprite - but the art exists if the presentation ever wants it.
+caption and not a board sprite - but the art exists if the presentation ever wants it. **8.40j kept the
+generated treatment**: a rail row carries no image, so that face has nothing to be prepared into, and
+Tigerclaw's is unprepared for the same reason.
+
+**BA-18. A fixture composing its catalog from a DEFERRED list is a red only a dealing can see, and it
+has two faces.** Six offline fixtures concatenated one of his three deferred lists; emptying those
+lists at 8.40j made three throw `Capability 'bain-bounty-marker-held' is not registered` and two throw
+`Capability references must be unique` for handing the now-registered handlers back as content. One
+mistake read from either side - naming the list that HOLDS a contract rather than the list that HAS it
+- and `Handlers()` is the fix, meaning the same set before the dealing and after.

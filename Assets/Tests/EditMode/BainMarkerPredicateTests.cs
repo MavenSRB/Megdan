@@ -59,11 +59,13 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The probe this milestone ordered, kept as a guard: the registered catalog reads marker state
-        /// nowhere, and the predicate built here does not change that because it is deferred.
+        /// The probe milestone 8.40c ordered, kept as a guard and RE-MEASURED at milestone 8.40j: the
+        /// registered catalog read marker state nowhere but inside a give until his dealing, and the
+        /// list below is exactly what the dealing added to it - nothing else in the build grew a
+        /// marker-named parameter or output in the same change.
         /// </summary>
         [Test]
-        public void TheRegisteredCatalog_ReadsMarkerStateNowhereButInsideTheGive()
+        public void TheRegisteredCatalog_ReadsMarkerStateOnlyWhereBainsDealingPutIt()
         {
             var capabilities = MatchContentCatalogs.ForThisBuild().Capabilities;
             var readers = capabilities.Registered
@@ -80,20 +82,29 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(readers, Is.EqualTo(new[]
                 {
+                    "bain-bounty-marker-held@1",
+                    "bain-give-bounty-marker@1",
+                    "bain-transfer-bounty-marker@1",
                     "choose-target@2",
                     "synthetic-give-marker@1",
+                    "synthetic-marker-held@1",
+                    "synthetic-transfer-marker@1",
                     "tigerclaw-give-poison-marker-1@1",
                     "tigerclaw-give-poison-marker-2@1"
                 }),
-                "Measured, not remembered. Before this milestone the only marker-named parameter or " +
+                "Measured, not remembered. Before milestone 8.40c the only marker-named parameter or " +
                 "output in the whole registered catalog was the hero a GIVE takes and publishes - " +
                 "three handlers, and nothing anywhere that asked whether a marker is WORN, which is " +
-                "the gap 8.40c fills. The fourth entry is this milestone's own seventh narrowing on " +
-                "`choose-target@2`, and it is default-off: the corpus case below asserts that no " +
-                "declaration written before this milestone binds it.");
-            Assert.That(capabilities.IsRegistered(BainComponentContent.BountyHeldV1), Is.False,
-                "and the predicate built here is deferred until he is dealt, so the sweep above " +
-                "stays true of this build.");
+                "the gap 8.40c filled. `choose-target@2` carries that milestone's own seventh " +
+                "narrowing and it is default-off: the corpus case below asserts that no declaration " +
+                "written before it binds it. Milestone 8.40j added the other four by DEALING him - " +
+                "his own predicate and transfer, and the two showcase instances over the fixture's " +
+                "Focus marker that milestone 7.9's gate asks of a new handler TYPE. His return " +
+                "appears in neither list, which is a fact about its schema rather than an omission: " +
+                "it names no hero at all.");
+            Assert.That(capabilities.IsRegistered(BainComponentContent.BountyHeldV1), Is.True,
+                "and the predicate built at 8.40c is registered now that he is dealt, which is what " +
+                "makes the sweep above the dealt build's own reading rather than a stale one.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -245,7 +256,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePredicate_IsAConditionalPredicateAndItsHolderBindsIntoALaterNode()
         {
-            var catalog = CatalogWithBainsDeferredHandlers();
+            var catalog = CatalogWithBainsMarkerHandlers();
 
             Assert.That(
                 EffectDefinitionValidator.Validate(PerfectGetawayShape(), catalog), Is.Empty,
@@ -508,40 +519,44 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
-        // The deferral
+        // The registration
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The predicate waits on milestone 7.9's gate beside the give, and the two owe the dealing
+        /// The predicate cleared milestone 7.9's gate beside the give, and the two owed the dealing
         /// different things: the give's handler TYPE is Tigerclaw's, already registered and already
-        /// showcased, while this one's is new at 8.40c and owes a showcase consumer at 8.40j.
+        /// showcased, while this one's was new at 8.40c and took a showcase consumer at 8.40j.
         /// </summary>
         [Test]
-        public void ThePredicate_IsDeferredBesideTheGiveAndOwesAShowcaseConsumer()
+        public void ThePredicate_IsRegisteredBesideTheGiveAndTookAShowcaseConsumer()
         {
-            Assert.That(BainComponentContent.RegisteredHandlers(), Is.Empty);
+            Assert.That(BainComponentContent.DeferredHandlers(), Is.Empty);
 
-            var deferred = BainComponentContent.DeferredHandlers().ToArray();
-            Assert.That(deferred.Select(handler => handler.Reference),
+            var registered = BainComponentContent.RegisteredHandlers().ToArray();
+            Assert.That(registered.Select(handler => handler.Reference),
                 Is.EqualTo(new[]
                 {
                     BainComponentContent.GiveBountyV1, BainComponentContent.TransferBountyV1,
                     BainComponentContent.ReturnBountyV1, BainComponentContent.BountyHeldV1
                 }));
             Assert.That(
-                deferred.Single(handler =>
+                registered.Single(handler =>
                     handler.Reference.Equals(BainComponentContent.BountyHeldV1)),
                 Is.InstanceOf<SyntheticComponentCapabilities.MarkerHolderHandler>(),
                 "A NEW handler type: nothing in the catalog read marker state as a question before " +
-                "this milestone, which is why this instance owes a showcase consumer at the dealing " +
-                "where the give does not.");
+                "milestone 8.40c, which is why this instance took a showcase consumer at the dealing " +
+                "where the give did not.");
 
             var capabilities = MatchContentCatalogs.ForThisBuild().Capabilities;
-            Assert.That(capabilities.IsRegistered(BainComponentContent.BountyHeldV1), Is.False,
-                "Registering it before a dealt card can start it moves pinned bytes and fails " +
-                "milestone 7.9's reachability gate.");
-            Assert.That(capabilities.IsRegistered(BainComponentContent.GiveBountyV1), Is.False,
-                "and the give it was written beside is still deferred too, so 8.40j moves one list.");
+            Assert.That(capabilities.IsRegistered(BainComponentContent.BountyHeldV1), Is.True,
+                "A dealt card starts it, which is what milestone 7.9's reachability gate asks before " +
+                "a capability may be registered.");
+            Assert.That(capabilities.IsRegistered(BainComponentContent.GiveBountyV1), Is.True,
+                "and the give it was written beside moved in the same change, so 8.40j moved one list.");
+            Assert.That(
+                capabilities.IsRegistered(SyntheticComponentCapabilities.MarkerHeldV1), Is.True,
+                "and the showcase consumer this TYPE owed is registered over the fixture's own Focus " +
+                "marker, so his predicate is not the first place the type ever runs.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -553,12 +568,12 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly EffectNodeId Branch = new EffectNodeId("bain-probe-branch");
         private static readonly EffectNodeId Consequence = new EffectNodeId("bain-probe-consequence");
 
-        private static EffectCapabilityCatalog CatalogWithBainsDeferredHandlers()
+        private static EffectCapabilityCatalog CatalogWithBainsMarkerHandlers()
         {
             var registered = SyntheticEffectCapabilities.CreateCatalog();
             return new EffectCapabilityCatalog(
                 registered.Registered.Select(registered.Load)
-                    .Concat(BainComponentContent.DeferredHandlers()));
+                    .Concat(BainComponentContent.Handlers()));
         }
 
         /// <summary>"If a hero in play has a bounty marker, block the attack" - the condition alone.</summary>
@@ -798,7 +813,7 @@ namespace GuardsDigital.Tests.EditMode
             public MarkerAttachmentRegister Markers { get; } = new MarkerAttachmentRegister();
 
             public IEffectCapabilityHandler ThePredicateHandler =>
-                BainComponentContent.DeferredHandlers().Single(handler =>
+                BainComponentContent.Handlers().Single(handler =>
                     handler.Reference.Equals(BainComponentContent.BountyHeldV1));
 
             public MarkerAttachment GiveBountyTo(HeroId holder) =>

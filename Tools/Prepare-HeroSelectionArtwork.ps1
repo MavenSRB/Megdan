@@ -31,6 +31,12 @@ $sources = [ordered]@{
     # (0849828287F044B22DE4B4BD8D3B84B38529D28A830966FA4E5C8CE6693244A4), so the face is hers by the
     # extraction's own naming and not by a reading of the picture.
     cutter = 'randomizers-tt15__7723688__front.png'
+    # Milestone 8.40j. SHA-256 matched rather than eyeballed, on the measurement Cutter's line above
+    # records: this front is byte-identical to the corpus's own
+    # `active-hero-cards/_selection-cards/Bain__front.png`
+    # (5388D4AFC311CC06292F13487F430F5554EBFB1064DFB4F1DD3CE27694E158B4), so the face is his by the
+    # extraction's own naming and not by a reading of the picture.
+    bain = 'randomizers-tt14__7723683__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

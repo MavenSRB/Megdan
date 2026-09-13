@@ -292,7 +292,16 @@ namespace GuardsDigital.Tests.EditMode
             // over a handler that already exists, and this rule counts TYPES. She contributes no
             // Active-effect creation at all - no face of hers prints an Active-effect keyword - so the
             // sentence seven dealings wrote about `ActiveEffectCreationHandler` simply does not arise.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(80),
+            // Milestone 8.40j, the FIFTEENTH dealing, moves it 80 -> 84. Bain the Bounty Hunter
+            // registers ELEVEN capability ids across exactly FOUR new handler TYPES, which is the
+            // widest gap between the two numbers any dealing has had: `MarkerTransferHandler` (8.40b)
+            // and `MarkerHolderHandler` (8.40c), each also registered a second time over the
+            // fixture's own Focus marker as the showcase consumer milestone 7.9's gate asks of a
+            // type, and `HiddenCardChoiceHandler` and `RevealChosenCardHandler` (8.40f), the first
+            // contracts in this build to hold an answer private and then make a card public. His
+            // give, his return, his five Active-effect creations and the other sixteen contracts his
+            // set names all run on types that already existed, and this rule counts TYPES.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(84),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

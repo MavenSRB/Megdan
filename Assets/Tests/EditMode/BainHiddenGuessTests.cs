@@ -46,9 +46,11 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HexCoordinate GuesserAt = new HexCoordinate(0, 0);
         private static readonly HexCoordinate ChooserAt = new HexCoordinate(1, 0);
 
+        // Milestone 8.40j registers both hidden-information contracts, so the build's own catalog
+        // already carries them and passing them again as content handlers would claim one reference
+        // twice. This is what a fixture written before a dealing looks like after it.
         private static readonly EffectCapabilityCatalog Catalog =
-            SyntheticEffectCapabilities.CreateCatalog(
-                SyntheticHiddenChoiceCapabilities.DeferredHandlers());
+            SyntheticEffectCapabilities.CreateCatalog();
 
         private static readonly EffectCapabilityCatalog TargetingCatalog =
             new EffectCapabilityCatalog(SyntheticTargetingCapabilities.Handlers());
@@ -77,15 +79,16 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         [Test]
-        public void NeitherNewCapability_IsRegisteredByThisBuild()
+        public void BothNewCapabilities_AreRegisteredByThisBuild()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
 
-            Assert.That(SyntheticHiddenChoiceCapabilities.RegisteredHandlers(), Is.Empty,
-                "No dealt card prints either sentence, and the registered capability list is " +
-                "serialized into every snapshot.");
+            Assert.That(SyntheticHiddenChoiceCapabilities.DeferredHandlers(), Is.Empty,
+                "Milestone 8.40j deals the three faces that print these sentences, so neither waits " +
+                "outside the registered capability list the snapshot serializes.");
             Assert.That(
-                SyntheticHiddenChoiceCapabilities.DeferredHandlers().Select(handler => handler.Reference),
+                SyntheticHiddenChoiceCapabilities.RegisteredHandlers()
+                    .Select(handler => handler.Reference),
                 Is.EquivalentTo(new[]
                 {
                     SyntheticHiddenChoiceCapabilities.HiddenCardChoiceV1,
@@ -93,17 +96,16 @@ namespace GuardsDigital.Tests.EditMode
                 }));
             Assert.That(
                 registered.IsRegistered(SyntheticHiddenChoiceCapabilities.HiddenCardChoiceV1),
-                Is.False,
-                "Registering a contract before a dealt card can start it moves pinned bytes and " +
-                "fails milestone 7.9's reachability gate. 8.40j registers both, each with a " +
-                "showcase consumer.");
+                Is.True,
+                "Milestone 7.9's reachability gate asks for a dealt card that can start a registered " +
+                "contract; 8.40j supplies three, and gave each handler TYPE a showcase consumer.");
             Assert.That(
                 registered.IsRegistered(SyntheticHiddenChoiceCapabilities.RevealChosenCardV1),
-                Is.False);
+                Is.True);
             Assert.That(
                 registered.IsRegistered(SyntheticBorrowedActionCapabilities.NameColorV1), Is.True,
-                "and the capability the guess domain is a PARAMETER on is registered, so the two " +
-                "assertions above are about deferral rather than about a catalog nobody fills.");
+                "and the capability the guess domain is a PARAMETER on was already registered, which " +
+                "is why the dealing moved two entries here and not three.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -555,11 +557,11 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         private static IEffectCapabilityHandler HiddenChoiceHandler() =>
-            SyntheticHiddenChoiceCapabilities.DeferredHandlers().Single(handler =>
+            SyntheticHiddenChoiceCapabilities.Handlers().Single(handler =>
                 handler.Reference.Equals(SyntheticHiddenChoiceCapabilities.HiddenCardChoiceV1));
 
         private static IEffectCapabilityHandler RevealHandler() =>
-            SyntheticHiddenChoiceCapabilities.DeferredHandlers().Single(handler =>
+            SyntheticHiddenChoiceCapabilities.Handlers().Single(handler =>
                 handler.Reference.Equals(SyntheticHiddenChoiceCapabilities.RevealChosenCardV1));
 
         private static IEffectCapabilityHandler NameColorHandler() =>

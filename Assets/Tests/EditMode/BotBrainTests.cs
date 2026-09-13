@@ -360,8 +360,28 @@ namespace GuardsDigital.Tests.EditMode
         /// own behavioural net: the moved code, driven through <c>BotPolicy.SelectGreedy</c> over
         /// whole matches, must still play the way the greedy pass played - decisively better than the
         /// random-legal driver it replaced.
+        ///
+        /// <para><b>THE ONLY CASE IN THIS SUITE THAT DECLARES A TIMEOUT, AND MILESTONE 8.40j MEASURED
+        /// WHY.</b> Unity's test framework applies a default per-test ceiling of 180,000 ms, and this
+        /// instrument had drifted up against it: 8.40j's first complete Edit Mode run measured it at
+        /// <b>179.6 s</b> - under the ceiling by four tenths of a second - and its second, on the same
+        /// revision and the same machine, at <b>191.1 s</b>, where it was killed mid-report having
+        /// already printed a complete measurement (<c>wins=15 losses=1 undecided=0 winRate=93.8 %</c>).
+        /// Nothing about the brain changed between those two runs; what changed was noise against a
+        /// budget it was already spending 99.8% of. The cost is the fixture's own and is recorded
+        /// above - a random-legal side drags most of its matches out to the full command budget - and
+        /// it grows with every hero the roster gains, because a longer match is more commands. The
+        /// same case takes about 57 s under the offline harness, which has no such ceiling; the
+        /// difference is the Unity runtime rather than the measurement.
+        ///
+        /// <para>So the ceiling is declared rather than left to the framework, at a number noise
+        /// cannot reach. NOTHING ELSE ABOUT THE CASE MOVES: the seed set, both side assignments, the
+        /// decided-match floor and the 0.60 win-rate gate are all exactly as they were, and a brain
+        /// that stopped beating random-legal still fails here. A timeout is a guard against a HUNG
+        /// test, and this one is not hung - it is three minutes of self-play doing what it says.</para>
         /// </summary>
         [Test]
+        [Timeout(600000)]
         public void TheMovedGreedyPassStillBeatsRandomLegal()
         {
             int greedyWins = 0, randomWins = 0, undecided = 0;

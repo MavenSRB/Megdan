@@ -513,60 +513,63 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The paired deferral assertion, which exists so that milestone 8.40j cannot register one half
-        /// and forget the other: his giving capability and his marker DEFINITION are two lists a
-        /// snapshot pins, and both are still outside the build's registered sets.
+        /// The paired registration assertion, INVERTED IN PLACE by milestone 8.40j from the deferral
+        /// this case asserted from 8.40a: his giving capability and his marker DEFINITION are two
+        /// lists a snapshot pins, and the dealing had to move both in one change. Asserting both
+        /// halves from one case is what makes it impossible to move one and forget the other, in
+        /// either direction.
         /// </summary>
         [Test]
-        public void NeitherHalfOfBainsMarker_IsRegisteredByThisBuild()
+        public void BothHalvesOfBainsMarker_AreRegisteredByThisBuild()
         {
-            Assert.That(BainComponentContent.RegisteredHandlers(), Is.Empty,
-                "He is not dealt, and the registered capability list is serialized into every " +
-                "snapshot.");
+            Assert.That(BainComponentContent.DeferredHandlers(), Is.Empty,
+                "He is dealt, so nothing of his waits outside the registered capability list the " +
+                "snapshot serializes.");
 
-            // Milestone 8.40b adds his two marker MOVEMENTS beside the give, and this assertion is
-            // widened rather than duplicated: the list it pins is the list that dealing has to move.
-            var deferred = BainComponentContent.DeferredHandlers().ToArray();
-            Assert.That(deferred.Select(handler => handler.Reference),
+            // Milestone 8.40b added his two marker MOVEMENTS beside the give, and this assertion was
+            // widened rather than duplicated: the list it pins is the list the dealing moved.
+            var registered = BainComponentContent.RegisteredHandlers().ToArray();
+            Assert.That(registered.Select(handler => handler.Reference),
                 Is.EqualTo(new[]
                 {
                     BainComponentContent.GiveBountyV1,
                     BainComponentContent.TransferBountyV1,
                     BainComponentContent.ReturnBountyV1,
-                    // Milestone 8.40c's marker-presence predicate, deferred beside the give it reads.
-                    // Its own deferral - and the showcase consumer it owes where the give owes none -
-                    // is asserted in BainMarkerPredicateTests.
+                    // Milestone 8.40c's marker-presence predicate, registered beside the give it
+                    // reads. Its showcase consumer - which the give owed none of - is asserted in
+                    // BainMarkerPredicateTests.
                     BainComponentContent.BountyHeldV1
                 }));
             Assert.That(
-                deferred.Single(handler =>
+                registered.Single(handler =>
                     handler.Reference.Equals(BainComponentContent.GiveBountyV1)),
                 Is.InstanceOf<GuardsDigital.Core.Effects.Synthetic.SyntheticComponentCapabilities
                     .MarkerGivingHandler>(),
                 "The handler TYPE is Tigerclaw's, already registered and already showcased, so this " +
-                "instance owes no showcase consumer at the dealing.");
+                "instance owed no showcase consumer at the dealing.");
             Assert.That(BainComponentContent.Handlers().Select(handler => handler.Reference),
-                Is.EqualTo(deferred.Select(handler => handler.Reference)));
+                Is.EqualTo(registered.Select(handler => handler.Reference)));
 
             var capabilities = MatchContentCatalogs.ForThisBuild().Capabilities;
-            Assert.That(capabilities.IsRegistered(BainComponentContent.GiveBountyV1), Is.False,
-                "HALF ONE: the capability. Registering it before a dealt card can start it moves " +
-                "pinned bytes and fails milestone 7.9's reachability gate.");
-            Assert.That(capabilities.IsRegistered(BainComponentContent.TransferBountyV1), Is.False);
-            Assert.That(capabilities.IsRegistered(BainComponentContent.ReturnBountyV1), Is.False);
+            Assert.That(capabilities.IsRegistered(BainComponentContent.GiveBountyV1), Is.True,
+                "HALF ONE: the capability. A dealt card starts it, so milestone 7.9's reachability " +
+                "gate asks for it to be here.");
+            Assert.That(capabilities.IsRegistered(BainComponentContent.TransferBountyV1), Is.True);
+            Assert.That(capabilities.IsRegistered(BainComponentContent.ReturnBountyV1), Is.True);
+            Assert.That(capabilities.IsRegistered(BainComponentContent.BountyHeldV1), Is.True);
 
             var components = SyntheticComponentDefinitions.CreateCatalog();
             Assert.That(components.IsRegistered(BainComponentContent.BountyDefinition.Reference),
-                Is.False,
+                Is.True,
                 "HALF TWO: the marker definition. A match registers one list of what it can put on a " +
                 "dashboard and the snapshot pins that list.");
             Assert.That(components.RegisteredMarkers,
-                Has.No.Member(BainComponentContent.BountyDefinition.Reference));
+                Has.Member(BainComponentContent.BountyDefinition.Reference));
             Assert.That(
                 components.IsRegistered(TigerclawComponentContent.PoisonOneDefinition.Reference),
                 Is.True,
-                "and Tigerclaw's is registered, so the two assertions above are about deferral " +
-                "rather than about a catalog nobody fills.");
+                "and Tigerclaw's is still registered beside it, so the assertions above are about a " +
+                "catalog that carries both markers rather than one that lost the first.");
         }
 
         // -------------------------------------------------------------------------------------------

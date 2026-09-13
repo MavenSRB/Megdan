@@ -1133,6 +1133,20 @@ namespace GuardsDigital.Tests.EditMode
                         1,
                         subjectHeroId: hero),
                     "RESOLVED WITH NO ACTION", false),
+                // Milestone 8.40f minted the THIRTY-FIRST kind and its own rendering arm and left
+                // this closed-vocabulary walk unswept, exactly as 8.35z61 did above - and exactly as
+                // the note above predicts, the harness could not see it, because this file is
+                // exclude-listed there. Milestone 8.40j's complete Unity Edit Mode run is the first
+                // tier that could, and it failed `Expected: 31, But was: 30` before this line
+                // existed. The rendered word is the same as `CardRevealed`'s and the arms are still
+                // separate, because the two kinds carry different rules about the card they name.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.CardRevealedByCardText,
+                        1,
+                        1,
+                        subjectHeroId: hero),
+                    "REVEALED", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),

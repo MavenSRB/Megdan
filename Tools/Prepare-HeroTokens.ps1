@@ -85,7 +85,8 @@
 param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
-        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter')]
+        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
+        'bain')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Check,
@@ -181,6 +182,20 @@ $declaredHeroes = @{
     # earned being declared rather than derived. She takes the calibrated 2% field floor: her art
     # leaves the ordinary team-coloured backdrop, so Swift's per-hero zero is hers alone.
     cutter = @{ ElementId = 8583041; ElementName = 'Airship_Captain'; DisplayName = 'Cutter' }
+
+    # Milestone 8.40j. THE FOURTH STANDEE THAT HIDES UNDER AN EPITHET, and the least disguised of the
+    # four: the manifest names nothing "Bain", and his element is `BountyHunter` (id 8596242), which
+    # is his printed epithet outright - where Whisper the Outcast's is `Outcast`, Tali the
+    # Spiritcaller's is `Spiritcaller` and Cutter's is `Airship_Captain`. Read from the bundled
+    # manifest with ConvertFrom-Json - `elementId: 8596242, elementName: "BountyHunter", elementType:
+    # "VerticalTokens"`, one atlas `Image_0_Atlas` 4096x4096 carrying the two 302x302 faces this
+    # tool's invariant requires at (1563,3007) and (1867,3007) - and confirmed VISUALLY against his
+    # cropped face, his dashboard art and his pick card: wide maroon brim, round goggle lenses pushed
+    # up over the eyes, long dark hair, dark coat. A name-matching rule would find nothing at all for
+    # him, which is the fifth time this table has earned being declared rather than derived. He takes
+    # the calibrated 2% field floor: his art leaves the ordinary team-coloured backdrop, so Swift's
+    # per-hero zero is still hers alone.
+    bain = @{ ElementId = 8596242; ElementName = 'BountyHunter'; DisplayName = 'Bain' }
 }
 
 $declared = $declaredHeroes[$Hero]

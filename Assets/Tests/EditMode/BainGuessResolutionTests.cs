@@ -404,9 +404,10 @@ namespace GuardsDigital.Tests.EditMode
         private sealed class GuessBoard
         {
             private readonly EffectDefinition definition;
+            // Milestone 8.40j registers both hidden-information contracts, so the build's own catalog
+            // already carries them and passing them again would claim one reference twice.
             private readonly EffectCapabilityCatalog catalog =
-                SyntheticEffectCapabilities.CreateCatalog(
-                    SyntheticHiddenChoiceCapabilities.DeferredHandlers());
+                SyntheticEffectCapabilities.CreateCatalog();
             private readonly MatchParticipants participants = StagedBoardParticipants.CreateWithBlueAlly();
             private readonly bool repeatIsUnavailable;
             private readonly bool secondEnemy;

@@ -769,7 +769,7 @@ deals is not a dealt hero.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840i-compose-bains-eighteen-dealt-faces-and-prove-them-at-the-focused-tier-completion-evidence).
 
-### [ ] 8.40j Deal, register and artwork Bain as the fifteenth hero, and put his pick card under the cursor
+### [x] 8.40j Deal, register and artwork Bain as the fifteenth hero, and put his pick card under the cursor
 
 The registration milestone the build blocks were sized to pay for once, plus the artwork and selector work
 the user asked for by name.
@@ -817,6 +817,98 @@ answers by the conductor's tiebreak. Neither stops a bot ANSWERING, and neither 
 because a bot reads its own seat frame. They are owed here because this is the first milestone at
 which a fleet test can reach either prompt.
 
+**HE IS DEALT, AND THE COUNT THAT MOVED IS THE ONE NO EARLIER DEALING HAS MOVED THIS FAR.** Bain is
+pickable in the live selector, his SHA-matched pick card renders on hover, his eighteen real printed
+fronts and his two official team tokens are prepared from the Tabletopia corpus, and a configured match
+composes his whole set. THIRTEEN capability ids join the registered list across FOUR new handler TYPES,
+which is the widest gap between those two numbers any dealing has had: his four marker operations, his
+five Active-effect creations, 8.40f's two hidden-information contracts and the two showcase instances
+milestone 7.9's gate asks of a new TYPE. Registered handler types **80 -> 84** -
+`MarkerTransferHandler`, `MarkerHolderHandler`, `HiddenCardChoiceHandler`, `RevealChosenCardHandler`.
+And ONE marker DEFINITION joins the component catalog, the second this build carries after Tigerclaw's
+Poison and the first component any dealing has added since Tali's three tokens.
+
+**THE SHOWCASE CONSUMERS ARE FOUR TYPES ON TWO CARDS, AND THE GROUPING IS THE RULE THIS FILE ALREADY
+FOLLOWS**: two contracts share a card exactly when one printed SENTENCE carries both. Close Call prints
+"If a hero in play has a bounty marker, block the attack and that hero gives the marker to you", so the
+Bondsman carries the holder predicate and the transfer; his three guessing Blues print the hidden pick
+and the reveal in one sentence, so the Cardsharp carries those. **The two marker instances are bound to
+the fixture's own Focus marker rather than to his bounty**, which is the only shape a definition-bound
+handler can be showcased in and is exactly what `synthetic-give-marker@1` has done for
+`MarkerGivingHandler` since milestone 6.2 - so the pair costs two ids the digests account for.
+
+**THE CLASS OF RED ONLY A DEALING COULD SEE WAS NOT A CONFORMANCE RULE THIS TIME - IT WAS THE FIXTURES
+THEMSELVES, AND IT HAS TWO FACES.** Six offline fixtures built their catalogs by concatenating one of
+his three DEFERRED lists. Emptying those lists is what registering him means, so three of them threw
+`Capability 'bain-bounty-marker-held' is not registered in this build` and two threw
+`Capability references must be unique` for handing the now-registered handlers back in as content
+handlers. One mistake read from either side - a fixture naming the list that HOLDS a contract rather
+than the list that HAS it - and `Handlers()` is the fix, because it meant the same set before the
+dealing and means it after. Recorded as BA-18. The conformance rules a dealing usually trips were
+silent: `minimumCardsInHand` had already reached the integer-domain guard at 8.40f, because a parameter
+joining an ALREADY-registered handler is inside the registered set the moment it is written, and
+`RevealChosenCardHandler` declares `namedColor`'s `CardColor` domain on its own schema.
+
+**THE PAIRED GUARD WAS PROVED BY A DELIBERATE HALF-MOVE AND THEN RESTORED BYTE-IDENTICALLY.** Milestone
+8.40i asserted his six new contracts as a SET from his own fixture so that this milestone could not
+register one and forget another. It never fired in anger, because all six moved in one edit - so the
+probe was run on purpose, with five registered and `bain-bounty-marker-held@1` put back in
+`DeferredHandlers`. The same case inverted in place is what now asserts the discharge, still as a set,
+and `BainMarkerDefeatCostTests`, `BainMarkerMovementTests`, `BainMarkerPredicateTests` and
+`BainHiddenGuessTests` each assert their own half from both sides.
+
+**THE THREE SCENE-COMPOSITION ARMS SHIPPED TOGETHER AND THE THIRD ONE'S CLAIM IS NOW TESTED RATHER
+THAN INHERITED.** `SelectSetupConfiguration` gained `IsStagedBain` and
+`CreateStagedWaspVersusBainOneVsOne`, `EngagedMirrorStaging`'s restaging list gained the same arm, and
+his five `SceneCardContent` members went in beside them. The third arm needed NO EDIT AT ALL, which is
+the first time milestone 8.39i's derivation could be tested by a hero it had never seen:
+`PolishWaveScreenshotPlayModeTests` reflects for the sealed static `*CardContent` classes in
+`WaspCardContent`'s namespace, so `BainCardContent` joined that walk by existing. Verified rather than
+assumed - the complete Play Mode run walks his eighteen catalog rows through it.
+
+**THE ARTWORK IS THE REAL CORPUS AND HIS STANDEE IS THE FOURTH TO HIDE UNDER AN EPITHET.** The manifest
+names nothing "Bain"; his element is `BountyHunter` (8596242), which is his printed epithet outright -
+read with `ConvertFrom-Json` and confirmed by the tool's own measurement, two 302x302 faces in
+`Image_0_Atlas` at (1563,3007) and (1867,3007). **He does not break the per-hero artwork bound Swift
+broke**: his measured flat field is 14.8% Blue and 14.9% Red against the calibrated 2% floor, so he
+takes the default and Swift's declared zero stays hers alone. His pick card is SHA-matched rather than
+eyeballed. Tool `-Check` counts: `Prepare-CardArtwork.ps1` **270** prepared 372x520 fronts, eighteen
+for each of fifteen heroes; `Prepare-HeroSelectionArtwork.ps1` **15** byte-identical overview fronts;
+`Prepare-ShineSprites.ps1` **976** slots traced, 0 failed, 0 missing, 0 stale, 0 stray, of which 62
+were written for him against the 914 already present. Its manifest probe was extended to fifteen heroes
+in the dealing rather than left to go stale.
+
+**THE RAIL DRAWS A MARKER WITH NO VALUE CHANNEL AND THE PROOF IS LIVE.** `HeroMarkerViewModel` already
+contributes no chip for a property declaring no value modification, and his bounty declares exactly one
+property with `PrintedValueChannel.None` - so the rail must read `BOUNTY` alone where Tigerclaw's reads
+`POISON INI -1 ATK -1 DEF -1`. `BainMarkerRailPlayModeTests` loads the staged Bain scene, plays Dead or
+Alive through a real commitment, a real basic Attack and a real answer to the optional give, and reads
+the drawn Labels off the holder's own rail - both rails empty before, exactly one row after, the same
+row after a presentation rebuild, and nothing on the giver's side. **BA-17's corpus `BountyMarker` face
+is deliberately NOT prepared and the generated treatment is kept**: this build draws a held marker as a
+rail caption with no image anywhere in the row, so there is nothing for that face to be prepared into,
+and Tigerclaw's own marker face is unprepared for the same reason.
+
+**THE TWO BOT ARMS ARE BUILT AND BOTH READ THE BOT'S OWN SEAT FRAME.** A card candidate whose intent
+cannot be read - which is every card candidate on a remote client, because the wire deliberately
+carries no effect frame - is now scored by the candidate's own LOCATION in the reader's projection: a
+card in a discard is being retrieved and a card in a hand is being given up, which reproduces what the
+definition walk answers for every dealt face in the build without the frame. And an Integer candidate
+under a declared value vocabulary has a scoring arm for the first time, preferring a colour the bot can
+see LEAST of in the open zones its own projection already holds. Neither reads another hero's hand,
+because a seat's projection does not contain one. `PrivateSessionBotFleetTests` is green and Swift's
+atomicity class did not recur: no bot answer started something with nobody in reach.
+
+**THE COMBAT-OUTCOME CHECK 8.40i POINTED HERE IS DISCHARGED, AND MEASURING THE BOARD IS WHAT MADE IT
+POSSIBLE.** On the untouched engaged staging Bain stands at (-3,1) and the enemy Wasp at (-2,2), two
+spaces apart around the engaged Blue melee minion at (-3,2) - and every Attack face of his offers
+MINIONS ONLY there, because the two-space gap is bent rather than straight. A page against a minion
+removes it and never opens p.14's step 3 window, so it can never record a step 6 outcome.
+`BainCombatOutcomeTests` therefore stands him on a free playable neighbour of the enemy hero, computed
+from the board rather than written down, and drives all three plain crossbows and Hunter-Seeker's
+adjacent bullet through a complete page: commitment, turn, offered action, hero target, the defender's
+declined window, `Action.AttackSuccessful` and `Action.AttackResolutionCompleted`.
+
 Acceptance checks:
 
 - Bain is pickable in the live hero selector, his pick card renders on hover, and a configured match
@@ -836,6 +928,8 @@ Acceptance checks:
 
 Non-goals: No sixteenth hero. No new playtest package. No change to the fourteen existing heroes' art or
 pins beyond re-measurement.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840j-deal-register-and-artwork-bain-as-the-fifteenth-hero-and-put-his-pick-card-under-the-cursor-completion-evidence).
 
 ### [ ] 8.40k Player-path gate Bain's whole printed set through real player input
 

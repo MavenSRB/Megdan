@@ -354,6 +354,12 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string CutterHeroIdValue = "hero-cutter";
 
+        /// <summary>
+        /// Milestone 8.40j. Bain's own hero id - the fifteenth hero, and the third dealt after the
+        /// package arc closed, on the 2026-09-13 user direction that named him by name.
+        /// </summary>
+        public const string BainHeroIdValue = "hero-bain";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
@@ -388,7 +394,11 @@ namespace GuardsDigital.Core.Setup
                 // Milestone 8.39i deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. She is the FOURTEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
-                (CutterHeroIdValue, "cutter", "Cutter the Sky Pirate")
+                (CutterHeroIdValue, "cutter", "Cutter the Sky Pirate"),
+                // Milestone 8.40j deals him and makes him pickable in the same commit, which is what
+                // the rule above asks for. He is the FIFTEENTH, so the sentence Tali's row wrote -
+                // "every hero this build can deal" - stays true only because this row is here too.
+                (BainHeroIdValue, "bain", "Bain the Bounty Hunter")
             };
 
         /// <summary>
@@ -558,6 +568,20 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusCutterOneVsOne() =>
             CreateOneVsOne(new HeroContentId("cutter"), "Cutter");
+
+        /// <summary>
+        /// Milestone 8.40j. The same board with Bain the Bounty Hunter on the Blue seat, for the
+        /// fixtures whose subject is his printed set.
+        ///
+        /// <para>Written in the SAME change as his five <c>SceneCardContent</c> members and his three
+        /// <c>MatchConfiguration</c> stagings, which is the whole of what milestone 8.38f's repair
+        /// teaches: without this arm every staged scene of his falls through
+        /// <c>SelectSetupConfiguration</c>'s default to Arien's setup, and the hand factory - which
+        /// takes an owner id rather than naming a hero - then deals HIS cards to a seat whose content
+        /// identity is <c>arien</c>. No offline tier can see that; only a loaded scene composes.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusBainOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("bain"), "Bain");
 
         /// <summary>
         /// Milestone 8.22. The same board with Sabina on the Blue seat, for the fixtures whose subject

@@ -697,49 +697,53 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
-        // Deferral: all three halves wait for the dealing together
+        // Registration: all four halves moved at the dealing together
         // -------------------------------------------------------------------------------------------
 
         [Test]
-        public void BainsThreeMarkerOperations_AreDeferredTogether_AndOneOwesAShowcaseConsumer()
+        public void BainsFourMarkerOperations_AreRegisteredTogether_AndTwoTookAShowcaseConsumer()
         {
-            var deferred = BainComponentContent.DeferredHandlers().ToArray();
+            var registered = BainComponentContent.RegisteredHandlers().ToArray();
 
-            Assert.That(deferred.Select(handler => handler.Reference), Is.EqualTo(new[]
+            Assert.That(registered.Select(handler => handler.Reference), Is.EqualTo(new[]
             {
                 BainComponentContent.GiveBountyV1,
                 BainComponentContent.TransferBountyV1,
                 BainComponentContent.ReturnBountyV1,
                 BainComponentContent.BountyHeldV1
             }));
-            Assert.That(BainComponentContent.RegisteredHandlers(), Is.Empty);
+            Assert.That(BainComponentContent.DeferredHandlers(), Is.Empty);
 
             var capabilities = MatchContentCatalogs.ForThisBuild().Capabilities;
-            foreach (var handler in deferred)
+            foreach (var handler in registered)
             {
-                Assert.That(capabilities.IsRegistered(handler.Reference), Is.False,
-                    "Registering one before a dealt card can start it moves pinned bytes and fails " +
-                    "milestone 7.9's reachability gate.");
+                Assert.That(capabilities.IsRegistered(handler.Reference), Is.True,
+                    "A dealt card starts each of them, which is what milestone 7.9's reachability " +
+                    "gate asks before a capability may be registered.");
             }
 
-            Assert.That(deferred[1],
+            Assert.That(registered[1],
                 Is.InstanceOf<SyntheticComponentCapabilities.MarkerTransferHandler>(),
                 "ONE OF THE TWO NEW TYPES (8.40c's predicate is the other). Milestone 7.9's deferral gate asks its second half of the handler " +
-                "TYPE, so this one owes a showcase consumer at milestone 8.40j; the give's type is " +
-                "Tigerclaw's and the return's is milestone 6.2's, and neither does.");
-            Assert.That(deferred[0],
+                "TYPE, so this one took a showcase consumer at milestone 8.40j; the give's type is " +
+                "Tigerclaw's and the return's is milestone 6.2's, and neither did.");
+            Assert.That(registered[0],
                 Is.InstanceOf<SyntheticComponentCapabilities.MarkerGivingHandler>());
-            Assert.That(deferred[2],
+            Assert.That(registered[2],
                 Is.InstanceOf<SyntheticComponentCapabilities.ReturnMarkerHandler>());
             Assert.That(
                 capabilities.IsRegistered(SyntheticComponentCapabilities.ReturnMarkerV1), Is.True,
                 "and the return's type reaches this build through milestone 6.2's own registered " +
                 "instance, which is what makes the sentence above true rather than hopeful.");
             Assert.That(
+                capabilities.IsRegistered(SyntheticComponentCapabilities.TransferMarkerV1), Is.True,
+                "and the transfer's type reaches it through milestone 8.40j's own showcase instance " +
+                "over the fixture's Focus marker, which is that showcase consumer.");
+            Assert.That(
                 SyntheticComponentDefinitions.CreateCatalog()
                     .IsRegistered(BainComponentContent.BountyDefinition.Reference),
-                Is.False,
-                "and his marker definition is still deferred with them.");
+                Is.True,
+                "and his marker definition moved with them.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -794,7 +798,7 @@ namespace GuardsDigital.Tests.EditMode
                         .Concat(BainComponentContent.Markers()));
                 components = new MatchComponents(catalog, board, Markers, board, board, board);
 
-                var handlers = BainComponentContent.DeferredHandlers().ToArray();
+                var handlers = BainComponentContent.Handlers().ToArray();
                 give = handlers.Single(handler =>
                     handler.Reference.Equals(BainComponentContent.GiveBountyV1));
                 transfer = handlers.Single(handler =>
@@ -935,7 +939,7 @@ namespace GuardsDigital.Tests.EditMode
                     ActionInvocationContext.PrintedPrimary,
                     new EffectResolutionContext(
                         definition,
-                        new EffectCapabilityCatalog(BainComponentContent.DeferredHandlers()),
+                        new EffectCapabilityCatalog(BainComponentContent.Handlers()),
                         participants,
                         null,
                         1,

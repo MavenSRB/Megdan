@@ -170,6 +170,15 @@ namespace GuardsDigital.Core.Cards
                     // 8.39f1's trigger, and the effect it names borrows the previous turn slot's
                     // card through milestone 8.39f's pool.
                     CutterEffectContent.TriggeredEffects(CutterCardContent.ContentRevision))
+                .Concat(
+                    // Milestone 8.40j, the milestone that deals Bain the Bounty Hunter. TWO, on the
+                    // terms every group above joins by. A Complicated Profession's own effect is what
+                    // milestone 8.40h's after-a-marker-is-given trigger names BY REFERENCE, and the
+                    // owner walk resolves that reference against this catalog - his is the first
+                    // permanent ability in the build to watch a MARKER moment rather than an action
+                    // or a push. Another One!'s End-of-turn repeat is named by reference too, by the
+                    // Active effect that face stands, which is Tali's Blizzard shape exactly.
+                    BainEffectContent.TriggeredEffects(BainCardContent.ContentRevision))
                 .ToArray()));
 
         /// <summary>
@@ -255,7 +264,22 @@ namespace GuardsDigital.Core.Cards
                 // genuinely new contract, `subject-adjacent-terrain-presence@1`, registers from
                 // SyntheticRosterCapabilities rather than from here, because it is generic vocabulary
                 // this build now owns rather than content of hers.
-                .Concat(SwiftActiveEffectContent.Handlers());
+                .Concat(SwiftActiveEffectContent.Handlers())
+                // Milestone 8.40j, the milestone that deals Bain the Bounty Hunter. Two groups, and
+                // the split is the one this file has drawn since Tigerclaw's Poison. His FIVE Active
+                // effects - the two obstacle permissions and the two Movement raises his two Movement
+                // primaries stand, and Another One!'s End-of-turn repeat - owe no showcase consumer:
+                // every one runs on ActiveEffectCreationHandler, the type Arien's five persistent
+                // texts proved at milestone 6.8, and milestone 7.9's deferral gate asks its second
+                // half of the handler TYPE.
+                .Concat(BainActiveEffectContent.Handlers())
+                // And his FOUR marker operations - the give, the transfer, the definition-bound
+                // return and the holder predicate all five of his Green faces read - which are
+                // content of HIS rather than generic vocabulary, which is why they register from his
+                // own file exactly as Tigerclaw's two gives do and not from a Synthetic one. Two of
+                // the four are new handler TYPES and each took a showcase consumer in this same
+                // change, bound to the fixture's Focus marker rather than to his bounty.
+                .Concat(BainComponentContent.Handlers());
 
         // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate, adds NOTHING to the list
         // above and says so rather than leaving the absence to be read as an oversight. No face of
@@ -265,5 +289,12 @@ namespace GuardsDigital.Core.Cards
         // register from `SyntheticTargetingCapabilities` and `SyntheticRosterCapabilities` rather
         // than from here, because they are generic vocabulary this build now owns rather than content
         // of hers. Her one triggered definition is composed into `ForThisBuild` above.
+        //
+        // Milestone 8.40j's own two generic contracts follow the same rule and are named here for the
+        // same reason: `synthetic-hidden-card-choice@1` and `synthetic-reveal-chosen-card@1` register
+        // from `SyntheticHiddenChoiceCapabilities` through `SyntheticEffectCapabilities.CreateCatalog`
+        // rather than from here, because they are vocabulary this build now owns rather than content
+        // of his, and the two showcase marker instances register from `SyntheticComponentCapabilities`
+        // beside the give they mirror.
     }
 }

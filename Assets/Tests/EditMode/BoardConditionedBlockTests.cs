@@ -1164,7 +1164,7 @@ namespace GuardsDigital.Tests.EditMode
                             RootNodeId,
                             nodes),
                         SyntheticEffectCapabilities.CreateCatalog(
-                            BainComponentContent.DeferredHandlers()),
+                            BainComponentContent.Handlers()),
                         participants,
                         null,
                         1,

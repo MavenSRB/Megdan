@@ -1394,6 +1394,72 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 soloVictorySkillProfile: RedSoloVictorySkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.40j: the FOUR handler types Bain the Bounty Hunter's dealing registers, proved
+        // here on cards that are nobody's, and grouped onto TWO cards by the rule this file has drawn
+        // since 8.35z34 - two contracts share a card exactly when one printed SENTENCE carries both.
+        // Close Call prints "If a hero in play has a bounty marker, block the attack and that hero
+        // gives the marker to you", so the holder predicate and the transfer are one card; his three
+        // guessing Blues print "An enemy hero in radius ... chooses one of those cards; Guess the
+        // card's color, then reveal the card", so the hidden choice and the reveal are the other.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.40j's marker-board Skill, sitting outside its team's ordinary Initiative band
+        /// for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedMarkerBoardSkillProfile { get; } =
+            new SyntheticSkillProfile("red-bondsman", "Red Bondsman", 38);
+
+        /// <summary>
+        /// Milestone 8.40j's hidden-guess Skill, on the same terms.
+        /// </summary>
+        private static SyntheticSkillProfile RedHiddenGuessSkillProfile { get; } =
+            new SyntheticSkillProfile("red-cardsharp", "Red Cardsharp", 39);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.40j's marker-board pair, which is how
+        /// <c>MarkerHolderHandler</c> (milestone 8.40c) and <c>MarkerTransferHandler</c> (milestone
+        /// 8.40b) become reachable from showcase content rather than arriving for the first time inside
+        /// Bain's own slice.
+        ///
+        /// <para><b>It reads the fixture's own Focus marker rather than his bounty</b>, which is the
+        /// only shape a definition-bound handler can be showcased in: the definition is bound to the
+        /// handler and never named on the wire, so proving the TYPE means declaring a second instance
+        /// over a marker that is nobody's - exactly what <c>synthetic-give-marker@1</c> has done for
+        /// <c>MarkerGivingHandler</c> since milestone 6.2.</para>
+        ///
+        /// <para><b>Both nodes are <c>IfAble</c>, which is the one difference from Close Call.</b> The
+        /// printed clause runs inside a Block that already established the board fact; a fixture hand
+        /// is dealt onto boards with no Focus marker out at all, and a card that refused to be played
+        /// there would prove nothing. The bindings are the printed ones - the predicate publishes its
+        /// Boolean and the transfer moves the marker to the ACTOR, which is what "to you" means.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithMarkerBoardSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                markerBoardSkillProfile: RedMarkerBoardSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.40j's hidden card choice and public reveal, which
+        /// is how <c>HiddenCardChoiceHandler</c> and <c>RevealChosenCardHandler</c> (both milestone
+        /// 8.40f) become reachable on the same terms.
+        ///
+        /// <para><b>The chooser is the card's own actor and not an enemy</b>, and that is the fixture's
+        /// deliberate narrowing rather than a weakening: what the gate asks is that the TYPE be reached
+        /// from a showcase card, and a showcase hand is dealt into compositions that need not hold a
+        /// second seat at all. The privacy the contract exists for is an application-layer projection
+        /// arm and is asserted where it lives, from a losing seat's own projection, rather than here.
+        /// Everything else is the printed shape: the pick publishes a card instance, the reveal binds
+        /// that instance beside a named colour under <c>CardColor</c>'s integer domain, and both of its
+        /// published facts are declared by the node so a restore re-deriving the recorded outcome finds
+        /// no output the node does not admit.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithHiddenGuessSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                hiddenGuessSkillProfile: RedHiddenGuessSkillProfile);
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1555,6 +1621,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile sourceDiscardSkillProfile = null,
             SyntheticSkillProfile obstacleGrappleSkillProfile = null,
             SyntheticSkillProfile soloVictorySkillProfile = null,
+            SyntheticSkillProfile markerBoardSkillProfile = null,
+            SyntheticSkillProfile hiddenGuessSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1842,6 +1910,22 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateSoloVictorySkillDefinition(soloVictorySkillProfile),
                     soloVictorySkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (markerBoardSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateMarkerBoardSkillDefinition(markerBoardSkillProfile),
+                    markerBoardSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (hiddenGuessSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateHiddenGuessSkillDefinition(hiddenGuessSkillProfile),
+                    hiddenGuessSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -4319,6 +4403,149 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// boolean, which is the whole of what milestone 7.9's second half asks of a showcase card.
         /// </summary>
         private const int UnreachableSoloVictoryThreshold = 9999;
+
+        /// <summary>
+        /// Milestone 8.40j. The board predicate and the transfer it names, on a card that is nobody's
+        /// and over the fixture's own Focus marker. See <see cref="RedMarkerBoardSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateMarkerBoardSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("marker-board-root");
+            var transfer = new EffectNodeId("marker-board-transfer");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-40j-rev-1",
+                root,
+                new[]
+                {
+                    // The predicate IS the Conditional, exactly as Close Call composes it, so the
+                    // showcase proves the shape a printed face uses rather than a flattened one. A
+                    // Conditional is Mandatory by construction - `EffectNodeDefinition` refuses any
+                    // other policy, because its branches carry their own - and it answers false
+                    // rather than failing on a board with no marker out, which is what makes the
+                    // shape safe in a fixture hand.
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticComponentCapabilities.MarkerHeldV1,
+                        childNodeIds: new[] { transfer },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticComponentCapabilities.MarkerHolderHandler.PresentOutputName,
+                                EffectValueKind.Boolean)
+                        }),
+                    // "to you" - the marker moves to the actor, which is the one binding Close Call
+                    // makes and the reason the transfer asks nobody on this card either.
+                    new EffectNodeDefinition(
+                        transfer, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticComponentCapabilities.TransferMarkerV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                SyntheticComponentCapabilities.MarkerTransferHandler
+                                    .HolderParameterName,
+                                EffectRoleKind.Actor,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("holder", EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticComponentCapabilities.MarkerTransferHandler
+                                    .PreviousHolderOutputName,
+                                EffectValueKind.Hero)
+                        })
+                });
+
+            return SkillCard(profile, "primary-marker-board-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.40j. The hidden card pick and the public reveal that names a colour against it,
+        /// on a card that is nobody's. See <see cref="RedHiddenGuessSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateHiddenGuessSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("hidden-guess-root");
+            var hide = new EffectNodeId("hidden-guess-hide");
+            var guess = new EffectNodeId("hidden-guess-name");
+            var reveal = new EffectNodeId("hidden-guess-reveal");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-40j-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { hide, guess, reveal }),
+                    // IfAble on all three, which is the one difference from the printed clause: a
+                    // fixture hand is dealt onto boards where the actor may hold nothing to pick, and
+                    // a card that refused to be played there would prove nothing.
+                    new EffectNodeDefinition(
+                        hide, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticHiddenChoiceCapabilities.HiddenCardChoiceV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                SyntheticHiddenChoiceCapabilities.HiddenChoiceHeroParameter,
+                                EffectRoleKind.Actor,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticHiddenChoiceCapabilities.ChosenCardOutput,
+                                EffectValueKind.CardInstance)
+                        }),
+                    new EffectNodeDefinition(
+                        guess, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticBorrowedActionCapabilities.NameColorV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                SyntheticBorrowedActionCapabilities.NameColorChooserParameter,
+                                EffectRoleKind.Actor,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticBorrowedActionCapabilities.NamedColorOutput,
+                                EffectValueKind.Integer)
+                        }),
+                    new EffectNodeDefinition(
+                        reveal, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticHiddenChoiceCapabilities.RevealChosenCardV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticHiddenChoiceCapabilities.RevealCardParameter,
+                                hide,
+                                SyntheticHiddenChoiceCapabilities.ChosenCardOutput,
+                                EffectValueKind.CardInstance),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticHiddenChoiceCapabilities.NamedColorParameter,
+                                guess,
+                                SyntheticBorrowedActionCapabilities.NamedColorOutput,
+                                EffectValueKind.Integer,
+                                EffectIntegerDomain.All<CardColor>())
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticHiddenChoiceCapabilities.RevealedColorOutput,
+                                EffectValueKind.Integer),
+                            new EffectOutputBinding(
+                                SyntheticHiddenChoiceCapabilities.MatchedOutput,
+                                EffectValueKind.Boolean)
+                        })
+                });
+
+            return SkillCard(profile, "primary-hidden-guess-skill", effect);
+        }
 
         private static CardDefinition CreateBorrowedActionSkillDefinition(SyntheticSkillProfile profile)
         {

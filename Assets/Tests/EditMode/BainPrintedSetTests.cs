@@ -347,22 +347,23 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The contracts this series minted as new handler TYPES are all held on a DECLARED deferred
-        /// list and none is in the build's registration list, asserted as a SET rather than one
-        /// membership at a time - so milestone 8.40j cannot register one and forget another. Milestone
-        /// 8.39h wrote the same case for Cutter's pair and her dealing inverted it; this is that shape
-        /// at six.
+        /// The contracts this series minted as new handler TYPES are all in the build's registration
+        /// list and none is left on a deferred one, asserted as a SET rather than one membership at a
+        /// time - so milestone 8.40j could not register one and forget another, and no later edit can
+        /// move one back. Milestone 8.40i wrote this case as the deferral and milestone 8.40j inverted
+        /// it in place, which is the shape milestone 8.39h and Cutter's dealing set at two; this is
+        /// that shape at six.
         /// </summary>
         [Test]
-        public void HisSixDeferredContracts_AreHeldTogetherAndNoneIsRegisteredYet()
+        public void HisSixNewContracts_AreRegisteredTogetherNowThatHeIsDealt()
         {
-            var deferred = BainComponentContent.DeferredHandlers()
-                .Concat(SyntheticHiddenChoiceCapabilities.DeferredHandlers())
+            var his = BainComponentContent.Handlers()
+                .Concat(SyntheticHiddenChoiceCapabilities.Handlers())
                 .Select(handler => handler.Reference.ToString())
                 .OrderBy(value => value, StringComparer.Ordinal)
                 .ToArray();
 
-            Assert.That(deferred, Is.EqualTo(new[]
+            Assert.That(his, Is.EqualTo(new[]
             {
                 "bain-bounty-marker-held@1",
                 "bain-give-bounty-marker@1",
@@ -371,29 +372,30 @@ namespace GuardsDigital.Tests.EditMode
                 "synthetic-hidden-card-choice@1",
                 "synthetic-reveal-chosen-card@1"
             }.OrderBy(value => value, StringComparer.Ordinal).ToArray()),
-                "The six his faces start and the build does not register. Four of them run on TYPES " +
-                "milestone 7.9's gate has already seen showcased - the give and the return - and four " +
-                "are new types owing a showcase consumer at his dealing: the transfer, the holder " +
-                "predicate, the hidden choice and the reveal.");
+                "The six his faces start. Two of them run on TYPES milestone 7.9's gate had already " +
+                "seen showcased - the give and the return - and four are new types that took a " +
+                "showcase consumer at his dealing: the transfer, the holder predicate, the hidden " +
+                "choice and the reveal.");
 
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities.Registered
                 .Select(value => value.ToString())
                 .ToArray();
-            foreach (var reference in deferred)
+            foreach (var reference in his)
             {
-                Assert.That(registered, Has.No.Member(reference),
-                    reference + " is deferred, so the build must not register it before he is dealt.");
+                Assert.That(registered, Has.Member(reference),
+                    reference + " is his and he is dealt, so the build must register it.");
             }
 
             Assert.That(
-                BainComponentContent.RegisteredHandlers(), Is.Empty,
-                "and his own registered list is empty on both sides of the seam.");
-            Assert.That(BainActiveEffectContent.RegisteredHandlers(), Is.Empty);
+                BainComponentContent.DeferredHandlers(), Is.Empty,
+                "and nothing of his is left on a deferred list, on both sides of the seam.");
+            Assert.That(SyntheticHiddenChoiceCapabilities.DeferredHandlers(), Is.Empty);
+            Assert.That(BainActiveEffectContent.DeferredHandlers(), Is.Empty);
             Assert.That(
-                BainActiveEffectContent.DeferredHandlers().Count(), Is.EqualTo(5),
-                "His five Active-effect creations wait with them - two obstacle permissions, two " +
-                "Movement raises and the End-of-turn repeat - on a handler TYPE this build has " +
-                "registered since milestone 6.8, so they owe the gate no showcase consumer.");
+                BainActiveEffectContent.RegisteredHandlers().Count(), Is.EqualTo(5),
+                "His five Active-effect creations moved across with them - two obstacle permissions, " +
+                "two Movement raises and the End-of-turn repeat - on a handler TYPE this build has " +
+                "registered since milestone 6.8, so they owed the gate no showcase consumer.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -1531,9 +1533,9 @@ namespace GuardsDigital.Tests.EditMode
             new EffectCapabilityCatalog(
                 MatchContentCatalogs.ForThisBuild().Capabilities.Registered
                     .Select(MatchContentCatalogs.ForThisBuild().Capabilities.Load)
-                    .Concat(BainComponentContent.DeferredHandlers())
-                    .Concat(BainActiveEffectContent.DeferredHandlers())
-                    .Concat(SyntheticHiddenChoiceCapabilities.DeferredHandlers())
+                    .Concat(BainComponentContent.Handlers())
+                    .Concat(BainActiveEffectContent.Handlers())
+                    .Concat(SyntheticHiddenChoiceCapabilities.Handlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
 
@@ -1866,7 +1868,7 @@ namespace GuardsDigital.Tests.EditMode
 
             public void CreateActiveEffect(EffectCapabilityReference reference)
             {
-                var handler = BainActiveEffectContent.DeferredHandlers()
+                var handler = BainActiveEffectContent.Handlers()
                     .Single(candidate => candidate.Reference.Equals(reference));
                 var result = handler.Execute(new EffectCapabilityContext(
                     new EffectNodeId("stride-raise"),

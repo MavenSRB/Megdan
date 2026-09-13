@@ -258,6 +258,24 @@
     { "definitionId": "cutter-outmaneuver", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter15__7718209__front.png" },
     { "definitionId": "cutter-crashland", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter16__7718208__front.png" },
     { "definitionId": "cutter-outsmart", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter17__7718207__front.png" },
-    { "definitionId": "cutter-legend-of-the-skies", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter18__7624846__front.png" }
+    { "definitionId": "cutter-legend-of-the-skies", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter18__7624846__front.png" },
+    { "definitionId": "bain-dead-or-alive", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain__7478189__front.png" },
+    { "definitionId": "bain-get-over-here", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain2__7624924__front.png" },
+    { "definitionId": "bain-light-crossbow", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain3__7348633__front.png" },
+    { "definitionId": "bain-heavy-crossbow", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain4__7348636__front.png" },
+    { "definitionId": "bain-hand-crossbow", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain5__7348629__front.png" },
+    { "definitionId": "bain-arbalest", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain6__7348637__front.png" },
+    { "definitionId": "bain-hunter-seeker", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain7__7348635__front.png" },
+    { "definitionId": "bain-a-game-of-chance", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain8__7348639__front.png" },
+    { "definitionId": "bain-dead-mans-hand", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain9__7348626__front.png" },
+    { "definitionId": "bain-drinking-buddies", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain10__7348631__front.png" },
+    { "definitionId": "bain-were-not-done-yet", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain11__7348638__front.png" },
+    { "definitionId": "bain-another-one", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain12__7348634__front.png" },
+    { "definitionId": "bain-close-call", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain13__7348642__front.png" },
+    { "definitionId": "bain-narrow-escape", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain14__7348640__front.png" },
+    { "definitionId": "bain-vantage-point", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain15__7348643__front.png" },
+    { "definitionId": "bain-perfect-getaway", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain16__7348632__front.png" },
+    { "definitionId": "bain-high-ground", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain17__7348644__front.png" },
+    { "definitionId": "bain-a-complicated-profession", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain18__7348630__front.png" }
   ]
 }

@@ -735,7 +735,40 @@ namespace GuardsDigital.Presentation.Interaction
         /// A Fistful of Coins and Outsmart - and Legend of the Skies unlocked. This is the only arm
         /// that reaches the solo-victory claim at all.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedCutter = 75
+        VerifiedTierThreeAlternateEngagedStagedCutter = 75,
+
+        /// <summary>
+        /// Milestone 8.40j. The engaged staging with Bain the Bounty Hunter on the Blue seat, holding
+        /// rulebook p.6's five starting cards. The fifteenth hero.
+        /// </summary>
+        VerifiedEngagedStagedBain = 76,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Bain holding the first sibling
+        /// of each colour: Heavy Crossbow, Dead Man's Hand and Narrow Escape.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedBain = 77,
+
+        /// <summary>
+        /// The Tier II staging with Bain holding the second sibling of each colour: Hand Crossbow,
+        /// Drinking Buddies and Vantage Point - the only Tier II arm that reaches a marker modal, the
+        /// shared retrieval and a Movement primary.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedBain = 78,
+
+        /// <summary>
+        /// The Tier III staging with Bain holding the first sibling of each colour - Arbalest, We're
+        /// Not Done Yet! and Perfect Getaway - and A Complicated Profession unlocked beside his
+        /// dashboard. This is the only arm that reaches the failure modal.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedBain = 79,
+
+        /// <summary>
+        /// The Tier III staging with Bain holding the second sibling of each colour - Hunter-Seeker,
+        /// Another One! and High Ground - and A Complicated Profession unlocked. This is the only arm
+        /// that reaches the one-or-both modal and the End-of-turn repeat.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedBain = 80
     }
 
     [ExecuteAlways]
@@ -1250,6 +1283,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedCutterTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.CutterUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedBain =>
+                    MatchConfiguration.CreateStagedBainForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedBain =>
+                    MatchConfiguration.CreateStagedBainTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BainUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBain =>
+                    MatchConfiguration.CreateStagedBainTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BainUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedBain =>
+                    MatchConfiguration.CreateStagedBainTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BainUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBain =>
+                    MatchConfiguration.CreateStagedBainTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BainUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1301,7 +1353,12 @@ namespace GuardsDigital.Presentation.Interaction
                 // what milestone 8.38f's repair of this list teaches: a staged arm missing from here
                 // composes its two heroes fifteen spaces apart, every approach helper throws
                 // `Sequence contains no elements`, and no offline tier can see it.
-                IsStagedCutter(content))
+                IsStagedCutter(content) ||
+                // Milestone 8.40j. Written in the SAME change as his five members above, on the same
+                // terms: a staged arm missing from here composes its two heroes fifteen spaces apart,
+                // every approach helper throws `Sequence contains no elements`, and no offline tier
+                // can see it.
+                IsStagedBain(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1765,6 +1822,11 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusCutterOneVsOne();
                     }
 
+                    if (IsStagedBain(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusBainOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -1917,6 +1979,21 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedCutter ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedCutter ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedCutter;
+
+        /// <summary>
+        /// Whether this content is one of milestone 8.40j's five staged Bain scenes. Written in the
+        /// same change as those five members, the setup configuration they name and the restaging list
+        /// above - the three arms milestone 8.38f had to add for Swift after the fact, and which every
+        /// dealing since has therefore shipped together. He needs no ally seat: nothing of his names a
+        /// FRIENDLY hero, and what his set needs is an enemy hero in radius holding cards, enemy units
+        /// to shoot and a board a marker can sit on, all of which the engaged position supplies.
+        /// </summary>
+        private static bool IsStagedBain(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedBain ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedBain ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBain ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedBain ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBain;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

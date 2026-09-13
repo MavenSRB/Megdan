@@ -106,6 +106,12 @@ namespace GuardsDigital.Core.Components.Synthetic
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.
                 new[] { FocusDefinition }.Concat(
-                    GuardsDigital.Core.Cards.Verified.TigerclawComponentContent.Markers()));
+                    GuardsDigital.Core.Cards.Verified.TigerclawComponentContent.Markers())
+                    // Milestone 8.40j. Bain's bounty marker joins the one registered set at the
+                    // milestone that deals him, exactly as Tigerclaw's Poison did at his: a match
+                    // registers one list of what it can put on a dashboard and the snapshot pins that
+                    // list, so a marker registered before a dealt card could give it would move
+                    // pinned bytes for nothing.
+                    .Concat(GuardsDigital.Core.Cards.Verified.BainComponentContent.Markers()));
     }
 }

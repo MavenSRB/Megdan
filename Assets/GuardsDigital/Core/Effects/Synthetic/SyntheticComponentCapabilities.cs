@@ -37,6 +37,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityId ReturnMarker { get; } =
             new EffectCapabilityId("synthetic-return-marker");
 
+        /// <summary>
+        /// Milestone 8.40j. The showcase consumer <see cref="MarkerTransferHandler"/> owes - milestone
+        /// 8.40b minted the TYPE and milestone 7.9's gate asks its second half of a type rather than
+        /// of a capability id, so this is what keeps Close Call's transfer from being the first place
+        /// in the build that type ever runs. Bound to the fixture's own Focus marker for exactly the
+        /// reason <see cref="GiveMarker"/> is: a definition-bound handler can only be showcased on a
+        /// definition that is nobody's.
+        /// </summary>
+        public static EffectCapabilityId TransferMarker { get; } =
+            new EffectCapabilityId("synthetic-transfer-marker");
+
+        /// <summary>
+        /// Milestone 8.40j. The showcase consumer <see cref="MarkerHolderHandler"/> owes, on the same
+        /// terms: milestone 8.40c minted the TYPE for Bain's five Green faces, and this instance reads
+        /// the fixture's own Focus marker so his predicate is not the first place it runs.
+        /// </summary>
+        public static EffectCapabilityId MarkerHeld { get; } =
+            new EffectCapabilityId("synthetic-marker-held");
+
         public static EffectCapabilityReference ReclaimTokenV1 =>
             new EffectCapabilityReference(ReclaimToken, 1);
 
@@ -49,6 +68,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference ReturnMarkerV1 =>
             new EffectCapabilityReference(ReturnMarker, 1);
 
+        public static EffectCapabilityReference TransferMarkerV1 =>
+            new EffectCapabilityReference(TransferMarker, 1);
+
+        public static EffectCapabilityReference MarkerHeldV1 =>
+            new EffectCapabilityReference(MarkerHeld, 1);
+
         /// <summary>The handlers this milestone contributes to the shared capability catalog.</summary>
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
@@ -57,7 +82,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PlaceTokenHandler(),
                 new MarkerGivingHandler(
                     GiveMarkerV1, SyntheticComponentDefinitions.FocusDefinition),
-                new ReturnMarkerHandler()
+                new ReturnMarkerHandler(),
+                // Milestone 8.40j. The two showcase instances of the marker handler TYPES milestones
+                // 8.40b and 8.40c minted, on the Focus marker rather than on Bain's bounty, so that
+                // neither type arrives for the first time inside his slice. They join here rather
+                // than waiting in a deferred list because the showcase cards that name them are dealt
+                // by the fixture hands this file's give is already reached from.
+                new MarkerTransferHandler(
+                    TransferMarkerV1, SyntheticComponentDefinitions.FocusDefinition),
+                new MarkerHolderHandler(
+                    MarkerHeldV1, SyntheticComponentDefinitions.FocusDefinition)
             };
 
         /// <summary>

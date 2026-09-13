@@ -444,7 +444,19 @@ namespace GuardsDigital.Tests.EditMode
                     // threshold is deliberately unreachable, because this is the first showcase card
                     // whose handler can END A MATCH and proving a contract must not do that.
                     SyntheticShowcaseHand.CreateRedWithObstacleGrappleSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithSoloVictorySkill(owner)
+                    SyntheticShowcaseHand.CreateRedWithSoloVictorySkill(owner),
+                    // Milestone 8.40j's FOUR handler types on TWO cards, and the grouping rule is why
+                    // there are two rather than four: two contracts share a card exactly when one
+                    // printed SENTENCE carries both. Close Call prints "If a hero in play has a bounty
+                    // marker, block the attack and that hero gives the marker to you", so the Bondsman
+                    // carries the holder predicate and the transfer over the fixture's own Focus
+                    // marker - a definition-bound handler can only be showcased on a marker that is
+                    // nobody's, which is the shape `synthetic-give-marker@1` set at milestone 6.2. And
+                    // his three guessing Blues print "An enemy hero in radius ... chooses one of those
+                    // cards; Guess the card's color, then reveal the card", so the Cardsharp carries
+                    // the hidden pick and the reveal.
+                    SyntheticShowcaseHand.CreateRedWithMarkerBoardSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithHiddenGuessSkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -566,6 +578,18 @@ namespace GuardsDigital.Tests.EditMode
                 // nineteen contracts her set names were all registered before this milestone, which is
                 // what thirteen lettered build blocks bought. She declares no Active effect at all.
                 .Concat(CutterCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.40j. Bain's eighteen dealt faces, the fifteenth set, on the same terms.
+                // FOUR of his contracts are new HANDLER TYPES - `bain-transfer-bounty-marker@1`
+                // (8.40b), `bain-bounty-marker-held@1` (8.40c) and 8.40f's two hidden-information
+                // contracts - each proved on one of the two showcase cards above before this concat
+                // admits the faces that name them. His give and his return owe none: those run on
+                // `MarkerGivingHandler` and `ReturnMarkerHandler`, types this build has registered and
+                // showcased since milestones 6.2 and 8.23. His five Active-effect creations owe none
+                // either - `ActiveEffectCreationHandler` is the type the showcase has reached since
+                // milestone 6.8 - and his Ultimate's effect and Another One!'s End-of-turn repeat
+                // reach theirs through the triggered-effect concat below rather than through a card
+                // node, which is what that concat is there for.
+                .Concat(BainCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
