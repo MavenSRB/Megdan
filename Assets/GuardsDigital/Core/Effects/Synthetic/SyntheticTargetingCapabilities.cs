@@ -248,6 +248,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <c>choose-charge-line@1</c> and <c>choose-through-target-line@1</c> publish theirs: the
         /// sentence that names the target is the same sentence that names where it takes you, and
         /// re-deriving the line in a later node would be a second source of truth about one step.</para>
+        ///
+        /// <para><b>Milestone 8.40e widened it rather than writing a second one</b>, for Bain's Silver
+        /// basic Get over here! - "Target a unit or a token in a straight line and in range with no
+        /// obstacles between you and the target; move the target towards you in a straight line, until
+        /// you are adjacent." That is this walk's geometry exactly: p.19's six directions, the printed
+        /// Range Total, the first-blocker stop, and p.18's full blocking list, which is what "no
+        /// obstacles" asks for. The two things his sentence needs that hers does not are an optional
+        /// narrowing of what may be NAMED - <see cref="ExcludeTerrainParameterName"/> - and the
+        /// actor-side twin of the approach space - <see cref="ActorApproachSpaceOutputName"/>. Both are
+        /// optional and default off, so her declaration and the showcase Skill beside it keep their
+        /// exact candidate sets and their exact published facts.</para>
         /// </summary>
         public static EffectCapabilityId RangeObstacleTarget { get; } =
             new EffectCapabilityId("synthetic-range-obstacle-target");
@@ -265,6 +276,54 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// feeds is then a move of no spaces rather than an impossible step.
         /// </summary>
         public const string ObstacleApproachSpaceOutputName = "obstacleApproachSpace";
+
+        /// <summary>
+        /// Milestone 8.40e. The mirror of <see cref="ObstacleApproachSpaceOutputName"/>: the space on
+        /// the chosen obstacle's own file that leaves IT adjacent to the ACTOR - one step out from the
+        /// actor along the line this selection walked.
+        ///
+        /// <para>Grappling Bolt moves the hero and Get over here! moves the target, so one sentence
+        /// ends beside the obstacle and the other ends beside the hero. They are the same file, which
+        /// is why this is a second output on one selection rather than a second selection: re-deriving
+        /// the line in the node that moves would be a second source of truth about one step.</para>
+        ///
+        /// <para>A target already adjacent publishes its own space, because "until you are adjacent"
+        /// is satisfied where it stands. The Move that consumes it then has nowhere to go - p.11's
+        /// reachability never offers the mover's own space - so an <c>IfAble</c> node reads it as a
+        /// step not taken rather than as a failure, which is the reading the printed sentence asks for
+        /// and the shape Grappling Bolt's own Move already has.</para>
+        ///
+        /// <para>Published only for a node that declared it, and the obstacle-side output is now
+        /// published on the same terms. That is not a convenience: see
+        /// <see cref="EffectCapabilityContext.DeclaredOutputs"/> - a restored payload's outcomes are
+        /// checked against the node's declaration, so a handler publishing a fact its node did not ask
+        /// for writes a snapshot the build refuses to read back.</para>
+        /// </summary>
+        public const string ActorApproachSpaceOutputName = "actorApproachSpace";
+
+        /// <summary>
+        /// Milestone 8.40e. Whether this selection offers only the obstacles that are p.19's units and
+        /// tokens - Get over here!'s "Target a unit <b>or a token</b>".
+        ///
+        /// <para><b>It narrows what may be NAMED and never what BLOCKS, and Bain's own deck is what
+        /// makes that distinction load-bearing.</b> The same sentence still prints "no obstacles",
+        /// which is p.18's full list - "Units, terrain (including printed on the board), tokens, as
+        /// well as any objects represented by miniatures" - while his five crossbows print the strictly
+        /// narrower "no units, or terrain, between you". So the walk stops where it always stopped, and
+        /// a file whose first obstacle is terrain offers NOTHING on that file rather than offering what
+        /// stands behind it. Reading this narrowing into the blocking set would let the pull reach past
+        /// a wall, which is a sentence no face prints.</para>
+        ///
+        /// <para>What it excludes is exactly "no board object stands here". p.19's one-obstacle-per-
+        /// space rule names a unit or a token one-to-one by its space, and the other two things this
+        /// walk can stop on carry no object at all: a terrain space, and a space an
+        /// <c>EffectiveTypeOverlay</c> makes count as one.</para>
+        ///
+        /// <para>Optional and defaulting to false, so Cutter's Grappling Bolt and the showcase Skill
+        /// beside it keep their exact candidate sets without naming it.</para>
+        /// </summary>
+        public const string ExcludeTerrainParameterName = "excludeTerrain";
+
         public static EffectCapabilityId HeroAdjacentToMinion { get; } =
             new EffectCapabilityId("synthetic-hero-adjacent-to-minion");
 
@@ -638,14 +697,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectCapabilityParameter(
                             "activity",
                             EffectValueKind.Integer,
-                            integerDomain: EffectIntegerDomain.AllExcept(RuleActivity.None))
+                            integerDomain: EffectIntegerDomain.AllExcept(RuleActivity.None)),
+
+                        // Milestone 8.40e. See ExcludeTerrainParameterName: a narrowing of what may be
+                        // named, never of what blocks the file, optional and default-off.
+                        new EffectCapabilityParameter(
+                            ExcludeTerrainParameterName, EffectValueKind.Boolean, isRequired: false)
                     },
                     new[]
                     {
                         new EffectOutputBinding(
                             ChosenObstacleSpaceOutputName, EffectValueKind.Coordinate),
                         new EffectOutputBinding(
-                            ObstacleApproachSpaceOutputName, EffectValueKind.Coordinate)
+                            ObstacleApproachSpaceOutputName, EffectValueKind.Coordinate),
+
+                        // Milestone 8.40e. The actor-side twin, for the sentence that moves the target
+                        // rather than the hero.
+                        new EffectOutputBinding(
+                            ActorApproachSpaceOutputName, EffectValueKind.Coordinate)
                     });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -674,13 +743,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                return EffectExecutionResult.Applied(new[]
+                var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact(
-                        ChosenObstacleSpaceOutputName, EffectValue.Space(chosen.Obstacle)),
-                    new EffectOutcomeFact(
-                        ObstacleApproachSpaceOutputName, EffectValue.Space(chosen.Approach))
-                });
+                        ChosenObstacleSpaceOutputName, EffectValue.Space(chosen.Obstacle))
+                };
+
+                // Milestone 8.40e. Each approach space goes to the node that asked for it and to no
+                // other: Grappling Bolt binds the obstacle-side one, Get over here! the actor-side one,
+                // and a fact a node did not declare is a snapshot the build refuses to read back. Every
+                // declaration written before this milestone binds the obstacle-side output, so every
+                // one of them publishes exactly the pair it always published.
+                if (context.Publishes(ObstacleApproachSpaceOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        ObstacleApproachSpaceOutputName, EffectValue.Space(chosen.Approach)));
+                }
+
+                if (context.Publishes(ActorApproachSpaceOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        ActorApproachSpaceOutputName, EffectValue.Space(chosen.ActorApproach)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
@@ -733,6 +819,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Array.Empty<GrappleOption>();
                 }
 
+                // Milestone 8.40e. Unbound is the absence of the clause, which is today's set - every
+                // obstacle p.18 names. Bound, the offer is narrowed to the obstacles that are units or
+                // tokens; the walk below is untouched, because the narrowing is about what may be
+                // named and the stop is about what stands in the way.
+                var excludeTerrain = context.Input(ExcludeTerrainParameterName);
+                var unitsAndTokensOnly =
+                    excludeTerrain.Kind == EffectValueKind.Boolean && excludeTerrain.BooleanValue;
+
                 var found = new List<GrappleOption>();
                 foreach (var direction in Directions)
                 {
@@ -759,11 +853,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // The first obstacle on this file, and therefore the only candidate it can
                         // ever offer - anything beyond it has this one "between you". That holds
                         // whether or not this one may be targeted, which is why the loop breaks
-                        // either way: an immune unit still occupies its file.
-                        if (MayBeTargeted(context, board, at, actor, activity))
+                        // either way: an immune unit still occupies its file, and so does a heap of
+                        // terrain a narrowed selection may not name.
+                        if (MayBeTargeted(context, board, at, actor, activity) &&
+                            (!unitsAndTokensOnly || board.TryGetObjectAt(at, out _)))
                         {
                             found.Add(new GrappleOption(
-                                at, StraightLineQuery.Step(actorAt, direction, step - 1)));
+                                at,
+                                StraightLineQuery.Step(actorAt, direction, step - 1),
+                                StraightLineQuery.Step(actorAt, direction, 1)));
                         }
 
                         break;
@@ -821,15 +919,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             private sealed class GrappleOption
             {
-                public GrappleOption(HexCoordinate obstacle, HexCoordinate approach)
+                public GrappleOption(
+                    HexCoordinate obstacle, HexCoordinate approach, HexCoordinate actorApproach)
                 {
                     Obstacle = obstacle;
                     Approach = approach;
+                    ActorApproach = actorApproach;
                 }
 
                 public HexCoordinate Obstacle { get; }
 
+                /// <summary>One step back from the obstacle: where the ACTOR ends up beside it.</summary>
                 public HexCoordinate Approach { get; }
+
+                /// <summary>
+                /// One step out from the actor: where the OBSTACLE ends up beside him. Milestone
+                /// 8.40e. The two coincide on an adjacent obstacle only in the sense that neither
+                /// piece has anywhere to travel - the obstacle-side value is then the actor's own
+                /// space and this one is the obstacle's own space.
+                /// </summary>
+                public HexCoordinate ActorApproach { get; }
             }
         }
         /// <summary>

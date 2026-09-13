@@ -655,7 +655,7 @@ that family. No general line-of-sight rule: this is one printed narrowing, not p
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840d-build-the-unit-and-terrain-clear-line-his-five-crossbows-print-completion-evidence).
 
-### [ ] 8.40e Build the pull his Silver basic prints
+### [x] 8.40e Build the pull his Silver basic prints
 
 Observable outcome: a card can name a unit or a token on a clear straight file within range and move it
 along that file toward the actor until it is adjacent, leaving everything an existing obstacle selection
@@ -691,6 +691,54 @@ FOR.** p.19's Target keyword admits a unit, a token or a space, and this face pr
 token**". Prove the token arm directly, including that the moved token keeps its instance identity and
 its owner.
 
+**EVERY PREDICTION ABOVE HELD, AND THE PROBE IS WHAT SAYS SO RATHER THAN THE READING.** The family
+offers the first obstacle on each of p.19's six files inside the printed Range Total - terrain, heroes,
+minions and tokens alike, filtered only by p.18's immunity and only where a unit stands - and publishes
+`chosenObstacleSpace` beside `obstacleApproachSpace`, one step back from the obstacle. It carried
+exactly ONE parameter, `activity`. **And it is REGISTERED rather than deferred**, which is the thing the
+block told this milestone to check and state: 8.39i moved it into `RegisteredHandlers` when Cutter was
+dealt, and this tree finds it there and absent from `DeferredHandlers`. So the widening is a parameter
+and an output on a live declaration, and **no split was needed**.
+
+**A PARAMETER RATHER THAN A SIBLING CAPABILITY, ON THE RULE THIS SERIES ALREADY STATES.**
+`excludeTerrain` is optional and default-off, so Grappling Bolt and the showcase Red Grapnel Skill keep
+their exact candidate sets without naming it. It attaches no rule the printed text does not carry,
+because it narrows what may be NAMED and never what BLOCKS - and Bain's own deck is what forces that
+separation. BA-03 is the reason: this face prints "no obstacles" and his five crossbows print "no units,
+or terrain", so a file whose first obstacle is terrain offers nothing on that file rather than the unit
+standing behind the wall.
+
+**THE ONE THING THE BLOCK DID NOT PREDICT IS THAT AN EXTRA OUTPUT IS NOT OPT-IN BY ITSELF.**
+`context.Publishes` does make a node's declaration the authority - but this handler published BOTH its
+facts unconditionally, and `AuthoritativeSnapshotSerializer` refuses a restored outcome naming an output
+its node did not declare. A pull node binding the target and the actor-side space alone would therefore
+have written a snapshot the build cannot read back, and it would have failed at composition time rather
+than here. So `actorApproachSpace` and `obstacleApproachSpace` are now both published only for a node
+that asked. Every existing declaration is byte-identical, because both of them declare the
+obstacle-side output - asserted over the corpus and over the published facts. Milestone 8.39b's own
+fixture now declares the outputs its context models, which is the only edit this block made outside the
+selection family.
+
+**"UNTIL YOU ARE ADJACENT" NEEDED NOTHING AT ALL FROM THE DISPLACEMENT SIDE.**
+`synthetic-direct-move@3` under `NamedSpace` moves a token, a hero and a minion from the published space
+to the published destination, and the token keeps its instance id, its owner, its controller and its
+definition, because `AdjacentMoveAuthority` relocates one with `WithCoordinate`. A target already
+adjacent is published its own space, and p.11's reachability never offers a mover's own space - so the
+Move reports itself impossible and an `IfAble` node reads that as a step not taken. That is Grappling
+Bolt's shape exactly, and it is what "legal and moves nowhere" means in this build.
+`DirectMoveDestinationPolicy` is untouched.
+
+**TWELVE CASES ON A BOARD THAT SPENDS ALL SIX FILES.** `PullLineBoard` is `GrappleLineBoard`'s shape
+plus the one thing that board cannot express - terrain in the MIDDLE of a file, because its own terrain
+is a ring one step past the last playable space and nothing can ever stand behind it. On one board the
+six files exclude their candidates for six different reasons, and the narrowed and unnarrowed sets are
+asserted against each other rather than described. The corpus claim is a sweep rather than a list: the
+nodes naming this family are found by reflection over the verified content classes plus the showcase
+hand, and the case fails if it finds anything but the two that exist. **That last assertion is a
+deliberate tripwire for 8.40i**, which adds a third declaration and turns it red - the milestone that
+composes Get over here! has to look at what "every declaration written before this one" then means,
+exactly as 8.39h wrote Cutter's deferral pair so 8.39i could not register one half and forget the other.
+
 Acceptance checks:
 
 - The selection offers exactly the first unit or token on each of the six files within the printed Range
@@ -708,6 +756,8 @@ Acceptance checks:
 
 Non-goals: No Bain content. No push - p.18's Push has its own stop rules and this is a Move. No change
 to `DirectMoveDestinationPolicy`.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840e-build-the-pull-his-silver-basic-prints-completion-evidence).
 
 ### [ ] 8.40f Build the hidden card choice, the reveal and the public guess domain his Blue line prints
 

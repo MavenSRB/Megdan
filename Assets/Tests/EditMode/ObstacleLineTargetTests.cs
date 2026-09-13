@@ -402,7 +402,22 @@ namespace GuardsDigital.Tests.EditMode
                     board,
                     board,
                     board),
-                immunityOverrides: overrides);
+                immunityOverrides: overrides,
+                // Milestone 8.40e. Grappling Bolt's node declares both of this selection's outputs and
+                // this context now says so, because the approach space is published for a node that
+                // asked for it - the discipline the printed-icon minion arm has had since 8.20, and
+                // the thing that lets Bain's pull bind the actor-side twin without also being handed a
+                // fact it never named. The cases above are unchanged by it: they read the same pair
+                // Cutter's face reads.
+                declaredOutputs: new[]
+                {
+                    new EffectOutputBinding(
+                        SyntheticTargetingCapabilities.ChosenObstacleSpaceOutputName,
+                        EffectValueKind.Coordinate),
+                    new EffectOutputBinding(
+                        SyntheticTargetingCapabilities.ObstacleApproachSpaceOutputName,
+                        EffectValueKind.Coordinate)
+                });
 
         /// <summary>
         /// A card printing the Range this selection reads its reach from. A probe definition rather
