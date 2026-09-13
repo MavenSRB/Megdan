@@ -270,6 +270,50 @@ Non-goals: No Cutter content - the face that reaches this is composed at 8.39h. 
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839g-build-the-solo-victory-condition-a-fistful-of-coins-prints-completion-evidence).
 
+### [x] 8.39g1 Build the seam a printed card claims the solo victory through
+
+**This block is a split out of 8.39g, found by the probe 8.39h ordered before composing.** It is the same total scope and no acceptance check is dropped, on the precedent 8.39d1 and 8.39f1 set in this series and 8.38c set before it. It runs BEFORE 8.39h, because the composition names what it builds.
+
+Observable outcome: an effect node a printed card declares can claim the solo victory for its controller, and the match ends at the same boundary every other mid-turn ending is noticed at.
+
+**8.39g BUILT THE ENDING AND NOT THE WAY A CARD REACHES IT, AND ITS OWN NON-GOAL IS WHERE THE ASSUMPTION SITS.** That block wrote "No Cutter content - the face that reaches this is composed at 8.39h", which reads as though composition alone would connect the two. It does not. `RoundResolutionAuthority.TryRecordSoloVictory` is an instance method on the round authority; an effect capability is handed `EffectRosterState` (turn slots, hero-Defeat history, the coin ledger), `MatchComponents`, `MatchParticipants` and the frame's own facts, and no path from any of them reaches the round. A composed face declaring the branch today would gain three coins and stop.
+
+**THE TRANSPORT DOES NOT HAVE TO BE BUILT, AND THAT IS WHAT KEEPS THIS BLOCK SMALL.** The obvious design is the four-layer channel p.8's recorded Lane-Push cause travels - a capability publishes a typed fact, `RecordedLanePushQuery` reads it off the completed frame, `EffectResolutionStepResult` carries it, and the card action hands it up. That channel is real and it is the wrong size for this. Milestone 8.16 already widened `ExecuteTurnCommand`'s post-command check from p.13's counters to "every ending the state can already describe", and 8.39g's own `ASoloEndingThePhaseDoesNotRecord_IsAnUnrecordedGameEnd` proves a recorded solo winner with the phase not yet ended reads as exactly the fault that hook looks for. So a node that only WRITES the winner gets `EndGame(null)` from the existing boundary, and the re-entrancy 8.39g worried about never arises - nothing calls `EndGame` from inside a live effect frame.
+
+**AND THE BOUNDARY HOOK IS BLIND TO IT TODAY, WHICH IS THIS BLOCK'S PRE-FIX OBSERVATION.** `AnUnrecordedEndingExists()` calls `MatchOutcomeQuery.Read(participants, lanePush?.LanePush, TeamLives, gameIsRecordedAsEnded: false)` - the four-argument overload, with no `soloVictoryHeroId`. `ReadOutcome` passes the field and this does not, so a solo victory recorded mid-turn is invisible to the one seam that notices every other mid-turn ending. It is a one-line omission with a real consequence, and it is observed failing before it is fixed.
+
+**THE THRESHOLD IS THE CARD'S, NOT THE ENGINE'S.** "If you have 13 or more coins" is a number A Fistful of Coins prints, so it is a declared parameter on the node rather than a constant here - the discipline every printed distance in this catalog follows. The count is read at the branch from the live ledger, which is what 8.39g's `TheCountIsReadAtTheBranchRatherThanAtItsHighWaterMark` already requires of it.
+
+**IT IS A NEW HANDLER TYPE, SO IT OWES MILESTONE 7.9'S GATE BOTH HALVES** - deferred until a dealt card starts it, which is 8.39i, and a showcase consumer added there. That is 8.39b's position exactly, and this block joins its declaration to the same deferred list.
+
+Acceptance checks:
+
+- A node declaring the claim ends the match for its controller when the live ledger holds the printed threshold or more, and does nothing at all below it - asserted at 12, 13 and 14.
+- The winner is the node's CONTROLLER and never the actor of some enclosing grant, asserted directly.
+- `AnUnrecordedEndingExists` is observed NOT noticing a recorded solo winner before the fix and noticing it after, and the three team endings are byte-identical in behaviour either way.
+- A second claim in the same match is refused rather than layered, and a claim by a hero the match is not playing is refused.
+- The declaration is deferred rather than registered, and a case says so.
+- No schema field, corpus digest or pinned constant moves - the fact 8.39g added is the one this writes, and writing it from a second place adds no state.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Cutter content - the face that declares this is composed at 8.39h. No registration and no showcase consumer; both belong to 8.39i with the rest of her dealing. No change to what an ending means for any of p.8's or p.13's three.
+
+**THE BLOCK'S PREDICTIONS ALL HELD, WHICH MAKES IT THE SECOND IN THIS SERIES TO MANAGE THAT** after 8.39f1. The boundary was blind, the widening is one argument, and the claim needed no transport built.
+
+**THE DEFECT IS SMALLER THAN ITS CONSEQUENCE AND THAT IS WORTH RECORDING.** `AnUnrecordedEndingExists` called `MatchOutcomeQuery.Read`'s four-argument overload while `ReadOutcome`, two methods above it in the same file, called the five-argument one. One missing argument, and the shape it produced was a match with a recorded winner that went on asking that winner for their next command - observed directly as `Expected: GameEnded / But was: ResolvingTurn`, with the other eleven cases green, so the pre-fix observation names the defect and nothing else. **The check's own remarks had already written down why it would happen**: "the list of rules that can end the match grows with the content; the list of endings does not" - and then 8.39g grew the list of endings.
+
+**`ISoloVictoryClaim` IS AN INTERFACE AND THE REASON IS TESTABILITY RATHER THAN LAYERING.** `RoundResolutionAuthority` implements it directly and hands `this` to the effect frame, so nothing is indirected in production; what the interface buys is that the capability's own seven cases assert what was asked for against a recording stand-in, with no match composed at all, and only the two boundary cases pay for a round.
+
+**`TryRecordSoloVictory` IS NOW `TryClaim` PLUS `EndGame`, AND THE SPLIT IS THE WHOLE MECHANISM.** The refusals - an ended match, an already-claimed one, an undefined hero, a hero this match is not playing - moved down into `TryClaim` and are stated once, so the ending path and the card path cannot disagree about who may win. Nothing that called the old method changed behaviour.
+
+**WHAT A CARD MUST NOT DO FROM INSIDE A FRAME, STATED AS A RULE THE NEXT SUCH CLAUSE INHERITS.** `EndGame` stops the turn's in-flight resolution, and the resolution in flight is the one making the claim. So a capability writes the fact and returns, and the command boundary ends the match. The window between the two is one turn command wide and never spans two, which is the same window p.8's mid-turn Lane Push has always lived in. **`Anticipate` must not claim either** - a walk judging whether the branch can be taken would otherwise end the match by merely offering the card - which is asserted directly rather than left to the handler's shape.
+
+**THE THRESHOLD PROVED WORTH DECLARING RATHER THAN CONSTANTING** for a reason the block only guessed at: the case that reads the ledger after a Level Up spend is what says the count is live, and it needs to set a balance the card's own number does not equal.
+
+Evidence: complete unfiltered dotnet harness **2,886/2,886 passed, 0 failed, 0 skipped** - the 2,874 baseline plus exactly this milestone's twelve cases. No schema field, corpus digest or pinned constant moved. No Cutter content.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839g1-build-the-seam-a-printed-card-claims-the-solo-victory-through-completion-evidence).
+
 ### [ ] 8.39h Compose Cutter's eighteen dealt faces and prove them at the focused tier
 
 Observable outcome: all eighteen of her dealt faces carry composed printed text with no `PrintedTextComposition.DeferredUntil`, and her focused authoritative rule tests resolve every branch each face states.

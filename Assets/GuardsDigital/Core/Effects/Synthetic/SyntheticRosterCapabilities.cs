@@ -366,6 +366,41 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference TransferResourceV1 => Reference("transfer-resource", 1);
 
         /// <summary>
+        /// Milestone 8.39g1. `claim-solo-victory@1` - Cutter's A Fistful of Coins, "If you have 13 or
+        /// more coins, <b>you alone win the game</b>", and the only sentence in the corpus that claims
+        /// an ending for one hero.
+        ///
+        /// <para><b>It sits in this file because the question is a coin balance</b>, which is the
+        /// round-owned ledger <c>gain-resource@1</c> above already writes through the same
+        /// <see cref="EffectRosterState"/>. Milestone 8.39g1 put the claim itself on that state beside
+        /// the ledger for the same reason, so this handler reads one thing and writes one thing and
+        /// reaches nothing else.</para>
+        ///
+        /// <para><b>The threshold is the card's own number, declared rather than constant.</b> Thirteen
+        /// is printed on A Fistful of Coins, so it is bound at the call site exactly as every printed
+        /// distance and radius in this catalog is - and a second card printing a different number costs
+        /// a binding rather than a capability.</para>
+        ///
+        /// <para><b>Below the threshold it applies and does nothing</b>, which is the printed sentence
+        /// rather than a softening of it: "If you have 13 or more coins" is a condition on a clause the
+        /// card always reaches, so a hero holding twelve has resolved the whole face correctly. The
+        /// published boolean is what a later node would read, and the node needs no Conditional in
+        /// front of it because there is nothing after it to gate.</para>
+        ///
+        /// <para><b>The winner is the CONTROLLER and not the actor.</b> "You" on a card is the hero
+        /// whose card it is; a borrowed or granted performance is still that hero winning, and reading
+        /// the actor would hand the match to whoever happened to be performing.</para>
+        /// </summary>
+        public static EffectCapabilityReference ClaimSoloVictoryV1 =>
+            Reference("claim-solo-victory", 1);
+
+        /// <summary>The printed count at or above which the claim is taken. See <see cref="ClaimSoloVictoryV1"/>.</summary>
+        public const string SoloVictoryThresholdParameter = "threshold";
+
+        /// <summary>Whether this resolution claimed the match. See <see cref="ClaimSoloVictoryV1"/>.</summary>
+        public const string SoloVictoryClaimedOutput = "claimed";
+
+        /// <summary>
         /// Milestones 8.35z28 and 8.35z33. `empty-minion-spawn-points-in-radius@1` - how many empty
         /// minion Spawn points of the current Battle Zone stand inside the acting card's own printed
         /// Radius disk, and whether that count reaches the number the card asks for.
@@ -943,6 +978,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // `RegisteredHandlers` below. Swift the Sharpshooter is dealt at milestone 8.38e, so her
             // three Green faces, which qualify the enemy they reach by that enemy's own footing, are
             // cards a configured match puts in a hand.
+
+            // Milestone 8.39g1. Cutter's A Fistful of Coins is the only face in the corpus that claims
+            // an ending for one hero, she is not dealt until milestone 8.39i, and this IS a new handler
+            // type - so it owes milestone 7.9's gate both halves, exactly as 8.39b's obstacle selection
+            // does: it stays out of the registered list until a dealt card can start it, and the
+            // dealing adds the showcase consumer the second half asks for.
+            yield return new ClaimSoloVictoryHandler();
         }
 
         /// <summary>
@@ -3758,6 +3800,92 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 throw new InvalidOperationException("This capability never requests a choice.");
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                CanApply(context)
+                    ? EffectExecutionResultKind.Applied
+                    : EffectExecutionResultKind.ImpossibleMandatory;
+        }
+
+        /// <summary>
+        /// Milestone 8.39g1. See <see cref="ClaimSoloVictoryV1"/>.
+        ///
+        /// <para>It records and does not end. <c>ISoloVictoryClaim.TryClaim</c> writes the winner and
+        /// returns; the match stops at the end of the turn command, through the boundary milestone 8.16
+        /// widened to notice every ending the state describes. Ending it here would mean calling
+        /// <c>EndGame</c> - which stops the turn's in-flight resolution - from inside the resolution
+        /// still running.</para>
+        /// </summary>
+        private sealed class ClaimSoloVictoryHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => ClaimSoloVictoryV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(
+                            SoloVictoryThresholdParameter, EffectValueKind.Integer)
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding(SoloVictoryClaimedOutput, EffectValueKind.Boolean),
+                        new EffectOutputBinding("winner", EffectValueKind.Hero)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            /// <summary>
+            /// Whether this state can be asked the question at all - a composition carrying no round to
+            /// claim through answers no, which the node's own policy then reads as an impossible step
+            /// rather than as a silent nothing.
+            /// </summary>
+            private static bool CanApply(EffectCapabilityContext context) =>
+                context.RosterState.IsAvailable &&
+                context.RosterState.SoloVictory != null &&
+                context.ControllerId.IsDefined &&
+                context.Input(SoloVictoryThresholdParameter).IntegerValue > 0;
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (!CanApply(context))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var controller = context.ControllerId;
+
+                // Read at the branch, from the live ledger. Milestone 8.39g's own case records why it
+                // cannot be a high-water mark: coins are farmed by everyone and spent back down at
+                // p.15's Level Up, so what wins is holding them HERE.
+                var held = context.RosterState.Coins.TryGetCoins(controller, out var coins)
+                    ? coins
+                    : 0;
+                var claimed =
+                    held >= context.Input(SoloVictoryThresholdParameter).IntegerValue &&
+                    context.RosterState.SoloVictory.TryClaim(controller);
+
+                var facts = new List<EffectOutcomeFact>
+                {
+                    new EffectOutcomeFact(
+                        SoloVictoryClaimedOutput, EffectValue.Boolean(claimed))
+                };
+                if (claimed && context.Publishes("winner"))
+                {
+                    facts.Add(new EffectOutcomeFact("winner", EffectValue.Hero(controller)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("This capability never requests a choice.");
+
+            /// <summary>
+            /// A walk judging whether the branch can be taken must not TAKE it, so this asks only
+            /// whether the question is answerable and never touches the claim.
+            /// </summary>
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
                 CanApply(context)
                     ? EffectExecutionResultKind.Applied

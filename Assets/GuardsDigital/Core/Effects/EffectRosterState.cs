@@ -20,6 +20,7 @@ namespace GuardsDigital.Core.Effects
         private readonly IReadOnlyList<RoundTurnSlot> turnSlots;
         private readonly RoundHeroDefeatHistory heroDefeats;
         private readonly HeroCoinLedger coins;
+        private readonly GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory;
 
         private EffectRosterState()
         {
@@ -28,11 +29,13 @@ namespace GuardsDigital.Core.Effects
         private EffectRosterState(
             IReadOnlyList<RoundTurnSlot> turnSlots,
             RoundHeroDefeatHistory heroDefeats,
-            HeroCoinLedger coins)
+            HeroCoinLedger coins,
+            GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory)
         {
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
             this.coins = coins;
+            this.soloVictory = soloVictory;
         }
 
         /// <summary>
@@ -41,14 +44,24 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         public static EffectRosterState Absent => AbsentState;
 
+        /// <summary>
+        /// Milestone 8.39g1 added <paramref name="soloVictory"/>, and it is optional for the reason
+        /// every optional parameter in this build is: a caller written before it keeps exactly the
+        /// state it had. Absence is a match no printed card can claim outright - a fixture composing
+        /// this state without one, or a restore reading a payload that never carried the authority -
+        /// and <see cref="SoloVictory"/> reports it as the named absence rather than as a claim that
+        /// silently does nothing.
+        /// </summary>
         public static EffectRosterState Of(
             IReadOnlyList<RoundTurnSlot> turnSlots,
             RoundHeroDefeatHistory heroDefeats,
-            HeroCoinLedger coins) =>
+            HeroCoinLedger coins,
+            GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
-                coins ?? throw new ArgumentNullException(nameof(coins)));
+                coins ?? throw new ArgumentNullException(nameof(coins)),
+                soloVictory);
 
         public bool IsAvailable => turnSlots != null;
 
@@ -57,6 +70,20 @@ namespace GuardsDigital.Core.Effects
         public RoundHeroDefeatHistory HeroDefeats => Available(heroDefeats);
 
         public HeroCoinLedger Coins => Available(coins);
+
+        /// <summary>
+        /// Milestone 8.39g1. The round's solo-victory claim, or <c>null</c> where this state was
+        /// composed without one.
+        ///
+        /// <para>It is the one authority here that may legitimately be absent while the rest are
+        /// present, which is why it does not go through <see cref="Available{T}"/>: the other three are
+        /// state every round has, and a missing one means a caller forgot to supply the round. A
+        /// missing claim means this composition has no round to claim through, which a capability
+        /// answers by reporting itself infeasible rather than by throwing at a card that did nothing
+        /// wrong.</para>
+        /// </summary>
+        public GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim SoloVictory =>
+            IsAvailable ? soloVictory : null;
 
         private T Available<T>(T value)
             where T : class

@@ -24,6 +24,7 @@ namespace GuardsDigital.Core.Cards
     }
 
     public sealed class RoundResolutionAuthority
+        : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim
     {
         public const int TurnsPerRound = 4;
 
@@ -218,8 +219,12 @@ namespace GuardsDigital.Core.Cards
                 HeroProgression,
                 HeroItems,
                 roundCoinLedger);
+            // Milestone 8.39g1 hands the round's own solo-victory claim to the effect frame beside the
+            // three authorities it already carries, which is how a printed card reaches an ending it
+            // otherwise could not name. It is `this` rather than a delegate because the claim is this
+            // authority's own state and the interface is already the narrowing.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
-                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger));
+                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this));
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -428,6 +433,38 @@ namespace GuardsDigital.Core.Cards
             out RoundResolutionEvent gameEnded)
         {
             gameEnded = default;
+            if (!TryClaim(winningHeroId))
+            {
+                return false;
+            }
+
+            gameEnded = EndGame(null);
+            return true;
+        }
+
+        /// <summary>Milestone 8.39g1. Whether this match has already been claimed by somebody.</summary>
+        public bool HasBeenClaimed => SoloVictoryHeroId.IsDefined;
+
+        /// <summary>
+        /// Milestone 8.39g1. Records the hero who won alone, and does NOT end the match - the half of
+        /// <see cref="TryRecordSoloVictory"/> that a printed card can reach.
+        ///
+        /// <para><b>The split is what lets card text claim the victory at all.</b> An effect capability
+        /// is handed no route to this authority except
+        /// <see cref="GuardsDigital.Core.Effects.EffectRosterState"/>, which carries the round-owned
+        /// authorities a roster capability may read or mutate; a claim is one more of those. What it
+        /// must not do from in there is call <see cref="EndGame"/>, which stops the turn's in-flight
+        /// resolution - and the resolution still running is the one making the claim. So this writes
+        /// the fact and returns, and <see cref="AnUnrecordedEndingExists"/> stops the match at the end
+        /// of the same turn command, which is the seam milestone 8.16 widened to notice exactly this.
+        /// </para>
+        ///
+        /// <para>The refusals are <see cref="TryRecordSoloVictory"/>'s own, unchanged and now stated
+        /// once: an ended match, an already-claimed one, an undefined hero, and a hero this match is
+        /// not playing.</para>
+        /// </summary>
+        public bool TryClaim(GuardsDigital.Core.Units.Heroes.HeroId winningHeroId)
+        {
             if (!winningHeroId.IsDefined ||
                 Phase == RoundResolutionPhase.GameEnded ||
                 SoloVictoryHeroId.IsDefined ||
@@ -437,7 +474,6 @@ namespace GuardsDigital.Core.Cards
             }
 
             SoloVictoryHeroId = winningHeroId;
-            gameEnded = EndGame(null);
             return true;
         }
 
@@ -475,7 +511,18 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private bool AnUnrecordedEndingExists() =>
             GuardsDigital.Core.Rules.Victory.MatchOutcomeQuery
-                .Read(participants, lanePush?.LanePush, TeamLives, gameIsRecordedAsEnded: false)
+                .Read(
+                    participants,
+                    lanePush?.LanePush,
+                    TeamLives,
+                    gameIsRecordedAsEnded: false,
+                    // Milestone 8.39g1. This overload was called WITHOUT the solo winner, while
+                    // `ReadOutcome` two methods up passed it - so the one seam that notices every
+                    // mid-turn ending was the one place blind to the fact milestone 8.39g added, and a
+                    // match won outright went on asking its winner for their next command. The check's
+                    // own remarks already said what it was for: "the list of rules that can end the
+                    // match grows with the content; the list of endings does not."
+                    SoloVictoryHeroId)
                 .Fault == GuardsDigital.Core.Rules.Victory.MatchOutcomeFault.UnrecordedGameEnd;
 
         /// <summary>Milestone 6.2's marker attachments, held beside <see cref="Timing"/>.</summary>
@@ -880,7 +927,10 @@ namespace GuardsDigital.Core.Cards
             cardActions?.BindRosterState(EffectRosterState.Of(
                 authority.turnSlots.AsReadOnly(),
                 authority.HeroDefeatHistory,
-                cardActions.EnsureCoinLedger(participants)));
+                cardActions.EnsureCoinLedger(participants),
+                // Milestone 8.39g1. A restored round is as claimable as a composed one - the claim is
+                // refused on its own terms when the payload already carries a winner.
+                authority));
             authority.completedRounds.Clear();
             authority.completedRounds.AddRange(state.History.CompletedRounds);
             authority.endOfRoundOutcomes.Clear();
