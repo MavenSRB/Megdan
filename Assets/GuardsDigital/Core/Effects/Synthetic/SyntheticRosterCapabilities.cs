@@ -813,6 +813,32 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string AdjacentToAnotherEnemyUnitParameter = "adjacentToAnotherEnemyUnit";
 
+        /// <summary>
+        /// Milestone 8.39h. Whether the selection drops p.9's innermost ring - the second half of the
+        /// clause the parameter above carries, "an enemy hero adjacent to another enemy unit <b>and not
+        /// adjacent to you</b>".
+        ///
+        /// <para><b>Milestone 8.39d recorded this half as already registered and it was not.</b> It
+        /// named <c>target-is-not-adjacent@1</c>, and so did her shard's mapping row. That capability
+        /// asks whether the enclosing ATTACK's bound target is adjacent to the actor right now -
+        /// Misa's Thunder Shot at p.14's step 7 - and Bombardment, Barrage and Broadside are Skills
+        /// with no attack target to ask about. The composition milestone is where that surfaced, which
+        /// is where this project expects it to, and both records are corrected beside this parameter
+        /// rather than papered over.</para>
+        ///
+        /// <para><b>It is spelled with the printed-icon family's own constant rather than a second
+        /// literal that happens to match.</b> <c>synthetic-radius-hero-target@1</c> has carried this
+        /// exact narrowing since milestone 8.11 for Wasp's Shock, Electrocute and Electroblast - "An
+        /// enemy hero in radius and not adjacent to you" - and a card author declaring the clause on a
+        /// written-distance selection and on a printed-icon one must not be able to get one of them
+        /// wrong. The reading is that family's, unchanged: the ring removed is measured from the ACTOR,
+        /// which is who "you" is on every face that prints the clause.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every declaration written before this milestone
+        /// keeps its exact candidate set.</para>
+        /// </summary>
+        public const string ExcludeAdjacentParameter =
+            SyntheticTargetingCapabilities.ExcludeAdjacentParameterName;
 
         /// <summary>
         /// Milestone 8.22. The count <c>presence-count@1</c>'s <c>present</c> answer is measured
@@ -1663,6 +1689,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         AdjacentToAnotherEnemyUnitParameter, EffectValueKind.Boolean,
                         isRequired: false),
 
+                    // Milestone 8.39h. The other half of that same sentence - "and not adjacent to
+                    // you" - which 8.39d recorded as already registered against a capability that
+                    // reads an enclosing Attack's target. These three faces are Skills. See
+                    // `ExcludeAdjacentParameter` for the correction; the spelling is the printed-icon
+                    // family's own constant, so one clause has one name in this catalog.
+                    new EffectCapabilityParameter(
+                        ExcludeAdjacentParameter, EffectValueKind.Boolean, isRequired: false),
+
                     // Milestone 8.39a. Cutter's three lunges, "Target a hero adjacent to you in the
                     // direction of the move". It sits beside the three narrowings above for the reason
                     // they sit here: the clause is part of WHO may be picked, so a hero standing off
@@ -1702,6 +1736,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (context.Input(AdjacentToAnotherEnemyUnitParameter).BooleanValue)
                 {
                     declared = AdjacentToAnotherUnitOfItsOwnSide(context, declared);
+                }
+
+                // Milestone 8.39h, and it filters after the clause above for the reason that clause
+                // filters after Sabina's: a card printing both means both, and Cutter's three Blue
+                // discards print both in one sentence.
+                if (context.Input(ExcludeAdjacentParameter).BooleanValue)
+                {
+                    declared = StandingBeyondTheActorsOwnRing(context, declared);
                 }
 
                 // Milestone 8.39a, and it is bound rather than flagged because the clause carries a
@@ -1803,6 +1845,44 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// enemy unit. Without this exclusion the clause would admit every enemy hero on the
             /// board, which is the opposite of what "another" says.</para>
             /// </summary>
+            /// <summary>
+            /// Milestone 8.39h. The candidates standing further than p.9's innermost ring from the
+            /// actor - "and not adjacent to you", the second half of the clause Cutter's Bombardment,
+            /// Barrage and Broadside print.
+            ///
+            /// <para>It is the identical test <c>synthetic-radius-hero-target@1</c> has applied since
+            /// milestone 8.11 for Wasp's Shock: the exact distance the word means rather than "further
+            /// than one", so it says nothing about the actor's own space and does not quietly depend on
+            /// that space having been excluded elsewhere. This selection excludes the actor
+            /// unconditionally anyway, which is why the two readings agree everywhere.</para>
+            ///
+            /// <para>A board that cannot place the actor keeps nobody rather than everybody: a
+            /// narrowing that silently does nothing is worse than one that refuses, which is the
+            /// reading milestone 8.39d1 recorded for the same reason.</para>
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> StandingBeyondTheActorsOwnRing(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
+            {
+                var board = context.Components?.Board;
+                if (board == null || !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                var kept = new List<BoardObjectReference>();
+                foreach (var target in declared)
+                {
+                    if (board.TryGetObjectCoordinate(target, out var targetAt) &&
+                        HexDistanceQuery.Calculate(actorAt, targetAt) != 1)
+                    {
+                        kept.Add(target);
+                    }
+                }
+
+                return kept;
+            }
+
             private static IReadOnlyList<BoardObjectReference> AdjacentToAnotherUnitOfItsOwnSide(
                 EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
             {

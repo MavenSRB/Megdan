@@ -6,6 +6,8 @@ Created 2026-09-12 during the fourteenth hero's second required warning-threshol
 
 Milestones **8.39a**, **8.39b** and **8.39c** moved here verbatim, as one contiguous run of 4,318 words rather than one block at a time. They are sized together deliberately, on the lesson the seventh shard's header records - "the immediately preceding move in this same review was sized for two, fitted one, and would otherwise have forced a second review mid-ceremony". `PHASE_8_FOURTEENTH_HERO.md` had reached 12,969 of its 15,000 limit with **five** definitions still to land, one of them the solo-victory block the series preamble singles out as larger than the rest; it keeps 8.39d onward and lands near 8,800, which is the first time in this series the active shard has had room for everything still owed. The run is self-contained: three vocabulary contracts proved before any content named them, whose one forward reference is 8.39b's deferred `synthetic-range-obstacle-target@1`, and the dealing at 8.39i owes that its showcase consumer whether or not the definition sits here. Every `Historical evidence:` link inside it resolves unchanged, because both shards sit in one directory.
 
+Milestones **8.39d** and **8.39d1** joined them on 2026-09-13, during the fourteenth hero's THIRD required warning-threshold ownership review - the one milestone 8.39h forced by doubling its own block from 975 words to 2,185 as it completed, which is exactly what this series' own notes said a completing block does. `PHASE_8_FOURTEENTH_HERO.md` stood at 13,277 of its 15,000 limit with the warning line at 12,750 and two definitions still to land; the pair is 2,348 words against 110 of pointer, which clears the overage nine times over and leaves the active shard near 11,100 - room for 8.39i and 8.39j to double as they complete without a fourth review. They are moved as ONE run under one routing summary rather than one block at a time, on the lesson this header already records, and they are self-contained in the way that matters: a block and the implementation split it made when it measured that a card-text selection's subject and an Attack's target are different seams. Every `Historical evidence:` link inside them resolves unchanged, because both shards sit in one directory.
+
 Definitions remain active authority under the same `Roadmap/` family threshold; this is sharding, not archiving, and completion evidence remains in commit bodies indexed by the Phase 8 handoff archive.
 
 ### [x] 8.39a Build the directional attack vocabulary her Red line needs
@@ -140,4 +142,82 @@ Acceptance checks:
 Non-goals: No Cutter content. No change to `AfterPushTrigger`'s shape. No new push capability - `synthetic-object-push@3` already carries the distances both faces print.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839c-build-the-zone-crossing-push-consequence-her-gold-line-needs-completion-evidence).
+
+### [x] 8.39d Build the subject-adjacency predicate and excluded repeat her Blue line needs
+
+Observable outcome: a radius selection can narrow its subjects to those standing beside a unit of the SUBJECT's own team, and a card-text repeat can exclude the subject its first performance took.
+
+**THE ADJACENCY PREDICATE IS A SIBLING PARAMETER, NOT A NEW SELECTION, AND THE NEAR MISS IS EXACT.** Bombardment, Barrage and Broadside print "An enemy hero **adjacent to another enemy unit** and not adjacent to you discards a card, if able." Sabina's selection already carries `adjacentToFriendlyMinion`, which narrows the same radius-hero selection by adjacency - measured from the ACTOR's team and restricted to minions. Cutter's clause measures from the TARGET's team and says unit. That is two parameter differences on a declaration that already carries one, which is what the 8.38b lesson predicts and what this block confirms before minting anything.
+
+~~**"AND NOT ADJACENT TO YOU" IS ALREADY REGISTERED** as `target-is-not-adjacent@1` and needs nothing.~~ **THIS WAS WRONG AND 8.39h IS WHERE IT SURFACED.** That capability asks whether an enclosing ATTACK's bound target is adjacent to the actor right now - Misa's Thunder Shot at p.14's step 7 - and these three faces are Skills with no attack target to ask about. Her shard's mapping row said the same thing, which is the eighth time in this series that a block or a row named the wrong contract. The composition milestone ships the missing half as a fifth optional boolean on the same declaration this block widened, spelled with the printed-icon family's own `excludeAdjacent` constant so one clause has one name in the catalog; nothing else about this block moves.
+
+**THE REPEAT'S EXCLUSION IS THE GENUINELY NEW HALF.** Broadside alone adds "May repeat once on a different target." p.10's repeat is registered and milestone 8.38c2's per-grant target exclusion is the nearest shape in the build, so the question this block answers is whether that scope can carry a card-text repeat's subject exclusion or whether the two are different seams wearing one description.
+
+**AND MILESTONE 8.35z15's RULE IS EXPECTED TO APPLY RATHER THAN BE RE-DECIDED.** That milestone established that a card-text repeat with no legal subject is not offered. Broadside with exactly one legal subject on the board must therefore not offer its repeat. The block confirms this rather than assuming it, because 8.35z15 found three shipped journeys that had only ever DECLINED their own named prompt - a shape that passes without ever exercising the rule.
+
+**THE BLOCK'S OWN QUESTION IS ANSWERED, AND THE ANSWER SPLITS IT.** It asked "whether that scope can carry a card-text repeat's subject exclusion or whether the two are different seams wearing one description". **They are different seams**, so 8.39d ships the adjacency predicate and **8.39d1 below ships the repeat**, on milestone 8.38c's precedent - same total scope, no acceptance check dropped, each block back under 8.19b's ceiling.
+
+**WHY THEY ARE DIFFERENT SEAMS, MEASURED RATHER THAN ARGUED.** `RepeatTargetBinding` already carries `DifferentTarget`, `DifferentEnemyHero` and `DifferentEnemyMinion`, and every one of them is about an ATTACK's own target: its own remarks say the exclusion "is carried by the repeated Attack instance rather than bound to a node id", and the store is `PendingAttackResolution.ExcludedTargets`. Broadside is a **Skill**. Its "target" is the subject a card-text selection node chose, and a Skill has no attack-target state to exclude from. The one arm that binds a selection node is `SameTarget`, which SUPPLIES the piece to that node's `Resume` - capability-agnostic precisely because it hands a value over rather than removing one - and `EffectDefinitionValidator` refuses the combination Broadside needs outright: "A different-target repeat excludes the action's own target, so it names no selection node." Milestone 8.38c2's per-grant exclusion is not the nearest shape either; it is turn-scoped and spans separate granted actions.
+
+**WHAT 8.39d SHIPS.** `adjacentToAnotherEnemyUnit`, a second optional boolean on `choose-target@2` beside Sabina's `adjacentToFriendlyMinion`. Hers narrows the same radius-hero selection by an adjacency measured from the ACTOR's team and restricted to p.19's minions; Cutter's measures from the SUBJECT's team and admits any unit. **Two parameter differences, so it is a sibling and not a shared pair**: re-expressing Sabina's through common parameters would change her node's inputs and move a shipped digest, which is the discipline this catalog has followed since 8.20.
+
+**"ANOTHER" DOES REAL WORK HERE WHERE IT DID NOT FOR SABINA, AND THAT IS THE TRAP IN THIS CLAUSE.** Her remarks record that a minion cannot be standing on an enemy hero, so nothing needed excluding. This clause measures a disk around the candidate for units on the candidate's OWN side - and the candidate is one. p.9 measures a disk inclusively, so without an explicit self-exclusion the clause would admit every enemy hero on the board by standing next to itself, which is the exact opposite of what it prints. Asserted as its own case.
+
+**AND "ENEMY" IS STILL READ FROM THE ACTOR**, as every relation in this catalog is, which is what keeps this from needing a relation measured from the subject: a unit that opposes the actor is on the candidate's own side by construction, because the candidate opposes the actor too. The sharpest statement of the difference is a board where Sabina's clause and Cutter's select **different heroes**, which is asserted directly.
+
+Acceptance checks:
+
+- The predicate admits exactly the enemy heroes standing beside another unit of their own team, asserted as a set equality on a board where an isolated enemy hero and an enemy hero beside a friendly-to-the-actor unit are both excluded for different reasons.
+- A hero adjacent to two qualifying units is offered once, not twice.
+- Sabina's existing parameter is unchanged in behaviour and her candidate sets are byte-identical.
+- ~~The repeat excludes the first subject, and is not offered at all when no second legal subject exists.~~ **Moved to 8.39d1**, which this milestone split out after measuring that a card-text selection's subject and an Attack's target are different seams. Nothing is dropped: the check is restated there with four more beside it.
+- No schema field, corpus digest or pinned constant moves.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Cutter content. No change to Sabina's declaration beyond the parameter this block adds. No change to p.10's repeat for any existing face.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839d-build-the-subject-adjacency-predicate-and-excluded-repeat-her-blue-line-needs-completion-evidence).
+
+### [x] 8.39d1 Build the card-text repeat that excludes the subject a selection already took
+
+Split out of 8.39d during implementation, on milestone 8.38c's precedent: same total scope, no acceptance check dropped, and each block back under 8.19b's ceiling. 8.39d asked whether milestone 8.38c2's scope could carry this and measured that it cannot.
+
+Observable outcome: a card-text repeat on a face whose subject comes from a SELECTION node can exclude the piece that node took in the instance that asked for the repeat.
+
+**THE THREE EXISTING `Different*` ARMS ARE ABOUT AN ATTACK'S OWN TARGET AND CANNOT REACH THIS.** `RepeatTargetBinding.DifferentTarget`'s own remarks say the exclusion "is carried by the repeated Attack instance rather than bound to a node id", and the store is `PendingAttackResolution.ExcludedTargets` - state a Skill has none of. Broadside prints "An enemy hero adjacent to another enemy unit and not adjacent to you discards a card, if able. **May repeat once on a different target**", and its "target" is the subject a card-text selection chose.
+
+**THE ARM THAT DOES BIND A SELECTION NODE IS `SameTarget`, AND IT IS THE OPPOSITE OPERATION.** That one captures the chosen piece onto the frame (`RepeatedActionQuery.TryCaptureBoundTarget`), carries it on `RepeatContinuation.NextBoundTo`, and hands it to the repeated instance's own `Resume` - which is what keeps it capability-agnostic: nothing in the session knows what a target is, it just passes a value back. **An exclusion cannot be expressed that way**, because removing a candidate is a question only the selection can answer. That asymmetry is this block's whole problem and it should be stated in the solution rather than worked around.
+
+**AND `EffectDefinitionValidator` REFUSES THE COMBINATION TODAY**, in as many words: "A different-target repeat excludes the action's own target, so it names no selection node." So the block owes a new member, a validator arm that requires a bound selection where the new member is declared, and a way for the excluded piece to reach the selection's candidate derivation.
+
+**THE CAPTURE HALF IS ALREADY BUILT AND MUST BE REUSED RATHER THAN REBUILT.** `IsBoundSelection` is what arms the capture, and it currently tests for `SameTarget` alone; the new member belongs in that test. Reading the piece back out is `TryReadBoundTarget`. Both already survive a restore, which is what milestone 8.6 records as the reason the binding lives in the resolution identity rather than in a field.
+
+**MILESTONE 8.35z15's RULE IS EXPECTED TO APPLY RATHER THAN BE RE-DECIDED.** That milestone established that a card-text repeat with no legal subject is not offered. Broadside with exactly one legal subject on the board must therefore not offer its repeat. The block confirms this rather than assuming it, because 8.35z15 found three shipped journeys that had only ever DECLINED their own named prompt - a shape that passes without ever exercising the rule.
+
+**THE ASYMMETRY THE BLOCK PREDICTED IS REAL, AND IT IS WHAT DECIDED WHERE THE EXCLUSION LIVES.** Supplying a piece can be capability-agnostic - `SameTarget` hands its captured piece to the bound selection's own `Resume` and lets that selection judge it, so nothing in the session has to know what a target is. **Removing one cannot**, because only a selection knows its candidates. So the exclusion is applied in `EffectSelectionEligibilityQuery`, which is where every other generic narrowing in this build already happens and which already has an offer half (`EligibleCandidates`) and an answer half (`AreStillEligible`) that the session already calls. One method serves both, so a piece left out of the offer cannot be submitted to it.
+
+**IT IS APPLIED BEFORE THE CONSUMER NARROWING RATHER THAN AFTER IT**, and that ordering is deliberate: a piece an excluding repeat took is not a candidate at all, so no question about it is put to a consumer. It is also the only narrowing in that query that applies where no consumer can be read, which is what keeps it a rule about the card rather than a rule about the consumer.
+
+**ONE CAPTURE, TWO USES, AND THE SPLIT THAT KEEPS THEM APART.** `RepeatedActionQuery.BindsSelection` armed the capture for `SameTarget` alone; it now answers for both arms, because both need the piece recorded at the moment the selection names it - the last moment it is still standing where the selection saw it. Everything after that point had to learn the difference, so `BoundBy(definition, node, binding)` is split out and `TryReadBoundTarget` - the SUPPLY path - is pinned to `SameTarget` explicitly. Widening that one instead would have handed the repeated instance the very subject the clause tells it to avoid, which is the defect this split exists to make impossible.
+
+**MATCHED BY IDENTITY WHERE THE OFFER NAMES A PIECE AND BY SPACE WHERE IT NAMES A COORDINATE.** A selection publishes whichever its own card asked for and the frame records the excluded piece as a board object, so a comparison that only knew one of those would silently exclude nobody - a narrowing that quietly does nothing is worse than one that refuses. Both arms are asserted.
+
+**TWO PLACES THE TWO BINDING ARMS DELIBERATELY DIFFER, BOTH ASSERTED.** A `SameTarget` repeat whose selection named nobody REFUSES, which is milestone 8.6's conservative answer - running it unbound would be the card saying something it does not say. An EXCLUDING repeat with nothing to exclude ADVANCES, because a repeat of an unnarrowed set is exactly what p.10's default already is. And `RepeatRequest.Binding` still reports `Unbound` for `SameTarget`: that field exists so a dispatcher can honour "on a different target" without reading nodes, and putting a value where Wasp and Dodger have always seen none would be a behaviour change they never asked for.
+
+**NOTHING IS STORED**, on `DifferentEnemyHero`'s own terms: the repeated instance reads this member off the trusted definition when it builds its candidates, and the piece comes from the same restorable frame state `SameTarget` has used since milestone 8.6. No snapshot field and no schema version.
+
+Acceptance checks:
+
+- A repeat declaring the new binding offers the same selection its printed instance did, minus the piece that instance took, asserted as a set equality on a board carrying at least three legal subjects.
+- The exclusion is read by the same query the offer and the answer use, so the taken piece cannot be submitted to the repeated instance.
+- ~~The repeat is not offered at all when no second legal subject exists, which is milestone 8.35z15's rule confirmed rather than re-decided.~~ **Amended at closing: this is a FEASIBILITY question about the repeat node, not an exclusion question, and it belongs to the milestone that composes the face.** 8.35z15's rule is enforced where a repeat's offer is judged; what this block owes it is that the narrowed set be the one that judgement reads, which the shared method gives it. The behaviour is asserted at composition, where a real board can hold exactly one legal subject - a vocabulary fixture can only assert the narrowing that produces the empty set, and does.
+- A piece that has become ineligible for another reason between the two instances is excluded by that reason rather than by this one, and the two do not mask each other.
+- `SameTarget`'s capture and read are shared rather than copied, and Wasp's and Dodger's existing bound repeats are byte-identical in behaviour, asserted rather than assumed.
+- `EffectDefinitionValidator` refuses the new member without a bound selection node, and refuses a bound selection node that is the repeat itself, on the terms it already refuses those for `SameTarget`.
+- No schema field, corpus digest or pinned constant moves - the narrowing is derived from the trusted definition when the repeated instance builds its candidates, which is what `DifferentEnemyHero`'s remarks record as the reason that member moved none.
+- Complete unfiltered dotnet harness passes.
+
+Non-goals: No Cutter content. No change to the three Attack-target `Different*` arms, to `PendingAttackResolution.ExcludedTargets`, or to milestone 8.38c2's turn-scoped granted-target exclusion. No new repeat node kind - p.10's repeat is one node kind and this is a declaration on it.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-839d1-build-the-card-text-repeat-that-excludes-the-subject-a-selection-already-took-completion-evidence).
 

@@ -293,6 +293,13 @@ namespace GuardsDigital.Tests.EditMode
         /// <para>The corpus is derived from the verified content classes the assembly contains rather
         /// than listed, on milestone 8.38d's precedent: a fourteenth hero who binds the crossing is
         /// supposed to appear here, and a hero this check simply forgot is not.</para>
+        ///
+        /// <para><b>Milestone 8.39h is the fourteenth hero arriving, and this case caught her rather
+        /// than being told about her.</b> Cutter's Brace for Impact, Ramming Speed and Crashland are
+        /// the faces this parameter was built for, so the premise is now a PARTITION: her three bind
+        /// the crossing and every declaration written before 8.39e binds the same three parameters it
+        /// was written with. "A new name here is a hero to check" was the instruction, and the check is
+        /// that hers bind it TRUE while the four before hers bind it at all.</para>
         /// </summary>
         [Test]
         public void EveryChargeDeclarationWrittenBeforeThisMilestone_BindsNoCrossing()
@@ -305,13 +312,13 @@ namespace GuardsDigital.Tests.EditMode
                 .ToArray();
 
             Assert.That(nodes.Select(entry => entry.Owner).Distinct().OrderBy(value => value),
-                Is.EqualTo(new[] { "brogan", "ursafar" }),
+                Is.EqualTo(new[] { "brogan", "cutter", "ursafar" }),
                 "The premise: these are the heroes whose printed cards name the charge line today. " +
                 "A new name here is a hero to check, not a failure to suppress.");
-            Assert.That(nodes.Length, Is.EqualTo(4),
-                "Brogan's three charges and Ursafar's one.");
+            Assert.That(nodes.Length, Is.EqualTo(7),
+                "Brogan's three charges, Ursafar's one, and Cutter's three Green charges.");
 
-            foreach (var entry in nodes)
+            foreach (var entry in nodes.Where(entry => entry.Owner != "cutter"))
             {
                 Assert.That(
                     entry.node.Inputs.Select(input => input.ParameterName)
@@ -324,6 +331,30 @@ namespace GuardsDigital.Tests.EditMode
                     }),
                     $"{entry.Owner}'s {entry.Id.Value} binds the three parameters it was written " +
                     "with and no fourth.");
+            }
+
+            var crossing = nodes.Where(entry => entry.Owner == "cutter").ToArray();
+
+            Assert.That(crossing.Length, Is.EqualTo(3));
+            foreach (var entry in crossing)
+            {
+                Assert.That(
+                    entry.node.Inputs.Select(input => input.ParameterName)
+                        .OrderBy(value => value, StringComparer.Ordinal),
+                    Is.EqualTo(new[]
+                    {
+                        SyntheticRosterCapabilities.IgnoresObstaclesParameter,
+                        "maximumDistance",
+                        "minimumDistance",
+                        SyntheticRosterCapabilities.UnitKindParameter
+                    }.OrderBy(value => value, StringComparer.Ordinal).ToArray()),
+                    $"{entry.Id.Value} prints \"ignoring obstacles\" and binds it.");
+                Assert.That(
+                    entry.node.Inputs
+                        .Single(input => input.ParameterName ==
+                            SyntheticRosterCapabilities.IgnoresObstaclesParameter)
+                        .Literal.BooleanValue,
+                    Is.True, entry.Id.Value);
             }
         }
 

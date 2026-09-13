@@ -5,6 +5,7 @@ using System.Reflection;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -28,6 +29,18 @@ namespace GuardsDigital.Tests.EditMode
     /// thirteen literals would close the hole for this build and leave it open for the fourteenth
     /// hero. A hero composed but not yet dealt is covered here too, which is the point - this is the
     /// check that lets a composition milestone see what only a dealing used to.</para>
+    ///
+    /// <para><b>The catalog it validates against is the build's registration list PLUS every
+    /// declaration the build deliberately withholds, and milestone 8.39h is why that distinction had to
+    /// be written down.</b> Milestone 7.9's deferral gate keeps a contract out of the registration list
+    /// until a dealt card can start it, so a hero composed and not yet dealt names capabilities the
+    /// build does not register - Cutter's Grappling Bolt names 8.39b's obstacle selection and her A
+    /// Fistful of Coins names 8.39g1's solo-victory claim. Validating her against the registered list
+    /// alone would report both as unregistered and say nothing at all about the parameter and output
+    /// names this case exists to check, which is the opposite of covering a composition milestone. The
+    /// two lists are concatenated rather than named here, so a contract that moves from one to the
+    /// other needs no edit in this file, and the registration debt is asserted from the other side by
+    /// each hero's own printed-set fixture.</para>
     /// </summary>
     [TestFixture]
     public sealed class DealtCorpusCompositionValidationTests
@@ -35,7 +48,18 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void EveryVerifiedFace_PassesTheValidatorAMatchCompositionRuns()
         {
-            var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
+            var build = MatchContentCatalogs.ForThisBuild().Capabilities;
+            var catalog = new EffectCapabilityCatalog(
+                build.Registered.Select(build.Load)
+                    .Concat(SyntheticRosterCapabilities.DeferredHandlers())
+                    .Concat(SyntheticTargetingCapabilities.DeferredHandlers())
+                    .Concat(SyntheticPlacementCapabilities.DeferredHandlers())
+                    .Concat(SyntheticDisplacementCapabilities.DeferredHandlers())
+                    .Concat(SyntheticBorrowedActionCapabilities.DeferredHandlers())
+                    .Concat(SyntheticConditionCapabilities.DeferredHandlers())
+                    .Concat(SyntheticAttackTargetSurvivalCapabilities.DeferredHandlers())
+                    .GroupBy(handler => handler.Reference)
+                    .Select(group => group.First()));
             var violations = new List<string>();
             var walked = 0;
 

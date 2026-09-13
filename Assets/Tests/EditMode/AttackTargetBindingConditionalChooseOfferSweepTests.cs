@@ -183,6 +183,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var card in TaliCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("tali", d);
             foreach (var card in WhisperCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("whisper", d);
             foreach (var card in SwiftCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("swift", d);
+            foreach (var card in CutterCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("cutter", d);
         }
 
         /// <summary>
