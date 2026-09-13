@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.40b**.
+- Current completed milestone: **8.40e**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.40c**.
+- Next proposed milestone: **8.40f**.
 
 On 2026-09-13 the user named the FIFTEENTH hero and asked for him on the terms the two series before him were given: "make other agents and have them implement Bain ... Keep pushing them until hero is fully implemented and tested", and "fully implemented, pickable, real cards, pick card on pick screen, all the cards work, the whole thing." [Fifteenth-hero dealing](Roadmap/PHASE_8_FIFTEENTH_HERO.md) owns that series as a user-approved roadmap amendment, and [his shard](Rules/HERO_BAIN.md) carries the inventory it is sized against. **Milestone 8.40 inventoried him and did nothing else** - he is not composed, registered, dealt or gated, so the build still deals fourteen heroes - and twelve blocks follow, **8.40a** through **8.40k**. One is much larger than the rest: three of his Blue faces have an enemy hero secretly choose a card from their own hand while Bain guesses its colour and then reveals it, which is the first hidden choice and the first public reveal this build has ever needed, and his shard records the reading that its legal guesses are derived from PUBLIC information only. This re-opens the ROSTER for Bain alone; the 2026-09-07 brakes direction still governs the parked presentation program, the card-authoring workbench, tier-3 bots and every other parked item.
 
