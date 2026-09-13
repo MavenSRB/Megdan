@@ -337,13 +337,30 @@ namespace GuardsDigital.Tests.EditMode
                 "Swift's Red line declares the plain straight line, so the sweep is reading real " +
                 "declarations rather than an empty corpus of defaults.");
 
-            foreach (var entry in declared)
+            // Milestone 8.40i composed the three faces this clause was built for - Light Crossbow,
+            // Heavy Crossbow and Arbalest - so the sweep now separates them from everything written
+            // before rather than asserting that nothing prints the member. The three are asked the
+            // clearance question by the cases above; every OTHER declaration in the build still keeps
+            // the exact set p.13 and p.19 gave it.
+            var clearLine = declared
+                .Where(entry => entry.Policy.Line ==
+                    AttackTargetLine.InStraightLineClearOfUnitsAndTerrain)
+                .ToArray();
+            Assert.That(
+                clearLine.Select(entry => entry.Owner).OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    "BainCardContent/bain-arbalest/primary-ranged-attack",
+                    "BainCardContent/bain-heavy-crossbow/primary-ranged-attack",
+                    "BainCardContent/bain-light-crossbow/primary-ranged-attack"
+                }),
+                "Bain's three plain crossbows are the only faces in the build that print \"no units, " +
+                "or terrain, between you\", which is BA-03 and the count 8.40d corrected from five - " +
+                "his two modal Reds print a marker clause and no line clause at all.");
+
+            foreach (var entry in declared.Where(entry => entry.Policy.Line !=
+                AttackTargetLine.InStraightLineClearOfUnitsAndTerrain))
             {
-                Assert.That(
-                    entry.Policy.Line,
-                    Is.Not.EqualTo(AttackTargetLine.InStraightLineClearOfUnitsAndTerrain),
-                    entry.Owner + " was written before this milestone and cannot already print its " +
-                    "clause.");
                 Assert.That(
                     Targets(board, entry.Policy),
                     Is.EquivalentTo(ExpectedUnderTheOlderReadings(entry.Policy)),

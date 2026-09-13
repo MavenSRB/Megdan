@@ -58,6 +58,17 @@ namespace GuardsDigital.Tests.EditMode
                     .Concat(SyntheticBorrowedActionCapabilities.DeferredHandlers())
                     .Concat(SyntheticConditionCapabilities.DeferredHandlers())
                     .Concat(SyntheticAttackTargetSurvivalCapabilities.DeferredHandlers())
+
+                    // Milestone 8.40i. The two lists a fifteenth hero's composition names and the
+                    // build does not register: the hidden card choice and the public reveal his Blue
+                    // line prints, and his four marker operations. They join here for the reason the
+                    // seven above did - this case validates against registration PLUS every
+                    // deliberately withheld declaration, or a composed-but-undealt hero's faces report
+                    // "unregistered" and say nothing at all about the parameter and output names the
+                    // case exists to check.
+                    .Concat(SyntheticHiddenChoiceCapabilities.DeferredHandlers())
+                    .Concat(BainComponentContent.DeferredHandlers())
+                    .Concat(BainActiveEffectContent.DeferredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();

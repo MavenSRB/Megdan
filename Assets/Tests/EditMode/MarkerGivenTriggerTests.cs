@@ -603,17 +603,27 @@ namespace GuardsDigital.Tests.EditMode
                     UltimateTriggerCondition.AfterControllerPlacesSelf,
                     UltimateTriggerCondition.AfterControllerDefeatsMinionWithBasicAttack,
                     UltimateTriggerCondition.AfterControllerResolvesBasicCard,
-                    UltimateTriggerCondition.AfterControllerPerformsPrimaryAction
+                    UltimateTriggerCondition.AfterControllerPerformsPrimaryAction,
+
+                    // Milestone 8.40i. Bain's A Complicated Profession is the one face in the build
+                    // that declares this milestone's own condition, which is what 8.40h built it for -
+                    // and the case below is what keeps the other six naming the action window.
+                    UltimateTriggerCondition.AfterControllerGivesMarker
                 }),
-                "No dealt hero declares this milestone's condition, and the conditions they do " +
-                "declare are the ones they declared before it.");
+                "The six conditions dealt heroes declared before this series still are what they " +
+                "were, and the seventh is Bain's own.");
             Assert.That(
                 declared.All(rule =>
-                    rule.TriggerCheckpoints.Count == 1 &&
-                    rule.TriggerCheckpoints[0] == TimingCheckpoint.ActionEnded),
+                    rule.TriggerCondition == UltimateTriggerCondition.AfterControllerGivesMarker
+                        ? rule.TriggerCheckpoints.Count == 1 &&
+                            rule.TriggerCheckpoints[0] == TimingCheckpoint.MarkerGivenToHero
+                        : rule.TriggerCheckpoints.Count == 1 &&
+                            rule.TriggerCheckpoints[0] == TimingCheckpoint.ActionEnded),
                 Is.True,
-                "and every one of them still names the action window, which is the half the widened " +
-                "constructor guard could have loosened and did not.");
+                "and every one of the six still names the action window, which is the half the widened " +
+                "constructor guard could have loosened and did not - while the seventh names the " +
+                "moment a marker is given, which is the pairing that guard now enforces in both " +
+                "directions.");
 
             var momentWatchers = ConfiguredUltimates()
                 .Where(rule => rule.AfterPush.IsDeclared || rule.BeforeAction.IsDeclared)

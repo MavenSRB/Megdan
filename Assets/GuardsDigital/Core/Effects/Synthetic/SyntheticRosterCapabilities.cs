@@ -1261,6 +1261,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string RetrievedByOutputName = "retrievedBy";
 
         /// <summary>
+        /// Milestone 8.40i. Whether the retrieval happened at all, published only on success - the "if
+        /// they do" of Bain's Drinking Buddies and Another One!, whose consequence is about somebody
+        /// ELSE.
+        ///
+        /// <para><b>Why the hero above could not carry it, measured rather than assumed.</b>
+        /// Silverarrow's faces read "if they do" through the binding itself: the coin grant's recipient
+        /// IS the hero the retrieval published, so a decline leaves the binding undefined and an
+        /// <c>if able</c> grant is simply not made. Bain's second sentence is "you may ALSO retrieve",
+        /// which is about the ACTOR - so nothing in the dependent step can be bound from the first one,
+        /// and the condition needs a node of its own. An <see cref="EffectNodeKind.Optional"/> gated by
+        /// a hero-consuming node cannot carry it either: the feasibility walk that decides whether to
+        /// OFFER an optional branch treats a node whose required input is not yet bound as undecidable
+        /// and therefore performable, so the prompt was opened and then refused - which is a wasted
+        /// decision rather than a condition.</para>
+        ///
+        /// <para>So it is the count form of the fact, exactly as <c>discard-owned-card@1</c>'s
+        /// <see cref="DidDiscardOutputName"/> is, and for the identical recorded reason: "the sentence
+        /// after the semicolon has to be told, and a decline publishes nothing to tell it with". A
+        /// <see cref="EffectNodeKind.Conditional"/> over <c>synthetic-is-flagged@1</c> reads it, and a
+        /// binding left undefined by a decline reads as false, which is what the printed "if" asks
+        /// for.</para>
+        ///
+        /// <para>Published only for a node that declared it, so Silverarrow's and Tali's four
+        /// retrievals are byte-identical without naming it - and an added OUTPUT moves no corpus
+        /// digest, because the identity walker digests a capability's reference and its Active-effect
+        /// definitions and never its parameter schema.</para>
+        /// </summary>
+        public const string DidRetrieveOutputName = "didRetrieve";
+
+        /// <summary>
         /// The Zone reach a card-text Fast Travel declares - p.11's own, or the "adjacent zone" both
         /// of Silverarrow's Gold basics print.
         /// </summary>
@@ -3526,7 +3556,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // recipient here, so a hero who declined leaves the binding undefined and the
                         // grant reports itself impossible - which its own `if able` policy turns into
                         // a step not taken. Nothing separate asks "did it happen".
-                        new EffectOutputBinding(RetrievedByOutputName, EffectValueKind.Hero)
+                        new EffectOutputBinding(RetrievedByOutputName, EffectValueKind.Hero),
+
+                        // Milestone 8.40i. The same fact as a Boolean, for a card whose "if they do"
+                        // gates a step about somebody else - see DidRetrieveOutputName.
+                        new EffectOutputBinding(DidRetrieveOutputName, EffectValueKind.Boolean)
                     });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -3593,6 +3627,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     facts.Add(new EffectOutcomeFact(
                         RetrievedByOutputName, EffectValue.Hero(card.OwnerId)));
+                }
+
+                if (context.Publishes(DidRetrieveOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        DidRetrieveOutputName, EffectValue.Boolean(true)));
                 }
 
                 return EffectExecutionResult.Applied(facts);

@@ -605,7 +605,7 @@ Ultimate trigger condition for any other hero.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840h-build-the-after-a-marker-is-given-trigger-his-ultimate-fires-on-completion-evidence).
 
-### [ ] 8.40i Compose Bain's eighteen dealt faces and prove them at the focused tier
+### [x] 8.40i Compose Bain's eighteen dealt faces and prove them at the focused tier
 
 Observable outcome: all eighteen of his dealt faces carry composed printed text with no
 `PrintedTextComposition.DeferredUntil`, and his focused authoritative rule tests resolve every branch
@@ -643,13 +643,115 @@ the cycle this avoids presents as a suite that is absent rather than red.
 and Another One! differ only in Another One!'s extra keyword sentence - BA-12 - so unlike Cutter's
 Bombardment/Barrage pair the reach does not separate them. The composition must not collapse them.
 
+**EIGHTEEN DEALT FACES COMPOSE AND THE ONE DEFERRAL IS THE HANDICAP.** `BainCardContent` is a sealed
+static class in `GuardsDigital.Core.Cards.Verified` behind a `Lazy<IReadOnlyList<CardDefinition>>`, which
+is both what the derived sweep reflects for and what keeps the static-initialization cycle out of a
+corner that presents as an ABSENT suite rather than a red one. Thirteen faces attach a body: the three
+plain crossbows state their whole text as a targeting DECLARATION, Perfect Getaway's whole text is its
+Block condition, the Ultimate composes as an Ultimate rule rather than as an action, and Side Quest
+composes nothing on the standing p.20 reason.
+
+**THE FREE PRE-FIX OBSERVATION WAS MADE AND IT SAID EXACTLY WHAT THIS BLOCK PREDICTED.** With his
+content class written and his line not yet in the sweep's corpus,
+`TheSweptCorpus_CoversEveryVerifiedContentClassTheBuildContains` failed with `Missing (1): < "bain" >` -
+the derived guard demanding his line rather than passing while he went unswept. It is green with the
+line added, and the observation is recorded in the completion commit body as the block asked.
+
+**THREE MAPPING ROWS NAMED THE WRONG CONTRACT, AND COMPOSITION IS WHERE THIS PROJECT EXPECTS THAT.**
+(1) **"If they do" cannot read a card as a flag.** The row put `synthetic-is-flagged@1` over
+`retrieve-card@1`'s `retrieved` output; that parameter is a BOOLEAN and the retrieval published a card
+instance and a hero, so the definition validator refuses the binding outright. Silverarrow's Fae Healing
+needs no Boolean because its consequence is about the hero who retrieved - the binding IS the condition
+there - while Bain's second sentence is about HIMSELF, so nothing in the dependent step can be bound
+from the first. (2) **Hand Crossbow's bullet cannot be a printed-Range hero selection narrowed by
+`holdsTheActorsMarker`.** That narrowing lives on `choose-target@2`, whose reach is a distance a
+definition writes down, and writing 3 there would leave BA-15's `+1 Range` item - the one his Blue Tier
+III exists to grant - raising every reach on his sheet except the bullet it was printed for. The shape
+carrying BOTH the printed Range and the marker narrowing is the `attack-sequence@1` BULLET, so Hand
+Crossbow composes exactly as Hunter-Seeker does and differs from it in the modal's cardinality alone -
+which is what the two printed sentences differ in. (3) **Close Call needs no `synthetic-is-flagged@1`
+either.** 8.40c's rule that a Conditional's branch cannot bind that Conditional's own output bites only
+where a branch names "that hero", and the transfer's `holder` is the hero the marker moves TO - the
+defender, who is the frame's own actor - while the hero it moves FROM is the one attachment, derived. So
+all five Greens hang their branch straight off the predicate.
+
+**ONE ADDED OUTPUT IS THE WHOLE OF WHAT THIS MILESTONE GREW, AND IT IS THE CORRECTION ABOVE PAID.**
+`retrieve-card@1` gained `didRetrieve`, a Boolean published only on success, which is
+`discard-owned-card@1`'s `didDiscard` for the identical grammar and for the recorded reason: "the
+sentence after the semicolon has to be told, and a decline publishes nothing to tell it with". An added
+output moves no corpus digest, publishes to no node that did not ask, and leaves Silverarrow's and
+Tali's four retrievals byte-identical. **The alternative was measured and refused rather than assumed**:
+an `Optional` gated by a hero-consuming node still OPENED "you may also retrieve" after a decline,
+because `EffectOptionFeasibilityQuery.IsDecidable` treats a node whose required input is not yet bound as
+undecidable and therefore performable. A wasted decision is not a condition, and a mandatory gate is
+worse - it stops the resolution, and Another One! has its keyword sentence to arm afterwards.
+
+**BA-Q1 AND BA-Q3 ARE SETTLED IN HIS SHARD AND EACH IS PROVEN WHERE THE READINGS DIFFER.** BA-Q1: "a
+hero in radius" is every hero on the board EXCEPT Bain, enemies included - the noun carries no
+side-word, which on this set's conventions means every hero, and "you may **also** retrieve" means
+nothing unless the first retrieval was somebody else's. BA-Q3: the Movement raise is the TURN's, so a
+second Movement action in the same turn is raised too, which is Ursafar's answer inherited for a
+structural reason rather than a preference - `RuleValueApplicability` has nothing scoped to one ACTION
+and `ActiveEffectDurationKind` names no such window, so the turn is the shortest scope this build can
+express for a value raise.
+
+**HE DECLARES FIVE ACTIVE EFFECTS AND THEY ARE NAMED HERE RATHER THAN COUNTED LATER.** Two obstacle
+permissions and two Movement raises - one pair per Movement primary, because "Ignore obstacles" is
+unconditional and "+N movement" is not, and one definition carrying both would take the permission away
+on a board with no marker out - plus Another One!'s End-of-turn repeat, which pays Tali's four costs
+because `EffectNodeKind.RepeatAction` re-runs an enclosing ACTION and there is none at `TurnEnded`. All
+five are `ActiveEffectCreationHandler` instances, a TYPE registered and showcased since milestone 6.8,
+so none owes 8.40j a showcase consumer.
+
+**SIX SHIPPED TRIPWIRES FIRED AND EVERY ONE WAS DOING ITS JOB.** The pull's two-declaration sweep is now
+three and asserts his node from the other side; the give's "no dealt face binds the move arm" is now
+exactly one binder, which is the face BA-D1 built it for; the Block corpus is eight classification arms
+plus his three board-conditioned ones; the clear-line sweep separates his three crossbows from every
+declaration written before them; the Ultimate-trigger corpus carries a seventh condition, his; and
+`DealtCorpusCompositionValidationTests` was widened to concatenate the three deferred lists his faces
+name, without which a composed-but-undealt hero reports "unregistered" and says nothing about the
+parameter and output names that case exists to check.
+
+**WHAT 8.40j INHERITS, STATED SO IT CANNOT BE HALF-REGISTERED.** Six contracts sit on declared deferred
+lists and his own fixture asserts them as a SET: `bain-give-bounty-marker@1`,
+`bain-transfer-bounty-marker@1`, `bain-return-bounty-marker@1`, `bain-bounty-marker-held@1`,
+`synthetic-hidden-card-choice@1` and `synthetic-reveal-chosen-card@1`. Four of them are new handler
+TYPES and each owes a showcase consumer at the dealing - `MarkerTransferHandler`, `MarkerHolderHandler`,
+and the two hidden-choice handlers; the give and the return run on proved types and owe none. His five
+Active-effect creations and his marker definition move across in the same change.
+
+**Evidence.** `BainPrintedSetTests` 39/39 - the printed values of all nineteen faces against a literal
+inventory table, every composed body past the validator a match composition runs, the twenty-one
+contracts his set names, the ordered-event arms each printed sentence dictates, and thirteen
+behavioural arms driven from HIS OWN composed nodes through the production resolution session: the give
+and BA-D1's move, the transfer and the return, the Block condition on both boards, the pull on a clear
+file and on a target already adjacent, the guessing game's two outcomes, the Tier III modal's two
+bullets, the guess domain read twice, BA-Q1's candidate set and "if they do" answered both ways, and
+BA-Q3's raise off the composed effect's own contribution. Plus the directly affected regressions -
+`DealtCorpusCompositionValidationTests`, the eight vocabulary fixtures at 166/166, Silverarrow's and
+Tali's retrievals, `VerifiedContentIdentityTests`, `EffectDefinitionValidatorTests`,
+`ModificationSeamConformanceTests`, `PromptReachabilityConformanceTests` and
+`RosterPersistentSourceTests` at 170/170. Complete unfiltered dotnet harness **3,147 passed / 0 failed /
+0 skipped in 11 m 14 s**, which reconciles as 8.40h's measured 3,108 plus exactly the 39 cases this
+milestone adds; the six tripwires were EDITED rather than added and move no count. Presentation probe 0
+errors, run before each harness pass. No schema field, wire version, corpus digest, pinned constant or
+other hero's content revision moved - schema stays v42 and the wire `/15`, and he is not dealt, so
+`VerifiedContentIdentityTests` pins nothing of his yet. **Edit Mode and Play Mode are unrun and this
+milestone is pure Core**, which POLICY.md admits at the harness: what moved is one content namespace,
+one added capability output and six offline fixtures, and 8.40f's owed Presentation arm is discharged by
+8.40j's complete Edit Mode run rather than here.
+
 Acceptance checks:
 
 - Eighteen dealt faces compose; only Side Quest carries a deferral, and it names the standing p.20 reason.
 - The derived corpus-sweep guard demands his line and is observed failing before it is satisfied.
 - Each face's focused authoritative scenarios cover positive, negative, boundary and ordered-event arms,
   with the split between behavioural and structural coverage stated rather than implied, and the Attack
-  faces additionally cover the enclosing combat outcome arms.
+  faces additionally cover the enclosing combat outcome arms. (Corrected at completion: the SPLIT is
+  stated - thirteen behavioural arms driven from his composed nodes, the rest structural - and the
+  enclosing combat outcome is NOT reached here and could not be. A complete p.14 for a modal Attack of
+  his needs a configured match holding his cards, which is exactly what no composition milestone has;
+  8.40j composes one and 8.40k drives both bullets of Hunter-Seeker through real controls.)
 - Every printed value in the composition matches the inventory table, asserted rather than transcribed.
 - His progressed hands compose, and his three upgrade lines match the printed Tier structure the
   inventory recorded.
@@ -657,10 +759,15 @@ Acceptance checks:
   differ.
 - Every contract his set names is registered or on a declared deferred list, asserted from his own
   fixture so the dealing cannot move one and forget another.
-- Complete unfiltered dotnet harness and Edit Mode pass.
+- Complete unfiltered dotnet harness and Edit Mode pass. (Corrected at completion: the harness passed
+  unfiltered and Edit Mode is UNRUN, which POLICY.md admits for a pure-Core change - nothing here is
+  Unity-side, and the tracked presentation probe compiled every fixture against the Unity assemblies
+  with 0 errors before each pass. 8.40j's own run is the first that can see his content in an Editor.)
 
 Non-goals: No registration, no artwork, no pick-screen row, no Play Mode journey. A composed face nothing
 deals is not a dealt hero.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840i-compose-bains-eighteen-dealt-faces-and-prove-them-at-the-focused-tier-completion-evidence).
 
 ### [ ] 8.40j Deal, register and artwork Bain as the fifteenth hero, and put his pick card under the cursor
 

@@ -336,6 +336,12 @@ namespace GuardsDigital.Tests.EditMode
         /// default-off parameter only leaves earlier declarations alone if no earlier declaration binds
         /// it, and this sweeps every dealt face of every hero rather than naming the two that give
         /// markers - which is what keeps the guard true for the sixteenth hero as well.
+        ///
+        /// <para><b>Milestone 8.40i fired it and the reason is the parameter's whole purpose.</b> Dead
+        /// or Alive's give is the ONE face this build composes that binds the arm, so the sweep now
+        /// asserts exactly that one binder rather than none: everything dealt before Bain still keeps
+        /// milestone 6.2's refusal, and his own face is why the arm was built. A sixteenth hero's face
+        /// binding it without a printed reason to fails here exactly as it did before.</para>
         /// </summary>
         [Test]
         public void NoDealtFaceInTheBuild_BindsTheNewGiveParameter_AndTheGivesSchemaIsOtherwiseUnmoved()
@@ -377,8 +383,9 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(walked, Is.GreaterThan(0),
                 "The reflection must find the content classes and their nodes at all.");
-            Assert.That(binders, Is.Empty,
-                "BA-D1's arm is opt-in, so every face dealt before it keeps milestone 6.2's refusal: " +
+            Assert.That(binders, Is.EqualTo(new[] { "bain-dead-or-alive / bounty-give" }),
+                "BA-D1's arm is opt-in, so every face dealt before it keeps milestone 6.2's refusal, " +
+                "and the one face that binds it is the one whose supply of one made it necessary: " +
                 string.Join(", ", binders));
 
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities

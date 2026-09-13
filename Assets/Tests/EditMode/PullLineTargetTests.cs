@@ -293,11 +293,20 @@ namespace GuardsDigital.Tests.EditMode
         /// names this family binds no narrowing and declares the two outputs it always declared. A
         /// fifteenth hero's face added without this block's parameter fails here rather than going
         /// silently uncovered.
+        ///
+        /// <para><b>Milestone 8.40i is that fifteenth hero and the tripwire fired exactly as written.</b>
+        /// Get over here! is the third declaration of the family and the first to bind the narrowing,
+        /// so the count moved from two to three and the "binds nothing" assertion is asked of the two
+        /// that were written before it - which is the claim this case was always making. His own node
+        /// is asserted from the other side: it binds the narrowing and declares the actor-side approach
+        /// space, and a sweep that found it doing neither would mean his pull had been composed against
+        /// Cutter's reading.</para>
         /// </summary>
         [Test]
         public void EveryDeclarationWrittenBeforeThisMilestone_BindsNoNarrowingAndDeclaresTheSameOutputs()
         {
             var found = 0;
+            var bains = 0;
             foreach (var entry in Corpus())
             {
                 foreach (var node in entry.Definition.Nodes)
@@ -309,6 +318,21 @@ namespace GuardsDigital.Tests.EditMode
                     }
 
                     found++;
+                    if (entry.Owner == "bain")
+                    {
+                        bains++;
+                        Assert.That(
+                            node.Inputs.Select(input => input.ParameterName),
+                            Has.Member(SyntheticTargetingCapabilities.ExcludeTerrainParameterName),
+                            "Get over here! prints \"a unit or a token\" and binds the narrowing.");
+                        Assert.That(
+                            node.Outputs.Select(output => output.OutputName),
+                            Has.Member(SyntheticTargetingCapabilities.ActorApproachSpaceOutputName),
+                            "and it moves the TARGET, so it declares the actor-side approach space " +
+                            "rather than Cutter's obstacle-side one.");
+                        continue;
+                    }
+
                     Assert.That(
                         node.Inputs.Select(input => input.ParameterName),
                         Has.No.Member(SyntheticTargetingCapabilities.ExcludeTerrainParameterName),
@@ -324,9 +348,11 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(found, Is.EqualTo(2),
+            Assert.That(found, Is.EqualTo(3),
                 "Cutter's Grappling Bolt and the showcase Red Grapnel Skill are the two declarations " +
-                "this family had before Bain, and a sweep that found neither would prove nothing.");
+                "this family had before Bain, and Get over here! is the third.");
+            Assert.That(bains, Is.EqualTo(1),
+                "and exactly one of the three is his, because one face of his prints the pull.");
         }
 
         /// <summary>

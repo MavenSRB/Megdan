@@ -114,19 +114,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The corpus, swept rather than remembered: every Block this build deals still prints one of
-        /// the two arms about the attacking card, so the third member changed no declaration.
+        /// The corpus, swept rather than remembered: every Block this build dealt before Bain still
+        /// prints one of the two arms about the attacking card, so the third member changed no
+        /// declaration.
+        ///
+        /// <para><b>Milestone 8.40i added the first three faces that print the third member</b>, which
+        /// is what 8.40g built it for, so the count moved from eight to eleven and the classification
+        /// assertion is asked of the eight that print a classification clause. A twelfth Block arriving
+        /// without a milestone knowing about it is still what the count exists to notice.</para>
         /// </summary>
         [Test]
         public void EveryBlockTheBuildAlreadyDeals_StillDeclaresAnAttackClassificationArm()
         {
             var blocks = DealtBlocks().ToArray();
 
-            Assert.That(blocks.Length, Is.EqualTo(8),
-                "Wasp's three Green Blocks and Tigerclaw's five Blue ones are the whole of p.14's " +
-                "Block content in this build; a ninth arriving here without this milestone knowing " +
-                "about it is what this count exists to notice.");
-            foreach (var (cardId, action) in blocks)
+            Assert.That(blocks.Length, Is.EqualTo(11),
+                "Wasp's three Green Blocks, Tigerclaw's five Blue ones and Bain's three Green ones " +
+                "are the whole of p.14's Block content in this build.");
+            foreach (var (cardId, action) in blocks.Where(block =>
+                block.Action.BlockCondition != PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker))
             {
                 Assert.That(
                     new[]
@@ -137,6 +143,14 @@ namespace GuardsDigital.Tests.EditMode
                     Has.Member(action.BlockCondition),
                     $"{cardId.Value} prints a classification clause and still declares it.");
             }
+
+            Assert.That(
+                blocks.Count(block =>
+                    block.Action.BlockCondition ==
+                    PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker),
+                Is.EqualTo(3),
+                "and the three that print no classification clause at all are Bain's - Close Call, " +
+                "Narrow Escape and Perfect Getaway, which is the face count BA-08 records.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -277,11 +291,19 @@ namespace GuardsDigital.Tests.EditMode
         /// the corpus rather than over a remembered list: every one of them reaches exactly the verdict
         /// its printed classification clause reaches, on three boards - none, a bounty the defender's own
         /// content put out, and a poison - and with no register at all.
+        ///
+        /// <para><b>Milestone 8.40i composed the three faces that print the OTHER member</b>, and they
+        /// are excluded here by their own declaration rather than by name: this case is about the eight
+        /// that ask a question about the attacking card, and a Block asking the board is what the cases
+        /// above and below it prove. Reading them through this one's arithmetic would assert that a
+        /// board-conditioned Block answers a classification question, which is the confusion 8.40g's
+        /// second axis was refused to avoid.</para>
         /// </summary>
         [Test]
         public void WaspsThreeBlocksAndTigerclawsFive_AreByteIdenticalOnEveryBoardThisMilestoneBuilds()
         {
-            foreach (var (cardId, action) in DealtBlocks())
+            foreach (var (cardId, action) in DealtBlocks().Where(block =>
+                block.Action.BlockCondition != PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker))
             {
                 foreach (var attackRange in new[] { AttackRangeKind.Ranged, AttackRangeKind.NonRanged })
                 {
