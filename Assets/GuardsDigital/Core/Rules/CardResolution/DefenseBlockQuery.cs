@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -16,6 +18,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
     ///
     /// <para>Both callers ask this now. A preview that disagreed with the resolution would be worse
     /// than no preview at all: it is the thing a player decides from.</para>
+    ///
+    /// <para><b>Milestone 8.40g widened what both callers are handed, and made it required rather
+    /// than optional for that same reason.</b> Bain the Bounty Hunter's three Green Blocks resolve by
+    /// a fact about the board - "If a hero in play has a [bounty] bounty marker" - which no signature
+    /// carrying the offer, the definitions and the attack's reference could answer at all. The marker
+    /// register is therefore a parameter with no default: a caller that could omit it is a caller that
+    /// could reach a different verdict from the other one, which is the exact failure milestone 8.11a
+    /// exists to prevent. Where the condition needs the register and none was supplied the query
+    /// refuses loudly rather than answering, on milestone 8.40c's terms - a silent "no marker out"
+    /// looks exactly like a board position and would grey a defence that in fact holds.</para>
     /// </summary>
     public static class DefenseBlockQuery
     {
@@ -24,11 +36,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <see cref="DefenseBlockResult.None"/> whenever the offer is not a printed Block, which is
         /// what says "this one is settled by its Defense value in the ordinary way".
         /// </summary>
+        /// <param name="markers">
+        /// The match's marker register, for a Block whose printed condition is about the board.
+        /// <c>null</c> is a composition with no register at all rather than a board with no marker on
+        /// it, and it is refused rather than answered - see the type's own remarks.
+        /// </param>
         public static DefenseBlockResult Evaluate(
             ActionOffer defenseOffer,
             IReadOnlyList<CardDefinition> definitions,
             CardDefinitionReference attackDefinitionReference,
-            ActionDefinitionId attackActionDefinitionId)
+            ActionDefinitionId attackActionDefinitionId,
+            MarkerAttachmentRegister markers)
         {
             if (definitions == null)
             {
@@ -39,6 +57,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (action.DefenseResolution != PrintedDefenseResolution.Block)
             {
                 return DefenseBlockResult.None;
+            }
+
+            // Milestone 8.40g. The board arm is answered before the attack is named, because it reads
+            // nothing the attack carries: "If a hero in play has a bounty marker" is true or false of
+            // the board whether the attack that opened p.14's window was Ranged or not. Answering it
+            // here rather than inside `Fulfils` is what makes that independence structural instead of
+            // incidental - there is no classification for it to fall through to.
+            if (action.BlockCondition == PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker)
+            {
+                return FulfilsTheBoardCondition(defenseOffer, markers)
+                    ? DefenseBlockResult.Blocked
+                    : DefenseBlockResult.ConditionUnfulfilled;
             }
 
             // p.14's condition is read off the attacking action's own printed classification rather
@@ -53,6 +83,37 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return attack != null && Fulfils(action.BlockCondition, attack.AttackRange)
                 ? DefenseBlockResult.Blocked
                 : DefenseBlockResult.ConditionUnfulfilled;
+        }
+
+        /// <summary>
+        /// Milestone 8.40g. Whether any hero in play is wearing a marker the DEFENDING hero's own
+        /// content put out.
+        ///
+        /// <para>The defender is the Defense offer's own actor, and "his own marker" is the
+        /// attachment's owner, so this is <c>HeldMarkerQuery</c>'s actor-derived reading asked from a
+        /// third site rather than a third reading of one printed clause - the same composition
+        /// milestone 8.40c's predicate and its two selection narrowings take, which is what lets one
+        /// board give all four of them the same answer.</para>
+        /// </summary>
+        private static bool FulfilsTheBoardCondition(
+            ActionOffer defenseOffer, MarkerAttachmentRegister markers)
+        {
+            if (markers == null)
+            {
+                throw new InvalidOperationException(
+                    "This Defense offer prints " +
+                    $"'{PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker}', which is rulebook " +
+                    "p.14's Block condition stated as a fact about the board, and this evaluation was " +
+                    "given no marker register to read. Supply the match's register at the call site " +
+                    "rather than letting the condition silently fail for a board nobody looked at: " +
+                    "the defence preview and the Attack resolution both ask this, and a verdict one " +
+                    "of them derived from an absent register is the disagreement milestone 8.11a " +
+                    "exists to prevent.");
+            }
+
+            return HeldMarkerQuery
+                .HoldersOfAMarkerDeclaredBy(markers.Attachments, defenseOffer.ActorId)
+                .Count > 0;
         }
 
         /// <summary>
@@ -73,6 +134,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case PrintedBlockCondition.AttackIsNotRanged:
                     return attackRange == AttackRangeKind.NonRanged;
                 default:
+                    // Milestone 8.40g's board condition never arrives here - it is answered above,
+                    // from the board, before the attack is even named - so what is left is a Block
+                    // carrying no condition at all, which the definition layer refuses to construct.
                     return false;
             }
         }

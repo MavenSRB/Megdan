@@ -363,7 +363,7 @@ Non-goals: No Bain content. No change to p.10's repeat machinery.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840f1-build-the-failure-modal-were-not-done-yet-prints-completion-evidence).
 
-### [ ] 8.40g Build the board-conditioned Block his three Green Defenses print
+### [x] 8.40g Build the board-conditioned Block his three Green Defenses print
 
 Observable outcome: a printed Block can be resolved by a condition about the BOARD rather than about the
 attacking card, the defence preview and the resolution agree about it, and every Block written before
@@ -390,13 +390,79 @@ all: it is the thing a player decides from." Both must be handed the same facts.
 **THE DEFENSE TEXT'S TIMING IS THE SECOND HALF AND IT IS SETTLED HERE.** Close Call prints "block the
 attack **and** that hero gives the marker to you" and Narrow Escape "block the attack **and** retrieve
 the marker", so a consequence runs when the Block succeeds. Defense card text is registered in shape -
-Arien's, Tigerclaw's and Wasp's Defense actions carry it - but no Block in the build has ever carried a
-consequence. State where in p.14's Defense window it runs, and prove that a Block whose condition is
-unfulfilled runs nothing.
+Arien's, Tigerclaw's and Wasp's Defense actions carry it - and **this block's first reading, that no
+Block in the build had ever carried a consequence, was wrong: six of the eight do**, and two of them are
+conditioned on the Block succeeding. State where in p.14's Defense window it runs, and prove that a
+Block whose condition is unfulfilled runs nothing.
 
 **PERFECT GETAWAY IS THE CONTROL AND IT IS THE POINT OF HAVING THREE.** It prints the condition and no
 consequence at all, so it proves the condition alone; Close Call proves the transfer arm; Narrow Escape
 proves the return arm. Compose the cases so each isolates one.
+
+**THE CONDITION IS A THIRD MEMBER, AND THE SECOND AXIS WAS PRICED BEFORE IT WAS REFUSED.**
+`PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker` joins the two arms about the attacking card. An
+axis has exactly one home - a new public property on `ActionDefinition` - and milestone 8.38d measured
+that shape as the first change ever to move all twelve corpus digests at once, while a member on an enum
+an existing property already carries moves nothing, because no card written before this milestone names
+it. The cross product it would have bought, "block a ranged attack, if the board says so", is a sentence
+no printed face asks for, and building the vocabulary for it early is what 8.3 refused when it declared
+the Block's shape and left the condition to the face that first printed one. What the enum names is the
+condition the card prints: a face printing no classification clause is asking a different question rather
+than silently asserting one. `ActionDefinition`'s pairing guard is untouched in both directions and
+asserted in both.
+
+**THE QUERY'S WIDENING IS ONE REQUIRED PARAMETER, AND REQUIRED IS THE WHOLE POINT.**
+`DefenseBlockQuery.Evaluate` takes the marker register with no default, because a caller able to omit it
+is a caller able to reach a different verdict from the other one - the exact failure 8.11a exists to
+prevent. Neither call site needed a new collaborator to find one: the Attack backend has held the round's
+register since 6.12 so that p.13's returns happen where the Defeat is recorded, and the projection the
+preview is built from has published it since 8.23a. That the two are ONE object rather than two copies is
+asserted by reflection in a live match, beside two cases that drive the preview and the resolution on the
+same board and read both verdicts. The board arm is answered BEFORE the attack is named, off
+`HeldMarkerQuery`'s actor-derived reading, so the clause means here what it means in 8.40c's predicate
+and its two narrowings; an absent register refuses loudly on 8.40c's terms rather than answering false
+for a board nobody looked at.
+
+**THE TIMING HALF WAS ALREADY ANSWERED BY SHIPPED CONTENT, AND THIS BLOCK'S READING OF IT WAS WRONG.**
+Six of the build's eight Blocks carry Defense text, and Wasp's Deflect and Reflect are conditioned on the
+Block succeeding in as many words - "Block a ranged attack; **if you do**, an enemy hero in range
+discards a card, if able". Milestone 8.11 composed that "if you do" as **the Block condition read
+again**, a `Conditional` over `attack-is-ranged@1` wrapping the whole rider, because p.14 step 4 applies
+the defender's text whatever step 6 will decide. So the consequence runs at step 4, between step 3's
+discard and step 5's total, and what makes it conditional is the CARD rather than the window - with
+8.40c's predicate in `attack-is-ranged@1`'s place, which is the node Close Call's transfer needs anyway
+to name "that hero". Making step 4 itself conditional was refused on that measurement: it would have
+changed six shipped faces to buy nothing. The paragraph above is corrected in place, and both cases are
+asserted rather than argued - the probe Block's text runs at step 4 on a failed condition too, and the
+gated composition runs nothing on the board where the same clause is false.
+
+**ONE MEASURED BOUNDARY THE COMPOSITION MILESTONE INHERITS.** The first probe Block gave Tigerclaw's
+Poison to the ATTACKER at step 4, and p.14 then refused its own resolution: `ResolveOutcome` re-derives
+the Attack value it prevalidated at step 2 and compares it, so a Defense text that lowers the attacker's
+Attack between steps 4 and 6 leaves the page unable to resume. No printed face does this and Bain's two
+cannot - the bounty carries one property, p.13's additional Life cost, and no printed value channel at
+all - but 8.40i composes a marker consequence in exactly that window, so it is recorded rather than
+rediscovered.
+
+**WHAT WAS BUILT, AND WHAT IT DID NOT COST.** One enum member, one required parameter on one query, and
+one argument at each of its two call sites. No new capability and **no new handler type, so this block
+owes 8.40j no showcase consumer**; no schema field and no persisted payload, because the condition is
+content the snapshot never writes and the persisted `DefenseBlockResult` is unmoved; no corpus digest and
+no pinned constant. **No split was needed.** Two contract rows in his shard were corrected in the same
+change and the shard came out a word shorter than it went in.
+
+**Evidence.** Focused `BoardConditionedBlockTests` 21/21, plus the directly affected
+`PrintedBlockConditionTests`, `ConfiguredDefenseCardTests`, `TigerclawVerifiedContentTests`,
+`TigerclawReadingOrderTests`, `VerifiedContentIdentityTests`, `DefenseOfferFeasibilityTests`,
+`PromptReachabilityConformanceTests` and the three Bain marker fixtures at 108/108. Complete unfiltered
+dotnet harness **3,040 passed / 0 failed / 0 skipped in 14 m 12 s**, which reconciles as 8.40e's
+measured 3,019 plus exactly the 21 cases this milestone adds; two calls in `PrintedBlockConditionTests`
+were EDITED to name the new parameter and neither changes the count. **The tracked presentation probe earned its keep on this
+block**: the harness was green while `Is.AnyOf` - which Unity's bundled NUnit does not have - sat in the
+new fixture, and the probe refused it in two seconds. No schema field, corpus digest or pinned constant
+moved. Edit Mode and Play Mode are unrun and this milestone is pure Core and Application with no
+Unity-side change: what moved is one enum member, one static query and two call sites, and the worktree
+it was built in has no Unity.
 
 Acceptance checks:
 
@@ -412,6 +478,8 @@ Acceptance checks:
 
 Non-goals: No Bain content. No change to p.14's Defense window for a numeric Defense. No new Defense
 resolution kind.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-840g-build-the-board-conditioned-block-his-three-green-defenses-print-completion-evidence).
 
 ### [ ] 8.40h Build the after-a-marker-is-given trigger his Ultimate fires on
 

@@ -897,7 +897,8 @@ namespace GuardsDigital.Application
                     .Where(option => option != null)
                     .ToArray()
                 : Array.Empty<ClearOptionProjection>();
-            var defensePreview = CreateDefensePreview(turn, turnModifications, round.HeroItems);
+            var defensePreview = CreateDefensePreview(
+                turn, turnModifications, round.HeroItems, round.Markers);
             var effectChoicePreview = turn?.DescribePendingEffectChoice(
                     configuration.CardDefinitions, turnModifications) ??
                 Array.Empty<EffectChoiceCandidatePreview>();
@@ -1072,10 +1073,18 @@ namespace GuardsDigital.Application
                 .ToArray());
         }
 
+        /// <summary>
+        /// Milestone 8.40g: the marker register arrives beside the item state, for the reason that one
+        /// does - a preview that consulted a different copy of the board's markers than the resolution
+        /// does would predict a Block the Attack then refuses, which is the disagreement milestone
+        /// 8.11a exists to prevent. It is the round's own register, the same object the dispatcher
+        /// hands the Attack backend, so the two cannot drift apart.
+        /// </summary>
         private PendingDefensePreviewProjection CreateDefensePreview(
             TurnResolutionAuthority turn,
             RuleModificationSet modifications,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            GuardsDigital.Core.Components.MarkerAttachmentRegister markers)
         {
             var choice = turn?.PendingDefenseChoice;
             var attack = turn?.PendingAttackResolution;
@@ -1101,7 +1110,8 @@ namespace GuardsDigital.Application
                     offer,
                     configuration.CardDefinitions,
                     attack.SourceDefinitionReference,
-                    attack.ActionDefinitionId);
+                    attack.ActionDefinitionId,
+                    markers);
                 if (blockResult != DefenseBlockResult.None)
                 {
                     projectedChoices.Add(new DefenseChoicePreviewProjection(

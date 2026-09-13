@@ -2711,6 +2711,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Milestone 8.11a moved the condition itself into <see cref="DefenseBlockQuery"/>, because the
         /// defence preview a defender chooses from has to reach the same verdict this does. What is
         /// left here is naming the attack being answered.
+        ///
+        /// <para>Milestone 8.40g adds the second thing a condition may be answered from: the marker
+        /// register this backend has held since milestone 6.12, so that p.13's "any markers they had
+        /// are returned" happens where the Defeat is recorded. Reading it here needed no widened
+        /// signature and no component port, exactly as 8.40c's bullet narrowing did not - and it is
+        /// the same object the round authority hands the projection the preview is built from, which
+        /// is what makes the two verdicts one fact rather than two derivations.</para>
         /// </summary>
         private DefenseBlockResult EvaluateBlock(
             ActionOffer defenseOffer,
@@ -2719,7 +2726,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 defenseOffer,
                 definitions,
                 pendingAttackResolution.SourceDefinitionReference,
-                pendingAttackResolution.ActionDefinitionId);
+                pendingAttackResolution.ActionDefinitionId,
+                markers);
 
         /// <summary>
         /// Milestone 8.22, finding `F-ATK-01`: the pre-consequence target space is carried across

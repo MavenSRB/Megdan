@@ -159,6 +159,11 @@ namespace GuardsDigital.Tests.EditMode
         /// The verdict for answering an attack of the named classification with a Block printing the
         /// named condition, asked through the one query both the resolver and the defender's preview
         /// use.
+        ///
+        /// <para>Milestone 8.40g gave that query a marker register to answer a board condition from,
+        /// and these cases hand it none deliberately: both arms under test here are read off the
+        /// attacking card alone, so a Block printing one of them reaches the same verdict on a board
+        /// this fixture never builds. <c>BoardConditionedBlockTests</c> is where the register matters.</para>
         /// </summary>
         private static DefenseBlockResult Evaluate(
             PrintedBlockCondition condition, AttackRangeKind attackRange)
@@ -173,7 +178,8 @@ namespace GuardsDigital.Tests.EditMode
             };
 
             return DefenseBlockQuery.Evaluate(
-                BlockOffer(definitions[1]), definitions, definitions[0].Reference, attackAction);
+                BlockOffer(definitions[1]), definitions, definitions[0].Reference, attackAction,
+                markers: null);
         }
 
         private static ActionOffer BlockOffer(CardDefinition blockCard) =>
@@ -209,7 +215,8 @@ namespace GuardsDigital.Tests.EditMode
             };
 
             return DefenseBlockQuery.Evaluate(
-                BlockOffer(definitions[1]), definitions, definitions[0].Reference, movementAction);
+                BlockOffer(definitions[1]), definitions, definitions[0].Reference, movementAction,
+                markers: null);
         }
 
         private static IEnumerable<(CardDefinitionId CardId, ActionDefinition Action)> VerifiedBlocks()
