@@ -55,24 +55,34 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Milestone 7.9's gate, both halves. It is a NEW handler type and no dealt card starts it
-        /// until milestone 8.39i deals Cutter, so it is deferred rather than registered - a capability
-        /// registered before a dealt card can start it moves pinned bytes.
+        /// Milestone 7.9's gate, SATISFIED on both halves. Milestone 8.39b wrote this case the other
+        /// way round - built and deferred, because it is a NEW handler type and no dealt card started
+        /// it - and milestone 8.39i is what moved it: Cutter is dealt, so Grappling Bolt is a card a
+        /// configured match puts in a hand, and the Red Grapnel showcase Skill is the consumer the
+        /// second half asks of a new type.
+        ///
+        /// <para>Inverted rather than deleted, on the same terms milestone 8.38e inverted Swift's
+        /// pair: the claim that has to keep being true is that this declaration sits in exactly one
+        /// list, whichever list that is.</para>
         /// </summary>
         [Test]
-        public void TheObstacleSelection_IsBuiltAndDeferredRatherThanRegistered()
+        public void TheObstacleSelection_IsRegisteredNowThatADealtCardNamesIt()
         {
-            Assert.That(
-                SyntheticTargetingCapabilities.DeferredHandlers().Select(handler => handler.Reference),
-                Does.Contain(SyntheticTargetingCapabilities.RangeObstacleTargetV1),
-                "Grappling Bolt is the only face in the corpus that targets an obstacle, and she is " +
-                "not dealt yet.");
             Assert.That(
                 SyntheticTargetingCapabilities.RegisteredHandlers()
                     .Any(handler => handler.Reference.Equals(
                         SyntheticTargetingCapabilities.RangeObstacleTargetV1)),
-                Is.False,
-                "and registering it before then would move pinned bytes.");
+                Is.True,
+                "Grappling Bolt is the only face in the corpus that targets an obstacle, and " +
+                "milestone 8.39i deals her.");
+            Assert.That(
+                SyntheticTargetingCapabilities.DeferredHandlers().Select(handler => handler.Reference),
+                // `Has.No.Member` rather than `Does.Not.Contain`, on milestone 8.38e's measurement:
+                // `Does.Contain` binds to NUnit's STRING overload under Unity's resolution and to the
+                // collection overload under the harness's, so the same source compiles in one tier
+                // and not the other.
+                Has.No.Member(SyntheticTargetingCapabilities.RangeObstacleTargetV1),
+                "and nothing is in both lists, which is what the gate means either way round.");
         }
 
         /// <summary>
@@ -320,6 +330,10 @@ namespace GuardsDigital.Tests.EditMode
         // Fixture
         // -------------------------------------------------------------------------------------------
 
+        /// <remarks>
+        /// Reached through <c>Handlers()</c> - registered and deferred concatenated - so that milestone
+        /// 8.39i moving the declaration from one list to the other needed no edit here.
+        /// </remarks>
         private static IEffectCapabilityHandler Handler() =>
             SyntheticTargetingCapabilities.Handlers()
                 .Single(handler =>

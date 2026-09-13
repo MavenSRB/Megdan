@@ -143,24 +143,18 @@ namespace GuardsDigital.Tests.PlayMode
             if (!Directory.Exists(Path.Combine(UnityEngine.Application.dataPath, "Resources", "Private", "Cards")))
                 yield break;
             yield return LoadTheMatch();
-            var definitions = WaspCardContent.DealtDefinitions.Concat(XargathaCardContent.DealtDefinitions)
-                .Concat(TigerclawCardContent.DealtDefinitions).Concat(ArienCardContent.DealtDefinitions)
-                .Concat(BroganCardContent.DealtDefinitions).Concat(SabinaCardContent.DealtDefinitions)
-                .Concat(DodgerCardContent.DealtDefinitions).Concat(MisaCardContent.DealtDefinitions)
-                .Concat(SilverarrowCardContent.DealtDefinitions).Concat(UrsafarCardContent.DealtDefinitions)
-                .Concat(WhisperCardContent.DealtDefinitions)
-                // Milestone 8.37. The twelfth and last: this walk is driven by the artwork catalog's
-                // own entries, so a hero whose rows are in that catalog and whose definitions are
-                // not in this dictionary throws on the lookup rather than being quietly skipped.
-                .Concat(TaliCardContent.DealtDefinitions)
-                // Milestone 8.38f. The THIRTEENTH, added because this tripwire caught her absence
-                // exactly as the note above predicted: 8.38e put her rows in the artwork catalog and
-                // left her definitions out of this dictionary, and the lookup threw
-                // `KeyNotFoundException` on `swift-reload`. Only a Play Mode run can see it, which is
-                // the debt 8.38e moved here. A FOURTEENTH hero will trip it again - the list is hand
-                // written where 8.38d.s corpus sweep is now derived, and that is the fix this note
-                // leaves for whoever adds her.
-                .Concat(SwiftCardContent.DealtDefinitions).ToDictionary(card => card.Reference);
+            // MILESTONE 8.39i TOOK THE FIX THE NOTE BELOW LEFT, RATHER THAN ADDING A FOURTEENTH LINE.
+            // This walk is driven by the artwork catalog's own entries, so a hero whose rows are in
+            // that catalog and whose definitions are not in this dictionary threw
+            // `KeyNotFoundException` on the lookup rather than being quietly skipped - which is what
+            // happened at milestone 8.38e, where the hand-written list had twelve heroes in it and the
+            // catalog had thirteen, and which only a Play Mode run could see. 8.38f added the
+            // thirteenth line by hand and wrote down that a fourteenth hero would trip it again; this
+            // is that hero, and the list is DERIVED here on exactly the terms milestone 8.38d derived
+            // the per-hero corpus sweep. `EveryDealtDefinitionInTheBuild` reflects for the sealed
+            // static `*CardContent` classes in `WaspCardContent`'s own namespace and reads each one's
+            // `DealtDefinitions`, so a fifteenth hero is covered the moment her content class exists.
+            var definitions = EveryDealtDefinitionInTheBuild().ToDictionary(card => card.Reference);
             var flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic;
             foreach (var hero in ConfiguredCardArtworkCatalog.Catalog.Entries.GroupBy(entry => entry.ContentSetId))
             {
@@ -569,6 +563,47 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 UiPlayer.SetPlayerViewport(1920, 1080, "restore after 8.36f1");
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.39i. Every dealt definition every verified hero in this build contributes,
+        /// derived from the content classes themselves rather than listed by hand.
+        ///
+        /// <para>The reflection is milestone 8.38d's, copied deliberately rather than generalised into
+        /// a shared helper: it finds the sealed static classes named <c>*CardContent</c> in
+        /// <see cref="WaspCardContent"/>'s own namespace and reads each one's public static
+        /// <c>DealtDefinitions</c>. Two shape requirements follow and are the same two that guard
+        /// applies - a hero's content class must be STATIC (the filter is
+        /// <c>IsClass &amp;&amp; IsAbstract &amp;&amp; IsSealed</c>) and must sit in that namespace - and
+        /// the assertion below is what keeps a rename from turning this into a silent empty walk.</para>
+        /// </summary>
+        private static IEnumerable<CardDefinition> EveryDealtDefinitionInTheBuild()
+        {
+            var contentClasses = typeof(WaspCardContent).Assembly.GetTypes()
+                .Where(type =>
+                    type.IsClass && type.IsAbstract && type.IsSealed &&
+                    type.Namespace == typeof(WaspCardContent).Namespace &&
+                    type.Name.EndsWith("CardContent", System.StringComparison.Ordinal))
+                .OrderBy(type => type.Name, System.StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.That(contentClasses, Is.Not.Empty,
+                "The reflection must find the verified content classes at all; finding none would " +
+                "make this walk silently cover nothing.");
+
+            var everyDealtDefinition = new List<CardDefinition>();
+            foreach (var contentClass in contentClasses)
+            {
+                var property = contentClass.GetProperty(
+                    "DealtDefinitions",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                Assert.That(property, Is.Not.Null,
+                    contentClass.Name + " must expose DealtDefinitions for this walk to cover it.");
+                everyDealtDefinition.AddRange(
+                    (IReadOnlyList<CardDefinition>)property.GetValue(null));
+            }
+
+            return everyDealtDefinition;
         }
     }
 }

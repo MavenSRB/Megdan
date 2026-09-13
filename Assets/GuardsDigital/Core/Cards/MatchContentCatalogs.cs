@@ -153,6 +153,16 @@ namespace GuardsDigital.Core.Cards
                     // all - so an unregistered one here would be a grant the rule can name and the
                     // build cannot load.
                     SwiftEffectContent.TriggeredEffects(SwiftCardContent.ContentRevision))
+                .Concat(
+                    // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate. ONE, on the
+                    // terms every group above joins by: Legend of the Skies' own effect, which p.16's
+                    // permanent ability names BY REFERENCE and the owner walk resolves against this
+                    // catalog - so an unregistered one here would be a definition the rule can name
+                    // and the build cannot load. Her Ultimate is the first in this build to fire
+                    // after a PRIMARY action rather than after a basic one, which is milestone
+                    // 8.39f1's trigger, and the effect it names borrows the previous turn slot's
+                    // card through milestone 8.39f's pool.
+                    CutterEffectContent.TriggeredEffects(CutterCardContent.ContentRevision))
                 .ToArray()));
 
         /// <summary>
@@ -239,5 +249,14 @@ namespace GuardsDigital.Core.Cards
                 // SyntheticRosterCapabilities rather than from here, because it is generic vocabulary
                 // this build now owns rather than content of hers.
                 .Concat(SwiftActiveEffectContent.Handlers());
+
+        // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate, adds NOTHING to the list
+        // above and says so rather than leaving the absence to be read as an oversight. No face of
+        // hers prints "This turn:", "Next turn:" or "End of turn:", so she declares no Active effect
+        // at all - which is why there is no `CutterActiveEffectContent` to concat - and her two
+        // genuinely new contracts, `synthetic-range-obstacle-target@1` and `claim-solo-victory@1`,
+        // register from `SyntheticTargetingCapabilities` and `SyntheticRosterCapabilities` rather
+        // than from here, because they are generic vocabulary this build now owns rather than content
+        // of hers. Her one triggered definition is composed into `ForThisBuild` above.
     }
 }

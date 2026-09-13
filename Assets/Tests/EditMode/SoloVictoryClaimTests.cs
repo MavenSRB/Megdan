@@ -55,25 +55,29 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Milestone 7.9's gate, both halves - 8.39b's position exactly. It is a NEW handler type and
-        /// no dealt card starts it until milestone 8.39i deals Cutter, so it is deferred rather than
-        /// registered: a capability registered before a dealt card can start it moves pinned bytes.
+        /// Milestone 7.9's gate, SATISFIED on both halves - 8.39b's position inverted at the same
+        /// moment for the same reason. Milestone 8.39g1 wrote this case the other way round; milestone
+        /// 8.39i deals Cutter, so A Fistful of Coins is a card a configured match puts in a hand, and
+        /// the Red Privateer showcase Skill is the consumer a new handler TYPE owes.
         /// </summary>
         [Test]
-        public void TheClaim_IsBuiltAndDeferredRatherThanRegistered()
+        public void TheClaim_IsRegisteredNowThatADealtCardNamesIt()
         {
-            Assert.That(
-                SyntheticRosterCapabilities.DeferredHandlers()
-                    .Select(handler => handler.Reference),
-                Does.Contain(SyntheticRosterCapabilities.ClaimSoloVictoryV1),
-                "A Fistful of Coins is the only face in the corpus that claims an ending, and she is " +
-                "not dealt yet.");
             Assert.That(
                 SyntheticRosterCapabilities.RegisteredHandlers()
                     .Any(handler => handler.Reference.Equals(
                         SyntheticRosterCapabilities.ClaimSoloVictoryV1)),
-                Is.False,
-                "and registering it before then would move pinned bytes.");
+                Is.True,
+                "A Fistful of Coins is the only face in the corpus that claims an ending, and " +
+                "milestone 8.39i deals her.");
+            Assert.That(
+                SyntheticRosterCapabilities.DeferredHandlers()
+                    .Select(handler => handler.Reference),
+                // `Has.No.Member` rather than `Does.Not.Contain`, on milestone 8.38e's measurement:
+                // `Does.Contain` binds to NUnit's STRING overload under Unity's resolution and to the
+                // collection overload under the harness's.
+                Has.No.Member(SyntheticRosterCapabilities.ClaimSoloVictoryV1),
+                "and nothing is in both lists, which is what the gate means either way round.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -275,8 +279,13 @@ namespace GuardsDigital.Tests.EditMode
         // Staging
         // -------------------------------------------------------------------------------------------
 
+        /// <remarks>
+        /// Milestone 8.39i moved the declaration out of <c>DeferredHandlers</c>, so this reads the
+        /// whole vocabulary - registered and deferred concatenated - rather than one list, which is
+        /// what keeps a later move from needing an edit here again.
+        /// </remarks>
         private static IEffectCapabilityHandler Handler() =>
-            SyntheticRosterCapabilities.DeferredHandlers()
+            SyntheticRosterCapabilities.Handlers()
                 .Single(handler =>
                     handler.Reference.Equals(SyntheticRosterCapabilities.ClaimSoloVictoryV1));
 

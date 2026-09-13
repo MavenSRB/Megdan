@@ -427,14 +427,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// already registers six times, not a new handler type, so the gate's second half - a new
         /// handler must be reachable from a showcase card - had nothing to ask of it.</para>
         ///
-        /// <para>Milestone 8.39b refills it with one. Cutter's Grappling Bolt is the only face in the
-        /// corpus that targets an obstacle, she is not dealt until milestone 8.39i, and this IS a new
-        /// handler type - so it owes the gate both halves: it stays out of the registered list until a
-        /// dealt card starts it, and it owes a showcase consumer, which the dealing adds. The list is
-        /// kept rather than deleted for the same reason 8.35z53 kept it empty.</para>
+        /// <para>Milestone 8.39b refilled it with one and MILESTONE 8.39i HAS EMPTIED IT AGAIN.
+        /// Cutter's Grappling Bolt is the only face in the corpus that targets an obstacle, the
+        /// milestone that deals her is what moved the declaration into <see cref="RegisteredHandlers"/>
+        /// below, and both halves of the gate were satisfied in that one commit: her Silver basic is a
+        /// card a configured match puts in a hand, and the Red Grapnel showcase Skill is the consumer a
+        /// new handler TYPE owes. The list is kept rather than deleted for the same reason 8.35z53 kept
+        /// it empty: the next declaration this file defers finds the name already here.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[] { new RangeObstacleTargetHandler() };
+            Array.Empty<IEffectCapabilityHandler>();
 
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[]
@@ -467,7 +469,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PrintedIconTargetHandler(
                     RadiusUnitTargetV1, PrintedValueChannel.Radius,
                     declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit),
-                new HeroAdjacentToMinionHandler()
+                new HeroAdjacentToMinionHandler(),
+                // Milestone 8.39i. The obstacle selection Grappling Bolt names, which waited in
+                // `DeferredHandlers` above until a dealt card started it - her Silver basic is that
+                // card. Unlike the printed-icon declarations beside it this is its own handler TYPE,
+                // because p.18's obstacles include terrain and its candidates are therefore SPACES
+                // rather than board objects; what it shares with them is `RangeValueQuery`, so p.9's
+                // icon and p.16's items are still read in exactly one place.
+                new RangeObstacleTargetHandler()
             };
 
         /// <summary>

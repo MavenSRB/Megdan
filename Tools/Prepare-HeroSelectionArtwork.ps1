@@ -25,6 +25,12 @@ $sources = [ordered]@{
     # and the role icons Sniper, Farming and Tactician, which is a trio no other selection face in
     # the set carries.
     swift = 'randomizers-tt9__7723691__front.png'
+    # Milestone 8.39i. SHA-256 matched rather than eyeballed, which is the check the thirteen above
+    # record in prose and this line records by measurement: this front is byte-identical to the
+    # corpus's own `active-hero-cards/_selection-cards/Cutter__front.png`
+    # (0849828287F044B22DE4B4BD8D3B84B38529D28A830966FA4E5C8CE6693244A4), so the face is hers by the
+    # extraction's own naming and not by a reading of the picture.
+    cutter = 'randomizers-tt15__7723688__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

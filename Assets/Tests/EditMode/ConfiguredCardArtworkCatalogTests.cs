@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
@@ -45,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA234EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA252EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -114,15 +115,26 @@ namespace GuardsDigital.Tests.EditMode
             // once the count was fixed. A Unity-only fixture that pins more than one thing is not
             // green until it is RE-RUN green - the same shape milestone 8.38e's scenario digests
             // record, where the failure message reported five of nine.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(234));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(234));
+            //
+            // MILESTONE 8.39i TAKES IT 234 TO 252, and it is the first dealing since 8.35z53 that the
+            // wider half did not catch AND that this count did not catch either: the instruction the
+            // seven paragraphs above leave was followed in one edit - `HeroFolders`'s
+            // { "cutter", "Cutter" }, `Configured`'s .Concat(CutterCardContent.DealtDefinitions), the
+            // eighteen JSON rows, this count and the grouping below - and the offline check those
+            // paragraphs do NOT name was run beside it: the catalog's `contentRevision` set against
+            // every `public const string ContentRevision` in the verified content, which is a two-
+            // second comparison and the one thing that makes the revision half of this file provable
+            // without a Unity launch. Few More Steps is p.20's Handicap card and is excluded exactly
+            // as the seven Handicap cards named above are.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(252));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(252));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(234),
+                Is.EqualTo(252),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -130,7 +142,7 @@ namespace GuardsDigital.Tests.EditMode
                     .OrderBy(group => group.Hero),
                 Is.EqualTo(new[]
                 {
-                    ("arien", 18), ("brogan", 18), ("dodger", 18), ("misa", 18),
+                    ("arien", 18), ("brogan", 18), ("cutter", 18), ("dodger", 18), ("misa", 18),
                     ("sabina", 18), ("silverarrow", 18), ("swift", 18), ("tali", 18),
                     ("tigerclaw", 18), ("ursafar", 18), ("wasp", 18), ("whisper", 18),
                     ("xargatha", 18)
@@ -439,6 +451,136 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(face.tooltip, Is.EqualTo(card.AssistiveLabel));
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.39i. A checkout WITHOUT the private corpus still draws every configured hero,
+        /// proved rather than assumed, and proved for all fourteen rather than for the one face the
+        /// case above happens to use.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why it is derived over the catalog.</b> The clean-checkout claim is made by every
+        /// dealing's acceptance checks and has been carried since milestone 8.25f by one Wasp card. A
+        /// hero whose rows are in the catalog and whose face cannot be built without artwork would fail
+        /// for a player with no `Docs/` folder and pass for every author who has one - which is exactly
+        /// the asymmetry a private corpus creates. Walking the catalog's own content sets means a
+        /// fifteenth hero is covered the moment her rows are added.</para>
+        /// <para>The absent corpus is simulated the way the case above simulates it - a texture loader
+        /// that returns null for every request - because that is precisely what `Resources.Load` does
+        /// when the ignored folder is not there.</para>
+        /// </remarks>
+        [Test]
+        public void WithoutThePrivateCorpus_EveryConfiguredHeroStillDrawsAGeneratedFace()
+        {
+            var byHero = ConfiguredCardArtworkCatalog.Catalog.Entries
+                .GroupBy(entry => entry.ContentSetId)
+                .OrderBy(group => group.Key, StringComparer.Ordinal)
+                .ToArray();
+            Assert.That(byHero, Is.Not.Empty, "The catalog must name the heroes this case walks.");
+
+            var definitions = ConfiguredCardArtworkCatalog.ConfiguredReferences.ToArray();
+            using (ConfiguredCardArtwork.UseTextureLoader(_ => null))
+            {
+                foreach (var hero in byHero)
+                {
+                    var reference = hero.First().Reference;
+                    var definition = EveryDealtDefinition()
+                        .Single(candidate => candidate.Reference.Equals(reference));
+                    var card = CurrentRoundCards.DeckCard(
+                        new CardInstanceId("clean-checkout-" + hero.Key), definition);
+
+                    var face = DirectorHandsUnityView.BuildStandaloneCard(card);
+
+                    AssertStandardFootprint(face);
+                    Assert.That(
+                        Descendants(face).Any(element => element.name == "gd-card-artwork"),
+                        Is.False,
+                        hero.Key + " must draw no artwork element when the private corpus is absent.");
+                    Assert.That(
+                        Descendants(face).Any(element => element.name == "gd-card-rules"),
+                        Is.True,
+                        hero.Key + " must still draw its generated typed face.");
+                    Assert.That(face.tooltip, Is.EqualTo(card.AssistiveLabel));
+                }
+            }
+
+            Assert.That(definitions, Has.Length.EqualTo(
+                ConfiguredCardArtworkCatalog.Catalog.Entries.Count),
+                "and the walk above covered one face per configured hero out of that same set.");
+        }
+
+        /// <summary>
+        /// Milestone 8.39i. The hover pick card resolves for EVERY hero the selector offers, and the
+        /// two halves that have to agree for it to are asserted against each other rather than either
+        /// alone.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>An absent private resource is tolerated by design everywhere else in this build,
+        /// which is exactly what would let this fail quietly.</b> `PrivateLobbyViews.ShowHeroOverview`
+        /// loads `Private/HeroSelection/&lt;heroIdValue&gt;` and HIDES the overview when the load
+        /// returns null - correct behaviour for a clean checkout, and indistinguishable from a hero
+        /// whose front was never prepared. So the check is that the two sides cannot drift: the
+        /// preparation tool is keyed by CONTENT id and writes `hero-&lt;contentId&gt;.png`, while the
+        /// runtime addresses by HERO id, and every roster row must satisfy
+        /// `heroIdValue == "hero-" + contentId` for those to be the same file.</para>
+        /// <para>Derived over `RegisteredHeroRoster.ForThisBuild`, so a fifteenth hero is covered by
+        /// her roster row alone. Milestone 8.36e built the hover; what a dealing owes it is the
+        /// prepared resource under the key the runtime composes, and this is the offline half of
+        /// proving that - the live half is the lobby Play Mode case, which asserts a non-null texture
+        /// per offered hero on a checkout that HAS the corpus.</para>
+        /// </remarks>
+        [Test]
+        public void EveryHeroTheSelectorOffers_HasAPreparedHoverFrontUnderTheKeyTheRuntimeComposes()
+        {
+            var script = File.ReadAllText(Path.Combine(UnityEngine.Application.dataPath,
+                "..", "Tools", "Prepare-HeroSelectionArtwork.ps1"));
+            var declared = Regex.Matches(script, @"(?m)^\s*([a-z]+)\s*=\s*'([^']+\.png)'\s*$")
+                .Cast<Match>().Select(match => match.Groups[1].Value).ToArray();
+
+            Assert.That(declared, Is.Not.Empty,
+                "The preparation script's own declared rows are this check's source; finding none " +
+                "means its shape moved and this assertion stopped asking anything.");
+            Assert.That(
+                declared, Is.EquivalentTo(RegisteredHeroRoster.ForThisBuild
+                    .Select(hero => hero.ContentId.Value)),
+                "Every hero the selector offers needs a prepared hover front, and nothing is prepared " +
+                "for a hero no selector offers.");
+
+            foreach (var hero in RegisteredHeroRoster.ForThisBuild)
+            {
+                Assert.That(hero.HeroIdValue, Is.EqualTo("hero-" + hero.ContentId.Value),
+                    "The tool writes hero-<contentId>.png and the runtime loads " +
+                    "Private/HeroSelection/<heroIdValue>; a row where those disagree prepares a file " +
+                    "the hover never asks for and falls back silently.");
+            }
+        }
+
+        /// <summary>
+        /// Every dealt definition every verified content class in the build contributes, derived by the
+        /// same reflection milestone 8.38d's corpus sweep uses rather than listed by hand.
+        /// </summary>
+        private static IEnumerable<CardDefinition> EveryDealtDefinition()
+        {
+            var contentClasses = typeof(WaspCardContent).Assembly.GetTypes()
+                .Where(type =>
+                    type.IsClass && type.IsAbstract && type.IsSealed &&
+                    type.Namespace == typeof(WaspCardContent).Namespace &&
+                    type.Name.EndsWith("CardContent", StringComparison.Ordinal))
+                .ToArray();
+            Assert.That(contentClasses, Is.Not.Empty,
+                "The reflection must find the verified content classes at all.");
+
+            var everyDealtDefinition = new List<CardDefinition>();
+            foreach (var contentClass in contentClasses)
+            {
+                var property = contentClass.GetProperty(
+                    "DealtDefinitions",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                Assert.That(property, Is.Not.Null, contentClass.Name);
+                everyDealtDefinition.AddRange((IReadOnlyList<CardDefinition>)property.GetValue(null));
+            }
+
+            return everyDealtDefinition;
         }
 
         [Test]

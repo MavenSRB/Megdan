@@ -145,7 +145,18 @@ namespace GuardsDigital.Tests.EditMode
             // of this list. Milestone 8.35z50's trap was watched for and did not recur: her staged
             // configuration went into EveryDealtDefinition in this same change, so the digest below is
             // over her whole dealt set rather than over zero cards.
-            new IdentityPin("swift", "swift-8-38d-rev-1", "9e63eeb9d36737860b65f4ef6684142b21d74382c9a36ecff866c2947d09e0bb")
+            new IdentityPin("swift", "swift-8-38d-rev-1", "9e63eeb9d36737860b65f4ef6684142b21d74382c9a36ecff866c2947d09e0bb"),
+            // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
+            // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
+            // composed Cutter's eighteen faces without dealing her.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
+            // deliberately wrong value and the digest read off this oracle's own failure output, with
+            // the thirteen pins above confirmed byte-identical in that same run. Milestone 8.35z50's
+            // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
+            // measures the hero as contributing ZERO cards, and hers went in beside the row in
+            // EveryDealtDefinition below, in one change.
+            new IdentityPin("cutter", "cutter-8-39h-rev-1", "f1c3d7be14b331e994cbaa29fdd9f7e0a1970228547f1fd87e09ca686afd0172")
         };
 
         [Test]
@@ -269,6 +280,12 @@ namespace GuardsDigital.Tests.EditMode
                 // that sentence claims - the union covering every hero this build deals - is kept true
                 // by this row rather than by that one.
                 .Concat(MatchConfiguration.CreateStagedSwiftForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.39i. Cutter's staged configuration, on the same terms and added in the
+                // same change as her pin, which is what the two warnings above ask for. She is the
+                // fourteenth, so the union covering every hero this build deals is kept true by this
+                // row rather than by the one above it.
+                .Concat(MatchConfiguration.CreateStagedCutterForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

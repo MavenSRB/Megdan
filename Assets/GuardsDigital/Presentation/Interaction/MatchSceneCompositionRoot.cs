@@ -703,7 +703,39 @@ namespace GuardsDigital.Presentation.Interaction
         /// Mobile Scout and Hunting Season - and Bullet Time unlocked. This is the only arm that
         /// reaches her fast travel, her escalating discard and her two-promise bounty at once.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedSwift = 70
+        VerifiedTierThreeAlternateEngagedStagedSwift = 70,
+
+        /// <summary>
+        /// Milestone 8.39i. The engaged staging with Cutter the Sky Pirate on the Blue seat, holding
+        /// rulebook p.6's five starting cards. The fourteenth hero.
+        /// </summary>
+        VerifiedEngagedStagedCutter = 71,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Cutter holding the first sibling
+        /// of each colour: Bold Thrust, Barrage and Ramming Speed.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedCutter = 72,
+
+        /// <summary>
+        /// The Tier II staging with Cutter holding the second sibling of each colour: Evasive Shot,
+        /// X Marks the Spot and Outmaneuver - the only Tier II arm that reaches her enemy-chosen modal
+        /// and her minion swap.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedCutter = 73,
+
+        /// <summary>
+        /// The Tier III staging with Cutter holding the first sibling of each colour - Fearless Lunge,
+        /// Broadside and Crashland - and Legend of the Skies unlocked beside her dashboard.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedCutter = 74,
+
+        /// <summary>
+        /// The Tier III staging with Cutter holding the second sibling of each colour - Tumble Shot,
+        /// A Fistful of Coins and Outsmart - and Legend of the Skies unlocked. This is the only arm
+        /// that reaches the solo-victory claim at all.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedCutter = 75
     }
 
     [ExecuteAlways]
@@ -1199,6 +1231,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedSwiftTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.SwiftUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedCutter =>
+                    MatchConfiguration.CreateStagedCutterForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedCutter =>
+                    MatchConfiguration.CreateStagedCutterTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.CutterUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedCutter =>
+                    MatchConfiguration.CreateStagedCutterTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.CutterUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedCutter =>
+                    MatchConfiguration.CreateStagedCutterTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.CutterUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedCutter =>
+                    MatchConfiguration.CreateStagedCutterTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.CutterUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1245,7 +1296,12 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedUrsafar(content) ||
                 IsStagedWhisper(content) ||
                 IsStagedTali(content) ||
-                IsStagedSwift(content))
+                IsStagedSwift(content) ||
+                // Milestone 8.39i. Written in the SAME change as her five members above, which is
+                // what milestone 8.38f's repair of this list teaches: a staged arm missing from here
+                // composes its two heroes fifteen spaces apart, every approach helper throws
+                // `Sequence contains no elements`, and no offline tier can see it.
+                IsStagedCutter(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1704,6 +1760,11 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusSwiftOneVsOne();
                     }
 
+                    if (IsStagedCutter(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusCutterOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -1841,6 +1902,21 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSwift ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedSwift ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift;
+
+        /// <summary>
+        /// Whether this content is one of milestone 8.39i's five staged Cutter scenes. Written in the
+        /// same change as those five members, the setup configuration they name and the restaging list
+        /// above - the three arms milestone 8.38f had to add for Swift after the fact, and which this
+        /// dealing therefore ships together. She needs no ally seat: no face of hers names a friendly
+        /// hero, so what her set needs is an enemy hero in radius, enemy minions to swap with and an
+        /// obstacle in range, all of which the engaged position and p.8's waves supply.
+        /// </summary>
+        private static bool IsStagedCutter(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedCutter ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedCutter ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedCutter ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedCutter ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedCutter;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

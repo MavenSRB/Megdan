@@ -240,6 +240,24 @@
     { "definitionId": "swift-mark-for-death", "contentRevision": "swift-8-38d-rev-1", "sourcePath": "active-hero-cards/Swift/swift15__7579992__front.png" },
     { "definitionId": "swift-killing-ground", "contentRevision": "swift-8-38d-rev-1", "sourcePath": "active-hero-cards/Swift/swift16__7572608__front.png" },
     { "definitionId": "swift-hunting-season", "contentRevision": "swift-8-38d-rev-1", "sourcePath": "active-hero-cards/Swift/swift17__7579993__front.png" },
-    { "definitionId": "swift-bullet-time", "contentRevision": "swift-8-38d-rev-1", "sourcePath": "active-hero-cards/Swift/swift18__7702879__front.png" }
+    { "definitionId": "swift-bullet-time", "contentRevision": "swift-8-38d-rev-1", "sourcePath": "active-hero-cards/Swift/swift18__7702879__front.png" },
+    { "definitionId": "cutter-walk-the-plank", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter__7624856__front.png" },
+    { "definitionId": "cutter-grappling-bolt", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter2__7632642__front.png" },
+    { "definitionId": "cutter-daring-strike", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter3__7624850__front.png" },
+    { "definitionId": "cutter-bold-thrust", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter4__7624851__front.png" },
+    { "definitionId": "cutter-evasive-shot", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter5__7624973__front.png" },
+    { "definitionId": "cutter-fearless-lunge", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter6__7624852__front.png" },
+    { "definitionId": "cutter-tumble-shot", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter7__7624974__front.png" },
+    { "definitionId": "cutter-bombardment", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter8__7718212__front.png" },
+    { "definitionId": "cutter-barrage", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter9__7718593__front.png" },
+    { "definitionId": "cutter-x-marks-the-spot", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter10__7718592__front.png" },
+    { "definitionId": "cutter-broadside", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter11__7718204__front.png" },
+    { "definitionId": "cutter-a-fistful-of-coins", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter12__7718206__front.png" },
+    { "definitionId": "cutter-brace-for-impact", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter13__7718211__front.png" },
+    { "definitionId": "cutter-ramming-speed", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter14__7718210__front.png" },
+    { "definitionId": "cutter-outmaneuver", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter15__7718209__front.png" },
+    { "definitionId": "cutter-crashland", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter16__7718208__front.png" },
+    { "definitionId": "cutter-outsmart", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter17__7718207__front.png" },
+    { "definitionId": "cutter-legend-of-the-skies", "contentRevision": "cutter-8-39h-rev-1", "sourcePath": "active-hero-cards/Cutter/cutter18__7624846__front.png" }
   ]
 }

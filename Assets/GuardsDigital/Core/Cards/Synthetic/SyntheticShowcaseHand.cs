@@ -1334,6 +1334,66 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedDefendedColorProfile });
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.39i: the two handler types Cutter the Sky Pirate's dealing registers, proved
+        // here on cards that are nobody's, on the division every dealing since 8.35z34 has drawn. Both
+        // are questions a Skill can ask, so both are Skills; they do NOT share a card, because they
+        // share no printed sentence - one is her Silver basic's grapple and the other her Blue Tier
+        // III's third bullet - and the grouping rule this file follows joins two contracts only when
+        // one face puts them in one sentence.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.39i's obstacle-grappling Skill, sitting outside its team's ordinary Initiative
+        /// band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedObstacleGrappleSkillProfile { get; } =
+            new SyntheticSkillProfile("red-grapnel", "Red Grapnel", 36);
+
+        /// <summary>
+        /// Milestone 8.39i's solo-victory Skill, on the same terms.
+        /// </summary>
+        private static SyntheticSkillProfile RedSoloVictorySkillProfile { get; } =
+            new SyntheticSkillProfile("red-privateer", "Red Privateer", 37);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.39i's obstacle selection, which is how
+        /// <c>synthetic-range-obstacle-target@1</c> becomes reachable from showcase content rather than
+        /// arriving for the first time inside Cutter's own slice.
+        ///
+        /// <para><b>It prints a Range, which no other showcase Skill in this file does.</b> The
+        /// selection reads the acting card's printed Range through <c>RangeValueQuery</c> - p.9's icon
+        /// and p.16's items in one place - so a fixture card printing none would name the capability
+        /// and never be able to offer a candidate. Four is the smallest number that reaches past the
+        /// ring of neighbours on every fixture board this file's hands are dealt to.</para>
+        ///
+        /// <para>It declares p.18's unqualified immunity override, because the printed sentence the
+        /// contract was minted for does - "ignore immunity" with no activity named - and a fixture that
+        /// left it off would prove a narrower node than the one Grappling Bolt composes.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithObstacleGrappleSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                obstacleGrappleSkillProfile: RedObstacleGrappleSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.39i's solo-victory claim, which is how
+        /// <c>claim-solo-victory@1</c> becomes reachable on the same terms.
+        ///
+        /// <para><b>Its threshold is deliberately out of reach, and that is the fixture's whole
+        /// safety.</b> The handler ENDS A MATCH when the controller holds the printed count, and this
+        /// card is dealt into hands whose fixtures assume no card can end one. The gate asks that a
+        /// showcase card REACH a new handler type; the node does that, with the same literal binding
+        /// and the same published pair Cutter's own face composes, and a threshold no p.8 farming run
+        /// can reach keeps the proof from ending somebody else's match as a side effect. That is the
+        /// same restraint milestone 8.35z53 recorded when its showcase cards selected minions and
+        /// deliberately did not defeat them.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithSoloVictorySkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                soloVictorySkillProfile: RedSoloVictorySkillProfile);
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1447,6 +1507,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile directionBatchSkillProfile = null,
             SyntheticSkillProfile heroTokenSkillProfile = null,
             SyntheticSkillProfile sourceDiscardSkillProfile = null,
+            SyntheticSkillProfile obstacleGrappleSkillProfile = null,
+            SyntheticSkillProfile soloVictorySkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1718,6 +1780,22 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateSourceDiscardSkillDefinition(sourceDiscardSkillProfile),
                     sourceDiscardSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (obstacleGrappleSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateObstacleGrappleSkillDefinition(obstacleGrappleSkillProfile),
+                    obstacleGrappleSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (soloVictorySkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateSoloVictorySkillDefinition(soloVictorySkillProfile),
+                    soloVictorySkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -4054,8 +4132,17 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// because they differ in exactly two things - the action id and the effect - and repeating
         /// twenty lines four times would let one of them drift from the others silently.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.39i adds the optional printed values. Every Skill above prints none, and the
+        /// default keeps that exactly; the obstacle grapple is the first fixture Skill whose own
+        /// capability READS a printed icon off the card carrying it, so a card printing nothing would
+        /// name the contract and never be able to offer a candidate.
+        /// </remarks>
         private static CardDefinition SkillCard(
-            SyntheticSkillProfile profile, string actionId, EffectDefinition effect) =>
+            SyntheticSkillProfile profile,
+            string actionId,
+            EffectDefinition effect,
+            IReadOnlyList<PrintedValueDefinition> printedValues = null) =>
             new CardDefinition(
                 new CardDefinitionId($"placeholder-{profile.Id}"),
                 "phase-8-37-rev-1",
@@ -4069,12 +4156,123 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new ActionDefinitionId(actionId),
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
-                        Array.Empty<PrintedValueDefinition>(),
+                        printedValues ?? (IReadOnlyList<PrintedValueDefinition>)
+                            Array.Empty<PrintedValueDefinition>(),
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
                         default,
                         effect)
                 });
+
+        /// <summary>
+        /// Milestone 8.39i. The obstacle a printed-Range sentence grapples to, with the approach space
+        /// published beside it - Cutter's Grappling Bolt's selection, on a card that is nobody's.
+        /// See <see cref="RedObstacleGrappleSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateObstacleGrappleSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("obstacle-grapple-root");
+            var obstacle = new EffectNodeId("obstacle-grapple-obstacle");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-39i-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { obstacle }),
+                    // IfAble rather than Mandatory, which is the one difference from the printed node
+                    // and the same restraint every fixture selection in this file takes: a board with
+                    // no obstacle inside the printed Range is not a card that refuses to be played.
+                    // What the gate asks is that the contract be REACHED, and the bindings below are
+                    // Grappling Bolt's own rather than a weakened copy.
+                    new EffectNodeDefinition(
+                        obstacle, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticTargetingCapabilities.RangeObstacleTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity",
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.All)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenObstacleSpaceOutputName,
+                                EffectValueKind.Coordinate),
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ObstacleApproachSpaceOutputName,
+                                EffectValueKind.Coordinate)
+                        },
+                        immunityOverrides: new[]
+                        {
+                            new GuardsDigital.Core.Rules.Modifications.ImmunityOverrideDeclaration(
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.All,
+                                GuardsDigital.Core.Rules.Modifications.ImmunityOverrideReason
+                                    .PrintedUnqualifiedImmunity)
+                        })
+                });
+
+            return SkillCard(
+                profile,
+                "primary-obstacle-grapple-skill",
+                effect,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Range, 4) });
+        }
+
+        /// <summary>
+        /// Milestone 8.39i. The solo-victory claim, on a card that is nobody's and at a threshold
+        /// nothing can reach. See <see cref="RedSoloVictorySkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateSoloVictorySkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("solo-victory-root");
+            var claim = new EffectNodeId("solo-victory-claim");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-39i-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { claim }),
+                    // IfAble, because a composition carrying no round to claim through answers the
+                    // question with "cannot" rather than with "no", and a fixture hand is dealt into
+                    // compositions that have no such round.
+                    new EffectNodeDefinition(
+                        claim, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.ClaimSoloVictoryV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.SoloVictoryThresholdParameter,
+                                EffectValue.Integer(UnreachableSoloVictoryThreshold))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.SoloVictoryClaimedOutput,
+                                EffectValueKind.Boolean),
+                            new EffectOutputBinding("winner", EffectValueKind.Hero)
+                        })
+                });
+
+            return SkillCard(profile, "primary-solo-victory-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.39i. The count the fixture claim asks for, written down rather than left as a
+        /// magic number: A Fistful of Coins prints thirteen and the showcase card must never take the
+        /// claim, so this is a number rulebook p.13's bounties and p.17's farming cannot produce inside
+        /// a fixture match. The handler still runs, still reads the live ledger and still publishes its
+        /// boolean, which is the whole of what milestone 7.9's second half asks of a showcase card.
+        /// </summary>
+        private const int UnreachableSoloVictoryThreshold = 9999;
 
         private static CardDefinition CreateBorrowedActionSkillDefinition(SyntheticSkillProfile profile)
         {

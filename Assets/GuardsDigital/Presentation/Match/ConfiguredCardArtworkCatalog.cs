@@ -88,7 +88,13 @@ namespace GuardsDigital.Presentation.Match
                 // extraction directory spells the name plainly. Written here at the same moment as the
                 // eighteen rows, for the reason those five paragraphs give: the rows alone are what
                 // every offline tier can see, and this map is what turns them into a front on a card.
-                { "swift", "Swift" }
+                { "swift", "Swift" },
+                // Milestone 8.39i, the SEVENTH consecutive dealing told by the comment above rather
+                // than by a check. Her extraction directory spells the name plainly, like Swift's and
+                // Tali's before her. Written here at the same moment as the eighteen rows, for the
+                // reason those six paragraphs give: the rows alone are what every offline tier can
+                // see, and this map is what turns them into a front on a card.
+                { "cutter", "Cutter" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -375,6 +381,12 @@ namespace GuardsDigital.Presentation.Match
                 // Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance, Ursafar's
                 // Jaws That Bite, Whisper's Vile Accusation and Tali's Ice Shard are not among theirs.
                 .Concat(SwiftCardContent.DealtDefinitions)
+                // Milestone 8.39i. Cutter's eighteen, on exactly the terms the rows above state. Few
+                // More Steps is p.20's Handicap card and is not among her DealtDefinitions, exactly as
+                // Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance,
+                // Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard and Swift's
+                // Backup are not among theirs.
+                .Concat(CutterCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

@@ -329,6 +329,22 @@ offered at all when no second legal subject exists; milestone 8.35z15 establishe
 this build - a card-text repeat with no legal subject is not offered - so this is expected to be a
 citation rather than a decision, and is recorded so the milestone confirms it rather than assumes it.
 
+**CU-15 (SETTLED at 8.39i, and recorded because the CLASS is reusable rather than because the fix was
+hard). Registering a contract is what makes the build's conformance rules able to see it, and two of
+this series' blocks were invisible to one of them for two milestones.**
+`EffectDefinitionValidatorTests.IntegerBackedClosedVocabulariesRejectOutOfDomainLiteralsAtContentLoad`
+walks the REGISTERED capability set and demands that every integer parameter either be named as an
+ordinary quantity or declare its enum domain. Milestone 7.9's deferral gate held `claim-solo-victory@1`
+out of that set from 8.39g1 until this dealing, so the rule was structurally silent about its
+`threshold` parameter, and it fired the moment the dealing registered the handler - the only red in the
+run that was not a deliberately blanked pin. The parameter is an ordinary quantity by every sense that
+list means (a coin count compared against a ledger, with no closed set of legal thresholds to
+enumerate), so it joins the list beside `amount`, `minimum` and `maximumCounted`; `maximumCounted`'s own
+note records this exact class arriving at Dodger's dealing. **The lesson a later hero inherits is that a
+conformance rule scoped to the registered set says nothing about a deferred declaration, so a dealing is
+the first tier that can read one - and the finding is a defect against nothing, because the tier did not
+exist earlier in the series to be skipped.**
+
 ## Components and prepared artwork sources
 
 Every row below is measured from the private corpus rather than guessed, and each names how.

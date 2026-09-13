@@ -280,7 +280,19 @@ namespace GuardsDigital.Tests.EditMode
             // Ursafar's dealing, so her reaching it moves this by nothing on rule ledger row 25's own
             // sentence. Her Active-effect creations move it by nothing on the sentence seven dealings
             // have now written.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(78),
+            // Milestone 8.39i, the FOURTEENTH dealing, moves it 78 -> 80. Cutter the Sky Pirate
+            // registers exactly TWO capability ids and both are new handler TYPES, which is the first
+            // time since milestone 8.35z46 that the two numbers a dealing moves are equal:
+            // `RangeObstacleTargetHandler`, the obstacle selection her Silver basic's grapple names -
+            // its own type rather than an eighth arm of `PrintedIconTargetHandler`, because p.18's
+            // obstacles include terrain and its candidates are therefore SPACES - and
+            // `ClaimSoloVictoryHandler`, the only reader in the build that claims an ending for one
+            // hero. Her other nineteen contracts were all registered before she was dealt, which is
+            // what thirteen lettered build blocks bought: every one of them is a further reference
+            // over a handler that already exists, and this rule counts TYPES. She contributes no
+            // Active-effect creation at all - no face of hers prints an Active-effect keyword - so the
+            // sentence seven dealings wrote about `ActiveEffectCreationHandler` simply does not arise.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(80),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

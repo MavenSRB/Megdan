@@ -1005,12 +1005,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // three Green faces, which qualify the enemy they reach by that enemy's own footing, are
             // cards a configured match puts in a hand.
 
-            // Milestone 8.39g1. Cutter's A Fistful of Coins is the only face in the corpus that claims
-            // an ending for one hero, she is not dealt until milestone 8.39i, and this IS a new handler
-            // type - so it owes milestone 7.9's gate both halves, exactly as 8.39b's obstacle selection
-            // does: it stays out of the registered list until a dealt card can start it, and the
-            // dealing adds the showcase consumer the second half asks for.
-            yield return new ClaimSoloVictoryHandler();
+            // MILESTONE 8.39g1'S ONE HAS LEFT THIS LIST - see `RegisteredHandlers` below. Cutter the
+            // Sky Pirate is dealt at milestone 8.39i, so A Fistful of Coins, the only face in the
+            // corpus that claims an ending for one hero, is a card a configured match puts in a hand.
+            // Both halves of milestone 7.9's gate are satisfied in that one commit: the dealing
+            // satisfies the first, and the showcase Skill it adds - the Red Privateer - satisfies the
+            // second, which a new handler TYPE owes.
         }
 
         /// <summary>
@@ -1182,6 +1182,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // first half is satisfied outright. It IS a new handler type, so it owes the second half a
             // showcase consumer, and milestone 8.38e adds one.
             yield return new SubjectAdjacentTerrainPresenceHandler();
+
+            // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate. `claim-solo-victory@1`
+            // is A Fistful of Coins' third bullet - "If you have 13 or more coins, you alone win the
+            // game" - and it is the only sentence in the corpus that claims an ending for one hero.
+            // Milestone 8.39g built the contract it writes through and 8.39g1 minted this reader; the
+            // gate held it out of this list until a card a configured match DEALS could start it, and
+            // her Blue Tier III is that card. It IS a new handler type, so it owes the gate's second
+            // half a showcase consumer, and this milestone adds one - the Red Privateer, whose own
+            // threshold is deliberately unreachable so that proving the contract cannot end a fixture
+            // match as a side effect.
+            yield return new ClaimSoloVictoryHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>

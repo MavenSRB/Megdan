@@ -348,6 +348,12 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string SwiftHeroIdValue = "hero-swift";
 
+        /// <summary>
+        /// Milestone 8.39i. Cutter's own hero id - the fourteenth hero, and the second dealt after the
+        /// package arc closed, on the same 2026-09-11 user direction that named her by name.
+        /// </summary>
+        public const string CutterHeroIdValue = "hero-cutter";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
@@ -378,7 +384,11 @@ namespace GuardsDigital.Core.Setup
                 // the rule above asks for - and which the 8.35z46 omission recorded there is the whole
                 // reason to restate. She is the THIRTEENTH, so the sentence Tali's row above wrote -
                 // "every hero this build can deal" - stays true only because this row is here.
-                (SwiftHeroIdValue, "swift", "Swift the Sharpshooter")
+                (SwiftHeroIdValue, "swift", "Swift the Sharpshooter"),
+                // Milestone 8.39i deals her and makes her pickable in the same commit, which is what
+                // the rule above asks for. She is the FOURTEENTH, so the sentence Tali's row wrote -
+                // "every hero this build can deal" - stays true only because this row is here too.
+                (CutterHeroIdValue, "cutter", "Cutter the Sky Pirate")
             };
 
         /// <summary>
@@ -534,6 +544,20 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusSwiftOneVsOne() =>
             CreateOneVsOne(new HeroContentId("swift"), "Swift");
+
+        /// <summary>
+        /// Milestone 8.39i. The same board with Cutter the Sky Pirate on the Blue seat, for the
+        /// fixtures whose subject is her printed set.
+        ///
+        /// <para>Written in the SAME change as her five <c>SceneCardContent</c> members and her three
+        /// <c>MatchConfiguration</c> stagings, which is the whole of what milestone 8.38f's repair
+        /// above teaches: without this arm every staged scene of hers falls through
+        /// <c>SelectSetupConfiguration</c>'s default to Arien's setup, and the hand factory - which
+        /// takes an owner id rather than naming a hero - then deals HER cards to a seat whose content
+        /// identity is <c>arien</c>. No offline tier can see that; only a loaded scene composes.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusCutterOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("cutter"), "Cutter");
 
         /// <summary>
         /// Milestone 8.22. The same board with Sabina on the Blue seat, for the fixtures whose subject

@@ -85,7 +85,7 @@
 param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
-        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift')]
+        'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Check,
@@ -168,6 +168,19 @@ $declaredHeroes = @{
     # both of her faces, not assumed; what still identifies her crop is the manifest element, the
     # ring's own team, and a portrait filling at least 30% of the interior.
     swift = @{ ElementId = 8597511; ElementName = 'Swift'; DisplayName = 'Swift'; FieldFloor = 0.0 }
+
+    # Milestone 8.39i. THE THIRD STANDEE THAT HIDES UNDER AN EPITHET, and the line that shows why the
+    # sentence above Swift's - "the epithet trap does not apply" - was about HER rather than about the
+    # corpus. The manifest names nothing "Cutter"; hers is `Airship_Captain` (id 8583041), exactly as
+    # Whisper the Outcast's is `Outcast` and Tali the Spiritcaller's is `Spiritcaller`. Read from the
+    # bundled manifest with ConvertFrom-Json - `elementId: 8583041, elementName: "Airship_Captain",
+    # elementType: "VerticalTokens"`, one atlas `Image_0_Atlas` 4096x4096 carrying the two 302x302
+    # faces this tool's invariant requires at (3249,2526) and (3553,2526) - and confirmed VISUALLY
+    # against her cropped face and her dashboard art: teal curls, forehead goggles, brown coat. A
+    # name-matching rule would find nothing at all for her, which is the fourth time this table has
+    # earned being declared rather than derived. She takes the calibrated 2% field floor: her art
+    # leaves the ordinary team-coloured backdrop, so Swift's per-hero zero is hers alone.
+    cutter = @{ ElementId = 8583041; ElementName = 'Airship_Captain'; DisplayName = 'Cutter' }
 }
 
 $declared = $declaredHeroes[$Hero]

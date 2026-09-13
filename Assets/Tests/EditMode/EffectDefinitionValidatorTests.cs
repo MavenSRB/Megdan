@@ -55,7 +55,21 @@ namespace GuardsDigital.Tests.EditMode
                 "minimumDistance",
                 "radius",
                 "range",
-                "reach"
+                "reach",
+                // Milestone 8.39i. The printed count A Fistful of Coins claims the match at - "If you
+                // have 13 or more coins, you alone win the game". It is an ordinary quantity in every
+                // sense this list means: it is compared against a coin balance, a second card printing
+                // a different number costs a binding rather than a capability, and there is no closed
+                // set of legal thresholds to enumerate.
+                //
+                // IT REACHES THIS RULE NOW AND NOT AT 8.39g1, AND THAT IS THE SAME CLASS
+                // `maximumCounted` ABOVE RECORDS, ARRIVING A SECOND TIME. Rules here apply to
+                // REGISTERED parameters; milestone 7.9's deferral gate held `claim-solo-victory@1` out
+                // of that list until a dealt card could start it, so this conformance rule was
+                // structurally silent about the declaration for two milestones and fired the moment
+                // Cutter's dealing registered it. Nothing was wrong with the parameter - what was
+                // missing was a tier that could look at it, and a dealing is that tier.
+                "threshold"
             };
             var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
             var integerParameters = catalog.Registered

@@ -4231,7 +4231,11 @@ namespace GuardsDigital.Tests.EditMode
                 // list: the user re-opened the roster on 2026-09-11. The list and the artwork
                 // bijection it is asserted against cover every hero the build can deal, which is the
                 // claim that has to keep being true rather than a count that was once right.
-                .Concat(SwiftCardContent.DealtDefinitions).ToArray();
+                .Concat(SwiftCardContent.DealtDefinitions)
+                // Milestone 8.39i. The fourteenth, on the terms the line above states: the claim that
+                // has to keep being true is that this list and the artwork bijection it is asserted
+                // against cover every hero the build can deal, and each dealing keeps it true.
+                .Concat(CutterCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

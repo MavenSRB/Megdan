@@ -318,31 +318,32 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The two contracts this series minted as new handler TYPES are not in the build's
-        /// registration list while she is undealt, and that is milestone 7.9's deferral gate rather
-        /// than an omission: a capability registered before a dealt card can start it moves pinned
-        /// bytes and fails the gate's first half.
+        /// The two contracts this series minted as new handler TYPES are in the build's registration
+        /// list now that she is dealt, and neither is still deferred. Milestone 8.39h wrote this case
+        /// the other way round - the debt asserted from her own side, as a PAIR rather than as two
+        /// memberships - specifically so that milestone 8.39i could not register one and forget the
+        /// other; it did the work it was written for, and the inversion is what discharges it.
         ///
-        /// <para>The debt is asserted from this side so that milestone 8.39i cannot register them
-        /// without this case moving with it - which is the inversion Dodger's own pair records.</para>
+        /// <para>THE PAIR IS STILL ASSERTED AS A PAIR. What has to keep being true is that these two
+        /// sit together in exactly one list, whichever list that is.</para>
         /// </summary>
         [Test]
-        public void HerTwoNewContracts_AreNotRegisteredWhileSheIsUndealt()
+        public void HerTwoNewContracts_AreRegisteredNowThatSheIsDealt()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities.Registered
                 .Select(value => value.ToString())
                 .ToArray();
 
-            Assert.That(registered, Has.No.Member("synthetic-range-obstacle-target@1"));
-            Assert.That(registered, Has.No.Member("claim-solo-victory@1"));
+            Assert.That(registered, Has.Member("synthetic-range-obstacle-target@1"));
+            Assert.That(registered, Has.Member("claim-solo-victory@1"));
 
             var deferred = SyntheticRosterCapabilities.DeferredHandlers()
                 .Concat(SyntheticTargetingCapabilities.DeferredHandlers())
                 .Select(handler => handler.Reference.ToString())
                 .ToArray();
 
-            Assert.That(deferred, Has.Member("synthetic-range-obstacle-target@1"));
-            Assert.That(deferred, Has.Member("claim-solo-victory@1"));
+            Assert.That(deferred, Has.No.Member("synthetic-range-obstacle-target@1"));
+            Assert.That(deferred, Has.No.Member("claim-solo-victory@1"));
         }
 
         // -------------------------------------------------------------------------------------------
@@ -1530,7 +1531,7 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         private static IEffectCapabilityHandler ClaimHandler() =>
-            SyntheticRosterCapabilities.DeferredHandlers()
+            SyntheticRosterCapabilities.Handlers()
                 .Single(handler =>
                     handler.Reference.Equals(SyntheticRosterCapabilities.ClaimSoloVictoryV1));
 

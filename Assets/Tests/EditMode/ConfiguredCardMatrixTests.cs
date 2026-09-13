@@ -433,7 +433,18 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticShowcaseHand.CreateRedWithDirectionBatchSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithHeroTokenSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithSourceDiscardSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithDefendedColorRiderText(owner)
+                    SyntheticShowcaseHand.CreateRedWithDefendedColorRiderText(owner),
+                    // Milestone 8.39i's TWO handler types on TWO cards, and the grouping rule is why
+                    // there are two rather than one: a card carries two contracts only when one
+                    // printed SENTENCE carries both, and Cutter's obstacle grapple and her solo
+                    // victory are her Silver basic and her Blue Tier III. The Grapnel is the only
+                    // showcase Skill in the file that PRINTS a value - the obstacle selection reads
+                    // the acting card's own Range through `RangeValueQuery`, so a card printing none
+                    // could name the contract and never offer a candidate - and the Privateer's
+                    // threshold is deliberately unreachable, because this is the first showcase card
+                    // whose handler can END A MATCH and proving a contract must not do that.
+                    SyntheticShowcaseHand.CreateRedWithObstacleGrappleSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithSoloVictorySkill(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -547,6 +558,14 @@ namespace GuardsDigital.Tests.EditMode
                 // BorrowPrimaryActionHandler, types this build already registers, and milestone 7.9's
                 // gate asks its second half of the handler TYPE.
                 .Concat(SwiftCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.39i. Cutter's eighteen dealt faces, the fourteenth set, on the same
+                // terms. TWO of her contracts are new HANDLER TYPES -
+                // `synthetic-range-obstacle-target@1`, the obstacle her Silver basic grapples to, and
+                // `claim-solo-victory@1`, the ending her Blue Tier III claims - each proved on its own
+                // showcase card above before this concat admits the faces that name them. The other
+                // nineteen contracts her set names were all registered before this milestone, which is
+                // what thirteen lettered build blocks bought. She declares no Active effect at all.
+                .Concat(CutterCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

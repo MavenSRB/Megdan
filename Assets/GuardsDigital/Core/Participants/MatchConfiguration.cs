@@ -517,6 +517,11 @@ namespace GuardsDigital.Core.Participants
                 // selector row rather than after it.
                 case Setup.QuickGameSetupConfiguration.SwiftHeroIdValue:
                     return Cards.Verified.SwiftCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.39i. The fourteenth hero this build deals, on exactly the terms the rows
+                // above are on. The agreement Tali's arm records - switch and offerable roster covering
+                // the same heroes - is what this arm keeps true rather than establishes.
+                case Setup.QuickGameSetupConfiguration.CutterHeroIdValue:
+                    return Cards.Verified.CutterCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1448,6 +1453,71 @@ namespace GuardsDigital.Core.Participants
         }
 
         /// <summary>
+        /// Milestone 8.39i. The staged Wasp-versus-Cutter match, on the same `DEV-005` terms the ten
+        /// staged matches before it are on. This is the configuration that makes Cutter playable in a
+        /// fixture, and the fourteenth of its shape.
+        ///
+        /// <para><b>She needs no ally seat</b>, and it is worth saying why rather than leaving it to be
+        /// noticed: every selection her set makes reaches an ENEMY, an obstacle or a space. Her Red
+        /// line targets units adjacent to her or in range, her Blue line hands a modal choice to an
+        /// enemy hero in radius, her two Swap Skills exchange her with an enemy MINION, and her three
+        /// Green charges qualify their destination by an enemy hero beside it. Nothing of hers names a
+        /// friendly hero, which is the one thing a one-Blue-hero board cannot offer and the reason
+        /// Brogan's staging needed a second seat.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedCutterForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedCutterHand(TeamSide.Blue));
+        }
+
+        /// <summary>
+        /// Milestone 8.39i. The staged Wasp-versus-Cutter match at rulebook p.15's Tier II stage, with
+        /// Cutter holding one Tier II card of each colour on the branch the caller names - see
+        /// <see cref="Cards.Verified.CutterUpgradeBranch"/>'s own remarks for what each branch reaches.
+        /// </summary>
+        public static MatchConfiguration CreateStagedCutterTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.CutterUpgradeBranch branch)
+        {
+            return Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedCutterHand(tierThree: false, branch));
+        }
+
+        /// <summary>
+        /// Milestone 8.39i. The staged Wasp-versus-Cutter match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Legend of the Skies in Cutter's.
+        /// </summary>
+        public static MatchConfiguration CreateStagedCutterTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.CutterUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedCutterHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.CutterCardContent.LegendOfTheSkies)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
         /// Milestone 8.22. The staged Wasp-versus-Sabina match, on the same `DEV-005` terms the staged
         /// Arien and Brogan matches are on.
         ///
@@ -1876,6 +1946,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.SwiftProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.SwiftProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.39i. One seat's verified Cutter hand, prefixed by the seat's team side for the
+        /// reason the thirteen earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedCutterHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.CutterCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedCutterHand(
+            bool tierThree, Cards.Verified.CutterUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.CutterProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.CutterProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>
