@@ -197,7 +197,7 @@ when infeasible. **Registered** means the contract is live in the default produc
 | --- | --- | --- |
 | Snipe | Target policy `reach=ExactlyPrintedRange, line=InStraightLine` | reach registered (RULING 1); line **owed, 8.38a** |
 | Prepared Shot, Killshot | Target policy `reach=PrintedRange, line=InStraightLine, proximity=NotAdjacentToActor` | line and proximity **owed, 8.38a** |
-| Shotgun | `shot-bystander -> choose-target@2 (A,C, enemy hero adjacent to X.target; IfAble/One; BeforeAttack)`; `shot-discard -> synthetic-discard-chosen-card@2 (chooser=Out(shot-bystander); IfAble/One)` | registered |
+| Shotgun | `shot-bystander -> choose-target@2 (A,C, enemy hero adjacent to X.target, excluding X.target itself; IfAble/One; BeforeAttack)`; `shot-discard -> synthetic-discard-chosen-card@2 (chooser=Out(shot-bystander); IfAble/One)` | registered |
 | Super-Shotgun | Shotgun's two nodes plus `shot-defeat -> synthetic-defeat-hero@1 (when the discard reported none; M/One; staged Defeat)` | registered - Treetop Sentinel's escalation, ledger question 13 |
 | Steam Jump, Assault Jump, Drop Trooper | `jump-destination -> place-in-radius-in-straight-line@1 (A, in printed Radius, on a file from A, empty, no Spawn point, not adjacent to an empty Spawn point; M/One)`; `jump-place -> synthetic-place@2 (piece=A, destination=Out(jump-destination); M/One)` | destination **owed, 8.38b**; place registered |
 | Steam Jump, Assault Jump | `jump-push-target -> synthetic-choose-target@1 (enemy unit adjacent to A; May/One; after the placement)`; `jump-push -> synthetic-object-push@3 (source=A, target=Out(jump-push-target), distance 0..1 / 0..2)` | registered |

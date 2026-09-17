@@ -555,8 +555,27 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator ShotgunStopsBeforeTheAttack_AndScattersOntoAHeroBesideTheTarget()
         {
+            yield return ScatterOntoBystander(false);
+        }
+
+        [UnityTest]
+        public IEnumerator SuperShotgunStopsBeforeTheAttack_AndScattersOntoAHeroBesideTheTarget()
+        {
+            yield return ScatterOntoBystander(true);
+        }
+
+        [UnityTest]
+        public IEnumerator SuperShotgunDefeatsAnEmptyHandedBystander_ThenAttacksTheOriginalMinion()
+        {
+            yield return ScatterOntoBystander(true, true);
+        }
+
+        private static IEnumerator ScatterOntoBystander(bool super, bool emptyHand = false)
+        {
+            var cardId = super ? SwiftCardContent.SuperShotgun : SwiftCardContent.Shotgun;
             yield return LoadStagedScene(
-                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSwift);
+                super ? SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift :
+                    SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSwift);
             var root = Root();
             var runtime = root.Runtime;
             var hud = root.Hud;
@@ -564,9 +583,25 @@ namespace GuardsDigital.Tests.PlayMode
             var enemyId = EnemyOf(runtime, swiftId);
             var besideTheMinion = new HexCoordinate(-1, 1);
 
+            if (emptyHand)
+            {
+                var onlyCard = HighestInitiativeAttackIdOf(runtime, enemyId);
+                var nextTurnCard = runtime.Cards.First(card => card.OwnerId.Equals(enemyId) &&
+                    card.State.Location == CardLocation.Hand &&
+                    !card.DefinitionReference.DefinitionId.Equals(onlyCard)).DefinitionReference.DefinitionId;
+                MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                    heroes: new[] { new SandboxHeroStaging(enemyId,
+                        runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
+                        hand: new[] { onlyCard, nextTurnCard }) });
+                yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift);
+                root = Root();
+                runtime = root.Runtime;
+                hud = root.Hud;
+            }
+
             // His turn, spent stepping beside the Red melee minion she can reach.
             Commit(runtime, enemyId, HighestInitiativeAttackIdOf(runtime, enemyId));
-            Commit(runtime, swiftId, LowestInitiativeIdOf(runtime, swiftId, SwiftCardContent.Shotgun));
+            Commit(runtime, swiftId, LowestInitiativeIdOf(runtime, swiftId, cardId));
             yield return YieldUntilTheNamedSeatActs(runtime, enemyId);
             var movement = runtime.RoundView.Model.Actions.Single(value =>
                 KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Movement);
@@ -593,11 +628,12 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             yield return AdvanceToNextTurn(runtime);
-            yield return HerTurnOn(root, swiftId, SwiftCardContent.Shotgun);
+            yield return HerTurnOn(root, swiftId, cardId);
 
             var handBefore = runtime.Cards
                 .Count(card => card.OwnerId.Equals(enemyId) &&
                     card.State.Location == CardLocation.Hand);
+            if (emptyHand) Assert.That(handBefore, Is.Zero);
 
             Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
             var choice = runtime.PendingAttackTargetChoice;
@@ -618,6 +654,10 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.SubmitProjectedCommand(
                     DirectorCommand.ChooseAttackTarget(beside.MinionId)),
                 Is.True);
+            yield return null;
+
+            var beforeAnswer = runtime.CaptureSnapshot();
+            Assert.That(runtime.RestoreSnapshot(beforeAnswer), Is.True);
             yield return null;
 
             // "Before the attack" - the pause stands between the target being named and p.14's step 4.
@@ -646,8 +686,58 @@ namespace GuardsDigital.Tests.PlayMode
             var handAfter = runtime.Cards
                 .Count(card => card.OwnerId.Equals(enemyId) &&
                     card.State.Location == CardLocation.Hand);
-            Assert.That(handAfter, Is.EqualTo(handBefore - 1),
+            Assert.That(handAfter, Is.EqualTo(emptyHand ? 0 : handBefore - 1),
                 "The hero standing beside her target is one card lighter. " + Remaining(runtime));
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.EqualTo(!emptyHand));
+            Assert.That(runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(beside.MinionId)),
+                Is.False, "The original minion is attacked after the bystander's discard or Defeat.");
+        }
+
+        [UnityTest]
+        public IEnumerator ShotgunAttackingAnIsolatedHero_DoesNotMakeItsTargetDiscard()
+        {
+            yield return AttackIsolatedHero(false);
+        }
+
+        [UnityTest]
+        public IEnumerator SuperShotgunAttackingAnIsolatedHero_DoesNotMakeItsTargetDiscard()
+        {
+            yield return AttackIsolatedHero(true);
+        }
+
+        private static IEnumerator AttackIsolatedHero(bool super)
+        {
+            var cardId = super ? SwiftCardContent.SuperShotgun : SwiftCardContent.Shotgun;
+            yield return LoadStagedScene(super
+                ? SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift
+                : SceneCardContent.VerifiedTierTwoAlternateEngagedStagedSwift);
+            var root = Root();
+            var runtime = root.Runtime;
+            var swiftId = SwiftSeat(runtime).HeroId;
+            var enemyId = EnemyOf(runtime, swiftId);
+            yield return HerTurnOn(root, swiftId, cardId);
+            var handBefore = runtime.Cards.Count(card => card.OwnerId.Equals(enemyId) &&
+                card.State.Location == CardLocation.Hand);
+            yield return PointTrayAt(root, swiftId);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            Assert.That(runtime.PendingAttackTargetChoice.LegalTargets.Any(target =>
+                target.Kind == AttackTargetKind.Hero && target.HeroId.Equals(enemyId)), Is.True);
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var enemy = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId));
+            var tile = Object.FindObjectsByType<HexTileView>()
+                .Single(value => value.Coordinate.Equals(enemy.Coordinate));
+            Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, tile.transform.position), Is.True);
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "An isolated attack target is not its own adjacent bystander.");
+            Assert.That(runtime.Cards.Count(card => card.OwnerId.Equals(enemyId) &&
+                card.State.Location == CardLocation.Hand), Is.EqualTo(handBefore));
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
+                "The original attack continues to its normal Defense response.");
+            Assert.That(runtime.DeclineDefense(), Is.True);
+            yield return null;
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.False,
+                "The original target, not a substituted bystander, receives the attack.");
         }
 
         /// <summary>

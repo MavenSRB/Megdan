@@ -145,7 +145,7 @@ namespace GuardsDigital.Tests.EditMode
             // of this list. Milestone 8.35z50's trap was watched for and did not recur: her staged
             // configuration went into EveryDealtDefinition in this same change, so the digest below is
             // over her whole dealt set rather than over zero cards.
-            new IdentityPin("swift", "swift-8-38d-rev-1", "9e63eeb9d36737860b65f4ef6684142b21d74382c9a36ecff866c2947d09e0bb"),
+            new IdentityPin("swift", "swift-8-42-rev-1", "568e3260f07531bebf6ab4b6ae7d49dd8762c47b01d4c96982fc07193fee2ef5"),
             // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
             // composed Cutter's eighteen faces without dealing her.

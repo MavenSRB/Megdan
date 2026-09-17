@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
@@ -34,6 +35,50 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly MapId Map = new MapId("roster-target-geometry");
         private static readonly EffectCapabilityCatalog Catalog =
             new EffectCapabilityCatalog(SyntheticRosterCapabilities.Handlers());
+
+        [TestCase(false, true, false)]
+        [TestCase(true, true, false)]
+        [TestCase(false, false, true)]
+        [TestCase(true, false, true)]
+        [TestCase(false, false, false)]
+        [TestCase(true, false, false)]
+        public void ShotgunScatter_ExcludesTheAttackedHeroButKeepsAdjacentBystanders(
+            bool super, bool heroTarget, bool adjacentBystander)
+        {
+            var cardId = super ? SwiftCardContent.SuperShotgun : SwiftCardContent.Shotgun;
+            var selection = SwiftEffectContent.AttackTextFor(cardId, SwiftCardContent.ContentRevision)
+                .Nodes.Single(node => node.Id.Value == "scatter-bystander");
+            var targetAt = new HexCoordinate(2, 0);
+            var minion = Minion("scatter-target", TeamSide.Blue, StandardMinionType.Melee, targetAt);
+            var board = Board(new HexCoordinate(0, 0),
+                heroTarget ? targetAt : adjacentBystander
+                    ? new HexCoordinate(2, -1) : new HexCoordinate(4, 0),
+                heroTarget ? null : new[] { minion });
+            var enclosing = new EnclosingAttackFacts(Actor,
+                heroTarget ? Other : default, heroTarget ? default : minion.MinionId,
+                AttackRangeKind.Ranged, targetAt);
+            var context = Context(board,
+                selection.Inputs.ToDictionary(input => input.ParameterName, input => input.Literal),
+                enclosingAttack: enclosing);
+            var handler = Handler(selection.Capability);
+            var offered = handler.Execute(context);
+
+            Assert.That(offered.Kind, Is.EqualTo(adjacentBystander
+                ? EffectExecutionResultKind.NeedsChoice : EffectExecutionResultKind.ImpossibleMandatory),
+                "Adjacent means a neighbouring space, never the attacked hero's own space.");
+            if (adjacentBystander)
+            {
+                Assert.That(offered.Choice.Candidates, Is.EqualTo(new[] { EffectValue.Hero(Other) }));
+                Assert.That(handler.Resume(context, offered.Choice.Candidates).Kind,
+                    Is.EqualTo(EffectExecutionResultKind.Applied));
+            }
+            else if (heroTarget)
+            {
+                Assert.That(handler.Resume(context, new[] { EffectValue.Hero(Other) }).Kind,
+                    Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
+                    "A stale or forged selection cannot make the attack target its own bystander.");
+            }
+        }
 
         [Test]
         public void SwapSubject_AdjacencyNeverIncludesTheActor()

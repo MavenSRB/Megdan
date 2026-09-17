@@ -191,6 +191,7 @@ namespace GuardsDigital.Tests.PlayMode
                 // page BEFORE the attack - `choose-target@2` anchored on the target rather than on her.
                 Face(SwiftCardContent.Shotgun, "Shotgun", new[]
                     {
+                        Prove(RangedAttackTarget, "ShotgunAttackingAnIsolatedHero_DoesNotMakeItsTargetDiscard"),
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(RangedAttackTarget, ShotgunJourney),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk),
@@ -224,6 +225,9 @@ namespace GuardsDigital.Tests.PlayMode
                 // could not complete and asked of nobody.
                 Face(SwiftCardContent.SuperShotgun, "Super-Shotgun", new[]
                     {
+                        Prove(RangedAttackTarget, "SuperShotgunAttackingAnIsolatedHero_DoesNotMakeItsTargetDiscard"),
+                        Prove(BeforeAttackTextPause, "SuperShotgunDefeatsAnEmptyHandedBystander_ThenAttacksTheOriginalMinion"),
+                        Prove(HandCardSelection, "SuperShotgunStopsBeforeTheAttack_AndScattersOntoAHeroBesideTheTarget"),
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(RangedAttackTarget, ShotgunJourney),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk),

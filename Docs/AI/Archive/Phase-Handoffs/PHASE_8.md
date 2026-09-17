@@ -1750,3 +1750,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.41f | Gated every playable face and component through real-input journeys, including zero-space Push, Battle Fury continuation, round cleanup and earned-item use; full regression and targeted visual checks. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841f-complete-garruss-permanent-player-path-gate). | `milestone/8.41f` |
+
+## Milestone 8.42 shotgun target exclusion completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.42 | Excluded the attacked hero from both shotgun bystander clauses; isolated-target, restored discard and empty-hand Defeat journeys preserve the original attack. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842-exclude-the-attack-target-from-shotgun-scatter). | `milestone/8.42` |

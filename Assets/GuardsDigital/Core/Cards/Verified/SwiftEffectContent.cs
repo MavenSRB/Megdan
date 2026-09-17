@@ -249,6 +249,9 @@ namespace GuardsDigital.Core.Cards.Verified
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticRosterCapabilities.OriginParameter,
                             RosterQueryOrigin.EnclosingTargetBeforeConsequences),
+                        // The disk includes its origin; the attacked unit is not adjacent to itself.
+                        EffectInputBinding.FromLiteral(
+                            SyntheticRosterCapabilities.ExcludeTargetParameter, EffectValue.Boolean(true)),
                         EffectInputBinding.FromLiteral(
                             SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(1)),
                         EffectInputBinding.FromClosedVocabulary(
