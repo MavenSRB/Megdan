@@ -608,22 +608,25 @@ namespace GuardsDigital.Tests.EditMode
                     // Milestone 8.40i. Bain's A Complicated Profession is the one face in the build
                     // that declares this milestone's own condition, which is what 8.40h built it for -
                     // and the case below is what keeps the other six naming the action window.
-                    UltimateTriggerCondition.AfterControllerGivesMarker
+                    UltimateTriggerCondition.AfterControllerGivesMarker,
+                    UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded
                 }),
                 "The six conditions dealt heroes declared before this series still are what they " +
-                "were, and the seventh is Bain's own.");
+                "were; Bain adds marker-given and Garrus adds resolved-card-discarded.");
             Assert.That(
                 declared.All(rule =>
                     rule.TriggerCondition == UltimateTriggerCondition.AfterControllerGivesMarker
                         ? rule.TriggerCheckpoints.Count == 1 &&
                             rule.TriggerCheckpoints[0] == TimingCheckpoint.MarkerGivenToHero
+                        : rule.TriggerCondition == UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded
+                            ? rule.TriggerCheckpoints.Count == 1 &&
+                                rule.TriggerCheckpoints[0] == TimingCheckpoint.ResolvedCardDiscarded
                         : rule.TriggerCheckpoints.Count == 1 &&
                             rule.TriggerCheckpoints[0] == TimingCheckpoint.ActionEnded),
                 Is.True,
                 "and every one of the six still names the action window, which is the half the widened " +
                 "constructor guard could have loosened and did not - while the seventh names the " +
-                "moment a marker is given, which is the pairing that guard now enforces in both " +
-                "directions.");
+                "moment a marker is given and the eighth the actual resolved-card discard.");
 
             var momentWatchers = ConfiguredUltimates()
                 .Where(rule => rule.AfterPush.IsDeclared || rule.BeforeAction.IsDeclared)

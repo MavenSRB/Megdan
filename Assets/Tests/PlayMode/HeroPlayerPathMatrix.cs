@@ -546,6 +546,10 @@ namespace GuardsDigital.Tests.PlayMode
                 ["synthetic-swap-actor"] = Array.Empty<PlayerInteractionShape>(),
                 ["synthetic-place-in-range"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["synthetic-direct-move"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["move-adjacent-to-enemy-hero-for-push"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["discard-resolved-card"] = new[] { PlayerInteractionShape.HandCardSelection },
+                // The card is already named by the trigger, not selected again by the player.
+                ["borrow-named-discarded-primary"] = Array.Empty<PlayerInteractionShape>(),
 
                 // Milestone 8.20b. p.9's printed-icon selections, which differ from one another in
                 // which icon they read and which class of piece they offer, and agree in what they ask

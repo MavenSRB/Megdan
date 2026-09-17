@@ -76,10 +76,12 @@ Non-goals: a new package or the final hero gate's completion claim.
 
 Historical evidence: [8.41e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841e-garrus-dealing-and-artwork-completion-evidence).
 
-### [ ] 8.41f Complete Garrus's permanent player-path gate
+### [x] 8.41f Complete Garrus's permanent player-path gate
 
 Outcome: every playable face and interaction shape is covered by the mechanically complete hero matrix and configured real-input journeys.
 
 Acceptance: selection/spawn/identity, actual pointer/board input, commit/reveal, primaries/secondaries, modal and repeat choices, direct movement/Push, opponent discard/Defeat, retrieval, progression/items/Ultimate, Active aura reading, round cleanup, defeat/respawn, stale input, no EngineFault, projection agreement, restore and retained-prefix Undo on a Garrus-specific pause, restart/rebuild, whole-face footprint/short viewport and targeted non-batch visual inspection. No required journey may be Explicit/skipped. Run the breadth required by testing policy, with focused evidence first; review player experience, rules authority, maintainability and risk before closure.
 
 Non-goals: unrelated cleanup or additional heroes.
+
+Historical evidence: [8.41f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841f-garrus-player-path-gate-completion-evidence).

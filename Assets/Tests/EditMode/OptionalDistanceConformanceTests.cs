@@ -69,6 +69,7 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(subjects, Is.EqualTo(new[]
             {
+                "move-adjacent-to-enemy-hero-for-push",
                 "synthetic-direct-move", "synthetic-object-push", "synthetic-push-target"
             }), "The set of capabilities declaring a distance changed. A new one joins this rule " +
                 "rather than arriving outside it; a vanished one means the rule now guards nothing.");

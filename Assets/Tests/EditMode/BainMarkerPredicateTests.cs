@@ -351,9 +351,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(44),
-                "MEASURED at milestone 8.40c: forty-four composed nodes across the fifteen verified " +
-                "content classes name the declaration this milestone widened. A different count means " +
+            Assert.That(nodes.Length, Is.EqualTo(55),
+                "MEASURED at 8.41f: the previous 44 plus Garrus's eleven unnarrowed target nodes: " +
+                "three each on Trace/Chase/Hunt Down and one each on Blunt Force/Send Flying. A different count means " +
                 "a face was added or removed - read which, then re-measure rather than editing this " +
                 "number to match.");
             Assert.That(

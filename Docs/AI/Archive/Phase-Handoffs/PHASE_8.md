@@ -1744,3 +1744,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.41e | Registered and dealt the sixteenth selectable hero with all five staged configurations, eighteen private fronts, profile, tokens and highlights; explicit compatibility decision and local build smoke. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841e-deal-register-and-artwork-garrus). | `milestone/8.41e` |
+
+## Milestone 8.41f Garrus player-path gate completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.41f | Gated every playable face and component through real-input journeys, including zero-space Push, Battle Fury continuation, round cleanup and earned-item use; full regression and targeted visual checks. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841f-complete-garruss-permanent-player-path-gate). | `milestone/8.41f` |
