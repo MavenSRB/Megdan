@@ -101,11 +101,33 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "resolution.skill-hero-defeat-order", "feasibility.readonly-condition-binding"
+            "tokens.named-owned-facts", "tokens.explicit-round-retention"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "tokens.named-owned-facts",
+                new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticOwnedTokenCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticOwnedTokenCapabilities.SpaceHandler), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(OwnedTokenCapabilityTests),
+                    nameof(OwnedTokenCapabilityTests.PresenceAndPosition_AreOwnerAndRevisionScopedReadOnlyFacts),
+                    MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture, "owner, definition revision and readonly outputs") },
+                new[] { "query", "ownership", "reach", "feasibility" },
+                "One actor-owned token from a trusted single-piece definition, optionally bounded by the source card's Range or Radius; no token selection or mutation.",
+                "Reassess for multi-piece definitions, controller-based selection, non-actor anchors or hypothetical token displacement."),
+            new SharedFoundationClaim(
+                "tokens.explicit-round-retention",
+                new MemberLocator(typeof(GuardsDigital.Core.Components.ComponentCleanupRules),
+                    nameof(GuardsDigital.Core.Components.ComponentCleanupRules.TokensRemovedAtEndOfRound), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(OwnedTokenCapabilityTests),
+                    nameof(OwnedTokenCapabilityTests.RetainedRoundToken_IsNotClearedByRoundCleanup_ButCanStillBeRemoved),
+                    MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture, "mixed cleanup lifetime and later removal") },
+                new[] { "lifecycle", "definition", "cleanup" },
+                "A trusted definition may retain a token at round end; its identity, properties and ordinary removal paths do not change.",
+                "Reassess for another automatic removal condition or a mutable per-instance lifetime."),
             new SharedFoundationClaim(
                 "resolution.skill-hero-defeat-order",
                 new MemberLocator(typeof(GuardsDigital.Core.Rules.EffectResolution.EffectResolutionContext),

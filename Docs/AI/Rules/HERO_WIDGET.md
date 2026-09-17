@@ -22,7 +22,9 @@ WI-05: Nibble **removes an enemy minion**, while Gnaw **defeats a minion** witho
 
 WI-06: Fight as One borrows a **resolved Skill**; Dragon Knight prints **face-up Skill**. These are different eligibility contracts, and performing another card's primary does not itself retrieve, discard or play that source. Gold's different-unit restriction names the attacked unit, not the token. Exact eligible-pool and coupled-movement interpretation gates are recorded below.
 
-External source leads, not adopted authority: the community [FAQ](https://www.cockeyedandcurious.com/goa2/faq) attributes Widget comments to Arty on Discord, but the direct messages were not verified. In particular its older All Aboard quotation lacks the explicit Pyro-in-range wording on this local face and must not override it. The community [Widget spotlight](https://boardgamegeek.com/thread/3454879/widget-and-pyro-spotlight) is strategy commentary, not a verified official ruling. No source from either site resolves the open questions by itself.
+WI-07: designer Arty N. (`nichik`) directly answered the Gold targeting question on 2025-02-17 in the [Widget spotlight discussion](https://boardgamegeek.com/thread/3454879/widget-and-pyro-spotlight). His reply distinguishes the unit originally attacked from a unit affected by the subsequent Skill and explains the restriction as preventing both effects on that original target. This supports an exclusion, not a requirement that a reused Skill must target a unit. The opening strategy article remains community commentary; its older card wording must not replace local faces.
+
+External source lead, not adopted authority: the community [FAQ](https://www.cockeyedandcurious.com/goa2/faq) attributes other Widget comments to Arty on Discord, but those direct messages were not verified. In particular its older All Aboard quotation lacks the explicit Pyro-in-range wording on this local face and must not override it.
 
 ## Printed inventory
 
@@ -84,7 +86,7 @@ These routes separate inspected reusable contracts from missing vocabulary. Comp
 
 | Printed clause | Existing foundation / required delta | Owner |
 | --- | --- | --- |
-| Persistent named token | Cleanup already filters by explicit lifetime, but the definition currently admits only the end-round condition; add a verified retained-round condition, typed owned-definition lookup and source-backed Pyro definition/supply | 8.43a |
+| Persistent named token | Generic retained-round condition and typed owned-definition fact handlers implemented at the 8.43a checkpoint; source-backed Pyro definition/supply still gated by WI-Q3. No production registration | 8.43a |
 | Place Pyro / move actor and token in either order | Existing Place/reclamation and direct-Move operations; probe relocation semantics and compose explicit order with live state | 8.43a |
 | Direct token movement / Swap with Pyro | Existing `synthetic-direct-move@3` and object Swap; supply token lookup and independent printed icon bounds | 8.43a |
 | Range plus Pyro line/adjacency | Existing target/presence geometry and typed exclusions; add the two-origin intersection not expressible by a single disk | 8.43b |
@@ -98,6 +100,6 @@ These routes separate inspected reusable contracts from missing vocabulary. Comp
 
 - **WI-Q1 (answered 2026-09-18):** The user approved "Yes, move them together as described" for one common distance (2 or 3) and one direction, both moving as a pair, allowing following through the other's vacated spaces, and neither moving if either cannot complete the chosen distance. This is a user-approved interpretation, not a claimed official ruling. Ordinary obstacles still block Drag Off; Carry Away ignores transit obstacles but both endpoints must be legal. Coupled implementation and regression checks are owned by 8.43b.
 - **WI-Q2 (asked 2026-09-18, unanswered):** Dragon Knight's face-up pool: include owned face-up discarded Skills and resolved Skills, including the card just used for Movement, but exclude in-hand cards? The printed state wording is broader than Gold's resolved-only pool; do not silently substitute that pool or treat an internal hand-orientation flag as public face-up eligibility.
-- Verify named token supply and visual identities before executable component definition/integration. Do not treat the manifest's standee type as a second hero.
-- Fight as One's borrowed action may affect Pyro/spaces rather than a unit; apply "different unit" as an original-target exclusion, not an invented requirement to target a unit. Recheck the ordinary p.10/p.19 targeting rules and source-linked tests before composing this interpretation; seek a user decision if a material unresolved case remains.
+- **WI-Q3 (asked 2026-09-18, unanswered):** confirm exactly one Pyro piece and relocation of that same piece when already placed. Verify visual identities at integration; do not treat the manifest's standee type as a second hero.
+- Fight as One's borrowed action may affect Pyro/spaces rather than a unit; WI-07 supports applying "different unit" as an original-target exclusion, not an invented requirement to target a unit. Source-linked tests must cover both shapes at 8.43c.
 - Build smoke requires a scoped launcher exception at integration; it is a workflow permission, not a game rule or distribution authorization.

@@ -18,13 +18,17 @@ Non-goals: executable content or mechanics; adopting unverified community ruling
 
 Historical evidence: [8.43 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843-widget-inventory-completion-evidence).
 
-### [ ] 8.43a Support Pyro's persistent token and ordinary operations
+### [!] 8.43a Support Pyro's persistent token and ordinary operations
 
 Outcome: a declared hero-owned persistent token can be selected by typed component identity, placed from supply or relocated as printed, moved and swapped using existing object operations; Dragon Bond can move actor and token in either chosen order.
 
 Acceptance: owner/definition isolation, supply and board identity, ordinary token occupancy/Clear/spawn behavior, round and controller-Defeat persistence, legal empty placements in printed Radius, existing-token relocation and impossible destinations; direct-Move up-to zero and positive distances; both Dragon Bond orders with live second-step legality; actor/friendly-hero Swap, separate Pyro Range/Radius checks, immunity and stale answers. Enumerate affected component/query/movement/exchange/restore consumers, cover snapshot/replay continuations and register narrow foundation claims. T2 minimum; promote on policy triggers.
 
 Non-goals: paired enemy movement, borrowed actions, dealing or artwork registration.
+
+Paused prerequisite: **WI-Q3**, confirmation of Pyro's single-piece supply, before declaring executable hero component content. The generic single-token fact handlers and explicit retained-round lifetime are implemented and tested at `checkpoint/8.43a-token-groundwork`; no Widget token definition or card is registered. Still owed: source-backed component definition, complete placement/move/order/Swap compositions and their source-linked paused/restore/replay checks above. This checkpoint does not close the milestone. WI-Q2 separately gates 8.43c; WI-Q1 is answered.
+
+Checkpoint index: [8.43a token groundwork](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843a-widget-token-groundwork-checkpoint).
 
 ### [ ] 8.43b Support Pyro-anchored targeting and coupled displacement
 

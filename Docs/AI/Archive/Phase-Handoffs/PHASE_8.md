@@ -1780,3 +1780,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.43 | Inventoried nineteen Widget faces and mapped the authorized implementation sequence, with Pyro component identity, paired-movement ruling and explicit remaining source gates. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843-inventory-widget-and-map-the-implementation-sequence). | `milestone/8.43` |
+
+## Milestone 8.43a Widget token groundwork checkpoint
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.43a checkpoint | Tested generic owned-token facts and explicit round retention; hero component supply and composed operation paths remain outstanding at WI-Q3. Not milestone completion. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md). | `checkpoint/8.43a-token-groundwork` |

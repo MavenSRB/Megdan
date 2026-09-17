@@ -26,6 +26,10 @@ Milestone 6.3 implements the persistent-property and first general-interaction s
 
 ### Token property capabilities
 
+The 8.43a groundwork adds `TokenRemovalCondition.RetainedAtEndOfRound` as an explicit immutable-definition override required by Dragon Bond. The existing cleanup filter leaves those instances unchanged; ordinary Clear, Spawn clearance and Remove remain available, and controller defeat does not remove tokens. `None` and undefined conditions are rejected. No production definition uses this override until Widget's component supply is verified and registered.
+
+`SyntheticOwnedTokenCapabilities` provides two deferred, definition-bound factory methods, PresenceHandler and SpaceHandler, for a single-piece supply. They read only the acting hero's exact owned token definition/revision, not another owner's token or a matching display name. Presence publishes a boolean; position publishes the live coordinate or is impossible, with optional trusted Range/Radius measured from the actor using ordinary item/value queries. Both publish read-only feasibility facts without creating a choice or mutation. Multi-piece supplies and unsupported reach channels are refused at declaration. This narrow vocabulary is not production registration; 8.43a still owes the source-backed component and composed operation paths, and 8.43e owns reachable registration. `OwnedTokenCapabilityTests` and the test-owned foundation claim catalog cover the current slice.
+
 A token definition composes explicit continuous/query/trigger capabilities such as obstacle classification, terrain-like restriction, entry/exit effect, modifier source, immunity interaction, or removal condition. Token art does not define behavior.
 
 The implemented milestone 6.3 declaration carries stable property identity, rule kind, and applicability kind. It establishes the source/lifetime contract without inventing a concrete verified modifier, trigger, or Wasp rule; those consumers arrive with the milestone and source that require them.

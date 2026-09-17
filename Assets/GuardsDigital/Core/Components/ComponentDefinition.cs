@@ -211,7 +211,7 @@ namespace GuardsDigital.Core.Components
     /// Rulebook p.19 states the rule with its condition attached - "Unless the card text says otherwise,
     /// tokens are removed at the end of round (See Page 8)" - so <see cref="EndOfRoundCleanup"/> is the
     /// baseline every token declares and the "otherwise" is a member added with the verified card text
-    /// that requires it, never ahead of it. No current definition needs one, so none exists.
+    /// that requires it, never ahead of it. Dragon Bond supplies the first explicit override.
     ///
     /// The same page's next sentence is the negative this enum must not be read as covering: "Tokens are
     /// not removed when the hero who placed them is defeated." That is already structural - a token's
@@ -225,7 +225,10 @@ namespace GuardsDigital.Core.Components
         None = 0,
 
         /// <summary>Removed to supply at the end of every round (p.8, "Remove Tokens, Return Markers").</summary>
-        EndOfRoundCleanup = 1
+        EndOfRoundCleanup = 1,
+
+        /// <summary>Printed override: retained at round end, but still removable by ordinary token operations.</summary>
+        RetainedAtEndOfRound = 2
     }
 
     /// <summary>
@@ -283,12 +286,12 @@ namespace GuardsDigital.Core.Components
                     nameof(properties));
             }
 
-            if (removalCondition == TokenRemovalCondition.None)
+            if (removalCondition != TokenRemovalCondition.EndOfRoundCleanup &&
+                removalCondition != TokenRemovalCondition.RetainedAtEndOfRound)
             {
                 throw new ArgumentException(
-                    "A token definition requires an explicit removal condition; a token that never " +
-                    "leaves the board would contradict the end-of-round cleanup rulebook p.19 applies " +
-                    "to every token whose card text does not say otherwise.",
+                    "A token definition requires a supported explicit removal condition; retaining " +
+                    "a token at round end must be declared by its printed rules.",
                     nameof(removalCondition));
             }
 

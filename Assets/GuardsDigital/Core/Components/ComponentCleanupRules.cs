@@ -25,9 +25,8 @@ namespace GuardsDigital.Core.Components
         /// <summary>
         /// The tokens rulebook p.8's "Remove all tokens from the board" takes, which is every placed
         /// token whose definition has not declared an override under p.19's "unless the card text says
-        /// otherwise". No current definition declares one, so this is currently every placed token - and
-        /// it is written as a filter anyway, because the filter is the rule and the emptiness of the
-        /// exception set is content.
+        /// otherwise". A retained-round token stays in place with the same identity and properties;
+        /// Clear, Spawn clearance and explicit Remove remain separate operations.
         /// </summary>
         public static IReadOnlyList<PlacedToken> TokensRemovedAtEndOfRound(
             IEnumerable<PlacedToken> placedTokens)
