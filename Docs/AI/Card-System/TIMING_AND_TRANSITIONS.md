@@ -50,6 +50,10 @@ Reusable structured nodes include:
 
 Control nodes store stable node IDs so a pending resolution can serialize and resume at the exact location.
 
+Milestone 8.41d stages ordinary, repeated and borrowed Skill hero-Defeat requests before the next effect node, matching the existing minion-Defeat boundary. Card authority completes the consequences, then resumes the saved node continuation; completion does not emit the same request again. Heavy Pilum proves Defeat before its optional Move and no duplicate life spend after restore. This adds no persisted field or schema revision. Hero-removal decisions that can themselves pause are not claimed by this extension.
+
+The target-binding feasibility walk may read a Conditional's branch from a handler that explicitly declares non-mutating anticipated facts, when its inputs are decidable and the actor's position is not already hypothetical. Owned-card presence supplies this contract for Garrus's pursuit attacks: the discard-present branch carries Move and target binding together, while the absent branch binds without movement. Unknown predicates retain the conservative walk. A condition after hypothetical state mutation requires a fresh extension check rather than an assumed proof.
+
 ## System-transition capabilities used by cards
 
 Some card effects can trigger or depend on larger systems. These remain dedicated authoritative transitions:

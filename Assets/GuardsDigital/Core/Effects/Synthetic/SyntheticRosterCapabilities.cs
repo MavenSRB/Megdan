@@ -3778,8 +3778,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// and asking nobody. The location is a parameter rather than a second capability because the
         /// question is the same one wherever it is asked, and the card is what says where.</para>
         /// </summary>
-        private sealed class OwnedCardPresentHandler : IEffectCapabilityHandler
+        private sealed class OwnedCardPresentHandler : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
+            public bool PublishesWithoutApplying => true;
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                CanRead(context) ? Observe(context) : Array.Empty<EffectOutcomeFact>();
             public EffectCapabilityReference Reference => OwnedCardPresentV1;
 
             public EffectCapabilityParameterSchema Schema { get; } =
@@ -3812,14 +3816,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                return EffectExecutionResult.Applied(Observe(context));
+            }
+
+            private static IReadOnlyList<EffectOutcomeFact> Observe(EffectCapabilityContext context)
+            {
                 var owner = context.Input(HeroParameter).HeroId;
                 var location = (CardLocation)context.Input(LocationParameter).IntegerValue;
-                return EffectExecutionResult.Applied(new[]
+                return new[]
                 {
                     new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(
                         context.CardState.Instances.Any(card =>
                             card.OwnerId.Equals(owner) && card.State.Location == location)))
-                });
+                };
             }
 
             public EffectExecutionResult Resume(

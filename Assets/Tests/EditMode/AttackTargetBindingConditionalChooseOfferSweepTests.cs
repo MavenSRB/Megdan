@@ -185,6 +185,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var card in SwiftCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("swift", d);
             foreach (var card in CutterCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("cutter", d);
             foreach (var card in BainCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("bain", d);
+            foreach (var card in GarrusCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("garrus", d);
         }
 
         /// <summary>

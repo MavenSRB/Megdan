@@ -3812,7 +3812,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!result.Accepted || board == null ||
                 ((appliedPushes == null || appliedPushes.Count == 0) &&
                     skillBackend.StagedMinionDefeats.Count == 0 &&
-                    !skillBackend.StagedMarkerGive.IsDefined && !skillBackend.StagedResolvedDiscard.IsDefined))
+                    !skillBackend.StagedMarkerGive.IsDefined && !skillBackend.StagedResolvedDiscard.IsDefined &&
+                    !skillBackend.StagedHeroDefeat))
             {
                 return result;
             }
@@ -3821,7 +3822,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var pushes = appliedPushes ?? Array.Empty<RuleObject>();
             var complete = result.IsComplete;
             while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0 ||
-                skillBackend.StagedMarkerGive.IsDefined || skillBackend.StagedResolvedDiscard.IsDefined)
+                skillBackend.StagedMarkerGive.IsDefined || skillBackend.StagedResolvedDiscard.IsDefined ||
+                skillBackend.StagedHeroDefeat)
             {
                 var interrupted = skillBackend.PendingResolution;
                 if (interrupted == null || interrupted.PendingChoice != null)
@@ -3860,7 +3862,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // that did would still have the pushes it owed run first, in the order the page
                 // produced them.
                 var markerGivenTo = skillBackend.StagedMarkerGive;
-                if (minionDefeats.Count > 0 ||
+                if (minionDefeats.Count > 0 || skillBackend.StagedHeroDefeat ||
                     (!TryStartAfterPushTrigger(interrupted, pushes, boundary, steps) &&
                         !TryStartMarkerGivenTrigger(
                             interrupted.ActorId, interrupted.ResolutionId, markerGivenTo, boundary,

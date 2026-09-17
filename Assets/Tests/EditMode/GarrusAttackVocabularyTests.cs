@@ -52,7 +52,7 @@ namespace GuardsDigital.Tests.EditMode
             var probe = new Probe(GarrusEffectContent.PursuitAttack(Card, "rev-1", 3),
                 ActionKind.Attack, new HexCoordinate(1, 0), foreignDiscard: foreignDiscard, minion: true);
             probe.Option("advance");
-            Assert.That(probe.Choice.NodeId.Value, Is.EqualTo("hero-target"));
+            Assert.That(probe.Choice.NodeId.Value, Is.EqualTo("stationary-target"));
             Assert.That(probe.Choice.Candidates.Select(value => value.Value.Kind), Has.All.EqualTo(EffectValueKind.Hero));
             probe.Pick(EffectValue.Hero(Blue));
             Assert.That(probe.Step.BoundAttackTarget, Is.EqualTo(AttackTarget.Hero(Blue)));

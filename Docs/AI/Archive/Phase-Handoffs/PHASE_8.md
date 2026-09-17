@@ -1732,3 +1732,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.41c | Immediate resolved-discard trigger grants the exact primary, preserving nested actions, repeats, source cancellation and restored/replayed continuations. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841c-execute-battle-fury-after-a-resolved-card-discard). | `milestone/8.41c` |
+
+## Milestone 8.41d Garrus card composition completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.41d | Composed the nineteen-face inventory and eighteen executable faces; verified actual pursuit/Push attacks, aura/Ultimate ordering, retrieval, unit movement and Pilum with restored continuations. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841d-compose-garruss-eighteen-playable-faces). | `milestone/8.41d` |

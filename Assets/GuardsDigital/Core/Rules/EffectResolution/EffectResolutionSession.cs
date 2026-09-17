@@ -352,8 +352,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool stagesMinionDefeats = false,
             bool stagesBorrowedActions = false,
             bool watchesResolvedDiscards = false,
-            CardInstanceId triggeredCardId = default)
+            CardInstanceId triggeredCardId = default,
+            bool stagesHeroDefeats = false)
         {
+            StagesHeroDefeats = stagesHeroDefeats;
             WatchesResolvedDiscards = watchesResolvedDiscards;
             TriggeredCardId = triggeredCardId;
             WatchesAppliedPushes = watchesAppliedPushes;
@@ -517,6 +519,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// Radius would come back a ring smaller than the one the player was offered.
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.HeroItemState HeroItems { get; }
+        public bool StagesHeroDefeats { get; }
 
         /// <summary>Milestone 8.19b's live round-owned query and resource state.</summary>
         public EffectRosterState RosterState { get; }
@@ -785,7 +788,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Rebuild(frame, continuation, outcomes, frame.AcceptedChoices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
                 RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
@@ -958,7 +961,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         Rebuild(frame, continuation, outcomes, choices), true, events,
                         RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                         RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                        RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                        context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),
@@ -1379,6 +1382,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                                 requestedMinionDefeats: defeats);
                     }
 
+                    // A Skill's hero Defeat has the same ordering requirement as a minion's:
+                    // complete its authoritative consequences before reading the next clause.
+                    if (context.StagesHeroDefeats)
+                    {
+                        var defeats = RequestedHeroDefeatQuery.Requested(context.Definition,
+                            new[] { outcomes[outcomes.Count - 1] });
+                        if (defeats.Count > 0)
+                            return EffectResolutionStepResult.Accept(
+                                Rebuild(frame, continuation, outcomes, choices), false, events,
+                                requestedHeroDefeats: defeats);
+                    }
+
                     // Milestone 8.19c1. The node is finished and its facts are recorded before the walk
                     // stops, so what the caller resumes is the effect standing exactly after the Push -
                     // "the exact node it left" is this frame, and a later node binding to a fact this
@@ -1452,7 +1467,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 Rebuild(frame, continuation, outcomes, choices), true, events,
                 RepeatedActionQuery.Requested(context.Definition, frame, outcomes),
                 RecordedLanePushQuery.Recorded(context.Definition, outcomes),
-                RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
+                context.StagesHeroDefeats ? null : RequestedHeroDefeatQuery.Requested(context.Definition, outcomes),
                 RequestedMinionDefeatQuery.Requested(context.Definition, outcomes),
                         RequestedAttackTargetQuery.Bound(context.Definition, outcomes),
                         AroundActionPlacementQuery.Placed(context.Definition, outcomes),

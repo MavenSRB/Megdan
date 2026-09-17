@@ -407,6 +407,29 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
                 case EffectNodeKind.Choose:
                 case EffectNodeKind.Conditional:
+                    // A declared read-only predicate can prove which branch exists now. Do not
+                    // invoke Execute, and keep the conservative walk for undecidable predicates
+                    // or a board already made hypothetical by earlier movement.
+                    if (node.Kind == EffectNodeKind.Conditional && prospectiveActorSpaces == null &&
+                        context.Catalog.TryLoad(node.Capability, out var predicateHandler) &&
+                        predicateHandler is IEffectAnticipatedOutcomeCapabilityHandler predicatePublisher &&
+                        predicatePublisher.PublishesWithoutApplying)
+                    {
+                        var predicateContext = EffectResolutionSession.BuildCapabilityContext(frame, node, outcomes, context);
+                        if (IsDecidable(predicateHandler, predicateContext) &&
+                            predicateHandler.Anticipate(predicateContext) == EffectExecutionResultKind.Applied)
+                        {
+                            var facts = predicatePublisher.AnticipateOutcomes(predicateContext, Array.Empty<EffectValue>());
+                            if (facts != null && facts.Any(fact => fact.Value.Kind == EffectValueKind.Boolean))
+                            {
+                                var branch = facts.Any(fact => fact.Value.Kind == EffectValueKind.Boolean && fact.Value.BooleanValue) ? 0 : 1;
+                                return branch < node.ChildNodeIds.Count
+                                    ? WalkToAttackTargetBinding(node.ChildNodeIds[branch], frame, outcomes, context,
+                                        ref budget, prospectiveActorSpaces, explanation)
+                                    : BindingVerdict.Continue;
+                            }
+                        }
+                    }
                     foreach (var child in node.ChildNodeIds)
                     {
                         if (WalkToAttackTargetBinding(

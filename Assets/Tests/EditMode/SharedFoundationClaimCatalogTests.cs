@@ -101,11 +101,37 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "timing.resolved-discard-primary"
+            "resolution.skill-hero-defeat-order", "feasibility.readonly-condition-binding"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "resolution.skill-hero-defeat-order",
+                new MemberLocator(typeof(GuardsDigital.Core.Rules.EffectResolution.EffectResolutionContext),
+                    nameof(GuardsDigital.Core.Rules.EffectResolution.EffectResolutionContext.StagesHeroDefeats), MemberTypes.Property),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(GarrusComposedRoundTests),
+                    nameof(GarrusComposedRoundTests.HeavyPilum_CompletesDiscardOrDefeatBeforeOptionalMovement),
+                    MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture, "Defeat before Move; restore and no duplicate life spend") },
+                new[] { "resolution", "consequence", "continuation" },
+                "Skill execution stages each hero-Defeat node before reading its next clause; completed frames do not request it again.",
+                "Reassess for an interruptible hero-removal decision or a producer outside ordinary/repeated/borrowed Skills."),
+            new SharedFoundationClaim(
+                "feasibility.readonly-condition-binding",
+                new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities.OwnedCardPresentV1), MemberTypes.Property),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] {
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(GarrusComposedRoundTests),
+                        nameof(GarrusComposedRoundTests.PursuitWithoutDiscard_CannotStartWhenBothBranchesHaveNoAdjacentTarget),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.ViolatorFixture, "empty discard does not invent pre-movement"),
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(GarrusComposedRoundTests),
+                        nameof(GarrusComposedRoundTests.PursuitCards_MoveBeforeBindingHeroAndKeepThePrintedAttack),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture, "discard-present branch reaches target after Move") },
+                new[] { "query", "condition", "target binding" },
+                "An owned-card-presence predicate at a card-text branch exposes read-only facts to target-binding feasibility.",
+                "Reassess for a condition following hypothetical mutation or another anticipated predicate family."),
             new SharedFoundationClaim(
                 "timing.resolved-discard-primary",
                 new MemberLocator(typeof(GuardsDigital.Core.Rules.Progression.ResolvedCardDiscardTriggerQuery),

@@ -106,6 +106,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         internal HeroId StagedMarkerGive { get; private set; }
         internal CardInstanceId StagedResolvedDiscard { get; private set; }
+        internal bool StagedHeroDefeat { get; private set; }
 
         /// <summary>
         /// Milestone 8.19c1. Whether any unlocked Ultimate in these cards declares an
@@ -198,7 +199,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
+                stagesMinionDefeats: true, stagesHeroDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -292,7 +293,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
+                stagesMinionDefeats: true, stagesHeroDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -452,7 +453,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
+                stagesMinionDefeats: true, stagesHeroDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -540,7 +541,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
+                stagesMinionDefeats: true, stagesHeroDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -660,6 +661,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // call from being read as this one's.
             StagedMarkerGive = step.IsComplete ? default : step.MarkerGivenTo;
             StagedResolvedDiscard = step.IsComplete ? default : step.ResolvedCardDiscarded;
+            StagedHeroDefeat = !step.IsComplete && step.RequestedHeroDefeats.Count > 0;
 
             var steps = new List<ResolutionStep>();
             if (isStart)

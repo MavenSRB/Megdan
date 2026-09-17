@@ -54,13 +54,15 @@ Non-goals: changes to existing Ultimate meanings.
 
 Historical evidence: [8.41c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841c-resolved-discard-primary-trigger-completion-evidence).
 
-### [ ] 8.41d Compose Garrus's eighteen playable faces
+### [x] 8.41d Compose Garrus's eighteen playable faces
 
 Outcome: all nineteen definitions preserve printed data and all eighteen playable faces carry complete executable compositions, including Chilling Howl and Battle Fury.
 
 Acceptance: one source-linked row per face; upgrades/items; lazy content initialization; composition validation against registered plus declared deferred contracts; every distinct legal behavior and negative at Core tier; corpus sweep membership; count/selection/icon distinctions; mandatory/optional/repeat semantics; no invented Handicap behavior. Focused and directly affected T2 checks.
 
 Non-goals: dealing, artwork registration or claiming the player gate passed.
+
+Historical evidence: [8.41d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841d-garrus-card-composition-completion-evidence).
 
 ### [ ] 8.41e Deal, register and artwork Garrus
 
