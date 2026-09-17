@@ -1761,4 +1761,10 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.42a checkpoint | Card-plus-item Initiative badge implemented and checked; Swift artwork references synchronized. Local build-smoke approval/check remain outstanding; not milestone completion. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#842a-show-total-revealed-initiative-in-the-hero-rail). | `checkpoint/8.42a-build-gate` |
+| 8.42a checkpoint | Card-plus-item Initiative badge implemented and checked; Swift artwork references synchronized. Local build-smoke approval/check remained outstanding at this checkpoint; not milestone completion. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842a-show-total-revealed-initiative-in-the-hero-rail). | `checkpoint/8.42a-build-gate` |
+
+## Milestone 8.42a Initiative badge completion evidence
+
+| Milestone | Outcome | Evidence commit |
+| --- | --- | --- |
+| 8.42a | Closed the approved disposable Windows build-and-launch gate for the revealed card-plus-item Initiative badge and synchronized Swift artwork. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842a-show-total-revealed-initiative-in-the-hero-rail). | `milestone/8.42a` |

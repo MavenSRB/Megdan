@@ -12,7 +12,7 @@ Non-goals: shared distance-query changes, rule reinterpretation, other cards, ne
 
 Historical evidence: [8.42 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842-shotgun-target-exclusion-completion-evidence).
 
-### [!] 8.42a Show total revealed Initiative in the hero rail
+### [x] 8.42a Show total revealed Initiative in the hero rail
 
 Outcome: the revealed-card badge in each hero plaque shows printed Initiative plus Initiative items, using authoritative public counts and the shared item query. The printed card front remains unchanged. Validation also repairs Swift's artwork catalog references after 8.42's content-revision bump; that resource metadata requires the build-smoke check.
 
@@ -20,7 +20,9 @@ Acceptance: base-only and bonus cases, correct per-hero totals, no facedown info
 
 Non-goals: other statistics, tray redesign, unrelated presentation changes, packaging.
 
-Checkpoint: implementation, focused rules/HUD/seat checks and non-batch viewport inspection are complete. Required prerequisite: user approval to run `Tools/Invoke-PlayerBuildSmoke.ps1` for the updated resource catalog, then a green local disposable build-and-launch smoke check. The prior permission belonged to 8.41e; a new permission question is outstanding. No package or upload is authorized. [Checkpoint evidence](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842a-initiative-badge-build-gate-checkpoint).
+On 2026-09-18 the user approved `Tools/Invoke-PlayerBuildSmoke.ps1` for the updated resource catalog, discharging the checkpoint's prerequisite. No package or upload is authorized.
+
+Historical evidence: [checkpoint](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842a-initiative-badge-build-gate-checkpoint); [completion](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842a-initiative-badge-completion-evidence).
 
 ### [ ] 8.42b Keep player tray navigation private and connect hero identity controls
 
