@@ -101,11 +101,29 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "values.owned-discard-count"
+            "values.owned-discard-count",
+            "movement.adjacent-enemy-hero-for-push"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "movement.adjacent-enemy-hero-for-push",
+                new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.MoveAdjacentToEnemyHeroForPushV1),
+                    MemberTypes.Property), SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(DisplacementCapabilityTests),
+                        nameof(DisplacementCapabilityTests.AdjacentPushMove_RequiresAReachableEligibleHeroAndRevalidatesBeforeMutation),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.ViolatorFixture, "reachable adjacency and live Push immunity"),
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(GarrusAttackVocabularyTests),
+                        nameof(GarrusAttackVocabularyTests.PostAttack_MovePauseAndNamedPush_RoundTripAndContinueIdentically),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture, "move and named-hero pauses across snapshots")
+                }, new[] { "movement", "target", "continuation" },
+                "Direct self Move ends beside an eligible opposing hero; zero satisfies adjacency under GA-Q1, " +
+                "then ordinary selection explicitly names the Push target.",
+                "Reassess for another mover, relation, target kind or following operation."),
             new SharedFoundationClaim(
                 "values.owned-discard-count",
                 new MemberLocator(typeof(GuardsDigital.Core.Rules.CardResolution.RosterDynamicValueQuery),

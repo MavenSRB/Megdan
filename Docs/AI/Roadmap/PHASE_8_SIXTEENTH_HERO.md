@@ -28,7 +28,7 @@ Non-goals: Battle Fury or dealing Garrus.
 
 Historical evidence: [8.41a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841a-resolved-card-discard-completion-evidence).
 
-### [!] 8.41b Complete Garrus's attack and movement vocabulary
+### [x] 8.41b Complete Garrus's attack and movement vocabulary
 
 Outcome: Angry Strike can count the acting hero's discarded cards, and the Red cards can express their exact modal pre-move and optional move-adjacent-then-push clauses using verified generic contracts.
 
@@ -39,6 +39,10 @@ Non-goals: new content registration or unrelated movement refactors.
 Paused checkpoint: `checkpoint/8.41b-rule-gate` preserves the implemented live owned-discard Attack query and its focused evidence; it is not milestone completion. **Prerequisite:** resolve [GA-Q1](../Rules/HERO_GARRUS.md#open-verification-points) using an official source or an explicit user-approved interpretation. Remaining closing checks are the modal pre-move/target path, named-hero post-move Push, distance/decline/impossible/immunity cases, and persisted movement continuation. Existing direct Move supports up-to zero as an applied no-op; existing charge-line selection requires a positive straight route and publishes only an endpoint, so neither alone establishes the printed `if you do` meaning. The existing query's old enum identities and all production content remain unchanged; no Garrus face is dealt by this checkpoint.
 
 Checkpoint index: [8.41b rule gate](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841b-garrus-attack-vocabulary-rule-gate-checkpoint).
+
+Resumed after the user's 2026-09-17 GA-Q1 answer: choosing zero spaces while adjacent does permit the Push. The checkpoint above records the former prerequisite, now discharged; all remaining acceptance checks still apply.
+
+Historical evidence: [8.41b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841b-garrus-attack-and-movement-completion-evidence).
 
 ### [ ] 8.41c Execute Battle Fury after a resolved-card discard
 

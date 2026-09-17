@@ -85,10 +85,10 @@ These are checked implementation routes, with missing pieces explicitly owned by
 | Printed clause | Existing contract / required delta | Owner |
 | --- | --- | --- |
 | Owned resolved-card discard | `discard-resolved-card@1` adds actor-owned selection, played identity, Active cancellation and retrieval; built vocabulary remains deferred until dealing | 8.41a |
-| +1 Attack per owned discard | `RosterValueQueryKind.OwnedDiscardCount` counts live owned discard locations; ordinary `RosterValueContributionDefinition` owns the bonus, with no new production consumer yet | 8.41b checkpoint |
+| +1 Attack per owned discard | `RosterValueQueryKind.OwnedDiscardCount` counts live owned discard locations; ordinary `RosterValueContributionDefinition` owns the bonus, with no new production consumer yet | 8.41b |
 | Discard present | `owned-card-present@1`, `hero` and `location=DiscardPile`; already registered | 8.41d |
-| Modal before-attack move / hero or unit target | Existing `attack-sequence@1`, nested condition and direct Move; verify pre-move feasibility and target binding | 8.41b, 8.41d |
-| Move beside named enemy, then Push it | Existing direct Move and object Push; probe destination/hero pairing and publish exact named hero; extend selector only if needed | 8.41b |
+| Modal before-attack move / hero or unit target | `GarrusEffectContent.PursuitAttack` composes ordinary Choose, discard presence conditional, direct Move and typed target binding; no new attack-sequence contract needed | 8.41b, 8.41d |
+| Move beside named enemy, then Push it | `GarrusEffectContent.MovePushAfterAttack` composes the deferred `move-adjacent-to-enemy-hero-for-push@1`, explicit adjacent-hero selection and ordinary three-space obstacle-ignoring Push; zero is applied under GA-Q1 | 8.41b |
 | This-round enemy-hero aura | `HeroesInRadius`, `ThisRound`, printed radius, opposing relation, FastTravel restriction and Movement activity limit 2 all exist | 8.41d |
 | Ranged unit moved closer/farther | Printed Range unit selector + direct Move `TowardActor` / `AwayFromActor`, exact distance 1 | 8.41d |
 | Repeat once/twice | Existing `RepeatAction` control node with `maximumRepeats`; fresh selection and consequence boundary each time | 8.41d |
@@ -100,6 +100,6 @@ These are checked implementation routes, with missing pieces explicitly owned by
 
 ## Open verification points
 
-**GA-Q1 - open, blocking 8.41b:** When Garrus is already adjacent to an eligible enemy hero, does choosing to move zero spaces on Blunt Force or Send Flying satisfy `if you do` and permit the Push, or must he change spaces? The general p.10/p.11 up-to-distance contract admits an applied zero-space result, but that does not independently settle this conditional clause. The [community Garrus FAQ](https://www.cockeyedandcurious.com/goa2/heroes/garrus) contains the same question and attributes a reply to Arty on 2025-04-29, but the reply only points to another discussion and supplies no answer or primary-source transcript. It is an inconclusive lead, not verified authority. Requested an official ruling or an explicit temporary interpretation from the user on 2026-09-17; neither outcome has been encoded as a test expectation. This question is also indexed as Q35 in [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md).
+**GA-Q1 - answered by user-approved interpretation, 2026-09-17:** After viewing both exact card texts, the user ruled "I think yes, he can move 0." Choosing a zero-space move on Blunt Force or Send Flying while already adjacent to an eligible enemy hero satisfies `if you do` and permits that hero's Push. Declining the whole optional clause still performs neither Move nor Push. This is authority-hierarchy level 5, not an official ruling; a higher-authority clarification supersedes it. The earlier [community Garrus FAQ](https://www.cockeyedandcurious.com/goa2/heroes/garrus) lead was inconclusive: its attributed reply only referred to another discussion. This question is also indexed as Q35 in [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md).
 
 Battle Fury's interrupt placement must be established against p.17 timing and every actual discard producer before implementation; the name of an existing action trigger is insufficient evidence of suitability.

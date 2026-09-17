@@ -1719,4 +1719,10 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | ID | Outcome | Commit |
 | --- | --- | --- |
-| 8.41b checkpoint | Live owned-discard Attack count checked; milestone paused, not complete, on [GA-Q1](../../Rules/HERO_GARRUS.md#open-verification-points). [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#841b-complete-garruss-attack-and-movement-vocabulary). | `checkpoint/8.41b-rule-gate` |
+| 8.41b checkpoint | Live owned-discard Attack count checked; milestone paused, not complete, on [GA-Q1](../../Rules/HERO_GARRUS.md#open-verification-points). [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841b-complete-garruss-attack-and-movement-vocabulary). | `checkpoint/8.41b-rule-gate` |
+
+## Milestone 8.41b Garrus attack and movement completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.41b | Source-backed Red clauses, zero-space Move/Push under the user's ruling, explicit target choice and restored continuations. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841b-complete-garruss-attack-and-movement-vocabulary). | `milestone/8.41b` |

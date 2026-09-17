@@ -1032,6 +1032,107 @@ namespace GuardsDigital.Tests.EditMode
             return set;
         }
 
+        [TestCase(1)]
+        [TestCase(2)]
+        public void AdjacentPushMove_ZeroIsAppliedAndAllowsTheFollowingThreeSpacePush(int maximum)
+        {
+            // Garrus GA-Q1, user ruling 2026-09-17: choosing zero is not declining the clause.
+            var board = CreateLineBoard(new HexCoordinate(1, 0));
+            var move = AdjacentPushMoveHandler();
+            var context = MoveContext(board, EffectFailurePolicy.UpTo, ActorAt, maximum,
+                DirectMoveDestinationPolicy.Unrestricted);
+            Assert.That(move.Execute(context).Choice.Candidates, Contains.Item(EffectValue.Space(ActorAt)));
+            Assert.That(move.Resume(context, new[] { EffectValue.Integer(99) }).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory), "An integer must not alias the zero-space coordinate.");
+            Assert.That(move.Resume(context, new[] { EffectValue.Space(ActorAt) }).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(board.Occupancies.Single(value => value.HeroId.Equals(Actor)).Coordinate, Is.EqualTo(ActorAt));
+            var push = Handler(SyntheticDisplacementCapabilities.PushTargetV3).Execute(BuildContext(
+                board, EffectFailurePolicy.Mandatory, RuleModificationSet.Empty,
+                SyntheticDisplacementCapabilities.PushTargetV3, new Dictionary<string, EffectValue>
+                {
+                    ["target"] = EffectValue.Space(new HexCoordinate(1, 0)),
+                    ["distance"] = EffectValue.Integer(3),
+                    ["ignoresObstacles"] = EffectValue.Boolean(true),
+                    [SyntheticExchangeCapabilities.EligiblePieceParameterName] =
+                        EffectValue.Integer((int)PushEligiblePieceKind.Unit)
+                }));
+            Assert.That(push.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(board.Occupancies.Single(value => value.HeroId.Equals(Other)).Coordinate,
+                Is.EqualTo(new HexCoordinate(4, 0)));
+        }
+
+        [Test]
+        public void AdjacentPushMove_RequiresAReachableEligibleHeroAndRevalidatesBeforeMutation()
+        {
+            var board = CreateLineBoard(new HexCoordinate(3, 0));
+            var move = AdjacentPushMoveHandler();
+            EffectCapabilityContext ContextWith(int distance, RuleModificationSet modifications) =>
+                MoveContext(board, EffectFailurePolicy.UpTo, ActorAt, distance,
+                    DirectMoveDestinationPolicy.Unrestricted, modifications);
+            Assert.That(move.Anticipate(ContextWith(1, RuleModificationSet.Empty)),
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            var context = ContextWith(2, RuleModificationSet.Empty);
+            var offered = move.Execute(context);
+            Assert.That(offered.Choice.Candidates, Is.EqualTo(new[] { EffectValue.Space(new HexCoordinate(2, 0)) }));
+            Assert.That(move.Resume(context, new[] { EffectValue.Integer(0) }).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(move.Resume(ContextWith(2, PushImmunityFor(Other)), offered.Choice.Candidates).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(board.Occupancies.Single(value => value.HeroId.Equals(Actor)).Coordinate, Is.EqualTo(ActorAt));
+            Assert.That(move.Resume(context, offered.Choice.Candidates).Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
+            Assert.That(board.Occupancies.Single(value => value.HeroId.Equals(Actor)).Coordinate,
+                Is.EqualTo(new HexCoordinate(2, 0)));
+        }
+
+        [Test]
+        public void AdjacentPushMove_UsesOrdinaryPathsNotStraightLines_AndCannotMoveAnotherUnit()
+        {
+            var coordinates = Enumerable.Range(-3, 7).SelectMany(q => Enumerable.Range(-3, 7)
+                .Select(r => new HexCoordinate(q, r))).ToArray();
+            var board = new AdjacentMoveAuthority(BoardMapDefinition.CreateSynthetic(Map, 1, coordinates),
+                new[] { new HeroOccupancy(Actor, ActorAt), new HeroOccupancy(Other, new HexCoordinate(2, 1)) },
+                Array.Empty<ObstacleOccupancy>());
+            var context = MoveContext(board, EffectFailurePolicy.UpTo, ActorAt, 2,
+                DirectMoveDestinationPolicy.Unrestricted);
+            var move = AdjacentPushMoveHandler();
+            Assert.That(move.Execute(context).Choice.Candidates, Contains.Item(EffectValue.Space(new HexCoordinate(1, 1))));
+            Assert.That(move.Execute(context).Choice.Candidates, Has.None.EqualTo(EffectValue.Space(ActorAt)),
+                "Zero is allowed only when its named-hero adjacency requirement is already met.");
+            Assert.That(move.Anticipate(MoveContext(board, EffectFailurePolicy.UpTo, new HexCoordinate(2, 1), 2,
+                DirectMoveDestinationPolicy.Unrestricted)), Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+        }
+
+        [Test]
+        public void AdjacentPushMove_IsDeferredAndDoesNotWidenOrdinaryDirectMove()
+        {
+            Assert.That(SyntheticDisplacementCapabilities.Handlers().Select(value => value.Reference),
+                Has.None.EqualTo(SyntheticDisplacementCapabilities.MoveAdjacentToEnemyHeroForPushV1));
+            var board = CreateLineBoard(new HexCoordinate(5, 0));
+            var context = MoveContext(board, EffectFailurePolicy.UpTo, ActorAt, 1,
+                DirectMoveDestinationPolicy.Unrestricted);
+            Assert.That(AdjacentPushMoveHandler().Anticipate(context), Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(Handler(SyntheticDisplacementCapabilities.DirectMoveV3).Execute(context).Choice.Candidates,
+                Contains.Item(EffectValue.Space(ActorAt)));
+        }
+
+        private static IEffectCapabilityHandler AdjacentPushMoveHandler() =>
+            SyntheticDisplacementCapabilities.DeferredHandlers().Single(value =>
+                value.Reference.Equals(SyntheticDisplacementCapabilities.MoveAdjacentToEnemyHeroForPushV1));
+
+        [Test]
+        public void AdjacentPushMove_RespectsMoveObstaclesEvenThoughTheFollowingPushIgnoresThem()
+        {
+            var terrain = new HexCoordinate(1, 0);
+            var board = new AdjacentMoveAuthority(BoardMapDefinition.CreateSynthetic(Map, 1,
+                    Enumerable.Range(-2, 9).Select(q => new HexCoordinate(q, 0)).Where(at => !at.Equals(terrain)),
+                    new[] { terrain }),
+                new[] { new HeroOccupancy(Actor, ActorAt), new HeroOccupancy(Other, new HexCoordinate(3, 0)) },
+                Array.Empty<ObstacleOccupancy>());
+            Assert.That(AdjacentPushMoveHandler().Anticipate(MoveContext(board, EffectFailurePolicy.UpTo,
+                ActorAt, 2, DirectMoveDestinationPolicy.Unrestricted)), Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+        }
+
         private static IEffectCapabilityHandler Handler(EffectCapabilityReference reference) =>
             SyntheticEffectCapabilities.CreateCatalog().Load(reference);
 

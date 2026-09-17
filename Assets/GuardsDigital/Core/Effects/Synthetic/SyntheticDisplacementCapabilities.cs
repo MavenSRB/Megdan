@@ -259,6 +259,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string RealisedDistanceOutputName = "distance";
 
+        /// <summary>
+        /// Direct self Move ending beside an eligible enemy hero for a following Push. The player
+        /// chooses the destination here and the named hero through the ordinary adjacent selection.
+        /// GA-Q1 permits the current space when it already satisfies that target requirement.
+        /// </summary>
+        public static EffectCapabilityReference MoveAdjacentToEnemyHeroForPushV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("move-adjacent-to-enemy-hero-for-push"), 1);
+
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[]
             {
@@ -275,11 +283,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>
         /// Milestone 8.37 moved <c>synthetic-choose-direction@1</c> and
         /// <c>synthetic-batch-direct-move@1</c> into <see cref="Handlers"/> beside the dealing that
-        /// starts them. Nothing waits here now; the member survives for the offline content tests that
-        /// compose catalogs of their own from the deferred lists.
+        /// starts them. Garrus's adjacency-qualified self Move remains deferred until his dealing
+        /// milestone; it shares the ordinary direct-Move executor and narrows only its endpoints.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[]
+            {
+                new DirectMoveHandler(MoveAdjacentToEnemyHeroForPushV1,
+                    supportsImmunityOverrides: true, requiresAdjacentEnemyHeroForPush: true)
+            };
 
         /// <summary>
         /// Milestone 8.37. p.19's six directions, in the same order
@@ -376,13 +388,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
             IEffectActorRelocationCapabilityHandler
         {
             private readonly bool supportsImmunityOverrides;
+            private readonly bool requiresAdjacentEnemyHeroForPush;
 
             public DirectMoveHandler(
                 EffectCapabilityReference reference,
-                bool supportsImmunityOverrides)
+                bool supportsImmunityOverrides,
+                bool requiresAdjacentEnemyHeroForPush = false)
             {
                 Reference = reference;
                 this.supportsImmunityOverrides = supportsImmunityOverrides;
+                this.requiresAdjacentEnemyHeroForPush = requiresAdjacentEnemyHeroForPush;
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -457,7 +472,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
-                if (selected == null || selected.Count != 1)
+                if (selected == null || selected.Count != 1 || selected[0].Kind != EffectValueKind.Coordinate)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -660,7 +675,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // move offers no such decision: the named space is the only thing that satisfies it.
                 if (namesASpace)
                 {
-                    return travelled
+                    return AdmitPushEndpoints(context, travelled)
                         .OrderBy(coordinate => coordinate.Q)
                         .ThenBy(coordinate => coordinate.R)
                         .ToArray();
@@ -677,10 +692,29 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? travelled.Concat(new[] { moverAt })
                     : travelled;
 
-                return spaces
+                return AdmitPushEndpoints(context, spaces)
                     .OrderBy(coordinate => coordinate.Q)
                     .ThenBy(coordinate => coordinate.R)
                     .ToArray();
+            }
+
+            private IEnumerable<HexCoordinate> AdmitPushEndpoints(
+                EffectCapabilityContext context, IEnumerable<HexCoordinate> spaces)
+            {
+                if (!requiresAdjacentEnemyHeroForPush) return spaces;
+                var board = context.Components.Board;
+                var actor = BoardObjectReference.ForHero(context.ActorId);
+                if (context.Participants == null ||
+                    !board.TryGetObjectCoordinate(actor, out var actorAt) ||
+                    !context.Input("mover").Coordinate.Equals(actorAt))
+                    return Array.Empty<HexCoordinate>();
+
+                // Adjacency is a target-existence requirement, including when choosing zero. A later
+                // ordinary target choice names which qualifying hero; no hero is selected implicitly.
+                return spaces.Where(space => RosterPresenceQuery.FindUnitsWithin(
+                        space, 1, RosterUnitKind.Hero, SourceTeamRelation.OpposingSource,
+                        context.ActorId, board, context.Participants, context.Modifications, actor)
+                    .Any(target => !IsImmuneToThisPush(context, target, actor.AsRuleObject())));
             }
 
             /// <summary>
