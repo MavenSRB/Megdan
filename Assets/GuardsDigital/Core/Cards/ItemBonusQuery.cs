@@ -41,6 +41,23 @@ namespace GuardsDigital.Core.Cards
         public const int BonusPerItem = 1;
 
         /// <summary>
+        /// Read-only total from a public per-icon item count. Uses the same matching-icon rule as
+        /// attributed item contributions; presentation need not reconstruct item state or own p.16.
+        /// </summary>
+        public static int TotalWithProjectedItems(ValueResult printedValue, int matchingItemCount)
+        {
+            if (printedValue == null) throw new ArgumentNullException(nameof(printedValue));
+            if (matchingItemCount < 0) throw new ArgumentOutOfRangeException(nameof(matchingItemCount));
+            return checked(printedValue.Total +
+                (PrintsMatchingIcon(printedValue) ? matchingItemCount * BonusPerItem : 0));
+        }
+
+        private static bool PrintsMatchingIcon(ValueResult value) =>
+            value.Contributions.Any(contribution =>
+                contribution.Kind == ValueContributionKind.PrintedIcon &&
+                contribution.Channel == value.Channel);
+
+        /// <summary>
         /// The item contributions one hero's items add to an already-computed printed value, in the
         /// hero's own item order. Empty whenever the hero has no item supplying that icon, or the card
         /// prints no icon of that channel.
@@ -62,10 +79,7 @@ namespace GuardsDigital.Core.Cards
             // card." A card prints an icon in this channel exactly when the printed result carries a
             // printed-icon contribution for it; a channel present only through card text or another
             // modifier is not a printed icon, and p.16 raises icons rather than numbers.
-            var printsMatchingIcon = printedValue.Contributions.Any(contribution =>
-                contribution.Kind == ValueContributionKind.PrintedIcon &&
-                contribution.Channel == printedValue.Channel);
-            if (!printsMatchingIcon)
+            if (!PrintsMatchingIcon(printedValue))
             {
                 return Array.Empty<ValueContribution>();
             }

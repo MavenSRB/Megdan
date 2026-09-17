@@ -1,6 +1,6 @@
 # Phase 8 - Playtest refinements
 
-On 2026-09-17 the user reported Super-Shotgun making the attacked hero discard, requested the revealed-card Initiative badge include the bonus, and approved fixing both Shotgun and Super-Shotgun. The approved sequence is **8.42 -> 8.42a**, with separate validation and local commits. Return to [ROADMAP.md](../ROADMAP.md); [SESSION_BRIEF.md](../SESSION_BRIEF.md) owns the live route.
+On 2026-09-17 the user reported Super-Shotgun making the attacked hero discard, requested the revealed-card Initiative badge include the bonus, and approved fixing both Shotgun and Super-Shotgun. They then requested that clicking another player's token must not show that player's cards. The approved sequence is **8.42 -> 8.42a -> 8.42b**, with separate validation and local commits. Return to [ROADMAP.md](../ROADMAP.md); [SESSION_BRIEF.md](../SESSION_BRIEF.md) owns the live route.
 
 ### [x] 8.42 Exclude the attack target from shotgun scatter
 
@@ -12,10 +12,20 @@ Non-goals: shared distance-query changes, rule reinterpretation, other cards, ne
 
 Historical evidence: [8.42 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842-shotgun-target-exclusion-completion-evidence).
 
-### [ ] 8.42a Show total revealed Initiative in the hero rail
+### [!] 8.42a Show total revealed Initiative in the hero rail
 
-Outcome: the revealed-card badge in each hero plaque shows the card's Initiative plus its applicable Initiative bonus, using authoritative projected values.
+Outcome: the revealed-card badge in each hero plaque shows printed Initiative plus Initiative items, using authoritative public counts and the shared item query. The printed card front remains unchanged. Validation also repairs Swift's artwork catalog references after 8.42's content-revision bump; that resource metadata requires the build-smoke check.
 
 Acceptance: base-only and bonus cases, correct per-hero totals, no facedown information leak, updates across reveal/resolution/round refresh, existing hover and badge geometry preserved, and owner-private/Director projection agreement. Focused projection and HUD checks, affected Play Mode and targeted visual inspection (T2); no Initiative resolution rule or protocol/schema change.
 
 Non-goals: other statistics, tray redesign, unrelated presentation changes, packaging.
+
+Checkpoint: implementation, focused rules/HUD/seat checks and non-batch viewport inspection are complete. Required prerequisite: user approval to run `Tools/Invoke-PlayerBuildSmoke.ps1` for the updated resource catalog, then a green local disposable build-and-launch smoke check. The prior permission belonged to 8.41e; a new permission question is outstanding. No package or upload is authorized. [Checkpoint evidence](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842a-initiative-badge-build-gate-checkpoint).
+
+### [ ] 8.42b Keep player tray navigation private and connect hero identity controls
+
+Outcome: clicking another player's board token cannot show that player's card tray in a player seat; the seat's own tray remains selected. Clicking the player's own hero plaque selects that hero. Hovering a plaque's hero portrait shows its existing hero-picker profile card. Director-only inspection is preserved. The user explicitly added the own-plaque selection and portrait-preview requirements on 2026-09-17.
+
+Acceptance: actual board clicks on allied and enemy tokens from a player seat keep the owner's tray, hide all foreign tray cards and preserve own card actions; own-plaque click selects the local hero; profile hover uses the correct existing artwork, stays on-screen and dismisses cleanly; private projection boundaries and reconnect/refresh remain intact; Director pinning still works. Focused presenter and affected real-input/online Play Mode checks plus visual inspection (T2).
+
+Non-goals: removing public hero-rail history or hover information, changing game visibility rules, or disabling Director tools.

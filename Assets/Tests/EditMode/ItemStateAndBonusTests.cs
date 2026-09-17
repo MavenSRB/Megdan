@@ -192,6 +192,31 @@ namespace GuardsDigital.Tests.EditMode
 
         // ----- Check 2: +1 only to the matching printed icon -----
 
+        [TestCase(0)]
+        [TestCase(1)]
+        [TestCase(2)]
+        public void ProjectedItemCounts_MatchTheAttributedRulesTotal(int count)
+        {
+            var participants = MatchConfiguration.CreateForShowcaseFixture().Participants;
+            var owner = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+            var printed = PrintedIcon(PrintedValueChannel.Initiative, 6);
+            var items = ItemsHolding(participants, owner,
+                Enumerable.Repeat(PrintedValueChannel.Initiative, count).ToArray());
+            Assert.That(ItemBonusQuery.TotalWithProjectedItems(printed, count), Is.EqualTo(6 + count));
+            Assert.That(ItemBonusQuery.TotalWithProjectedItems(printed, count),
+                Is.EqualTo(ItemBonusQuery.Apply(printed, items, owner).Total));
+            Assert.That(ItemBonusQuery.TotalWithProjectedItems(
+                new ValueResult(PrintedValueChannel.Initiative, Array.Empty<ValueContribution>()), count), Is.Zero);
+        }
+
+        [Test]
+        public void ProjectedItemCounts_RejectInvalidInputs()
+        {
+            Assert.Throws<ArgumentNullException>(() => ItemBonusQuery.TotalWithProjectedItems(null, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                ItemBonusQuery.TotalWithProjectedItems(PrintedIcon(PrintedValueChannel.Initiative, 6), -1));
+        }
+
         [Test]
         public void AnItem_AddsExactlyOneToItsOwnChannelOnEveryOneOfThePageSixIcons()
         {

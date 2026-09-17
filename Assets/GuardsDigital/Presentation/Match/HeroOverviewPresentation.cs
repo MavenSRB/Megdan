@@ -407,7 +407,8 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class HeroCurrentCardViewModel
     {
-        public HeroCurrentCardViewModel(TurnCardCommitmentStatus status, TrayCardViewModel card = null)
+        public HeroCurrentCardViewModel(TurnCardCommitmentStatus status, TrayCardViewModel card = null,
+            int? initiativeWithItems = null)
         {
             if (status != TurnCardCommitmentStatus.CardCommittedFacedown &&
                 status != TurnCardCommitmentStatus.Revealed)
@@ -428,11 +429,13 @@ namespace GuardsDigital.Presentation.Match
             IsFacedown = status == TurnCardCommitmentStatus.CardCommittedFacedown;
             StateLabel = IsFacedown ? "FACEDOWN" : "RESOLVING";
             Color = card?.Color ?? CardColor.None;
-            InitiativeLabel = card?.Face?.Initiative?.AmountLabel ?? string.Empty;
+            InitiativeLabel = IsFacedown ? string.Empty :
+                initiativeWithItems?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
+                card?.Face?.Initiative?.AmountLabel ?? string.Empty;
             AssistiveLabel = IsFacedown
                 ? "Current card: committed facedown, not revealed"
                 : $"Current card: {card.DisplayName} - {card.ColorName} - {card.ValueLine} - " +
-                    StateLabel;
+                    StateLabel + $" - Card + item Initiative: {InitiativeLabel}";
         }
 
         /// <summary>The projected commitment this marker is a reading of.</summary>
@@ -450,7 +453,7 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The revealed card's printed colour, or <c>None</c> while it is facedown.</summary>
         public CardColor Color { get; }
 
-        /// <summary>p.7's Initiative as the marker prints it, or empty while the card is facedown.</summary>
+        /// <summary>Printed Initiative plus p.16 item bonuses; empty while facedown.</summary>
         public string InitiativeLabel { get; }
 
         /// <summary>`FACEDOWN` or `RESOLVING` - the word the marker carries beside its colour.</summary>
@@ -1196,7 +1199,12 @@ namespace GuardsDigital.Presentation.Match
                     playedTurnIndex,
                     false,
                     false,
-                    true));
+                    true),
+                ItemBonusQuery.TotalWithProjectedItems(
+                    PrintedValueQuery.CalculatePrintedInitiative(card, projection.Definitions),
+                    projection.HeroProgression.FirstOrDefault(value => value.HeroId.Equals(heroId))?
+                        .ItemBonuses.Where(value => value.Key == PrintedValueChannel.Initiative)
+                        .Sum(value => value.Value) ?? 0));
         }
 
         /// <summary>

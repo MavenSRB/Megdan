@@ -1123,6 +1123,47 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void RevealedInitiativeBadge_AddsOnlyTheOwnersEarnedInitiativeItems()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(out var owner);
+            var actions = new RoundActionUnityView();
+            var actionPresenter = new RoundActionPresenter(session, actions);
+            actionPresenter.Refresh();
+            var upgrade = actions.Model.SystemTransitionPrompt.Options.First(option =>
+                option.ItemIcon == PrintedValueChannel.Initiative);
+            Assert.That(actionPresenter.Submit(new TypedInvocationViewModel(upgrade.Label, upgrade.Command)), Is.True);
+            for (var step = 0; step < 40 && session.Projection.Phase == RoundResolutionPhase.EndOfRound; step++)
+            {
+                actionPresenter.Refresh();
+                var pending = actions.Model.SystemTransitionPrompt;
+                ConfiguredMatchFixtures.Accept(session, pending == null
+                    ? DirectorCommand.AdvanceEndOfRound() : pending.Options[0].Command);
+            }
+            Assert.That(session.Projection.HeroProgression.Single(hero => hero.HeroId.Equals(owner))
+                .ItemBonuses.Single(bonus => bonus.Key == PrintedValueChannel.Initiative).Value, Is.GreaterThan(0));
+            ConfiguredMatchFixtures.CommitBothHands(session);
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+            foreach (var hero in view.Model.Heroes)
+            {
+                var bonus = session.Projection.HeroProgression.Single(value => value.HeroId.Equals(hero.HeroId))
+                    .ItemBonuses.Where(value => value.Key == PrintedValueChannel.Initiative)
+                    .Sum(value => value.Value);
+                Assert.That(hero.CurrentCard, Is.Not.Null);
+                Assert.That(hero.CurrentCard.InitiativeLabel,
+                    Is.EqualTo((hero.CurrentCard.Card.Face.Initiative.Amount + bonus).ToString()),
+                    "The badge includes only this hero's Initiative items, without changing the printed card face.");
+                foreach (var seat in MatchSeatBinding.ForParticipants(session.Projection.Participants).Seats)
+                {
+                    var scoped = SeatProjectionFactory.ForSeat(session.Projection, seat);
+                    Assert.That(CurrentRoundCards.CurrentCard(scoped, hero.HeroId).InitiativeLabel,
+                        Is.EqualTo(hero.CurrentCard.InitiativeLabel),
+                        "Public revealed card-plus-item values agree for every seat and the Director.");
+                }
+            }
+        }
+
+        [Test]
         public void APausedResolution_KeepsTheCardInTheMarkerUntilTheActionCompletes()
         {
             var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();

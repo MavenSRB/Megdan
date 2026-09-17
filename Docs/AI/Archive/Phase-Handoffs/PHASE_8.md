@@ -1756,3 +1756,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.42 | Excluded the attacked hero from both shotgun bystander clauses; isolated-target, restored discard and empty-hand Defeat journeys preserve the original attack. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842-exclude-the-attack-target-from-shotgun-scatter). | `milestone/8.42` |
+
+## Milestone 8.42a Initiative badge build-gate checkpoint
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.42a checkpoint | Card-plus-item Initiative badge implemented and checked; Swift artwork references synchronized. Local build-smoke approval/check remain outstanding; not milestone completion. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#842a-show-total-revealed-initiative-in-the-hero-rail). | `checkpoint/8.42a-build-gate` |
