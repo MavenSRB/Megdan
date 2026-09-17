@@ -276,6 +276,24 @@
     { "definitionId": "bain-vantage-point", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain15__7348643__front.png" },
     { "definitionId": "bain-perfect-getaway", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain16__7348632__front.png" },
     { "definitionId": "bain-high-ground", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain17__7348644__front.png" },
-    { "definitionId": "bain-a-complicated-profession", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain18__7348630__front.png" }
+    { "definitionId": "bain-a-complicated-profession", "contentRevision": "bain-8-40i-rev-1", "sourcePath": "active-hero-cards/Bain/bain18__7348630__front.png" },
+    { "definitionId": "garrus-angry-strike", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus__7583457__front.png" },
+    { "definitionId": "garrus-chilling-howl", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus2__7502814__front.png" },
+    { "definitionId": "garrus-trace", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus3__7502825__front.png" },
+    { "definitionId": "garrus-chase", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus4__7502824__front.png" },
+    { "definitionId": "garrus-blunt-force", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus5__7502817__front.png" },
+    { "definitionId": "garrus-hunt-down", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus6__7502815__front.png" },
+    { "definitionId": "garrus-send-flying", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus7__7502818__front.png" },
+    { "definitionId": "garrus-menace", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus8__7502828__front.png" },
+    { "definitionId": "garrus-threaten", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus9__7502812__front.png" },
+    { "definitionId": "garrus-form-up", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus10__7502826__front.png" },
+    { "definitionId": "garrus-terrify", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus11__7502816__front.png" },
+    { "definitionId": "garrus-testudo", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus12__7502821__front.png" },
+    { "definitionId": "garrus-hold-ground", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus13__7502829__front.png" },
+    { "definitionId": "garrus-make-a-stand", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus14__7502819__front.png" },
+    { "definitionId": "garrus-light-pilum", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus15__7502827__front.png" },
+    { "definitionId": "garrus-battle-ready", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus16__7502813__front.png" },
+    { "definitionId": "garrus-heavy-pilum", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus17__7502822__front.png" },
+    { "definitionId": "garrus-battle-fury", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus18__7544040__front.png" }
   ]
 }

@@ -456,7 +456,8 @@ namespace GuardsDigital.Tests.EditMode
                     // cards; Guess the card's color, then reveal the card", so the Cardsharp carries
                     // the hidden pick and the reveal.
                     SyntheticShowcaseHand.CreateRedWithMarkerBoardSkill(owner),
-                    SyntheticShowcaseHand.CreateRedWithHiddenGuessSkill(owner)
+                    SyntheticShowcaseHand.CreateRedWithHiddenGuessSkill(owner),
+                    SyntheticResolvedRepriseHand.Create(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -590,6 +591,7 @@ namespace GuardsDigital.Tests.EditMode
                 // reach theirs through the triggered-effect concat below rather than through a card
                 // node, which is what that concat is there for.
                 .Concat(BainCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                .Concat(GarrusCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

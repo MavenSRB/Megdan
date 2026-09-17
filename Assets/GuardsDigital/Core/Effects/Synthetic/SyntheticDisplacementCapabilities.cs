@@ -277,21 +277,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // Snowstorm are dealt primary Skills that name both, so the standing rule the
                 // deferred list below states is satisfied and they join the one registered set.
                 new ChooseDirectionHandler(),
-                new BatchDirectMoveHandler()
+                new BatchDirectMoveHandler(),
+                new DirectMoveHandler(MoveAdjacentToEnemyHeroForPushV1,
+                    supportsImmunityOverrides: true, requiresAdjacentEnemyHeroForPush: true)
             };
 
         /// <summary>
         /// Milestone 8.37 moved <c>synthetic-choose-direction@1</c> and
         /// <c>synthetic-batch-direct-move@1</c> into <see cref="Handlers"/> beside the dealing that
-        /// starts them. Garrus's adjacency-qualified self Move remains deferred until his dealing
-        /// milestone; it shares the ordinary direct-Move executor and narrows only its endpoints.
+        /// starts them. Milestone 8.41e registers Garrus's adjacency-qualified self Move beside
+        /// his dealt consumer; it shares ordinary direct-Move execution and narrows only endpoints.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[]
-            {
-                new DirectMoveHandler(MoveAdjacentToEnemyHeroForPushV1,
-                    supportsImmunityOverrides: true, requiresAdjacentEnemyHeroForPush: true)
-            };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// Milestone 8.37. p.19's six directions, in the same order

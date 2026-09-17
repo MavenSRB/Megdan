@@ -28,7 +28,7 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly ActionDefinitionId Action = new ActionDefinitionId("discard-resolved-primary");
         private static readonly EffectNodeId Node = new EffectNodeId("discard-resolved-node");
         private static IEffectCapabilityHandler Handler =>
-            SyntheticResolvedDiscardCapabilities.DeferredHandlers().Single();
+            SyntheticResolvedDiscardCapabilities.RegisteredHandlers().Single();
 
         [TestCase(CardFaceOrientation.FaceUp)]
         [TestCase(CardFaceOrientation.FaceDown)]
@@ -136,11 +136,11 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void NewContract_IsDeferredUntilAConfiguredCardUsesIt()
+        public void NewContract_IsRegisteredWithItsConfiguredConsumer()
         {
-            Assert.That(SyntheticResolvedDiscardCapabilities.RegisteredHandlers(), Is.Empty);
+            Assert.That(SyntheticResolvedDiscardCapabilities.DeferredHandlers(), Is.Empty);
             Assert.That(MatchContentCatalogs.ForThisBuild().Capabilities.Registered,
-                Has.None.EqualTo(SyntheticResolvedDiscardCapabilities.DiscardResolvedCardV1));
+                Has.Some.EqualTo(SyntheticResolvedDiscardCapabilities.DiscardResolvedCardV1));
         }
 
         [Test]

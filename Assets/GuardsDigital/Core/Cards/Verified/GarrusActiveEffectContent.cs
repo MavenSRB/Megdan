@@ -19,6 +19,8 @@ namespace GuardsDigital.Core.Cards.Verified
             new[] { RuleModification.ForRestriction(RuleActivity.FastTravel), RuleModification.ForActivityLimit(RuleActivity.Movement, 2) },
             null, DeclaredRadius.PrintedIcon(3), SourceTeamRelation.OpposingSource);
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
+        public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             new IEffectCapabilityHandler[] { new ActiveEffectCreationHandler(ChillingHowlV1, ChillingHowlDefinition) };
     }
 }

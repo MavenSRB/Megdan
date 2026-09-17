@@ -86,7 +86,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain')]
+        'bain', 'garrus')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Check,
@@ -196,6 +196,7 @@ $declaredHeroes = @{
     # the calibrated 2% field floor: his art leaves the ordinary team-coloured backdrop, so Swift's
     # per-hero zero is still hers alone.
     bain = @{ ElementId = 8596242; ElementName = 'BountyHunter'; DisplayName = 'Bain' }
+    garrus = @{ ElementId = 8597491; ElementName = 'Centurion'; DisplayName = 'Garrus' }
 }
 
 $declared = $declaredHeroes[$Hero]

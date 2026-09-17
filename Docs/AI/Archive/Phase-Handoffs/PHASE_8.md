@@ -1738,3 +1738,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.41d | Composed the nineteen-face inventory and eighteen executable faces; verified actual pursuit/Push attacks, aura/Ultimate ordering, retrieval, unit movement and Pilum with restored continuations. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841d-compose-garruss-eighteen-playable-faces). | `milestone/8.41d` |
+
+## Milestone 8.41e Garrus dealing and artwork completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.41e | Registered and dealt the sixteenth selectable hero with all five staged configurations, eighteen private fronts, profile, tokens and highlights; explicit compatibility decision and local build smoke. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841e-deal-register-and-artwork-garrus). | `milestone/8.41e` |

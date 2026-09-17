@@ -35,7 +35,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(SyntheticNamedBorrowCapabilities.DeferredHandlers())
                 .Concat(GarrusActiveEffectContent.DeferredHandlers())), defaults.Components,
                 new TriggeredEffectCatalog(defaults.TriggeredEffects.Definitions.Concat(new[] {
-                    GarrusEffectContent.ResolvedDiscardPrimary(GarrusCardContent.BattleFury, GarrusCardContent.ContentRevision) })));
+                    GarrusEffectContent.ResolvedDiscardPrimary(GarrusCardContent.BattleFury, GarrusCardContent.ContentRevision) })
+                    .GroupBy(effect => effect.Reference).Select(group => group.First())));
         }
 
         [Test]

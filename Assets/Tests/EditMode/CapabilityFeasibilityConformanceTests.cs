@@ -301,7 +301,8 @@ namespace GuardsDigital.Tests.EditMode
             // contracts in this build to hold an answer private and then make a card public. His
             // give, his return, his five Active-effect creations and the other sixteen contracts his
             // set names all run on types that already existed, and this rule counts TYPES.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(84),
+            // Garrus adds resolved discard and named discarded-primary borrowing (two types).
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(86),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

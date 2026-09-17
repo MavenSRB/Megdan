@@ -14,6 +14,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityReference(new EffectCapabilityId("borrow-named-discarded-primary"), 1);
         public const string CardParameter = "card";
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[] { new Handler() };
 
         private sealed class Handler : IEffectCapabilityHandler

@@ -768,7 +768,12 @@ namespace GuardsDigital.Presentation.Interaction
         /// Another One! and High Ground - and A Complicated Profession unlocked. This is the only arm
         /// that reaches the one-or-both modal and the End-of-turn repeat.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedBain = 80
+        VerifiedTierThreeAlternateEngagedStagedBain = 80,
+        VerifiedEngagedStagedGarrus = 81,
+        VerifiedTierTwoEngagedStagedGarrus = 82,
+        VerifiedTierTwoAlternateEngagedStagedGarrus = 83,
+        VerifiedTierThreeEngagedStagedGarrus = 84,
+        VerifiedTierThreeAlternateEngagedStagedGarrus = 85
     }
 
     [ExecuteAlways]
@@ -1286,6 +1291,20 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedEngagedStagedBain =>
                     MatchConfiguration.CreateStagedBainForInternalTest(
                         TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedGarrus =>
+                    MatchConfiguration.CreateStagedGarrusForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedGarrus =>
+                    MatchConfiguration.CreateStagedGarrusTierTwoForInternalTest(TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.GarrusUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedGarrus =>
+                    MatchConfiguration.CreateStagedGarrusTierTwoForInternalTest(TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.GarrusUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedGarrus =>
+                    MatchConfiguration.CreateStagedGarrusTierThreeForInternalTest(TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.GarrusUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedGarrus =>
+                    MatchConfiguration.CreateStagedGarrusTierThreeForInternalTest(TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.GarrusUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedTierTwoEngagedStagedBain =>
                     MatchConfiguration.CreateStagedBainTierTwoForInternalTest(
                         TeamSide.Red,
@@ -1358,7 +1377,7 @@ namespace GuardsDigital.Presentation.Interaction
                 // terms: a staged arm missing from here composes its two heroes fifteen spaces apart,
                 // every approach helper throws `Sequence contains no elements`, and no offline tier
                 // can see it.
-                IsStagedBain(content))
+                IsStagedBain(content) || IsStagedGarrus(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1826,6 +1845,10 @@ namespace GuardsDigital.Presentation.Interaction
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusBainOneVsOne();
                     }
+                    if (IsStagedGarrus(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusGarrusOneVsOne();
+                    }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
@@ -1994,6 +2017,13 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBain ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedBain ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBain;
+
+        private static bool IsStagedGarrus(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedGarrus ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedGarrus ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedGarrus ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedGarrus ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedGarrus;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

@@ -14,12 +14,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         public const string DiscardedOutput = "discarded";
 
-        // Register only when a configured card can start the contract (milestone 8.41e).
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[] { new DiscardResolvedCardHandler() };
 
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[] { new DiscardResolvedCardHandler() };
+            Array.Empty<IEffectCapabilityHandler>();
 
         private sealed class DiscardResolvedCardHandler : IEffectCapabilityHandler
         {

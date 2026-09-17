@@ -172,6 +172,7 @@ namespace GuardsDigital.Tests.EditMode
                 // SyntheticComponentCapabilities, and this mirror is of VerifiedCapabilityHandlers
                 // alone, exactly as Silverarrow's CardTextFastTravelHandler is excluded above.
                 .Concat(BainActiveEffectContent.Handlers())
-                .Concat(BainComponentContent.Handlers());
+                .Concat(BainComponentContent.Handlers())
+                .Concat(GarrusActiveEffectContent.Handlers());
     }
 }

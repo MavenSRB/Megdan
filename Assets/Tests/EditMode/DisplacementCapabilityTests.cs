@@ -1104,10 +1104,10 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void AdjacentPushMove_IsDeferredAndDoesNotWidenOrdinaryDirectMove()
+        public void AdjacentPushMove_IsRegisteredAndDoesNotWidenOrdinaryDirectMove()
         {
             Assert.That(SyntheticDisplacementCapabilities.Handlers().Select(value => value.Reference),
-                Has.None.EqualTo(SyntheticDisplacementCapabilities.MoveAdjacentToEnemyHeroForPushV1));
+                Has.Some.EqualTo(SyntheticDisplacementCapabilities.MoveAdjacentToEnemyHeroForPushV1));
             var board = CreateLineBoard(new HexCoordinate(5, 0));
             var context = MoveContext(board, EffectFailurePolicy.UpTo, ActorAt, 1,
                 DirectMoveDestinationPolicy.Unrestricted);
@@ -1117,7 +1117,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static IEffectCapabilityHandler AdjacentPushMoveHandler() =>
-            SyntheticDisplacementCapabilities.DeferredHandlers().Single(value =>
+            SyntheticDisplacementCapabilities.Handlers().Single(value =>
                 value.Reference.Equals(SyntheticDisplacementCapabilities.MoveAdjacentToEnemyHeroForPushV1));
 
         [Test]

@@ -37,6 +37,8 @@ $sources = [ordered]@{
     # (5388D4AFC311CC06292F13487F430F5554EBFB1064DFB4F1DD3CE27694E158B4), so the face is his by the
     # extraction's own naming and not by a reading of the picture.
     bain = 'randomizers-tt14__7723683__front.png'
+    # Byte-identical to active-hero-cards/_selection-cards/Garrus__front.png.
+    garrus = 'randomizers-tt13__7723690__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA270EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA288EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -132,15 +132,16 @@ namespace GuardsDigital.Tests.EditMode
             // fifteen `contentRevision` values equal the fifteen `ContentRevision` constants as sets,
             // which is the half of this file a green harness is otherwise structurally blind to.
             // Side Quest is p.20's Handicap card and is excluded exactly as the eight named above are.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(270));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(270));
+            // 8.41e adds Garrus's eighteen playable fronts; Angry Swipe stays boxed.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(288));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(288));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(270),
+                Is.EqualTo(288),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -149,7 +150,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     ("arien", 18), ("bain", 18), ("brogan", 18), ("cutter", 18), ("dodger", 18),
-                    ("misa", 18), ("sabina", 18), ("silverarrow", 18), ("swift", 18), ("tali", 18),
+                    ("garrus", 18), ("misa", 18), ("sabina", 18), ("silverarrow", 18), ("swift", 18), ("tali", 18),
                     ("tigerclaw", 18), ("ursafar", 18), ("wasp", 18), ("whisper", 18),
                     ("xargatha", 18)
                 }));

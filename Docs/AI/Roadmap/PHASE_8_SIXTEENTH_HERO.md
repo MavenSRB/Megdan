@@ -64,13 +64,17 @@ Non-goals: dealing, artwork registration or claiming the player gate passed.
 
 Historical evidence: [8.41d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841d-garrus-card-composition-completion-evidence).
 
-### [ ] 8.41e Deal, register and artwork Garrus
+### [x] 8.41e Deal, register and artwork Garrus
 
 Outcome: Garrus is the sixteenth legal lobby pick, with his real hover profile, card fronts, board token, hand/deck/upgrades and catalog registrations.
+
+On 2026-09-17 the user explicitly authorized `Tools/Invoke-PlayerBuildSmoke.ps1` for this required local disposable build-and-launch check, as an exception to the test-launcher-only rule. No package or upload is authorized.
 
 Acceptance: standard setup and staged/engaged/progressed configuration routes; all scene-content adapters; selection/hero/artwork bijections; register only reachable contracts; content identity and snapshot compatibility decision; preserve existing heroes' identities; correct source token visual match; focused scene/picker/artwork/complete-card footprint checks and applicable build-smoke affectedness. Apply the highest testing tier triggered by catalog/configuration changes.
 
 Non-goals: a new package or the final hero gate's completion claim.
+
+Historical evidence: [8.41e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841e-garrus-dealing-and-artwork-completion-evidence).
 
 ### [ ] 8.41f Complete Garrus's permanent player-path gate
 

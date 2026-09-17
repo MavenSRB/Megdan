@@ -166,7 +166,8 @@ namespace GuardsDigital.Tests.EditMode
             // did not recur: a pin added WITHOUT its staged configuration measures the hero as
             // contributing ZERO cards, and his went in beside the row in EveryDealtDefinition below,
             // in one change.
-            new IdentityPin("bain", "bain-8-40i-rev-1", "4aa847253fd0406aef2c544ea0c5e57fb737e8801cbb3c61564e31e1609289e9")
+            new IdentityPin("bain", "bain-8-40i-rev-1", "4aa847253fd0406aef2c544ea0c5e57fb737e8801cbb3c61564e31e1609289e9"),
+            new IdentityPin("garrus", "garrus-8-41d-rev-1", "8244a9e8ebadb20886be72acc9bc590dd090252d0b9bb943a12fe57cddb7b335")
         };
 
         [Test]
@@ -302,6 +303,8 @@ namespace GuardsDigital.Tests.EditMode
                 // fifteenth, so the union covering every hero this build deals is kept true by this
                 // row rather than by the one above it.
                 .Concat(MatchConfiguration.CreateStagedBainForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                .Concat(MatchConfiguration.CreateStagedGarrusForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

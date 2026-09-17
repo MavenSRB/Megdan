@@ -359,6 +359,7 @@ namespace GuardsDigital.Core.Setup
         /// package arc closed, on the 2026-09-13 user direction that named him by name.
         /// </summary>
         public const string BainHeroIdValue = "hero-bain";
+        public const string GarrusHeroIdValue = "hero-garrus";
 
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
@@ -398,7 +399,8 @@ namespace GuardsDigital.Core.Setup
                 // Milestone 8.40j deals him and makes him pickable in the same commit, which is what
                 // the rule above asks for. He is the FIFTEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
-                (BainHeroIdValue, "bain", "Bain the Bounty Hunter")
+                (BainHeroIdValue, "bain", "Bain the Bounty Hunter"),
+                (GarrusHeroIdValue, "garrus", "Garrus the Gladiator")
             };
 
         /// <summary>
@@ -582,6 +584,9 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusBainOneVsOne() =>
             CreateOneVsOne(new HeroContentId("bain"), "Bain");
+
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusGarrusOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("garrus"), "Garrus");
 
         /// <summary>
         /// Milestone 8.22. The same board with Sabina on the Blue seat, for the fixtures whose subject

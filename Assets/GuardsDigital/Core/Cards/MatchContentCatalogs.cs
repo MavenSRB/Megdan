@@ -179,6 +179,7 @@ namespace GuardsDigital.Core.Cards
                     // or a push. Another One!'s End-of-turn repeat is named by reference too, by the
                     // Active effect that face stands, which is Tali's Blizzard shape exactly.
                     BainEffectContent.TriggeredEffects(BainCardContent.ContentRevision))
+                .Concat(new[] { GarrusEffectContent.ResolvedDiscardPrimary(GarrusCardContent.BattleFury, GarrusCardContent.ContentRevision) })
                 .ToArray()));
 
         /// <summary>
@@ -279,7 +280,8 @@ namespace GuardsDigital.Core.Cards
                 // own file exactly as Tigerclaw's two gives do and not from a Synthetic one. Two of
                 // the four are new handler TYPES and each took a showcase consumer in this same
                 // change, bound to the fixture's Focus marker rather than to his bounty.
-                .Concat(BainComponentContent.Handlers());
+                .Concat(BainComponentContent.Handlers())
+                .Concat(GarrusActiveEffectContent.Handlers());
 
         // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate, adds NOTHING to the list
         // above and says so rather than leaving the absence to be read as an oversight. No face of

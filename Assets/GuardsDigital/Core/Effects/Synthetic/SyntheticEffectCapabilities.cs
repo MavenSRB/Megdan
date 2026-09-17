@@ -146,6 +146,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // three guessing Blue faces are the cards that change that, and each handler TYPE
                 // took a showcase consumer in the same change.
                 .Concat(SyntheticHiddenChoiceCapabilities.RegisteredHandlers())
+                .Concat(SyntheticResolvedDiscardCapabilities.RegisteredHandlers())
+                .Concat(SyntheticNamedBorrowCapabilities.RegisteredHandlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

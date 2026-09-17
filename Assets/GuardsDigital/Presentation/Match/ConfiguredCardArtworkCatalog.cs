@@ -100,7 +100,8 @@ namespace GuardsDigital.Presentation.Match
                 // Swift's and Tali's before him. Written here at the same moment as the eighteen
                 // rows, for the reason those seven paragraphs give: the rows alone are what every
                 // offline tier can see, and this map is what turns them into a front on a card.
-                { "bain", "Bain" }
+                { "bain", "Bain" },
+                { "garrus", "Garrus" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -399,6 +400,7 @@ namespace GuardsDigital.Presentation.Match
                 // Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard, Swift's
                 // Backup and Cutter's Few More Steps are not among theirs.
                 .Concat(BainCardContent.DealtDefinitions)
+                .Concat(GarrusCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 
