@@ -18,13 +18,15 @@ Non-goals: executable content or mechanics.
 
 Historical evidence: [8.41 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841-inventory-garrus-completion-evidence).
 
-### [ ] 8.41a Support discarding resolved cards through the ordinary card lifecycle
+### [x] 8.41a Support discarding resolved cards through the ordinary card lifecycle
 
 Outcome: a typed optional choice can discard one owned resolved card, preserving played identity and canceling its Active effect, while round retrieval and card-text retrieval recover the resulting card correctly.
 
 Acceptance: source-state eligibility; correct chooser; stale/foreign/unresolved rejection; deterministic choice ordering; selected-card identity and discard event; played/discarded representation; turn-slot history; active-source cancellation; round and explicit retrieval; snapshot/restore and replay. Trace all existing discard producers and the future trigger integration point. Focused Core/CardState/Application checks plus enumerated lifecycle/restore regressions, T2 or higher if a durable schema changes.
 
 Non-goals: Battle Fury or dealing Garrus.
+
+Historical evidence: [8.41a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841a-resolved-card-discard-completion-evidence).
 
 ### [ ] 8.41b Complete Garrus's attack and movement vocabulary
 

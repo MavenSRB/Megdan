@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.41**.
+- Current completed milestone: **8.41a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.41a**.
+- Next proposed milestone: **8.41b**.
 
 On 2026-09-17 the user requested the next hero and selected **Garrus the Gladiator**. [Sixteenth-hero dealing](Roadmap/PHASE_8_SIXTEENTH_HERO.md) owns the authorized sequence **8.41 -> 8.41a -> 8.41b -> 8.41c -> 8.41d -> 8.41e -> 8.41f**, through inventory, required vocabulary, composition, selectable artworked integration and the permanent player-path gate. Continue sequentially without another authorization stop between those outcomes. [His rules shard](Rules/HERO_GARRUS.md) owns the nineteen-face source inventory. Other parked work and the separate package request remain outside this sequence. The older statement below that no hero follows Bain describes the route before this amendment.
 

@@ -101,11 +101,31 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "application.pending-decision-contract"
+            "card-state.resolved-discard"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "card-state.resolved-discard",
+                new MemberLocator(typeof(GuardsDigital.Core.Cards.CardLifecycleAuthority),
+                    nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority.TryDiscardResolvedCard), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(ResolvedCardDiscardTests),
+                        nameof(ResolvedCardDiscardTests.DiscardChoice_IsOwnedCanonicalAndRejectsStaleForeignOrUnresolvedCards),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.ViolatorFixture,
+                        "owner, resolved source state and stale answer"),
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(ResolvedCardDiscardTests),
+                        nameof(ResolvedCardDiscardTests.PendingDiscard_RoundTripsAndContinuesIdentically_WithPlayedDiscardInSnapshot),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture,
+                        "pending choice and played-discard snapshot continuation")
+                },
+                new[] { "card lifecycle", "owner", "continuation" },
+                "One actor-owned resolved card in the turn area becomes a played, resolved discard; " +
+                "its source Active effect cancels and existing retrieval admits the state.",
+                "Reassess for another owner's discard choice, unresolved discard, batch discard, or a new discard producer."),
             new SharedFoundationClaim(
                 "application.pending-decision-contract",
                 new MemberLocator(typeof(MatchSessionProjection),

@@ -107,6 +107,27 @@ namespace GuardsDigital.Core.Cards
                 new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile));
         }
 
+        /// <summary>p.10: discarding a resolved card changes its location, not its played history.</summary>
+        public static bool TryDiscardResolvedCard(CardInstance card)
+        {
+            if (card == null) throw new ArgumentNullException(nameof(card));
+            if (!IsResolvedCardInTurnArea(card)) return false;
+            card.ApplyState(new CardStateFacts(
+                CardLocation.DiscardPile, true, CardResolutionStatus.Resolved,
+                card.State.FaceOrientation));
+            return true;
+        }
+
+        public static bool IsResolvedCardInTurnArea(CardInstance card) =>
+            card != null && card.State.Location == CardLocation.TurnArea &&
+            card.State.HasBeenPlayed && card.State.ResolutionStatus == CardResolutionStatus.Resolved;
+
+        /// <summary>The two legal discarded shapes; an unresolved played discard is not supported.</summary>
+        public static bool IsDiscardedRestingCard(CardInstance card) =>
+            card != null && card.State.Location == CardLocation.DiscardPile &&
+            ((!card.State.HasBeenPlayed && card.State.ResolutionStatus == CardResolutionStatus.None) ||
+             (card.State.HasBeenPlayed && card.State.ResolutionStatus == CardResolutionStatus.Resolved));
+
         /// <summary>
         /// p.15's "Return this card to your deck", the first of the three transitions an upgrade moves
         /// cards through.
@@ -203,12 +224,9 @@ namespace GuardsDigital.Core.Cards
         /// Rulebook p.8's Retrieve Cards, asked of one card: is this card one the round returns to its
         /// owner's hand, and if so return it in fresh state.
         ///
-        /// Two shapes are eligible and they are the two the round can produce - a played card that
-        /// resolved, and a Defense discarded from hand without being played. Everything else is
-        /// ineligible by not being either: a card still in hand, one set aside, one in an item slot.
-        /// Face orientation is deliberately not part of either shape, because it is orthogonal to both:
-        /// a played card is revealed before it can resolve, so no resolved card is facedown, and adding
-        /// the redundant condition would let a future facedown resolution silently stop being retrieved.
+        /// Resolved played cards are eligible in the turn area or discard pile, as are unplayed
+        /// hand-discards. Hand, deck, item and unresolved states are ineligible. Face orientation
+        /// is orthogonal: either face of each eligible resting state returns to a fresh hand.
         ///
         /// Milestone 6.13 renamed this from `TryRetrieveEligibleSyntheticCard` and changed nothing else.
         /// It is the only eligibility question end-of-round retrieval asks, and the milestone's audit
@@ -221,15 +239,7 @@ namespace GuardsDigital.Core.Cards
                 throw new ArgumentNullException(nameof(card));
             }
 
-            var isResolvedPlayedCard =
-                card.State.Location == CardLocation.TurnArea &&
-                card.State.HasBeenPlayed &&
-                card.State.ResolutionStatus == CardResolutionStatus.Resolved;
-            var isDiscardedDefense =
-                card.State.Location == CardLocation.DiscardPile &&
-                !card.State.HasBeenPlayed &&
-                card.State.ResolutionStatus == CardResolutionStatus.None;
-            if (!isResolvedPlayedCard && !isDiscardedDefense)
+            if (!IsResolvedCardInTurnArea(card) && !IsDiscardedRestingCard(card))
             {
                 return false;
             }

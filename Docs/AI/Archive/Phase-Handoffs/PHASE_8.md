@@ -1708,3 +1708,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.41 | Inventoried Garrus's nineteen faces and mapped the authorized sixteenth-hero implementation sequence. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841-inventory-garrus-and-map-the-implementation-sequence). | `milestone/8.41` |
+
+## Milestone 8.41a Resolved-card discard completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.41a | Added resolved-card discard, source cancellation and played-discard retrieval with snapshot continuation. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841a-support-discarding-resolved-cards-through-the-ordinary-card-lifecycle). | `milestone/8.41a` |

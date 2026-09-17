@@ -3649,10 +3649,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 RosterCardRetrievalKind kind,
                 IReadOnlyList<CardDefinition> definitions)
             {
-                var isRetrievableDiscard =
-                    card.State.Location == CardLocation.DiscardPile &&
-                    !card.State.HasBeenPlayed &&
-                    card.State.ResolutionStatus == CardResolutionStatus.None;
+                var isRetrievableDiscard = CardLifecycleAuthority.IsDiscardedRestingCard(card);
                 if (kind == RosterCardRetrievalKind.OwnedDiscardedCard)
                     return isRetrievableDiscard;
 

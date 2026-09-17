@@ -14,7 +14,7 @@ GA-01: extraction of every page of the local second-printing rulebook finds no G
 
 GA-02: the nineteen backs form two SHA-256 groups: nine `2E01D461C34B16E0C19A3C376377A98377172B89EDBB582071F941A42AB698AA`, ten `8DB9CD48E411A49FC4FC104D14D0F80EE1B43E6847A5186E783E840E3ACE28A7`. A shared back must not be assumed.
 
-GA-03: p.10 explicitly permits discarding cards in different states and says a discarded played card remains played. The engine currently only discards from hand and retrieves clean hand-discards or resolved cards still in the turn area. Chilling Howl requires an additional legal lifecycle path, with ordinary retrieval/cancellation consumers updated coherently. Battle Fury observes the discard transition, not an action completion or a generic current-discard count.
+GA-03: p.10 explicitly permits discarding cards in different states and says a discarded played card remains played. Milestone 8.41a adds this legal lifecycle path and updates ordinary retrieval/cancellation consumers coherently; the former hand-only discard remains distinct. Battle Fury observes the discard transition, not an action completion or a generic current-discard count, and its trigger remains owned by 8.41c.
 
 GA-04: Chilling Howl says **This round**, **enemy heroes**, **in radius**, and **with a movement action**. Its live radius follows Garrus and uses the Radius icon plus items; it does not prohibit direct Move or Push. Movement restriction is evaluated at action start under the standing contract. Its source is an ordinary cancelable Active effect.
 
@@ -84,7 +84,7 @@ These are checked implementation routes, with missing pieces explicitly owned by
 
 | Printed clause | Existing contract / required delta | Owner |
 | --- | --- | --- |
-| Owned resolved-card discard | `CardLifecycleAuthority` currently lacks the transition; add typed card selection and preserve played identity, Active cancellation and retrieval | 8.41a |
+| Owned resolved-card discard | `discard-resolved-card@1` adds actor-owned selection, played identity, Active cancellation and retrieval; built vocabulary remains deferred until dealing | 8.41a |
 | +1 Attack per owned discard | Add a live discard-count member to `RosterValueQueryKind`; ordinary `RosterValueContributionDefinition` owns the bonus | 8.41b |
 | Discard present | `owned-card-present@1`, `hero` and `location=DiscardPile`; already registered | 8.41d |
 | Modal before-attack move / hero or unit target | Existing `attack-sequence@1`, nested condition and direct Move; verify pre-move feasibility and target binding | 8.41b, 8.41d |
@@ -93,7 +93,7 @@ These are checked implementation routes, with missing pieces explicitly owned by
 | Ranged unit moved closer/farther | Printed Range unit selector + direct Move `TowardActor` / `AwayFromActor`, exact distance 1 | 8.41d |
 | Repeat once/twice | Existing `RepeatAction` control node with `maximumRepeats`; fresh selection and consequence boundary each time | 8.41d |
 | Two enemy heroes in printed radius | `presence-count@1` threshold 2 with a composed printed-Radius value, presence rather than immunity-filtered targets | 8.41d |
-| Retrieve one/up to two discarded cards | `retrieve-card@1`; extend eligibility for the played-discard state at 8.41a, then compose optional repeated selection | 8.41a, 8.41d |
+| Retrieve one/up to two discarded cards | `retrieve-card@1` now admits the played-discard state; compose optional repeated selection | 8.41a, 8.41d |
 | Enemy discards if able / or is defeated | Printed Range hero selection, `synthetic-discard-chosen-card@2` reports inability, ordinary hero Defeat on that branch | 8.41d |
 | Optional self Move | Existing exact/up-to direct Move + optional control node | 8.41d |
 | Battle Fury | New resolved-card-discard timing fact and exact-card primary grant; use existing resumable trigger/grant infrastructure | 8.41c |

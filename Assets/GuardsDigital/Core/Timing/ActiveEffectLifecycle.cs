@@ -240,6 +240,30 @@ namespace GuardsDigital.Core.Timing
                 turnIndex);
         }
 
+        /// <summary>
+        /// Cancels the sources invalidated by one card's state change before the next effect node.
+        /// This visit only cancels; it cannot activate or trigger an effect and therefore needs no
+        /// cross-team trigger ordering decision. Continuous Ultimate sources are unaffected.
+        /// </summary>
+        public IReadOnlyList<ActiveEffectLifecycleEvent> CancelForSourceCardStateChange(
+            CardInstanceId sourceCardId, int roundIndex, int turnIndex)
+        {
+            if (!sourceCardId.IsDefined || roundIndex < 1 || turnIndex < 1)
+                throw new ArgumentException("Source cancellation requires a card and a live round/turn.");
+            var context = new ActiveEffectCheckpointContext(
+                TimingCheckpoint.SourceCardStateChanged, roundIndex, turnIndex,
+                sourceCardInstanceId: sourceCardId);
+            var result = new List<ActiveEffectLifecycleEvent>();
+            foreach (var effect in effects.OrderBy(value => value.CreationSequence))
+            {
+                if (effect.Phase == ActiveEffectPhase.Ended || !ShouldCancel(effect, context)) continue;
+                effect.End(context.Checkpoint);
+                result.Add(new ActiveEffectLifecycleEvent(ActiveEffectLifecycleEventKind.Cancelled,
+                    effect.Id, context.Checkpoint, roundIndex, turnIndex));
+            }
+            return result.AsReadOnly();
+        }
+
         public ActiveEffectLifecycleRestoreState CaptureRestoreState() =>
             new ActiveEffectLifecycleRestoreState(effects, continuousSources);
 
