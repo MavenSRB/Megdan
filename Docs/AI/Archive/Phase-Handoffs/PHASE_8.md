@@ -1726,3 +1726,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.41b | Source-backed Red clauses, zero-space Move/Push under the user's ruling, explicit target choice and restored continuations. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841b-complete-garruss-attack-and-movement-vocabulary). | `milestone/8.41b` |
+
+## Milestone 8.41c Resolved-discard primary trigger completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.41c | Immediate resolved-discard trigger grants the exact primary, preserving nested actions, repeats, source cancellation and restored/replayed continuations. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841c-execute-battle-fury-after-a-resolved-card-discard). | `milestone/8.41c` |

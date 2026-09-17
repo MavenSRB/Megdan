@@ -32,7 +32,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <see cref="PendingEffectInterrupt.RemainingSubjects"/> is always empty: p.18 pushes a batch
         /// at the same time, and nothing in the rules gives several markers at once.</para>
         /// </summary>
-        AfterMarkerGivenTrigger = 2
+        AfterMarkerGivenTrigger = 2,
+
+        // Subject is the discarding owner. The exact card is the completed discard outcome
+        // on InterruptedResolutionId, not a second independently persisted card identity.
+        AfterResolvedCardDiscardTrigger = 3
     }
 
     /// <summary>

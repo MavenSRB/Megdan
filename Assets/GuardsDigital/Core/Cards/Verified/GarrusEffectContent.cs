@@ -59,6 +59,22 @@ namespace GuardsDigital.Core.Cards.Verified
                     }, outputs: new[] { Output("moved", EffectValueKind.Integer) })
             });
 
+        public static EffectDefinition ResolvedDiscardPrimary(CardDefinitionId card, string revision) =>
+            new EffectDefinition(new EffectDefinitionId(card.Value + "-resolved-discard-primary"), revision,
+                Id("may-perform-primary"), new[]
+                {
+                    new EffectNodeDefinition(Id("may-perform-primary"), EffectNodeKind.Optional,
+                        EffectFailurePolicy.May, childNodeIds: new[] { Id("perform-discarded-primary") },
+                        chooser: EffectChooserRole.Actor),
+                    new EffectNodeDefinition(Id("perform-discarded-primary"), EffectNodeKind.Capability,
+                        EffectFailurePolicy.Mandatory,
+                        capability: SyntheticNamedBorrowCapabilities.BorrowNamedDiscardedPrimaryV1,
+                        inputs: new[] { EffectInputBinding.FromRole("card", EffectRoleKind.TriggeredCard,
+                            EffectValueKind.CardInstance) },
+                        outputs: new[] { Output(SyntheticBorrowedActionCapabilities.BorrowedCardOutput,
+                            EffectValueKind.CardInstance) })
+                });
+
         private static EffectNodeId Id(string value) => new EffectNodeId(value);
         private static EffectOutputBinding Output(string name, EffectValueKind kind) => new EffectOutputBinding(name, kind);
         private static EffectNodeDefinition Sequence(string id, params string[] children) =>

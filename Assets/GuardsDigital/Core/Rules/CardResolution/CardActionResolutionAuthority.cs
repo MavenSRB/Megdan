@@ -2769,11 +2769,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new InvalidOperationException("The selected card has no borrowable primary.");
 
             // Milestone 8.38d. A card text asked from inside its own resolution, so that resolution is
-            // suspended and resumed around the instance. A PERMANENT ABILITY asked from a trigger that
-            // has already run to completion, so there is nothing to suspend and nothing to come back
-            // to - the instance simply happens, and the turn finishes the card it was already
-            // finishing. Which of the two this is decided by whether a Skill frame is standing, never
-            // by the content that asked.
+            // suspended and resumed around the instance. An action-end ability normally has no
+            // parent, while an in-action discard trigger suspends the Skill it interrupted. The
+            // standing frame decides whether a parent exists; the ability identity still authorizes
+            // a trigger's exact-card grant, whose request is not a node on that parent.
             var granting = owedBorrowedActionGrantSourceId;
             var parent = skillBackend.HasPendingResolution ? skillBackend.SuspendForBorrow() : null;
             if (parent != null)
@@ -2784,7 +2783,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             owedBorrowedActionCardId = default;
             owedBorrowedActionActorId = default;
             owedBorrowedActionGrantSourceId = null;
-            grantSourceId = parent == null ? granting : null;
+            grantSourceId = granting;
             var primary = definition.ActionDefinitions.Single(value => value.Origin == ActionDefinitionOrigin.PrintedPrimary);
             resolutionId = parent == null
                 ? BorrowedResolutionIdFor(card.Id, actor)
@@ -2792,7 +2791,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     parent.CompletedOutcomes.Count + ":" + card.Id.Value);
             var offer = new ActionOffer(card.Id, definition.Reference, primary.Id, actor,
                 ActionInvocationContext.TextGranted, true, primary.AttackRange, primary.SourceCardStateTransition);
-            authorizedParentlessBorrowOffer = parent == null ? offer : (ActionOffer?)null;
+            authorizedParentlessBorrowOffer = parent == null || granting != null ? offer : (ActionOffer?)null;
             return offer;
         }
 
@@ -3813,7 +3812,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!result.Accepted || board == null ||
                 ((appliedPushes == null || appliedPushes.Count == 0) &&
                     skillBackend.StagedMinionDefeats.Count == 0 &&
-                    !skillBackend.StagedMarkerGive.IsDefined))
+                    !skillBackend.StagedMarkerGive.IsDefined && !skillBackend.StagedResolvedDiscard.IsDefined))
             {
                 return result;
             }
@@ -3822,7 +3821,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var pushes = appliedPushes ?? Array.Empty<RuleObject>();
             var complete = result.IsComplete;
             while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0 ||
-                skillBackend.StagedMarkerGive.IsDefined)
+                skillBackend.StagedMarkerGive.IsDefined || skillBackend.StagedResolvedDiscard.IsDefined)
             {
                 var interrupted = skillBackend.PendingResolution;
                 if (interrupted == null || interrupted.PendingChoice != null)
@@ -3865,7 +3864,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     (!TryStartAfterPushTrigger(interrupted, pushes, boundary, steps) &&
                         !TryStartMarkerGivenTrigger(
                             interrupted.ActorId, interrupted.ResolutionId, markerGivenTo, boundary,
-                            steps)))
+                            steps) &&
+                        !TryStartResolvedDiscardTrigger(interrupted, skillBackend.StagedResolvedDiscard,
+                            boundary, steps)))
                 {
                     var continued = skillBackend.ContinueAfterInterrupt(
                         boundary.Definitions, boundary.Instances, boundary.Participants,
@@ -4029,6 +4030,53 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 rosterState: rosterState);
+
+        /// <summary>
+        /// Rebind the exact discarded card from the interrupted operation's persisted last outcome.
+        /// </summary>
+        private CardInstanceId InterruptedDiscardedCard(PendingEffectInterrupt standing,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            var parent = skillBackend.PendingResolution;
+            if (parent == null || !parent.ResolutionId.Equals(standing.InterruptedResolutionId))
+                throw new InvalidOperationException("A discard trigger requires its suspended operation.");
+            var root = SkillCardActionStrategyBackend.FindEffectRoot(definitions, parent);
+            var discarded = ResolvedCardDiscardQuery.Requested(root, parent.CompletedOutcomes.LastOrDefault());
+            if (!discarded.IsDefined)
+                throw new InvalidOperationException("A discard trigger requires a completed resolved-card discard.");
+            return discarded;
+        }
+
+        private bool TryStartResolvedDiscardTrigger(PendingResolution interrupted,
+            CardInstanceId discarded, ActionBoundaryContext boundary, List<ResolutionStep> steps)
+        {
+            if (!discarded.IsDefined || board == null) return false;
+            var source = GuardsDigital.Core.Rules.Progression.ResolvedCardDiscardTriggerQuery.Derive(
+                GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(boundary.Definitions, boundary.Instances),
+                board, discarded, boundary.Instances);
+            if (source == null) return false;
+            if (!ContentCatalogs.TriggeredEffects.TryGet(source.Rule.TriggeredEffect.Value, out var effect))
+                throw new InvalidOperationException("The resolved-discard trigger's effect is not configured.");
+            var context = new EffectResolutionContext(effect, ContentCatalogs.Capabilities,
+                boundary.Participants, boundary.Timing, boundary.RoundIndex, boundary.TurnIndex,
+                CurrentModificationsFor(boundary, source.OwnerId),
+                EffectCardState.Of(boundary.Definitions, boundary.Instances), ActionKind.Skill,
+                components: components, heroItems: skillBackend.HeroItems, rosterState: rosterState,
+                triggeredCardId: discarded);
+            var step = EffectResolutionSession.Start(
+                new EffectResolutionId(interrupted.ResolutionId.Value + ":discard-trigger:" +
+                    interrupted.CompletedOutcomes.Count + ":" + discarded.Value),
+                source.SourceCardInstanceId, source.SourceDefinitionReference, source.Rule.EffectSourceId,
+                source.OwnerId, source.OwnerId, ActionInvocationContext.PrintedPrimary, context);
+            if (!step.Accepted) throw new InvalidOperationException("A configured discard trigger was refused.");
+            steps.AddRange(PreActionFacts(step, source.SourceCardInstanceId, source.Rule.EffectSourceId,
+                source.OwnerId, CardTextTiming.None));
+            if (step.IsComplete) return false;
+            pendingEffectInterrupt = new PendingEffectInterrupt(step.Frame,
+                EffectInterruptKind.AfterResolvedCardDiscardTrigger, RuleObject.ForHero(source.OwnerId),
+                interrupted.ResolutionId);
+            return true;
+        }
 
         /// <summary>
         /// Milestone 8.40h. Starts the trigger owed for a marker this hero has just given, and reports
@@ -4213,7 +4261,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     : default,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                triggeredCardId: standing.Kind == EffectInterruptKind.AfterResolvedCardDiscardTrigger
+                    ? InterruptedDiscardedCard(standing, boundary.Definitions) : default);
             var step = EffectResolutionSession.Answer(standing.Frame, command, context);
             if (!step.Accepted)
             {
@@ -4242,6 +4292,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             pendingEffectInterrupt = null;
             AppendRequestedHeroDefeatsFromInterrupt(step, standing.Frame, boundary, steps);
+
+            if (standing.Kind == EffectInterruptKind.AfterResolvedCardDiscardTrigger && step.BorrowRequested.IsRequested)
+            {
+                // The trigger is finished; the ordinary borrow stack now suspends the interrupted
+                // Skill, executes the exact card's primary, and resumes after the discard node.
+                RecordOwedBorrowedAction(step.BorrowRequested, standing.Frame.ActorId);
+                owedBorrowedActionGrantSourceId = standing.Frame.ActionDefinitionId.Value;
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
 
             // Milestone 8.22, finding `F-ATK-02`. The trigger was set off by a Push inside rulebook
             // p.14's card text, so what it interrupted is the rest of the page. It is handed back

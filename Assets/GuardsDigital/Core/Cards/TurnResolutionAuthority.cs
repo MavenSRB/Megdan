@@ -1379,14 +1379,17 @@ namespace GuardsDigital.Core.Cards
         /// Milestone 8.38e. The grant produced an instance that found nobody to act on, so the
         /// instance is over and the turn carries on from where it was.
         ///
-        /// <para>It returns <c>null</c> - "nothing is waiting" - rather than a result, which is the
+        /// <para>Without a parent it returns <c>null</c> - "nothing is waiting" - which is the
         /// same answer <see cref="TryStartOwedBorrowedAction"/> gives for a granted action that
         /// finished without asking anything. The grant is spent either way: rulebook p.10 gives the
         /// player the choice of whether to take a `may`, not a guarantee that taking it accomplishes
         /// something.</para>
+        /// <para>A suspended borrowing Skill must instead resume immediately, including after a
+        /// discard-trigger grant. The grant reaching nobody cannot leave its parent stranded.</para>
         /// </summary>
         private TurnResolutionResult? CompleteGrantedActionThatReachedNobody(
-            List<TurnResolutionEvent> events) => null;
+            List<TurnResolutionEvent> events) =>
+            cardActions.HasBorrowedSkillParent ? ResumeBorrowingSkill(events) : (TurnResolutionResult?)null;
 
         private TurnResolutionResult? TryStartOwedAfterActionRepeat(List<TurnResolutionEvent> events)
         {
@@ -2452,6 +2455,8 @@ namespace GuardsDigital.Core.Cards
             }
 
             var events = MaterializeSteps(answered.Steps, TurnResolutionEvent.FromTriggeredEffect);
+            var borrowed = TryStartOwedBorrowedAction(events);
+            if (borrowed.HasValue) return borrowed.Value;
             if (!answered.IsComplete)
             {
                 return TurnResolutionResult.Accept(events);
@@ -3099,7 +3104,7 @@ namespace GuardsDigital.Core.Cards
         private bool IsSelectedActionSource(CardInstanceId card, HeroId actor, ActionInvocationContext invocation) =>
             initiative.SelectedActor.IsDefined && actor.Equals(initiative.SelectedActor.ActorId) &&
             (card.Equals(initiative.SelectedActor.CardInstanceId) ||
-                (invocation == ActionInvocationContext.TextGranted &&
+                ((invocation == ActionInvocationContext.TextGranted || invocation == ActionInvocationContext.Repeated) &&
                     (cardActions.HasBorrowedSkillParent || HasRunningGrant)));
 
         /// <summary>

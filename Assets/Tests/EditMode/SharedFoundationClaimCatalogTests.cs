@@ -101,12 +101,28 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "values.owned-discard-count",
-            "movement.adjacent-enemy-hero-for-push"
+            "timing.resolved-discard-primary"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "timing.resolved-discard-primary",
+                new MemberLocator(typeof(GuardsDigital.Core.Rules.Progression.ResolvedCardDiscardTriggerQuery),
+                    nameof(GuardsDigital.Core.Rules.Progression.ResolvedCardDiscardTriggerQuery.Derive), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(ResolvedDiscardTriggerTests),
+                        nameof(ResolvedDiscardTriggerTests.WrongChooserAndStaleAcceptance_AreAtomic_AndCannotGrantTwice),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.ViolatorFixture, "chooser and replayed acceptance"),
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(ResolvedDiscardTriggerTests),
+                        nameof(ResolvedDiscardTriggerTests.CommandsReplayAndRetainedPrefixes_ReproduceEveryPauseAndOrderedEvent),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture, "nested grant, snapshot and retained-prefix replay")
+                }, new[] { "timing", "borrow", "continuation" },
+                "The successful resolved-card discard in Skill execution interrupts before the next clause; " +
+                "an on-board owner's unlocked Ultimate may grant that exact discarded primary.",
+                "Reassess for a resolved-discard producer outside Skill execution or a trigger with work after its grant."),
             new SharedFoundationClaim(
                 "movement.adjacent-enemy-hero-for-push",
                 new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities),

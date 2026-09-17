@@ -92,6 +92,8 @@ namespace GuardsDigital.Core.Timing
         /// writes into its own trigger declaration to say which moment it is watching, and the moment is
         /// produced by the handler that performed the give.</para>
         /// </summary>
-        MarkerGivenToHero = 19
+        MarkerGivenToHero = 19,
+
+        ResolvedCardDiscarded = 20
     }
 }

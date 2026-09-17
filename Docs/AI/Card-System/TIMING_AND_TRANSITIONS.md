@@ -35,6 +35,8 @@ Milestone 5.8 integrates Defense response and Attack-result comparison as durabl
 
 ## Control flow and action composition
 
+Milestone 8.41c adds the resolved-card-discard moment for Garrus's Battle Fury. The sole current producer, `discard-resolved-card@1` inside Skill execution, first commits the state transition and cancels the discarded source's Active effects, then yields its typed card outcome before the next node. `ResolvedCardDiscardTriggerQuery` admits only the on-board owner's unlocked watching Ultimate. Its optional trigger grants that exact card through `borrow-named-discarded-primary@1`; the card stays discarded. The existing interrupt frame and borrowed-Skill parent stack preserve nested grants and resume the interrupted clause, including after ordinary repeats or a granted Attack with no target. `TriggeredCard` is rebound from the interrupted frame's completed discard outcome; no second card identity or new snapshot field is stored. Existing schema v42 bytes and dealt content identities remain unchanged. These contracts stay deferred until dealing; a producer outside Skill execution or trigger text continuing after its grant requires a fresh extension check. Core retained-prefix replay is covered here; the configured Garrus Undo/player journey remains the authorized 8.41f gate.
+
 Reusable structured nodes include:
 
 - `Sequence` for exact printed order.

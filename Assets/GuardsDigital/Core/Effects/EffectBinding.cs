@@ -79,7 +79,10 @@ namespace GuardsDigital.Core.Effects
         /// hero, which is what every unresolvable binding here resolves to, and the step that reads it
         /// reports itself impossible rather than acting on nobody.</para>
         /// </summary>
-        OpposingHero = 7
+        OpposingHero = 7,
+
+        /// <summary>The exact card named by the operation that opened this trigger.</summary>
+        TriggeredCard = 8
     }
 
     /// <summary>Who owns a decision. The resolver never chooses on a player's behalf.</summary>

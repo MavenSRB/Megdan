@@ -644,6 +644,7 @@ namespace GuardsDigital.Core.Effects
                 case EffectRoleKind.OpposingHero:
                     return EffectValueKind.Hero;
                 case EffectRoleKind.SourceCard:
+                case EffectRoleKind.TriggeredCard:
                     return EffectValueKind.CardInstance;
                 default:
                     return EffectValueKind.None;

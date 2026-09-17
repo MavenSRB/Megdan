@@ -96,10 +96,10 @@ These are checked implementation routes, with missing pieces explicitly owned by
 | Retrieve one/up to two discarded cards | `retrieve-card@1` now admits the played-discard state; compose optional repeated selection | 8.41a, 8.41d |
 | Enemy discards if able / or is defeated | Printed Range hero selection, `synthetic-discard-chosen-card@2` reports inability, ordinary hero Defeat on that branch | 8.41d |
 | Optional self Move | Existing exact/up-to direct Move + optional control node | 8.41d |
-| Battle Fury | New resolved-card-discard timing fact and exact-card primary grant; use existing resumable trigger/grant infrastructure | 8.41c |
+| Battle Fury | Successful resolved-discard outcome opens an optional Ultimate interrupt; `borrow-named-discarded-primary@1` grants exactly its card through the existing suspended-Skill stack | 8.41c |
 
 ## Open verification points
 
 **GA-Q1 - answered by user-approved interpretation, 2026-09-17:** After viewing both exact card texts, the user ruled "I think yes, he can move 0." Choosing a zero-space move on Blunt Force or Send Flying while already adjacent to an eligible enemy hero satisfies `if you do` and permits that hero's Push. Declining the whole optional clause still performs neither Move nor Push. This is authority-hierarchy level 5, not an official ruling; a higher-authority clarification supersedes it. The earlier [community Garrus FAQ](https://www.cockeyedandcurious.com/goa2/heroes/garrus) lead was inconclusive: its attributed reply only referred to another discussion. This question is also indexed as Q35 in [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md).
 
-Battle Fury's interrupt placement must be established against p.17 timing and every actual discard producer before implementation; the name of an existing action trigger is insufficient evidence of suitability.
+Battle Fury runs immediately after the actual resolved-card discard, before the next printed clause. Rulebook p.17 cancels the discarded source's Active effect at the state change, before the trigger reads state; the exact card text supplies the trigger, not the ordinary action-ended checkpoint. The only current executable resolved-discard producer is the typed Skill capability. Hand/Defense discard and state-copy operations do not emit that moment. Configured-card composition and the player gate remain 8.41d-f.

@@ -119,8 +119,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 if (outcome.ResultKind != EffectExecutionResultKind.Applied ||
                     !definition.TryGetNode(outcome.NodeId, out var node) ||
                     node.Kind != EffectNodeKind.Capability ||
-                    !node.Capability.Equals(
-                        SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1))
+                    (!node.Capability.Equals(SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1) &&
+                     !node.Capability.Equals(SyntheticNamedBorrowCapabilities.BorrowNamedDiscardedPrimaryV1)))
                 {
                     continue;
                 }

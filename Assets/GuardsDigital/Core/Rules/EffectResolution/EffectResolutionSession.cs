@@ -114,9 +114,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 null,
             bool placedActingHero = false,
             BorrowRequest borrowRequested = default,
-            HeroId markerGivenTo = default)
+            HeroId markerGivenTo = default,
+            CardInstanceId resolvedCardDiscarded = default)
         {
             MarkerGivenTo = markerGivenTo;
+            ResolvedCardDiscarded = resolvedCardDiscarded;
             BorrowRequested = borrowRequested;
             AppliedPushes =
                 new ReadOnlyCollection<GuardsDigital.Core.Rules.Modifications.RuleObject>(
@@ -251,6 +253,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// stopping is all it does about it.</para>
         /// </summary>
         public HeroId MarkerGivenTo { get; }
+        public CardInstanceId ResolvedCardDiscarded { get; }
 
         /// <summary>
         /// Milestone 8.35z27. The plan a completed modal Attack's step-1 frame named -
@@ -299,12 +302,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 null,
             bool placedActingHero = false,
             BorrowRequest borrowRequested = default,
-            HeroId markerGivenTo = default) =>
+            HeroId markerGivenTo = default,
+            CardInstanceId resolvedCardDiscarded = default) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
                 boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences,
-                placedActingHero, borrowRequested, markerGivenTo);
+                placedActingHero, borrowRequested, markerGivenTo, resolvedCardDiscarded);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -346,8 +350,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool repeatIsUnavailable = false,
             Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
             bool stagesMinionDefeats = false,
-            bool stagesBorrowedActions = false)
+            bool stagesBorrowedActions = false,
+            bool watchesResolvedDiscards = false,
+            CardInstanceId triggeredCardId = default)
         {
+            WatchesResolvedDiscards = watchesResolvedDiscards;
+            TriggeredCardId = triggeredCardId;
             WatchesAppliedPushes = watchesAppliedPushes;
             WatchesMarkerGives = watchesMarkerGives;
             StagesMinionDefeats = stagesMinionDefeats;
@@ -447,6 +455,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// milestone, which is what keeps every Tigerclaw Poison give in this build byte-identical.</para>
         /// </summary>
         public bool WatchesMarkerGives { get; }
+        public bool WatchesResolvedDiscards { get; }
+        public CardInstanceId TriggeredCardId { get; }
         public bool StagesMinionDefeats { get; }
         public bool StagesBorrowedActions { get; }
 
@@ -1395,6 +1405,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             markerGivenTo: result.MarkerGivenTo);
                     }
 
+                    if (context.WatchesResolvedDiscards)
+                    {
+                        var discarded = ResolvedCardDiscardQuery.Requested(context.Definition,
+                            outcomes[outcomes.Count - 1]);
+                        if (discarded.IsDefined)
+                            return EffectResolutionStepResult.Accept(
+                                Rebuild(frame, continuation, outcomes, choices), false, events,
+                                resolvedCardDiscarded: discarded);
+                    }
+
                     return null;
             }
         }
@@ -1516,7 +1536,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return default;
             }
 
-            var inputs = ResolveInputBindings(node, frame, outcomes, context.OpposingHeroId);
+            var inputs = ResolveInputBindings(node, frame, outcomes, context.OpposingHeroId, context.TriggeredCardId);
             return inputs.TryGetValue(EffectNodeDefinition.ChooserParameterName, out var value) &&
                 value.Kind == EffectValueKind.Hero
                     ? value.HeroId
@@ -1585,7 +1605,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IReadOnlyList<EffectNodeOutcome> outcomes,
             EffectResolutionContext context) =>
             BuildCapabilityContext(
-                frame, node, outcomes, context, ResolveInputBindings(node, frame, outcomes, context.OpposingHeroId), null);
+                frame, node, outcomes, context, ResolveInputBindings(node, frame, outcomes, context.OpposingHeroId, context.TriggeredCardId), null);
 
         /// <summary>
         /// The same context, with some inputs answered rather than resolved.
@@ -1690,13 +1710,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectNodeDefinition node,
             PendingResolution frame,
             IReadOnlyList<EffectNodeOutcome> outcomes,
-            HeroId opposingHeroId = default)
+            HeroId opposingHeroId = default,
+            CardInstanceId triggeredCardId = default)
         {
             var inputs = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
             foreach (var binding in node.Inputs)
             {
                 inputs[binding.ParameterName] =
-                    ResolveInput(binding, frame, outcomes, opposingHeroId);
+                    ResolveInput(binding, frame, outcomes, opposingHeroId, triggeredCardId);
             }
 
             return inputs;
@@ -1706,7 +1727,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectInputBinding binding,
             PendingResolution frame,
             IReadOnlyList<EffectNodeOutcome> outcomes,
-            HeroId opposingHeroId)
+            HeroId opposingHeroId,
+            CardInstanceId triggeredCardId)
         {
             switch (binding.SourceKind)
             {
@@ -1723,6 +1745,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             return EffectValue.Hero(frame.ControllerId);
                         case EffectRoleKind.SourceCard:
                             return EffectValue.Card(frame.SourceCardInstanceId);
+                        case EffectRoleKind.TriggeredCard:
+                            return triggeredCardId.IsDefined ? EffectValue.Card(triggeredCardId) : default;
                         case EffectRoleKind.OpposingHero:
                             // An undefined hero where the frame has none, rather than a throw: this is
                             // a binding like any other, and the step that reads it reports itself

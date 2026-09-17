@@ -157,8 +157,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(7),
-                "Five at milestone 8.38c2, six since 8.39f1, seven since 8.40h. A new condition is " +
+            Assert.That(conditions.Length, Is.EqualTo(8),
+                "Eight since 8.41c adds the distinct resolved-discard operation. A new condition is " +
                 "classified in UltimateTriggeredEffectSourceQuery and proved in its own fixture.");
             Assert.That(
                 conditions, Does.Contain(UltimateTriggerCondition.AfterControllerResolvesBasicCard));

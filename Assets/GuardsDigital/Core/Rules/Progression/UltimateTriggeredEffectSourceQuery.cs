@@ -212,6 +212,7 @@ namespace GuardsDigital.Core.Rules.Progression
                 // off the give's own report; `ContinuousTriggeredEffectSource` would refuse the
                 // checkpoint such a rule names, which is the second guard keeping the two apart.
                 case UltimateTriggerCondition.AfterControllerGivesMarker:
+                case UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded:
                     return false;
                 default:
                     return false;

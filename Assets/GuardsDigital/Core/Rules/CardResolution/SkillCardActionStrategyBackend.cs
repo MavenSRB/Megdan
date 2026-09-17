@@ -105,6 +105,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// Defeats, and both of them describe the one node the frame is standing after.</para>
         /// </summary>
         internal HeroId StagedMarkerGive { get; private set; }
+        internal CardInstanceId StagedResolvedDiscard { get; private set; }
 
         /// <summary>
         /// Milestone 8.19c1. Whether any unlocked Ultimate in these cards declares an
@@ -197,7 +198,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -291,7 +292,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -451,7 +452,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -539,7 +540,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 effectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, materializedInstances), ActionKind.Skill,
                 components: components, heroItems: heroItems, rosterState: rosterState,
-                stagesMinionDefeats: true, stagesBorrowedActions: true,
+                stagesMinionDefeats: true, stagesBorrowedActions: true, watchesResolvedDiscards: true,
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
@@ -658,6 +659,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // completed step has none by construction; saying so keeps the stale report of a previous
             // call from being read as this one's.
             StagedMarkerGive = step.IsComplete ? default : step.MarkerGivenTo;
+            StagedResolvedDiscard = step.IsComplete ? default : step.ResolvedCardDiscarded;
 
             var steps = new List<ResolutionStep>();
             if (isStart)

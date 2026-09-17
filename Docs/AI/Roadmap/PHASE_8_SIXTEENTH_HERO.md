@@ -44,13 +44,15 @@ Resumed after the user's 2026-09-17 GA-Q1 answer: choosing zero spaces while adj
 
 Historical evidence: [8.41b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841b-garrus-attack-and-movement-completion-evidence).
 
-### [ ] 8.41c Execute Battle Fury after a resolved-card discard
+### [x] 8.41c Execute Battle Fury after a resolved-card discard
 
 Outcome: an unlocked Ultimate belonging to an on-board hero observes an actual resolved-card discard and optionally grants that exact card's primary action, then resumes the interrupted operation.
 
 Acceptance: trigger exactly once per actual transition; no hand-card/Defense discard or state-swap false positive; owner and on-board checks; correct card identity; source stays discarded; full printed primary and ordinary repeats; nested choices and timing order; decline/impossible action; source cancellation; deterministic events, snapshot restore and retained-prefix Undo; exercise all reachable resolved-discard producers. Use the established grant/borrow and timing systems without UI resolution. T2 minimum, T3 if persisted schema/infrastructure scope requires it.
 
 Non-goals: changes to existing Ultimate meanings.
+
+Historical evidence: [8.41c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841c-resolved-discard-primary-trigger-completion-evidence).
 
 ### [ ] 8.41d Compose Garrus's eighteen playable faces
 

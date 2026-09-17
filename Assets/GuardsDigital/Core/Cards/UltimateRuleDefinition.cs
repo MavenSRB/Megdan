@@ -146,7 +146,9 @@ namespace GuardsDigital.Core.Cards
         /// that hero's give, read exactly as <see cref="AfterPushTrigger"/> reads "if YOU push" on
         /// Sabina's. BA-D5.</para>
         /// </summary>
-        AfterControllerGivesMarker = 7
+        AfterControllerGivesMarker = 7,
+
+        AfterOwnedResolvedCardDiscarded = 8
     }
 
     /// <summary>
@@ -395,6 +397,8 @@ namespace GuardsDigital.Core.Cards
         private static TimingCheckpoint WatchedMomentOf(UltimateTriggerCondition condition) =>
             condition == UltimateTriggerCondition.AfterControllerGivesMarker
                 ? TimingCheckpoint.MarkerGivenToHero
+                : condition == UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded
+                    ? TimingCheckpoint.ResolvedCardDiscarded
                 : TimingCheckpoint.ActionEnded;
 
         public static UltimateRuleDefinition PermanentDeclaration(string ruleId, string ruleKind) =>

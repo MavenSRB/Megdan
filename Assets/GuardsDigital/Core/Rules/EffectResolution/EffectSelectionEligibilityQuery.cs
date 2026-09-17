@@ -322,7 +322,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
 
             var inputs = EffectResolutionSession.ResolveInputBindings(
-                consumer, frame, outcomes, context.OpposingHeroId);
+                consumer, frame, outcomes, context.OpposingHeroId, context.TriggeredCardId);
             var substituted = new HashSet<string>(
                 consumed.Select(binding => binding.ParameterName), StringComparer.Ordinal);
             var undecidable = handler.Schema.Parameters
