@@ -1774,3 +1774,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.42b | Player trays remain owner-only; plaque clicks select the permitted hero and portrait hover reuses the pick card, with bounded previews and preserved Director/online/reconnect behavior. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842b-keep-player-tray-navigation-private-and-connect-hero-identity-controls). | `milestone/8.42b` |
+
+## Milestone 8.43 Widget inventory completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.43 | Inventoried nineteen Widget faces and mapped the authorized implementation sequence, with Pyro component identity, paired-movement ruling and explicit remaining source gates. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843-inventory-widget-and-map-the-implementation-sequence). | `milestone/8.43` |

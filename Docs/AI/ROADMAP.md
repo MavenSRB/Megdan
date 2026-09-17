@@ -76,6 +76,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Fourteenth-hero dealing: Cutter the Sky Pirate](Roadmap/PHASE_8_FOURTEENTH_HERO.md)
 - [Phase 8 - Fifteenth-hero dealing: Bain the Bounty Hunter](Roadmap/PHASE_8_FIFTEENTH_HERO.md)
 - [Phase 8 - Sixteenth-hero dealing: Garrus the Gladiator](Roadmap/PHASE_8_SIXTEENTH_HERO.md)
+- [Phase 8 - Seventeenth-hero dealing: Widget and Pyro](Roadmap/PHASE_8_SEVENTEENTH_HERO.md)
 - [Phase 8 - Playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)
 - [Phase 8 - Six-hero roster re-baseline and shared foundations](Roadmap/PHASE_8_ROSTER_REBASE.md)
 - [Phase 8 - Roster-complete stabilization and corrective route](Roadmap/PHASE_8_STABILIZATION.md)

@@ -14,13 +14,15 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.42b**.
+- Current completed milestone: **8.43**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z71**.
+- Next proposed milestone: **8.43a**.
+
+On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
 
 The user approved the 2026-09-17 playtest refinements **8.42 -> 8.42a -> 8.42b**: exclude the attacked unit from Shotgun/Super-Shotgun's adjacent-hero discard, show revealed card-plus-item Initiative in the badge, and keep player trays on their own hero when another token is clicked. [Playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns the checks; return to proposed cleanup 8.35z71 afterward.
 
-The approved refinement sequence is exhausted: player trays stay on the admitted hero, own-plaque clicks select that hero, and portrait hover shows the existing pick card. Director inspection and public rail history remain. The user approved 8.42a's disposable local build-and-launch check on 2026-09-18; no package, upload or further implementation is authorized.
+The approved refinement sequence is exhausted: player trays stay on the admitted hero, own-plaque clicks select that hero, and portrait hover shows the existing pick card. Director inspection and public rail history remain. The user approved 8.42a's disposable local build-and-launch check on 2026-09-18; that approval includes no package, upload or further refinement implementation.
 
 On 2026-09-17 the user requested the next hero and selected **Garrus the Gladiator**. [Sixteenth-hero dealing](Roadmap/PHASE_8_SIXTEENTH_HERO.md) owns the completed authorized sequence **8.41 -> 8.41a -> 8.41b -> 8.41c -> 8.41d -> 8.41e -> 8.41f**, through inventory, required vocabulary, composition, selectable artworked integration and the permanent player-path gate. That authorization is now exhausted; the next route returns to proposed cleanup item 8.35z71 for user direction. [His rules shard](Rules/HERO_GARRUS.md) owns the nineteen-face source inventory. Other parked work and the separate package request remain outside this sequence. The older statement below that no hero follows Bain describes the route before this amendment.
 
