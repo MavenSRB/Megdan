@@ -226,9 +226,8 @@ namespace GuardsDigital.Presentation.Match
         ///
         /// For the Director it defaults to the hero the match is waiting on - the one still owing a
         /// commitment, or the one resolving a turn. For a seat it defaults to that seat's home hero,
-        /// whose private hand is the one the projection actually carries. A map selection pins another
-        /// hero, and the pin lasts exactly as long as the currently awaited hero does; when the match
-        /// moves on, the Director follows the new wait and a seat returns to its own tray.
+        /// whose private hand is the one the projection actually carries. Only the Director can pin
+        /// another hero, until the awaited hero changes. A player seat always keeps its own tray.
         ///
         /// It is local presentation state throughout. Nothing here submits a command or reads back into
         /// authority, which is why <see cref="SelectViewedHero"/> can be answered from a board click that
@@ -246,7 +245,7 @@ namespace GuardsDigital.Presentation.Match
         public bool SelectViewedHero(HeroId heroId)
         {
             var projection = session.Projection;
-            if (!heroId.IsDefined ||
+            if (!heroId.IsDefined || (!session.IsDirector && !heroId.Equals(homeHeroId)) ||
                 !projection.Setup.Heroes.Any(hero => hero.HeroId.Equals(heroId)))
             {
                 return false;
@@ -286,6 +285,13 @@ namespace GuardsDigital.Presentation.Match
 
         private HeroId Resolve(IMatchReadModel projection)
         {
+            if (!session.IsDirector)
+            {
+                pinnedHeroId = default;
+                pinnedAgainstAwaitedHeroId = default;
+                return homeHeroId;
+            }
+
             var awaited = Awaited(projection);
             if (pinnedHeroId.IsDefined && pinnedAgainstAwaitedHeroId.Equals(awaited))
             {
@@ -341,6 +347,8 @@ namespace GuardsDigital.Presentation.Match
                 lastViewModel == null)
             {
                 var hands = projection.Setup.Heroes
+                    // An unbound player renders no fallback hand; binding supplies the admitted hero.
+                    .Where(hero => session.IsDirector || hero.HeroId.Equals(homeHeroId))
                     .OrderBy(hero => hero.TeamSide)
                     .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
                     .Select(hero =>

@@ -24,10 +24,12 @@ On 2026-09-18 the user approved `Tools/Invoke-PlayerBuildSmoke.ps1` for the upda
 
 Historical evidence: [checkpoint](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842a-initiative-badge-build-gate-checkpoint); [completion](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842a-initiative-badge-completion-evidence).
 
-### [ ] 8.42b Keep player tray navigation private and connect hero identity controls
+### [x] 8.42b Keep player tray navigation private and connect hero identity controls
 
 Outcome: clicking another player's board token cannot show that player's card tray in a player seat; the seat's own tray remains selected. Clicking the player's own hero plaque selects that hero. Hovering a plaque's hero portrait shows its existing hero-picker profile card. Director-only inspection is preserved. The user explicitly added the own-plaque selection and portrait-preview requirements on 2026-09-17.
 
 Acceptance: actual board clicks on allied and enemy tokens from a player seat keep the owner's tray, hide all foreign tray cards and preserve own card actions; own-plaque click selects the local hero; profile hover uses the correct existing artwork, stays on-screen and dismisses cleanly; private projection boundaries and reconnect/refresh remain intact; Director pinning still works. Focused presenter and affected real-input/online Play Mode checks plus visual inspection (T2).
 
 Non-goals: removing public hero-rail history or hover information, changing game visibility rules, or disabling Director tools.
+
+Historical evidence: [8.42b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842b-hero-tray-interactions-completion-evidence).

@@ -180,6 +180,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(root.Runtime.ReadModel, Is.TypeOf<NetworkMatchReadModel>(),
                 "Playing as host still reads the same owner projection as a joining player.");
+            AssertPlayerTrayStaysHome(root.Runtime);
             Assert.That(root.Runtime.ReadModel.Cards.All(card =>
                 card.OwnerId.Equals(root.Runtime.Seat.HeroId) ||
                 card.State.Location != GuardsDigital.Core.Cards.CardLocation.Hand), Is.True);
@@ -224,6 +225,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(root.Runtime.ReadModel, Is.TypeOf<NetworkMatchReadModel>());
             Assert.That(root.Runtime.Seat.Id, Is.EqualTo(client.TargetSeat));
+            AssertPlayerTrayStaysHome(root.Runtime);
             Assert.That(root.Runtime.ReadModel.Cards.All(card =>
                 card.OwnerId.Equals(root.Runtime.Seat.HeroId) ||
                 card.State.Location != GuardsDigital.Core.Cards.CardLocation.Hand), Is.True);
@@ -320,6 +322,7 @@ namespace GuardsDigital.Tests.PlayMode
                 ?.Invoke(lobby, null);
             Assert.That(root.Runtime.Seat.Id, Is.EqualTo(replacement.TargetSeat),
                 "A later join must bind its own seat rather than retaining the departed one.");
+            AssertPlayerTrayStaysHome(root.Runtime);
             Assert.That(root.Runtime.ReadModel.IsInputEnabled, Is.True);
             Assert.That(root.Runtime.ReadModel.Cards.All(value =>
                     value.OwnerId.Equals(root.Runtime.Seat.HeroId) ||
@@ -331,6 +334,18 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(root.Runtime.ReadModel.DecisionContract, Is.Null);
             Assert.That(root.Runtime.ReadModel.AvailableTurnActions, Is.Empty);
             Assert.That(root.Runtime.ReadModel.TeamAgreement, Is.Null);
+        }
+
+        private static void AssertPlayerTrayStaysHome(ConfiguredMatchSceneRuntime runtime)
+        {
+            var version = runtime.ReadModel.Version;
+            foreach (var hero in runtime.Setup.Heroes.Where(value => !value.HeroId.Equals(runtime.Seat.HeroId)))
+                Assert.That(runtime.SelectViewedHero(hero.HeroId), Is.False);
+            runtime.RefreshAll();
+            Assert.That(runtime.ViewedHeroId, Is.EqualTo(runtime.Seat.HeroId));
+            Assert.That(runtime.HandsView.Model.Hands.Select(hand => hand.HeroId),
+                Is.EqualTo(new[] { runtime.Seat.HeroId }));
+            Assert.That(runtime.ReadModel.Version, Is.EqualTo(version));
         }
     }
 }

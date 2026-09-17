@@ -564,22 +564,22 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(model.RemovalPreventionPrompt, Is.Null);
 
                 var hands = new CapturingHandsView();
-                new DirectorHandsPresenter(client, hands).Refresh();
-                var projectedOpponentHand = client.Projection.Cards
-                    .Where(card => !card.OwnerId.Equals(seat.HeroId) &&
+                new DirectorHandsPresenter(client, hands, seat.HeroId).Refresh();
+                var projectedOwnHand = client.Projection.Cards
+                    .Where(card => card.OwnerId.Equals(seat.HeroId) &&
                         card.State.Location == CardLocation.Hand)
                     .Select(card => card.Id)
                     .OrderBy(id => id.Value)
                     .ToArray();
-                var renderedOpponentHand = hands.Model.Hands
-                    .Where(hand => !hand.HeroId.Equals(seat.HeroId))
+                var renderedOwnHand = hands.Model.Hands
+                    .Where(hand => hand.HeroId.Equals(seat.HeroId))
                     .SelectMany(hand => hand.Cards)
                     .Select(card => card.Id)
                     .OrderBy(id => id.Value)
                     .ToArray();
-                CollectionAssert.AreEqual(projectedOpponentHand, renderedOpponentHand,
-                    "The completed tray may show cards whose exact identity is already public, " +
-                    "but it must never invent another card beyond the seat projection.");
+                CollectionAssert.AreEqual(projectedOwnHand, renderedOwnHand);
+                Assert.That(hands.Model.Hands.All(hand => hand.HeroId.Equals(seat.HeroId)), Is.True,
+                    "Even after the match, a player tray shows only its owner, not public foreign cards.");
             }
 
             Assert.That(statuses.Distinct().Count(), Is.EqualTo(1),
@@ -698,12 +698,62 @@ namespace GuardsDigital.Tests.EditMode
                 Is.False, "This seat's own projection withholds another hero's hand entirely.");
 
             var view = new CapturingHandsView();
-            var presenter = new DirectorHandsPresenter(client, view);
-            presenter.SelectViewedHero(other.HeroId);
+            var presenter = new DirectorHandsPresenter(client, view, seat.HeroId);
+            presenter.Refresh();
+            Assert.That(presenter.SelectViewedHero(other.HeroId), Is.False);
+            Assert.That(view.Model.ViewedHand.HeroId, Is.EqualTo(seat.HeroId));
+            Assert.That(view.Model.Hands.SelectMany(hand => hand.TrayCards)
+                .All(card => client.Projection.Cards.Single(value => value.Id.Equals(card.CardInstanceId))
+                    .OwnerId.Equals(seat.HeroId)), Is.True);
+        }
 
-            Assert.That(view.Model.ViewedHand.TrayCards, Is.Empty,
-                "So there is nothing at all here that could carry a false card-scope shine, even " +
-                "though rulebook p.7 has every hero - this one included - owing a commitment now.");
+        [TestCase(false)]
+        [TestCase(true)]
+        public void PlayerTrayRejectsEveryForeignHero_EvenWhenTheirCardsArePublic(bool revealed)
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            if (revealed)
+                OwnerScopedProjectionTests.DriveThroughSeats(host, 100,
+                    projection => projection.Phase != RoundResolutionPhase.AwaitingCommitments);
+
+            foreach (var seat in host.Seats.Seats)
+            {
+                var client = new SeatMatchClient(host.ClientForSeat(seat.Id));
+                if (revealed)
+                    Assert.That(client.Projection.Cards.Any(card =>
+                        !card.OwnerId.Equals(seat.HeroId) && card.State.Location == CardLocation.TurnArea),
+                        Is.True, "Exercise visible foreign cards, not only hidden hands.");
+                var view = new CapturingHandsView();
+                var presenter = new DirectorHandsPresenter(client, view, seat.HeroId);
+                presenter.Refresh();
+                var version = host.Version;
+                foreach (var other in host.Seats.Seats.Where(value => !value.Id.Equals(seat.Id)))
+                {
+                    Assert.That(presenter.SelectViewedHero(other.HeroId), Is.False);
+                    presenter.Refresh();
+                    Assert.That(presenter.ViewedHeroId, Is.EqualTo(seat.HeroId));
+                    Assert.That(view.Model.ViewedHand.HeroId, Is.EqualTo(seat.HeroId));
+                    Assert.That(view.Model.ViewedHand.TrayCards, Is.Not.Empty);
+                    Assert.That(view.Model.Hands.Select(hand => hand.HeroId),
+                        Is.EqualTo(new[] { seat.HeroId }));
+                }
+                Assert.That(presenter.SelectViewedHero(seat.HeroId), Is.True);
+                Assert.That(host.Version, Is.EqualTo(version), "Navigation submits no command.");
+            }
+        }
+
+        [Test]
+        public void AnUnboundPlayerTrayShowsNoFallbackHero_UntilItsSeatIsBound()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            var seat = host.Seats.Seats[0];
+            var view = new CapturingHandsView();
+            var presenter = new DirectorHandsPresenter(new SeatMatchClient(host.ClientForSeat(seat.Id)), view);
+            presenter.Refresh();
+            Assert.That(view.Model.ViewedHand, Is.Null);
+            Assert.That(presenter.SelectViewedHero(seat.HeroId), Is.False);
+            Assert.That(presenter.SetHomeHero(seat.HeroId), Is.True);
+            Assert.That(view.Model.ViewedHand.HeroId, Is.EqualTo(seat.HeroId));
         }
 
         /// <summary>

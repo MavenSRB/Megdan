@@ -1768,3 +1768,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | Milestone | Outcome | Evidence commit |
 | --- | --- | --- |
 | 8.42a | Closed the approved disposable Windows build-and-launch gate for the revealed card-plus-item Initiative badge and synchronized Swift artwork. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842a-show-total-revealed-initiative-in-the-hero-rail). | `milestone/8.42a` |
+
+## Milestone 8.42b hero-tray interactions completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.42b | Player trays remain owner-only; plaque clicks select the permitted hero and portrait hover reuses the pick card, with bounded previews and preserved Director/online/reconnect behavior. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842b-keep-player-tray-navigation-private-and-connect-hero-identity-controls). | `milestone/8.42b` |

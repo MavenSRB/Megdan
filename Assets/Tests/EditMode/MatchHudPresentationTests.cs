@@ -1611,7 +1611,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
-        // The viewed hero: the map is the only control, and the tray follows what the match is waiting on
+        // The Director's viewed hero: map/plaque selection pins it; otherwise it follows the match's wait.
         // -------------------------------------------------------------------------------------------
 
         [Test]

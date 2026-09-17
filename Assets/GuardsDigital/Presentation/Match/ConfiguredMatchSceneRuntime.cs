@@ -377,6 +377,7 @@ namespace GuardsDigital.Presentation.Match
             {
                 HeroOverviewsView.HeroHighlighted += heroId =>
                     BoardView.SetHoveredHero(heroId);
+                HeroOverviewsView.HeroSelected += heroId => SelectViewedHero(heroId);
             }
             MinionChoiceView.CandidateHighlighted += candidate =>
             {

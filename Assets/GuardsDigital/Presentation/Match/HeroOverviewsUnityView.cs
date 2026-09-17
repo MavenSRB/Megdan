@@ -6,6 +6,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -75,6 +76,10 @@ namespace GuardsDigital.Presentation.Match
                 ColumnGeometryChanged?.Invoke());
             blueColumn.RegisterCallback<GeometryChangedEvent>(_ =>
                 ColumnGeometryChanged?.Invoke());
+            Root.RegisterCallback<GeometryChangedEvent>(_ =>
+            {
+                if (highlighted != null) PlacePreview(highlighted);
+            });
         }
 
         public VisualElement Root { get; }
@@ -127,6 +132,7 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Milestone 8.11b: the pointed-at discard icon, on the terms of the two above.</summary>
         public event Action<TrayCardViewModel> DiscardCardHighlighted;
         public event Action<HeroId> HeroHighlighted;
+        public event Action<HeroId> HeroSelected;
 
         /// <summary>
         /// Raised after either rail column resolves a new live bound. The configured HUD uses Red's
@@ -221,14 +227,16 @@ namespace GuardsDigital.Presentation.Match
             highlighted = model;
             preview.Clear();
             var card = CardOf(model);
-            if (card == null)
+            var face = model is HeroOverviewViewModel hero
+                ? BuildHeroProfile(hero)
+                : card == null ? null : DirectorHandsUnityView.BuildStandaloneCard(card);
+            if (face == null)
             {
                 highlighted = null;
                 preview.style.display = DisplayStyle.None;
             }
             else
             {
-                var face = DirectorHandsUnityView.BuildStandaloneCard(card);
                 DirectorHandsUnityView.IgnorePickingRecursively(face);
                 preview.Add(face);
                 preview.style.display = DisplayStyle.Flex;
@@ -265,6 +273,24 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
+        private static VisualElement BuildHeroProfile(HeroOverviewViewModel hero)
+        {
+            // A staged/mirrored hero's instance id can differ from its registered content identity.
+            var registered = RegisteredHeroRoster.ForThisBuild.FirstOrDefault(value =>
+                value.ContentId.Equals(hero.ContentId));
+            if (string.IsNullOrEmpty(registered.HeroIdValue)) return null;
+            var texture = Resources.Load<Texture2D>("Private/HeroSelection/" + registered.HeroIdValue);
+            if (texture == null) return null; // Private artwork is optional in a source-only checkout.
+            return new Image
+            {
+                name = "gd-hero-profile-preview",
+                image = texture,
+                scaleMode = ScaleMode.ScaleToFit,
+                tooltip = hero.PortraitAssistiveLabel,
+                pickingMode = PickingMode.Ignore
+            };
+        }
+
         /// <summary>
         /// Puts the revealed card beside the rail it belongs to and inside the region the rails occupy:
         /// out from the left rail, in from the right one, and never off the top or bottom.
@@ -280,6 +306,14 @@ namespace GuardsDigital.Presentation.Match
             var anchor = element.worldBound;
             var height = Root.resolvedStyle.height;
             var width = Root.resolvedStyle.width;
+            if (face is Image profile && model is HeroOverviewViewModel && profile.image != null)
+            {
+                var aspect = (float)profile.image.width / profile.image.height;
+                var profileWidth = Mathf.Max(0f,
+                    Mathf.Min(744f, width - 16f, (height - 16f) * aspect));
+                profile.style.width = profileWidth;
+                profile.style.height = profileWidth / aspect;
+            }
             var faceWidth = face == null
                 ? CardFootprint.Width
                 : face.style.width.value.value;
@@ -290,7 +324,7 @@ namespace GuardsDigital.Presentation.Match
             var left = onLeft
                 ? anchor.xMax + 10f
                 : anchor.xMin - faceWidth - 10f;
-            preview.style.left = Mathf.Max(0f, left);
+            preview.style.left = Mathf.Clamp(left, 0f, Mathf.Max(0f, width - faceWidth));
             preview.style.top = Mathf.Max(
                 0f,
                 Mathf.Min(
@@ -345,6 +379,7 @@ namespace GuardsDigital.Presentation.Match
                     hero.IsViewed ? MatchHudTheme.SelectedOutline : new Color(0f, 0f, 0f, 0f));
                 HudElements.OnPointedAt(rail, pointedAt =>
                     ForwardHeroHighlight(pointedAt ? hero.HeroId : default));
+                rail.AddManipulator(new Clickable(() => HeroSelected?.Invoke(hero.HeroId)));
                 column.Add(rail);
             }
 
@@ -970,7 +1005,7 @@ namespace GuardsDigital.Presentation.Match
         /// what carries the identity. Falling back to the initial would keep the surface this milestone
         /// exists to replace alive in the tracked project.</para>
         /// </summary>
-        private static VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
+        private VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
         {
             var medallion = new VisualElement { name = "gd-hero-medallion" };
             medallion.style.width = HeroMedallionSize;
@@ -1031,6 +1066,8 @@ namespace GuardsDigital.Presentation.Match
             icon.tooltip = hero.PortraitAssistiveLabel;
             medallion.tooltip = hero.PortraitAssistiveLabel;
             medallion.Add(icon);
+            revealAnchors.Add(hero, medallion);
+            HudElements.OnPointedAt(medallion, pointedAt => SetHighlight(pointedAt ? hero : null));
             return medallion;
         }
 
