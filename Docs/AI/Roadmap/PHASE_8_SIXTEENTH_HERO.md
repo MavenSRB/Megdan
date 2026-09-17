@@ -28,13 +28,17 @@ Non-goals: Battle Fury or dealing Garrus.
 
 Historical evidence: [8.41a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841a-resolved-card-discard-completion-evidence).
 
-### [ ] 8.41b Complete Garrus's attack and movement vocabulary
+### [!] 8.41b Complete Garrus's attack and movement vocabulary
 
 Outcome: Angry Strike can count the acting hero's discarded cards, and the Red cards can express their exact modal pre-move and optional move-adjacent-then-push clauses using verified generic contracts.
 
-Acceptance: live discard count including played discards and facedown cards; owner isolation; Attack item composition; conditional before-attack move followed by hero-only targeting versus ordinary unit targeting; optional positive-distance move ending beside a named enemy hero followed by that hero's three-space obstacle-ignoring Push; zero/decline and impossible paths; immunity/Heavy; persisted continuation. Probe existing selection/movement contracts first and extend only demonstrated missing vocabulary. Focused and directly affected T2 checks; enumerate the shared-foundation claims.
+Acceptance: live discard count including played discards and facedown cards; owner isolation; Attack item composition; conditional before-attack move followed by hero-only targeting versus ordinary unit targeting; optional move ending beside a named enemy hero followed by that hero's three-space obstacle-ignoring Push, with the zero-space reading resolved by GA-Q1 before implementation; zero/decline and impossible paths; immunity/Heavy; persisted continuation. Probe existing selection/movement contracts first and extend only demonstrated missing vocabulary. Focused and directly affected T2 checks; enumerate the shared-foundation claims.
 
 Non-goals: new content registration or unrelated movement refactors.
+
+Paused checkpoint: `checkpoint/8.41b-rule-gate` preserves the implemented live owned-discard Attack query and its focused evidence; it is not milestone completion. **Prerequisite:** resolve [GA-Q1](../Rules/HERO_GARRUS.md#open-verification-points) using an official source or an explicit user-approved interpretation. Remaining closing checks are the modal pre-move/target path, named-hero post-move Push, distance/decline/impossible/immunity cases, and persisted movement continuation. Existing direct Move supports up-to zero as an applied no-op; existing charge-line selection requires a positive straight route and publishes only an endpoint, so neither alone establishes the printed `if you do` meaning. The existing query's old enum identities and all production content remain unchanged; no Garrus face is dealt by this checkpoint.
+
+Checkpoint index: [8.41b rule gate](../Archive/Phase-Handoffs/PHASE_8.md#milestone-841b-garrus-attack-vocabulary-rule-gate-checkpoint).
 
 ### [ ] 8.41c Execute Battle Fury after a resolved-card discard
 

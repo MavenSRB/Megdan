@@ -13,6 +13,7 @@ using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -284,6 +285,96 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(blueStart.PendingTargetChoice.LegalTargetHeroIds,
                 Does.Contain(Red),
                 "The live Range total reaches distance 3 after one adjacent enemy contributes +1.");
+        }
+
+        [TestCase(false, CardFaceOrientation.FaceUp)]
+        [TestCase(false, CardFaceOrientation.FaceDown)]
+        [TestCase(true, CardFaceOrientation.FaceUp)]
+        [TestCase(true, CardFaceOrientation.FaceDown)]
+        public void OwnedDiscardBonus_CountsLiveLocationRegardlessOfPlayedStateOrFace(
+            bool played, CardFaceOrientation face)
+        {
+            // Garrus, Angry Strike: +1 Attack for every card in your discard. p.10: a
+            // discarded played card remains played; neither played state nor face narrows "every".
+            var action = AttackAction("discard-count-attack", AttackRangeKind.NonRanged,
+                new RosterValueContributionDefinition(
+                    PrintedValueChannel.Attack, RosterValueQueryKind.OwnedDiscardCount, 1));
+            var definition = Definition("discard-count-card", action);
+            var source = CardInstance.CreateInHand(new CardInstanceId("source"), definition.Reference, Red);
+            var discardedState = new CardStateFacts(CardLocation.DiscardPile, played,
+                played ? CardResolutionStatus.Resolved : CardResolutionStatus.None, face);
+            var own = new CardInstance(new CardInstanceId("own-discard"), definition.Reference, Red, discardedState);
+            var foreign = new CardInstance(new CardInstanceId("foreign-discard"), definition.Reference, Blue, discardedState);
+            var resolved = new CardInstance(new CardInstanceId("own-resolved"), definition.Reference, Red,
+                new CardStateFacts(CardLocation.TurnArea, true, CardResolutionStatus.Resolved, face));
+            var cards = new[] { source, own, foreign, resolved };
+            var board = Board(new HexCoordinate(0, 0), new HexCoordinate(1, 0),
+                Array.Empty<QuickGameMinionSetupState>());
+            IReadOnlyList<ValueContribution> Read() => RosterDynamicValueQuery.Contributions(
+                action, Offer(source, action, Red, AttackRangeKind.NonRanged), AttackTarget.Hero(Blue),
+                PrintedValueChannel.Attack, new[] { definition }, cards, StagedBoardParticipants.Create(),
+                board, RuleModificationSet.Empty, EffectRosterState.Absent, 1, 1);
+
+            var contribution = Read().Single();
+            Assert.That(contribution.Amount, Is.EqualTo(1));
+            Assert.That(contribution.Kind, Is.EqualTo(ValueContributionKind.CardTextModifier));
+            Assert.That(contribution.SourceCardInstanceId, Is.EqualTo(source.Id));
+            Assert.That(contribution.SourceActionDefinitionId, Is.EqualTo(action.Id));
+            Assert.That(CardLifecycleAuthority.TryDiscardResolvedCard(resolved), Is.True);
+            Assert.That(Read().Single().Amount, Is.EqualTo(2), "Read current state, not an action-start count.");
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(own), Is.True);
+            Assert.That(Read().Single().Amount, Is.EqualTo(1));
+            Assert.That(CardLifecycleAuthority.TryRetrieveEligibleCard(resolved), Is.True);
+            Assert.That(Read(), Is.Empty, "No zero-valued modifier and no foreign-owner contribution.");
+            Assert.That(CardLifecycleAuthority.TryDiscardFromHand(source), Is.True);
+            Assert.That(Read().Single().Amount, Is.EqualTo(1), "A primary performed from discard counts its own card.");
+        }
+
+        [Test]
+        public void OwnedDiscardBonus_ComposesWithAttackItems_AndRebindsOnRestore()
+        {
+            var participants = StagedBoardParticipants.Create();
+            var action = AttackAction("discard-item-attack", AttackRangeKind.NonRanged,
+                new RosterValueContributionDefinition(
+                    PrintedValueChannel.Attack, RosterValueQueryKind.OwnedDiscardCount, 1));
+            var definition = Definition("discard-item-card", action);
+            var source = CardInstance.CreateInHand(new CardInstanceId("source"), definition.Reference, Red);
+            var discarded = new CardInstance(new CardInstanceId("discard"), definition.Reference, Red,
+                new CardStateFacts(CardLocation.DiscardPile, true, CardResolutionStatus.Resolved, CardFaceOrientation.FaceDown));
+            var cards = new[] { source, discarded };
+            var definitions = new[] { definition };
+            var board = Board(new HexCoordinate(0, 0), new HexCoordinate(1, 0),
+                Array.Empty<QuickGameMinionSetupState>());
+            Assert.That(HeroDashboard.RulebookLayout.TryFindSlotAccepting(PrintedValueChannel.Attack, out var slot), Is.True);
+            var items = HeroItemState.Restore(participants, new HeroItemRestoreState(new[]
+            {
+                new HeroItem(Red, new CardInstanceId("item"), slot.Position, PrintedValueChannel.Attack, 1)
+            }));
+            var catalogs = MatchContentCatalogs.ForThisBuild();
+            CardActionResolutionAuthority Restore(CardActionResolutionRestoreState state) =>
+                CardActionResolutionAuthority.Restore(catalogs, board, state, null, null, null,
+                    definitions, cards, participants, new MarkerAttachmentRegister(), RuleModificationSet.Empty, items);
+            var authority = Restore(new CardActionResolutionAuthority(catalogs, board).CaptureRestoreState());
+            var start = authority.StartAttackResolution(new ActionResolutionId("discard-item-resolution"),
+                Offer(source, action, Red, AttackRangeKind.NonRanged), definitions, cards, participants,
+                RuleModificationSet.Empty);
+            var replay = Restore(authority.CaptureRestoreState());
+            foreach (var branch in new[] { authority, replay })
+            {
+                var answer = branch.AnswerAttackTarget(new AttackTargetChoiceCommand(
+                    start.PendingTargetChoice.ResolutionId, start.PendingTargetChoice.ChoiceId, Blue),
+                    definitions, cards, participants, RuleModificationSet.Empty);
+                Assert.That(answer.PendingResolution.AttackTotal, Is.EqualTo(4),
+                    "Printed 2 + Attack item 1 + one discarded card 1; the item does not scale the text bonus.");
+            }
+        }
+
+        [Test]
+        public void OwnedDiscardBonus_IsOnlyAnAttackContribution()
+        {
+            foreach (var channel in new[] { PrintedValueChannel.Range, PrintedValueChannel.Defense, PrintedValueChannel.Movement })
+                Assert.That(() => new RosterValueContributionDefinition(channel,
+                    RosterValueQueryKind.OwnedDiscardCount, 1), Throws.ArgumentException);
         }
 
         [Test]

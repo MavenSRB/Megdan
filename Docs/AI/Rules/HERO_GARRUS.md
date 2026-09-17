@@ -85,7 +85,7 @@ These are checked implementation routes, with missing pieces explicitly owned by
 | Printed clause | Existing contract / required delta | Owner |
 | --- | --- | --- |
 | Owned resolved-card discard | `discard-resolved-card@1` adds actor-owned selection, played identity, Active cancellation and retrieval; built vocabulary remains deferred until dealing | 8.41a |
-| +1 Attack per owned discard | Add a live discard-count member to `RosterValueQueryKind`; ordinary `RosterValueContributionDefinition` owns the bonus | 8.41b |
+| +1 Attack per owned discard | `RosterValueQueryKind.OwnedDiscardCount` counts live owned discard locations; ordinary `RosterValueContributionDefinition` owns the bonus, with no new production consumer yet | 8.41b checkpoint |
 | Discard present | `owned-card-present@1`, `hero` and `location=DiscardPile`; already registered | 8.41d |
 | Modal before-attack move / hero or unit target | Existing `attack-sequence@1`, nested condition and direct Move; verify pre-move feasibility and target binding | 8.41b, 8.41d |
 | Move beside named enemy, then Push it | Existing direct Move and object Push; probe destination/hero pairing and publish exact named hero; extend selector only if needed | 8.41b |
@@ -100,4 +100,6 @@ These are checked implementation routes, with missing pieces explicitly owned by
 
 ## Open verification points
 
-The positive-distance versus zero-distance `if you do` reading on the two post-attack moves must be reconciled with the existing source-backed movement outcome contract and tested before composition. Battle Fury's interrupt placement must be established against p.17 timing and every actual discard producer before implementation; the name of an existing action trigger is insufficient evidence of suitability.
+**GA-Q1 - open, blocking 8.41b:** When Garrus is already adjacent to an eligible enemy hero, does choosing to move zero spaces on Blunt Force or Send Flying satisfy `if you do` and permit the Push, or must he change spaces? The general p.10/p.11 up-to-distance contract admits an applied zero-space result, but that does not independently settle this conditional clause. The [community Garrus FAQ](https://www.cockeyedandcurious.com/goa2/heroes/garrus) contains the same question and attributes a reply to Arty on 2025-04-29, but the reply only points to another discussion and supplies no answer or primary-source transcript. It is an inconclusive lead, not verified authority. Requested an official ruling or an explicit temporary interpretation from the user on 2026-09-17; neither outcome has been encoded as a test expectation. This question is also indexed as Q35 in [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md).
+
+Battle Fury's interrupt placement must be established against p.17 timing and every actual discard producer before implementation; the name of an existing action trigger is insufficient evidence of suitability.

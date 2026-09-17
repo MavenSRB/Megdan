@@ -157,7 +157,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// resolution recorded no action-start space - which is every Attack whose card never asks -
         /// answers nothing, on the same reading the capability takes of the same absence.</para>
         /// </summary>
-        ActorMovedThisAction = 7
+        ActorMovedThisAction = 7,
+
+        /// <summary>Every card currently in the acting hero's discard, regardless of face or played state.</summary>
+        OwnedDiscardCount = 8
     }
 
     /// <summary>
@@ -583,6 +586,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         ? 1
                         : 0;
                 }
+
+                case RosterValueQueryKind.OwnedDiscardCount:
+                    return instances.Count(instance => instance != null &&
+                        instance.OwnerId.Equals(actorId) &&
+                        instance.State.Location == CardLocation.DiscardPile);
 
                 // Milestone 8.39g2. The same comparison `actor-moved-this-action@1` makes, reached from
                 // the value pipeline: the space the Attack recorded at its start against the space the

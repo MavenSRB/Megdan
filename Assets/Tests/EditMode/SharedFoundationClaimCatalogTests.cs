@@ -101,11 +101,30 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "card-state.resolved-discard"
+            "values.owned-discard-count"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "values.owned-discard-count",
+                new MemberLocator(typeof(GuardsDigital.Core.Rules.CardResolution.RosterDynamicValueQuery),
+                    nameof(GuardsDigital.Core.Rules.CardResolution.RosterDynamicValueQuery.Contributions), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(RosterHistoryPresenceAndValueTests),
+                        nameof(RosterHistoryPresenceAndValueTests.OwnedDiscardBonus_CountsLiveLocationRegardlessOfPlayedStateOrFace),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture,
+                        "live discard/retrieval, owner isolation, played state and orientation"),
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(RosterHistoryPresenceAndValueTests),
+                        nameof(RosterHistoryPresenceAndValueTests.OwnedDiscardBonus_ComposesWithAttackItems_AndRebindsOnRestore),
+                        MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture,
+                        "item contribution and pending attack restore")
+                },
+                new[] { "value", "owner", "card location" },
+                "Attack card-text contribution counts every card currently in the acting hero's discard.",
+                "Reassess for a different owner, pile, value channel or card-characteristic filter."),
             new SharedFoundationClaim(
                 "card-state.resolved-discard",
                 new MemberLocator(typeof(GuardsDigital.Core.Cards.CardLifecycleAuthority),

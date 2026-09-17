@@ -1714,3 +1714,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.41a | Added resolved-card discard, source cancellation and played-discard retrieval with snapshot continuation. [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#x-841a-support-discarding-resolved-cards-through-the-ordinary-card-lifecycle). | `milestone/8.41a` |
+
+## Milestone 8.41b Garrus attack vocabulary rule-gate checkpoint
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.41b checkpoint | Live owned-discard Attack count checked; milestone paused, not complete, on [GA-Q1](../../Rules/HERO_GARRUS.md#open-verification-points). [Definition](../../Roadmap/PHASE_8_SIXTEENTH_HERO.md#841b-complete-garruss-attack-and-movement-vocabulary). | `checkpoint/8.41b-rule-gate` |

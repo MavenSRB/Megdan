@@ -121,6 +121,8 @@ A restriction names an activity and a permission names the exact grant it gives,
 
 ## Values, resources, and ownership changes
 
+`RosterValueQueryKind.OwnedDiscardCount` supplies an Attack card-text contribution from every card currently in the acting hero's discard pile, independent of orientation and played state. It is live across discard/retrieval and composes separately from printed and item contributions. This 8.41b checkpoint adds no production card consumer; Garrus's composition and dealing remain pending.
+
 `ModifyValueEffect` references a typed value channel and contribution source, such as Initiative, Attack, Defense, Movement, Range, or Radius. Printed icons, items, card text, minions, and Active effects remain separate contributions.
 
 Milestone 5.3 implements the general minion Defense subset from rulebook page 14. A discarded Defense card keeps its printed-icon contribution, then the value query adds +1 for every adjacent friendly Melee/Heavy minion, -1 for every adjacent enemy Melee/Heavy minion, and -1 for every enemy Ranged minion within radius 2. Every added contribution carries the stable authoritative `MinionId`; decline or no legal Defense card still produces no Defense Total.

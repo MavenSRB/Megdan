@@ -185,8 +185,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 Enum.GetValues(typeof(RosterValueQueryKind)).Cast<RosterValueQueryKind>()
                     .Count(value => value != RosterValueQueryKind.None),
-                Is.EqualTo(7),
-                "Six at milestone 8.37, seven since 8.39g2.");
+                Is.EqualTo(8),
+                "The eight queries preserve the original seven identities.");
+            Assert.That((int)RosterValueQueryKind.OwnedDiscardCount, Is.EqualTo(8));
         }
 
         // -------------------------------------------------------------------------------------------
