@@ -398,3 +398,15 @@ Acceptance: a packaging milestone is a pre-build regression gate and therefore a
 Non-goals: upload, remote operation, or public distribution of any kind; new heroes; a repeat internet playtest; the parked presentation program, tier-3 bots or the card-authoring workbench; and any rule, schema, wire or content-identity change.
 
 Historical evidence: [8.44 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-844-seventeen-hero-package-completion-evidence).
+
+### [x] 8.45 Package the undo-correction playtest build
+
+Authorized 2026-09-18, in the user's own words: "Ok, go make a build now please." It carries the two undo corrections made after 8.44 - 8.42d's visible seat rewind and 8.42e's interaction wall - to the playtesters who reported the first of them. No new hero, content or protocol work is authorized by it.
+
+Outcome: a separately named current Windows build and matching ZIP under `Builds/`, carrying all seventeen dealt heroes plus 8.42d and 8.42e, with the existing single `PLAY - Host or Join.bat` launcher, in-client Host/Join, a playtester README, and a build identity naming the source commit, Unity version, wire protocol, snapshot schema and configured content digest.
+
+Acceptance: a packaging milestone is a pre-build regression gate and therefore a T3 trigger in its own right, so both unfiltered Edit Mode and Play Mode suites plus the complete offline harness run at the exact packaged revision, with every skip and every established `[Explicit]` diagnostic enumerated rather than absorbed into a total. The configured content digest must be MEASURED and compared against 8.44's rather than assumed unchanged; neither correction touched content, so a moved digest would mean something unintended shipped. Private-resource checks must confirm that no extracted card art, map, rulebook, private log, build or worktree enters Git. Run the required build-and-launch smoke through the actual packaged executable rather than a rehearsal script, and inspect the ZIP contents, the launcher and the identity file. Record measured suite totals and the executable and managed-assembly hashes in the completion evidence. Keep every prior package and all private evidence.
+
+Non-goals: upload, remote operation, or public distribution of any kind; new heroes; a repeat internet playtest; the parked presentation program, tier-3 bots or the card-authoring workbench; and any rule, schema, wire or content-identity change.
+
+Historical evidence: [8.45 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-845-undo-correction-package-completion-evidence).
