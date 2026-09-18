@@ -398,3 +398,27 @@ Acceptance: a packaging milestone is a pre-build regression gate and therefore a
 Non-goals: upload, remote operation, or public distribution of any kind; new heroes; a repeat internet playtest; the parked presentation program, tier-3 bots or the card-authoring workbench; and any rule, schema, wire or content-identity change.
 
 Historical evidence: [8.44 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-844-seventeen-hero-package-completion-evidence).
+
+### [x] 8.45 Package the undo-correction playtest build
+
+Authorized 2026-09-18, in the user's own words: "Ok, go make a build now please." It carries the two undo corrections made after 8.44 - 8.42d's visible seat rewind and 8.42e's interaction wall - to the playtesters who reported the first of them. No new hero, content or protocol work is authorized by it.
+
+Outcome: a separately named current Windows build and matching ZIP under `Builds/`, carrying all seventeen dealt heroes plus 8.42d and 8.42e, with the existing single `PLAY - Host or Join.bat` launcher, in-client Host/Join, a playtester README, and a build identity naming the source commit, Unity version, wire protocol, snapshot schema and configured content digest.
+
+Acceptance: a packaging milestone is a pre-build regression gate and therefore a T3 trigger in its own right, so both unfiltered Edit Mode and Play Mode suites plus the complete offline harness run at the exact packaged revision, with every skip and every established `[Explicit]` diagnostic enumerated rather than absorbed into a total. The configured content digest must be MEASURED and compared against 8.44's rather than assumed unchanged; neither correction touched content, so a moved digest would mean something unintended shipped. Private-resource checks must confirm that no extracted card art, map, rulebook, private log, build or worktree enters Git. Run the required build-and-launch smoke through the actual packaged executable rather than a rehearsal script, and inspect the ZIP contents, the launcher and the identity file. Record measured suite totals and the executable and managed-assembly hashes in the completion evidence. Keep every prior package and all private evidence.
+
+Non-goals: upload, remote operation, or public distribution of any kind; new heroes; a repeat internet playtest; the parked presentation program, tier-3 bots or the card-authoring workbench; and any rule, schema, wire or content-identity change.
+
+Historical evidence: [8.45 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-845-undo-correction-package-completion-evidence).
+
+### [x] 8.47 Announce each phase change with a banner
+
+Authorized 2026-09-18, in the user's own words, three hours before an invited playtest: "Can you squeeze the letters into a build for tonight somehow?" - the "letters" being the transient phase banner they had specified minutes earlier: "text over the screen to let the players know game state changed. It pops up, then fades away after like a second or two", in blood red with a black outline on a shaded box, big, centre screen; round start bundled into the round's first commit banner; no banner at a turn's end; a banner for the Minion Battle. Cut as an interim package on top of 8.45, ahead of the decision window (8.46), which was mid-build on its own branch.
+
+Outcome: `PhaseBannerPresenter`, a seat-scoped presenter whose `PhaseBannerCueDetector` decides from one projection snapshot to the next which transition just happened for this viewer - commitment begins (`ROUND 2 · TURN 1` over `COMMIT A CARD`), a hero's card begins resolving (`YOUR TURN` over `RESOLVE YOUR CARD` on the acting seat, `SABINA'S TURN` elsewhere), the end-of-round Minion Battle (`END OF ROUND 2` over `MINION BATTLE`) - and `PhaseBannerUnityView`, which attaches to the HUD root lazily, never takes the pointer, fades in, holds, fades out and detaches, every size a reference unit under `MatchHudPanelScaling`. The first observation primes and announces nothing, so a joining or reconnecting client is never told a state it did not watch change; every key shows once; a refresh carrying a whole turn's change announces where the game is now. Package `Builds/Playtest-8.45a-phase-banner` and its ZIP, stamped `1.0-8.45a-phase-banner`.
+
+Acceptance: the detector proven on plain snapshots for every moment, both viewer readings, priming, repriming on a rebind, and the no-turn-end rule; the view proven to draw the words in the asked colours at the asked size and to take no pointer; a Play Mode case seeing the banner land centred over the HUD and take itself down; the presenter roster and the shared button treatment fixtures still green; the complete Play Mode suite, the complete Edit Mode suite and the complete offline harness green at the packaged revision, with every established skip enumerated; the built player reaching a configured match, and the packaged exe launching from its own folder. The source diff against 8.45 must touch only Presentation, tests, the harness exclusion list and the version stamp, which is what carries the configured content digest unchanged.
+
+Non-goals: a banner at a turn's end; sequencing through the kinetic conductor ahead of the decision window (owed when 8.46 lands, so the two never draw over each other); upload or public distribution; any rule, schema, wire or content change.
+
+Historical evidence: [8.47 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-847-phase-banner-completion-evidence).

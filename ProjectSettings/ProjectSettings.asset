@@ -148,7 +148,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 1.0-8.44-seventeen-hero
+  bundleVersion: 1.0-8.45a-phase-banner+20260918165811-08b69eab
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0

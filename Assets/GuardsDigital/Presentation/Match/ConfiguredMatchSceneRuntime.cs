@@ -170,6 +170,13 @@ namespace GuardsDigital.Presentation.Match
             // keeps this milestone's edits out of the file a parallel milestone is reworking.
             FizzleNoticePresenter = new FizzleNoticePresenter(client, RoundView, Seat?.HeroId ?? default);
 
+            // Milestone 8.47. The phase banner reads the same projection as every panel and is
+            // scoped to the same seat: "YOUR TURN" is true on exactly one of them. Its host attaches
+            // to the HUD root lazily, the way the kinetic layer does, because that root does not
+            // exist yet here.
+            PhaseBannerView = new PhaseBannerUnityView(() => hud?.RootElement);
+            PhaseBannerPresenter = new PhaseBannerPresenter(client, PhaseBannerView, Seat?.HeroId ?? default);
+
             // The Director's own controls exist only in the Director's runtime. A seat's HUD is not
             // given an Undo it must remember to hide; it is given a composition that has none.
             UndoRestartPresenter = Seat == null ? new UndoRestartPresenter(session, UndoRestartView) : null;
@@ -440,7 +447,8 @@ namespace GuardsDigital.Presentation.Match
                 KineticPresenter,
                 MatchLogPresenter,
                 SpotlightPresenter,
-                DecisionWindowPresenter);
+                DecisionWindowPresenter,
+                PhaseBannerPresenter);
             RefreshAll();
         }
 
@@ -560,7 +568,9 @@ namespace GuardsDigital.Presentation.Match
                 // the seat that OWNS the standing decision, and an unrepaired identity is the
                 // Director's - who owns every decision at once - so a networked seat left unbound
                 // would open a window for every other player's question.
-                DecisionWindowPresenter
+                DecisionWindowPresenter,
+                // Milestone 8.47. The SIXTH: "YOUR TURN" is true on exactly one seat.
+                PhaseBannerPresenter
             };
 
         /// <summary>
@@ -816,6 +826,9 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 8.35z8. The fizzle notice's own presenter; see its own doc for why.</summary>
         public FizzleNoticePresenter FizzleNoticePresenter { get; }
+        /// <summary>Milestone 8.47. The phase banner and its presenter.</summary>
+        public PhaseBannerUnityView PhaseBannerView { get; }
+        public PhaseBannerPresenter PhaseBannerPresenter { get; }
         public UndoRestartPresenter UndoRestartPresenter { get; }
         public DiagnosticLogPresenter DiagnosticPresenter { get; }
         public MinionChoicePresenter MinionChoicePresenter { get; }

@@ -50,6 +50,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/MinionChoicePresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/OfficialBoardArtworkTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PendingDecisionContractConformanceTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/PhaseBannerTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/Phase4ArchitectureConformanceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/Phase4RuntimeHygieneTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/PlaceholderObstacleViewTests.cs" />

@@ -704,6 +704,7 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 8.46c. The one surface that asks the player a question.</summary>
         private readonly DecisionWindowPresenter decisionWindow;
+        private readonly PhaseBannerPresenter phaseBanner;
 
         private readonly Action<string, Exception> panelRefreshFailed;
         private IReadOnlyList<string> failedPanelNames = Array.Empty<string>();
@@ -735,7 +736,8 @@ namespace GuardsDigital.Presentation.Match
             // round panel deliberately: the strip yields a decision family to the window exactly
             // while the window is drawing it, so the window must have observed this projection
             // before the strip rebuilds against it.
-            DecisionWindowPresenter decisionWindow = null)
+            DecisionWindowPresenter decisionWindow = null,
+            PhaseBannerPresenter phaseBanner = null)
         {
             this.panelRefreshFailed = panelRefreshFailed;
             this.decisionWindow = decisionWindow;
@@ -743,6 +745,7 @@ namespace GuardsDigital.Presentation.Match
             this.kinetics = kinetics;
             this.attackSpotlight = attackSpotlight;
             this.matchLog = matchLog;
+            this.phaseBanner = phaseBanner;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hands = hands ?? throw new ArgumentNullException(nameof(hands));
             this.round = round ?? throw new ArgumentNullException(nameof(round));
@@ -820,6 +823,7 @@ namespace GuardsDigital.Presentation.Match
             // one thing on this list that can never cost a player a fact on the surfaces above it.
             RefreshPanel("kinetics", () => kinetics?.Refresh(), failed, errors);
             RefreshPanel("match-log", () => matchLog?.Refresh(), failed, errors);
+            RefreshPanel("phase-banner", () => phaseBanner?.Refresh(), failed, errors);
 
             failedPanelNames = failed.Count == 0
                 ? Array.Empty<string>()

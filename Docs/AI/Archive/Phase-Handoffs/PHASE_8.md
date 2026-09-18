@@ -1852,3 +1852,15 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 8.42e | The seat's rewind now stops at any interaction with an opponent, not only at an Attack's target lock: the watermark compares what opposing seats own across each accepted command and raises the floor above one that changed it. Five rewindable interactions measured before the change - three enemy minions and two enemy heroes displaced by card text - are its regression seeds. Opponents only, and the floor rises above that command rather than ending the turn's rewind, both by the user's decision. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842e-stop-the-seats-rewind-at-any-interaction-with-an-opponent). | `milestone/8.42e` |
+
+## Milestone 8.45 Undo-correction package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.45 | Cut `Builds/Playtest-8.45-undo-corrections` and its ZIP from a green three-tier pre-build gate: the same seventeen dealt heroes as 8.44 plus 8.42d's visible seat rewind and 8.42e's interaction wall, stamped `1.0-8.45-undo-corrections`. The configured content digest was measured rather than assumed and is byte-identical to 8.44's, which is what a package carrying only host and HUD corrections should show. [Definition](../../Roadmap/PHASE_8.md#x-845-package-the-undo-correction-playtest-build). | `milestone/8.45` |
+
+## Milestone 8.47 Phase banner completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.47 | Cut `Builds/Playtest-8.45a-phase-banner` and its ZIP as an interim package on top of 8.45, three hours before an invited playtest, carrying one change: the transient phase banner - big blood-red outlined letters on a shaded box, centre screen, announcing a new turn's commitment, a hero's card resolving and the Minion Battle, per seat, never taking the pointer, silent on the first thing a joining client sees. Stamped `1.0-8.45a-phase-banner`. Complete Edit Mode 4301 discovered / 4265 passed / 0 failed / 36 established skips; complete Play Mode 623 / 623 / 0 / 0; complete offline harness 3385 / 0 / 0; build-and-launch smoke passed; packaged exe launched from its own folder. The source diff against 8.45 touches only Presentation, tests, the harness exclusion list and the version stamp, so the configured content digest is carried unchanged. [Definition](../../Roadmap/PHASE_8.md#x-847-announce-each-phase-change-with-a-banner). | `milestone/8.47` |

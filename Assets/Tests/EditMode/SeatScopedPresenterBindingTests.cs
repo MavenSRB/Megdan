@@ -128,6 +128,7 @@ namespace GuardsDigital.Tests.EditMode
                 nameof(DirectorHandsPresenter),
                 nameof(FizzleNoticePresenter),
                 nameof(KineticCuePresenter),
+                nameof(PhaseBannerPresenter),
                 nameof(RoundActionPresenter)
             }), "If this list changed, ConfiguredMatchSceneRuntime.SeatScopedPresenters must have " +
                 "changed with it - that is the whole point of pinning it here.");
