@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -53,6 +54,42 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class BainEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What his own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>We're Not Done Yet!'s repeat is one of the five nodes in this build that is BOTH an
+        /// arm of a <c>Choose</c> and a node opening rulebook p.10's confirm-or-decline - "otherwise
+        /// may repeat once or gain 2 coins" prints the repeat as a bullet and as a <c>may</c>. One
+        /// declaration answers both, and what the repeat repeats is the guess, so that is what it
+        /// says.</para>
+        ///
+        /// <para>Another One!'s row keys a node in the End-of-turn body its Active effect names by
+        /// reference to the card that prints the clause, which is what the pause carries.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(BainCardContent.DeadOrAlive, "bounty-may",
+                "Give an enemy hero in radius a bounty marker", "Give no bounty marker");
+
+            yield return DecisionArm(BainCardContent.HandCrossbow, "crossbow-marker-bullet",
+                "Target a hero in range with a bounty marker");
+            yield return DecisionArm(BainCardContent.HandCrossbow, "crossbow-adjacent-bullet",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(BainCardContent.HunterSeeker, "crossbow-marker-bullet",
+                "Target a hero in range with a bounty marker");
+            yield return DecisionArm(BainCardContent.HunterSeeker, "crossbow-adjacent-bullet",
+                "Target a unit adjacent to you");
+
+            yield return DecisionStep(BainCardContent.WereNotDoneYet, "guess-repeat",
+                "Guess again on another card", "Stop here");
+            yield return DecisionArm(BainCardContent.WereNotDoneYet, "guess-coin-bullet",
+                "Gain 2 coins");
+
+            yield return DecisionStep(BainCardContent.AnotherOne, "another-one-repeat-optional",
+                "Have a hero retrieve a discarded card again", "Stop here");
+        }
         // -----------------------------------------------------------------------------------------
         // p.14's Attack text
         // -----------------------------------------------------------------------------------------

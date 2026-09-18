@@ -5,6 +5,7 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -39,6 +40,36 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class WaspEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say. One row per <c>Choose</c> arm and per
+        /// node that opens rulebook p.10's confirm-or-decline, naming the CONSEQUENCE in the printed
+        /// text's own words and in the printed text's own case - presentation upper-cases.
+        ///
+        /// <para><see cref="DecisionLabelCatalog"/> aggregates this table with every other hero's, and
+        /// <c>DecisionLabelCoverageTests</c> derives the set of nodes that has to appear here from the
+        /// resolution session's own pause rule rather than from a second list beside it. Nothing reads
+        /// these words as a rule: no card definition, digest, snapshot schema or wire revision moves
+        /// when one is reworded.</para>
+        ///
+        /// <para>High Voltage's row keys a node in a TRIGGERED body - p.16's permanent ability names
+        /// its effect by reference - to the card that raises it, which is how the pause carries it and
+        /// how the window will ask for it.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(WaspCardContent.ThunderBoomerang, "thunder-repeat",
+                "Attack again on a different target", "Don't attack again");
+            yield return DecisionStep(WaspCardContent.LiftUp, "orbit-repeat",
+                "Move it again", "Stop here");
+            yield return DecisionStep(WaspCardContent.ControlGravity, "orbit-repeat",
+                "Move it again", "Stop here");
+            yield return DecisionStep(WaspCardContent.CenterOfMass, "orbit-repeat",
+                "Move it again", "Stop here");
+            yield return DecisionStep(WaspCardContent.MassTelekinesis, "telekinesis-repeat",
+                "Place another unit or token adjacent to you", "Stop here");
+            yield return DecisionStep(WaspCardContent.HighVoltage, "high-voltage-may",
+                "Defeat an enemy minion in radius", "Leave the minions alone");
+        }
         public static EffectDefinition HighVoltageTriggeredEffect(string contentRevision)
         {
             var root = new EffectNodeId("high-voltage-may");

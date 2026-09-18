@@ -7,6 +7,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -34,6 +35,43 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class WhisperEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para><b>Lesser Evil and Greater Good are read by the ENEMY hero, not by her.</b> "An enemy
+        /// hero in range chooses one" makes that hero the chooser, so its two arms are written about
+        /// the board rather than to "you": the card's own "you" is Whisper, and a control that kept it
+        /// would tell the pressing player they were about to defeat a minion of their own. Naming her
+        /// is what keeps the second bullet true for whoever is reading it.</para>
+        ///
+        /// <para>Lesser Evil's second bullet is a printed bullet and a <c>may</c> at once - it prints
+        /// "You may defeat a minion adjacent to you" where Greater Good prints an unconditional "up to
+        /// 3" - so it carries declining words and Greater Good's does not. Death Seeker's retrieval is
+        /// the same double role.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionArm(WhisperCardContent.SwiftJustice, "modal-ranged-hero",
+                "Target a hero in range with an empty discard");
+            yield return DecisionArm(WhisperCardContent.SwiftJustice, "modal-adjacent-unit",
+                "Target a unit adjacent to you");
+
+            yield return DecisionArm(WhisperCardContent.DeathSeeker, "seeker-immunity",
+                "This turn: You are immune to enemy actions");
+            yield return DecisionStep(WhisperCardContent.DeathSeeker, "seeker-retrieve-may",
+                "Retrieve a discarded card", "Leave my discard as it is");
+
+            yield return DecisionArm(WhisperCardContent.LesserEvil, "modal-price",
+                "Discard a card, if able");
+            yield return DecisionStep(WhisperCardContent.LesserEvil, "modal-slaughter",
+                "Defeat a minion adjacent to Whisper", "No minion is defeated");
+            yield return DecisionArm(WhisperCardContent.GreaterGood, "modal-price",
+                "Discard a card, or be defeated");
+            yield return DecisionArm(WhisperCardContent.GreaterGood, "modal-slaughter",
+                "Defeat up to 3 minions adjacent to Whisper");
+        }
         /// <summary>The Ultimate's rule identity, named here because the card content references it.</summary>
         public const string GrimReaperRuleId = "whisper-grim-reaper";
 

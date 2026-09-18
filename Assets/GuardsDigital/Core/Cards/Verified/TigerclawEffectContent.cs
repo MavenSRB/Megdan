@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Rules.Placement;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -27,6 +28,21 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class TigerclawEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What his own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Cloak and Daggers is his whole contribution, and its node lives in the TRIGGERED body
+        /// p.16's permanent ability names by reference rather than on any action of the card. The row
+        /// keys it to the card that raises it, which is what the pause carries. "That action" is the
+        /// only honest subject: the basic action it repeats is whichever one just ended.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(TigerclawCardContent.CloakAndDaggers, "cloak-and-daggers-repeat",
+                "Perform that action again", "Stop here");
+        }
         /// <summary>The Ultimate's rule identity, named here because the card content references it.</summary>
         public const string CloakAndDaggersRuleId = "tigerclaw-cloak-and-daggers";
 

@@ -1002,7 +1002,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     case EffectNodeKind.Optional:
                         if (top.ChildIndex == 0)
                         {
-                            if (node.FailurePolicy == EffectFailurePolicy.IfAble)
+                            // Milestone 8.46a. Which optionality asks is now stated once, in
+                            // `OptionalStepQuery`, and asked here and at the RepeatAction arm below -
+                            // so the content check that proves every asking node carries an authored
+                            // consequence label derives its set from this rule rather than from a
+                            // second list of node kinds that would drift from it.
+                            if (!OptionalStepQuery.OpensConfirmOrDecline(node))
                             {
                                 // `if able` never asks. It attempts, and a refusal is simply skipped.
                                 AdvanceTop(continuation);
@@ -1208,7 +1213,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             continue;
                         }
 
-                        if (node.FailurePolicy == EffectFailurePolicy.May)
+                        // Milestone 8.46a asks the same predicate the Optional arm above asks, for the
+                        // same reason: one rule names the nodes that open p.10's confirm-or-decline,
+                        // and the label-coverage check reads that rule rather than a copy of it.
+                        if (OptionalStepQuery.OpensConfirmOrDecline(node))
                         {
                             return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                                 frame, node, context, EffectChoiceKind.ConfirmOrDecline,

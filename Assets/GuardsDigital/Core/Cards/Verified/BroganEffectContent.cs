@@ -5,6 +5,7 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -31,6 +32,27 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class BroganEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What his own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>The two ranged arms read differently because the two faces cost differently: Throwing
+        /// Axe's range arm is PAID FOR by the discard - "you may discard a card; if you do" - and
+        /// Throwing Spear's is paid for by a card already in the pile, so its discard is a step it may
+        /// not need. The labels say which.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionArm(BroganCardContent.ThrowingAxe, "throw-adjacent",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(BroganCardContent.ThrowingAxe, "throw-range",
+                "Discard a card and target a unit in range");
+            yield return DecisionArm(BroganCardContent.ThrowingSpear, "throw-adjacent",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(BroganCardContent.ThrowingSpear, "throw-range",
+                "Target a unit in range, discarding a card if needed");
+        }
         /// <summary>
         /// Brogan's Skill effect for one card, or <c>null</c> for a Skill whose composition is still
         /// owed. The card content asks this for every Skill primary it builds, and

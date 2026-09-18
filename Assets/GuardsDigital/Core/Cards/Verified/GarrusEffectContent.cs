@@ -5,12 +5,75 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>Source-backed Garrus clauses; no definitions are dealt or registered by this factory.</summary>
     public static class GarrusEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What his own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>He owes more of these than any other hero, because almost every face of his prints a
+        /// "you may" or a "May repeat". Where two faces share a helper and differ only in a distance or
+        /// a count - the two Pila, the two pushes, Battle Ready against the two single retrievals - the
+        /// labels differ too, since that number is the whole difference between the cards.</para>
+        ///
+        /// <para>Battle Ready asks twice: the outer question is whether to retrieve at all, and the
+        /// second is whether to take the second card, so only the second can say "a second".</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(GarrusCardContent.ChillingHowl, "may-discard",
+                "Discard one of my resolved cards", "Keep my resolved cards");
+
+            yield return DecisionArm(GarrusCardContent.Trace, "advance",
+                "Move up to 1 space, then target a hero adjacent to you");
+            yield return DecisionArm(GarrusCardContent.Trace, "ordinary",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(GarrusCardContent.Chase, "advance",
+                "Move up to 2 spaces, then target a hero adjacent to you");
+            yield return DecisionArm(GarrusCardContent.Chase, "ordinary",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(GarrusCardContent.HuntDown, "advance",
+                "Move up to 3 spaces, then target a hero adjacent to you");
+            yield return DecisionArm(GarrusCardContent.HuntDown, "ordinary",
+                "Target a unit adjacent to you");
+
+            yield return DecisionStep(GarrusCardContent.BluntForce, "may-advance",
+                "Move up to 1 space next to a hero and push them 3", "Stay where I am");
+            yield return DecisionStep(GarrusCardContent.SendFlying, "may-advance",
+                "Move up to 2 spaces next to a hero and push them 3", "Stay where I am");
+
+            yield return DecisionStep(GarrusCardContent.Threaten, "repeat",
+                "Move an enemy unit farther away again", "Stop here");
+            yield return DecisionStep(GarrusCardContent.Terrify, "repeat",
+                "Move an enemy unit farther away again", "Stop here");
+            yield return DecisionStep(GarrusCardContent.FormUp, "repeat",
+                "Move a friendly unit closer to you again", "Stop here");
+            yield return DecisionStep(GarrusCardContent.Testudo, "repeat",
+                "Move a friendly unit closer to you again", "Stop here");
+
+            yield return DecisionStep(GarrusCardContent.HoldGround, "may-retrieve",
+                "Retrieve a discarded card", "Leave my discard as it is");
+            yield return DecisionStep(GarrusCardContent.MakeAStand, "may-retrieve",
+                "Retrieve a discarded card", "Leave my discard as it is");
+            yield return DecisionStep(GarrusCardContent.BattleReady, "may-retrieve",
+                "Retrieve up to two discarded cards", "Leave my discard as it is");
+            yield return DecisionStep(GarrusCardContent.BattleReady, "may-retrieve-2",
+                "Retrieve a second discarded card", "Stop at one card");
+
+            yield return DecisionStep(GarrusCardContent.LightPilum, "may-move",
+                "Move 1 space", "Stay where I am");
+            yield return DecisionStep(GarrusCardContent.HeavyPilum, "may-move",
+                "Move up to 2 spaces", "Stay where I am");
+
+            yield return DecisionStep(GarrusCardContent.BattleFury, "may-perform-primary",
+                "Perform that card's primary action", "Don't perform that action");
+        }
         public static EffectDefinition ChillingHowl(CardDefinitionId card, string revision) =>
             Skill(card, revision, new[]
             {

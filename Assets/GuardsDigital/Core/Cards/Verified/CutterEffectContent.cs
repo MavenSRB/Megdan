@@ -10,6 +10,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -43,6 +44,51 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class CutterEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para><b>X Marks the Spot and A Fistful of Coins are read by the ENEMY hero.</b> "An enemy
+        /// hero in radius chooses one" makes that hero the chooser, and both bullets print "You",
+        /// meaning Cutter - so the arms name her rather than keeping a "you" that would point at the
+        /// wrong seat. A Fistful of Coins keeps its win clause, because a hero handing over a third
+        /// coin needs to know it can end the game.</para>
+        ///
+        /// <para>The three lunges differ only in how far the first bullet moves, and that distance is
+        /// the whole Tier difference, so each says its own.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionArm(CutterCardContent.WalkThePlank, "plank-push-arm",
+                "Push an enemy hero adjacent to you up to 4 spaces");
+            yield return DecisionArm(CutterCardContent.WalkThePlank, "plank-minion-arm",
+                "Defeat a minion adjacent to you");
+
+            yield return DecisionArm(CutterCardContent.DaringStrike, "lunge-move-arm",
+                "Move 1 space, then target a hero; +2 Attack");
+            yield return DecisionArm(CutterCardContent.DaringStrike, "lunge-plain-arm",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(CutterCardContent.BoldThrust, "lunge-move-arm",
+                "Move 1 or 2 spaces, then target a hero; +2 Attack");
+            yield return DecisionArm(CutterCardContent.BoldThrust, "lunge-plain-arm",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(CutterCardContent.FearlessLunge, "lunge-move-arm",
+                "Move 1, 2 or 3 spaces, then target a hero; +2 Attack");
+            yield return DecisionArm(CutterCardContent.FearlessLunge, "lunge-plain-arm",
+                "Target a unit adjacent to you");
+
+            yield return DecisionArm(CutterCardContent.XMarksTheSpot, "chosen-place-arm",
+                "Cutter places that hero in a space in radius");
+            yield return DecisionArm(CutterCardContent.XMarksTheSpot, "chosen-coin-arm",
+                "Cutter gains 2 coins");
+            yield return DecisionStep(CutterCardContent.Broadside, "bombard-repeat",
+                "Make another enemy hero discard a card", "Stop here");
+            yield return DecisionArm(CutterCardContent.AFistfulOfCoins, "chosen-place-arm",
+                "Cutter places that hero in a space in radius");
+            yield return DecisionArm(CutterCardContent.AFistfulOfCoins, "chosen-coin-arm",
+                "Cutter gains 3 coins, and wins alone at 13");
+        }
         private const string ActorSpaceOutput = "space";
         private const string LineDestinationOutput = "destination";
         private const string ChargeDestinationOutput = "destination";
