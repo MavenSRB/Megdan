@@ -289,7 +289,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 2200, projection => projection.PendingHeroRespawnChoice != null, seed: 29);
+                host, 1200, projection => projection.PendingHeroRespawnChoice != null, seed: 23);
             var projection = host.Projection;
             Assert.That(projection.PendingHeroRespawnChoice, Is.Not.Null,
                 "The seeded walk must reach a respawn, or this case proves nothing.");

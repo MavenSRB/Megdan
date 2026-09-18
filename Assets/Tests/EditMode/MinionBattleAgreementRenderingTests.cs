@@ -396,6 +396,7 @@ namespace GuardsDigital.Tests.EditMode
             var presenter = new DirectorHandsPresenter(client, view, seat.HeroId);
             var retrievedPublicRenders = 0;
             var hiddenOpponentCards = 0;
+            var returnedToDeckWithheld = 0;
 
             var walked = OwnerScopedProjectionTests.DriveThroughSeats(host, 1500, _ =>
             {
@@ -416,8 +417,24 @@ namespace GuardsDigital.Tests.EditMode
                     var authoritative = host.Projection.Cards.Single(card =>
                         card.Id.Equals(commitment.RevealedCardInstanceId.Value));
                     var known = scoped.Cards.SingleOrDefault(card => card.Id.Equals(authoritative.Id));
+                    // Milestone 8.46e. The one-press rule re-derived this walk, and seed 29 now reaches
+                    // a state the old walk never did: an opponent plays a card, retrieves it at the end
+                    // of the round, and then RETURNS IT TO THE DECK through p.15's level-up while the
+                    // round's commitment still names it. The seat scope's retention rule is written for
+                    // the Hand (a retrieved card the public log already revealed) and is fail-closed
+                    // for every location it has not considered, the Deck among them - which is the
+                    // shipped contract the tray presenter is deliberately tolerant of. So the identity
+                    // must resolve wherever the scope retains it, and a returned-to-deck card is the
+                    // one documented absence.
+                    if (authoritative.State.Location == CardLocation.Deck)
+                    {
+                        returnedToDeckWithheld++;
+                        continue;
+                    }
+
                     Assert.That(known, Is.Not.Null,
-                        "A revealed identity retained by the bounded public log must still resolve.");
+                        "A revealed identity retained by the bounded public log must still resolve " +
+                        "(location " + authoritative.State.Location + ").");
                     if (!commitment.HeroId.Equals(seat.HeroId) &&
                         authoritative.State.Location == CardLocation.Hand)
                     {
@@ -442,6 +459,8 @@ namespace GuardsDigital.Tests.EditMode
                 "Retrieve in " + walked + " commands, so this case proves nothing.");
             Assert.That(hiddenOpponentCards, Is.GreaterThan(0),
                 "Retaining an exact revealed identity must not expose the rest of an opponent's hand.");
+            TestContext.Out.WriteLine(
+                "returned-to-deck commitments the scope withheld: " + returnedToDeckWithheld);
         }
 
         /// <summary>

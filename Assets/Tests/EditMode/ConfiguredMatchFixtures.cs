@@ -825,12 +825,20 @@ namespace GuardsDigital.Tests.EditMode
                 return true;
             }
 
-            var beside = redHero.Coordinate.GetNeighbors()
+            // The second unit needs only to STAND beside the hero: whether its own push line runs
+            // clear decides how far it travels, never whether it is offered. Prefer a clear line,
+            // take any open neighbour otherwise, and never fall back to the default coordinate.
+            var openNeighbours = redHero.Coordinate.GetNeighbors()
                 .Where(coordinate => playable.Contains(coordinate) && !occupied.Contains(coordinate))
-                .FirstOrDefault(coordinate => RunsClear(coordinate, 4));
-            Assert.That(playable, Does.Contain(beside),
-                "The official map has to offer a second open space beside the Red hero whose push " +
-                "line runs clear, or this fixture proves nothing.");
+                .ToArray();
+            Assert.That(openNeighbours, Is.Not.Empty,
+                "The official map has to offer a second open space beside the Red hero, or this " +
+                "fixture proves nothing.");
+            var beside = openNeighbours.FirstOrDefault(coordinate => RunsClear(coordinate, 4));
+            if (!openNeighbours.Contains(beside))
+            {
+                beside = openNeighbours[0];
+            }
             var besideSpaceId = map.Spaces.Single(space =>
                 space.Kind == BoardMapSpaceKind.Playable &&
                 space.Coordinate.Equals(beside)).Id;

@@ -3331,8 +3331,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(control.Command.Kind, Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
 
             Assert.That(session.Execute(control.Command).Accepted, Is.True);
-            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation)).Accepted, Is.True);
+            // Milestone 8.46b: the single spawn candidate is an exactly-one choice, so the select
+            // resolves it; a confirm is owed only where the same choice still stands and offers one.
+            ConfiguredMatchFixtures.ConfirmStandingEffectChoiceIfOwed(
+                session, control.Command.EffectChoice.ChoiceId);
             Assert.That(session.Projection.PendingEffectChoice, Is.Null,
                 "Passive forwarding of the projected command is the whole of the presenter's part.");
         }
@@ -3565,12 +3567,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(selectBlue)).Accepted,
                 Is.True);
             presenter.Refresh();
-            var selectedCue = view.Model.PieceTargetCues.Single(value =>
-                value.Target.Equals(blueTarget));
-            Assert.That(selectedCue.State, Is.EqualTo(BoardTargetCueState.Selected),
-                "The target's selected state comes from the pending authoritative choice.");
-            Assert.That(selectedCue.ConsequenceIntent,
-                Is.EqualTo(BoardTargetConsequenceIntent.Affect));
+            // Milestone 8.46b: the push's target is an exactly-one choice, so the select resolved it
+            // inside the same command and there is no standing "selected" cue left to read back.
+            // What the rebuild must show is the choice gone from the board.
+            Assert.That(session.Projection.PendingEffectChoice, Is.Null,
+                "An exactly-one target answers on its own press.");
+            Assert.That(view.Model.PieceTargetCues.Any(value => value.Target.Equals(blueTarget)),
+                Is.False, "A resolved choice leaves no target cue behind.");
             Assert.That(view.Model.EffectChoiceTargetSpace, Is.Null,
                 "The accepted selection rebuild drops the older projection's pointed-at state.");
             Assert.That(session.Undo().Accepted, Is.True);

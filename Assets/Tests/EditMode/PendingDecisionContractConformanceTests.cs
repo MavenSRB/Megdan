@@ -721,7 +721,7 @@ namespace GuardsDigital.Tests.EditMode
             Case("Block rider effect Select", PendingDecisionFamilies.Effect, "Effect",
                 CreateAttackEffectPause, false,
                 Row("Effect", "Effect/Attack or Block", EffectChoiceCommandKind.Select.ToString())),
-            Case("Block rider effect Deselect and Confirm", PendingDecisionFamilies.Effect, "Effect",
+            Case("Attack rider effect Deselect and Confirm", PendingDecisionFamilies.Effect, "Effect",
                 CreateSelectedAttackEffectPause, false,
                 Row("Effect", "Effect/Attack or Block", EffectChoiceCommandKind.Deselect.ToString()),
                 Row("Effect", "Effect/Attack or Block", EffectChoiceCommandKind.Confirm.ToString())),
@@ -898,8 +898,16 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSelectedSkillEffectPause()
         {
-            var session = CreateSkillEffectPause();
-            Accept(session, session.Projection.DecisionContract.Commands.Single(command =>
+            // Milestone 8.46b: an exactly-one choice resolves on its selection, so a Deselect and a
+            // Confirm can stand only on a choice of SEVERAL. Kinetic Blast's `up to 2 enemy units
+            // adjacent to you`, with two Blue units beside Wasp, is that choice.
+            var session = ConfiguredMatchFixtures.CreateKineticSessionWithTwoAdjacentEnemies(
+                WaspCardContent.KineticBlast);
+            Commit(session, WaspCardContent.KineticBlast, WaspCardContent.StopProjectiles);
+            StartAction(session, ActionKind.Skill);
+            Assert.That(session.Projection.PendingEffectChoice.MaximumSelections, Is.GreaterThan(1),
+                "The selected-pause case needs a choice of several, or no Deselect can stand.");
+            Accept(session, session.Projection.DecisionContract.Commands.First(command =>
                 command.EffectChoice.Kind == EffectChoiceCommandKind.Select));
             Assert.That(session.Projection.PendingEffectChoice.DeselectInvocations, Is.Not.Empty);
             Assert.That(session.Projection.PendingEffectChoice.ConfirmInvocation, Is.Not.Null);
@@ -917,8 +925,27 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MatchSession CreateSelectedAttackEffectPause()
         {
-            var session = CreateAttackEffectPause();
-            Accept(session, session.Projection.DecisionContract.Commands.Single(command =>
+            // Milestone 8.46b: an exactly-one choice resolves on its selection, so a Deselect and a
+            // Confirm can stand inside an Attack or Block only on a choice of SEVERAL. Reflect
+            // Projectiles' `an enemy hero in range discards a card` is exactly one and answers in
+            // one press; Bullet Hell's `remove up to two enemy minions adjacent to you`, with two
+            // Red Melee minions still beside Sabina after the attack, is the choice of several an
+            // Attack's own printed text opens.
+            var board = SabinaBoard.Create(
+                tier: 3, branch: SabinaUpgradeBranch.SecondSibling,
+                minionPlacements: new Dictionary<string, HexCoordinate>
+                {
+                    ["red-melee-01"] = StagedHeroBoard.FirstAdjacent,
+                    ["red-melee-02"] = StagedHeroBoard.SecondAdjacent,
+                    ["red-melee-03"] = StagedHeroBoard.ThirdAdjacent
+                });
+            board.PlayAttackAt(SabinaCardContent.BulletHell, board.MinionAt(StagedHeroBoard.FirstAdjacent));
+            var session = board.Session;
+            Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
+                "The target was adjacent, which is the tense Bullet Hell's rider prints.");
+            Assert.That(session.Projection.PendingEffectChoice.MaximumSelections, Is.GreaterThan(1),
+                "The selected-pause case needs a choice of several, or no Deselect can stand.");
+            Accept(session, session.Projection.DecisionContract.Commands.First(command =>
                 command.EffectChoice.Kind == EffectChoiceCommandKind.Select));
             Assert.That(session.Projection.PendingEffectChoice.DeselectInvocations, Is.Not.Empty);
             Assert.That(session.Projection.PendingEffectChoice.ConfirmInvocation, Is.Not.Null);
