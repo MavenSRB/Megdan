@@ -154,8 +154,8 @@ namespace GuardsDigital.Tests.PlayMode
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline), Is.True,
                 "and declining must be an offered answer, not an absence. Shown controls: " +
                 UiPlayer.Describe(hud));
-            var acceptBanner = UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel);
-            var declineBanner = UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel);
+            var acceptBanner = UiPlayer.Button(hud, WindowAnswerLabel(runtime, EffectChoiceCommandKind.Confirm));
+            var declineBanner = UiPlayer.Button(hud, WindowAnswerLabel(runtime, EffectChoiceCommandKind.Decline));
             var playableHand = UiPlayer.Descendants(hud.RootElement)
                 .Single(element => element.name == "gd-card-buttons");
             var handCards = UiPlayer.Descendants(playableHand)
@@ -264,8 +264,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             var banners = new[]
             {
-                UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel),
-                UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel)
+                UiPlayer.Button(hud, WindowAnswerLabel(runtime, EffectChoiceCommandKind.Confirm)),
+                UiPlayer.Button(hud, WindowAnswerLabel(runtime, EffectChoiceCommandKind.Decline))
             };
             Assert.That(banners.All(banner =>
                     banner.worldBound.xMin >= 0f && banner.worldBound.yMin >= 0f &&
@@ -425,9 +425,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "with its own confirm-or-decline drawn again rather than the unit selection the " +
                 "Undo dropped. " + Remaining(runtime));
             // Milestone 8.46c: the restored pause draws its two answers in the decision window again.
-            Assert.That(UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel).parent.name,
+            Assert.That(UiPlayer.Button(hud, WindowAnswerLabel(runtime, EffectChoiceCommandKind.Confirm)).parent.name,
                 Is.EqualTo("gd-decision-window-controls"));
-            Assert.That(UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel).parent.name,
+            Assert.That(UiPlayer.Button(hud, WindowAnswerLabel(runtime, EffectChoiceCommandKind.Decline)).parent.name,
                 Is.EqualTo("gd-decision-window-controls"));
 
             // A snapshot taken on the stopped decision, restored onto the same session: the pause has
@@ -1211,6 +1211,21 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
             yield return null;
+        }
+
+        // Milestone 8.46e. The optional step's two answers no longer read ACCEPT and DECLINE: the
+        // decision window labels them by consequence from the card's own declared label (8.46a), so a
+        // journey finds each answer by the command it carries and presses whatever words stand.
+        private static string WindowAnswerLabel(
+            ConfiguredMatchSceneRuntime runtime, EffectChoiceCommandKind kind)
+        {
+            var model = runtime.DecisionWindowView.Model;
+            Assert.That(model, Is.Not.Null, "The optional step stands in the decision window.");
+            var candidates = model.Controls.ToList();
+            if (model.CornerControl != null) candidates.Add(model.CornerControl);
+            var answer = candidates.Single(control =>
+                control.Command?.EffectChoice != null && control.Command.EffectChoice.Kind == kind);
+            return answer.Label;
         }
     }
 }
