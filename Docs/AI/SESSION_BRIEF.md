@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.45**.
+- Current completed milestone: **8.47**.
 - Active authorized milestone: **None**.
 - Next proposed milestone: **8.35z71**.
 
@@ -25,6 +25,8 @@ On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authori
 **[8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) is complete**: status narration now names the hero a standing public decision waits on, read from the authoritative `DecisionOwner` rather than guessed from the acting hero, while a responder keeps their own actionable prompt and no foreign hand or candidate is exposed. Ignatia was explicitly withdrawn; no hero follows Widget. Widget's local build-smoke exception is approved in his rules shard.
 
 On 2026-09-18 the user authorized two packages in turn. **[8.44](Roadmap/PHASE_8.md) is complete** - `Builds/Playtest-8.44-seventeen-hero`, seventeen heroes, whose gate caught a harness build break 8.42c had introduced. **[8.45](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.45-undo-corrections` and its ZIP carry the same seventeen heroes plus 8.42d's visible seat rewind and 8.42e's interaction wall, stamped `1.0-8.45-undo-corrections`, with the configured content digest measured unchanged. Neither authorizes upload, remote operation or public distribution, and no new hero follows them.
+
+On 2026-09-18, three hours before the evening's invited playtest, the user asked for "the letters" in a build for that night. **[8.47](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.45a-phase-banner` and its ZIP are 8.45 plus one change, the transient phase banner - blood-red outlined letters centre screen announcing a new turn's commitment, a hero's card resolving and the Minion Battle, per seat, never taking a click - cut on top of 8.45 while the decision window (8.46) continued on its own branch. Both complete suites, the harness and the launch smoke were green at the packaged revision.
 
 The completed 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b** exclude the attacked unit from Shotgun's adjacent-hero discard, show revealed card-plus-item Initiative in the badge, and keep player trays on their own hero. **8.42d** then restored the seat UNDO square that a standing card-text prompt was hiding, the host's own rewind bounds unchanged; [playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns all four. Return to proposed cleanup 8.35z71.
 
