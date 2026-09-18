@@ -197,11 +197,6 @@ namespace GuardsDigital.Tests.EditMode
         public void TheBanner_YieldsToAnExpandedWindowOpeningOnTheSameRefresh_AndIsNotOwedLater()
         {
             var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
-            var view = new PhaseBannerUnityView(() => new VisualElement());
-            var presenter = new PhaseBannerPresenter(new DirectorMatchClient(session), view);
-            presenter.Refresh();
-            Assert.That(view.IsShowing, Is.False, "The first observation primes.");
-
             var red = session.Projection.Cards.Single(card =>
                 session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Red &&
                 card.State.Location == CardLocation.Hand &&
@@ -210,10 +205,18 @@ namespace GuardsDigital.Tests.EditMode
                 session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue &&
                 card.State.Location == CardLocation.Hand &&
                 card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StopProjectiles));
+            // Milestone 8.50: only the player who is up hears a turn banner, so the viewer is the
+            // Red seat whose Lift Up acts first - the Director would hear nothing to yield.
+            var view = new PhaseBannerUnityView(() => new VisualElement());
+            var presenter = new PhaseBannerPresenter(new DirectorMatchClient(session), view, red.OwnerId);
+            presenter.Refresh();
+            Assert.That(view.IsShowing, Is.False, "The first observation primes.");
+
             ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
             ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
-            Assert.That(session.Projection.SelectedActor.IsDefined, Is.True,
-                "Both commitments in, a hero is acting: the transition a banner would announce.");
+            Assert.That(session.Projection.SelectedActor.ActorId, Is.EqualTo(red.OwnerId),
+                "Both commitments in, the viewer's own hero is acting: the transition a banner " +
+                "would announce as YOUR TURN.");
 
             presenter.YieldsWhen = () => true;
             presenter.Refresh();
