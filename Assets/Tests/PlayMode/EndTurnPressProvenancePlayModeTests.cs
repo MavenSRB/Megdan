@@ -22,7 +22,7 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class EndTurnPressProvenancePlayModeTests
     {
         [UnityTest]
-        public IEnumerator TheLivePanel_TellsAPointerPressFromAKeyboardSubmit_AndNamesTheKey()
+        public IEnumerator TheLivePanel_TellsAPointerPressFromAKeyboardSubmit_AndTheSubmitNoLongerPresses()
         {
             MatchSceneCompositionRoot.NextComposedCardContent = SceneCardContent.ConfiguredMatch;
             var operation = SceneManager.LoadSceneAsync("Milestone1_2_HexGrid", LoadSceneMode.Single);
@@ -83,13 +83,17 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return null;
 
-            Assert.That(presses, Has.Count.EqualTo(2),
-                "A navigation submit on the focused Button IS a press - which is the whole finding.");
-            Assert.That(presses[1], Does.Contain("source=keyboard"),
-                "and it reads as a keyboard press: " + presses[1]);
-            Assert.That(presses[1], Does.Contain("key=Space"), "naming the key that did it.");
-            Assert.That(presses[1], Does.Contain("focused=gd-end-turn-control"),
-                "and the control that had focus when it landed.");
+            // Milestone 8.51 found that a navigation submit on the focused Button IS a press - which
+            // is how an alt-tabbing player ended a turn. Milestone 8.52 closes it, at the user's word
+            // ("have it make space and enter not end a turn"): the control cannot take focus, and a
+            // submit dispatched at it anyway is stopped before the Button's own handler runs.
+            Assert.That(control.focusable, Is.False,
+                "END TURN is not a keyboard target, so Enter and Space have nothing to land on.");
+            Assert.That(control.panel.focusController.focusedElement, Is.Not.SameAs(control),
+                "Focus() on an unfocusable control leaves focus elsewhere.");
+            Assert.That(presses, Has.Count.EqualTo(1),
+                "A keyboard submit presses nothing: the one press is still the pointer's. " +
+                string.Join(" | ", presses));
         }
     }
 }

@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.49**.
+- Current completed milestone: **8.52**.
 - Active authorized milestone: **8.46f**.
-- Next proposed milestone: **8.52**.
+- Next proposed milestone: **8.53**.
 
 On 2026-09-18, after a row-by-row design review and a mockup drawn over live captures, the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)**: "Ok, get on it then." The sequence **8.46 -> 8.46a -> 8.46b -> 8.46c -> 8.46d -> 8.46e -> 8.46g -> 8.46f** replaces the strip's prompts with one two-state window whose controls name their consequence, built in a separate worktree beside the concurrent 8.45 package and merged after; nothing new may overlap an existing element at any resolution, and every new element inherits `MatchHudPanelScaling`. Blocks 8.46a-8.46g are landed on the series branch - 8.46g, added mid-playtest at the user's word, moves the level-up upgrade into the window as well - and 8.46f integrates them behind 8.49-8.52.
 
@@ -31,6 +31,8 @@ On 2026-09-18 the user authorized two packages, both complete: **[8.44](Roadmap/
 The evening's invited playtest drove a run of small milestones, all complete: **[8.47](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.45a-phase-banner` three hours before it - 8.45 plus the transient centre-screen phase banner; **[8.48](Roadmap/PHASE_8.md)** made Bounce's "may repeat once" hold when Reload! borrows it (Swift's revision `swift-8-48-rev-1`); **[8.50](Roadmap/PHASE_8.md)** made the banner speak only when a player is up, retiring the other seats' "<NAME>'S TURN" line; **[8.51](Roadmap/PHASE_8.md)** answered "Silverarrows blue got resolved without player input" with a `CardHeld` log row (wire `guards-private-online/16`) and a `GUARDS_INPUT: END_TURN_PRESS` line naming what pressed END TURN. No package is authorized by 8.48-8.51.
 
 The playtest's third report - "Lives are not being counted correctly. It just takes -1 from pool" - became **[8.49](Roadmap/PHASE_8.md) is complete** (landed after 8.50 and 8.51): p.13's lowest-Tier reading now covers the cards a hero is playing with rather than the Tier I cards its upgrades returned to the deck, so a Defeat costs and pays 1, 2 or 3 by Tier as the table prints, and each rail shows the hero's worth in a half-coin, half-heart badge beside its level.
+
+From the same night's "Silverarrow" report, once 8.51 had named the press: **[8.52](Roadmap/PHASE_8.md) is complete** - the drawn END TURN control no longer answers Enter or Space, only the pointer.
 
 The completed 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b** exclude the attacked unit from Shotgun's adjacent-hero discard, show revealed card-plus-item Initiative in the badge, and keep player trays on their own hero. **8.42d** then restored the seat UNDO square that a standing card-text prompt was hiding, the host's own rewind bounds unchanged; [playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns all four. Return to proposed cleanup 8.35z71.
 

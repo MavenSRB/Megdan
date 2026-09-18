@@ -470,3 +470,15 @@ Acceptance: `MatchLogChannelTests` ties the Hold row one-for-one to its event on
 Non-goals: deciding what pressed END TURN on 2026-09-18 - no log from that night can; refusing keyboard submits on END TURN or any other change to how a press behaves; a package, since the record reaches players only in the next build they run; any rule, content or schema change.
 
 Historical evidence: [8.51 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-851-hold-row-and-press-provenance-completion-evidence).
+
+### [x] 8.52 END TURN answers the pointer and nothing else
+
+Authorized 2026-09-19 by the user, relayed from the session that built 8.51: "have it make space and enter not end a turn." 8.51's provenance line proved how an alt-tabbing player ended Silverarrow's turn on 2026-09-18: a UI Toolkit Button presses itself on a `NavigationSubmitEvent`, and InputForUI maps Enter and Space to it for whichever control holds focus.
+
+Outcome: the drawn END TURN control - live or greyed - is unfocusable, so the keyboard's navigation can never land on it, and a trickle-down submit handler stops any `NavigationSubmitEvent` before the Button's own handler runs. A mouse click and 8.51's press-provenance log line are exactly as they were.
+
+Acceptance: `EndTurnPressProvenancePlayModeTests` presses the live control with the pointer (one press, `source=pointer`), then focuses it and dispatches a Space key and a navigation submit, and asserts the control is unfocusable, focus stayed elsewhere, and the press count is still one; `EndTurnPressProvenanceTests` unchanged. Focused Edit and Play Mode green; complete offline harness green.
+
+Non-goals: any other control's keyboard behaviour; the tray's Confirm and Pass banners, which a keyboard may still submit.
+
+Historical evidence: [8.52 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-852-end-turn-keyboard-completion-evidence).

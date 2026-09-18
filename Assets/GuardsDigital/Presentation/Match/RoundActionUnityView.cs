@@ -1904,6 +1904,7 @@ namespace GuardsDigital.Presentation.Match
                     ConfiguredMatchHudRenderer.EndTurnControlHeight, EndTurnControlFontSize);
                 disabled.tooltip = unavailableReason;
                 HudElements.MarkUnavailable(disabled);
+                IgnoreKeyboardSubmit(disabled);
                 endTurnHost.Add(disabled);
                 return;
             }
@@ -1932,6 +1933,8 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.51: the live control is the one whose pointer, key and submit signals
             // name the press; the greyed one above cannot be pressed and is not observed.
             endTurnPress.Observe(control);
+            // Milestone 8.52: and a keyboard can no longer press it at all - see IgnoreKeyboardSubmit.
+            IgnoreKeyboardSubmit(control);
             endTurnControl = control;
             if (onlyOfferLeft)
             {
@@ -1952,6 +1955,31 @@ namespace GuardsDigital.Presentation.Match
                 control.Add(shine);
             }
             endTurnHost.Add(control);
+        }
+
+        /// <summary>
+        /// Milestone 8.52. END TURN answers the pointer and nothing else. The user, after the
+        /// 2026-09-18 playtest: "have it make space and enter not end a turn" - an alt-tabbing player
+        /// had ended Silverarrow's turn without meaning to, and milestone 8.51's provenance line
+        /// proved how: a UI Toolkit <see cref="Button"/> presses itself on a
+        /// <see cref="NavigationSubmitEvent"/>, and InputForUI maps Enter and Space to that event for
+        /// whichever control holds focus.
+        ///
+        /// <para>Two locks, because each closes a different door. The control is made unfocusable, so
+        /// the keyboard's own navigation can never land on it and a submit has no target here. And a
+        /// trickle-down submit handler stops the event before the Button's own handler runs, so a
+        /// submit that arrives anyway - dispatched at the control by code, or by a future input map -
+        /// still presses nothing. The pointer path and the press-provenance line are untouched: a
+        /// mouse click is exactly as it was.</para>
+        /// </summary>
+        private static void IgnoreKeyboardSubmit(Button control)
+        {
+            control.focusable = false;
+            control.RegisterCallback<NavigationSubmitEvent>(evt =>
+            {
+                evt.StopImmediatePropagation();
+                evt.PreventDefault();
+            }, TrickleDown.TrickleDown);
         }
 
         private static Button CreateCornerControl(
