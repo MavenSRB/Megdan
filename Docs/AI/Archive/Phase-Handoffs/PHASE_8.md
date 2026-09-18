@@ -1792,3 +1792,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.43c prerequisite | Recorded the source-checked, user-accepted WI-Q2 face-up Skill pool; no implementation or milestone completion. [Rule owner](../../Rules/HERO_WIDGET.md#open-verification-points). | `checkpoint/widget-dragon-knight-ruling` |
+
+## Milestone 8.43a Widget ordinary token operations completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.43a | Declared one retained-round Pyro and composed ordinary placement, movement/order and swaps with source-linked continuation coverage; all remain deferred until dealing. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843a-support-pyros-persistent-token-and-ordinary-operations). | `milestone/8.43a` |

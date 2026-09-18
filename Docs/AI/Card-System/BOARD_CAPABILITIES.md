@@ -22,6 +22,8 @@ Milestone 8.19b implements the roster-specific reusable layer without pretending
 
 ### Geometry
 
+Printed-icon hero selection may additionally declare `chosenHeroSpace`, a live coordinate published beside the selected hero identity by the same read-only execution/feasibility query. Undeclared outputs remain absent, preserving existing identity-only nodes. Widget's All Aboard family uses it to feed the ordinary token/hero Swap, with consumer eligibility checking both participants and the Swap immunity before offering a partner; no hero name or card text selects the operation.
+
 Reusable geometry queries include:
 
 - `AdjacentSpaceQuery` and `AdjacentObjectQuery`.

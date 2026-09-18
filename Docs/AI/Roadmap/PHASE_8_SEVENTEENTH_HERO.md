@@ -18,7 +18,7 @@ Non-goals: executable content or mechanics; adopting unverified community ruling
 
 Historical evidence: [8.43 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843-widget-inventory-completion-evidence).
 
-### [!] 8.43a Support Pyro's persistent token and ordinary operations
+### [x] 8.43a Support Pyro's persistent token and ordinary operations
 
 Outcome: a declared hero-owned persistent token can be selected by typed component identity, placed from supply or relocated as printed, moved and swapped using existing object operations; Dragon Bond can move actor and token in either chosen order.
 
@@ -26,9 +26,11 @@ Acceptance: owner/definition isolation, supply and board identity, ordinary toke
 
 Non-goals: paired enemy movement, borrowed actions, dealing or artwork registration.
 
-Paused prerequisite: **WI-Q3**, confirmation of Pyro's single-piece supply, before declaring executable hero component content. The generic single-token fact handlers and explicit retained-round lifetime are implemented and tested at `checkpoint/8.43a-token-groundwork`; no Widget token definition or card is registered. Still owed: source-backed component definition, complete placement/move/order/Swap compositions and their source-linked paused/restore/replay checks above. This checkpoint does not close the milestone. WI-Q1 is answered; WI-Q2 is source-checked and user-accepted, with implementation still owned by 8.43c.
+WI-Q3 confirms one Pyro. The deferred component and ordinary effect compositions now use identity-preserving board Place, supply Place, both live-state movement orders and independent Range/Radius swaps; no Widget card or component is production-registered. The earlier checkpoint remains historical. WI-Q1 and WI-Q2 are resolved for their later implementation owners. On a full board, the existing conservative conditional-feasibility rule can still offer the Place branch; taking it performs no placement or reclamation. No new special-case feasibility engine is introduced.
 
 Checkpoint index: [8.43a token groundwork](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843a-widget-token-groundwork-checkpoint).
+
+Historical evidence: [8.43a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843a-widget-ordinary-token-operations-completion-evidence).
 
 ### [ ] 8.43b Support Pyro-anchored targeting and coupled displacement
 

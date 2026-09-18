@@ -4,7 +4,7 @@ Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
 ## Widget content ledger
 
-Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, capability mapping and unresolved interpretations. No Widget executable content is claimed by this inventory.
+Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, capability mapping and interpretations. His deferred component and ordinary Place/Move/Swap compositions are implemented; full cards, dealing and the player gate remain outstanding.
 
 ## Source authority
 
@@ -86,9 +86,9 @@ These routes separate inspected reusable contracts from missing vocabulary. Comp
 
 | Printed clause | Existing foundation / required delta | Owner |
 | --- | --- | --- |
-| Persistent named token | Generic retained-round condition and typed owned-definition fact handlers implemented at the 8.43a checkpoint; source-backed Pyro definition/supply still gated by WI-Q3. No production registration | 8.43a |
-| Place Pyro / move actor and token in either order | Existing Place/reclamation and direct-Move operations; probe relocation semantics and compose explicit order with live state | 8.43a |
-| Direct token movement / Swap with Pyro | Existing `synthetic-direct-move@3` and object Swap; supply token lookup and independent printed icon bounds | 8.43a |
+| Persistent named token | WI-Q3 confirms one Pyro; `WidgetComponentContent` declares its explicit retained-round lifetime and deferred identity/Range/Radius/supply handlers. No production registration | 8.43a |
+| Place Pyro / move actor and token in either order | `WidgetEffectContent.DragonBond` composes supply Place versus identity-preserving board Place, and two chosen direct-Move orders with live second-step state | 8.43a |
+| Direct token movement / Swap with Pyro | Ordinary direct-Move riders, optional actor Swap in Radius, and All Aboard/Take-Off/Safe Landing's separate Pyro/hero Range checks; Safe Landing rechecks after its optional exact one-space move | 8.43a |
 | Range plus Pyro line/adjacency | Existing target/presence geometry and typed exclusions; add the two-origin intersection not expressible by a single disk | 8.43b |
 | Coupled exact 2/3 movement | Existing direction/board-displacement primitives; Tali's one-space pre-effect-occupancy batch is NOT this contract; requires WI-Q1 | 8.43b |
 | Discard / Remove / Defeat / Remove Pyro | Existing ordinary consequence handlers, preserving immunity, owner choice, Lane timing and mandatory-step order | 8.43b, 8.43d |
@@ -100,6 +100,6 @@ These routes separate inspected reusable contracts from missing vocabulary. Comp
 
 - **WI-Q1 (answered 2026-09-18):** The user approved "Yes, move them together as described" for one common distance (2 or 3) and one direction, both moving as a pair, allowing following through the other's vacated spaces, and neither moving if either cannot complete the chosen distance. This is a user-approved interpretation, not a claimed official ruling. Ordinary obstacles still block Drag Off; Carry Away ignores transit obstacles but both endpoints must be legal. Coupled implementation and regression checks are owned by 8.43b.
 - **WI-Q2 (resolved 2026-09-18):** Dragon Knight includes owned face-up discarded and resolved Skills, including the Skill card just used for Movement, but excludes in-hand and facedown cards. Its exact text says "your face-up Skill card", not "another" or "resolved". Rulebook p.9 ties card type to its primary action; p.7 reveals the played card before acting, so the current Skill qualifies without assuming that its resolution precedes the Ultimate trigger. Page 10 distinguishes resolved/discarded states and removes type/actions from facedown cards; p.4 identifies cards in hand as hidden. Those full pages and the local Dragon Knight face were visually checked for this answer. The user accepted this source-based reading with "ok keep going then?" after the explanation. This is not a separately verified Widget-specific designer ruling. Do not substitute Gold's resolved-only pool or treat an internal hand-orientation flag as public face-up eligibility. Implementation and source-linked eligibility/continuation checks remain owed by 8.43c.
-- **WI-Q3 (asked 2026-09-18, unanswered):** confirm exactly one Pyro piece and relocation of that same piece when already placed. Verify visual identities at integration; do not treat the manifest's standee type as a second hero.
+- **WI-Q3 (answered 2026-09-18):** The user answered "ok, keep going then" to the explicit confirmation that Widget has exactly one Pyro token and "Place Pyro" relocates the same piece when already on the board. Declare one physical piece, preserving its board identity on relocation; this supply confirmation is user-approved rather than a claimed published component count. Verify visual identities at integration; do not treat the manifest's standee type as a second hero.
 - Fight as One's borrowed action may affect Pyro/spaces rather than a unit; WI-07 supports applying "different unit" as an original-target exclusion, not an invented requirement to target a unit. Source-linked tests must cover both shapes at 8.43c.
-- Build smoke requires a scoped launcher exception at integration; it is a workflow permission, not a game rule or distribution authorization.
+- Build smoke exception approved 2026-09-18: the user answered "Yes, run Widget's local build smoke check" to using `Tools/Invoke-PlayerBuildSmoke.ps1` for the required disposable local build-and-launch check. No package, upload or distribution is authorized.

@@ -101,11 +101,22 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "tokens.named-owned-facts", "tokens.explicit-round-retention"
+            "tokens.named-owned-facts", "tokens.explicit-round-retention", "targeting.hero-space-output"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "targeting.hero-space-output",
+                new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities.ChosenHeroSpaceOutputName), MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetTokenOperationTests),
+                    nameof(WidgetTokenOperationTests.AllAboardChecksBothRanges_AndSelectsOnlyAnotherFriendlyHero),
+                    MemberTypes.Method), SharedFoundationEvidenceKind.BoundaryFixture, "printed Range hero selection feeding token/hero Swap") },
+                new[] { "query", "typed output", "feasibility", "identity" },
+                "Printed-icon hero selection can publish its selected hero's live space when declared by the consuming node; identity-only nodes keep their existing output.",
+                "Reassess for a consumer retaining the coordinate across an intervening displacement."),
             new SharedFoundationClaim(
                 "tokens.named-owned-facts",
                 new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticOwnedTokenCapabilities),

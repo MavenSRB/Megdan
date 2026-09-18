@@ -33,3 +33,13 @@ Acceptance: actual board clicks on allied and enemy tokens from a player seat ke
 Non-goals: removing public hero-rail history or hover information, changing game visibility rules, or disabling Director tools.
 
 Historical evidence: [8.42b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842b-hero-tray-interactions-completion-evidence).
+
+### [ ] 8.42c Name the awaited responder in status narration
+
+Authorized 2026-09-18, to follow Widget's approved sequence: the user reports the narration bar fails to say when the game waits for a hero outside the current activation, for example "Sabina choosing defense card".
+
+Outcome: status narration identifies the hero whose response is currently required and the public activity, including out-of-turn Defense and opponent-owned card choices, rather than attributing every pause to the active hero.
+
+Acceptance: reproduce the incorrect Defense narration before fixing it; derive the awaited responder from authoritative pending-input/projection facts, preserving the separate active actor; cover defender card selection, opponent-owned discard/other applicable pending families, ordinary activation, and transition back to the attacker. Both responding and observing seats must receive accurate public waiting text with no foreign hand/selection leak. Focused presenter/projection regressions, an affected real-input Play Mode journey and targeted visual inspection (T2); snapshot refresh must rederive the same narration without new authoritative state.
+
+Non-goals: narration-bar redesign, new rule timing, unrelated HUD changes or packaging.

@@ -402,6 +402,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         /// <summary>The hero a printed-Radius hero selection chose.</summary>
         public const string ChosenHeroOutputName = "chosenHero";
+        public const string ChosenHeroSpaceOutputName = "chosenHeroSpace";
 
         public const string ChosenMinionOutputName = "chosenMinion";
 
@@ -1162,6 +1163,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             new EffectOutputBinding(
                                 ChosenMinionSpaceOutputName, EffectValueKind.Coordinate)
                         }
+                        : Enumerable.Empty<EffectOutputBinding>())
+                    .Concat(subject == PrintedIconSelectionSubject.Hero
+                        ? new[] { new EffectOutputBinding(ChosenHeroSpaceOutputName, EffectValueKind.Coordinate) }
                         : Enumerable.Empty<EffectOutputBinding>()));
             }
 
@@ -1280,11 +1284,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         return null;
                     }
 
-                    return new[]
+                    var heroOutcomes = new List<EffectOutcomeFact>
                     {
                         new EffectOutcomeFact(
                             ChosenHeroOutputName, EffectValue.Hero(selected[0].HeroId))
                     };
+                    // A declared coordinate lets a following object operation consume the same
+                    // selected hero. Existing nodes that request only identity remain unchanged.
+                    if (context.Publishes(ChosenHeroSpaceOutputName) && context.Components?.Board != null &&
+                        context.Components.Board.TryGetObjectCoordinate(
+                            BoardObjectReference.ForHero(selected[0].HeroId), out var heroAt))
+                        heroOutcomes.Add(new EffectOutcomeFact(ChosenHeroSpaceOutputName, EffectValue.Space(heroAt)));
+                    return heroOutcomes;
                 }
 
                 if (subject == PrintedIconSelectionSubject.Minion)

@@ -14,13 +14,15 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.43**.
+- Current completed milestone: **8.43a**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.43a**.
+- Next proposed milestone: **8.43b**.
 
 On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
 
-**8.43a is paused at WI-Q3**, Pyro's single-piece supply confirmation. Its generic token groundwork is checkpointed, not milestone-complete. WI-Q1 is answered; WI-Q2's Dragon Knight pool is now source-checked and user-accepted, with implementation owed by 8.43c. Widget is not yet playable.
+**8.43a is complete**: persistent Pyro and ordinary Place/Move/Swap compositions are tested and deferred. WI-Q1-WI-Q3 are resolved; anchored targeting/coupled movement follows, then Dragon Knight's accepted pool at 8.43c. Widget is not yet playable.
+
+The user additionally authorized [8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md), out-of-turn waiting narration, **after 8.43f**. Ignatia was explicitly withdrawn; no hero follows Widget. Widget's local build-smoke exception is approved in his rules shard.
 
 The user approved the 2026-09-17 playtest refinements **8.42 -> 8.42a -> 8.42b**: exclude the attacked unit from Shotgun/Super-Shotgun's adjacent-hero discard, show revealed card-plus-item Initiative in the badge, and keep player trays on their own hero when another token is clicked. [Playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns the checks; return to proposed cleanup 8.35z71 afterward.
 
