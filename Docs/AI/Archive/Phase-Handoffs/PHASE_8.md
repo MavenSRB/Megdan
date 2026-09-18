@@ -1828,3 +1828,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 8.43f | Completed Widget's whole-set player gate, added independent Finish Movement, corrected borrowed-card prompts and removed Pyro's artwork caption. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843f-complete-widgets-permanent-player-path-gate). | `milestone/8.43f` |
+
+## Milestone 8.42c Awaited responder narration completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.42c | Status narration now names the hero a standing public decision waits on, and the public family it is, derived from the authoritative DecisionOwner rather than the acting hero; responders keep their own actionable prompt and no foreign hand or candidate is exposed. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842c-name-the-awaited-responder-in-status-narration). | `milestone/8.42c` |

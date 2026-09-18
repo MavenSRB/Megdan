@@ -2091,6 +2091,25 @@ namespace GuardsDigital.Presentation.Match
             return ActionUnavailabilityLabels.Generic;
         }
 
+        private static string FormatPublicDecisionWait(IMatchReadModel projection, HeroId viewerHeroId)
+        {
+            var owner = projection.DecisionOwner;
+            if (!viewerHeroId.IsDefined || !owner.IsDefined) return null;
+            var viewer = projection.Setup.Heroes.SingleOrDefault(hero => hero.HeroId.Equals(viewerHeroId));
+            var ownsDecision = owner.IsTeamOwned
+                ? viewer != null && viewer.TeamSide == owner.TeamSide
+                : owner.HeroIds.Any(hero => hero.Equals(viewerHeroId));
+            // An enabled responder keeps their detailed actionable prompt. An in-flight reader
+            // may have no private pending surface, but still knows this same public wait.
+            if (ownsDecision && projection.IsInputEnabled) return null;
+            var names = owner.IsTeamOwned
+                ? MinionChoiceLabels.TeamLabel(owner.TeamSide).ToUpperInvariant()
+                : string.Join(", ", owner.HeroIds.Select(hero =>
+                    HeroDisplayName(projection.Setup.Heroes, hero).ToUpperInvariant()));
+            return string.IsNullOrEmpty(names) ? null : NarrationLabels.HeroDeciding(
+                names, NarrationLabels.PublicDecisionActivity(owner.FamilyId));
+        }
+
         /// <summary>
         /// Milestone 8.35n (the FIFTH amendment, playtest finding: "ACTING ON INITIATIVE X is not
         /// enough ... hero name, who is acting, not only initiative"). Every branch below reads as
@@ -2107,14 +2126,9 @@ namespace GuardsDigital.Presentation.Match
         /// 8.35g's own decision), and who still owes a commitment or a team-agreement answer (both
         /// stated public on their own declarations).
         ///
-        /// <para><b>What this deliberately does NOT say, and why.</b> A non-owning viewer's
-        /// projection carries <c>null</c> for defense, leveling and respawn, so this method cannot
-        /// name that one of those is standing on the acting hero's turn, only that the hero is
-        /// acting - the same recorded gap <see cref="AwaitedInputQuery.IsHeroAwaited"/> already
-        /// carries for the hero-scope tray shine, closed only once the Core track's event-channel
-        /// milestone adds the missing public owner fact to <see cref="IMatchReadModel"/>. Composing a
-        /// spectator sentence that guessed at it from local state would be exactly the rule
-        /// re-derivation the project's own discipline forbids.</para>
+        /// <para>Observers read the public DecisionOwner before ordinary phase/actor narration.
+        /// Its family and awaited heroes are public even when the answer details are withheld.
+        /// This changes no turn actor, exposes no candidates and persists no presentation state.</para>
         /// </summary>
         private static string FormatStatus(
             IMatchReadModel projection, HeroId viewerHeroId, out string statusDetail)
@@ -2180,6 +2194,9 @@ namespace GuardsDigital.Presentation.Match
                 return MinionChoiceLabels.TeamLabel(side) + " wins: " +
                     FormatVictoryCause(outcome.Cause) + ".";
             }
+
+            var publicWait = FormatPublicDecisionWait(projection, viewerHeroId);
+            if (publicWait != null) return publicWait;
 
             var minionBattle = projection.PendingMinionBattleChoice;
             if (minionBattle != null)

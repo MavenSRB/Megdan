@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Application;
 
 namespace GuardsDigital.Presentation.Match
 {
@@ -21,6 +22,26 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public static class NarrationLabels
     {
+        private static readonly IReadOnlyDictionary<PendingDecisionFamilyId, string> PublicActivities =
+            new Dictionary<PendingDecisionFamilyId, string>
+            {
+                [PendingDecisionFamilies.Initiative] = "CHOOSING WHO ACTS FIRST",
+                [PendingDecisionFamilies.Movement] = "CHOOSING A MOVEMENT DESTINATION",
+                [PendingDecisionFamilies.AttackTarget] = "CHOOSING AN ATTACK TARGET",
+                [PendingDecisionFamilies.Defense] = "CHOOSING A DEFENSE CARD",
+                [PendingDecisionFamilies.Effect] = "RESOLVING A CARD EFFECT",
+                [PendingDecisionFamilies.Correction] = "RESOLVING DISPLACEMENT",
+                [PendingDecisionFamilies.MinionBattle] = "CHOOSING MINION BATTLE REMOVALS",
+                [PendingDecisionFamilies.HeroRespawn] = "CHOOSING A RESPAWN SPACE",
+                [PendingDecisionFamilies.SystemTransition] = "MAKING A ROUND-END CHOICE",
+                [PendingDecisionFamilies.RemovalPrevention] = "CHOOSING A REMOVAL RESPONSE",
+                [PendingDecisionFamilies.TurnRelease] = "TURN COMPLETE, AWAITING RELEASE"
+            };
+
+        /// <summary>The public family only: never another seat's candidates, selected card or bounds.</summary>
+        public static string PublicDecisionActivity(PendingDecisionFamilyId familyId) =>
+            PublicActivities.TryGetValue(familyId, out var activity) ? activity : "CHOOSING A RESPONSE";
+
         /// <summary>
         /// A decision the VIEWER'S OWN projection carries in full - defense, leveling, respawn,
         /// movement, an attack target, and the rest of the eleven declared pending-decision families,
@@ -50,12 +71,8 @@ namespace GuardsDigital.Presentation.Match
         /// acting, never whether a decision (a defender's answer, say) is standing on top of that
         /// turn.
         ///
-        /// <para><b>Milestone 8.35z7 note.</b> <see cref="IMatchReadModel.DecisionOwner"/> now
-        /// publishes exactly the fact that would tell a non-owning viewer whether such a decision
-        /// stands, and <see cref="AwaitedInputQuery.IsHeroAwaited"/> reads it for the hero-scope tray
-        /// shine - but composing a richer STATUS SENTENCE from it (naming the family, not only that
-        /// the turn is not the actor's own to continue) is this label's own separate surface and
-        /// stays a follow-up, not something this milestone's tray-arm fix touched.</para>
+        /// <para>A standing public decision takes precedence over this ordinary-activation label;
+        /// the presenter reads its awaited owner and <see cref="PublicDecisionActivity"/> instead.</para>
         /// </summary>
         public static string HeroActing(string heroDisplayName, int initiative) =>
             $"{RequireName(heroDisplayName)} — ACTING (INITIATIVE {initiative})";

@@ -4880,16 +4880,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The deferred non-goal, proved rather than assumed. A non-owning seat's own projection
-        /// carries <c>null</c> for <c>PendingDefenseChoice</c> - <c>SeatProjection</c>'s
-        /// <c>ownsDecision</c> scoping, the same shape the M3 worker recorded for the SEVENTH
-        /// amendment's tray shine - so an unmodified projection with an acting hero and no owned
-        /// pending family IS exactly what a real non-owning seat's projection looks like, not a
-        /// stand-in for one. The narration must never widen that privacy boundary by inferring a
-        /// standing defense from any other public clue.
+        /// Without a standing public decision, another viewer sees ordinary activation. An active
+        /// hero alone cannot imply a Defense, respawn or other response; 8.42c names those only
+        /// from the explicit public DecisionOwner, never from private answer details.
         /// </summary>
         [Test]
-        public void ANonOwningViewer_NeverNamesAnOwnerScopedActivityOnlyTheActingHerosName()
+        public void ANonOwningViewerWithoutAStandingDecisionNamesTheActingHero()
         {
             var session = CreateSession();
             StartTiedTurn(session, ActionKind.Movement);
@@ -4898,7 +4894,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
             Assert.That(session.Projection.PendingDefenseChoice, Is.Null,
                 "The fixture under test must genuinely carry no owned pending family, or this " +
-                "proves nothing about the deferred non-goal.");
+                "proves nothing about ordinary activation.");
+            Assert.That(session.Projection.DecisionOwner.IsDefined, Is.False);
 
             var model = Narrate(new SpectatorReadModel(session.Projection), otherViewer);
             var actorName = session.Projection.Setup.Heroes
