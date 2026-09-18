@@ -1834,3 +1834,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 8.42c | Status narration now names the hero a standing public decision waits on, and the public family it is, derived from the authoritative DecisionOwner rather than the acting hero; responders keep their own actionable prompt and no foreign hand or candidate is exposed. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842c-name-the-awaited-responder-in-status-narration). | `milestone/8.42c` |
+
+## Milestone 8.44 Seventeen-hero package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.44 | Cut `Builds/Playtest-8.44-seventeen-hero` and its ZIP from a green pre-build gate: seventeen dealt heroes, the 8.42 refinements and 8.42c's awaited-responder narration, stamped `1.0-8.44-seventeen-hero`. The gate found and fixed a harness build break 8.42c had introduced. [Definition](../../Roadmap/PHASE_8.md#x-844-package-the-seventeen-hero-private-playtest-build). | `milestone/8.44` |
