@@ -434,3 +434,15 @@ Acceptance: `BounceBorrowedRepeatTests` drives a turn whose first slot holds Bou
 Non-goals: Bullet Time's granted performance, which runs while Bounce is still mid-resolution in the engine's state and so offers no repeat - whether p.16's "when a basic card resolves" should count that card as already resolved is a ruling for the user, recorded in [HERO_SWIFT.md](../Rules/HERO_SWIFT.md).
 
 Historical evidence: [8.48 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-848-bounce-repeat-through-reload-completion-evidence).
+
+### [~] 8.50 The banner speaks only when you are up
+
+Authorized 2026-09-18 after the evening playtest, in the user's words: "I dont think i want those banner letters we implemented for all the players. Just when a player is up. So only COMMIT A CARD and YOUR TURN + MINNION BATTLE i think." - confirmed after the session ("Yes, to it for point 1").
+
+Outcome: `PhaseBannerCueDetector` announces a seat's own commitment, its own turn and the Minion Battle, and nothing else: the other seats' "<NAME>'S TURN" line of 8.47 is retired, and the Director, who is up for nobody, hears no turn banner at all.
+
+Acceptance: `PhaseBannerTests` proves another hero's turn is silent while the viewer's next own turn is still announced, and that the Director still sees each commitment and the battle; `PhaseBannerPlayModeTests` unchanged and green.
+
+Non-goals: any change to the letters' look, timing or the window it yields to.
+
+Historical evidence: [8.50 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-850-banner-only-when-up-completion-evidence).
