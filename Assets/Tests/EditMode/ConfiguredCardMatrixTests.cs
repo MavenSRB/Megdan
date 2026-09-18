@@ -457,7 +457,8 @@ namespace GuardsDigital.Tests.EditMode
                     // the hidden pick and the reveal.
                     SyntheticShowcaseHand.CreateRedWithMarkerBoardSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithHiddenGuessSkill(owner),
-                    SyntheticResolvedRepriseHand.Create(owner)
+                    SyntheticResolvedRepriseHand.Create(owner),
+                    SyntheticCoupledEscortHand.Create(owner)
                 }
                 .SelectMany(hand => hand.Definitions)
                 .SelectMany(NamedCapabilities)
@@ -592,6 +593,7 @@ namespace GuardsDigital.Tests.EditMode
                 // node, which is what that concat is there for.
                 .Concat(BainCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(GarrusCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                .Concat(WidgetCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

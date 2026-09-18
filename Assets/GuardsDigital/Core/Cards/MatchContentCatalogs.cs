@@ -180,6 +180,7 @@ namespace GuardsDigital.Core.Cards
                     // Active effect that face stands, which is Tali's Blizzard shape exactly.
                     BainEffectContent.TriggeredEffects(BainCardContent.ContentRevision))
                 .Concat(new[] { GarrusEffectContent.ResolvedDiscardPrimary(GarrusCardContent.BattleFury, GarrusCardContent.ContentRevision) })
+                .Concat(new[] { WidgetEffectContent.DragonKnight(WidgetCardContent.DragonKnight, WidgetCardContent.ContentRevision) })
                 .ToArray()));
 
         /// <summary>
@@ -281,7 +282,9 @@ namespace GuardsDigital.Core.Cards
                 // the four are new handler TYPES and each took a showcase consumer in this same
                 // change, bound to the fixture's Focus marker rather than to his bounty.
                 .Concat(BainComponentContent.Handlers())
-                .Concat(GarrusActiveEffectContent.Handlers());
+                .Concat(GarrusActiveEffectContent.Handlers())
+                .Concat(WidgetComponentContent.RegisteredHandlers())
+                .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
 
         // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate, adds NOTHING to the list
         // above and says so rather than leaving the absence to be read as an oversight. No face of

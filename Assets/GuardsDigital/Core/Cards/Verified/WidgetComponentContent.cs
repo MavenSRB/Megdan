@@ -8,7 +8,7 @@ using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
-    /// <summary>Dragon Bond and WI-Q3: one persistent Pyro. Deferred until Widget is dealt.</summary>
+    /// <summary>Dragon Bond and WI-Q3: one persistent Pyro, registered with Widget.</summary>
     public static class WidgetComponentContent
     {
         public static TokenDefinition PyroDefinition { get; } = new TokenDefinition(
@@ -26,8 +26,8 @@ namespace GuardsDigital.Core.Cards.Verified
         public static EffectCapabilityReference DragTargetV1 => Reference("enemy-unit-beside-anchor");
 
         public static IEnumerable<TokenDefinition> Tokens() => new[] { PyroDefinition };
-        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() => Array.Empty<IEffectCapabilityHandler>();
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() => new[]
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() => Array.Empty<IEffectCapabilityHandler>();
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() => new[]
         {
             SyntheticOwnedTokenCapabilities.PresenceHandler(PyroPresentV1, PyroDefinition),
             SyntheticOwnedTokenCapabilities.SpaceHandler(PyroSpaceV1, PyroDefinition),

@@ -54,7 +54,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('tali')]
+    [ValidateSet('tali', 'widget')]
     [string] $Hero = 'tali',
     [switch] $Check,
     [switch] $Force
@@ -62,6 +62,13 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+# Pyro's source is a circular standee face. Reuse the validated circle/neutral-field
+# extraction, but write only the placed-token identity, never a hero registration.
+if ($Hero -eq 'widget') {
+    & (Join-Path $PSScriptRoot 'Prepare-HeroTokens.ps1') -Hero widget -Companion -Neutral -Check:$Check -Force:$Force
+    exit
+}
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $corpusRoot = [System.IO.Path]::Combine(

@@ -529,6 +529,8 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.BainCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.GarrusHeroIdValue:
                     return Cards.Verified.GarrusCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.WidgetHeroIdValue:
+                    return Cards.Verified.WidgetCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1544,6 +1546,30 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red),
                 CreateVerifiedBainHand(TeamSide.Blue));
+        }
+
+        public static MatchConfiguration CreateStagedWidgetForInternalTest(TeamSide initialTieBreakerSide) =>
+            Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red), owner => Cards.Verified.WidgetCardContent.CreateHand(owner, "blue"));
+
+        public static MatchConfiguration CreateStagedWidgetTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.WidgetUpgradeBranch branch) =>
+            Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                owner => Cards.Verified.WidgetProgressedHands.CreateTierTwoHand(owner, "blue", branch));
+
+        public static MatchConfiguration CreateStagedWidgetTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.WidgetUpgradeBranch branch)
+        {
+            var configuration = Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                owner => Cards.Verified.WidgetProgressedHands.CreateTierThreeHand(owner, "blue", branch));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(Cards.Verified.WidgetCardContent.DragonKnight)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException("The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
         }
 
         public static MatchConfiguration CreateStagedGarrusForInternalTest(TeamSide initialTieBreakerSide) =>

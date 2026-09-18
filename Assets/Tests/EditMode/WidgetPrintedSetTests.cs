@@ -29,13 +29,7 @@ namespace GuardsDigital.Tests.EditMode
         internal static HexCoordinate At(int q, int r = 0) => new HexCoordinate(q, r);
         internal static MatchContentCatalogs Catalogs()
         {
-            var defaults = MatchContentCatalogs.ForThisBuild();
-            return new MatchContentCatalogs(new EffectCapabilityCatalog(defaults.Capabilities.Registered.Select(defaults.Capabilities.Load)
-                .Concat(WidgetComponentContent.DeferredHandlers()).Concat(SyntheticCoupledMoveCapabilities.DeferredHandlers())),
-                new ComponentDefinitionCatalog(defaults.Components.RegisteredTokens.Select(defaults.Components.LoadToken).Concat(WidgetComponentContent.Tokens()),
-                    defaults.Components.RegisteredMarkers.Select(defaults.Components.LoadMarker)),
-                new TriggeredEffectCatalog(defaults.TriggeredEffects.Definitions.Concat(new[]
-                    { WidgetEffectContent.DragonKnight(WidgetCardContent.DragonKnight, WidgetCardContent.ContentRevision) })));
+            return MatchContentCatalogs.ForThisBuild();
         }
 
         [Test]

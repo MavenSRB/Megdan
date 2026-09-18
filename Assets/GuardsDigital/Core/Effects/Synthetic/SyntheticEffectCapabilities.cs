@@ -148,6 +148,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticHiddenChoiceCapabilities.RegisteredHandlers())
                 .Concat(SyntheticResolvedDiscardCapabilities.RegisteredHandlers())
                 .Concat(SyntheticNamedBorrowCapabilities.RegisteredHandlers())
+                .Concat(SyntheticOwnedTokenCapabilities.RegisteredHandlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

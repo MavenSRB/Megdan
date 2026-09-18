@@ -294,6 +294,24 @@
     { "definitionId": "garrus-light-pilum", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus15__7502827__front.png" },
     { "definitionId": "garrus-battle-ready", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus16__7502813__front.png" },
     { "definitionId": "garrus-heavy-pilum", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus17__7502822__front.png" },
-    { "definitionId": "garrus-battle-fury", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus18__7544040__front.png" }
+    { "definitionId": "garrus-battle-fury", "contentRevision": "garrus-8-41d-rev-1", "sourcePath": "active-hero-cards/Garrus/garrus18__7544040__front.png" },
+    { "definitionId": "widget-fight-as-one", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget__7692299__front.png" },
+    { "definitionId": "widget-dragon-bond", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget2__7538945__front.png" },
+    { "definitionId": "widget-diversionary-strike", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget3__7538943__front.png" },
+    { "definitionId": "widget-diversionary-attack", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget4__7538936__front.png" },
+    { "definitionId": "widget-airborne-attack", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget5__7538932__front.png" },
+    { "definitionId": "widget-diversionary-assault", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget6__7538941__front.png" },
+    { "definitionId": "widget-airborne-assault", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget7__7538942__front.png" },
+    { "definitionId": "widget-all-aboard", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget8__7570606__front.png" },
+    { "definitionId": "widget-take-off", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget9__7570607__front.png" },
+    { "definitionId": "widget-drag-off", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget10__7540767__front.png" },
+    { "definitionId": "widget-safe-landing", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget11__7570608__front.png" },
+    { "definitionId": "widget-carry-away", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget12__7538944__front.png" },
+    { "definitionId": "widget-fiery-breath", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget13__7540657__front.png" },
+    { "definitionId": "widget-flaming-breath", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget14__7540656__front.png" },
+    { "definitionId": "widget-nibble", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget15__7540775__front.png" },
+    { "definitionId": "widget-scorching-breath", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget16__7540654__front.png" },
+    { "definitionId": "widget-gnaw", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget17__7540711__front.png" },
+    { "definitionId": "widget-dragon-knight", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget18__7621750__front.png" }
   ]
 }

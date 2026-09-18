@@ -302,7 +302,8 @@ namespace GuardsDigital.Tests.EditMode
             // give, his return, his five Active-effect creations and the other sixteen contracts his
             // set names all run on types that already existed, and this rule counts TYPES.
             // Garrus adds resolved discard and named discarded-primary borrowing (two types).
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(86),
+            // Widget adds owned-token facts, anchored targets and coupled movement (three types).
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(89),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }
@@ -410,7 +411,7 @@ namespace GuardsDigital.Tests.EditMode
 
         private static Type[] RegisteredHandlerTypes()
         {
-            var catalog = SyntheticEffectCapabilities.CreateCatalog();
+            var catalog = GuardsDigital.Core.Cards.MatchContentCatalogs.ForThisBuild().Capabilities;
             return catalog.Registered
                 .Select(reference => catalog.Load(reference).GetType())
                 .Distinct()

@@ -4,7 +4,7 @@ Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
 ## Widget content ledger
 
-Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, capability mapping and interpretations. His nineteen printed definitions, eighteen executable dealt faces, progression, Pyro operations and Skill reuse are composed; production registration, dealing, artwork and the player gate remain outstanding.
+Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. His nineteen printed definitions, eighteen executable dealt faces, progression, Pyro operations and Skill reuse are composed. Production registration, staged branches and private artwork are integrated; the permanent player gate remains separate.
 
 ## Source authority
 
@@ -12,7 +12,7 @@ The curated `Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Wid
 
 WI-01: text extraction of all twenty-four pages of the local second-printing rulebook finds no Widget or Pyro mention. The extracted third-printing playtest cards remain the local authority for individual text, subject to the parent ledger's source hierarchy and edition qualification. General p.9 icon/range rules, p.10 card state/target/mandatory-step rules, p.11 movement, p.16 Ultimates, p.18 placement/obstacles/immunity and p.19 Swap/Remove/straight-line/token rules still govern. The full p.9, p.10, p.11, p.18 and p.19 pages were visually inspected for this inventory.
 
-WI-02: eighteen backs share SHA-256 `EF273AEE01095FDB89D14A2ACFA92050548C77B4427A7B6540CBB4D0F222FF92`; one has `85B7E5E5ABA34415B36EC0A429ECAE84B5270345313D320FC34914F8E8B21A9D`. Do not assume one shared back. The bundled manifest separately identifies `Widget2` (8596255) and `Pyro2` (8596251), both `VerticalTokens`; that extraction category is not their game-rules type. Visual crop verification and the supply declaration remain implementation acceptance, not proven by the manifest names alone.
+WI-02: eighteen backs share SHA-256 `EF273AEE01095FDB89D14A2ACFA92050548C77B4427A7B6540CBB4D0F222FF92`; one has `85B7E5E5ABA34415B36EC0A429ECAE84B5270345313D320FC34914F8E8B21A9D`. Do not assume one shared back. The bundled manifest separately identifies `Widget2` (8596255) and `Pyro2` (8596251), both `VerticalTokens`; that extraction category is not their game-rules type. The verified visual mapping and supply declaration are recorded below; manifest names alone establish neither.
 
 WI-03: Pyro is a token, not a hero or minion. Rulebook p.19 keeps tokens in play when their controller is defeated; Dragon Bond overrides ordinary end-round removal. Ordinary token occupancy, Clear and spawning onto tokens still apply. Place, direct Move, Swap, Remove and Defeat remain distinct operations. Existing Pyro can be Placed from the board under p.18; placing is into a different empty space and is not movement.
 
@@ -82,19 +82,25 @@ Starting hand: Fight as One, Dragon Bond, Diversionary Strike, All Aboard, Fiery
 
 ## Capability contract map
 
-These routes separate inspected reusable contracts from missing vocabulary. Composition must validate actual schemas; none is a production-registration claim.
+These routes identify the composed contracts. Registration at 8.43e makes each reachable from dealt content; 8.43f separately owns complete configured-player coverage.
 
 | Printed clause | Existing foundation / required delta | Owner |
 | --- | --- | --- |
-| Persistent named token | WI-Q3 confirms one Pyro; `WidgetComponentContent` declares its explicit retained-round lifetime and deferred identity/Range/Radius/supply handlers. No production registration | 8.43a |
+| Persistent named token | WI-Q3 confirms one Pyro; `WidgetComponentContent` declares its retained-round lifetime and registered identity/Range/Radius/supply handlers | 8.43a, 8.43e |
 | Place Pyro / move actor and token in either order | `WidgetEffectContent.DragonBond` composes supply Place versus identity-preserving board Place, and two chosen direct-Move orders with live second-step state | 8.43a |
 | Direct token movement / Swap with Pyro | Ordinary direct-Move riders, optional actor Swap in Radius, and All Aboard/Take-Off/Safe Landing's separate Pyro/hero Range checks; Safe Landing rechecks after its optional exact one-space move | 8.43a |
-| Range plus Pyro line/adjacency | Deferred anchored selectors intersect Widget's actual Range Total with Pyro geometry; consumer feasibility, immunity and live typed outputs share the ordinary choice contract | 8.43b |
-| Coupled exact 2/3 movement | Deferred coupled direct Move follows WI-Q1; both full paths validate with partner-vacated occupancy, then commit synchronously. Tali's one-space batch is unchanged | 8.43b |
-| Discard / Remove / Defeat / Remove Pyro | Deferred Breath/Nibble/Gnaw compositions use ordinary discard and staged consequences, preserving chooser, immunity, reward distinction, Lane timing and mandatory-step order | 8.43b, 8.43d |
+| Range plus Pyro line/adjacency | Anchored selectors intersect Widget's actual Range Total with Pyro geometry; consumer feasibility, immunity and live typed outputs share the ordinary choice contract | 8.43b, 8.43e |
+| Coupled exact 2/3 movement | Coupled direct Move follows WI-Q1; both full paths validate with partner-vacated occupancy, then commit synchronously. Tali's one-space batch is unchanged | 8.43b, 8.43e |
+| Discard / Remove / Defeat / Remove Pyro | Breath/Nibble/Gnaw compositions use ordinary discard and staged consequences, preserving chooser, immunity, reward distinction, Lane timing and mandatory-step order | 8.43b, 8.43d |
 | Resolved Skill primary, different unit | Owned resolved Skill pool, after-Attack grant and original-unit exclusion throughout the borrowed chain; token-only Skills remain legal | 8.43c |
 | Face-up Skill after Movement | Exact Movement completion fact and WI-Q2 public face-up pool use the existing Ultimate/grant pipeline, with source-state preservation | 8.43c |
-| Printed set, upgrades, items, registration and artwork | `WidgetCardContent` composes nineteen definitions, five starting cards, thirteen deck cards and the boxed Handicap; only the Handicap is deferred. Registration/artwork and configured player gate remain separate | 8.43d complete; 8.43e-8.43f outstanding |
+| Printed set, upgrades, items, registration and artwork | `WidgetCardContent` composes nineteen definitions, five starting cards, thirteen deck cards and the boxed Handicap; only the Handicap is deferred. Five staged branches and official selection deal the set | 8.43d-8.43e; gate 8.43f |
+
+## Integration identity and private artwork
+
+The registration addition leaves schema v42, wire `/15`, and all sixteen prior hero content identities unchanged. Eleven capability references and `widget-pyro@1` add 319 bytes to the recorded catalog. Earlier saved registration sets are rejected by the existing strict comparison, not silently migrated; only the test corpus fingerprints are regenerated. `SyntheticCoupledEscortHand` independently exercises owned Hazard lookup, anchored selection and coupled movement without Pyro.
+
+The selection front is byte-identical to `randomizers-tt25__7723701__front.png` (SHA-256 `3ED989791ACF2C5E808A40A5A2B43C2A4548055C7B92551C8AD68F9F96173CC6`). All eighteen playable fronts retain native 372x520 size. Visually verified Widget/Pyro circular faces come from their WI-02 manifest elements on `Image_1_Atlas`, respectively at `(1769,1577)/(2504,1577)` and `(2676,615)/(2980,615)`, each 302x302. The existing source-preserving portrait preparation supplies Widget's team/neutral resources and Pyro's single neutral placed-token resource; Pyro is never registered as a hero. Prepared fronts, highlights, profiles and portraits remain ignored private resources.
 
 ## Open verification points
 

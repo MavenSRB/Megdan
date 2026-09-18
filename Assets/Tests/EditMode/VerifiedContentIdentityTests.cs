@@ -167,7 +167,8 @@ namespace GuardsDigital.Tests.EditMode
             // contributing ZERO cards, and his went in beside the row in EveryDealtDefinition below,
             // in one change.
             new IdentityPin("bain", "bain-8-40i-rev-1", "4aa847253fd0406aef2c544ea0c5e57fb737e8801cbb3c61564e31e1609289e9"),
-            new IdentityPin("garrus", "garrus-8-41d-rev-1", "8244a9e8ebadb20886be72acc9bc590dd090252d0b9bb943a12fe57cddb7b335")
+            new IdentityPin("garrus", "garrus-8-41d-rev-1", "8244a9e8ebadb20886be72acc9bc590dd090252d0b9bb943a12fe57cddb7b335"),
+            new IdentityPin("widget", "widget-8-43d-rev-1", "80a8f06d51ba41181a990e3cd62387fce7d476044a2e48eba56c21815afd6c05")
         };
 
         [Test]
@@ -305,6 +306,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(MatchConfiguration.CreateStagedBainForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .Concat(MatchConfiguration.CreateStagedGarrusForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                .Concat(MatchConfiguration.CreateStagedWidgetForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

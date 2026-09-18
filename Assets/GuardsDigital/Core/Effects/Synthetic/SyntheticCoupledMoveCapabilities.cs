@@ -12,7 +12,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
     public static class SyntheticCoupledMoveCapabilities
     {
         public static EffectCapabilityReference MoveV1 => new EffectCapabilityReference(new EffectCapabilityId("coupled-direct-move"), 1);
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() => new[] { new CoupledMoveHandler() };
+        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() => Array.Empty<IEffectCapabilityHandler>();
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() => new[] { new CoupledMoveHandler() };
 
         private sealed class CoupledMoveHandler : IEffectCapabilityHandler
         {

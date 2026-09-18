@@ -8,19 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; sixteen playable heroes - the whole package arc plus Swift the Sharpshooter, Cutter the Sky Pirate, Bain the Bounty Hunter and Garrus the Gladiator, every composed hero dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v42 persists the current state; wire protocol is `guards-private-online/15`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the sixteen p.20 Handicap cards p.6 returns to the box at setup. Milestone 8.38's series then dealt and gated her, the 8.39 series dealt and gated a FOURTEENTH, Cutter the Sky Pirate, and the 8.40 series has dealt and gated a FIFTEENTH, Bain the Bounty Hunter; **all sixteen heroes pass the permanent player-path gate**. The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; seventeen playable heroes, including Widget and Pyro; every composed hero dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v42 persists the current state; wire protocol is `guards-private-online/15`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the seventeen p.20 Handicap cards p.6 returns to the box at setup. Milestone 8.38's series then dealt and gated her, the 8.39 series dealt and gated a FOURTEENTH, Cutter the Sky Pirate, and the 8.40 series has dealt and gated a FIFTEENTH, Bain the Bounty Hunter; Sixteen heroes pass the permanent player-path gate; Widget's gate remains. The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.43d**.
+- Current completed milestone: **8.43e**.
 - Active authorized milestone: **None**.
-- Next proposed milestone: **8.43e**.
+- Next proposed milestone: **8.43f**.
 
 On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
 
-**8.43d is complete**: all eighteen playable faces and the boxed Handicap are composed; WI-Q1-WI-Q3 are resolved. Widget is not yet selectable. Registration, artwork and player-path validation follow.
+**8.43e is complete**: Widget is selectable with his complete printed set, private artwork and Pyro. WI-Q1-WI-Q3 are resolved. His permanent player-path gate is next; no gate pass is claimed yet.
 
 The user additionally authorized [8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md), out-of-turn waiting narration, **after 8.43f**. Ignatia was explicitly withdrawn; no hero follows Widget. Widget's local build-smoke exception is approved in his rules shard.
 

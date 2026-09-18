@@ -1816,3 +1816,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.43d | Composed all printed faces and progression; corrected pre-attack token-Swap feasibility and non-basic Movement trigger holding. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843d-compose-widgets-eighteen-playable-faces). | `milestone/8.43d` |
+
+## Milestone 8.43e Widget dealing and artwork completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.43e | Registered Widget as the seventeenth pick with his complete set, private artwork and distinct Pyro token; preserved prior hero identities. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843e-deal-register-and-artwork-widget). | `milestone/8.43e` |

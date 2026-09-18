@@ -101,7 +101,8 @@ namespace GuardsDigital.Presentation.Match
                 // rows, for the reason those seven paragraphs give: the rows alone are what every
                 // offline tier can see, and this map is what turns them into a front on a card.
                 { "bain", "Bain" },
-                { "garrus", "Garrus" }
+                { "garrus", "Garrus" },
+                { "widget", "Widget" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -401,6 +402,7 @@ namespace GuardsDigital.Presentation.Match
                 // Backup and Cutter's Few More Steps are not among theirs.
                 .Concat(BainCardContent.DealtDefinitions)
                 .Concat(GarrusCardContent.DealtDefinitions)
+                .Concat(WidgetCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

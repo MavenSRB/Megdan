@@ -173,6 +173,8 @@ namespace GuardsDigital.Tests.EditMode
                 // alone, exactly as Silverarrow's CardTextFastTravelHandler is excluded above.
                 .Concat(BainActiveEffectContent.Handlers())
                 .Concat(BainComponentContent.Handlers())
-                .Concat(GarrusActiveEffectContent.Handlers());
+                .Concat(GarrusActiveEffectContent.Handlers())
+                .Concat(WidgetComponentContent.RegisteredHandlers())
+                .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
     }
 }

@@ -101,7 +101,8 @@ namespace GuardsDigital.Core.Components.Synthetic
                 // put on the board and the snapshot pins that list. She is the first verified hero
                 // whose printed faces place TOKENS rather than markers.
                 new[] { HazardDefinition, WardDefinition }.Concat(
-                    GuardsDigital.Core.Cards.Verified.TaliComponentContent.Tokens()),
+                    GuardsDigital.Core.Cards.Verified.TaliComponentContent.Tokens())
+                    .Concat(GuardsDigital.Core.Cards.Verified.WidgetComponentContent.Tokens()),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.

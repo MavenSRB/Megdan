@@ -80,15 +80,20 @@
 
 .PARAMETER Force
     Rewrite the resources even when correctly sized ones are already present.
+
+.PARAMETER Companion
+    For Widget only, prepare Pyro's declared circular source as one neutral placed-token face.
+    This reuses the exact portrait-preservation checks; Pyro is not registered as a hero.
 #>
 [CmdletBinding()]
 param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus')]
+        'bain', 'garrus', 'widget')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
+    [switch] $Companion,
     [switch] $Check,
     [switch] $Force
 )
@@ -197,9 +202,16 @@ $declaredHeroes = @{
     # per-hero zero is still hers alone.
     bain = @{ ElementId = 8596242; ElementName = 'BountyHunter'; DisplayName = 'Bain' }
     garrus = @{ ElementId = 8597491; ElementName = 'Centurion'; DisplayName = 'Garrus' }
+    widget = @{ ElementId = 8596255; ElementName = 'Widget2'; DisplayName = 'Widget' }
 }
 
 $declared = $declaredHeroes[$Hero]
+if ($Companion) {
+    if ($Hero -ne 'widget' -or -not $Neutral) {
+        throw 'The declared companion route is Widget/Pyro and requires -Neutral.'
+    }
+    $declared = @{ ElementId = 8596251; ElementName = 'Pyro2'; DisplayName = 'Pyro' }
+}
 $elementId = $declared.ElementId
 $elementName = $declared.ElementName
 $heroLabel = $declared.DisplayName
@@ -220,10 +232,14 @@ $corpusRoot = [System.IO.Path]::Combine(
     $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
 $resourceDirectory = [System.IO.Path]::Combine(
     $projectRoot, 'Assets', 'Resources', 'Private', 'Heroes')
+if ($Companion) {
+    $resourceDirectory = [System.IO.Path]::Combine($projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
+}
+$resourceStem = if ($Companion) { 'widget-pyro' } else { $Hero }
 $resources = if ($Neutral) {
     # `RuntimeTeamIdentity.NeutralResourcePath` - the content identity alone, with no team in it.
     [ordered]@{
-        Neutral = [System.IO.Path]::Combine($resourceDirectory, "$Hero.png")
+        Neutral = [System.IO.Path]::Combine($resourceDirectory, "$resourceStem.png")
     }
 } else {
     [ordered]@{

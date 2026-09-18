@@ -39,6 +39,8 @@ $sources = [ordered]@{
     bain = 'randomizers-tt14__7723683__front.png'
     # Byte-identical to active-hero-cards/_selection-cards/Garrus__front.png.
     garrus = 'randomizers-tt13__7723690__front.png'
+    # Byte-identical to active-hero-cards/_selection-cards/Widget__front.png.
+    widget = 'randomizers-tt25__7723701__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

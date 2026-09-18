@@ -19,6 +19,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string PresentOutput = "present";
         public const string SpaceOutput = "space";
 
+        public static EffectCapabilityReference OwnedHazardSpaceV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("synthetic-owned-hazard-space"), 1);
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() => new[]
+        {
+            SpaceHandler(OwnedHazardSpaceV1, Components.Synthetic.SyntheticComponentDefinitions.HazardDefinition)
+        };
+
         public static IEffectCapabilityHandler PresenceHandler(
             EffectCapabilityReference reference, TokenDefinition definition) =>
             new OwnedTokenFactHandler(reference, definition, true, null);

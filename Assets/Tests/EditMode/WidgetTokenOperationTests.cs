@@ -33,15 +33,16 @@ namespace GuardsDigital.Tests.EditMode
         private static HexCoordinate At(int q, int r = 0) => new HexCoordinate(q, r);
 
         [Test]
-        public void PyroIsOnePersistentOrdinaryToken_AndRemainsDeferred()
+        public void PyroIsOnePersistentOrdinaryToken_AndIsRegisteredWithWidget()
         {
             var definition = WidgetComponentContent.PyroDefinition;
             Assert.That(definition.SupplyCount, Is.EqualTo(1));
             Assert.That(definition.RemovalCondition, Is.EqualTo(TokenRemovalCondition.RetainedAtEndOfRound));
             Assert.That(definition.Properties, Is.Empty);
-            Assert.That(WidgetComponentContent.RegisteredHandlers(), Is.Empty);
+            Assert.That(WidgetComponentContent.DeferredHandlers(), Is.Empty);
+            Assert.That(WidgetComponentContent.RegisteredHandlers().Count(), Is.EqualTo(9));
             Assert.That(MatchContentCatalogs.ForThisBuild().Components.RegisteredTokens,
-                Has.No.Member(definition.Reference));
+                Has.Member(definition.Reference));
         }
 
         [Test]
@@ -279,7 +280,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(probe.PyroAt, Is.EqualTo(At(1)));
         }
 
-        private sealed class Probe
+        internal sealed class Probe
         {
             internal readonly AdjacentMoveAuthority Board;
             internal readonly MatchContentCatalogs Catalogs;
@@ -295,14 +296,16 @@ namespace GuardsDigital.Tests.EditMode
             internal HexCoordinate PyroAt => Board.PlacedTokens.Single().Coordinate;
 
             internal Probe(EffectDefinition effect, HexCoordinate? pyro = null, int? range = null, int radius = 2, HeroId actor = default,
-                HeroId immune = default, RuleActivity immunity = RuleActivity.None, IEnumerable<HexCoordinate> spaces = null)
+                HeroId immune = default, RuleActivity immunity = RuleActivity.None, IEnumerable<HexCoordinate> spaces = null,
+                TokenDefinition tokenDefinition = null)
             {
                 this.actor = actor.IsDefined ? actor : Actor;
                 Participants = actor.Equals(Enemy) ? StagedBoardParticipants.CreateWithBlueAlly() : StagedBoardParticipants.Create();
                 var defaults = MatchContentCatalogs.ForThisBuild();
                 var capabilities = new EffectCapabilityCatalog(defaults.Capabilities.Registered.Select(defaults.Capabilities.Load)
                     .Concat(WidgetComponentContent.DeferredHandlers()));
-                var components = new ComponentDefinitionCatalog(new[] { WidgetComponentContent.PyroDefinition }, Array.Empty<MarkerDefinition>());
+                tokenDefinition = tokenDefinition ?? WidgetComponentContent.PyroDefinition;
+                var components = new ComponentDefinitionCatalog(new[] { tokenDefinition }, Array.Empty<MarkerDefinition>());
                 Catalogs = new MatchContentCatalogs(capabilities, components);
                 Assert.That(EffectDefinitionValidator.Validate(effect, capabilities), Is.Empty);
                 var action = new ActionDefinition(Action, ActionKind.Skill, ActionDefinitionOrigin.PrintedPrimary,
@@ -322,7 +325,7 @@ namespace GuardsDigital.Tests.EditMode
                         .Concat(actor.Equals(Enemy) ? new[] { new HeroOccupancy(Friend, At(0, 2)) } : Array.Empty<HeroOccupancy>()),
                     Array.Empty<ObstacleOccupancy>(), Array.Empty<QuickGameMinionSetupState>());
                 if (pyro.HasValue) Board.CommitValidatedTokenPlacement(new PlacedToken(new TokenInstanceId("pyro"),
-                    WidgetComponentContent.PyroDefinition, this.actor, this.actor, Cards.Single(c => c.OwnerId.Equals(this.actor)).Id, pyro.Value));
+                    tokenDefinition, this.actor, this.actor, Cards.Single(c => c.OwnerId.Equals(this.actor)).Id, pyro.Value));
                 var rules = immunity == RuleActivity.None ? RuleModificationSet.Empty : new RuleModificationSet(new[]
                 {
                     AppliedRuleModification.FromActiveEffect(RuleModification.ForImmunity(immunity), RuleObject.ForHero(immune),

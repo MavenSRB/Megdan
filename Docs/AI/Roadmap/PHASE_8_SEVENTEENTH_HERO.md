@@ -62,13 +62,15 @@ Non-goals: dealing, artwork registration or player-gate completion claims.
 
 Historical evidence: [8.43d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843d-widget-printed-set-completion-evidence).
 
-### [ ] 8.43e Deal, register and artwork Widget
+### [x] 8.43e Deal, register and artwork Widget
 
 Outcome: Widget is the seventeenth legal pick, with profile, real card fronts, Widget and Pyro board visuals, hand/deck/upgrades, component supply and reachable catalog registrations.
 
 Acceptance: all configured/staged/engaged/progressed adapters, selection/definition/artwork bijections, correct source visual identities, readable owner/token distinction, private-resource boundaries, content identity and snapshot compatibility decision preserving existing hero identities; scene/picker/artwork/footprint checks. Apply highest tier triggered by catalog/configuration changes and the affected local build-and-launch smoke gate. Obtain a scoped exception to the test-launcher-only rule before invoking the documented build-smoke launcher; earlier heroes' exceptions are not Widget authorization.
 
 Non-goals: package creation/upload or final player-gate claims.
+
+Historical evidence: [8.43e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843e-widget-dealing-and-artwork-completion-evidence).
 
 ### [ ] 8.43f Complete Widget's permanent player-path gate
 

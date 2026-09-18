@@ -360,6 +360,7 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string BainHeroIdValue = "hero-bain";
         public const string GarrusHeroIdValue = "hero-garrus";
+        public const string WidgetHeroIdValue = "hero-widget";
 
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
@@ -400,7 +401,8 @@ namespace GuardsDigital.Core.Setup
                 // the rule above asks for. He is the FIFTEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
                 (BainHeroIdValue, "bain", "Bain the Bounty Hunter"),
-                (GarrusHeroIdValue, "garrus", "Garrus the Gladiator")
+                (GarrusHeroIdValue, "garrus", "Garrus the Gladiator"),
+                (WidgetHeroIdValue, "widget", "Widget and Pyro")
             };
 
         /// <summary>
@@ -587,6 +589,9 @@ namespace GuardsDigital.Core.Setup
 
         public static QuickGameSetupConfiguration CreateStagedWaspVersusGarrusOneVsOne() =>
             CreateOneVsOne(new HeroContentId("garrus"), "Garrus");
+
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusWidgetOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("widget"), "Widget");
 
         /// <summary>
         /// Milestone 8.22. The same board with Sabina on the Blue seat, for the fixtures whose subject
