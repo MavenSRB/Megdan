@@ -386,3 +386,13 @@ Acceptance checks:
 Non-goals: no new hero content; no change to which decisions exist, only to how they are asked and answered; Blizzard stays with 8.37a; no second playtest package.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
+
+### [~] 8.44 Package the seventeen-hero private playtest build
+
+Authorized 2026-09-18, immediately after 8.42c, in the user's own words: "After that carve out the new build." This converts the standing new-playtest-package request - recorded as owing a written milestone since the fourteenth-hero series - into a written milestone, and supersedes that note. Execute after 8.42c, not in place of any other work.
+
+Outcome: a separately named current Windows build and matching ZIP under `Builds/`, carrying all seventeen dealt heroes, the 8.42 playtest refinements and 8.42c's awaited-responder narration, with the existing single `PLAY - Host or Join.bat` launcher, in-client Host/Join, a playtester README, and a build identity naming the source commit, Unity version, wire protocol, snapshot schema and configured content digest.
+
+Acceptance: a packaging milestone is a pre-build regression gate and therefore a T3 trigger in its own right, so both unfiltered Edit Mode and Play Mode suites run at the exact packaged revision, with every skip and every established `[Explicit]` diagnostic enumerated rather than absorbed into a total. Private-resource checks must confirm that no extracted card art, map, rulebook, private log, build or worktree enters Git; the package itself legitimately carries prepared artwork resources, which is the existing local-artifact boundary and not a distribution. Run the required build-and-launch smoke through the actual packaged executable rather than a rehearsal script, and inspect the ZIP contents, the launcher and the identity file. Record measured suite totals and the executable and managed-assembly hashes in the completion evidence. Keep every prior package and all private evidence.
+
+Non-goals: upload, remote operation, or public distribution of any kind; new heroes; a repeat internet playtest; the parked presentation program, tier-3 bots or the card-authoring workbench; and any rule, schema, wire or content-identity change.

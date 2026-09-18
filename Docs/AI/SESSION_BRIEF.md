@@ -15,14 +15,16 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **8.43f**.
-- Active authorized milestone: **None**.
-- Next proposed milestone: **8.35z71**.
+- Active authorized milestone: **8.44**.
+- Next proposed milestone: **8.44**.
 
 On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
 
 **Widget's sequence is complete**: his complete printed set, private artwork, Pyro and permanent player-path gate are integrated. WI-Q1-WI-Q3 are resolved. FINISH MOVEMENT preserves optional follow-ups; Pyro's artwork has no name overlay.
 
 **[8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) is complete**: status narration now names the hero a standing public decision waits on, read from the authoritative `DecisionOwner` rather than guessed from the acting hero, while a responder keeps their own actionable prompt and no foreign hand or candidate is exposed. Ignatia was explicitly withdrawn; no hero follows Widget. Widget's local build-smoke exception is approved in his rules shard.
+
+On 2026-09-18, immediately after 8.42c, the user authorized the new build: "After that carve out the new build." [8.44](Roadmap/PHASE_8.md) owns it and supersedes the standing package note the fourteenth-hero series carried. A packaging milestone is a pre-build regression gate, so it runs both unfiltered suites at the packaged revision. No upload, remote operation or public distribution is authorized by it, and no new hero follows it.
 
 The user approved the 2026-09-17 playtest refinements **8.42 -> 8.42a -> 8.42b**: exclude the attacked unit from Shotgun/Super-Shotgun's adjacent-hero discard, show revealed card-plus-item Initiative in the badge, and keep player trays on their own hero when another token is clicked. [Playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns the checks; return to proposed cleanup 8.35z71 afterward.
 
@@ -40,7 +42,7 @@ The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 g
 
 Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Lobby bots use the measured owner-scoped tactical policy while hidden hands/decks remain absent. `Builds/Playtest-8.36h-host-and-play.zip` is the current completed local package; the user confirmed the outstanding ordinary-window package check worked on 2026-09-10. Additional heroes remain on hold.
 
-On 2026-09-11 the user also named **Cutter the Sky Pirate** next, on the same terms; [fourteenth-hero dealing](Roadmap/PHASE_8_FOURTEENTH_HERO.md) owns that COMPLETE thirteen-block series and [her shard](Rules/HERO_CUTTER.md) its inventory. Nearly every block predicted the wrong contract and was corrected by the probe it ordered, and her seventeen-journey gate found four shipped defects nothing offline could see. One decision is why it ran that long: her printed "you alone win the game" was implemented FAITHFULLY on the user's 2026-09-11 answer, moving the snapshot schema to **v42** and the wire to **/14**. **The user has asked for a NEW PLAYTEST PACKAGE, which still owes a written milestone before it is one.**
+On 2026-09-11 the user also named **Cutter the Sky Pirate** next, on the same terms; [fourteenth-hero dealing](Roadmap/PHASE_8_FOURTEENTH_HERO.md) owns that COMPLETE thirteen-block series and [her shard](Rules/HERO_CUTTER.md) its inventory. Nearly every block predicted the wrong contract and was corrected by the probe it ordered, and her seventeen-journey gate found four shipped defects nothing offline could see. One decision is why it ran that long: her printed "you alone win the game" was implemented FAITHFULLY on the user's 2026-09-11 answer, moving the snapshot schema to **v42** and the wire to **/14**.
 
 ## Durable boundaries
 
