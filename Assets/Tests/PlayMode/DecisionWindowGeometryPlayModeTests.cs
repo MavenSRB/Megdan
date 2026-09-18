@@ -61,6 +61,7 @@ namespace GuardsDigital.Tests.PlayMode
                     var live = Window(root).worldBound;
                     AssertBoundsEqual(expected, live, viewport.Label);
                     AssertClearOfEverythingThatExists(root, live, panel, viewport.Label);
+                    AssertClearOfTheRoundDocksLiveContent(root, live, viewport.Label);
 
                     // The five faces the user's four-candidate sentence asks for - the attacker's
                     // card and four answers - drawn at the TRAY'S OWN FOOTPRINT, distinct, and wholly
@@ -274,6 +275,104 @@ namespace GuardsDigital.Tests.PlayMode
                         $"The decision window covers {pair.Item1} at {label}.");
                 }
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.46e. The expanded rectangle overlaps the round dock's DECLARED rectangle by
+        /// construction - it spans the whole column between the rails - so the honest check is
+        /// against what the dock is actually DRAWING: every shown child with a size must sit clear of
+        /// the window, or the window is covering a control the player may need.
+        /// </summary>
+        private static void AssertClearOfTheRoundDocksLiveContent(
+            MatchSceneCompositionRoot root, Rect window, string label)
+        {
+            var dock = UiPlayer.Descendants(root.Hud.RootElement)
+                .FirstOrDefault(element => element.name == "gd-status-dock");
+            if (dock == null || !UiPlayer.IsShown(dock))
+            {
+                return;
+            }
+
+            foreach (var child in dock.Children())
+            {
+                if (!UiPlayer.IsShown(child) || child.worldBound.width <= 0f || child.worldBound.height <= 0f ||
+                    child.name == "gd-decision-window")
+                {
+                    continue;
+                }
+
+                Assert.That(child.worldBound.Overlaps(window), Is.False,
+                    $"The decision window covers the round dock's live content '{child.name}' at {label}: " +
+                    $"{window} against {child.worldBound}.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.46e. The longest consequence label the roster declares is laid out in a real
+        /// window control at the reference and must fit it: the control wraps, and the wrapped text
+        /// is no taller than the control that holds it, so nothing is clipped.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TheLongestDeclaredLabel_FitsItsControlWithoutClipping()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            try
+            {
+                yield return LoadEngagedScene();
+                var root = Root();
+                UiPlayer.SetPlayerViewport(2560u, 1440u, "8.46e longest label");
+                yield return null;
+                yield return null;
+
+                var longest = DecisionLabelCatalog.Registered.Values
+                    .SelectMany(table => table.Values)
+                    .SelectMany(declared => declared.HasDeclined
+                        ? new[] { declared.Chosen, declared.Declined }
+                        : new[] { declared.Chosen })
+                    .OrderByDescending(text => text.Length)
+                    .First();
+                var probe = new DecisionWindowControlViewModel(longest.ToUpperInvariant());
+                var model = new DecisionWindowViewModel(
+                    root.Runtime.Session?.Projection?.Version ?? 1,
+                    DecisionWindowFamily.Mode,
+                    DecisionWindowState.Expanded,
+                    "8.46e-longest-label-probe",
+                    "LONGEST LABEL",
+                    "8.46E PROBE",
+                    "The longest consequence label the roster declares, in a real control.",
+                    controls: new[] { probe, new DecisionWindowControlViewModel("A SHORT ONE") });
+                root.Runtime.DecisionWindowView.Render(model);
+                yield return null;
+                yield return null;
+
+                var element = root.Runtime.DecisionWindowView.ElementFor(probe);
+                Assert.That(element, Is.Not.Null, "The probe control is drawn.");
+                var window = Window(root).worldBound;
+                AssertContains(window, element.worldBound,
+                    $"The control holding '{longest}' ({longest.Length} characters) sits inside the window.");
+                var text = element as TextElement ?? UiPlayer.Descendants(element).OfType<TextElement>()
+                    .FirstOrDefault(candidate => candidate.text == probe.Label);
+                Assert.That(text, Is.Not.Null, "The control carries the label as text.");
+                Assert.That(text.resolvedStyle.whiteSpace, Is.EqualTo(WhiteSpace.Normal),
+                    "A long label wraps rather than running out of its control.");
+                var wrapped = text.MeasureTextSize(
+                    text.text, text.contentRect.width, VisualElement.MeasureMode.AtMost,
+                    0f, VisualElement.MeasureMode.Undefined);
+                Assert.That(text.contentRect.height, Is.GreaterThanOrEqualTo(wrapped.y - UiPlayer.PixelSnapping()),
+                    $"The wrapped text of '{longest}' is no taller than the control that holds it, so nothing is clipped.");
+            }
+            finally
+            {
+                root_RestoreAfterProbe();
+                UiPlayer.SetPlayerViewport(restoreWidth, restoreHeight, "8.46e restore");
+            }
+        }
+
+        private static void root_RestoreAfterProbe()
+        {
+            var root = Object.FindAnyObjectByType<MatchSceneCompositionRoot>();
+            root?.Runtime?.RefreshAll();
         }
 
         private static void AssertContains(Rect outer, Rect inner, string because)
