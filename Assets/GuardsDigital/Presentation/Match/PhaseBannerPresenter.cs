@@ -78,18 +78,6 @@ namespace GuardsDigital.Presentation.Match
 
         public static string EndOfRound(int roundIndex) => "END OF ROUND " + roundIndex;
 
-        /// <summary>The other seats' resolve line: the acting hero's own turn, by name.</summary>
-        public static string HeroTurn(string heroDisplayName)
-        {
-            if (string.IsNullOrWhiteSpace(heroDisplayName))
-            {
-                throw new ArgumentException("A hero's turn banner names the hero.", nameof(heroDisplayName));
-            }
-
-            var name = heroDisplayName.ToUpperInvariant();
-            return (name.EndsWith("S", StringComparison.Ordinal) ? name + "' TURN" : name + "'S TURN");
-        }
-
         public static PhaseBannerViewModel Commit(int roundIndex, int turnIndex) =>
             new PhaseBannerViewModel(
                 "commit:" + roundIndex + ":" + turnIndex,
@@ -100,12 +88,9 @@ namespace GuardsDigital.Presentation.Match
             new PhaseBannerViewModel(
                 ResolveKey(roundIndex, turnIndex, actor), ResolveOwnEyebrow, ResolveOwnLine);
 
-        public static PhaseBannerViewModel ResolveOther(
-            int roundIndex, int turnIndex, HeroId actor, string heroDisplayName) =>
-            new PhaseBannerViewModel(
-                ResolveKey(roundIndex, turnIndex, actor),
-                RoundAndTurn(roundIndex, turnIndex),
-                HeroTurn(heroDisplayName));
+        // Milestone 8.50 retired the other seats' "<NAME>'S TURN" line: the banner speaks only when
+        // THIS player is up - "COMMIT A CARD", "YOUR TURN" and "MINION BATTLE" - at the user's word
+        // after the 2026-09-18 playtest.
 
         public static PhaseBannerViewModel MinionBattle(int roundIndex) =>
             new PhaseBannerViewModel("battle:" + roundIndex, EndOfRound(roundIndex), MinionBattleLine);
@@ -186,15 +171,14 @@ namespace GuardsDigital.Presentation.Match
             if (heroDisplayName == null) throw new ArgumentNullException(nameof(heroDisplayName));
 
             var commit = snapshot.IsCommitting ? PhaseBannerLabels.Commit(snapshot.RoundIndex, snapshot.TurnIndex) : PhaseBannerViewModel.None;
-            var resolve = PhaseBannerViewModel.None;
-            if (snapshot.ActingHero.IsDefined)
-            {
-                resolve = viewer.IsDefined && snapshot.ActingHero.Equals(viewer)
+            // Milestone 8.50. The user, after the 2026-09-18 playtest: "I don't think I want those
+            // banner letters for all the players. Just when a player is up. So only COMMIT A CARD and
+            // YOUR TURN + MINION BATTLE." Another seat's turn is not this viewer's moment, so it is
+            // no longer announced - to a seat or to the Director, who is up for nobody.
+            var resolve = snapshot.ActingHero.IsDefined && viewer.IsDefined &&
+                snapshot.ActingHero.Equals(viewer)
                     ? PhaseBannerLabels.ResolveOwn(snapshot.RoundIndex, snapshot.TurnIndex, snapshot.ActingHero)
-                    : PhaseBannerLabels.ResolveOther(
-                        snapshot.RoundIndex, snapshot.TurnIndex, snapshot.ActingHero,
-                        heroDisplayName(snapshot.ActingHero) ?? snapshot.ActingHero.Value);
-            }
+                    : PhaseBannerViewModel.None;
 
             var battle = snapshot.IsMinionBattle ? PhaseBannerLabels.MinionBattle(snapshot.RoundIndex) : PhaseBannerViewModel.None;
 

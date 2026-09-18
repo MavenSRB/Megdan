@@ -435,7 +435,7 @@ Non-goals: Bullet Time's granted performance, which runs while Bounce is still m
 
 Historical evidence: [8.48 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-848-bounce-repeat-through-reload-completion-evidence).
 
-### [~] 8.49 A Defeat costs what the hero is worth
+### [x] 8.49 A Defeat costs what the hero is worth
 
 Authorized 2026-09-18 by the evening playtest's own report, in the user's words: "Lives are not being counted correctly. It just takes -1 from pool. It should take more and give more assit gold based on hero lvl, it is said so in the rulebook. And we need to show that on the map, next to hero level, show like half a coin and half a heart and a number in it, 1 2 or 3 depending on hero tier."
 
@@ -446,3 +446,27 @@ Acceptance: `HeroDefeatCostQueryTests` measures the defect (the returned Tier I 
 Non-goals: the killer's own coins, which p.13 already prices by Level; a badge on the board piece itself.
 
 Historical evidence: [8.49 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-849-defeat-cost-by-tier-completion-evidence).
+
+### [x] 8.50 The banner speaks only when you are up
+
+Authorized 2026-09-18 after the evening playtest, in the user's words: "I dont think i want those banner letters we implemented for all the players. Just when a player is up. So only COMMIT A CARD and YOUR TURN + MINNION BATTLE i think." - confirmed after the session ("Yes, to it for point 1").
+
+Outcome: `PhaseBannerCueDetector` announces a seat's own commitment, its own turn and the Minion Battle, and nothing else: the other seats' "<NAME>'S TURN" line of 8.47 is retired, and the Director, who is up for nobody, hears no turn banner at all.
+
+Acceptance: `PhaseBannerTests` proves another hero's turn is silent while the viewer's next own turn is still announced, and that the Director still sees each commitment and the battle; `PhaseBannerPlayModeTests` unchanged and green.
+
+Non-goals: any change to the letters' look, timing or the window it yields to.
+
+Historical evidence: [8.50 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-850-banner-only-when-up-completion-evidence).
+
+### [x] 8.51 Say when a seat held its card, and how END TURN was pressed
+
+Authorized 2026-09-18 after the evening playtest, in the user's words: "It looks like Silverarrows blue got resolved without player input, like he clicked end turn but he didnt" - and, once the host log had shown that the player's own client sent one END TURN press composition (a Hold, then the release one round trip later) 1.1 s into his turn while nothing on disk could say what pressed it: "close this gap, we need to know for sure." The player had been alt-tabbing; a click landing on the live control and Enter or Space reaching a focused one were both possible and both unrecorded.
+
+Outcome: three records that did not exist. `MatchLogEntryKind.CardHeld` - rulebook p.12's Hold performed by the seat's own command, derived from the `Turn.HoldActionPerformed` event the engine has always recorded - reaches the host's narration file as "<hero> HELD <card> - resolved with NO ACTION by the seat's own END TURN press" and the in-game tray as "<HERO> HELD <CARD> — NO ACTION"; the wire moves to `guards-private-online/16` (a version 15 peer refuses the frame; no bytes grew, schema v42 unmoved). `EndTurnPressProvenance` watches the drawn END TURN control ahead of the control's own handlers and, at every press, the runtime writes `GUARDS_INPUT: END_TURN_PRESS source=pointer|keyboard|pointer+keyboard|driver button=… key=… focused=… at=… version=… actor=… progressed=…` to the player's own log - UI Toolkit's Button answers a navigation submit exactly like a click, and the key that did it is named. `GameplayNarrationRecorder` no longer reports a numbering gap as a loss: a row keeps its rule-event sequence and most rule events derive no row, so a gap is a loss only when the window's oldest retained row was never written (the 2026-09-18 file carried 218 such reports, none real).
+
+Acceptance: `MatchLogChannelTests` ties the Hold row one-for-one to its event on a driven walk and pins the deterministic line; `GameplayNarrationLogTests` pins the sentence and the corrected gap rule; `MatchFeaturePresenterTests`' closed-vocabulary walk and `MatchFormatAdmissionTests`' version ratchet are swept in the same change; `EndTurnPressProvenanceTests` covers every source, the consumed stamps, the view's driver reading and the marker; `EndTurnPressProvenancePlayModeTests` clicks the drawn control on the live panel and then submits it from the keyboard, reading `source=pointer` and then `source=keyboard key=Space`. Complete offline harness, the affected Edit Mode fixtures and the affected Play Mode fixtures green.
+
+Non-goals: deciding what pressed END TURN on 2026-09-18 - no log from that night can; refusing keyboard submits on END TURN or any other change to how a press behaves; a package, since the record reaches players only in the next build they run; any rule, content or schema change.
+
+Historical evidence: [8.51 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-851-hold-row-and-press-provenance-completion-evidence).

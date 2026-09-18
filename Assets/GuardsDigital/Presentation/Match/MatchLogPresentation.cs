@@ -532,6 +532,20 @@ namespace GuardsDigital.Presentation.Match
                     return;
                 }
 
+                // Milestone 8.51. Rulebook p.12's Hold by the seat's own command. The card is a
+                // resolved turn card every seat sees, so it resolves by name wherever the
+                // projection can name it, and the line says outright that no action was taken -
+                // the fact the 2026-09-18 report needed at the table, not afterwards from a file.
+                case MatchLogEntryKind.CardHeld:
+                {
+                    var held = CardNameOrNull(projection, entry.SubjectCardInstanceId);
+                    lines.Add(Line(entry,
+                        held == null
+                            ? $"{HeroName(projection, entry.SubjectHeroId)} HELD THEIR CARD — NO ACTION"
+                            : $"{HeroName(projection, entry.SubjectHeroId)} HELD {held} — NO ACTION"));
+                    return;
+                }
+
                 default:
                     // MatchLogEntryKind.None never reaches an entry (the type throws on it), and every
                     // other member is handled above - a closed switch over a closed vocabulary.

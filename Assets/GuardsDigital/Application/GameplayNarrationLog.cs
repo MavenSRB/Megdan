@@ -192,6 +192,16 @@ namespace GuardsDigital.Application
                         "their card came up, so rulebook p.13 resolved it without an action and " +
                         "they were never asked for anything";
 
+                // Milestone 8.51. The third row that says why nothing happened, and the one the
+                // 2026-09-18 playtest lacked: the seat's OWN command resolved the card with no
+                // action. Stated as a press because that is the only way a seat performs a Hold -
+                // END TURN on an untouched card composes exactly this command - so a reader can
+                // tell "the player ended their turn" from "the engine passed them over" above.
+                case MatchLogEntryKind.CardHeld:
+                    return hero + " HELD " + Card(entry) + " - resolved with NO ACTION by the " +
+                        "seat's own END TURN press on an untouched card (rulebook p.12's Hold); " +
+                        "the engine never holds a card by itself";
+
                 case MatchLogEntryKind.MinionDefeated:
                     return minion + " was defeated";
                 case MatchLogEntryKind.MinionRemoved:
