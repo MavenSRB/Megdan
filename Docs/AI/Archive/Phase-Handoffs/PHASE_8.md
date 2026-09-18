@@ -1846,3 +1846,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 8.42d | The seat's UNDO square now follows `IsSeatUndoAvailable` alone instead of also being suppressed by the action region's exclusive-decision rule, which had removed it during every card-text prompt - on Whisper's Crimson Trail from the first prompt of the attack, while the host went on publishing and would have accepted the rewind. The authority's turn floor, other-seat wall and target-lock attack wall are unchanged. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842d-keep-the-seats-own-rewind-visible-while-its-card-text-is-asking). | `milestone/8.42d` |
+
+## Milestone 8.42e Interaction undo wall completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.42e | The seat's rewind now stops at any interaction with an opponent, not only at an Attack's target lock: the watermark compares what opposing seats own across each accepted command and raises the floor above one that changed it. Five rewindable interactions measured before the change - three enemy minions and two enemy heroes displaced by card text - are its regression seeds. Opponents only, and the floor rises above that command rather than ending the turn's rewind, both by the user's decision. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842e-stop-the-seats-rewind-at-any-interaction-with-an-opponent). | `milestone/8.42e` |

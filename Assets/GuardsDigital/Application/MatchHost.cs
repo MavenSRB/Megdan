@@ -452,6 +452,23 @@ namespace GuardsDigital.Application
         /// </summary>
         private bool undoAttackStanding;
 
+        /// <summary>
+        /// Milestone 8.42e. What the acting seat's opponents owned at the previous watermark
+        /// refresh, so the refresh after each accepted command can see whether that command
+        /// touched any of it. Recomputed rather than carried across a turn boundary, because it is
+        /// relative to whose turn it is.
+        /// </summary>
+        private string undoOpposingFingerprint = string.Empty;
+
+        /// <summary>
+        /// Milestone 8.42e. Why the floor stands where it does, when the reason is one a player
+        /// would otherwise have to guess. Empty means the floor is simply the turn's own beginning.
+        /// The SIXTH amendment's rule reaches the refusal text too: nothing is withheld without
+        /// saying why, and "you have already touched an opponent" is not something the generic
+        /// sentence conveys.
+        /// </summary>
+        private string undoFloorDetail = string.Empty;
+
         public MatchHost(IMatchSession session)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
@@ -1109,7 +1126,8 @@ namespace GuardsDigital.Application
         /// rises above anything a different seat answered inside this turn, so one player's rewind
         /// can never reach through another player's decision.</para>
         /// </remarks>
-        private void RefreshSeatUndoWatermark(SeatId submittingSeat, DirectorCommand accepted)
+        private void RefreshSeatUndoWatermark(
+            SeatId submittingSeat, DirectorCommand accepted, bool afterRewind = false)
         {
             var projection = session.Projection;
             var marker = TurnMarkerOf(projection);
@@ -1124,6 +1142,8 @@ namespace GuardsDigital.Application
                 var actor = marker.Length == 0 ? null : CurrentSeats().FindByHero(actorId);
                 undoActorSeat = actor == null ? default : actor.Id;
                 undoAttackStanding = projection.HasPendingAttackResolution;
+                undoOpposingFingerprint = OpposingFingerprint(undoActorSeat);
+                undoFloorDetail = string.Empty;
                 return;
             }
 
@@ -1163,7 +1183,31 @@ namespace GuardsDigital.Application
             if (submittingSeat.IsDefined && !submittingSeat.Equals(undoActorSeat))
             {
                 undoFloor = projection.AcceptedCommands.Count;
+                undoFloorDetail = string.Empty;
             }
+
+            // Milestone 8.42e. The INTERACTION WALL, the user's own rule from playtest on
+            // 2026-09-18: "undo should stop at any interaction". A command that changed anything
+            // the actor's OPPONENTS own puts the floor above itself, so a rewind can never step
+            // back through it - the same shape as the other-seat wall above, and there for the
+            // reason the attack wall already gives: they watched it happen to their own pieces and
+            // it cannot be un-shown. It is narrower than the attack wall on purpose: what follows
+            // the interaction, inside the same turn, stays the actor's own to take back.
+            //
+            // A rewind restores exactly what it undid, so the fingerprint is re-read on that path
+            // WITHOUT raising the floor. Without that exception one accepted press would change
+            // the board back, read as an interaction, and wall the seat out of its own next press.
+            var opposing = OpposingFingerprint(undoActorSeat);
+            if (!afterRewind &&
+                !string.Equals(opposing, undoOpposingFingerprint, StringComparison.Ordinal))
+            {
+                undoFloor = projection.AcceptedCommands.Count;
+                undoFloorDetail =
+                    "This turn has already touched an opponent, and a rewind may not reach back " +
+                    "through what another player has seen.";
+            }
+
+            undoOpposingFingerprint = opposing;
 
             // The p.14 action is over when nothing of it is still resolving and nothing is being
             // asked. Milestone 8.29f's rule restated at this layer: what decides whether the action
@@ -1180,9 +1224,106 @@ namespace GuardsDigital.Application
             {
                 undoFloor = projection.AcceptedCommands.Count;
                 undoAttackUnderWay = false;
+                undoFloorDetail = string.Empty;
             }
 
             undoAttackStanding = projection.HasPendingAttackResolution;
+        }
+
+
+        /// <summary>
+        /// Milestone 8.42e. Everything the acting seat's OPPONENTS own, as one comparable string:
+        /// where their heroes and minions stand, where their cards are, which markers their heroes
+        /// hold, where the tokens they own sit, and their teams' life counters.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The user's rule, from playtest on 2026-09-18: "undo should stop at any
+        /// interaction".</b> 8.35f's attack wall already said that of rulebook p.14 - the defender's
+        /// answer is information that cannot be un-shown - and this says it of everything else an
+        /// opponent can watch happen to their own pieces. A card text that slides an enemy hero two
+        /// spaces was rewindable until this milestone, measured five times in 2,400 commands of the
+        /// seeded six-player walk, twice on an enemy HERO.</para>
+        /// <para><b>Compared rather than deduced, and that is deliberate.</b> The alternative is to
+        /// ask each effect whether it "interacted", which every new card would have to answer again
+        /// and any card could answer wrongly by omission. What an opponent owns is observable at
+        /// acceptance, so the watermark reads the board instead of trusting a declaration - the same
+        /// reason the other three bounds are tracked forward here rather than reconstructed.</para>
+        /// <para><b>Opponents only, by the user's decision.</b> A friendly buff or an ally's move
+        /// stays rewindable; support heroes spend most of their text on allies and would otherwise
+        /// lose their rewind on nearly every turn.</para>
+        /// </remarks>
+        private string OpposingFingerprint(SeatId actorSeat)
+        {
+            if (!actorSeat.IsDefined)
+            {
+                return string.Empty;
+            }
+
+            var seats = CurrentSeats();
+            var actor = seats.Find(actorSeat);
+            if (actor == null)
+            {
+                return string.Empty;
+            }
+
+            var side = actor.TeamSide;
+            var opposingHeroes = new HashSet<GuardsDigital.Core.Units.Heroes.HeroId>(
+                seats.Seats.Where(seat => seat.TeamSide != side).Select(seat => seat.HeroId));
+            var opposingTeams = new HashSet<TeamId>(
+                seats.Seats.Where(seat => seat.TeamSide != side).Select(seat => seat.TeamId));
+            var projection = session.Projection;
+            var builder = new System.Text.StringBuilder();
+
+            foreach (var hero in projection.Heroes
+                .Where(hero => opposingHeroes.Contains(hero.HeroId))
+                .OrderBy(hero => hero.HeroId.Value, StringComparer.Ordinal))
+            {
+                builder.Append("h:").Append(hero.HeroId.Value).Append('@')
+                    .Append(hero.Coordinate).Append(';');
+            }
+
+            foreach (var minion in projection.Minions
+                .Where(minion => minion.TeamSide != side)
+                .OrderBy(minion => minion.MinionId.Value, StringComparer.Ordinal))
+            {
+                builder.Append("m:").Append(minion.MinionId.Value).Append('@')
+                    .Append(minion.Coordinate).Append(';');
+            }
+
+            foreach (var card in projection.Cards
+                .Where(card => opposingHeroes.Contains(card.OwnerId))
+                .OrderBy(card => card.Id.Value, StringComparer.Ordinal))
+            {
+                builder.Append("c:").Append(card.Id.Value).Append('@')
+                    .Append(card.State.Location).Append(';');
+            }
+
+            foreach (var marker in projection.HeldMarkers
+                .Where(marker => opposingHeroes.Contains(marker.HolderHeroId))
+                .OrderBy(marker => marker.Id.Value, StringComparer.Ordinal))
+            {
+                builder.Append("k:").Append(marker.Id.Value).Append('@')
+                    .Append(marker.HolderHeroId.Value).Append(';');
+            }
+
+            foreach (var token in projection.PlacedTokens
+                .Where(token => opposingHeroes.Contains(token.OwnerHeroId))
+                .OrderBy(token => token.Id.Value, StringComparer.Ordinal))
+            {
+                builder.Append("t:").Append(token.Id.Value).Append('@')
+                    .Append(token.Coordinate).Append('/')
+                    .Append(token.ControllerHeroId.Value).Append(';');
+            }
+
+            foreach (var counter in projection.TeamLifeCounters
+                .Where(counter => opposingTeams.Contains(counter.Key))
+                .OrderBy(counter => counter.Key.Value, StringComparer.Ordinal))
+            {
+                builder.Append("l:").Append(counter.Key.Value).Append('@')
+                    .Append(counter.Value).Append(';');
+            }
+
+            return builder.ToString();
         }
 
         /// <summary>
@@ -1246,7 +1387,9 @@ namespace GuardsDigital.Application
 
             if (projection.AcceptedCommands.Count <= undoFloor)
             {
-                detail = "This turn is already at the earliest state its own seat may return to.";
+                detail = undoFloorDetail.Length > 0
+                    ? undoFloorDetail
+                    : "This turn is already at the earliest state its own seat may return to.";
                 return false;
             }
 
@@ -1342,7 +1485,7 @@ namespace GuardsDigital.Application
 
                 // The rewind cannot have crossed a turn boundary - the floor is inside this turn -
                 // so this only lets the watermark observe the state it landed on.
-                RefreshSeatUndoWatermark(default, null);
+                RefreshSeatUndoWatermark(default, null, afterRewind: true);
 
                 var outcome = new CachedSubmissionOutcome
                 {

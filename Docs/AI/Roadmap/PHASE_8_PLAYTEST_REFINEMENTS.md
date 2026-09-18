@@ -57,3 +57,15 @@ Acceptance: reproduce the missing square before correcting it, on both routings 
 Non-goals: the host's undo bounds; END TURN's cancel composition for a card-text-bound attack, which one press cannot discard and which would mislabel the control; an always-present greyed square for seats with no rewind; the action region's one-usable-surface rule for the hand and tray; packaging.
 
 Historical evidence: [8.42d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842d-visible-seat-rewind-completion-evidence).
+
+### [x] 8.42e Stop the seat's rewind at any interaction with an opponent
+
+Authorized 2026-09-18, directly after 8.42d: "As soon as you attack or interact with other player in any way, you should not be able to undo." Investigation showed 8.35f's wall covers the Attack and nothing else, so a card text that displaces an enemy piece stayed rewindable - measured five times in 2,400 commands of the seeded six-player walk, twice having moved an enemy HERO several spaces.
+
+Outcome: a command that changed anything the acting seat's opponents own puts the undo floor above itself, so a rewind can never step back through it. The user settled both boundaries: opponents only, so a friendly buff or an ally's move stays rewindable and support heroes keep a usable rewind; and the floor rises above that one command rather than ending the turn's rewind, so what the actor does afterwards remains its own to take back.
+
+Acceptance: reproduce the five rewindable interactions before correcting them; decide the wall by comparing what opponents own across each accepted command - enemy hero and minion positions, opposing card locations, markers their heroes hold, tokens they own, and their team life counters - rather than asking each effect to declare that it interacted, so a new card cannot opt out by omission. A rewind must re-read that state without walling itself, or one press would strand the seat. Preserve the turn floor, the other-seat wall, the target-lock attack wall, Director Undo, and every existing bound and refusal reason. Focused seat-undo regressions plus the complete offline harness, Edit Mode and Play Mode suites (T2); the watermark stays derived host state, so no projection, protocol or schema change.
+
+Non-goals: teammates' pieces; a turn-long wall; any change to what the authority offers or to the rules of an Attack; END TURN's cancel composition; a new refusal reason - `UndoUnavailable` carries every bound, and this one gains its own detail sentence rather than falling back on the floor's generic one; packaging.
+
+Historical evidence: [8.42e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842e-interaction-undo-wall-completion-evidence).

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Replay;
 using NUnit.Framework;
@@ -756,6 +757,172 @@ namespace GuardsDigital.Tests.EditMode
             });
 
             return found;
+        }
+
+        /// <summary>
+        /// Milestone 8.42e, and the CLOSING CHECK of the user's 2026-09-18 rule: "undo should stop
+        /// at any interaction". No command that changed anything the acting seat's OPPONENTS own is
+        /// ever left rewindable.
+        /// </summary>
+        /// <remarks>
+        /// <para>Stated as a property over whole runs rather than at one position, on 8.35f's own
+        /// terms. What it reads is deliberately NOT the host's own fingerprint but an independent
+        /// and narrower one - where opposing heroes and minions stand, and where opposing players'
+        /// cards are - so this fails if the host ever stops walling one of those, instead of
+        /// agreeing with the implementation by construction.</para>
+        /// <para>Measured before the wall existed: of 13 such commands across these two seeds, FIVE
+        /// were still rewindable, two of them having moved an enemy HERO several spaces
+        /// (`hero-brogan` (0,5) -> (-1,3) at seed 21 command 89, `hero-arien` (1,6) -> (-2,8) at
+        /// 524). Those five are this case's regression seeds.</para>
+        /// <para>The second counter is the shape the user chose between: the floor rises above the
+        /// interacting command rather than ending the turn's rewind, so a seat that has touched an
+        /// opponent still owns whatever it does afterwards. If that is ever tightened into a
+        /// turn-long wall, this stops observing it and says so.</para>
+        /// </remarks>
+        [Test]
+        public void NoCommandThatTouchedAnOpponentIsLeftRewindable()
+        {
+            var touching = 0;
+            var rewindableAfterTouching = new List<string>();
+            var rewindsAfterAnEarlierTouch = 0;
+
+            foreach (var seed in new[] { 3, 21 })
+            {
+                var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+                var touchedThisTurn = string.Empty;
+
+                for (var step = 0; step < 1200; step++)
+                {
+                    var seat = ActingSeatOf(host);
+                    if (seat == null)
+                    {
+                        if (OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, seed) == 0)
+                        {
+                            break;
+                        }
+
+                        continue;
+                    }
+
+                    var before = OpposingState(host, seat.TeamSide);
+                    var index = host.Projection.AcceptedCommands.Count;
+                    var turn = TurnKeyOf(host);
+                    if (OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, seed) == 0)
+                    {
+                        break;
+                    }
+
+                    if (host.Projection.AcceptedCommands.Count <= index)
+                    {
+                        continue;
+                    }
+
+                    var after = ActingSeatOf(host);
+                    if (after == null || !after.Id.Equals(seat.Id))
+                    {
+                        continue;
+                    }
+
+                    var undoable = host.ProjectionForSeat(seat.Id).IsSeatUndoAvailable;
+                    var changed = Difference(before, OpposingState(host, seat.TeamSide));
+                    if (changed != null)
+                    {
+                        touching++;
+                        touchedThisTurn = turn;
+                        if (undoable)
+                        {
+                            rewindableAfterTouching.Add(
+                                "seed " + seed + " command " + index + ": " + changed);
+                        }
+                    }
+                    else if (undoable && string.Equals(turn, touchedThisTurn, StringComparison.Ordinal))
+                    {
+                        rewindsAfterAnEarlierTouch++;
+                    }
+                }
+            }
+
+            Assert.That(touching, Is.GreaterThan(0),
+                "No command in either run changed anything an opponent owns, so the wall was never " +
+                "the thing under test.");
+            Assert.That(rewindableAfterTouching, Is.Empty,
+                "A command that changed what an opponent owns was left rewindable: " +
+                string.Join(" | ", rewindableAfterTouching));
+            Assert.That(rewindsAfterAnEarlierTouch, Is.GreaterThan(0),
+                "After touching an opponent, no later command in the same turn was rewindable, so " +
+                "the wall is no longer the floor-raising shape the user chose and this case can no " +
+                "longer tell the two apart.");
+        }
+
+        /// <summary>The seat whose turn is being resolved, release pause included, or null.</summary>
+        private static MatchSeat ActingSeatOf(IMatchHost host)
+        {
+            var projection = host.Projection;
+            var release = projection.PendingTurnRelease;
+            if (release != null)
+            {
+                return host.Seats.FindByHero(release.ActorId);
+            }
+
+            return !projection.IsTurnActive || !projection.SelectedActor.IsDefined
+                ? null
+                : host.Seats.FindByHero(projection.SelectedActor.ActorId);
+        }
+
+        private static string TurnKeyOf(IMatchHost host) =>
+            host.Projection.RoundIndex + ":" + host.Projection.TurnIndex;
+
+        /// <summary>
+        /// Milestone 8.42e. What the seats OPPOSING the named side own, read independently of the
+        /// host's own fingerprint and narrower than it: heroes and minions by where they stand,
+        /// cards by where they are.
+        /// </summary>
+        private static Dictionary<string, string> OpposingState(IMatchHost host, TeamSide side)
+        {
+            var projection = host.Projection;
+            var state = new Dictionary<string, string>(StringComparer.Ordinal);
+            foreach (var seat in host.Seats.Seats.Where(value => value.TeamSide != side))
+            {
+                var hero = projection.Heroes.FirstOrDefault(value => value.HeroId.Equals(seat.HeroId));
+                state["hero:" + seat.HeroId.Value] =
+                    hero.HeroId.IsDefined ? hero.Coordinate.ToString() : "absent";
+                foreach (var card in projection.Cards.Where(value => value.OwnerId.Equals(seat.HeroId)))
+                {
+                    state["card:" + card.Id.Value] = card.State.Location.ToString();
+                }
+            }
+
+            foreach (var minion in projection.Minions.Where(value => value.TeamSide != side))
+            {
+                state["minion:" + minion.MinionId.Value] = minion.Coordinate.ToString();
+            }
+
+            return state;
+        }
+
+        /// <summary>The first difference between two readings, or null when they agree.</summary>
+        private static string Difference(
+            Dictionary<string, string> before, Dictionary<string, string> after)
+        {
+            foreach (var entry in after)
+            {
+                if (!before.TryGetValue(entry.Key, out var was))
+                {
+                    return entry.Key + " appeared as " + entry.Value;
+                }
+
+                if (!string.Equals(was, entry.Value, StringComparison.Ordinal))
+                {
+                    return entry.Key + " " + was + " -> " + entry.Value;
+                }
+            }
+
+            foreach (var entry in before.Keys.Where(key => !after.ContainsKey(key)))
+            {
+                return entry + " left the board";
+            }
+
+            return null;
         }
 
     }
