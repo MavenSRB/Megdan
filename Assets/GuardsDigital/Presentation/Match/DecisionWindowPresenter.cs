@@ -279,6 +279,19 @@ namespace GuardsDigital.Presentation.Match
                 return false;
             }
 
+            // Milestone 8.35z2's window, and the reason this guard is here rather than left to each
+            // family: a client whose own accepted answer is still in flight - or which is stale,
+            // resynchronizing or disconnected - has its pending answers stripped and its authorized
+            // commands emptied, while the PUBLIC owner fact stays. Building a window there would
+            // either draw controls that answer nothing or throw inside
+            // `PendingDecisionCommandBinding`, and milestone 8.35e's live playtest is the record of
+            // what a throw on a surface reader path costs. The narration line covers the wait, which
+            // is exactly what `RoundActionPresenter.FormatPublicDecisionWait` already does for it.
+            if (!projection.IsInputEnabled)
+            {
+                return false;
+            }
+
             if (!viewerHeroId.IsDefined)
             {
                 // The undefined hero is the DIRECTOR'S identity, and the Director legitimately owns
@@ -374,6 +387,9 @@ namespace GuardsDigital.Presentation.Match
                 agreement.Participants.Any(participant =>
                     participant.HeroId.Equals(viewerHeroId) && participant.Agreed);
 
+            // Short sentences, because the docked bar is bounded by the round dock's own width and
+            // yields its left edge to the Red rail - 444 units at the reference. A docked question is
+            // a line, not a paragraph.
             string question;
             if (viewerAgreed && waitingOn.Length > 0)
             {
@@ -381,12 +397,13 @@ namespace GuardsDigital.Presentation.Match
             }
             else if (selected < required)
             {
-                question = "Click minions on the board until " + required +
-                    (required == 1 ? " is chosen." : " are chosen.");
+                question = required == 1
+                    ? "Click a minion on the board."
+                    : "Click " + required + " minions on the board.";
             }
             else if (ready.Length > 0)
             {
-                question = string.Join(", ", ready) + ". Remove these minions?";
+                question = string.Join(", ", ready) + ".";
             }
             else
             {
@@ -728,7 +745,13 @@ namespace GuardsDigital.Presentation.Match
                 EffectChoicePromptLabels.SectionLabel(subject),
                 family == DecisionWindowFamily.Direction
                     ? "Choose a direction"
-                    : EffectChoicePromptLabels.StatusLine(choice, subject, projection),
+                    // A board-answered question is a LINE on the slim bar; the bounds it would
+                    // otherwise spell out are already in the count beside it.
+                    : family == DecisionWindowFamily.PieceOrSpace
+                        ? (subject == EffectChoiceSubject.Space
+                            ? "Click a lit space."
+                            : "Click a marked piece.")
+                        : EffectChoicePromptLabels.StatusLine(choice, subject, projection),
                 choice.MaximumSelections > 1
                     ? $"{choice.SelectedCandidates.Count} of {choice.MaximumSelections} chosen"
                     : null,

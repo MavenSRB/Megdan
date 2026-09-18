@@ -202,64 +202,79 @@ namespace GuardsDigital.Presentation.Match
             expandedCorner.style.display = DisplayStyle.None;
             expandedHost.Add(expandedCorner);
 
+            // The docked bar is TWO ROWS rather than one, which is a width decision and not a taste
+            // one: it is bounded by the round dock's 720 units and yields its left edge to the Red
+            // rail, so at the reference it is 444 wide. One row would leave a wrapped question a few
+            // dozen units beside a verb, a count and EXPAND. Two rows give each line the bar's whole
+            // width, and the host clips rather than spilling past the rectangle the renderer states.
             dockedHost = HudElements.Panel(MatchHudTheme.PanelBackground);
             dockedHost.name = "gd-decision-window-docked";
-            dockedHost.style.flexDirection = FlexDirection.Row;
-            dockedHost.style.alignItems = Align.Center;
+            dockedHost.style.flexDirection = FlexDirection.Column;
+            dockedHost.style.justifyContent = Justify.Center;
             dockedHost.style.flexGrow = 1f;
+            dockedHost.style.overflow = Overflow.Hidden;
             dockedHost.style.display = DisplayStyle.None;
             HudElements.Padding(dockedHost, DockedPadding);
             HudElements.Border(dockedHost, MatchHudTheme.PanelBorder, 1f, 4f);
             Root.Add(dockedHost);
 
-            var dockedText = new VisualElement();
-            dockedText.style.flexDirection = FlexDirection.Column;
-            dockedText.style.flexGrow = 1f;
-            dockedText.style.flexShrink = 1f;
-            dockedHost.Add(dockedText);
+            var dockedTopRow = new VisualElement { name = "gd-decision-window-docked-top" };
+            dockedTopRow.style.flexDirection = FlexDirection.Row;
+            dockedTopRow.style.alignItems = Align.Center;
+            dockedTopRow.style.flexShrink = 0f;
+            dockedHost.Add(dockedTopRow);
 
             dockedTitle = HudElements.Text(
                 string.Empty, QuestionFontSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
             dockedTitle.name = "gd-decision-window-docked-title";
             dockedTitle.style.letterSpacing = 0.4f;
+            dockedTitle.style.flexGrow = 1f;
             Wrapping(dockedTitle);
-            dockedText.Add(dockedTitle);
-
-            dockedQuestion = HudElements.Text(
-                string.Empty, CountFontSize, MatchHudTheme.MutedText);
-            dockedQuestion.name = "gd-decision-window-docked-question";
-            Wrapping(dockedQuestion);
-            dockedText.Add(dockedQuestion);
+            dockedTopRow.Add(dockedTitle);
 
             dockedCount = HudElements.Text(
                 string.Empty, CountFontSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
             dockedCount.name = "gd-decision-window-docked-count";
             dockedCount.style.flexShrink = 0f;
-            dockedCount.style.marginLeft = 10f;
-            dockedHost.Add(dockedCount);
+            dockedCount.style.marginLeft = 8f;
+            dockedTopRow.Add(dockedCount);
+
+            expandControl = HudElements.Control(
+                ExpandLabel, () => StateToggleRequested?.Invoke(), 22f);
+            expandControl.name = "gd-decision-window-expand";
+            expandControl.style.fontSize = CornerFontSize;
+            expandControl.style.flexShrink = 0f;
+            expandControl.style.marginLeft = 8f;
+            dockedTopRow.Add(expandControl);
+
+            var dockedBottomRow = new VisualElement { name = "gd-decision-window-docked-bottom" };
+            dockedBottomRow.style.flexDirection = FlexDirection.Row;
+            dockedBottomRow.style.alignItems = Align.Center;
+            dockedBottomRow.style.flexShrink = 0f;
+            dockedBottomRow.style.marginTop = 4f;
+            dockedHost.Add(dockedBottomRow);
+
+            dockedQuestion = HudElements.Text(
+                string.Empty, CountFontSize, MatchHudTheme.MutedText);
+            dockedQuestion.name = "gd-decision-window-docked-question";
+            dockedQuestion.style.flexGrow = 1f;
+            Wrapping(dockedQuestion);
+            dockedBottomRow.Add(dockedQuestion);
 
             dockedControls = new VisualElement { name = "gd-decision-window-docked-controls" };
             dockedControls.style.flexDirection = FlexDirection.Row;
             dockedControls.style.alignItems = Align.Center;
             dockedControls.style.flexShrink = 0f;
-            dockedControls.style.marginLeft = 10f;
-            dockedHost.Add(dockedControls);
+            dockedControls.style.marginLeft = 8f;
+            dockedBottomRow.Add(dockedControls);
 
             dockedCorner = new VisualElement { name = "gd-decision-window-docked-corner" };
             dockedCorner.style.flexDirection = FlexDirection.Row;
             dockedCorner.style.alignItems = Align.Center;
             dockedCorner.style.flexShrink = 0f;
-            dockedCorner.style.marginLeft = 8f;
+            dockedCorner.style.marginLeft = 6f;
             dockedCorner.style.display = DisplayStyle.None;
-            dockedHost.Add(dockedCorner);
-
-            expandControl = HudElements.Control(
-                ExpandLabel, () => StateToggleRequested?.Invoke(), 26f);
-            expandControl.name = "gd-decision-window-expand";
-            expandControl.style.fontSize = CornerFontSize;
-            expandControl.style.flexShrink = 0f;
-            expandControl.style.marginLeft = 8f;
-            dockedHost.Add(expandControl);
+            dockedBottomRow.Add(dockedCorner);
         }
 
         public VisualElement Root { get; }

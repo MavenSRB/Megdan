@@ -1682,7 +1682,7 @@ namespace GuardsDigital.Presentation.Match
         /// `DIRECTOR`'s bottom edge, which is the dock's LOWER band - so the two alternate by band
         /// rather than by visibility, and the `DIRECTOR` toggle's own rectangle stays clear.</para>
         ///
-        /// <para>At the reference this is (288, 838, 444, 64): the tray begins at y 968, the board's
+        /// <para>At the reference this is (288, 838, 444, 96): the tray begins at y 968, the board's
         /// left edge is at x 1228 - so a board-answered decision's bar never covers the pieces its own
         /// question is about - and the `DIRECTOR` toggle occupies x 12 to 134, which this bar clears
         /// HORIZONTALLY at every viewport because it begins one margin past the Red rail and the
@@ -1705,10 +1705,15 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.46c. The docked bar's own height: one wrapped question line, a count and one
-        /// verb at <see cref="DecisionWindowUnityView.DockedPadding"/>, inside the 128-unit dock.
+        /// Milestone 8.46c. The docked bar's own height, inside the 128-unit dock: its two rows - the
+        /// question's title with its running count, and the question with its one verb - at
+        /// <see cref="DecisionWindowUnityView.DockedPadding"/> either side.
+        ///
+        /// <para>96 rather than the whole 128, so the bar takes the dock's TOP band and the dock's own
+        /// live contents keep the lower one. At the reference the bar therefore ends at y 934, clear
+        /// of the tray at 968 and of the `DIRECTOR` toggle's lane below the hero column.</para>
         /// </summary>
-        public const float DecisionWindowDockedHeight = 64f;
+        public const float DecisionWindowDockedHeight = 96f;
 
         /// <summary>
         /// The round dock's own left edge. It is the Red rail's left edge - the dock and the rail
