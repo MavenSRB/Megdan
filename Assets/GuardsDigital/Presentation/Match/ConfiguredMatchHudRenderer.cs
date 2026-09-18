@@ -1645,9 +1645,10 @@ namespace GuardsDigital.Presentation.Match
         /// tray below it, the Blue rail to its right and - since milestone 8.35z59's second finding -
         /// the Red rail and the round dock to its left, so an inset of it cannot reach any of them.
         /// At the 2560x1440 reference the playfield is (1228, 96, 1044, 870) and this window is
-        /// therefore (1240, 108, 1020, 846): 32 units clear of the tray's top edge at 968, 24 clear of
-        /// the Blue rail's left edge at 2284, and 964 clear of the Red rail's right edge at 276. End
-        /// Turn and the seat undo square live in the status strip's own 96-unit band above it.</para>
+        /// therefore (1240, 108, 1020, 846): 14 units clear of the tray's top edge at 968, 24 clear of
+        /// the Blue rail's left edge at 2284, 964 clear of the Red rail's right edge at 276, and 12
+        /// below the status strip's own 96-unit band - which is where End Turn and the seat undo
+        /// square live, so neither is ever covered.</para>
         ///
         /// <para>The inset yields on a panel too small to carry it, so the window is never inverted -
         /// which cannot happen at any viewport this HUD lays out into (the panel is never smaller than
@@ -1681,9 +1682,13 @@ namespace GuardsDigital.Presentation.Match
         /// `DIRECTOR`'s bottom edge, which is the dock's LOWER band - so the two alternate by band
         /// rather than by visibility, and the `DIRECTOR` toggle's own rectangle stays clear.</para>
         ///
-        /// <para>At the reference this is (288, 838, 444, 64): the toggle stands at y 924, the tray
-        /// begins at y 968, and the board's left edge is at x 1228 - so a board-answered decision's
-        /// bar never covers the pieces its own question is about.</para>
+        /// <para>At the reference this is (288, 838, 444, 64): the tray begins at y 968, the board's
+        /// left edge is at x 1228 - so a board-answered decision's bar never covers the pieces its own
+        /// question is about - and the `DIRECTOR` toggle occupies x 12 to 134, which this bar clears
+        /// HORIZONTALLY at every viewport because it begins one margin past the Red rail and the
+        /// toggle begins at that rail's own left edge. That is why the toggle's vertical position,
+        /// which follows the live hero column and cannot be resolved statically, does not matter
+        /// here.</para>
         /// </summary>
         public static Rect CalculateDecisionWindowDockedRect(float panelWidth, float panelHeight)
         {

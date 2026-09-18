@@ -681,11 +681,8 @@ namespace GuardsDigital.Presentation.Match
 
             var controls = new List<DecisionWindowControlViewModel>();
             DecisionWindowControlViewModel corner = null;
-            if (!boardAnswered)
-            {
-                BuildEffectControls(
-                    projection, choice, subject, sourceDefinitionId, previews, controls);
-            }
+            BuildEffectControls(
+                projection, choice, subject, sourceDefinitionId, previews, boardAnswered, controls);
 
             if (choice.DeclineInvocation != null)
             {
@@ -744,6 +741,7 @@ namespace GuardsDigital.Presentation.Match
             EffectChoiceSubject subject,
             CardDefinitionId sourceDefinitionId,
             HashSet<EffectValue> previews,
+            bool boardAnswered,
             List<DecisionWindowControlViewModel> controls)
         {
             var ordinals = new Dictionary<EffectChoiceCandidate, int>();
@@ -752,7 +750,15 @@ namespace GuardsDigital.Presentation.Match
                 ordinals[choice.Candidates[index]] = index + 1;
             }
 
-            foreach (var candidate in choice.Candidates)
+            // A board-answered choice has no CANDIDATE controls anywhere - the pieces, the spaces and
+            // (from milestone 8.46d) the six direction arrows are the controls, where they stand. It
+            // keeps the answers that have no board surface, which is why this gate covers the two
+            // candidate loops and not the verbs below them: rulebook p.10's "up to two" is answered
+            // by clicking two minions and then pressing DONE, and a docked bar with no DONE would
+            // leave that selection unconfirmable.
+            foreach (var candidate in boardAnswered
+                ? Enumerable.Empty<EffectChoiceCandidate>()
+                : choice.Candidates)
             {
                 // A candidate the board already draws is answered by clicking the piece or the space
                 // it names - milestone 8.11a's rule - so the window never offers it a second time.
@@ -793,7 +799,9 @@ namespace GuardsDigital.Presentation.Match
                     isChosen: deselect != null));
             }
 
-            foreach (var unavailable in choice.UnavailableCandidates)
+            foreach (var unavailable in boardAnswered
+                ? Enumerable.Empty<EffectChoiceCandidate>()
+                : choice.UnavailableCandidates)
             {
                 controls.Add(new DecisionWindowControlViewModel(
                     CandidateLabel(
