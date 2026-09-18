@@ -71,7 +71,7 @@ namespace GuardsDigital.Presentation.Board
 
         public float OuterRadius => outerRadius;
 
-        /// <summary>The name this view is currently drawing, or the empty string before its first bind.</summary>
+        /// <summary>The drawn caption, empty when omitted by artwork metadata or not yet bound.</summary>
         public string NameText => nameLabel != null ? nameLabel.text : string.Empty;
 
         public BoardTargetRing TargetRing => targetRing;
@@ -102,8 +102,8 @@ namespace GuardsDigital.Presentation.Board
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
             EnsureVisual();
-            ApplyFace(state);
-            nameLabel.text = state.Definition.DisplayName.ToUpperInvariant();
+            var hasPreparedFace = ApplyFace(state);
+            nameLabel.text = PlacedTokenArtwork.Caption(state.Definition, hasPreparedFace);
             if (identityChanged)
             {
                 SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
@@ -205,22 +205,23 @@ namespace GuardsDigital.Presentation.Board
         /// Milestone 8.37. Draws the token's own printed face when the build has one, and leaves the
         /// generated disc alone when it does not.
         ///
-        /// <para>The name label stays either way. It is the only thing that distinguishes two tokens
+        /// <para>The name label stays by default. It is the only thing that distinguishes two tokens
         /// whose definitions share a physical piece - Tali's Ancestral and Venerated Totems are one
         /// double-sided token and wear one face - so removing it under art would make a board with
-        /// both totems on it unreadable in exactly the case the art was added for.</para>
+        /// both totems on it unreadable in exactly the case the art was added for. Artwork metadata
+        /// may omit a caption for a visually distinct prepared face; missing-art discs stay named.</para>
         ///
         /// <para>Absence is the ordinary state of a clean checkout, so nothing here throws or logs:
         /// see <see cref="PlacedTokenArtwork"/>'s own remarks. A token whose art is missing draws as
         /// the disc every token drew before this milestone.</para>
         /// </summary>
-        private void ApplyFace(PlacedToken state)
+        private bool ApplyFace(PlacedToken state)
         {
             var meshRenderer = GetComponent<MeshRenderer>();
             var material = meshRenderer.sharedMaterial;
             if (material == null)
             {
-                return;
+                return false;
             }
 
             if (!PlacedTokenArtwork.TryLoadTexture(state.Definition.Id, out var face))
@@ -230,13 +231,14 @@ namespace GuardsDigital.Presentation.Board
                 // left standing under a different token's name.
                 material.mainTexture = null;
                 material.color = DiscColor;
-                return;
+                return false;
             }
 
             material.mainTexture = face;
             // White, so the printed face is shown at its own colours rather than tinted by the
             // placeholder's purple.
             material.color = Color.white;
+            return true;
         }
 
         private static Material CreateDiscMaterial()

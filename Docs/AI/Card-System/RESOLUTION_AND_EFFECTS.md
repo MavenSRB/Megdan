@@ -33,6 +33,8 @@ Defense/Skill text application is also context-sensitive: the same printed card 
 
 Replacement and repeat are separate concepts. A replacement replaces the entire eligible action and uses its own text-application policy. A repeated action is a new instance of the original action, may make different modal choices, and cannot be replaced with another action such as Fast Travel or Clear unless later verified overriding card text explicitly says otherwise. Since milestone 8.6 it may itself repeat, up to the maximum its own node declares - and `on the same target` overrides the different-choices default for the one choice it names.
 
+The separate **FINISH MOVEMENT** control submits that same authorized Stop exactly once, without End Turn's decline/release composition. It leaves any resulting after-action decision intact, including after zero movement. Neither control adds a rule or a command kind.
+
 ## Deterministic, resumable resolution
 
 The resolver is a state machine that advances until it either completes, fails at a mandatory step, or needs an authoritative choice.

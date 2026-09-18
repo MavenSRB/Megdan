@@ -4,7 +4,7 @@ Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
 ## Widget content ledger
 
-Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. His nineteen printed definitions, eighteen executable dealt faces, progression, Pyro operations and Skill reuse are composed. Production registration, staged branches and private artwork are integrated; the permanent player gate remains separate.
+Widget is the seventeenth playable hero. [The completed implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance. His nineteen printed definitions, eighteen executable dealt faces, progression, Pyro operations and Skill reuse are composed. Production registration, staged branches, private artwork and the permanent player-path gate are complete.
 
 ## Source authority
 
@@ -101,6 +101,8 @@ These routes identify the composed contracts. Registration at 8.43e makes each r
 The registration addition leaves schema v42, wire `/15`, and all sixteen prior hero content identities unchanged. Eleven capability references and `widget-pyro@1` add 319 bytes to the recorded catalog. Earlier saved registration sets are rejected by the existing strict comparison, not silently migrated; only the test corpus fingerprints are regenerated. `SyntheticCoupledEscortHand` independently exercises owned Hazard lookup, anchored selection and coupled movement without Pyro.
 
 The selection front is byte-identical to `randomizers-tt25__7723701__front.png` (SHA-256 `3ED989791ACF2C5E808A40A5A2B43C2A4548055C7B92551C8AD68F9F96173CC6`). All eighteen playable fronts retain native 372x520 size. Visually verified Widget/Pyro circular faces come from their WI-02 manifest elements on `Image_1_Atlas`, respectively at `(1769,1577)/(2504,1577)` and `(2676,615)/(2980,615)`, each 302x302. The existing source-preserving portrait preparation supplies Widget's team/neutral resources and Pyro's single neutral placed-token resource; Pyro is never registered as a hero. Prepared fronts, highlights, profiles and portraits remain ignored private resources.
+
+Presentation direction: Pyro's prepared artwork has no overlaid name, as requested on 2026-09-18. Caption metadata changes no identity or rules; other tokens keep their captions, and a missing-art fallback disc remains named.
 
 ## Open verification points
 

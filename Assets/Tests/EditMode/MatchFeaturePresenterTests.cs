@@ -1996,6 +1996,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(holdModel.Actions.All(action => !action.Label.Contains("PRINTED")), Is.True,
                 "Player-facing action labels must not expose invocation-context enum names.");
             Assert.That(holdModel.EndTurnInvocation, Is.Not.Null);
+            Assert.That(holdModel.FinishMovementInvocation, Is.Null);
             Assert.That(holdModel.EndTurnInvocation.Label, Is.EqualTo("END TURN"));
             Assert.That(holdModel.EndTurnInvocation.Command.Kind, Is.EqualTo(DirectorCommandKind.PerformHold));
             Assert.That(holdModel.EndTurnInvocation.Command.CardInstanceId,
@@ -2012,6 +2013,9 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(holdSession.Projection.PendingMovementChoice.ResolutionId));
             Assert.That(movementModel.EndTurnInvocation.Command.ChoiceId,
                 Is.EqualTo(holdSession.Projection.PendingMovementChoice.ChoiceId));
+            Assert.That(movementModel.FinishMovementInvocation.Command, Is.EqualTo(movementModel.EndTurnInvocation.Command));
+            Assert.That(movementModel.FinishMovementInvocation, Is.Not.SameAs(movementModel.EndTurnInvocation),
+                "Finishing Movement must not arm End Turn's optional-decline/release composition.");
 
             var attackSession = CreateAdjacentSession();
             StartTiedTurn(attackSession, ActionKind.Attack);
@@ -2021,6 +2025,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(attackSession.Projection.PendingAttackTargetChoice, Is.Not.Null);
             var mandatoryModel = RoundActionPresenter.CreateViewModel(attackSession.Projection);
             Assert.That(mandatoryModel.Actions, Is.Empty);
+            Assert.That(mandatoryModel.FinishMovementInvocation, Is.Null);
             Assert.That(mandatoryModel.EndTurnInvocation, Is.Null,
                 "A mandatory target choice projects no DIRECT completion - the target itself cannot " +
                 "be skipped.");
@@ -2124,6 +2129,44 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(commands[commands.Count - 1].Kind, Is.EqualTo(DirectorCommandKind.ReleaseTurn),
                 "Both commands are recorded, in order, exactly as a two-press turn would have " +
                 "recorded them - the press is faster, the replay is not different in shape.");
+        }
+
+        [Test]
+        public void FinishMovementSubmitsOnlyTheProjectedStopAndRejectsItsStaleRepeat()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session,ActionKind.Movement);
+            var movement = session.Projection.AvailableTurnActions.Single(offer => GetActionKind(session.Projection,offer) == ActionKind.Movement);
+            Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
+            var presenter = new RoundActionPresenter(session,new CapturingRoundView());
+            var finish = RoundActionPresenter.CreateViewModel(session.Projection).FinishMovementInvocation;
+            var count = session.Projection.AcceptedCommands.Count;
+            Assert.That(presenter.Submit(finish), Is.True);
+            Assert.That(session.Projection.AcceptedCommands.Count, Is.EqualTo(count+1));
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind, Is.EqualTo(DirectorCommandKind.StopMovement));
+            Assert.That(session.Projection.PendingTurnRelease, Is.Not.Null);
+            Assert.That(presenter.Submit(finish), Is.False);
+            Assert.That(session.Projection.AcceptedCommands.Count, Is.EqualTo(count+1));
+        }
+
+        [Test]
+        public void FinishMovementDoesNotArmAnAsynchronousEndTurnContinuation()
+        {
+            var session = CreateSession();
+            StartTiedTurn(session,ActionKind.Movement);
+            var actor = session.Projection.SelectedActor.ActorId;
+            var movement = session.Projection.AvailableTurnActions.Single(offer => GetActionKind(session.Projection,offer) == ActionKind.Movement);
+            Assert.That(session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted, Is.True);
+            var client = new DeferredMatchClient(session);
+            var presenter = new RoundActionPresenter(client,new CapturingRoundView(),actor);
+            var finish = RoundActionPresenter.CreateViewModel(client.Projection,actor).FinishMovementInvocation;
+            var count = session.Projection.AcceptedCommands.Count;
+            Assert.That(presenter.Submit(finish), Is.True);
+            Assert.That(presenter.Submit(finish), Is.False,"No duplicate while the host is answering.");
+            for (var frame=0; frame<4; frame++) { client.DeliverPending(); presenter.Refresh(); }
+            Assert.That(session.Projection.AcceptedCommands.Count, Is.EqualTo(count+1));
+            Assert.That(session.Projection.AcceptedCommands.Last().Kind, Is.EqualTo(DirectorCommandKind.StopMovement));
+            Assert.That(session.Projection.PendingTurnRelease, Is.Not.Null);
         }
 
         /// <summary>

@@ -1822,3 +1822,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.43e | Registered Widget as the seventeenth pick with his complete set, private artwork and distinct Pyro token; preserved prior hero identities. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843e-deal-register-and-artwork-widget). | `milestone/8.43e` |
+
+## Milestone 8.43f Widget player-path gate completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.43f | Completed Widget's whole-set player gate, added independent Finish Movement, corrected borrowed-card prompts and removed Pyro's artwork caption. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843f-complete-widgets-permanent-player-path-gate). | `milestone/8.43f` |

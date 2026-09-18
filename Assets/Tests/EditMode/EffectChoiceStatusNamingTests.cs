@@ -282,6 +282,22 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ACardOutsideTheHandDoesNotImplyThatTheChoiceRetrievesIt()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithADiscardedCard(out var owner);
+            var card = session.Projection.Cards.First(candidate =>
+                candidate.OwnerId.Equals(owner) && candidate.State.Location == CardLocation.DiscardPile);
+            var choice = new PendingEffectChoice(
+                new EffectResolutionId("card-purpose"), new EffectChoiceId("card-purpose"),
+                new EffectNodeId("card-purpose"), owner, EffectChoiceKind.SelectTarget,
+                new[] { EffectChoiceCandidate.Value_(EffectValue.Card(card.Id)) }, 1, 1);
+            var name = session.Projection.Setup.Heroes.Single(hero => hero.HeroId.Equals(owner)).DisplayName;
+            Assert.That(EffectChoicePromptLabels.StatusLine(choice, EffectChoiceSubject.Card, session.Projection),
+                Is.EqualTo($"Choose 1 of 1 card belonging to {name}."),
+                "Location establishes ownership, not the operation: public cards may be borrowed or retrieved.");
+        }
+
+        [Test]
         public void ASingleCandidateIsCountedInTheSingular()
         {
             Assert.That(

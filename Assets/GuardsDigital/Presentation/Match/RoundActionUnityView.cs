@@ -621,6 +621,24 @@ namespace GuardsDigital.Presentation.Match
             }
 
             BuildActionRow();
+            if (Model.FinishMovementInvocation != null)
+            {
+                // Stop the legal Movement without the End Turn composition declining its follow-up.
+                var invocation = Model.FinishMovementInvocation;
+                optionalStepActionsHost.style.display = DisplayStyle.Flex;
+                var finish = new PewterBanner(() => ForwardInvocation(invocation),false,
+                    DirectorHandsUnityView.CornerBannerFontSize,"gd-finish-movement-label",hoverOnlyShine:true)
+                {
+                    name = "gd-finish-movement",
+                    text = invocation.Label,
+                    tooltip = "Stop moving and resolve any after-movement choices."
+                };
+                finish.SetVisibleLabel(invocation.Label);
+                finish.style.width = OptionalStepActionWidth;
+                finish.style.height = OptionalStepActionHeight;
+                finish.style.flexShrink = 0f;
+                optionalStepActionsHost.Add(finish);
+            }
             HideEmptySections();
         }
 
@@ -1743,6 +1761,7 @@ namespace GuardsDigital.Presentation.Match
             // cancel an open Attack selection first reads the identical way - the resolution being
             // cancelled offers nothing else either, so `PrintedActionRegions` is already empty.
             var onlyOfferLeft =
+                Model.FinishMovementInvocation == null &&
                 Model.InitiativeChoices.Count == 0 &&
                 Model.ContinueEndOfRoundInvocation == null &&
                 Model.PrintedActionRegions.All(region =>

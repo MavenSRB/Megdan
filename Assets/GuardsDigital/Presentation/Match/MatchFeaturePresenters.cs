@@ -8,6 +8,7 @@ using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -375,10 +376,9 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Adds the rules-facing purpose that can be read from the standing card candidates. A
-        /// hand-only card set is the configured discard family; the configured retrieval family
-        /// selects cards already outside the hand. This reads typed lifecycle and owner facts rather
-        /// than a node identity, card name, or printed sentence.
+        /// Names the owner of the standing card candidates. The configured hand-only card set is
+        /// the discard family; retrieval is named only when the paused definition declares it.
+        /// Public non-hand location alone cannot distinguish retrieval from borrowing a Primary.
         /// </summary>
         public static string StatusLine(
             PendingEffectChoice choice,
@@ -413,12 +413,28 @@ namespace GuardsDigital.Presentation.Match
                     : $"Choose {choice.MinimumSelections} to {choice.MaximumSelections}";
             var purpose = cards.All(card => card.State.Location == CardLocation.Hand)
                 ? $"for {heroName} to discard"
-                : $"for {heroName} to retrieve";
+                : IsDeclaredRetrieval(choice, projection)
+                    ? $"for {heroName} to retrieve"
+                    : $"belonging to {heroName}";
             var line = $"{bounds} of {count} {(count == 1 ? "card" : "cards")} {purpose}" +
                 (choice.DeclineInvocation != null ? ", or decline." : ".");
             return choice.MaximumSelections > 1
                 ? $"{line} {choice.SelectedCandidates.Count} chosen."
                 : line;
+        }
+
+        private static bool IsDeclaredRetrieval(PendingEffectChoice choice, IMatchReadModel projection)
+        {
+            var resolution = projection.PendingSkillResolution;
+            if (resolution == null || !resolution.ResolutionId.Equals(choice.ResolutionId)) return false;
+            var source = projection.Definitions.FirstOrDefault(definition =>
+                definition.Reference.Equals(resolution.SourceDefinitionReference));
+            var effect = source?.ActionDefinitions
+                .Select(action => action.EffectRootFor(resolution.EffectDefinitionReference))
+                .FirstOrDefault(definition => definition != null);
+            var node = effect?.Nodes.FirstOrDefault(value => value.Id.Equals(choice.NodeId));
+            // Read declared presentation meaning, never infer it from card names/text or resolve it here.
+            return node != null && node.Capability.Equals(SyntheticRosterCapabilities.RetrieveCardV1);
         }
 
         /// <summary>

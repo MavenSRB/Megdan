@@ -609,10 +609,11 @@ namespace GuardsDigital.Tests.EditMode
                     // that declares this milestone's own condition, which is what 8.40h built it for -
                     // and the case below is what keeps the other six naming the action window.
                     UltimateTriggerCondition.AfterControllerGivesMarker,
-                    UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded
+                    UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded,
+                    UltimateTriggerCondition.AfterControllerPerformsMovementAction
                 }),
                 "The six conditions dealt heroes declared before this series still are what they " +
-                "were; Bain adds marker-given and Garrus adds resolved-card-discarded.");
+                "were; Bain adds marker-given, Garrus resolved-card-discarded, and Widget actual Movement.");
             Assert.That(
                 declared.All(rule =>
                     rule.TriggerCondition == UltimateTriggerCondition.AfterControllerGivesMarker
@@ -626,7 +627,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True,
                 "and every one of the six still names the action window, which is the half the widened " +
                 "constructor guard could have loosened and did not - while the seventh names the " +
-                "moment a marker is given and the eighth the actual resolved-card discard.");
+                "moment a marker is given, the eighth the actual resolved-card discard, and Widget uses ActionEnded.");
 
             var momentWatchers = ConfiguredUltimates()
                 .Where(rule => rule.AfterPush.IsDeclared || rule.BeforeAction.IsDeclared)

@@ -769,7 +769,8 @@ namespace GuardsDigital.Presentation.Match
             string statusDetail = null,
             bool endTurnCancelsOpenAttack = false,
             string endTurnUnavailableReason = null,
-            IEnumerable<TrayCardViewModel> levelUpHandPreview = null)
+            IEnumerable<TrayCardViewModel> levelUpHandPreview = null,
+            TypedInvocationViewModel finishMovementInvocation = null)
         {
             LevelUpHandPreview = Array.AsReadOnly((levelUpHandPreview ??
                 Enumerable.Empty<TrayCardViewModel>()).ToArray());
@@ -789,6 +790,7 @@ namespace GuardsDigital.Presentation.Match
             Status = status ?? throw new ArgumentNullException(nameof(status));
             Actions = Array.AsReadOnly((actions ?? throw new ArgumentNullException(nameof(actions))).ToArray());
             EndTurnInvocation = endTurnInvocation;
+            FinishMovementInvocation = finishMovementInvocation;
             ContinueEndOfRoundInvocation = continueEndOfRoundInvocation;
             InitiativeChoices = Array.AsReadOnly((initiativeChoices ??
                 throw new ArgumentNullException(nameof(initiativeChoices))).ToArray());
@@ -889,6 +891,9 @@ namespace GuardsDigital.Presentation.Match
             IsAwaitingViewerInput ? NarrationVoice.YourMove : NarrationVoice.Calm;
         public IReadOnlyList<TypedInvocationViewModel> Actions { get; }
         public TypedInvocationViewModel EndTurnInvocation { get; }
+
+        /// <summary>Stop only this Movement, preserving any after-action decision. Never composes End Turn.</summary>
+        public TypedInvocationViewModel FinishMovementInvocation { get; }
 
         /// <summary>
         /// Milestone 8.35v (the THIRD amendment: "end turn button should be present the whole time

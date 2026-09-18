@@ -72,10 +72,14 @@ Non-goals: package creation/upload or final player-gate claims.
 
 Historical evidence: [8.43e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843e-widget-dealing-and-artwork-completion-evidence).
 
-### [ ] 8.43f Complete Widget's permanent player-path gate
+### [x] 8.43f Complete Widget's permanent player-path gate
 
 Outcome: mechanically complete coverage of every playable face/component and distinct interaction through configured real-input journeys.
 
 Acceptance: pick/spawn/identity, actual pointer/board input, commit/reveal, all primaries/secondaries, Pyro placement/movement/swaps/coupled movement, both Dragon Bond orders, anchored targets, opponent discard/Defeat, borrowed actions/exclusions, progression/earned items/Ultimate, round persistence, Clear/removal, defeat/respawn, stale input, no EngineFault, projection agreement, snapshot/restore/retained-prefix Undo on Widget-specific pauses, restart/rebuild, whole-face footprint/short viewport and targeted non-batch visual inspection. No required journey may be Explicit/skipped. Run focused evidence first and policy-required gate breadth; review player experience, rules authority, maintainability and risk before closure.
 
 Non-goals: unrelated cleanup or additional heroes.
+
+The user additionally requested on 2026-09-18 that Pyro's artwork lose its visible name overlay. This gate includes that presentation-only correction, preserving other tokens' captions and named missing-art fallbacks.
+
+Historical evidence: [8.43f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843f-widget-player-path-gate-completion-evidence).

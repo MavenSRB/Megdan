@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Setup;
@@ -29,6 +30,28 @@ namespace GuardsDigital.Tests.EditMode
     {
         private static readonly HeroId Owner = new HeroId("token-owner-hero");
         private static readonly CardInstanceId Source = new CardInstanceId("token-source-card");
+
+        [Test]
+        public void PyrosPreparedArtworkHasNoNameOverlayAndPooledFallbackKeepsItsName()
+        {
+            Assert.That(PlacedTokenArtwork.Caption(WidgetComponentContent.PyroDefinition, false), Is.EqualTo("PYRO"));
+            Assert.That(PlacedTokenArtwork.Caption(TaliComponentContent.AncestralTotemDefinition, true),
+                Is.EqualTo(TaliComponentContent.AncestralTotemDefinition.DisplayName.ToUpperInvariant()));
+            Assert.That(PlacedTokenArtwork.Caption(TaliComponentContent.VeneratedTotemDefinition, true),
+                Is.EqualTo(TaliComponentContent.VeneratedTotemDefinition.DisplayName.ToUpperInvariant()));
+            Assert.That(PlacedTokenArtwork.TryLoadTexture(WidgetComponentContent.PyroDefinition.Id, out var face), Is.True);
+            using (var board = new TokenBoard(new HexCoordinate(1, 0)))
+            {
+                board.Render(1, Token("pyro", WidgetComponentContent.PyroDefinition, new HexCoordinate(1, 0)));
+                var view = board.View.TokenViews.Single();
+                Assert.That(view.NameText, Is.Empty, "Pyro's artwork must not be covered by a PYRO caption.");
+                Assert.That(view.GetComponent<MeshRenderer>().sharedMaterial.mainTexture, Is.SameAs(face));
+                view.Configure(Token("hazard", SyntheticComponentDefinitions.HazardDefinition, new HexCoordinate(1, 0)),
+                    HexWorldLayout.DefaultOuterRadius);
+                Assert.That(view.NameText, Is.EqualTo("TEST - HAZARD"));
+                Assert.That(view.GetComponent<MeshRenderer>().sharedMaterial.mainTexture, Is.Null);
+            }
+        }
 
         [Test]
         public void APlacedToken_IsDrawnAtItsCoordinateAndNamedByItsDefinition()

@@ -1016,7 +1016,21 @@ namespace GuardsDigital.Tests.PlayMode
                 // see PublicCardRevealReading's own remarks for why it is not folded into the
                 // selection above it.
                 ["synthetic-reveal-chosen-card"] =
-                    new[] { PlayerInteractionShape.PublicCardRevealReading }
+                    new[] { PlayerInteractionShape.PublicCardRevealReading },
+
+                // Widget: owned-token identity/reach are readings, not selection controls. Anchored
+                // targets still ask for a unit on the board. A paired Move asks for the first
+                // token's destination; the second destination follows from the common displacement.
+                ["widget-pyro-present"] = Array.Empty<PlayerInteractionShape>(),
+                ["widget-pyro-space"] = Array.Empty<PlayerInteractionShape>(),
+                ["widget-pyro-in-range"] = Array.Empty<PlayerInteractionShape>(),
+                ["widget-pyro-in-radius"] = Array.Empty<PlayerInteractionShape>(),
+                ["widget-place-pyro"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["range-hero-in-anchor-line"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["range-enemy-minion-beside-anchor"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["range-minion-beside-anchor"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["enemy-unit-beside-anchor"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["coupled-direct-move"] = new[] { PlayerInteractionShape.BoardSpaceSelection }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

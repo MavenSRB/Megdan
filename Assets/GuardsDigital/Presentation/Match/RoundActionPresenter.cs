@@ -184,6 +184,9 @@ namespace GuardsDigital.Presentation.Match
                 .Concat(current.EndTurnInvocation != null
                     ? new[] { current.EndTurnInvocation }
                     : Array.Empty<TypedInvocationViewModel>())
+                .Concat(current.FinishMovementInvocation != null
+                    ? new[] { current.FinishMovementInvocation }
+                    : Array.Empty<TypedInvocationViewModel>())
                 .Concat(current.ContinueEndOfRoundInvocation != null
                     ? new[] { current.ContinueEndOfRoundInvocation }
                     : Array.Empty<TypedInvocationViewModel>())
@@ -967,7 +970,10 @@ namespace GuardsDigital.Presentation.Match
                 statusDetail,
                 endTurnCancelsOpenAttack,
                 endTurnUnavailableReason,
-                levelUpHandPreview);
+                levelUpHandPreview,
+                endTurnInvocation?.Command.Kind == DirectorCommandKind.StopMovement
+                    ? new TypedInvocationViewModel("FINISH MOVEMENT",endTurnInvocation.Command)
+                    : null);
         }
 
         private static IReadOnlyList<PrintedActionRegionViewModel> CreatePrintedActionRegions(

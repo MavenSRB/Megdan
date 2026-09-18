@@ -4786,6 +4786,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void FinishMovementHasItsOwnControlAndDisappearsAfterTheChoice()
+        {
+            var view = new RoundActionUnityView();
+            var finish = new TypedInvocationViewModel("FINISH MOVEMENT",DirectorCommand.StopMovement());
+            var end = new TypedInvocationViewModel("END TURN",finish.Command);
+            RoundActionViewModel Model(TypedInvocationViewModel stop) => new RoundActionViewModel(
+                1,1,1,RoundResolutionPhase.ResolvingTurn,"Moving",Array.Empty<TypedInvocationViewModel>(),end,null,
+                Array.Empty<TypedInvocationViewModel>(),Array.Empty<TypedInvocationViewModel>(),finishMovementInvocation:stop);
+            view.Render(Model(finish));
+            Assert.That(view.OptionalStepActionsRoot.Q<Button>("gd-finish-movement").text, Is.EqualTo(finish.Label));
+            Assert.That(view.OptionalStepActionsRoot.style.display.value, Is.EqualTo(DisplayStyle.Flex));
+            Assert.That(view.EndTurnShinesFully, Is.False);
+            view.Render(Model(null));
+            Assert.That(view.OptionalStepActionsRoot.Q<Button>("gd-finish-movement"), Is.Null);
+            Assert.That(view.OptionalStepActionsRoot.style.display.value, Is.EqualTo(DisplayStyle.None));
+        }
+
+        [Test]
         public void TheNarration_SpeaksWarmForTheViewersOwnMoveAndCalmOtherwise()
         {
             var session = ConfiguredMatchFixtures.CreateVerifiedMirrorSession();

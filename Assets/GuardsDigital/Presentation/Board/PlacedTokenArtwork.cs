@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using GuardsDigital.Core.Components;
 using UnityEngine;
 
@@ -30,6 +31,19 @@ namespace GuardsDigital.Presentation.Board
     /// </summary>
     public static class PlacedTokenArtwork
     {
+        // Presentation metadata only: the prepared face is sufficient to identify this piece.
+        private static readonly IReadOnlyDictionary<TokenDefinitionId, string> PreparedCaptions =
+            new Dictionary<TokenDefinitionId, string>
+            {
+                [new TokenDefinitionId("widget-pyro")] = string.Empty
+            };
+
+        /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>
+        public static string Caption(TokenDefinition definition, bool hasPreparedFace) =>
+            hasPreparedFace && PreparedCaptions.TryGetValue(definition.Id, out var caption)
+                ? caption
+                : definition.DisplayName.ToUpperInvariant();
+
         /// <summary>
         /// The ignored resource folder <c>Tools/Prepare-TokenArtwork.ps1</c> writes into, under
         /// <c>Private/</c> for the reason the hero standees and the board face are.

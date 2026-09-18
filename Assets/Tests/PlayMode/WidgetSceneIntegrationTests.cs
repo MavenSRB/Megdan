@@ -61,12 +61,12 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return GarrusUiJourneyTests.Space(root);
             var token = Object.FindObjectsByType<GuardsDigital.Presentation.Board.PlacedTokenView>().Single();
-            Assert.That(token.NameText, Is.EqualTo("PYRO"));
+            Assert.That(token.NameText, Is.Empty, "Pyro's art has no overprinted caption.");
             Assert.That(token.GetComponent<MeshRenderer>().sharedMaterial.mainTexture,
                 Is.SameAs(Resources.Load<Texture2D>("Private/Tokens/widget-pyro")));
             Assert.That(Resources.Load<Texture2D>("Private/Heroes/widget"),
                 Is.Not.SameAs(token.GetComponent<MeshRenderer>().sharedMaterial.mainTexture));
-            yield return UiPlayer.CaptureGameView("widget-e", "widget-and-pyro");
+            yield return UiPlayer.CaptureGameView("widget-f", "widget-and-pyro");
         }
     }
 }

@@ -383,11 +383,11 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// The tray half, over a real seat-served walk. From rulebook p.8's Retrieve stage until the
         /// next round begins, commitments still name the cards the table saw. The bounded public log
-        /// now preserves those exact identities when they return to hand, so the tray resolves the
-        /// known face while never requiring the rest of another hero's private hand.
+        /// preserves those exact identities when they return to hand. The 8.42b player tray remains
+        /// owner-only even though that public identity can still be read by public surfaces.
         /// </summary>
         [Test]
-        public void ASeatTrayResolvesARevealedCardAfterItReturnsToAnotherHerosHand()
+        public void ASeatTrayStaysPrivateWhenARevealedCardReturnsToAnotherHerosHand()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             var seat = host.Seats.Seats[0];
@@ -403,25 +403,28 @@ namespace GuardsDigital.Tests.EditMode
                 // continuation stops at - which is where the playtest's failures were entered.
                 presenter.Refresh();
                 Assert.That(view.Model, Is.Not.Null);
+                Assert.That(view.Model.Hands.Select(hand => hand.HeroId), Is.EqualTo(new[] { seat.HeroId }),
+                    "8.42b removed all foreign trays, including their publicly known cards.");
                 var scoped = client.Projection;
-                foreach (var hand in view.Model.Hands)
+                foreach (var commitment in scoped.Commitments)
                 {
-                    if (!hand.RevealedCardInstanceId.HasValue)
+                    if (!commitment.RevealedCardInstanceId.HasValue)
                     {
-                        Assert.That(hand.RevealedCard, Is.Null);
                         continue;
                     }
 
                     var authoritative = host.Projection.Cards.Single(card =>
-                        card.Id.Equals(hand.RevealedCardInstanceId.Value));
-                    Assert.That(hand.RevealedCard, Is.Not.Null,
+                        card.Id.Equals(commitment.RevealedCardInstanceId.Value));
+                    var known = scoped.Cards.SingleOrDefault(card => card.Id.Equals(authoritative.Id));
+                    Assert.That(known, Is.Not.Null,
                         "A revealed identity retained by the bounded public log must still resolve.");
-                    Assert.That(hand.RevealedCard.Id, Is.EqualTo(hand.RevealedCardInstanceId.Value));
-                    if (!hand.HeroId.Equals(seat.HeroId) &&
+                    if (!commitment.HeroId.Equals(seat.HeroId) &&
                         authoritative.State.Location == CardLocation.Hand)
                     {
-                        Assert.That(scoped.Cards.Any(card => card.Id.Equals(authoritative.Id)), Is.True,
-                            "The exact retrieved card is public knowledge after its reveal.");
+                        presenter.SelectViewedHero(commitment.HeroId);
+                        presenter.Refresh();
+                        Assert.That(view.Model.ViewedHeroId, Is.EqualTo(seat.HeroId),
+                            "Public knowledge of a retrieved face does not authorize a foreign tray.");
                         retrievedPublicRenders++;
                     }
                 }
@@ -435,7 +438,7 @@ namespace GuardsDigital.Tests.EditMode
             });
 
             Assert.That(retrievedPublicRenders, Is.GreaterThan(0),
-                "The seeded seat walk never rendered a publicly revealed opponent card after " +
+                "The seeded seat walk never observed a publicly revealed opponent card after " +
                 "Retrieve in " + walked + " commands, so this case proves nothing.");
             Assert.That(hiddenOpponentCards, Is.GreaterThan(0),
                 "Retaining an exact revealed identity must not expose the rest of an opponent's hand.");
