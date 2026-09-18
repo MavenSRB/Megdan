@@ -130,7 +130,7 @@ namespace GuardsDigital.Tests.EditMode
                 "\"Target a unit adjacent to you.\" - the second sentence, asked from the space he " +
                 "is standing in after the move was answered.");
             fixture.Select(fixture.MinionAt(FirstAdjacent));
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.Choice?.NodeId.Value, Is.EqualTo("reflexes-move"),
                 "\"If you did not move before the attack, you may move 1 space.\" - he did not, so " +
@@ -167,14 +167,14 @@ namespace GuardsDigital.Tests.EditMode
             fixture.StartPrimary(TigerclawCardContent.CombatReflexes);
             Assert.That(fixture.Choice, Is.Not.Null, "\"Before the attack: You may move 1 space.\"");
             fixture.Select(FourthAdjacent);
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.HeroSpace(fixture.Hero), Is.EqualTo(FourthAdjacent),
                 "He took the step-1 move.");
             Assert.That(fixture.Choice?.NodeId.Value, Is.EqualTo("before-target"),
                 "and the target question follows the move rather than preceding it.");
             fixture.Select(fixture.MinionAt(FirstAdjacent));
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.Choice, Is.Null,
                 "\"If you did not move before the attack\" is false, so the step-7 move never runs - " +
@@ -606,7 +606,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 fixture.StartPrimary(TigerclawCardContent.BlinkStrike);
                 fixture.SelectFirst();
-                fixture.Confirm();
+                fixture.ConfirmIfStillOwed();
 
                 Assert.That(fixture.Choice, Is.Not.Null,
                     "The unlocked Ultimate stops the game after the basic action it watched.");
@@ -786,7 +786,7 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.StartPrimary(TigerclawCardContent.BlinkStrike);
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
             Assert.That(fixture.Choice, Is.Not.Null);
             Assert.That(fixture.Choice.NodeId.Value, Is.EqualTo("cloak-and-daggers-repeat"));
             Assert.That(fixture.MinionIds(), Is.Empty,

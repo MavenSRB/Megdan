@@ -388,11 +388,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             var choice = session.Projection.PendingEffectChoice;
             Assert.That(choice.NodeId.Value, Is.EqualTo("repeat-choice"));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
                 choice.SelectInvocations.Single(candidate =>
-                    candidate.Candidate.OptionNodeId.Equals(option))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+                    candidate.Candidate.OptionNodeId.Equals(option)));
         }
 
         /// <summary>Names the adjacent subject, then takes the first destination it is offered.</summary>
@@ -404,15 +404,15 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void SelectValue(MatchSession session, HexCoordinate coordinate)
         {
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the
+            // choice this answer went into. That aim is what this fixture needs most: naming the one
+            // space a step admits now closes it inside that command and opens the printed repeat's
+            // own confirm-or-decline behind it, which the cases below answer on purpose.
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                session,
                 choice.SelectInvocations.Single(candidate =>
-                    candidate.Candidate.Value.Coordinate.Equals(coordinate))));
-            var confirm = session.Projection.PendingEffectChoice?.ConfirmInvocation;
-            if (confirm != null)
-            {
-                Accept(session, DirectorCommand.AnswerEffectChoice(confirm));
-            }
+                    candidate.Candidate.Value.Coordinate.Equals(coordinate)));
         }
 
         private static void Confirm(MatchSession session)

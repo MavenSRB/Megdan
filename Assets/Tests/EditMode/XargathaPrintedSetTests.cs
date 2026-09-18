@@ -179,7 +179,7 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.StartPrimary(XargathaCardContent.SirensCall);
             fixture.Select(called);
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
             fixture.AnswerEveryStandingChoice();
 
             var moved = fixture.SpaceOf(called);
@@ -200,7 +200,7 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.StartPrimary(XargathaCardContent.SirensCall);
             fixture.Select(called);
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             var destinations = fixture.CandidateSpaces(fixture.Choice);
             var distances = destinations
@@ -241,7 +241,7 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.StartPrimary(XargathaCardContent.SirensCall);
             fixture.Select(called);
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.Choice, Is.Null,
                 "An impossible if-able move is skipped without asking the player an empty question.");
@@ -406,7 +406,7 @@ namespace GuardsDigital.Tests.EditMode
             // Movement decision, and the "you may" behind it. Only the third question is the one
             // whose candidates this case is about.
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
             fixture.Confirm();
 
             var offered = fixture.CandidateMinions(fixture.Choice);
@@ -434,7 +434,7 @@ namespace GuardsDigital.Tests.EditMode
             // Movement decision, and the "you may" behind it. Only the third question is the one
             // whose candidates this case is about.
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
             fixture.Confirm();
 
             Assert.That(

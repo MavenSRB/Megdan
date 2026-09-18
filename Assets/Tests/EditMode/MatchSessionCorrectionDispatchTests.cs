@@ -76,7 +76,10 @@ namespace GuardsDigital.Tests.EditMode
             // return, so the correction is automatic and no unnecessary prompt appears.
             var session = StartDisplacementSkill(RedPusherAt);
             ChooseOption(session, MoveBranch);
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             SelectValue(session, new HexCoordinate(-1, -1));
             SelectValue(session, new HexCoordinate(-1, -3));
@@ -232,9 +235,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(option));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         private static void SelectValue(MatchSession session, HexCoordinate coordinate)
@@ -242,9 +245,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.Value.Coordinate.Equals(coordinate));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         private static MatchSession StartDisplacementSkill(HexCoordinate redAt)

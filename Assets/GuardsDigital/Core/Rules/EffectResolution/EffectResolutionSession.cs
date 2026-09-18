@@ -706,8 +706,31 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             EffectResolutionRejectionReason.InvalidChoice, frame);
                     }
 
-                    return Pause(frame, choice.WithSelected(
-                        choice.SelectedCandidates.Concat(new[] { command.Candidate })));
+                    var afterSelection = choice.WithSelected(
+                        choice.SelectedCandidates.Concat(new[] { command.Candidate }));
+
+                    // Milestone 8.46b, the user's own rule for the decision window: a choice that
+                    // admits exactly one selection is answered in ONE press. Naming the candidate is
+                    // the whole answer (see PendingEffectChoice.ResolvesOnSelection), so the Select
+                    // that fills such a choice is applied as select-and-confirm inside this command
+                    // rather than parking on a pause that stands on Deselect and Confirm.
+                    //
+                    // It resumes exactly as an accepted Confirm does, through the same Resume with
+                    // the same resolvedBy, so the EffectChoiceRecord this writes is the record the
+                    // two-step answer wrote and replay, restore and retained-prefix Undo reproduce
+                    // the same execution from it. Nothing about the recorded answer changed; what
+                    // changed is how many accepted commands it took to give.
+                    //
+                    // Resume's own refusals still stand and still leave the decision to be made:
+                    // a capability whose selection stopped being eligible rejects against `frame`,
+                    // which is this frame with its pause untouched and NOTHING selected - the
+                    // player is asked again rather than left holding half an answer.
+                    if (choice.ResolvesOnSelection)
+                    {
+                        return Resume(frame, afterSelection, EffectChoiceCommandKind.Confirm, context);
+                    }
+
+                    return Pause(frame, afterSelection);
 
                 case EffectChoiceCommandKind.Deselect:
                     if (!choice.DeselectInvocations.Any(invocation => invocation.Equals(command)))

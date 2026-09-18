@@ -81,9 +81,14 @@ namespace GuardsDigital.Tests.EditMode
                 // 2,600 steps ("minion-battle: the composition stopped on another family after
                 // 1800 steps" was the observed pre-fix red). A fresh offline scan of seeds 1-30 put
                 // every walked family on SEED 22, the last of them (minion-battle) at step 319.
+                // Milestone 8.46b re-derived it again. A choice admitting exactly one selection is now
+                // answered in ONE accepted command instead of two, so every seeded trajectory past the
+                // first such answer is a different match and seed 22 stopped reaching attack-target and
+                // minion-battle at all inside 1,800 steps. A fresh offline scan of seeds 1-30 put every
+                // walked family on SEED 29, the last of them (minion-battle) at step 558.
                 reached = harness.DriveThroughWire(WalkBudget, projection =>
                     projection.DecisionContract != null &&
-                    projection.DecisionContract.FamilyId.Value == family, seed: 22);
+                    projection.DecisionContract.FamilyId.Value == family, seed: 29);
             }
 
             Assert.That(harness.MatchHost.Projection.DecisionContract, Is.Not.Null,

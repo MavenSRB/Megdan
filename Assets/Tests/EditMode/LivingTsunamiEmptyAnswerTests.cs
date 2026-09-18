@@ -76,15 +76,23 @@ namespace GuardsDigital.Tests.EditMode
                 "before this fix it did, and a player taking it was refused as TargetUnavailable for " +
                 "choosing nothing when choosing nothing was legal (just spelled differently, by Decline).");
 
+            // Milestone 8.46b. What a NAMED destination does changed, and the change is the point of
+            // the pairing this case draws. Until this milestone naming one made Confirm legal, and
+            // the move happened on that second press; the printed move takes exactly one space, so
+            // naming it is now the whole answer and the move happens in that command. Nothing about
+            // the EMPTY answer moved - Decline is still the only way to give it, asserted above -
+            // which is what this case has always been for.
+            Assert.That(choice.ResolvesOnSelection, Is.True,
+                "\"you may move 1 space\" admits exactly one destination.");
+
             var before = board.HeroSpace(board.Hero);
             board.SelectFirst();
-            Assert.That(board.Choice.ConfirmInvocation, Is.Not.Null,
-                "Once a destination is named the ordinary mandatory-selection rule applies: Confirm " +
-                "becomes legal exactly as it would for any other single-target choice.");
-            board.Confirm();
 
+            Assert.That(
+                board.Choice == null || !board.Choice.ChoiceId.Equals(choice.ChoiceId), Is.True,
+                "so naming one answers it outright rather than making a Confirm legal behind it.");
             Assert.That(board.HeroSpace(board.Hero), Is.Not.EqualTo(before),
-                "Confirming a named destination still performs the move - the fix narrows the empty " +
+                "and naming a destination still performs the move - the fix narrows the empty " +
                 "answer, not the complete one.");
         }
 

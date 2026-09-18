@@ -657,9 +657,9 @@ namespace GuardsDigital.Tests.EditMode
             var adjacent = session.Projection.PendingEffectChoice.SelectInvocations
                 .First(invocation => actorCoordinate.GetNeighbors()
                     .Contains(invocation.Candidate.Value.Coordinate));
-            Accept(session, DirectorCommand.AnswerEffectChoice(adjacent));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, adjacent);
             token = session.Projection.PlacedTokens.Single();
 
             // Milestone 6.12: a later turn of the same round, not the next one. p.8's end-of-round
@@ -674,10 +674,10 @@ namespace GuardsDigital.Tests.EditMode
             MatchSession session, GuardsDigital.Core.Effects.EffectNodeId option)
         {
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
-                candidate => candidate.Candidate.OptionNodeId.Equals(option))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.OptionNodeId.Equals(option)));
         }
 
         private static void CommitAttackTurnForActor(MatchSession session, HeroId actorId)

@@ -175,10 +175,10 @@ namespace GuardsDigital.Tests.EditMode
             var chosen = spaces.Candidates
                 .Select(candidate => candidate.Value.Coordinate)
                 .First(space => !space.Equals(RedAt));
-            Accept(session, DirectorCommand.AnswerEffectChoice(spaces.SelectInvocations
-                .Single(invocation => invocation.Candidate.Value.Coordinate.Equals(chosen))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, spaces.SelectInvocations
+                .Single(invocation => invocation.Candidate.Value.Coordinate.Equals(chosen)));
 
             var board = RestoreBoard(session);
             Assert.That(Coordinate(board, actorId), Is.EqualTo(chosen));
@@ -196,7 +196,10 @@ namespace GuardsDigital.Tests.EditMode
             var blueId = BlueHero(session);
 
             ChooseOption(session, MoveBranch);
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             SelectValue(session, BlueAt);
 
@@ -221,7 +224,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             var session = StartDisplacementSkill();
             ChooseOption(session, MoveBranch);
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             var before = session.Projection;
@@ -251,7 +257,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             var session = StartDisplacementSkill();
             ChooseOption(session, MoveBranch);
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             var paused = session.Projection.PendingEffectChoice;
             Assert.That(paused.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
@@ -285,28 +294,35 @@ namespace GuardsDigital.Tests.EditMode
             var blueId = BlueHero(session);
 
             ChooseOption(session, MoveBranch);
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             SelectValue(session, BlueAt);
             var destination = session.Projection.PendingEffectChoice.SelectInvocations
                 .Single(candidate => candidate.Candidate.Value.Coordinate.Equals(BeyondBlue));
-            Accept(session, DirectorCommand.AnswerEffectChoice(destination));
-            var beforeConfirm = session.Projection.DiagnosticSnapshot;
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: naming the one subject this selection admits is the whole answer, in ONE
+            // accepted command - so the retained-prefix Undo below steps the whole of it back rather than
+            // half of it, and replaying it means sending that same command again.
+            var beforeTheAnswer = session.Projection.DiagnosticSnapshot;
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, destination);
             var afterCommit = session.Projection.DiagnosticSnapshot;
 
             Assert.That(Coordinate(RestoreBoard(session), blueId), Is.EqualTo(BeyondBlue));
 
             Assert.That(session.Undo().Accepted, Is.True);
-            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeConfirm),
-                "Retained-prefix Undo returns to the selected-but-unconfirmed destination.");
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeTheAnswer),
+                "Retained-prefix Undo returns to the standing destination question, with nothing named.");
             Assert.That(Coordinate(RestoreBoard(session), blueId), Is.EqualTo(BlueAt),
                 "The named subject is back where it stood, because the displacement is authoritative " +
                 "board state the replay reaches.");
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, destination);
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterCommit),
                 "Replaying the same answer reproduces the same occupancy and the same ordered facts.");
         }
@@ -335,9 +351,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Single(candidate => candidate.Candidate.OptionNodeId.Equals(PushBranch));
             var beforePush = session.Projection.DiagnosticSnapshot;
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(selectInvocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, selectInvocation);
             var afterPush = session.Projection.DiagnosticSnapshot;
 
             Assert.That(afterPush, Is.Not.EqualTo(beforePush));
@@ -348,8 +364,11 @@ namespace GuardsDigital.Tests.EditMode
                 "Retained-prefix Undo puts the pushed hero back, because the displacement is " +
                 "authoritative board state and not a side effect the replay cannot reach.");
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the mode was taken in ONE accepted command, so the Undo above gave
+            // back the whole answer and replaying it means sending that same command again.
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, selectInvocation);
 
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterPush),
                 "Replaying the same answer reproduces the same occupancy and the same ordered facts.");
@@ -469,9 +488,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(option));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         /// <summary>Selects one coordinate-valued candidate of the live choice and confirms it.</summary>
@@ -480,9 +499,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.Value.Coordinate.Equals(coordinate));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         /// <summary>

@@ -377,7 +377,10 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var id = Choice.ChoiceId;
                 Answer(command);
-                if (Choice != null && Choice.ChoiceId.Equals(id)) Answer(Choice.ConfirmInvocation);
+                // Milestone 8.46b: the completion is asked for rather than assumed - a choice admitting
+                // exactly one selection is closed by the select itself, and the same node asking again
+                // is a fresh question rather than this one still open.
+                if (Choice != null && Choice.ChoiceId.Equals(id) && Choice.ConfirmInvocation != null) Answer(Choice.ConfirmInvocation);
             }
             internal void Answer(EffectChoiceCommand command)
             {
@@ -469,7 +472,9 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var id = Choice.ChoiceId;
                 Assert.That(Round.TryAnswerEffectChoice(command).Accepted, Is.True);
-                if (Choice != null && Choice.ChoiceId.Equals(id)) Assert.That(Round.TryAnswerEffectChoice(Choice.ConfirmInvocation).Accepted, Is.True);
+                // Milestone 8.46b: the completion is asked for rather than assumed - a choice admitting
+                // exactly one selection is closed by the select itself.
+                if (Choice != null && Choice.ChoiceId.Equals(id) && Choice.ConfirmInvocation != null) Assert.That(Round.TryAnswerEffectChoice(Choice.ConfirmInvocation).Accepted, Is.True);
             }
             internal void RoundTrip()
             {

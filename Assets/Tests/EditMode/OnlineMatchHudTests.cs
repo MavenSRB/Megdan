@@ -48,8 +48,13 @@ namespace GuardsDigital.Tests.EditMode
             // rerouted this trajectory too and seed 6 no longer reaches the Minion Battle inside
             // 2,600 steps. A fresh offline scan of seeds 1-30 put all seven families on SEED 22, the
             // last of them (minion-battle) at step 319, so the 600-step budget still holds.
+            // Milestone 8.46b re-derived it again. A choice admitting exactly one selection is now
+            // answered in ONE accepted command instead of two, so every seeded trajectory past the
+            // first such answer is a different match and seed 22 stopped reaching attack-target and
+            // minion-battle at all inside 1,800 steps. A fresh offline scan of seeds 1-30 put every
+            // walked family on SEED 29, the last of them (minion-battle) at step 558.
             var submitted = harness.DriveThroughWire(600, afterAcceptedStep: () =>
-                AssertAllSeats(harness, seen), seed: 22);
+                AssertAllSeats(harness, seen), seed: 29);
 
             Assert.That(submitted, Is.EqualTo(600));
             Assert.That(seen, Is.SupersetOf(new[]

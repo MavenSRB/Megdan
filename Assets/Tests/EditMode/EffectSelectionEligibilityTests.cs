@@ -103,24 +103,31 @@ namespace GuardsDigital.Tests.EditMode
             // trusted from the offer, so a selection made while the consumer accepted it does not
             // survive the consumer ceasing to. The fixture's consumer accepts only in round 1, which
             // is how a state change between the pause and the answer is made deterministic.
+            // Milestone 8.46b moved WHICH command carries the answer, not whether eligibility is
+            // re-read when it arrives. The selection admits exactly one candidate, so the command
+            // that names it is the command that performs it, and that is the command the stale
+            // context has to refuse - atomically, leaving the question standing with nothing named.
             var definition = SelectionOnly(consumer: Consume);
             var paused = Start(definition, Context(definition, accepted: Other, roundIndex: 1));
             var choice = paused.Frame.PendingChoice;
-            var selected = EffectResolutionSession.Answer(
-                paused.Frame,
-                choice.SelectInvocations.Single(),
-                Context(definition, accepted: Other, roundIndex: 1));
-            Assert.That(selected.Accepted, Is.True, "Fixture precondition: the answer was legal.");
+            var naming = choice.SelectInvocations.Single();
+            Assert.That(
+                EffectResolutionSession.Answer(
+                    paused.Frame, naming,
+                    Context(definition, accepted: Other, roundIndex: 1)).Accepted,
+                Is.True,
+                "Fixture precondition: the answer was legal while the consumer accepted it.");
 
             var stale = Context(definition, accepted: Other, roundIndex: 2);
-            var refused = EffectResolutionSession.Answer(
-                selected.Frame, selected.Frame.PendingChoice.ConfirmInvocation, stale);
+            var refused = EffectResolutionSession.Answer(paused.Frame, naming, stale);
 
             Assert.That(refused.Accepted, Is.False);
             Assert.That(refused.RejectionReason,
                 Is.EqualTo(EffectResolutionRejectionReason.InvalidChoice));
-            Assert.That(refused.Frame, Is.SameAs(selected.Frame),
+            Assert.That(refused.Frame, Is.SameAs(paused.Frame),
                 "The pending choice survives untouched, so the decision is still there to be made.");
+            Assert.That(refused.Frame.PendingChoice.SelectedCandidates, Is.Empty,
+                "and untouched means nothing was half-applied on the way to the refusal.");
             Assert.That(refused.Events, Is.Empty);
         }
 

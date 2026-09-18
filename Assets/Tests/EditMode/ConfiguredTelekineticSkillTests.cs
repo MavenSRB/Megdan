@@ -183,8 +183,9 @@ namespace GuardsDigital.Tests.EditMode
             StartSkill(session);
             var subject = session.Projection.PendingEffectChoice.SelectInvocations
                 .Single(invocation => invocation.Candidate.Value.Coordinate.Equals(before));
-            Answer(session, subject);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, subject);
 
             var destinations = session.Projection.PendingEffectChoice.SelectInvocations
                 .Select(invocation => invocation.Candidate.Value.Coordinate)
@@ -202,8 +203,9 @@ namespace GuardsDigital.Tests.EditMode
                 "and each is one space away, because the card writes the distance down.");
 
             var chosen = destinations[0];
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
 
             Assert.That(HeroSpace(session, TeamSide.Blue), Is.EqualTo(chosen));
             Assert.That(HeroSpace(session, TeamSide.Red), Is.EqualTo(actorAt),
@@ -223,7 +225,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingEffectChoice.Kind,
                 Is.EqualTo(EffectChoiceKind.ConfirmOrDecline),
                 "`May repeat once` is p.10's confirm-or-decline and nothing else.");
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             Assert.That(session.Projection.PendingSkillResolution.InvocationContext,
                 Is.EqualTo(ActionInvocationContext.Repeated));
@@ -233,8 +239,9 @@ namespace GuardsDigital.Tests.EditMode
                 "it nothing to choose about the subject.");
 
             var secondFrom = HeroSpace(session, TeamSide.Blue);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
 
             var secondTo = HeroSpace(session, TeamSide.Blue);
             Assert.That(secondTo, Is.Not.EqualTo(secondFrom), "The same piece moved a second time.");
@@ -294,10 +301,12 @@ namespace GuardsDigital.Tests.EditMode
         {
             var subject = session.Projection.PendingEffectChoice.SelectInvocations
                 .Single(invocation => invocation.Candidate.Value.Coordinate.Equals(subjectAt));
-            Answer(session, subject);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, subject);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
         }
 
         private static void Answer(MatchSession session, EffectChoiceCommand invocation) =>

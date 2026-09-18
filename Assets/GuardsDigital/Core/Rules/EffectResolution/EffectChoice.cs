@@ -370,6 +370,26 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     resolutionId, choiceId, EffectChoiceCommandKind.Decline, default, chooserId)
                 : null;
 
+            // Milestone 8.46b. FOR AN EXACTLY-ONE CHOICE THIS IS ALWAYS NULL ON A STANDING PAUSE,
+            // and no line here was needed to make it so.
+            //
+            // The user's rule is that a choice admitting exactly one selection is answered in ONE
+            // press: the Select that fills it is applied as select-and-confirm inside the same
+            // command, in <c>EffectResolutionSession.Answer</c>. So the only state such a choice is
+            // ever published in is the empty one, and `chosen.Length >= minimumSelections` reads
+            // `0 >= 1` there, which is false. The pause offers no Confirm, and - `chosen` being
+            // empty - no Deselect beside it: exactly the standing shape the rule requires, derived
+            // from the bounds rather than special-cased into them.
+            //
+            // The derivation is deliberately NOT narrowed to force null whenever
+            // <see cref="ResolvesOnSelection"/> holds. Two callers legitimately hold such a choice
+            // WITH its one selection: the transient value Answer builds on its way into Resume, and
+            // a snapshot written by an earlier build while the old two-step pause stood - the
+            // schema still carries a standing choice's selected set (see
+            // <c>AuthoritativeSnapshotSerializer.CardAction</c>) and does not move for this
+            // milestone, so a frame restored from one has to stay answerable rather than come back
+            // as a pause with nothing that closes it.
+            //
             // Confirming and declining are not two names for one answer, even where nothing is
             // named: closing an `up to` with nothing chosen runs the node having taken none, and
             // declining records that it was refused. Milestone 6.5's own cases hold the first of
@@ -410,6 +430,37 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         public int MinimumSelections { get; }
         public int MaximumSelections { get; }
+
+        /// <summary>
+        /// Milestone 8.46b: whether naming a candidate is the whole answer, so the Select that fills
+        /// this choice closes it inside the same command.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>The user's rule, from the decision-window design of 2026-09-18:</b> "choose-
+        /// exactly-one answers in one press". A choice whose floor and ceiling are both one has
+        /// nothing left to say once a candidate is named - there is no second selection to add, none
+        /// to take away that would leave a legal answer, and a Confirm carries no information the
+        /// Select did not already carry. Asking for it twice is what playtesters read as the strip
+        /// not responding.</para>
+        /// <para><b>Why the bounds decide it and not the candidate kind.</b> A mode, a printed
+        /// number, a colour, a card and a piece all reach this type as candidates of a choice with
+        /// its own bounds; what makes the press final is that exactly one of them is wanted, which
+        /// is what the two numbers say. <see cref="EffectChoiceKind.ConfirmOrDecline"/> is excluded
+        /// because it offers no candidates at all - its press IS the Confirm - and an `up to 1`
+        /// choice is excluded because its floor is zero: closing it having taken none is a real
+        /// answer, so it keeps the completion action that gives it.</para>
+        /// <para><b>It is read where Select is applied, in the resolution session, and nowhere
+        /// else.</b> Presentation has forwarded the authority's own Confirm behind a filled
+        /// selection since milestone 6.5c (<c>EffectChoiceCompletion.FindImmediateConfirm</c>), but
+        /// that is two accepted commands: the pause really did stand on Deselect and Confirm in
+        /// between, a seat rewind stepped back only half the answer, and a remote seat had to
+        /// re-send the second command after the host's projection arrived. Moving the rule here
+        /// makes the one press one command for every surface at once.</para>
+        /// </remarks>
+        public bool ResolvesOnSelection =>
+            Kind != EffectChoiceKind.ConfirmOrDecline &&
+            MinimumSelections == 1 &&
+            MaximumSelections == 1;
 
         /// <summary>
         /// Milestone 8.37. What this choice's integer candidates MEAN, declared by the handler that

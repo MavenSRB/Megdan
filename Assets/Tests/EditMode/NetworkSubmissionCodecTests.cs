@@ -174,7 +174,12 @@ namespace GuardsDigital.Tests.EditMode
             // ConfirmMinionBattleRemovals inside 1,800 steps. An offline scan of seeds 1-30 against
             // the shared official-board seat walk put every target family on SEED 22, the last of
             // them (minion-battle) at step 319 - comfortably inside this budget.
-            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1800, seed: 22,
+            // Milestone 8.46b re-derived it again. A choice admitting exactly one selection is now
+            // answered in ONE accepted command instead of two, so every seeded trajectory past the
+            // first such answer is a different match and seed 22 stopped reaching attack-target and
+            // minion-battle at all inside 1,800 steps. A fresh offline scan of seeds 1-30 put every
+            // walked family on SEED 29, the last of them (minion-battle) at step 558.
+            var submitted = OwnerScopedProjectionTests.DriveThroughSeats(host, 1800, seed: 29,
                 stopBeforeCommand: projection =>
             {
                 foreach (var seat in host.Seats.Seats)

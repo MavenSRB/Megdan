@@ -252,13 +252,29 @@ namespace GuardsDigital.Tests.EditMode
             var attacks = 0;
             var budget = 1800;
 
+            // Milestone 8.46b re-derived this walk's seed, 6 -> 27. A choice admitting exactly one
+
+            // selection is now answered in ONE accepted command instead of two, so every trajectory past
+
+            // the first such answer is a different match: seed 6 still reaches two Attack targets but
+
+            // neither of them takes a further command while it resolves, and "the resolving half of the
+
+            // wall was never observed" is the red it leaves. A thirty-seed offline scan counted, per seed,
+
+            // how many Attacks it reaches and how many mid-action states those Attacks pass through; seed
+
+            // 27 is the richest - three Attacks, all three with the actor still holding earlier steps, and
+
+            // five mid-action states between them.
+
             // Each Attack the seeded walk reaches is driven by hand from its own target choice,
             // because the states this claim is about are the ones between accepting a target and
             // the action settling, and a walk that only ever appends never stops in them.
             while (budget > 0 && midActionRefusals == 0 && attacks < 8)
             {
                 budget -= OwnerScopedProjectionTests.DriveThroughSeats(
-                    host, budget, projection => projection.PendingAttackTargetChoice != null, 6);
+                    host, budget, projection => projection.PendingAttackTargetChoice != null, 27);
                 var projection = host.Projection;
                 if (projection.PendingAttackTargetChoice == null)
                 {
@@ -315,7 +331,7 @@ namespace GuardsDigital.Tests.EditMode
                         "A refused rewind moves nothing at all.");
                     midActionRefusals++;
 
-                    var stepped = OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, 6);
+                    var stepped = OwnerScopedProjectionTests.DriveThroughSeats(host, 1, null, 27);
                     budget -= stepped;
                     if (stepped == 0)
                     {

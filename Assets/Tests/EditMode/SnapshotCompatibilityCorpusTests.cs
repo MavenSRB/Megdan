@@ -1929,10 +1929,11 @@ namespace GuardsDigital.Tests.EditMode
                 candidate.ActionDefinitionId.Equals(new ActionDefinitionId("primary-displacement-skill")));
             Assert.That(session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted, Is.True);
 
+            // Milestone 8.46b: "Choose one" admits exactly one bullet, so taking the push is the
+            // whole answer and the completion is asked for rather than assumed.
             var push = session.Projection.PendingEffectChoice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Value == "displacement-object-push");
-            AnswerEffect(session, push);
-            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, push);
 
             var pending = session.Projection.PendingDisplacedMinionCorrection;
             Assert.That(pending, Is.Not.Null,
@@ -1999,11 +2000,12 @@ namespace GuardsDigital.Tests.EditMode
 
             var option = session.Projection.PendingEffectChoice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Value == optionNodeId);
-            AnswerEffect(session, option);
-            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: each of these two questions admits exactly one answer, so naming it
+            // closes it - the completions are asked for rather than assumed, and the payload this
+            // builds is the same committed component state it always was.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, option);
 
-            AnswerEffect(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
 
             Assert.That(session.Projection.PendingSkillResolution, Is.Null,
                 $"The {optionNodeId} branch must complete, so the captured payload holds committed " +

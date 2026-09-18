@@ -237,8 +237,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingEffectChoicePreview, Is.Empty,
                 "Undo returns to the mode choice, whose candidates name no space.");
 
-            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation)).Accepted, Is.True);
+            // Milestone 8.46b: the mode was taken in ONE command, so one press back gives the mode
+            // question itself rather than a mode selected and awaiting its confirm - and taking it
+            // again is naming the bullet again.
+            ChooseBranch(session, PushBranch);
             var after = session.Projection.PendingEffectChoicePreview
                 .Single(value => value.Coordinate.Equals(BlueAt));
 
@@ -424,19 +426,19 @@ namespace GuardsDigital.Tests.EditMode
         private static void ChooseBranch(MatchSession session, EffectNodeId branch)
         {
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
-                candidate => candidate.Candidate.OptionNodeId.Equals(branch))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.OptionNodeId.Equals(branch)));
         }
 
         private static void SelectValue(MatchSession session, HexCoordinate coordinate)
         {
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
-                candidate => candidate.Candidate.Value.Coordinate.Equals(coordinate))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.Value.Coordinate.Equals(coordinate)));
         }
 
         private static void Accept(MatchSession session, DirectorCommand command)

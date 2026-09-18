@@ -279,13 +279,10 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             Assert.That(choice, Is.Not.Null, "The placement is the next decision.");
             var destination = choice.Candidates[0].Value.Coordinate;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
-                candidate => candidate.Candidate.Value.Coordinate.Equals(destination))));
-            if (session.Projection.PendingEffectChoice?.ConfirmInvocation != null)
-            {
-                Accept(session, DirectorCommand.AnswerEffectChoice(
-                    session.Projection.PendingEffectChoice.ConfirmInvocation));
-            }
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.Value.Coordinate.Equals(destination)));
 
             var placed = RestoreBoard(session).PlacedTokens.Single();
             Assert.That(placed.Coordinate, Is.EqualTo(destination));
@@ -830,9 +827,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(mode));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         private static void CompleteCurrentTurn(MatchSession session)

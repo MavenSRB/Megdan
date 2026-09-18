@@ -434,12 +434,10 @@ namespace GuardsDigital.Tests.EditMode
                 1,
                 1);
             Assert.That(turn.TryStart().Accepted, Is.True);
+            // Milestone 8.46b: the restored question admits exactly one subject, so naming it is the
+            // whole answer and the resolution it was captured from runs to its end on that command.
             Assert.That(
                 turn.TryAnswerEffectChoice(rebuilt.PendingChoice.SelectInvocations[0]).Accepted,
-                Is.True);
-            Assert.That(
-                turn.TryAnswerEffectChoice(
-                    restored.PendingSkillResolution.PendingChoice.ConfirmInvocation).Accepted,
                 Is.True);
 
             Assert.That(restored.IsPendingTriggeredEffect, Is.False);

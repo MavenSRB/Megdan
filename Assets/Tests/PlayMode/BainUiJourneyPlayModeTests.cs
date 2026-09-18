@@ -1128,8 +1128,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             yield return null;
 
-            // SELECTING IS NOT TAKING, which is why one board click on this same question is TWO
-            // accepted commands. The setup presses the second one itself.
+            // Milestone 8.46b: whether a second command is owed is asked rather than assumed. The
+            // give's own selection admits exactly one recipient, so the session closes it inside
+            // the Select and the guard below finds nothing left standing on that node; a wider
+            // selection reached through here still owes its confirm and the setup still presses it.
             var standing = runtime.PendingEffectChoice;
             if (standing != null && standing.NodeId.Equals(selection.NodeId) &&
                 standing.ConfirmInvocation != null)

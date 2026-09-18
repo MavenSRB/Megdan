@@ -697,8 +697,11 @@ namespace GuardsDigital.Tests.EditMode
                         return false;
                     }
 
+                    // Milestone 8.46b: the modal admits exactly one bullet, so taking it is the whole
+                    // answer and no completion follows. A wider selection would still owe one, and
+                    // the walk goes on to give it.
                     var confirm = session.Projection.PendingEffectChoice?.ConfirmInvocation;
-                    return confirm != null &&
+                    return confirm == null ||
                         session.Execute(DirectorCommand.AnswerEffectChoice(confirm)).Accepted;
                 }
 

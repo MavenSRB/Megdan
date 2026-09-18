@@ -237,21 +237,24 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
                 "p.16's continuous ability fires after the basic Skill, from a card no test put there.");
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             var minion = session.Projection.PendingEffectChoice.SelectInvocations.Single(value =>
                 value.Candidate.Value.MinionId.Equals(targetId));
-            Accept(session, DirectorCommand.AnswerEffectChoice(minion));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.SelectInvocations.Single()));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.SelectInvocations.First()));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, minion);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
+                session.Projection.PendingEffectChoice.SelectInvocations.Single());
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
+                session.Projection.PendingEffectChoice.SelectInvocations.First());
 
             Assert.That(session.Projection.Minions.Any(value => value.MinionId.Equals(targetId)),
                 Is.False,

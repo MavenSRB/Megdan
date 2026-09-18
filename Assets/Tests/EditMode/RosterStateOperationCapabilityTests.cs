@@ -343,11 +343,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(payload));
 
+            // Milestone 8.46b: the transfer asks for exactly one number, so naming it is the whole
+            // answer and the restored question resolves on that command.
             var selectTwo = restoredChoice.SelectInvocations.Single(value =>
                 value.Candidate.Value.IntegerValue == 2);
             Assert.That(restored.Round.TryAnswerEffectChoice(selectTwo).Accepted, Is.True);
-            var selected = restored.Round.CurrentTurnAuthority.PendingEffectChoice;
-            Assert.That(restored.Round.TryAnswerEffectChoice(selected.ConfirmInvocation).Accepted, Is.True);
             Assert.That(restored.CardActions.CoinLedger.GetCoins(Red), Is.Zero);
             Assert.That(restored.CardActions.CoinLedger.GetCoins(Blue), Is.EqualTo(2));
         }

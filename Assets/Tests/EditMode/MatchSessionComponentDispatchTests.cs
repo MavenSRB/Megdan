@@ -71,9 +71,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(spaces.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
             var chosen = spaces.Candidates[0].Value.Coordinate;
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(spaces.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, spaces.SelectInvocations[0]);
 
             var board = RestoreBoard(session);
             var token = board.PlacedTokens.Single();
@@ -107,9 +107,9 @@ namespace GuardsDigital.Tests.EditMode
             ChooseOption(session, PlaceBranch);
             var spaces = session.Projection.PendingEffectChoice;
             var chosen = spaces.Candidates[0].Value.Coordinate;
-            Accept(session, DirectorCommand.AnswerEffectChoice(spaces.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, spaces.SelectInvocations[0]);
 
             var projected = session.Projection.PlacedTokens.Single();
             var authoritative = RestoreBoard(session).PlacedTokens.Single();
@@ -143,9 +143,9 @@ namespace GuardsDigital.Tests.EditMode
             var invocation = holders.SelectInvocations.Single(candidate =>
                 candidate.Candidate.Value.HeroId.Equals(holder));
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
 
             var attachment = RestoreMarkers(session).Attachments.Single();
 
@@ -181,18 +181,18 @@ namespace GuardsDigital.Tests.EditMode
             var reclaimedSpace = reclamation.Candidates[0].Value.Coordinate;
             var reclaimedToken = RestoreBoard(session).PlacedTokens
                 .Single(token => token.Coordinate.Equals(reclaimedSpace)).Id;
-            Accept(session, DirectorCommand.AnswerEffectChoice(reclamation.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, reclamation.SelectInvocations[0]);
 
             var placement = session.Projection.PendingEffectChoice;
             Assert.That(placement, Is.Not.Null,
                 "Reclaiming is its own node; placement is the next one, so each carries one decision.");
             Assert.That(placement.NodeId, Is.EqualTo(new EffectNodeId("component-place-token")));
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(placement.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, placement.SelectInvocations[0]);
 
             var board = RestoreBoard(session);
             Assert.That(board.PlacedTokens, Has.Count.EqualTo(placed),
@@ -242,9 +242,15 @@ namespace GuardsDigital.Tests.EditMode
                 "Candidate spaces are re-derived from the board and the trusted definition, never read " +
                 "from the payload.");
 
-            Accept(restored, DirectorCommand.AnswerEffectChoice(revived.SelectInvocations[0]));
-            Accept(restored, DirectorCommand.AnswerEffectChoice(
-                restored.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the restored question admits exactly one subject, so naming it is the
+
+
+            // whole answer and the completion is asked for rather than assumed.
+
+
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(restored, revived.SelectInvocations[0]);
 
             Assert.That(RestoreBoard(restored).PlacedTokens, Has.Count.EqualTo(1));
         }
@@ -256,10 +262,13 @@ namespace GuardsDigital.Tests.EditMode
             ChooseOption(session, PlaceBranch);
             var beforePlacement = session.Projection.DiagnosticSnapshot;
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the placement names exactly one space, so the answer is ONE accepted
+            // command - which is what the Undo below steps back, and replaying it means sending that
+            // same command again.
+            var placement = session.Projection.PendingEffectChoice.SelectInvocations[0];
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, placement);
             var afterPlacement = session.Projection.DiagnosticSnapshot;
 
             Assert.That(afterPlacement, Is.Not.EqualTo(beforePlacement));
@@ -271,8 +280,9 @@ namespace GuardsDigital.Tests.EditMode
                 "Retained-prefix Undo removes the token, because the placement is authoritative state " +
                 "and not a side effect held somewhere the replay cannot reach.");
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, placement);
 
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterPlacement),
                 "Replaying the same answers reproduces the same token identity and ordered facts.");
@@ -288,9 +298,9 @@ namespace GuardsDigital.Tests.EditMode
             var adjacentPlacement = session.Projection.PendingEffectChoice.SelectInvocations
                 .First(invocation => actorCoordinate.GetNeighbors()
                     .Contains(invocation.Candidate.Value.Coordinate));
-            Accept(session, DirectorCommand.AnswerEffectChoice(adjacentPlacement));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, adjacentPlacement);
             var token = RestoreBoard(session).PlacedTokens.Single();
 
             // Milestone 6.12: the Clear now happens in a later turn of the same round rather than in the
@@ -362,9 +372,13 @@ namespace GuardsDigital.Tests.EditMode
                 var choice = session.Projection.PendingEffectChoice;
                 Assert.That(choice.NodeId, Is.EqualTo(new EffectNodeId("component-place-token")),
                     "While the supply still has a copy, placement asks directly and no reclamation runs.");
-                Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations[0]));
-                Accept(session, DirectorCommand.AnswerEffectChoice(
-                    session.Projection.PendingEffectChoice.ConfirmInvocation));
+                // Milestone 8.46b: the completion is asked for rather than assumed - a choice admitting
+
+                // exactly one selection is closed by the select itself.
+
+                // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+                // this answer went into - one admitting exactly one selection is closed by the select itself.
+                ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations[0]);
                 placed++;
             }
 
@@ -514,9 +528,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(option));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         private static ActionOffer? FindComponentSkillOffer(MatchSession session)

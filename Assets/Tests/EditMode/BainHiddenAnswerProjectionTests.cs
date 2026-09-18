@@ -129,11 +129,12 @@ namespace GuardsDigital.Tests.EditMode
             var projection = host.ProjectionForSeat(seat.Id);
             var chosen = projection.PendingEffectChoice.Candidates[0].Value.CardInstanceId;
 
+            // Milestone 8.46b: the chooser's seat names exactly one card, so its single press is the
+            // whole answer - which is the half of the rule a foreign chooser makes visible, since
+            // the seat that must send that command is not the acting one.
             Submit(host, seat.Id, DirectorCommand.AnswerEffectChoice(
                 projection.PendingEffectChoice.SelectInvocations
                     .Single(invocation => invocation.Candidate.Value.CardInstanceId.Equals(chosen))));
-            Submit(host, seat.Id, DirectorCommand.AnswerEffectChoice(
-                host.ProjectionForSeat(seat.Id).PendingEffectChoice.ConfirmInvocation));
 
             Assert.That(
                 host.Projection.Cards.Single(card => card.Id.Equals(chosen)).State.Location,

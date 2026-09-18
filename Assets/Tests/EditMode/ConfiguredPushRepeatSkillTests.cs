@@ -847,10 +847,10 @@ namespace GuardsDigital.Tests.EditMode
         private static void ChooseMode(MatchSession session, EffectNodeId branch)
         {
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
-                candidate => candidate.Candidate.OptionNodeId.Equals(branch))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.OptionNodeId.Equals(branch)));
         }
 
         /// <summary>The Blue hero's turn with Blue Longbow's Skill started and its first prompt open.</summary>

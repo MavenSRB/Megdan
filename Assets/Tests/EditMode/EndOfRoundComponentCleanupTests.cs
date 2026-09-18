@@ -218,9 +218,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var choice = session.Projection.PendingEffectChoice;
             Assert.That(choice, Is.Not.Null);
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations[0]);
         }
 
         private static void ChooseOption(MatchSession session, EffectNodeId option)
@@ -228,9 +228,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(option));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         private static void StartComponentSkillOnCurrentTurn(MatchSession session)

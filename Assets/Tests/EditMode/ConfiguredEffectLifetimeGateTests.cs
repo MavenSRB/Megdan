@@ -709,8 +709,15 @@ namespace GuardsDigital.Tests.EditMode
                 var choice = Session.Projection.PendingEffectChoice;
                 Accept(DirectorCommand.AnswerEffectChoice(choice.SelectInvocations
                     .Single(candidate => candidate.Candidate.OptionNodeId.Equals(mode))));
-                Accept(DirectorCommand.AnswerEffectChoice(
-                    Session.Projection.PendingEffectChoice.ConfirmInvocation));
+
+                // Milestone 8.46b: a mode of exactly one is closed by the select itself, so the
+                // completion is asked for rather than assumed - and never reaches past its own
+                // question, which a choice that has only just opened gives away by holding nothing.
+                var standing = Session.Projection.PendingEffectChoice;
+                if (standing?.ConfirmInvocation != null && standing.SelectedCandidates.Count > 0)
+                {
+                    Accept(DirectorCommand.AnswerEffectChoice(standing.ConfirmInvocation));
+                }
             }
 
             private void CommitNamedPair(CardInstanceId red, CardInstanceId blue)

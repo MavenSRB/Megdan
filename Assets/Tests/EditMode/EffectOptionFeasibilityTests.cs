@@ -758,18 +758,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(selection, Is.Not.Null,
                 "The empty option carries a way to select it, which is the whole ruling.");
 
-            var selected = EffectResolutionSession.Answer(
-                paused.Frame, selection, Context(definition));
-            Assert.That(selected.Accepted, Is.True);
-
-            var confirmation = selected.Frame.PendingChoice.ConfirmInvocation;
-            Assert.That(confirmation, Is.Not.Null,
-                "One empty selection satisfies the node's minimum, so it is confirmable.");
-
+            // Milestone 8.46b: "Choose one" admits exactly one option, so naming it satisfies the
+            // node and the resolution session closes it inside that command. What used to be
+            // asserted of the Confirm - that an empty option is a complete answer and the action
+            // goes on - is asserted of the press that gives it.
             var confirmed = EffectResolutionSession.Answer(
-                selected.Frame, confirmation, Context(definition));
+                paused.Frame, selection, Context(definition));
 
-            Assert.That(confirmed.Accepted, Is.True);
+            Assert.That(confirmed.Accepted, Is.True,
+                "One empty selection satisfies the node's minimum, so taking it is a legal answer.");
             Assert.That(confirmed.IsComplete, Is.True,
                 "The action finishes rather than hanging on a pause nobody can answer.");
             Assert.That(confirmed.Frame, Is.Null);

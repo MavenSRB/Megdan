@@ -654,6 +654,15 @@ namespace GuardsDigital.Presentation.Match
     /// It applies to every candidate kind. A pick is the commitment regardless of whether its surface
     /// is the map, a card face, a printed number, or a mode control. Choices with wider bounds retain
     /// an explicit completion action because selecting one candidate does not necessarily finish them.
+    ///
+    /// <para>Milestone 8.46b narrowed what reaches here, without changing a line of it. A choice
+    /// whose minimum and maximum are both one is now closed by the resolution session inside the
+    /// Select itself, so by the time this reads the projection that pause is gone and the
+    /// <c>ChoiceId</c> guard below answers null - the exactly-one case this was built for in 6.5c is
+    /// no longer presentation's to complete. What still reaches it is every other way a selection can
+    /// fill a choice: an `up to 1`, whose floor of zero means closing it having taken none is a real
+    /// answer and so keeps a completion action, and a choose-several on its last candidate. Both are
+    /// genuinely two answers at the authority, and both are left exactly as they were.</para>
     /// </summary>
     internal static class EffectChoiceCompletion
     {

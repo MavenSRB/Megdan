@@ -559,7 +559,15 @@ namespace GuardsDigital.Tests.EditMode
                 return Answer(step, EffectValue.Card(chosen.Id));
             }
 
-            /// <summary>Select one candidate, then confirm - the two commands a real seat submits.</summary>
+            /// <summary>
+            /// Names one candidate, or nothing, and closes the choice where closing it is still a
+            /// separate command - the commands a real seat submits, however many that is.
+            ///
+            /// <para>Milestone 8.46b. It was always two. A choice admitting exactly one selection is
+            /// now answered by the select alone, so the completion is asked for rather than assumed;
+            /// an empty answer - <paramref name="value"/> undefined - is still a Confirm of its own,
+            /// which is the `up to` case this fixture also drives.</para>
+            /// </summary>
             private EffectResolutionStepResult Answer(
                 EffectResolutionStepResult step, EffectValue value)
             {
@@ -569,6 +577,10 @@ namespace GuardsDigital.Tests.EditMode
                     var select = choice.SelectInvocations.Single(invocation =>
                         invocation.Candidate.Value.Equals(value));
                     step = EffectResolutionSession.Answer(step.Frame, select, Context());
+                    if (!StillOwesItsCompletion(step))
+                    {
+                        return step;
+                    }
                 }
 
                 return EffectResolutionSession.Answer(
@@ -581,9 +593,21 @@ namespace GuardsDigital.Tests.EditMode
                 var select = choice.SelectInvocations.Single(invocation =>
                     invocation.Candidate.OptionNodeId.Equals(option));
                 var step = EffectResolutionSession.Answer(frame, select, Context());
-                return EffectResolutionSession.Answer(
-                    step.Frame, step.Frame.PendingChoice.ConfirmInvocation, Context());
+                return StillOwesItsCompletion(step)
+                    ? EffectResolutionSession.Answer(
+                        step.Frame, step.Frame.PendingChoice.ConfirmInvocation, Context())
+                    : step;
             }
+
+            /// <summary>
+            /// Milestone 8.46b. Whether a selection just made left a completion command owed: a
+            /// standing choice that HOLDS the selection - a choice with nothing selected is the next
+            /// question, opened by the same command - and that offers one.
+            /// </summary>
+            private static bool StillOwesItsCompletion(EffectResolutionStepResult step) =>
+                step.Frame?.PendingChoice != null &&
+                step.Frame.PendingChoice.SelectedCandidates.Count > 0 &&
+                step.Frame.PendingChoice.ConfirmInvocation != null;
 
             private EffectResolutionContext Context() =>
                 new EffectResolutionContext(

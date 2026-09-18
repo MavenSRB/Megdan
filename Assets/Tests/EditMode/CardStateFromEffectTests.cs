@@ -288,8 +288,10 @@ namespace GuardsDigital.Tests.EditMode
             var accepted = session.Execute(DirectorCommand.AnswerEffectChoice(select));
             if (accepted.Accepted)
             {
-                session.Execute(DirectorCommand.AnswerEffectChoice(
-                    session.Projection.PendingEffectChoice.ConfirmInvocation));
+                // Milestone 8.46b: the discard names exactly one card, so the select above is the
+                // whole answer where it is accepted at all; the completion is asked for rather than
+                // assumed, which is what keeps this case about the REFUSAL either way.
+                ConfiguredMatchFixtures.ConfirmStandingEffectChoiceIfOwed(session, select.ChoiceId);
             }
 
             Assert.That(
@@ -553,11 +555,11 @@ namespace GuardsDigital.Tests.EditMode
         private static void AnswerWithCard(MatchSession session, CardInstanceId cardId)
         {
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
                 choice.SelectInvocations.Single(invocation =>
-                    invocation.Candidate.Value.CardInstanceId.Equals(cardId))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+                    invocation.Candidate.Value.CardInstanceId.Equals(cardId)));
         }
 
         private static CardInstanceId FirstCandidate(MatchSession session) =>

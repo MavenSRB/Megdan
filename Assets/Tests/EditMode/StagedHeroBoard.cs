@@ -480,7 +480,11 @@ namespace GuardsDigital.Tests.EditMode
 
         internal PendingEffectChoice Choice => Session.Projection.PendingEffectChoice;
 
-        /// <summary>Names each subject in turn, then closes the selection if it offers a confirm.</summary>
+        /// <summary>
+        /// Names each subject in turn, then closes the selection where closing it is still a command
+        /// of its own. Milestone 8.46b: for a choice of exactly one it is not, and this must not
+        /// reach past the question it answered - see <see cref="ConfirmIfStillOwed"/>.
+        /// </summary>
         internal void SelectAndConfirm(params MinionId[] minions)
         {
             foreach (var minion in minions)
@@ -488,7 +492,7 @@ namespace GuardsDigital.Tests.EditMode
                 Select(minion);
             }
 
-            Confirm();
+            ConfirmIfStillOwed();
         }
 
         internal void Select(MinionId minion)
@@ -547,6 +551,30 @@ namespace GuardsDigital.Tests.EditMode
         {
             var open = Choice;
             if (open?.ConfirmInvocation != null)
+            {
+                Accept(DirectorCommand.AnswerEffectChoice(open.ConfirmInvocation));
+            }
+
+            RecordRemovals();
+        }
+
+        /// <summary>
+        /// Milestone 8.46b. Closes the selection just named, where closing it is still a command of
+        /// its own - which for a choice admitting exactly one selection it no longer is.
+        /// </summary>
+        /// <remarks>
+        /// <para>The difference from <see cref="Confirm"/> is what it refuses to answer. Naming the
+        /// one subject a choice admits now RESOLVES it inside that command, and what stands
+        /// afterwards is frequently the next question - a printed `may`, drawn as a confirm-or-
+        /// decline. <see cref="Confirm"/> would take that offer unasked; this will not, because a
+        /// question that has only just opened holds no selection.</para>
+        /// <para><see cref="Confirm"/> stays exactly as it was and stays the right call for
+        /// answering a `may` on purpose, which is most of what it is used for.</para>
+        /// </remarks>
+        internal void ConfirmIfStillOwed()
+        {
+            var open = Choice;
+            if (open?.ConfirmInvocation != null && open.SelectedCandidates.Count > 0)
             {
                 Accept(DirectorCommand.AnswerEffectChoice(open.ConfirmInvocation));
             }

@@ -135,7 +135,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var handBefore = fixture.Hand(fixture.Enemy).Count;
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.Hand(fixture.Enemy).Count, Is.EqualTo(handBefore - 1),
                 "The card the hero named leaves their hand.");
@@ -287,7 +287,7 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.PlayAttackAt(SabinaCardContent.PointBlankShot, fixture.Enemy);
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             PlayOnUntilSheHoldsHerBasicAgain(
                 fixture, AdjacentTo(fixture.HeroSpace(fixture.Enemy)));
@@ -300,7 +300,7 @@ namespace GuardsDigital.Tests.EditMode
                 "and the second firing asks the hero this push named.");
             var handBeforeTheSecondPayment = fixture.Hand(fixture.Enemy).Count;
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
             Assert.That(fixture.Hand(fixture.Enemy).Count,
                 Is.EqualTo(handBeforeTheSecondPayment - 1),
                 "and it is paid a second time, out of the hand p.8 returned to them.");

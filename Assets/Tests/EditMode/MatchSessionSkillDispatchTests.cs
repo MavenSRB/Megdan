@@ -105,16 +105,19 @@ namespace GuardsDigital.Tests.EditMode
             CommitSkillCards(session);
             Accept(session, DirectorCommand.StartAction(CurrentSkillOffer(session).ActionDefinitionId));
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             var target = session.Projection.PendingEffectChoice;
             Assert.That(target, Is.Not.Null, "Confirming the `may` step runs its child, which asks.");
             Assert.That(target.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(target.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, target.SelectInvocations[0]);
 
             Assert.That(session.Projection.PendingSkillResolution, Is.Null);
         }
@@ -125,7 +128,10 @@ namespace GuardsDigital.Tests.EditMode
             var session = CreateSkillSession();
             CommitSkillCards(session);
             Accept(session, DirectorCommand.StartAction(CurrentSkillOffer(session).ActionDefinitionId));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             var payload = session.CaptureSnapshot();
@@ -145,9 +151,11 @@ namespace GuardsDigital.Tests.EditMode
                 "Candidates are never written; they are re-derived from the trusted definition, so a " +
                 "restored choice offers exactly what the live one did.");
 
-            Accept(restored, DirectorCommand.AnswerEffectChoice(revived.SelectInvocations[0]));
-            Accept(restored, DirectorCommand.AnswerEffectChoice(
-                restored.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the restored question admits exactly one subject, so naming it is the
+            // whole answer and the completion is asked for rather than assumed.
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(restored, revived.SelectInvocations[0]);
             Assert.That(restored.Projection.PendingSkillResolution, Is.Null);
         }
 
@@ -159,7 +167,10 @@ namespace GuardsDigital.Tests.EditMode
             Accept(session, DirectorCommand.StartAction(CurrentSkillOffer(session).ActionDefinitionId));
             var beforeAnswer = session.Projection.DiagnosticSnapshot;
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             var afterAnswer = session.Projection.DiagnosticSnapshot;
             Assert.That(afterAnswer, Is.Not.EqualTo(beforeAnswer),
@@ -169,7 +180,10 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeAnswer),
                 "Retained-prefix Undo must reproduce the exact prior state of a paused effect frame.");
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
                 session.Projection.PendingEffectChoice.ConfirmInvocation));
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterAnswer),
                 "Replaying the same answer must reproduce the same ordered facts.");

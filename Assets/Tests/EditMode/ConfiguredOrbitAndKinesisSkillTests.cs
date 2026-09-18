@@ -43,7 +43,11 @@ namespace GuardsDigital.Tests.EditMode
             var firstTo = OrbitDestination(session);
             Assert.That(session.Projection.PendingEffectChoice.Kind,
                 Is.EqualTo(EffectChoiceKind.ConfirmOrDecline));
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             // Second instance: no subject question at all, then the repeat this milestone made
             // expressible - `up to two times` is the first declared maximum above one in this build.
@@ -54,7 +58,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingEffectChoice.Kind,
                 Is.EqualTo(EffectChoiceKind.ConfirmOrDecline),
                 "A repeat that has run once of two may still ask; before this milestone it could not.");
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             // Third instance: the destination, and then the chain simply ends.
             Assert.That(HeroSpace(session, TeamSide.Blue), Is.EqualTo(secondTo));
@@ -77,7 +85,11 @@ namespace GuardsDigital.Tests.EditMode
             NameSubject(session, subject);
             var firstTo = OrbitDestination(session);
             Assert.That(firstTo, Is.Not.EqualTo(subject), "The orbit has to have moved it.");
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             Assert.That(session.Projection.PendingEffectChoice.NodeId.Value, Is.EqualTo("orbit-move"),
                 "`on the same target` leaves the repeated instance nothing to choose about the " +
@@ -152,8 +164,9 @@ namespace GuardsDigital.Tests.EditMode
                 "have expressed it.");
 
             var chosen = destinations[0];
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
 
             // Where the piece ends up is not necessarily where the Place put it, and that is p.18
             // working rather than the Place failing: a minion miniature displaced out of the Battle
@@ -216,9 +229,10 @@ namespace GuardsDigital.Tests.EditMode
 
         private static void NameSubject(MatchSession session, HexCoordinate subjectAt)
         {
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations
                 .Single(invocation => invocation.Candidate.Value.Coordinate.Equals(subjectAt)));
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
         }
 
         /// <summary>Answers the orbit's destination choice and reports where the piece landed.</summary>
@@ -226,8 +240,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var chosen = session.Projection.PendingEffectChoice.SelectInvocations[0]
                 .Candidate.Value.Coordinate;
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
             return chosen;
         }
 

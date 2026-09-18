@@ -227,7 +227,7 @@ namespace GuardsDigital.Tests.EditMode
             declined.SelectAndConfirm(subject);
             var firstStep = declined.CandidateSpaces(declined.Choice).First();
             declined.Select(firstStep);
-            declined.Confirm();
+            declined.ConfirmIfStillOwed();
 
             Assert.That(declined.Choice, Is.Not.Null, "The repeat asks before it happens.");
             Assert.That(declined.Choice.DeclineInvocation, Is.Not.Null,
@@ -286,7 +286,7 @@ namespace GuardsDigital.Tests.EditMode
             fixture.SelectAndConfirm(moved);
             var firstStep = fixture.CandidateSpaces(fixture.Choice).First();
             fixture.Select(firstStep);
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.Choice, Is.Not.Null, "The repeat asks before it happens.");
             fixture.Confirm();
@@ -302,7 +302,7 @@ namespace GuardsDigital.Tests.EditMode
             fixture.SelectAndConfirm(moved);
             var secondStep = fixture.CandidateSpaces(fixture.Choice).First();
             fixture.Select(secondStep);
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(
                 fixture.SpaceOf(moved), Is.EqualTo(secondStep),
@@ -387,7 +387,7 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.StartPrimary(SabinaCardContent.UnwaveringResolve);
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.Hand(fixture.Hero), Has.Member(SabinaCardContent.BackToBack),
                 "p.10's retrieve puts a discarded card back into its owner's hand.");
@@ -443,7 +443,7 @@ namespace GuardsDigital.Tests.EditMode
 
             fixture.StartPrimary(SabinaCardContent.CloseSupport);
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             var choice = fixture.Choice;
             Assert.That(choice, Is.Not.Null);
@@ -452,7 +452,7 @@ namespace GuardsDigital.Tests.EditMode
                 "rather than the acting one.");
             var before = fixture.Hand(fixture.Enemy).Count;
             fixture.SelectFirst();
-            fixture.Confirm();
+            fixture.ConfirmIfStillOwed();
 
             Assert.That(fixture.Hand(fixture.Enemy).Count, Is.EqualTo(before - 1));
             Assert.That(fixture.DiscardPile(fixture.Enemy), Is.Not.Empty);
