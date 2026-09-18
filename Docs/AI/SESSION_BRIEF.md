@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.47**.
-- Active authorized milestone: **8.46a**.
-- Next proposed milestone: **8.46a**.
+- Current completed milestone: **8.48**.
+- Active authorized milestone: **8.46g**.
+- Next proposed milestone: **8.46f**.
 
-On 2026-09-18, after a row-by-row design review and a mockup drawn over live captures, the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)**: "Ok, get on it then." The sequence **8.46 -> 8.46a -> 8.46b -> 8.46c -> 8.46d -> 8.46e -> 8.46f** replaces the strip's prompts with one two-state window whose controls name their consequence, built in a separate worktree beside the concurrent 8.45 package and merged after; nothing new may overlap an existing element at any resolution, and every new element inherits `MatchHudPanelScaling`.
+On 2026-09-18, after a row-by-row design review and a mockup drawn over live captures, the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)**: "Ok, get on it then." The sequence **8.46 -> 8.46a -> 8.46b -> 8.46c -> 8.46d -> 8.46e -> 8.46g -> 8.46f** replaces the strip's prompts with one two-state window whose controls name their consequence, built in a separate worktree beside the concurrent 8.45 package and merged after; nothing new may overlap an existing element at any resolution, and every new element inherits `MatchHudPanelScaling`. Blocks 8.46a-8.46e are landed on the series branch with a green complete Play Mode; 8.46g, added mid-playtest at the user's word, moves the level-up upgrade into the window as well.
 
 On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
 
@@ -29,6 +29,8 @@ On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authori
 On 2026-09-18 the user authorized two packages in turn. **[8.44](Roadmap/PHASE_8.md) is complete** - `Builds/Playtest-8.44-seventeen-hero`, seventeen heroes, whose gate caught a harness build break 8.42c had introduced. **[8.45](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.45-undo-corrections` and its ZIP carry the same seventeen heroes plus 8.42d's visible seat rewind and 8.42e's interaction wall, stamped `1.0-8.45-undo-corrections`, with the configured content digest measured unchanged. Neither authorizes upload, remote operation or public distribution, and no new hero follows them.
 
 On 2026-09-18, three hours before the evening's invited playtest, the user asked for "the letters" in a build for that night. **[8.47](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.45a-phase-banner` and its ZIP are 8.45 plus one change, the transient phase banner - blood-red outlined letters centre screen announcing a new turn's commitment, a hero's card resolving and the Minion Battle, per seat, never taking a click - cut on top of 8.45 while the decision window (8.46) continued on its own branch. Both complete suites, the harness and the launch smoke were green at the packaged revision.
+
+During that playtest the user reported "swifts gold didnt let me play her silver twice". **[8.48](Roadmap/PHASE_8.md) is complete**: Bounce's "may repeat once" now holds when Reload! borrows it, because the gate reads a card resolved this round as already resolved (the wide reading Blizzard already used) rather than only a card in the discard pile; Swift's content revision is `swift-8-48-rev-1`. One ruling is left with the user in [HERO_SWIFT.md](Rules/HERO_SWIFT.md): whether Bullet Time's granted performance counts Bounce as already resolved.
 
 The completed 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b** exclude the attacked unit from Shotgun's adjacent-hero discard, show revealed card-plus-item Initiative in the badge, and keep player trays on their own hero. **8.42d** then restored the seat UNDO square that a standing card-text prompt was hiding, the host's own rewind bounds unchanged; [playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns all four. Return to proposed cleanup 8.35z71.
 

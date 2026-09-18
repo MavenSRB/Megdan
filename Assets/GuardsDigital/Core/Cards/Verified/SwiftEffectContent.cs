@@ -524,6 +524,18 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectNodeDefinition(
                         resolved, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                         SyntheticConditionCapabilities.SourceCardInDiscardV1,
+                        // Milestone 8.48. "Already resolved" is the WIDE reading, opt-in exactly as
+                        // Blizzard's "in your discard" is: a card resolved this round sits in the turn
+                        // area, not the discard, and a borrow through Reload! names precisely such a
+                        // card - so without this binding the repeat could never hold on the one path
+                        // the sentence exists for. Found at the table: "Swift's gold didn't let me
+                        // play her silver twice."
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                SyntheticConditionCapabilities.CountResolvedPlayedParameter,
+                                EffectValue.Boolean(true))
+                        },
                         outputs: new[]
                         {
                             new EffectOutputBinding(

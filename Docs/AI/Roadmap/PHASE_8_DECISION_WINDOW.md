@@ -17,7 +17,7 @@ One new HUD element, the **decision window**, with two states. **Expanded** cove
 | Direction (Tali's Cold Snap) | On the board: six arrows around the caster, docked question |
 | Optional step (`may` nodes) | Expanded: the card, two buttons naming the consequence, never `ACCEPT`/`DECLINE` |
 | Tied initiative, seat pick and team agreement | Expanded: the tied cards as faces, one button each; teammates' picks read "Tali prefers Sabina"; re-pressing replaces a pick |
-| Level-up upgrade | Stays in the strip unchanged |
+| Level-up upgrade | Expanded, minimisable (user, 2026-09-18 23:00: "players want the same treatment for level up screen"): everything the strip shows now - the hand preview, each upgrade pair as faces, the coins paid and remaining, the set-aside card and its item |
 | Defense | Expanded: the attacker's card separated from the offer; four candidate faces with their printed defense; decline small in a corner |
 | Removal prevention | Same window as defense |
 | Card chooser (discard, retrieve) | Expanded; the purpose line becomes the question |
@@ -32,7 +32,7 @@ Cross-cutting rules: no undo inside the window (the top seat undo covers a wrong
 
 Outcome: this shard, the inert label vocabulary both parallel blocks build against (`DecisionLabel` and `DecisionLabelCatalog` in `Core/Cards`, answering nothing until 8.46a fills them), and the mockup evidence. Completes with the series.
 
-### [~] 8.46a Decision labels
+### [x] 8.46a Decision labels
 
 Outcome: every Choose arm and every optional-step node that can raise a pause in dealt content carries a declared consequence label, readable through `DecisionLabelCatalog.TryGetLabel(cardId, nodeId)`, so a control can say "Defeat a minion adjacent to you" instead of its node id, and "Move it again" / "Stop here" instead of accept and decline.
 
@@ -40,7 +40,7 @@ Acceptance: a per-hero label table beside each hero's effect content, aggregated
 
 Non-goals: labels for board-answered candidates; reading printed text at runtime; presentation changes.
 
-### [ ] 8.46b One press for a choice of exactly one
+### [x] 8.46b One press for a choice of exactly one
 
 Outcome: an effect choice whose minimum and maximum are both one resolves on the selection itself, so no `Done` follows; a choice admitting several keeps Select, Deselect and Done exactly as today.
 
@@ -48,7 +48,7 @@ Acceptance: the rule lives in the resolution session where Select is applied, no
 
 Non-goals: any change to the command DTO, the pause's projected shape, or the schema; the Minion Battle confirm; defense.
 
-### [ ] 8.46c The decision window
+### [x] 8.46c The decision window
 
 Outcome: `DecisionWindowUnityView` and `DecisionWindowPresenter` (an `ISeatScopedPresenter`, composed in `ConfiguredMatchSceneRuntime` and laid out by `ConfiguredMatchHudRenderer`) present every family the table above moves, in both states; the strip stops drawing those families' controls.
 
@@ -56,7 +56,7 @@ Acceptance: expanded is one fixed rectangle from the Red rail's right edge to th
 
 Non-goals: movement, attack target, commitment, End Turn, level-up, fast travel, turn release; the attack spotlight's own staging, which the defense window sits beside rather than over; new authority commands.
 
-### [ ] 8.46d Direction on the board
+### [x] 8.46d Direction on the board
 
 Outcome: a declared `HexDirection` choice is answered by six arrow affordances around the choosing hero on the board, and the docked bar asks "Choose a direction".
 
@@ -64,7 +64,7 @@ Acceptance: the arrows are board interaction, composed like every other board-an
 
 Non-goals: any other vocabulary; changing what Cold Snap does.
 
-### [ ] 8.46e Geometry, readability and journeys
+### [x] 8.46e Geometry, readability and journeys
 
 Outcome: the window is proven clear of every named element and readable as drawn, and the journeys press consequence labels.
 
@@ -72,7 +72,17 @@ Acceptance: a Play Mode gate measures the window's live bounds in both states ag
 
 Non-goals: new families; packaging.
 
-### [ ] 8.46f Integration and evidence
+### [~] 8.46g The level-up upgrade in the window
+
+Authorized 2026-09-18 at 23:00, mid-playtest, in the user's words: "I lied, players want the same tretmant for level up screen, to be minimisable. So we need to put it in new thing you made, and show all information that we show now."
+
+Outcome: rulebook p.15's Upgrade a Card question opens in the decision window, expanded and minimisable, carrying every fact the strip's prompt carries today - the hero and the level reached, the coins paid and remaining, the hand preview at its reduced scale, one control per upgrade pair drawn as the candidate face with the card it replaces, the set-aside card and the item it becomes - and the strip yields the family exactly as it yields every other family the window took. Docked, the bar asks the one-line question with the hero's name.
+
+Acceptance: `DecisionWindowPresenter` composes a `LevelUp` family from `PendingSystemTransitionDescription` through the same `SystemTransitionPromptViewModel` the strip built, so no fact is re-derived; the faces keep the tray's footprint; the geometry gate covers the expanded level-up at every viewport; the level-up journeys press the window's controls; the strip test that pinned the comparison band moves to the window.
+
+Non-goals: the Lane-Push placement prompt, which stays on the board; any change to what p.15 offers.
+
+### [~] 8.46f Integration and evidence
 
 Outcome: the four parallel branches merged onto the series branch and then onto main behind 8.45; complete Edit Mode, Play Mode and offline harness runs (T2 promoted to complete suites because the change crosses Core, Application-facing presentation and Play Mode journeys); baselines and archive rows recorded; the design shard, brief and testing shard updated.
 

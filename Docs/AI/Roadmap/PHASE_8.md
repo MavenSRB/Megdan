@@ -422,3 +422,15 @@ Acceptance: the detector proven on plain snapshots for every moment, both viewer
 Non-goals: a banner at a turn's end; sequencing through the kinetic conductor ahead of the decision window (owed when 8.46 lands, so the two never draw over each other); upload or public distribution; any rule, schema, wire or content change.
 
 Historical evidence: [8.47 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-847-phase-banner-completion-evidence).
+
+### [x] 8.48 Bounce's repeat holds through Reload!
+
+Authorized 2026-09-18 by the evening playtest's own report, in the user's words: "swifts gold didnt let me play her silver twice." Reload! (her Gold basic) borrows the primary action of her rightmost resolved card; Bounce (her Silver basic) prints "if this card is already resolved as you perform this action, may repeat once" - and the repeat never came.
+
+Outcome: Bounce's `bounce-resolved` gate binds `countResolvedPlayed` true, the wide reading Blizzard's "in your discard" opted into at 8.37a: a card resolved this round sits in the turn area until the round ends, not in the discard pile, and Reload!'s pool names precisely such a card, so on the narrow reading the clause could never hold through Reload!. A borrow through Reload! now offers the repeat; Bounce's own turn still does not, because the card is mid-resolution. Swift's content revision moves to `swift-8-48-rev-1` with the artwork catalog and the identity pin.
+
+Acceptance: `BounceBorrowedRepeatTests` drives a turn whose first slot holds Bounce resolved and whose second plays Reload!, takes the borrow arm, and asserts the repeat is offered and taken (the silver played twice); its twin drives Bounce's own turn and asserts no repeat. Complete offline harness, Edit Mode and Play Mode green.
+
+Non-goals: Bullet Time's granted performance, which runs while Bounce is still mid-resolution in the engine's state and so offers no repeat - whether p.16's "when a basic card resolves" should count that card as already resolved is a ruling for the user, recorded in [HERO_SWIFT.md](../Rules/HERO_SWIFT.md).
+
+Historical evidence: [8.48 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-848-bounce-repeat-through-reload-completion-evidence).
