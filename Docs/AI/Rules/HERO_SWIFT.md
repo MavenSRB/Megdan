@@ -34,9 +34,11 @@ the pack-wide ruling that the Devoted Hero pack has no second source at all; her
 source this project holds is silent about her. The consequence is identical: **every string below is what
 our scan prints, and nothing is reconciled against a printing we do not hold.**
 
-[Source provenance](../RULES_LEDGER.md) still governs the rest. The extracted cards are third-printing
-playtest and the rulebook is second printing, so a disagreement between them is edition skew rather than
-an extraction error, and a designer answer may carry a third-printing rules change.
+[Source provenance](../RULES_LEDGER.md) still governs the rest. The extracted cards were verified
+against physical second-printing cards on 2026-09-18 and match the print on every rules-bearing word
+checked, so the cards and the rulebook are the SAME edition: a disagreement between them is a rulebook
+gap or a typesetting difference to be weighed on its merits, not edition skew, and a designer answer
+that contradicts the print reflects the third printing in preparation rather than this edition.
 
 ## Identity
 

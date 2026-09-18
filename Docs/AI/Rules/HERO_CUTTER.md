@@ -34,9 +34,11 @@ the pack-wide ruling that the Devoted Hero pack has no second source at all; Cut
 the one second source this project holds is silent about them. The consequence is identical: **every
 string below is what our scan prints, and nothing is reconciled against a printing we do not hold.**
 
-[Source provenance](../RULES_LEDGER.md) still governs the rest. The extracted cards are third-printing
-playtest and the rulebook is second printing, so a disagreement between them is edition skew rather than
-an extraction error, and a designer answer may carry a third-printing rules change.
+[Source provenance](../RULES_LEDGER.md) still governs the rest. The extracted cards were verified
+against physical second-printing cards on 2026-09-18 and match the print on every rules-bearing word
+checked, so the cards and the rulebook are the SAME edition: a disagreement between them is a rulebook
+gap or a typesetting difference to be weighed on its merits, not edition skew, and a designer answer
+that contradicts the print reflects the third printing in preparation rather than this edition.
 
 **CU-02. A Fistful of Coins prints a victory sentence the second-printing rulebook does not contain, and
 this is the most consequential source fact in the set.** The rulebook describes exactly three ways a
@@ -48,9 +50,11 @@ only one team wins the game". The printed face reads "If you have 13 or more coi
 game**", which names a single hero rather than a team, and no sentence in the book we hold describes
 that ending.
 
-Recorded as a source fact, not resolved here. It is edition skew by the standing provenance rule - a
-third-printing playtest text ahead of the second-printing book - and the inventory's job is to state
-that the printed text says what it says. What it costs to implement is a roadmap question and is
+Recorded as a source fact, not resolved here. It is NOT edition skew (the 2026-09-06 provenance rule
+that called it so was corrected on 2026-09-18, when physical second-printing cards proved the scan is
+the print): it is a sentence the second-printing rulebook simply does not describe - a rulebook gap,
+with the card outranking the book under the ledger's authority hierarchy - and the inventory's job is
+to state that the printed text says what it says. What it costs to implement is a roadmap question and is
 scoped as milestone 8.39g in the fourteenth-hero shard; what it means for the existing team-only
 `MatchOutcome` contract was put to the user and settled as **CU-D1** below.
 

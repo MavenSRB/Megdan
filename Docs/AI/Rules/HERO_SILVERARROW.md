@@ -39,12 +39,16 @@ face. The local rulebook is the base game's: `pdftotext` returns zero occurrence
 be reproduced against a second source**, so ledger question 1 stays **open for the pack** - her set is
 *consistent* with the second printing's conventions (p.9 colour letters and Tiers, the p.20 `H` card,
 the p.16 Tier IV Ultimate, p.21's two-star complexity and five role icons) but consistency with a
-convention is not a reproduced face, and this shard does not claim one. The consolidated
-printing-currency question tops `ASK-ARTY.md`; any designer answer supersedes this paragraph.
+convention is not a reproduced face, and this shard does not claim one. The printing-currency
+question that once topped `ASK-ARTY.md` was closed on 2026-09-18 by physical second-printing cards
+(see the ledger's source provenance): the extraction is the printed 2nd edition wherever it could be
+checked, which strengthens this paragraph rather than weakening it; a designer answer still
+supersedes it.
 
-Provenance, per the 2026-09-06 amendment: the card scans are pre-release **third-printing playtest**
-material and the rulebook is the **second printing**, so where the two would disagree the cards are
-ahead rather than behind.
+Provenance, corrected 2026-09-18: the card scans are the **printed second edition** wherever physical
+cards could be checked (five of five, rules text exact), the same edition as the **second-printing**
+rulebook; the 2026-09-06 "third-printing playtest" reading is superseded (see the parent ledger's
+"Edition of the extraction").
 
 ## Identity
 

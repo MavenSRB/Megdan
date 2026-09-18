@@ -50,11 +50,18 @@ Devoted Hero pack hero, outside the base game the local rulebook documents) rath
 The Tabletopia extraction is therefore SOLE AUTHORITY for every value and word below; ledger question 1
 stays fully open for Ursafar and the whole pack.
 
-**Source provenance note (2026-09-06 amendment).** The Tabletopia card scans are PRE-RELEASE
-3rd-printing playtest material, ahead of the 2nd-printing rulebook rather than behind it. Robby's
-designer-channel answer that Angry Roar "starts with 'you may'" quotes the 2nd-printing retail card;
-our extraction (the 3rd-printing playtest scan) genuinely lacks that word, and the printing-currency
-question is recorded as open (ASK-ARTY) rather than as a transcription error.
+**Source provenance note (2026-09-06 amendment, CORRECTED 2026-09-18).** The 2026-09-06 reading -
+that the Tabletopia scans were pre-release 3rd-printing playtest material ahead of the 2nd-printing
+rulebook - was wrong for every card that could be checked. On 2026-09-18 the user photographed
+physical 2nd-printing cards: Angry Roar prints exactly what our scan prints (it does NOT start with
+"you may" and carries NO replacement-action help text), and Unbound Fury, Wasp's Static Barrier and
+Crackling Dagger and Tigerclaw's Cloak and Daggers likewise match the scan on every rules-bearing
+word (punctuation differs by a comma, in either direction). The scan is therefore the printed 2nd
+edition, the same edition as the rulebook. Robby's "starts with 'you may'" answer and Arty's
+June-2026 help text describe a NEWER text: Tabletopia's current setups (bundle s804629, 2026-09-18)
+carry the help text alongside other 3rd-printing-direction revisions on seven decks - see
+`Docs/Guards of Atlantis II - Tabletopia Cards/CARD-DIFF-s804629-vs-s799373.md`. Composition follows
+the scan; the designer texts are recorded as forthcoming-printing changes, not implemented.
 
 ## Ursafar source faces
 
@@ -243,9 +250,11 @@ pack-wide and roster-wide questions this hero's faces settled (U-01 through U-07
   the whole Devoted Hero pack. See "Single-source caveat" above.
 - **U-09 - conditional stat-bar split does not separate.** p.21 selection metadata no rule consumes,
   recorded as approximate on purpose (like W-02), needs no answer before implementation.
-- **Two printing-currency questions, both queued to ASK-ARTY rather than decided here**: (a) does the
-  CURRENT printing of Angry Roar start with "you may" (Robby's designer-channel answer says yes; our
-  3rd-printing playtest extraction says no - see the provenance note above)? (b) which cards carry the
-  later-printing help text "(You may choose to perform a replacement action instead)" on a borrow, and
-  is it live in the current printing? Composition follows the scan as extracted; nothing here admits an
-  unprinted replacement-action allowance.
+- **Two printing-currency questions - CLOSED 2026-09-18 by the physical card, not by an answer.**
+  (a) The printed 2nd-edition Angry Roar does NOT start with "you may"; Robby's answer describes a
+  text that is not this edition's. (b) The printed Silver carries NO "(You may choose to perform a
+  replacement action instead)" help text; that sentence exists only on the newer Tabletopia text
+  (bundle s804629), which is where the 3rd printing is heading. Composition follows the scan as
+  extracted, which IS the print; nothing here admits an unprinted replacement-action allowance. The
+  reworded forward-looking question (are those newer texts the 3rd-printing changes?) stays in
+  ASK-ARTY as a note, not as an open item of this inventory.
