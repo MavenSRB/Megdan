@@ -20,7 +20,9 @@ namespace GuardsDigital.Presentation.Match
     /// the question is about but does not offer), <c>-controls</c> (the answers), <c>-corner</c> (the
     /// small answer that is not a choice), <c>-minimise</c> and <c>-expand</c>. A worded control is
     /// <c>gd-decision-control</c> and carries its label as the button's own <c>text</c>, so
-    /// <c>UiPlayer.Button(hud, label)</c> finds it exactly as it found the strip's controls. A
+    /// <c>UiPlayer.Button(hud, label)</c> finds it exactly as it found the strip's controls; the one
+    /// control that moves the game on is <c>gd-decision-verb</c> in the shared pewter-banner language,
+    /// and carries its label the same way (with the visible words on <c>gd-decision-verb-label</c>). A
     /// card-faced control keeps the name the strip gave it - <c>gd-defense-card</c> for rulebook
     /// p.11's Defense, <c>gd-effect-card</c> for a card-valued choice and a removal-prevention payment
     /// - and carries its identity in a caption label and its tooltip, which is how every existing
@@ -57,6 +59,14 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The docked bar's own inside padding, which is tighter because the bar is slim.</summary>
         public const float DockedPadding = 8f;
+
+        /// <summary>
+        /// The verb banner's footprint - the optional step's own two numbers, because that pair IS the
+        /// banner language this window inherits and two sizes for one control would be two languages.
+        /// </summary>
+        public const float VerbWidth = RoundActionUnityView.OptionalStepActionWidth;
+
+        public const float VerbHeight = RoundActionUnityView.OptionalStepActionHeight;
 
         public const float TitleFontSize = 22f;
         public const float EyebrowFontSize = 11f;
@@ -417,7 +427,9 @@ namespace GuardsDigital.Presentation.Match
                 var control = Model.Controls[index];
                 var element = control.Card != null
                     ? BuildCardControl(control)
-                    : BuildWordedControl(control);
+                    : control.IsPrimary
+                        ? BuildVerbBanner(control)
+                        : (VisualElement)BuildWordedControl(control);
                 if (control.Hero.IsDefined)
                 {
                     var hero = control.Hero;
@@ -461,7 +473,9 @@ namespace GuardsDigital.Presentation.Match
             var verb = Model.Controls.FirstOrDefault(control => control.Card == null);
             if (verb != null)
             {
-                var element = BuildWordedControl(verb);
+                var element = verb.IsPrimary
+                    ? BuildVerbBanner(verb, compact: true)
+                    : (VisualElement)BuildWordedControl(verb);
                 dockedControls.Add(element);
                 drawnControls.Add(
                     new KeyValuePair<DecisionWindowControlViewModel, VisualElement>(verb, element));
@@ -499,12 +513,6 @@ namespace GuardsDigital.Presentation.Match
                 element.style.color = MatchHudTheme.FaceText(control.Swatch);
             }
 
-            if (control.IsPrimary)
-            {
-                element.style.backgroundColor = MatchHudTheme.ConfirmAccent;
-                element.style.color = new Color(0.09f, 0.094f, 0.102f, 1f);
-            }
-
             if (control.IsChosen)
             {
                 HudElements.MarkSelected(element, true);
@@ -524,7 +532,70 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// One card-faced answer: the whole printed face at the declared window scale, its consequence
+        /// The one control that moves the game on, in the HUD's own pewter-banner language - the
+        /// swallowtailed silver cloth END TURN, CONFIRM FACEDOWN, PASS and the optional step's two
+        /// answers already wear. It is the same class, not a copy of it.
+        /// </summary>
+        /// <remarks>
+        /// <para>The shine follows the rule that language already carries: a banner standing ALONE in
+        /// the window is the player's one move and takes the full warm glow, exactly as END TURN does
+        /// when nothing else is offered; two banners beside each other (a printed `may`'s two answers)
+        /// withhold their shine until the pointer enters, as those two do today; and a single banner
+        /// beside other controls keeps the modest steady glow.</para>
+        /// <para>The Button's own <c>text</c> stays set under the cloth, because it is the selector a
+        /// journey finds this control by - the same reason <c>PewterBanner</c>'s own remarks give for
+        /// END TURN.</para>
+        /// </remarks>
+        private RoundActionUnityView.PewterBanner BuildVerbBanner(
+            DecisionWindowControlViewModel control, bool compact = false)
+        {
+            var captured = control;
+            var banners = Model.Controls.Count(value => value.IsPrimary && value.Card == null);
+            var alone = Model.Controls.Count == 1;
+            var banner = new RoundActionUnityView.PewterBanner(
+                () =>
+                {
+                    if (captured.IsAnswerable)
+                    {
+                        ControlActivated?.Invoke(captured);
+                    }
+                },
+                alone && banners == 1,
+                DirectorHandsUnityView.CornerBannerFontSize,
+                "gd-decision-verb-label",
+                hoverOnlyShine: banners > 1)
+            {
+                name = "gd-decision-verb",
+                text = control.Label
+            };
+            banner.SetVisibleLabel(control.Label);
+            banner.style.minHeight = VerbHeight;
+            banner.style.height = VerbHeight;
+            banner.style.whiteSpace = WhiteSpace.Normal;
+            if (compact)
+            {
+                // The slim bar is bounded by the round dock's own width and shares its lower row with
+                // the question and the corner answer, so the verb is content-sized there rather than
+                // taking the expanded window's fixed 240. It keeps the same cloth, height and motion.
+                banner.style.minWidth = 0f;
+                banner.style.flexShrink = 1f;
+            }
+            else
+            {
+                banner.style.width = VerbWidth;
+                banner.style.flexShrink = 0f;
+            }
+            if (control.UnavailableReason != null)
+            {
+                banner.tooltip = control.UnavailableReason;
+                HudElements.MarkUnavailable(banner);
+            }
+
+            return banner;
+        }
+
+        /// <summary>
+        /// One card-faced answer: the whole printed face at the tray's own footprint, its consequence
         /// caption beneath it, and the per-card fact the question turns on - a printed Defense, a
         /// Block's verdict, a price.
         /// </summary>

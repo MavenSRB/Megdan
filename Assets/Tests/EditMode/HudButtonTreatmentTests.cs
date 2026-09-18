@@ -366,6 +366,142 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        // -------------------------------------------------------------------------------------
+        // Milestone 8.46c: the decision window. Every control on it is one of the treatments
+        // already proven above, never a look of its own - the user's instruction when the window
+        // was authorized. One case per control kind the window draws.
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>One window with the given controls, for a treatment case that needs no match.</summary>
+        private static DecisionWindowViewModel DecisionWindow(
+            params DecisionWindowControlViewModel[] controls) =>
+            new DecisionWindowViewModel(
+                1L,
+                DecisionWindowFamily.Mode,
+                DecisionWindowState.Expanded,
+                "8.46c-button-treatment",
+                "CHOOSE ONE",
+                "SKILL · CHOOSE ONE",
+                "Choose one.",
+                controls: controls);
+
+        [Test]
+        public void DecisionWindowChoice_DrawsTheSharedChromeAndWiresMotion()
+        {
+            var view = new DecisionWindowUnityView();
+
+            view.Render(DecisionWindow(
+                new DecisionWindowControlViewModel("MOVE IT AGAIN", DirectorCommand.ReleaseTurn()),
+                new DecisionWindowControlViewModel("STOP HERE", DirectorCommand.ReleaseTurn())));
+
+            var control = Descendants(view.Root).OfType<Button>()
+                .First(element => element.name == "gd-decision-control");
+            Assert.That(control.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.ButtonIdleBackground));
+            Assert.That(control.style.borderTopColor.value, Is.EqualTo(MatchHudTheme.ButtonBorder));
+            Assert.That(control.style.borderTopLeftRadius.value.value,
+                Is.EqualTo(MatchHudTheme.ButtonCornerRadius));
+            Assert.That(control.text, Is.EqualTo("MOVE IT AGAIN"),
+                "and carries its own label as the selector a journey presses it by.");
+            AssertScaleMotionIsWired(control, "a decision window choice");
+        }
+
+        /// <summary>
+        /// The one control that moves the game on wears the pewter swallowtail END TURN, CONFIRM
+        /// FACEDOWN and the optional step's two answers already wear - the same class, not a copy.
+        /// </summary>
+        [Test]
+        public void DecisionWindowVerb_WearsTheSharedPewterBannerLanguage()
+        {
+            var view = new DecisionWindowUnityView();
+
+            view.Render(DecisionWindow(new DecisionWindowControlViewModel(
+                DecisionWindowPresenter.RemoveTheseMinionsLabel,
+                DirectorCommand.ReleaseTurn(),
+                isPrimary: true)));
+
+            var banner = Descendants(view.Root).OfType<Button>()
+                .Single(element => element.name == "gd-decision-verb");
+            Assert.That(banner.Q("gd-banner-cloth"), Is.Not.Null,
+                "The verb is painted in the shared pewter cloth rather than as a coloured chip.");
+            Assert.That(banner.text, Is.EqualTo(DecisionWindowPresenter.RemoveTheseMinionsLabel),
+                "Its own text stays set under the cloth, because that is what a journey finds it by.");
+            Assert.That(
+                Descendants(banner).OfType<Label>().Any(label =>
+                    label.name == "gd-decision-verb-label" &&
+                    label.text == DecisionWindowPresenter.RemoveTheseMinionsLabel),
+                Is.True,
+                "and the visible words are the banner's own label above that cloth.");
+            AssertScaleMotionIsWired(banner, "the decision window's verb");
+        }
+
+        [Test]
+        public void DecisionWindowMinimiseAndExpand_DrawTheSharedChromeAndWireMotion()
+        {
+            var view = new DecisionWindowUnityView();
+
+            view.Render(DecisionWindow(
+                new DecisionWindowControlViewModel("A CHOICE", DirectorCommand.ReleaseTurn())));
+
+            var minimise = Descendants(view.Root).OfType<Button>()
+                .Single(element => element.name == "gd-decision-window-minimise");
+            AssertSharedCornerChrome(minimise);
+            AssertScaleMotionIsWired(minimise, "MINIMISE");
+
+            var expand = Descendants(view.Root).OfType<Button>()
+                .Single(element => element.name == "gd-decision-window-expand");
+            AssertSharedCornerChrome(expand);
+            AssertScaleMotionIsWired(expand, "EXPAND");
+        }
+
+        [Test]
+        public void DecisionWindowUnavailableChoice_KeepsItsReasonAlongsideTheSharedChrome()
+        {
+            var view = new DecisionWindowUnityView();
+
+            view.Render(DecisionWindow(new DecisionWindowControlViewModel(
+                "MODE #2 REFUSED",
+                unavailableReason: ActionUnavailabilityLabels.Generic)));
+
+            var control = Descendants(view.Root).OfType<Button>()
+                .Single(element => element.name == "gd-decision-control");
+            Assert.That(control.tooltip, Is.EqualTo(ActionUnavailabilityLabels.Generic),
+                "A refused control still says why, exactly as a refused mode does on the strip.");
+            Assert.That(control.enabledSelf, Is.False);
+            Assert.That(control.style.opacity.value, Is.EqualTo(0.45f).Within(0.0001f),
+                "Unavailable is never colour alone - it is also visibly dimmed.");
+            Assert.That(control.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.ButtonIdleBackground),
+                "and the shared chrome underneath it is untouched.");
+            AssertScaleMotionIsWired(control, "an unavailable decision window control");
+        }
+
+        /// <summary>
+        /// A card used as a control gets the Defense option's own treatment and nothing else: the
+        /// shared scale motion over a face that paints no plate of its own.
+        /// </summary>
+        [Test]
+        public void DecisionWindowFaceControl_DrawsWithScaleMotionOverItsOwnCardFace()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse();
+            var view = new DecisionWindowUnityView();
+            new DecisionWindowPresenter(session, view).Refresh();
+
+            var controls = Descendants(view.Root)
+                .Where(element => element.name == "gd-defense-card")
+                .ToArray();
+            Assert.That(controls, Is.Not.Empty,
+                "Sanity: the fixture offers at least one card defense, and the Director owns it.");
+            foreach (var control in controls)
+            {
+                AssertScaleMotionIsWired(control, "a decision window Defense option");
+                Assert.That(control.style.backgroundColor.value.a, Is.Zero,
+                    "The face is the complete visible offer: no plate, inset or selection box is " +
+                    "painted around it, which is the reading milestone 8.11b gave the same control.");
+                Assert.That(control.style.borderTopWidth.value, Is.Zero);
+            }
+        }
+
         [Test]
         public void DirectorUndoAndRestart_DrawTheSharedChromeAndWireMotion()
         {

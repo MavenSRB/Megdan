@@ -719,8 +719,11 @@ namespace GuardsDigital.Presentation.Match
             // rather than small in a corner: "two buttons naming the consequence" is the user's row.
             if (family == DecisionWindowFamily.OptionalStep && corner != null)
             {
+                // Both are primary: a printed `may`'s two answers are the pair of submit-style pewter
+                // banners the strip already draws for it, not one banner and one chip.
                 controls.Add(new DecisionWindowControlViewModel(
-                    corner.Label, corner.Command, role: DecisionWindowControlRole.Answer));
+                    corner.Label, corner.Command, role: DecisionWindowControlRole.Answer,
+                    isPrimary: true));
                 corner = null;
             }
 
