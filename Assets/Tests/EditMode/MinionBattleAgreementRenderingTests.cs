@@ -435,7 +435,7 @@ namespace GuardsDigital.Tests.EditMode
                     !scoped.Cards.Any(visible => visible.Id.Equals(card.Id)));
 
                 return false;
-            });
+            }, seed: 29);
 
             Assert.That(retrievedPublicRenders, Is.GreaterThan(0),
                 "The seeded seat walk never observed a publicly revealed opponent card after " +

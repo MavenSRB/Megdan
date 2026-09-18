@@ -3098,8 +3098,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 session.Projection.AcceptedCommands.Skip(acceptedBeforeSelection)
                     .Select(value => value.EffectChoice.Kind),
-                Is.EqualTo(new[] { EffectChoiceCommandKind.Select, EffectChoiceCommandKind.Confirm }),
-                "Presentation forwards the authority's select and immediate confirm as one player action.");
+                Is.EqualTo(new[] { EffectChoiceCommandKind.Select }),
+                "Milestone 8.46b: an exactly-one mode resolves on the selection itself, so the one " +
+                "accepted command is the select; no confirm exists to forward.");
         }
 
         /// <summary>
@@ -4199,8 +4200,8 @@ namespace GuardsDigital.Tests.EditMode
                     choice.SelectInvocations.Single(candidate =>
                         candidate.Candidate.OptionNodeId.Equals(branch)))).Accepted,
                 Is.True);
-            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation)).Accepted, Is.True);
+            // Milestone 8.46b: the mode resolves on its selection; a confirm is owed only where one stands.
+            ConfiguredMatchFixtures.ConfirmStandingEffectChoiceIfOwed(session, choice.ChoiceId);
         }
 
         private static MatchSession CreateNeedleSession(

@@ -696,8 +696,8 @@ namespace GuardsDigital.Tests.EditMode
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(option));
             AcceptCommand(session, DirectorCommand.AnswerEffectChoice(invocation));
-            AcceptCommand(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: a confirm is owed only where the same choice still stands and offers one.
+            ConfiguredMatchFixtures.ConfirmStandingEffectChoiceIfOwed(session, choice.ChoiceId);
         }
 
         private static void AcceptCommand(MatchSession session, DirectorCommand command)

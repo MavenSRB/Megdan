@@ -265,7 +265,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 1200, projection => projection.PendingDisplacedMinionCorrection != null);
+                host, 1200, projection => projection.PendingDisplacedMinionCorrection != null, seed: 29);
             var projection = host.Projection;
             Assert.That(projection.PendingDisplacedMinionCorrection, Is.Not.Null,
                 "The seeded walk must reach a correction, or this case proves nothing.");
@@ -289,7 +289,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
             OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 2200, projection => projection.PendingHeroRespawnChoice != null);
+                host, 2200, projection => projection.PendingHeroRespawnChoice != null, seed: 29);
             var projection = host.Projection;
             Assert.That(projection.PendingHeroRespawnChoice, Is.Not.Null,
                 "The seeded walk must reach a respawn, or this case proves nothing.");
@@ -376,7 +376,7 @@ namespace GuardsDigital.Tests.EditMode
             OwnerScopedProjectionTests.DriveThroughSeats(
                 host, 1500,
                 projection => projection.PendingMinionBattleChoice != null ||
-                    projection.TeamAgreement?.Kind == TeamAgreementKind.MinionBattle);
+                    projection.TeamAgreement?.Kind == TeamAgreementKind.MinionBattle, seed: 29);
             var projection = host.Projection;
             Assert.That(
                 projection.PendingMinionBattleChoice != null ||

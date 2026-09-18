@@ -3158,10 +3158,9 @@ namespace GuardsDigital.Tests.EditMode
             var target = session.Projection.PendingAttackTargetChoice;
             ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseAttackTarget(
                 target.ResolutionId, target.ChoiceId, minionId));
-            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.SelectInvocations.Single()));
-            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: aimed at the question the selection went into.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
             Assert.That(session.Projection.PendingEffectChoice?.ChooserId, Is.EqualTo(blue),
                 "The fixture must be standing on the chosen hero's own card question.");
             return session;

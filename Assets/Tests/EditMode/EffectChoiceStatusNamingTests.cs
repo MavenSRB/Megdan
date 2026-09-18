@@ -480,14 +480,13 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        // Milestone 8.46b: aimed at the choice the selection went into; an unaimed confirm would take
+        // Lift Up's `may repeat once` unasked the moment it stood.
         private static void AnswerFirstSelection(MatchSession session)
         {
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            var confirm = session.Projection.PendingEffectChoice?.ConfirmInvocation;
-            if (confirm != null)
-            {
-                Answer(session, confirm);
-            }
+            var selection = session.Projection.PendingEffectChoice.SelectInvocations[0];
+            Answer(session, selection);
+            ConfiguredMatchFixtures.ConfirmStandingEffectChoiceIfOwed(session, selection.ChoiceId);
         }
 
         private static void Answer(MatchSession session, EffectChoiceCommand invocation) =>

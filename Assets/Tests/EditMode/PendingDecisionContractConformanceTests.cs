@@ -374,7 +374,23 @@ namespace GuardsDigital.Tests.EditMode
             }
             if (pauseCase.FamilyId.Equals(PendingDecisionFamilies.Effect))
             {
-                if (command.EffectChoice.Kind == EffectChoiceCommandKind.Select ||
+                if (command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                    before.PendingEffectChoice.MinimumSelections == 1 &&
+                    before.PendingEffectChoice.MaximumSelections == 1 &&
+                    before.PendingEffectChoice.Kind != EffectChoiceKind.ConfirmOrDecline)
+                {
+                    // Milestone 8.46b: an exactly-one choice resolves on its selection, so the witness
+                    // is the pause closing - gone, replaced, or re-asked empty - never a selection
+                    // left standing on it.
+                    var standing = after.PendingEffectChoice;
+                    Assert.That(
+                        standing == null || standing.SelectedCandidates.Count == 0 ||
+                        !standing.ChoiceId.Equals(before.PendingEffectChoice.ChoiceId) ||
+                        !standing.ResolutionId.Equals(before.PendingEffectChoice.ResolutionId),
+                        Is.True, pauseCase.Name + ": an exactly-one selection must close its own pause.");
+                    Assert.That(EffectFingerprint(after), Is.Not.EqualTo(EffectFingerprint(before)));
+                }
+                else if (command.EffectChoice.Kind == EffectChoiceCommandKind.Select ||
                     command.EffectChoice.Kind == EffectChoiceCommandKind.Deselect)
                 {
                     Assert.That(after.PendingEffectChoice, Is.Not.Null);
