@@ -1348,6 +1348,19 @@ namespace GuardsDigital.Tests.EditMode
         // Schema v42 and wire /15 stay unchanged. Eleven capabilities plus widget-pyro@1 cost
         // 319 bytes: setup 11745 -> 12064, verified-hand-setup 10844 -> 11163. No prior hero
         // content identity changed. The existing strict catalog comparison rejects old captures.
+        //
+        // MILESTONE 8.46b: MIGRATE, and the decision is recorded here rather than in the commit
+        // alone because this list exists to force it. A choice admitting exactly one selection is
+        // now answered in ONE accepted command instead of two, so a payload captured after such an
+        // answer carries one fewer command in the retained prefix it holds. FOUR of the sixteen
+        // move for that reason and no other - placed-token, attached-marker, pending-correction and
+        // paused-orbit-repeat, the four whose fixtures drive an effect choice to its end. The other
+        // twelve are byte-identical, which is what says this is the answer's own command count
+        // moving rather than the format: the schema version does not move, no field is added or
+        // removed, and every one of the sixteen still restores and re-captures byte-identically
+        // below. Reject was considered and refused: there is nothing to reject, because no payload
+        // this build wrote before the change has become unreadable - the old captures were never
+        // stored, they are rebuilt here from the fixtures every run.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
             new CompatibilityFixture("setup-v42", "df1e4ee685272fa213fe15544e9e2d67faf23872a8266d726dba2831da5542c6"),
@@ -1355,13 +1368,13 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("pending-choice-v42", "64ecb0626494d4a67d86914c363a1dfe72cb307fe650544353a344f9d334904e"),
             new CompatibilityFixture("end-of-round-v42", "e8b1006d8f898618fbeaf04c636e897e86d21c235017684c8496a91dd12e72ca"),
             new CompatibilityFixture("pending-minion-battle-v42", "867847ce481980f46452d81de7d0d7def370d9e9764e59ad11e99572265787a4"),
-            new CompatibilityFixture("placed-token-v42", "4ba101146ff52c50f71bbef00f64c6b1d420eb9e78ea7fd9a24988f6d739792e"),
-            new CompatibilityFixture("attached-marker-v42", "e24c6a024ae8a837b2e7ad347986e58ee857c928e22bacd5675ba7e423e46526"),
-            new CompatibilityFixture("pending-correction-v42", "caccc786509bde9a77afd3956ea087026f80db96c0bfac466386168a07c0db3b"),
+            new CompatibilityFixture("placed-token-v42", "efc2ed078a6971ce223ff4251914ac7dd9b6daa4b05c9c21b4653dd6eda555cf"),
+            new CompatibilityFixture("attached-marker-v42", "58eb82d6df56d5a3e71b3f3d11e18f611a1a3df9b9a854786aa2781214680c51"),
+            new CompatibilityFixture("pending-correction-v42", "ef7269e7f6104b471b6e117fcd6ab860015710d751f45040dcc708d70e229f7a"),
             new CompatibilityFixture("paused-level-up-v42", "db1489c4cffd676c685ae61f83025c343d439c6f8253c72dc4be5e2bb0c3d10b"),
             new CompatibilityFixture("ended-match-v42", "099bf715a0970afe035b018f1282aa4dbabd3703fc1f93d2e1e206ed62d96ed4"),
             new CompatibilityFixture("verified-hand-setup-v42", "25907137508c5b327dd00f979beb2701ee90cb2bed23432a167ca310cefd79bf"),
-            new CompatibilityFixture("paused-orbit-repeat-v42", "c896818ceebf967cdaacce5eb94a92625f80722d922be9cb75cf485531eaf59a"),
+            new CompatibilityFixture("paused-orbit-repeat-v42", "3e2ce2a9eeecccfc98a5e45fb72d0f17b0bdb133a85eea979eefd81754b980c7"),
             new CompatibilityFixture("paused-card-text-v42", "2f78610ba13ec55e5a70e8b04d8b958b39d65c50a691aded22da37951b033f16"),
             new CompatibilityFixture("paused-block-rider-v42", "7d6f10e03dfd78685157d3508f7d215c1a057a1dfdc13220f8586df3926bf2bb"),
             new CompatibilityFixture("paused-repeated-attack-v42", "4718d170120fd416b6748058cb805f1cae577eb63ef4170b1ea9759280d5732e"),
@@ -1675,12 +1688,12 @@ namespace GuardsDigital.Tests.EditMode
                 session.Execute(DirectorCommand.StartAction(movement.ActionDefinitionId)).Accepted,
                 Is.True);
 
-            // The second branch of the ordering question is "after the action".
+            // The second branch of the ordering question is "after the action". Milestone 8.46b: the
+            // ordering admits exactly one branch, so naming it is the whole answer and the
+            // completion is asked for rather than assumed.
             var ordering = session.Projection.PendingEffectChoice;
-            Assert.That(session.Execute(
-                DirectorCommand.AnswerEffectChoice(ordering.SelectInvocations[1])).Accepted, Is.True);
-            Assert.That(session.Execute(DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation)).Accepted, Is.True);
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                session, ordering.SelectInvocations[1]);
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null,
                 "The Movement has to be running, or this fixture pins an ordinary paused choice.");
             return session.CaptureSnapshot();
@@ -1840,11 +1853,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Execute(DirectorCommand.StartAction(offer.ActionDefinitionId)).Accepted,
                 Is.True);
 
-            // The subject, then the space it orbits to, then p.10's confirm-or-decline for the repeat.
-            AnswerEffect(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
-            AnswerEffect(session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
-            AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // The subject, then the space it orbits to, then p.10's confirm-or-decline for the
+            // repeat. Milestone 8.46b: each of the first two admits exactly one, so naming it is the
+            // whole answer and the completion is asked for rather than assumed; the third offers
+            // nothing to name and is taken on its own Confirm exactly as before.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
             AnswerEffect(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
 
             Assert.That(session.Projection.PendingSkillResolution, Is.Not.Null,
