@@ -55,6 +55,13 @@ namespace GuardsDigital.Presentation.Match
         // The tiles currently tinted, so the per-frame glide walks the disk rather than all 210 tiles.
         private readonly List<HexTileView> litAuraTiles = new List<HexTileView>();
 
+        // Milestone 8.46d. The one arrow construction and the (at most six) arrows drawn from it,
+        // generated on first use exactly as the Active-effect disk above is: a board that is never
+        // asked a direction allocates nothing, and an answered direction hides them rather than
+        // destroying them.
+        private HexDirectionArrowTemplate directionArrowTemplate;
+        private readonly List<HexDirectionArrow> directionArrows = new List<HexDirectionArrow>();
+
         public BoardInteractionUnityView(
             IEnumerable<PrimitiveHeroView> heroes,
             IEnumerable<HexTileView> tiles,
@@ -133,7 +140,14 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The native resources this view itself generated, for the hygiene fixtures.</summary>
         public int OwnedNativeResourceCount =>
-            (activeEffectAuraMaterial == null ? 0 : 1) + (activeEffectAuraMesh == null ? 0 : 1);
+            (activeEffectAuraMaterial == null ? 0 : 1) + (activeEffectAuraMesh == null ? 0 : 1) +
+            (directionArrowTemplate == null ? 0 : directionArrowTemplate.OwnedNativeResourceCount);
+
+        /// <summary>
+        /// The direction arrows this board has built, drawn or hidden. Empty until a direction choice
+        /// has stood at least once. Milestone 8.46d.
+        /// </summary>
+        public IReadOnlyList<HexDirectionArrow> DirectionArrows => directionArrows;
 
         /// <summary>
         /// Releases what this view generated. The composition root calls it where it already disposes
@@ -155,6 +169,22 @@ namespace GuardsDigital.Presentation.Match
 
             DestroyOwnedResource(ownedMaterial);
             DestroyOwnedResource(ownedMesh);
+
+            // Milestone 8.46d. The arrows are destroyed before the construction they point at, for
+            // the reason every generated board child in this project follows: a renderer left
+            // referencing a released mesh outlives the release by a frame.
+            var ownedArrowTemplate = directionArrowTemplate;
+            directionArrowTemplate = null;
+            foreach (var arrow in directionArrows)
+            {
+                if (arrow != null)
+                {
+                    DestroyOwnedResource(arrow.gameObject);
+                }
+            }
+
+            directionArrows.Clear();
+            ownedArrowTemplate?.Dispose();
         }
 
         private static void DestroyOwnedResource(UnityEngine.Object resource)
@@ -538,12 +568,101 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
+            RenderDirectionArrows(model);
+
             // Milestone 8.35z63. Lighting a space resets its aura to the space itself, so the
             // live offset is re-applied before this pass returns. Without it the one render that
             // matters most - the projection change that STARTS a slide, when the displacement is at
             // its largest - would draw the disk already arrived for a frame and then jump backwards to
             // meet the piece. It reads the transforms the kinetic layer last wrote and moves nothing.
             GlideActiveEffectAuras();
+        }
+
+        /// <summary>
+        /// Milestone 8.46d. Six arrows around the hero a direction choice is asking, one per offered
+        /// direction, each standing on the neighbouring space a click on it names.
+        ///
+        /// <para><b>Placed in the TILES' own frame rather than in world space.</b> A tile positions
+        /// itself at <see cref="HexWorldLayout.ToWorld"/> in its parent's local coordinates, so an
+        /// arrow placed the same way under the same parent lands exactly on the lattice however the
+        /// board root itself is scaled, rotated or moved - and it lands there whether or not a tile
+        /// happens to be drawn on that space, which is what keeps the six arrows a set of six.</para>
+        ///
+        /// <para>Nothing here decides which directions are offered or what answering one does: the
+        /// model carries the candidates and each carries its own command. This is where they are
+        /// drawn and nothing more.</para>
+        /// </summary>
+        private void RenderDirectionArrows(BoardInteractionViewModel model)
+        {
+            var candidates = model.DirectionCandidates;
+            var chooserSpace = model.DirectionChooserSpace;
+            if (candidates.Count == 0 || !chooserSpace.HasValue)
+            {
+                HideDirectionArrows();
+                return;
+            }
+
+            // The chooser's own tile where there is one, so the arrows are placed in the frame the
+            // hero is standing in; any drawn tile otherwise, since every tile of a board shares one.
+            // `!= null` rather than `??` throughout: see BoardDefeatFadeDriver.Attach for why an
+            // explicit comparison is the only one that asks Unity's own question.
+            var reference = tiles.FirstOrDefault(tile =>
+                tile != null && tile.Coordinate.Equals(chooserSpace.Value));
+            if (reference == null)
+            {
+                reference = tiles.FirstOrDefault(tile => tile != null);
+            }
+
+            if (reference == null)
+            {
+                HideDirectionArrows();
+                return;
+            }
+
+            var radius = reference.OuterRadius;
+            var parent = reference.transform.parent;
+            var chooserLocal = HexWorldLayout.ToWorld(chooserSpace.Value, radius);
+            for (var index = 0; index < candidates.Count; index++)
+            {
+                var candidate = candidates[index];
+                if (index >= directionArrows.Count)
+                {
+                    directionArrows.Add(HexDirectionArrow.Create(EnsureDirectionArrowTemplate(radius)));
+                }
+
+                var local = HexWorldLayout.ToWorld(candidate.Neighbour, radius);
+                directionArrows[index].SetVisible(
+                    candidate.Direction,
+                    candidate.Neighbour,
+                    parent,
+                    local,
+                    local - chooserLocal,
+                    hoveredCoordinate.HasValue &&
+                        hoveredCoordinate.Value.Equals(candidate.Neighbour));
+            }
+
+            HideDirectionArrows(candidates.Count);
+        }
+
+        private void HideDirectionArrows(int from = 0)
+        {
+            for (var index = from; index < directionArrows.Count; index++)
+            {
+                if (directionArrows[index] != null)
+                {
+                    directionArrows[index].SetHidden();
+                }
+            }
+        }
+
+        private HexDirectionArrowTemplate EnsureDirectionArrowTemplate(float outerRadius)
+        {
+            if (directionArrowTemplate == null)
+            {
+                directionArrowTemplate = new HexDirectionArrowTemplate(outerRadius);
+            }
+
+            return directionArrowTemplate;
         }
 
         private static bool TryResolveCoordinate(
