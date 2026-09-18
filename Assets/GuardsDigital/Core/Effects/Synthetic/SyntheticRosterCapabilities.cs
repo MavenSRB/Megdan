@@ -1626,7 +1626,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         BoardObjectReference.ForHero(context.ActorId),
                         excludeEnclosingTarget ? EnclosingTarget(context) : default)
                     .Where(target => AdmitsClass(admittedClass, target, board))
-                    .Where(target => !ImmunityQuery.IsImmuneTo(
+                    .Where(target => !TargetQuery.IsPrevented(
                         target.AsRuleObject(),
                         activity,
                         RuleObject.ForHero(context.ActorId),
@@ -2493,7 +2493,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         !TargetQuery.StandsInRelationTo(
                             SourceTeamRelation.OpposingSource, target, context.ActorId,
                             context.Participants, board) ||
-                        ImmunityQuery.IsImmuneTo(
+                        TargetQuery.IsPrevented(
                             target.AsRuleObject(), context.EnclosingActivity,
                             RuleObject.ForHero(context.ActorId), board, context.Participants,
                             context.Modifications, context.ImmunityOverrides))
@@ -2695,7 +2695,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     var targets = RosterPresenceQuery.FindUnitsWithin(
                             route.Destination, 1, kind, SourceTeamRelation.OpposingSource,
                             context.ActorId, board, context.Participants, context.Modifications)
-                        .Where(target => !ImmunityQuery.IsImmuneTo(
+                        .Where(target => !TargetQuery.IsPrevented(
                             target.AsRuleObject(), context.EnclosingActivity,
                             actor.AsRuleObject(), board, context.Participants,
                             context.Modifications, context.ImmunityOverrides))
@@ -2789,7 +2789,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         !TargetQuery.StandsInRelationTo(
                             SourceTeamRelation.OpposingSource, target, context.ActorId,
                             context.Participants, board) ||
-                        ImmunityQuery.IsImmuneTo(
+                        TargetQuery.IsPrevented(
                             target.AsRuleObject(), context.EnclosingActivity,
                             actor.AsRuleObject(), board, context.Participants,
                             context.Modifications, context.ImmunityOverrides) ||
@@ -4593,7 +4593,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         actorAt, reach, RosterUnitKind.Unit, SourceTeamRelation.AnyTeam,
                         context.ActorId, board, context.Participants, context.Modifications,
                         BoardObjectReference.ForHero(context.ActorId))
-                    .Where(target => !ImmunityQuery.IsImmuneTo(
+                    .Where(target => !TargetQuery.IsPrevented(
                         target.AsRuleObject(), RuleActivity.Swap,
                         RuleObject.ForHero(context.ActorId), board, context.Participants,
                         context.Modifications, context.ImmunityOverrides))
@@ -5201,7 +5201,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 IBoardDisplacementAuthority board,
                 IReadOnlyList<BoardObjectReference> candidates) =>
                 candidates
-                    .Where(candidate => !ImmunityQuery.IsImmuneTo(
+                    .Where(candidate => !TargetQuery.IsPrevented(
                         candidate.AsRuleObject(),
                         RuleActivity.Swap,
                         BoardObjectReference.ForHero(context.ActorId).AsRuleObject(),

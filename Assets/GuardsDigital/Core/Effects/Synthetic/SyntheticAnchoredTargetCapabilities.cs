@@ -103,7 +103,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // Typed Hero/Minion consumers name that miniature, as the printed-icon selectors do.
                     .Where(t => kind == RosterUnitKind.Unit || (kind == RosterUnitKind.Hero
                         ? t.Kind == BoardObjectKind.Hero : t.Kind == BoardObjectKind.Minion))
-                    .Where(t => !ImmunityQuery.IsImmuneTo(t.AsRuleObject(), context.EnclosingActivity,
+                    .Where(t => !TargetQuery.IsPrevented(t.AsRuleObject(), context.EnclosingActivity,
                         RuleObject.ForHero(context.ActorId), board, context.Participants, context.Modifications, context.ImmunityOverrides))
                     .Where(t => board.TryGetObjectCoordinate(t, out var at) &&
                         (shape == AnchorTargetShape.Adjacent ? HexDistanceQuery.Calculate(anchor, at) == 1 :

@@ -114,7 +114,13 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="BorrowRefusal"/>'s arms apply to that card and nothing else, exactly as milestone
         /// 8.38c decided for the card its own face names.</para>
         /// </summary>
-        PreviousTurnSlotCard = 4
+        PreviousTurnSlotCard = 4,
+
+        /// <summary>Fight as One: owned resolved, face-up Skill cards in the turn area.</summary>
+        OwnedResolvedSkills = 5,
+
+        /// <summary>Dragon Knight WI-Q2: owned public face-up Skills, including the current card.</summary>
+        OwnedFaceUpSkills = 6
     }
 
     /// <summary>
@@ -234,6 +240,12 @@ namespace GuardsDigital.Core.Cards
                 BorrowedActionPool.PreviousTurnSlotCard, CardColor.None);
 
         public BorrowedActionPool Pool { get; }
+
+        public static BorrowedPrimaryActionDeclaration FromResolvedSkills() =>
+            new BorrowedPrimaryActionDeclaration(BorrowedActionPool.OwnedResolvedSkills, CardColor.None);
+
+        public static BorrowedPrimaryActionDeclaration FromFaceUpSkills() =>
+            new BorrowedPrimaryActionDeclaration(BorrowedActionPool.OwnedFaceUpSkills, CardColor.None);
 
         /// <summary>The colour this borrow narrows its pool to, or <see cref="CardColor.None"/>.</summary>
         public CardColor RequiredColor { get; }
@@ -593,6 +605,13 @@ namespace GuardsDigital.Core.Cards
                 case BorrowedActionPool.PreviousTurnSlotCard:
                     return true;
 
+                case BorrowedActionPool.OwnedResolvedSkills:
+                    return CardLifecycleAuthority.IsResolvedCardInTurnArea(card) && IsFaceUpSkill(card, definitionsByReference);
+
+                case BorrowedActionPool.OwnedFaceUpSkills:
+                    return (card.State.Location == CardLocation.TurnArea || card.State.Location == CardLocation.DiscardPile) &&
+                        IsFaceUpSkill(card, definitionsByReference);
+
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(declaration), declaration.Pool,
@@ -604,6 +623,12 @@ namespace GuardsDigital.Core.Cards
             BorrowedPrimaryActionDeclaration declaration, CardDefinition definition) =>
             declaration.RequiredColor == CardColor.None ||
             definition.Progression.Color == declaration.RequiredColor;
+
+        private static bool IsFaceUpSkill(CardInstance card,
+            IReadOnlyDictionary<CardDefinitionReference, CardDefinition> definitions) =>
+            card.State.FaceOrientation == CardFaceOrientation.FaceUp &&
+            definitions.TryGetValue(card.DefinitionReference, out var definition) &&
+            definition.ActionDefinitions.Any(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary && action.Kind == ActionKind.Skill);
 
         private static bool CreatesAnActiveEffect(
             EffectDefinition root, EffectCapabilityCatalog capabilities) =>

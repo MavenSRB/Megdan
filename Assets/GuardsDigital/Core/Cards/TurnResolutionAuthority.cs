@@ -612,6 +612,7 @@ namespace GuardsDigital.Core.Cards
 
             initiative = new InitiativeResolutionAuthority(initialTieBreakerState);
             this.cardActions = cardActions;
+            cardActions?.BindBorrowedTargetScopeKeys(consumedTurnScopedKeys);
             this.timing = timing ?? new ActiveEffectLifecycle();
             this.roundIndex = roundIndex;
             this.turnIndex = turnIndex;
@@ -1311,7 +1312,9 @@ namespace GuardsDigital.Core.Cards
             }
 
             var offer = cardActions.TakeOwedBorrowedAction(
-                definitions, instances, out var resolution, out var grantSourceId);
+                definitions, instances, out var resolution, out var grantSourceId, out var excludedTarget);
+            if (excludedTarget.IsDefined)
+                consumedTurnScopedKeys.Add(BorrowedSkillTargetScope.Key(offer.ActorId, excludedTarget));
 
             // Milestone 8.38d. An instance a PERMANENT ABILITY granted says so for as long as it runs,
             // in the turn scoped key set - which is what lets the clause about what the grant may
@@ -2884,6 +2887,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private void ClearRunningGrant()
         {
+            consumedTurnScopedKeys.RemoveWhere(BorrowedSkillTargetScope.IsScope);
             consumedTurnScopedKeys.RemoveWhere(key => key != null && key.StartsWith(
                 GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.RunningGrantPrefix,
                 StringComparison.Ordinal));
@@ -2992,6 +2996,11 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private TurnResolutionResult CompleteAttackOrStartItsRepeat(List<TurnResolutionEvent> events)
         {
+            // After-Attack text can grant a primary just as Skill text can. Consume the request
+            // before resolving its played card or handing Initiative to the next hero.
+            var borrowed = TryStartOwedBorrowedAction(events);
+            if (borrowed.HasValue) return borrowed.Value;
+
             // Milestone 8.35z27, and it is FIRST for the reason 8.35z21's drain is second.
             // A modal Attack's "choose one, or both" runs a complete p.14 per chosen bullet and Ruling
             // 5 makes all of them ONE action, so nothing the end of an action owes may happen between
@@ -3115,7 +3124,7 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private bool HasRunningGrant =>
             GuardsDigital.Core.Rules.Progression.GrantedTargetExclusionQuery.RunningGrant(
-                consumedTurnScopedKeys) != null;
+                consumedTurnScopedKeys) != null || BorrowedSkillTargetScope.ContainsScope(consumedTurnScopedKeys);
 
         private bool IsPendingAttackForSelectedActor()
         {
@@ -3610,7 +3619,8 @@ namespace GuardsDigital.Core.Cards
 
             AddTiming(
                 events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId, basicAction,
-                completedAttackTarget, primaryAction);
+                completedAttackTarget, primaryAction,
+                PerformedMovementAction.ForCompletedAction(actorId, sourceCardInstanceId, actionDefinitionId, kind));
         }
 
         private void AddTiming(
@@ -3620,7 +3630,8 @@ namespace GuardsDigital.Core.Cards
             CardInstanceId sourceCardInstanceId = default,
             PerformedBasicAction basicAction = default,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default,
-            PerformedPrimaryAction primaryAction = default)
+            PerformedPrimaryAction primaryAction = default,
+            PerformedMovementAction movementAction = default)
         {
             if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
                 affectedHeroId = initiative.SelectedActor.ActorId;
@@ -3642,7 +3653,7 @@ namespace GuardsDigital.Core.Cards
                 ? cardActions.ApplyTriggeredActionEnded(
                     timing, context, initiative.TieBreakerState, definitions, instances,
                     participants, CurrentModifications(),
-                    ContinuousTriggersFor(basicAction, primaryAction),
+                    ContinuousTriggersFor(basicAction, primaryAction, movementAction),
                     basicAction,
                     completedAttackTarget)
                 : timing.ApplyCheckpoint(context, initiative.TieBreakerState);
@@ -3672,7 +3683,8 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         private IEnumerable<ContinuousTriggeredEffectSource> ContinuousTriggersFor(
             PerformedBasicAction basicAction,
-            PerformedPrimaryAction primaryAction = default)
+            PerformedPrimaryAction primaryAction = default,
+            PerformedMovementAction movementAction = default)
         {
             if (cardActions == null)
                 return Array.Empty<ContinuousTriggeredEffectSource>();
@@ -3681,7 +3693,7 @@ namespace GuardsDigital.Core.Cards
             return GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.ArmUnspent(
                 ultimates,
                 GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.Derive(
-                    ultimates, cardActions.Board, participants, basicAction, primaryAction),
+                    ultimates, cardActions.Board, participants, basicAction, primaryAction, movementAction),
                 consumedTurnScopedKeys);
         }
 

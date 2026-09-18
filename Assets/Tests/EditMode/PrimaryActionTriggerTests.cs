@@ -313,7 +313,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(8));
+            Assert.That(conditions.Length, Is.EqualTo(9), "Widget adds the distinct Movement-action condition.");
             Assert.That(
                 conditions,
                 Does.Contain(UltimateTriggerCondition.AfterControllerPerformsPrimaryAction));

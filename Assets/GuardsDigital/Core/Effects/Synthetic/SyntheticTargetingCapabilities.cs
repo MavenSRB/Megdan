@@ -936,7 +936,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 RuleActivity activity) =>
                 !board.TryGetObjectAt(at, out var standing) ||
                 standing.Kind == BoardObjectKind.Token ||
-                !ImmunityQuery.IsImmuneTo(
+                !TargetQuery.IsPrevented(
                     standing.AsRuleObject(),
                     activity,
                     actor.AsRuleObject(),

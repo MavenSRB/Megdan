@@ -759,7 +759,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? context.ImmunityOverrides
                     : Array.Empty<ImmunityOverrideDeclaration>();
                 var source = RuleObject.ForHero(context.ActorId);
-                return !ImmunityQuery.IsImmuneTo(
+                return !TargetQuery.IsPrevented(
                         unit,
                         context.EnclosingActivity,
                         source,
@@ -768,7 +768,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.Modifications,
                         overrides,
                         RuleActivity.DirectMove) &&
-                    !ImmunityQuery.IsImmuneTo(
+                    !TargetQuery.IsPrevented(
                         unit,
                         RuleActivity.DirectMove,
                         source,
@@ -951,7 +951,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var candidates = RosterPresenceQuery.FindUnitsWithin(
                         actorAt, radius, RosterUnitKind.Unit, SourceTeamRelation.OpposingSource,
                         context.ActorId, board, context.Participants, context.Modifications)
-                    .Where(target => !ImmunityQuery.IsImmuneTo(
+                    .Where(target => !TargetQuery.IsPrevented(
                         target.AsRuleObject(), context.EnclosingActivity,
                         RuleObject.ForHero(context.ActorId), board, context.Participants,
                         context.Modifications, context.ImmunityOverrides))
@@ -1671,7 +1671,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             EffectCapabilityContext context, BoardObjectReference occupant, RuleObject pushingUnit)
         {
             var asRuleObject = occupant.AsRuleObject();
-            return asRuleObject.IsDefined && ImmunityQuery.IsImmuneTo(
+            return asRuleObject.IsDefined && TargetQuery.IsPrevented(
                 asRuleObject,
                 RuleActivity.ObjectPush,
                 pushingUnit,

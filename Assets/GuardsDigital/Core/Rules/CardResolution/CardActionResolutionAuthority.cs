@@ -152,6 +152,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// taken inside the command that answered for it, so nothing here crosses a snapshot.</para>
         /// </summary>
         private string owedBorrowedActionGrantSourceId;
+        private RuleObject owedBorrowedTargetExclusion;
+        private IEnumerable<string> borrowedTargetScopeKeys;
+
+        internal void BindBorrowedTargetScopeKeys(IEnumerable<string> keys) => borrowedTargetScopeKeys = keys;
 
         /// <summary>
         /// The offer a parentless - that is, ability-granted - borrow is authorized to start, held
@@ -857,7 +861,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // for the same reason: this authority already holds the one register a live match
                 // gives markers into, so taking it from a caller would be the second copy
                 // CreateComponents exists to prevent.
-                components.Markers);
+                components.Markers).WithTargetExclusions(BorrowedSkillTargetScope.Read(borrowedTargetScopeKeys));
 
         public bool HasPendingResolution =>
             movementBackend.HasPendingResolution || attackDefenseBackend.HasPendingResolution ||
@@ -2460,6 +2464,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             owedBorrowedActionCardId = borrowRequested.BorrowedCardId;
             owedBorrowedActionActorId = actorId;
+            owedBorrowedTargetExclusion = borrowRequested.ExcludedTarget;
         }
 
         /// <summary>
@@ -2759,6 +2764,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal ActionOffer TakeOwedBorrowedAction(
             IEnumerable<CardDefinition> definitions, IEnumerable<CardInstance> instances,
             out ActionResolutionId resolutionId, out string grantSourceId)
+            => TakeOwedBorrowedAction(definitions, instances, out resolutionId, out grantSourceId, out _);
+
+        internal ActionOffer TakeOwedBorrowedAction(
+            IEnumerable<CardDefinition> definitions, IEnumerable<CardInstance> instances,
+            out ActionResolutionId resolutionId, out string grantSourceId, out RuleObject excludedTarget)
         {
             if (!HasOwedBorrowedAction)
                 throw new InvalidOperationException("No borrowed primary is owed.");
@@ -2784,6 +2794,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             owedBorrowedActionActorId = default;
             owedBorrowedActionGrantSourceId = null;
             grantSourceId = granting;
+            excludedTarget = owedBorrowedTargetExclusion;
+            owedBorrowedTargetExclusion = default;
             var primary = definition.ActionDefinitions.Single(value => value.Origin == ActionDefinitionOrigin.PrintedPrimary);
             resolutionId = parent == null
                 ? BorrowedResolutionIdFor(card.Id, actor)
@@ -3261,6 +3273,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 step, paused.Attack, materializedDefinitions, instances, participants, modifications,
                 facts);
             RecordOwedAttackRepeat(step, paused.Attack);
+            RecordOwedBorrowedAction(step, paused.Frame.ActorId);
 
             // Milestone 8.22, finding `F-ATK-02`, the resume half. A card text that asked a question
             // does its work here rather than where it started, so p.8's recorded cause and the Pushes

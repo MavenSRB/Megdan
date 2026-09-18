@@ -21,20 +21,21 @@ namespace GuardsDigital.Core.Rules.Progression
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             PerformedBasicAction basicAction,
-            PerformedPrimaryAction primaryAction = default)
+            PerformedPrimaryAction primaryAction = default,
+            PerformedMovementAction movementAction = default)
         {
             if (ultimates == null) throw new ArgumentNullException(nameof(ultimates));
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
-            if (!basicAction.IsDefined && !primaryAction.IsDefined)
+            if (!basicAction.IsDefined && !primaryAction.IsDefined && !movementAction.IsDefined)
                 return Array.Empty<ContinuousTriggeredEffectSource>();
 
             return ultimates.Ultimates
                 .Where(ultimate =>
-                    Applies(ultimate.Rule.TriggerCondition, basicAction, primaryAction) &&
+                    Applies(ultimate.Rule.TriggerCondition, basicAction, primaryAction, movementAction) &&
                     board.TryGetHeroCoordinate(ultimate.OwnerId, out _) &&
                     ultimate.OwnerId.Equals(
-                        ActorOf(ultimate.Rule.TriggerCondition, basicAction, primaryAction)))
+                        ActorOf(ultimate.Rule.TriggerCondition, basicAction, primaryAction, movementAction)))
                 .Select((ultimate, index) => ultimate.TriggeredSource(participants, index, basicAction))
                 .Where(source => source != null)
                 .ToArray();
@@ -137,7 +138,9 @@ namespace GuardsDigital.Core.Rules.Progression
         private static bool Applies(
             UltimateTriggerCondition condition,
             PerformedBasicAction basicAction,
-            PerformedPrimaryAction primaryAction) =>
+            PerformedPrimaryAction primaryAction,
+            PerformedMovementAction movementAction) =>
+            condition == UltimateTriggerCondition.AfterControllerPerformsMovementAction ? movementAction.IsDefined :
             condition == UltimateTriggerCondition.AfterControllerPerformsPrimaryAction
                 ? primaryAction.IsDefined
                 : basicAction.IsDefined && Matches(condition, basicAction);
@@ -151,7 +154,9 @@ namespace GuardsDigital.Core.Rules.Progression
         private static HeroId ActorOf(
             UltimateTriggerCondition condition,
             PerformedBasicAction basicAction,
-            PerformedPrimaryAction primaryAction) =>
+            PerformedPrimaryAction primaryAction,
+            PerformedMovementAction movementAction) =>
+            condition == UltimateTriggerCondition.AfterControllerPerformsMovementAction ? movementAction.ActorId :
             condition == UltimateTriggerCondition.AfterControllerPerformsPrimaryAction
                 ? primaryAction.ActorId
                 : basicAction.ActorId;

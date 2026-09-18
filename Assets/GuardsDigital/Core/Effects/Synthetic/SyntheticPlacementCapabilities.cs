@@ -955,7 +955,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             private static bool IsImmuneTo(
                 EffectCapabilityContext context, RuleObject unit, RuleActivity activity) =>
-                ImmunityQuery.IsImmuneTo(
+                TargetQuery.IsPrevented(
                     unit,
                     activity,
                     RuleObject.ForHero(context.ActorId),

@@ -1804,3 +1804,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.43b | Composed anchored Green Skills and WI-Q1 coupled movement with ordinary consequences and deterministic continuations; deferred until dealing. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843b-support-pyro-anchored-targeting-and-coupled-displacement). | `milestone/8.43b` |
+
+## Milestone 8.43c Widget Skill reuse completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.43c | Implemented distinct Skill pools, actual Movement trigger and original-unit exclusion through restored/nested borrowed actions, preserving source cards and existing identities. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843c-support-skill-reuse-and-dragon-knights-movement-trigger). | `milestone/8.43c` |

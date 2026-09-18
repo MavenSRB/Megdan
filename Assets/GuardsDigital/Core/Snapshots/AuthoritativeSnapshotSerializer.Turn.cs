@@ -107,7 +107,7 @@ namespace GuardsDigital.Core.Snapshots
                     // width after a restore as before it.
                     heroItems,
                     // Milestone 8.23: and from the same markers, for the same reason.
-                    markers),
+                    markers).WithTargetExclusions(BorrowedSkillTargetScope.Read(consumedTriggers)),
                 heroItems,
                 tieBreaker,
                 roundIndex,

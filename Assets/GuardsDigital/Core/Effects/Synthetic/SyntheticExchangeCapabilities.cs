@@ -793,7 +793,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             RuleObject unit,
             RuleActivity activity,
             bool supportsImmunityOverrides) =>
-            ImmunityQuery.IsImmuneTo(
+            TargetQuery.IsPrevented(
                 unit,
                 activity,
                 RuleObject.ForHero(context.ActorId),

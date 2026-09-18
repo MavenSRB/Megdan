@@ -53,6 +53,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         /// <summary>The card whose printed primary the borrowing hero is about to perform.</summary>
         public const string BorrowedCardOutput = "borrowedCard";
+        public const string ExcludeAttackedUnitParameter = "excludeAttackedUnit";
+        public const string ExcludedHeroOutput = "excludedHero";
+        public const string ExcludedMinionOutput = "excludedMinion";
 
         /// <summary>
         /// Milestone 8.37's <c>friendly-hero-in-play@1</c>: Commune with Spirits' "A
@@ -446,6 +449,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 case BorrowedActionPool.PreviousTurnSlotCard:
                     declaration = BorrowedPrimaryActionDeclaration.FromPreviousTurnSlotCard();
                     break;
+                case BorrowedActionPool.OwnedResolvedSkills:
+                    declaration = BorrowedPrimaryActionDeclaration.FromResolvedSkills();
+                    break;
+                case BorrowedActionPool.OwnedFaceUpSkills:
+                    declaration = BorrowedPrimaryActionDeclaration.FromFaceUpSkills();
+                    break;
                 default:
                     return Array.Empty<CardInstance>();
             }
@@ -596,11 +605,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         new EffectCapabilityParameter(
                             ColorParameter,
                             EffectValueKind.Integer,
-                            integerDomain: EffectIntegerDomain.All<CardColor>())
+                            integerDomain: EffectIntegerDomain.All<CardColor>()),
+                        new EffectCapabilityParameter(ExcludeAttackedUnitParameter, EffectValueKind.Boolean, isRequired: false)
                     },
                     new[]
                     {
-                        new EffectOutputBinding(BorrowedCardOutput, EffectValueKind.CardInstance)
+                        new EffectOutputBinding(BorrowedCardOutput, EffectValueKind.CardInstance),
+                        new EffectOutputBinding(ExcludedHeroOutput, EffectValueKind.Hero),
+                        new EffectOutputBinding(ExcludedMinionOutput, EffectValueKind.Minion)
                     });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -642,10 +654,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // The card is named and nothing else happens here. It is not moved, not flipped and not
                 // resolved - the contract's "the borrowed card does not change state" is true because
                 // this handler is the only thing that touches it and it touches nothing.
-                return EffectExecutionResult.Applied(new[]
+                var outcomes = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact(BorrowedCardOutput, EffectValue.Card(chosen.Id))
-                });
+                };
+                if (context.Input(ExcludeAttackedUnitParameter).BooleanValue)
+                {
+                    if (context.EnclosingAttack.HeroTargetId.IsDefined)
+                        outcomes.Add(new EffectOutcomeFact(ExcludedHeroOutput, EffectValue.Hero(context.EnclosingAttack.HeroTargetId)));
+                    else if (context.EnclosingAttack.MinionTargetId.IsDefined)
+                        outcomes.Add(new EffectOutcomeFact(ExcludedMinionOutput, EffectValue.Minion(context.EnclosingAttack.MinionTargetId)));
+                }
+                return EffectExecutionResult.Applied(outcomes);
             }
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>

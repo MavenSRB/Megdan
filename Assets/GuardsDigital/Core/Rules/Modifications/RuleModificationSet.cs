@@ -50,8 +50,10 @@ namespace GuardsDigital.Core.Rules.Modifications
         public RuleModificationSet(
             IEnumerable<AppliedRuleModification> modifications,
             IEnumerable<AppliedObstacleOverlay> obstacleOverlays,
-            TieBreakerState tieBreaker)
+            TieBreakerState tieBreaker,
+            IEnumerable<ActionTargetExclusion> targetExclusions = null)
         {
+            TargetExclusions = Array.AsReadOnly((targetExclusions ?? Array.Empty<ActionTargetExclusion>()).ToArray());
             var materialized = (modifications ?? throw new ArgumentNullException(nameof(modifications)))
                 .ToArray();
             if (materialized.Any(modification => modification == null))
@@ -96,7 +98,13 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// </summary>
         public IReadOnlyList<AppliedObstacleOverlay> ObstacleOverlays { get; }
 
-        public bool IsEmpty => Modifications.Count == 0 && ObstacleOverlays.Count == 0;
+        public IReadOnlyList<ActionTargetExclusion> TargetExclusions { get; }
+        public bool ExcludesTarget(RuleObject target, RuleObject actor) => actor.Kind == RuleObjectKind.Hero &&
+            TargetExclusions.Any(e => e.ActorId.Equals(actor.HeroId) && e.Target.Equals(target));
+        public RuleModificationSet WithTargetExclusions(IReadOnlyList<ActionTargetExclusion> exclusions) =>
+            (exclusions == null || exclusions.Count == 0) && TargetExclusions.Count == 0 ? this :
+                new RuleModificationSet(Modifications, ObstacleOverlays, TieBreaker, exclusions);
+        public bool IsEmpty => Modifications.Count == 0 && ObstacleOverlays.Count == 0 && TargetExclusions.Count == 0;
 
         /// <summary>
         /// Whether any overlay in effect makes <paramref name="space"/> count as an obstacle right

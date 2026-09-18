@@ -152,6 +152,31 @@ namespace GuardsDigital.Core.Cards.Verified
                 Pyro("pyro-after"), Remove("remove-pyro", "pyro-after", RemoveEligiblePieceKind.Token)
             });
 
+        public static EffectDefinition DragonKnight(CardDefinitionId card, string revision) =>
+            Definition(card, revision, "movement-skill-primary", new[]
+            {
+                new EffectNodeDefinition(Id("root"), EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1, inputs: new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(SyntheticBorrowedActionCapabilities.PoolParameter, BorrowedActionPool.OwnedFaceUpSkills),
+                        EffectInputBinding.FromClosedVocabulary(SyntheticBorrowedActionCapabilities.ColorParameter, CardColor.None)
+                    }, outputs: new[] { Output(SyntheticBorrowedActionCapabilities.BorrowedCardOutput, EffectValueKind.CardInstance) })
+            });
+
+        public static EffectDefinition FightAsOne(CardDefinitionId card, string revision) =>
+            Definition(card, revision, "after-attack", new[]
+            {
+                new EffectNodeDefinition(Id("root"), EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    SyntheticBorrowedActionCapabilities.BorrowPrimaryActionV1, inputs: new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(SyntheticBorrowedActionCapabilities.PoolParameter, BorrowedActionPool.OwnedResolvedSkills),
+                        EffectInputBinding.FromClosedVocabulary(SyntheticBorrowedActionCapabilities.ColorParameter, CardColor.None),
+                        EffectInputBinding.FromLiteral(SyntheticBorrowedActionCapabilities.ExcludeAttackedUnitParameter, EffectValue.Boolean(true))
+                    }, outputs: new[] { Output(SyntheticBorrowedActionCapabilities.BorrowedCardOutput, EffectValueKind.CardInstance),
+                        Output(SyntheticBorrowedActionCapabilities.ExcludedHeroOutput, EffectValueKind.Hero),
+                        Output(SyntheticBorrowedActionCapabilities.ExcludedMinionOutput, EffectValueKind.Minion) })
+            });
+
         private static EffectNodeDefinition AnchoredTarget(EffectCapabilityReference capability, string consumer,
             params EffectOutputBinding[] outputs)
         {

@@ -85,9 +85,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     !board.TryGetObjectAt(context.Input("second").Coordinate, out second) || first.Equals(second)) return false;
                 foreach (var target in new[] { first, second })
                     if (target.AsRuleObject().IsDefined &&
-                        (ImmunityQuery.IsImmuneTo(target.AsRuleObject(), context.EnclosingActivity,
+                        (TargetQuery.IsPrevented(target.AsRuleObject(), context.EnclosingActivity,
                             RuleObject.ForHero(context.ActorId), board, context.Participants, context.Modifications, context.ImmunityOverrides) ||
-                         ImmunityQuery.IsImmuneTo(target.AsRuleObject(), RuleActivity.DirectMove,
+                         TargetQuery.IsPrevented(target.AsRuleObject(), RuleActivity.DirectMove,
                             RuleObject.ForHero(context.ActorId), board, context.Participants, context.Modifications, context.ImmunityOverrides)))
                         return false;
                 return true;

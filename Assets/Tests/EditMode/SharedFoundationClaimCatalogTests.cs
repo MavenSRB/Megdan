@@ -101,11 +101,44 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "targeting.anchored-intersection", "movement.coupled-exact-pair"
+            "borrowing.public-skill-pools", "timing.actual-movement", "targeting.borrowed-skill-exclusion"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "borrowing.public-skill-pools",
+                new MemberLocator(typeof(GuardsDigital.Core.Cards.BorrowedPrimaryActionDeclaration),
+                    nameof(GuardsDigital.Core.Cards.BorrowedPrimaryActionDeclaration.FromFaceUpSkills), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetSkillReuseTests),
+                    nameof(WidgetSkillReuseTests.PoolsSeparateResolvedSkillsFromAllPublicFaceUpSkills), MemberTypes.Method),
+                    SharedFoundationEvidenceKind.BoundaryFixture, "resolved-only versus public face-up owned Skill primaries") },
+                new[] { "ownership", "visibility", "type", "lifecycle" },
+                "Owned resolved face-up TurnArea Skills, or owned face-up TurnArea/DiscardPile Skills including the currently performed card; no hand cards or source state transition.",
+                "Reassess for another public location, card type, or source-state transition."),
+            new SharedFoundationClaim(
+                "timing.actual-movement",
+                new MemberLocator(typeof(GuardsDigital.Core.Cards.PerformedMovementAction),
+                    nameof(GuardsDigital.Core.Cards.PerformedMovementAction.ForCompletedAction), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetSkillReuseTests),
+                    nameof(WidgetSkillReuseTests.DragonKnightFiresAfterActualMovement_AndCanReuseTheCurrentSkill), MemberTypes.Method),
+                    SharedFoundationEvidenceKind.BoundaryFixture, "zero/positive Movement end grants current Skill and restores its choices") },
+                new[] { "action kind", "timing", "owner", "continuation" },
+                "Actual Movement action completion including zero spaces; not direct Move, Place, Swap or Fast Travel. On-board unlocked owner only, optional Skill grant.",
+                "Reassess for an in-action movement checkpoint or trigger text continuing after its grant."),
+            new SharedFoundationClaim(
+                "targeting.borrowed-skill-exclusion",
+                new MemberLocator(typeof(GuardsDigital.Core.Rules.Modifications.TargetQuery),
+                    nameof(GuardsDigital.Core.Rules.Modifications.TargetQuery.IsPrevented), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetSkillReuseTests),
+                    nameof(WidgetSkillReuseTests.ExclusionSurvivesNestedBorrow_ThenResumesItsParentAndRejectsStaleAnswers), MemberTypes.Method),
+                    SharedFoundationEvidenceKind.BoundaryFixture, "Attack-granted Skill chain excludes original unit through nested choices/restore") },
+                new[] { "actor", "unit identity", "grant lifetime", "immunity", "persistence" },
+                "An after-Attack final borrow clause excludes the original Hero/Minion for the acting hero through its entire borrowed chain; independent of immunity and presence, allowing token-only Skills.",
+                "Reassess for before-Attack borrowing, text after an Attack borrow clause, overlapping differently scoped grants, or a new operation bypassing TargetQuery."),
             new SharedFoundationClaim(
                 "targeting.anchored-intersection",
                 new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticAnchoredTargetCapabilities),

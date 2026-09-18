@@ -42,13 +42,15 @@ Non-goals: new card-state pools or production content registration.
 
 Historical evidence: [8.43b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843b-widget-anchored-skills-and-coupled-movement-completion-evidence).
 
-### [ ] 8.43c Support Skill reuse and Dragon Knight's Movement trigger
+### [x] 8.43c Support Skill reuse and Dragon Knight's Movement trigger
 
 Outcome: Fight as One grants an owned resolved Skill primary with the original attack target excluded, and Dragon Knight optionally grants an eligible face-up Skill primary after an actual Movement action.
 
 Acceptance: resolve WI-Q2 before its pool implementation; separate resolved-only and face-up pools, ownership/type/visibility and current-card eligibility, token-only Skills, missing/inert Skills, source-card state preservation, original unit exclusion throughout the borrowed action, correct Skill rather than Attack immunity, nested choices and mandatory/optional behavior. Trigger once after Movement including a legal zero-space action, not direct Move/Swap/Place/Fast Travel; unlocked/on-board owner checks, decline, exact timing order, no recursive false trigger, snapshot/replay/Undo and suspended parent continuation. Reuse existing borrow/grant machinery; explicitly migrate or reject if durable identity changes. T2 minimum; apply any T3 triggers.
 
 Non-goals: changes to previous heroes' borrowing or Ultimate meanings.
+
+Historical evidence: [8.43c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843c-widget-skill-reuse-completion-evidence).
 
 ### [ ] 8.43d Compose Widget's eighteen playable faces
 

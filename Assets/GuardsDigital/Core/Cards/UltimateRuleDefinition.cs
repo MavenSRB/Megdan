@@ -148,7 +148,10 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         AfterControllerGivesMarker = 7,
 
-        AfterOwnedResolvedCardDiscarded = 8
+        AfterOwnedResolvedCardDiscarded = 8,
+
+        /// <summary>Dragon Knight: every completed Movement action, primary or secondary.</summary>
+        AfterControllerPerformsMovementAction = 9
     }
 
     /// <summary>

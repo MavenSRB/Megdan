@@ -262,7 +262,7 @@ namespace GuardsDigital.Core.Rules.BoardObjects
         public bool IsPrevented(BoardObjectReference subject)
         {
             var unit = subject.AsRuleObject();
-            return unit.IsDefined && ImmunityQuery.IsImmuneTo(
+            return unit.IsDefined && TargetQuery.IsPrevented(
                 unit, activity, actingUnit, board, participants, modifications);
         }
 

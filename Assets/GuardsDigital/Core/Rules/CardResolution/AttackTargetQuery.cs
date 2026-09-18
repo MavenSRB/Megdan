@@ -242,7 +242,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     !minion.TeamId.Equals(attackerTeam) &&
                     HexDistanceQuery.Calculate(attackerOccupancy.Coordinate, minion.Coordinate) <= maximumDistance &&
                     IsAdmitted(minion.Coordinate) &&
-                    !ImmunityQuery.IsImmuneTo(
+                    !TargetQuery.IsPrevented(
                         RuleObject.ForMinion(minion.MinionId), RuleActivity.Attack, attacker,
                         board, participants, modifications))
                 .Select(minion => AttackTarget.Minion(minion.MinionId));
@@ -309,7 +309,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     participantHeroIds.Contains(occupancy.HeroId) &&
                     HexDistanceQuery.Calculate(attackerCoordinate, occupancy.Coordinate) <= maximumDistance &&
                     !participants.GetTeamForHero(occupancy.HeroId).Id.Equals(attackerTeamId) &&
-                    !ImmunityQuery.IsImmuneTo(
+                    !TargetQuery.IsPrevented(
                         RuleObject.ForHero(occupancy.HeroId), RuleActivity.Attack, attacker,
                         board, participants, modifications))
                 .Select(occupancy => occupancy.HeroId)

@@ -29,6 +29,14 @@ namespace GuardsDigital.Core.Rules.Modifications
     /// </summary>
     public static class TargetQuery
     {
+        /// <summary>Explicit grant exclusions cannot be bypassed by a printed immunity override.</summary>
+        public static bool IsPrevented(RuleObject target, RuleActivity activity, RuleObject actingUnit,
+            IBoardDisplacementAuthority board, MatchParticipants participants, RuleModificationSet modifications,
+            IReadOnlyList<ImmunityOverrideDeclaration> overrides = null, RuleActivity overrideActivity = RuleActivity.None) =>
+            modifications.ExcludesTarget(target, actingUnit) || ImmunityQuery.IsImmuneTo(target, activity, actingUnit,
+                board, participants, modifications, overrides ?? Array.Empty<ImmunityOverrideDeclaration>(),
+                overrideActivity == RuleActivity.None ? activity : overrideActivity);
+
         /// <summary>
         /// Every board object within <paramref name="range"/> spaces of <paramref name="origin"/> that
         /// <paramref name="targetingUnit"/> may target under <paramref name="activity"/>, in canonical
@@ -93,7 +101,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                     }
 
                     var asRuleObject = occupant.AsRuleObject();
-                    if (asRuleObject.IsDefined && ImmunityQuery.IsImmuneTo(
+                    if (asRuleObject.IsDefined && TargetQuery.IsPrevented(
                             asRuleObject,
                             activity,
                             targetingUnit,

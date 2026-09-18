@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Rules.EffectResolution
 {
@@ -17,10 +18,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// </summary>
     public readonly struct BorrowRequest : IEquatable<BorrowRequest>
     {
-        private BorrowRequest(bool isRequested, CardInstanceId borrowedCardId)
+        private BorrowRequest(bool isRequested, CardInstanceId borrowedCardId, RuleObject excludedTarget)
         {
             IsRequested = isRequested;
             BorrowedCardId = borrowedCardId;
+            ExcludedTarget = excludedTarget;
         }
 
         /// <summary>No borrow was asked for - what every non-borrowing action reports.</summary>
@@ -30,17 +32,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         /// <summary>The card whose printed primary is to be performed. Meaningful only when requested.</summary>
         public CardInstanceId BorrowedCardId { get; }
+        public RuleObject ExcludedTarget { get; }
 
-        public static BorrowRequest For(CardInstanceId borrowedCardId) =>
-            new BorrowRequest(true, borrowedCardId);
+        public static BorrowRequest For(CardInstanceId borrowedCardId, RuleObject excludedTarget = default) =>
+            new BorrowRequest(true, borrowedCardId, excludedTarget);
 
         public bool Equals(BorrowRequest other) =>
-            IsRequested == other.IsRequested && BorrowedCardId.Equals(other.BorrowedCardId);
+            IsRequested == other.IsRequested && BorrowedCardId.Equals(other.BorrowedCardId) && ExcludedTarget.Equals(other.ExcludedTarget);
 
         public override bool Equals(object obj) => obj is BorrowRequest other && Equals(other);
 
         public override int GetHashCode() =>
-            (IsRequested ? 1 : 0) ^ (BorrowedCardId.GetHashCode() * 397);
+            (IsRequested ? 1 : 0) ^ (BorrowedCardId.GetHashCode() * 397) ^ ExcludedTarget.GetHashCode();
 
         public override string ToString() =>
             IsRequested ? BorrowedCardId.ToString() : "no borrow";
@@ -133,7 +136,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                             StringComparison.Ordinal) &&
                         fact.Value.Kind == EffectValueKind.CardInstance)
                     {
-                        return BorrowRequest.For(fact.Value.CardInstanceId);
+                        var excluded = RuleObject.None;
+                        foreach (var target in outcome.Outputs)
+                        {
+                            if (target.OutputName == SyntheticBorrowedActionCapabilities.ExcludedHeroOutput && target.Value.Kind == EffectValueKind.Hero)
+                                excluded = RuleObject.ForHero(target.Value.HeroId);
+                            if (target.OutputName == SyntheticBorrowedActionCapabilities.ExcludedMinionOutput && target.Value.Kind == EffectValueKind.Minion)
+                                excluded = RuleObject.ForMinion(target.Value.MinionId);
+                        }
+                        return BorrowRequest.For(fact.Value.CardInstanceId, excluded);
                     }
                 }
 
