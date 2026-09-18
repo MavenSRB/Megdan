@@ -155,6 +155,60 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(Descendants(reward).OfType<Label>().Select(label => label.text), Does.Contain("GAINS:"));
         }
 
+        /// <summary>
+        /// Milestone 8.46g. The strip yields rulebook p.15's WHOLE offer - the prompt line, the hand
+        /// preview and the six candidate faces - to the decision window, exactly as it already yields
+        /// the Defense, the tied Initiative and every effect choice: it draws it right up until the
+        /// window draws it, so a composition with NO window still offers every decision and no
+        /// decision can fall between the two surfaces.
+        /// </summary>
+        [Test]
+        public void TheStrip_YieldsTheWholeLevelUpOffer_AndKeepsItWhereThereIsNoWindow()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionPausedOnLevelUpUpgrade(out var heroId);
+            var model = RoundActionPresenter.CreateViewModel(session.Projection, heroId);
+            Assert.That(model.SystemTransitionPrompt, Is.Not.Null,
+                "Sanity: the fixture actually reaches p.15's Upgrade a Card pause.");
+
+            var alone = new RoundActionUnityView();
+            alone.Render(model);
+            Assert.That(alone.HasUpgradeComparisonBand, Is.True,
+                "A composition with no window draws the offer exactly as it always did.");
+            foreach (var name in new[]
+                { "gd-upgrade-comparison-band", "gd-levelup-hand-preview", "gd-upgrade-option" })
+            {
+                Assert.That(Descendants(alone.Root).Any(element => element.name == name), Is.True,
+                    $"'{name}' is drawn on a strip that has no window beside it.");
+            }
+
+            var yielding = new RoundActionUnityView
+            {
+                YieldedDecisionFamily = () => DecisionWindowFamily.LevelUp
+            };
+            yielding.Render(model);
+            Assert.That(yielding.HasUpgradeComparisonBand, Is.False,
+                "and stops reserving the taller tray band the moment the window is drawing the offer.");
+            foreach (var name in new[]
+                { "gd-upgrade-comparison-band", "gd-levelup-hand-preview", "gd-upgrade-option" })
+            {
+                Assert.That(Descendants(yielding.Root).Any(element => element.name == name), Is.False,
+                    $"'{name}' is the window's while the window is drawing it, so the strip draws " +
+                    "no second copy of it.");
+            }
+
+            // Every OTHER family the window took leaves this strip's own yield untouched: a level-up
+            // is yielded by the LevelUp family and by nothing else.
+            var unrelated = new RoundActionUnityView
+            {
+                YieldedDecisionFamily = () => DecisionWindowFamily.Defense
+            };
+            unrelated.Render(model);
+            Assert.That(unrelated.HasUpgradeComparisonBand, Is.True);
+            Assert.That(
+                Descendants(unrelated.Root).Any(element => element.name == "gd-upgrade-option"),
+                Is.True);
+        }
+
         [Test]
         public void LevelUpHandPreview_IsEmptyOutsideTheLevelingWindow()
         {

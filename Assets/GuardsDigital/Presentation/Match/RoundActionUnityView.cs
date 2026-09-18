@@ -375,8 +375,14 @@ namespace GuardsDigital.Presentation.Match
         /// to select the contained six-card overlay and short-view vertical fallback while keeping
         /// every standing HUD and board-safe rectangle on its ordinary geometry.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.46g: false while the DECISION WINDOW is drawing p.15's upgrade, because this
+        /// answers what the region is DRAWING and the renderer spends a taller tray reservation on
+        /// the answer. A composition with no window keeps every word of the old behaviour.
+        /// </remarks>
         public bool HasUpgradeComparisonBand =>
             Model?.SystemTransitionPrompt != null &&
+            !YieldsLevelUp &&
             Model.SystemTransitionPrompt.Options.All(option => option.Card != null);
 
         public bool HasOptionalStepDecision =>
@@ -417,6 +423,14 @@ namespace GuardsDigital.Presentation.Match
         private bool YieldsDefense => Yielded == DecisionWindowFamily.Defense;
 
         private bool YieldsRemovalPrevention => Yielded == DecisionWindowFamily.RemovalPrevention;
+
+        /// <summary>
+        /// Milestone 8.46g. Rulebook p.15's Upgrade a Card is the window's while the window is drawing
+        /// it - the hand preview, the six candidate faces and the coins alike. p.8's Lane Push
+        /// placement is the OTHER system-transition kind and is never yielded: it is answered by
+        /// clicking a lit space, and this strip keeps the sentence that explains it.
+        /// </summary>
+        private bool YieldsLevelUp => Yielded == DecisionWindowFamily.LevelUp;
 
         private bool YieldsEffectChoice
         {
@@ -643,7 +657,13 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 7.8a: a paused system transition is the whole of the region while it stands.
             // Nothing else the model carries can be acted on - the authority refuses every other
             // command - so drawing anything beside it would be drawing refusals.
-            if (Model.SystemTransitionPrompt != null)
+            //
+            // Milestone 8.46g: unless the DECISION WINDOW is drawing p.15's upgrade, in which case
+            // the prompt line, the hand preview and the six candidate faces are all its. Falling
+            // through rather than returning is safe for the reason the Defense arm below states: the
+            // authority offers this seat no turn action at all while the pause stands, so the row
+            // below draws nothing.
+            if (Model.SystemTransitionPrompt != null && !YieldsLevelUp)
             {
                 BuildTransitionPrompt(Model.SystemTransitionPrompt);
                 return;
@@ -1147,7 +1167,14 @@ namespace GuardsDigital.Presentation.Match
         /// What taking this option does, over the candidate's bottom printed item position: p.16's item,
         /// which is the icon printed on the candidate this option does <em>not</em> take.
         /// </summary>
-        private static VisualElement BuildUpgradeOptionFacts(SystemTransitionOptionViewModel option)
+        /// <remarks>
+        /// Milestone 8.46g made this shared rather than private, and did not copy it. The decision
+        /// window draws p.15's offer now, and the "GAINS:" overlay a player reads there has to be the
+        /// SAME overlay - the same box, the same height over the same bottom band, the same two
+        /// absences it states in words - or the two surfaces would be free to drift apart one style
+        /// write at a time. One builder, called by both views.
+        /// </remarks>
+        public static VisualElement BuildUpgradeOptionFacts(SystemTransitionOptionViewModel option)
         {
             var facts = HudElements.Column(3f);
             facts.name = "gd-upgrade-facts";
@@ -1677,6 +1704,36 @@ namespace GuardsDigital.Presentation.Match
             defenseCardHoverPreview.Clear();
             defenseCardHoverPreview.style.display = DisplayStyle.None;
         }
+
+        /// <summary>
+        /// Milestone 8.46g. Opens this view's shared read-only card inspection over one anchor, and
+        /// closes it when <paramref name="card"/> is null.
+        /// </summary>
+        /// <remarks>
+        /// <para>The inspection layer is one layer for the whole HUD, exactly as it has been since the
+        /// Defense offer and the level-up hand preview were given the same peek: "Defense and leveling
+        /// are exclusive decisions, sharing one unclipped, pointer-transparent inspection layer
+        /// without adding playable controls". Milestone 8.46g moved the hand preview onto the decision
+        /// window and did NOT give that window a second peek of its own - the window raises its
+        /// pointer through <c>DecisionWindowUnityView.CardInspected</c> and
+        /// <c>ConfiguredMatchSceneRuntime</c> brings it here, so a card inspected from either surface
+        /// is drawn by one builder at one position, and <c>DefenseCardHoverPreviewRoot</c> remains the
+        /// one element a check measures it on.</para>
+        /// </remarks>
+        public void ShowCardInspection(TrayCardViewModel card, VisualElement anchor)
+        {
+            ClearDefenseCardPeekPreview();
+            if (card == null || anchor == null)
+            {
+                return;
+            }
+
+            DirectorHandsUnityView.PopulatePeekPreview(
+                defenseCardHoverPreview, card, anchor, isRightSideGroup: true, dimUnavailable: false);
+        }
+
+        /// <summary>Closes the shared read-only card inspection, whoever opened it.</summary>
+        public void ClearCardInspection() => ClearDefenseCardPeekPreview();
 
         private void BuildActionRow()
         {

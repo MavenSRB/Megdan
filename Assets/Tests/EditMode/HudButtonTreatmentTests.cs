@@ -435,6 +435,36 @@ namespace GuardsDigital.Tests.EditMode
             AssertScaleMotionIsWired(banner, "the decision window's verb");
         }
 
+        /// <summary>
+        /// Milestone 8.46g. Rulebook p.15's upgrade candidates are card-faced controls in the window
+        /// now, and they wear the scale motion a Defense option's face already wears: one treatment
+        /// for "a card face used as a control", not a second one invented for this family.
+        /// </summary>
+        [Test]
+        public void DecisionWindowUpgradeOption_DrawsWithScaleMotionOverItsOwnCardFace()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(
+                out var levellingHeroId);
+            var view = new DecisionWindowUnityView();
+
+            view.Render(DecisionWindowPresenter.CreateViewModel(
+                session.Projection, levellingHeroId));
+
+            var controls = Descendants(view.Root)
+                .Where(element => element.name == "gd-upgrade-option")
+                .ToArray();
+            Assert.That(controls, Has.Length.EqualTo(6),
+                "Sanity: p.15 offers three source cards with two candidates each.");
+            foreach (var control in controls)
+            {
+                AssertScaleMotionIsWired(control, "a level-up upgrade option");
+                Assert.That(
+                    Descendants(control).Any(element => element.name == "gd-upgrade-item"), Is.True,
+                    "and keeps the SHARED GAINS overlay, drawn over the same bottom band by the " +
+                    "same builder the strip calls.");
+            }
+        }
+
         [Test]
         public void DecisionWindowMinimiseAndExpand_DrawTheSharedChromeAndWireMotion()
         {

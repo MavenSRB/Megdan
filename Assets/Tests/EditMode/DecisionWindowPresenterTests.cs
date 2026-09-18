@@ -411,6 +411,147 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------
+        // Rulebook p.15's Upgrade a Card - milestone 8.46g
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.46g. The user, mid-playtest on 2026-09-18: "players want the same treatment for
+        /// level up screen, to be minimisable. So we need to put it in new thing you made, and show
+        /// all information that we show now."
+        ///
+        /// <para>"All information" is asserted against the strip's OWN prompt rather than against
+        /// typed strings, which is the whole point of the composition: the window is built from
+        /// <c>RoundActionPresenter.CreateSystemTransitionPrompt</c>, so a fact it failed to carry
+        /// would be a fact missing from one of two readings of one derivation - and there is only
+        /// one.</para>
+        /// </summary>
+        [Test]
+        public void ALevelUpUpgrade_OpensExpandedAndMinimisable_CarryingEveryFactTheStripShowed()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(
+                out var levellingHeroId);
+            var projection = session.Projection;
+            var prompt = RoundActionPresenter.CreateSystemTransitionPrompt(projection);
+            Assert.That(prompt, Is.Not.Null,
+                "Sanity: the fixture stands on p.15's Upgrade a Card.");
+
+            var model = DecisionWindowPresenter.CreateViewModel(projection, levellingHeroId);
+            Assert.That(model, Is.Not.Null, "The levelling seat owns its own upgrade.");
+            Assert.That(model.Family, Is.EqualTo(DecisionWindowFamily.LevelUp));
+            Assert.That(model.State, Is.EqualTo(DecisionWindowState.Expanded),
+                "The question is answered by pressing a card, so it opens over the board.");
+            Assert.That(model.IsMinimisable, Is.True,
+                "\"players want the same treatment for level up screen, to be minimisable\".");
+
+            // The three strings the strip drew, carried whole: its section label, its prompt line and
+            // its status line. Between them they hold the hero, the level reached, and the coins paid
+            // and remaining.
+            Assert.That(model.Eyebrow, Is.EqualTo(prompt.SectionLabel));
+            Assert.That(model.Eyebrow, Is.EqualTo("LEVEL UP"));
+            Assert.That(model.Question, Is.EqualTo(prompt.PromptLabel), Describe(model));
+            Assert.That(model.Count, Is.EqualTo(prompt.StatusLabel), Describe(model));
+            Assert.That(model.Title, Does.Contain("UPGRADE A CARD"), Describe(model));
+            var heroName = projection.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(levellingHeroId)).DisplayName.ToUpperInvariant();
+            Assert.That(model.Question, Does.Contain(heroName).And.Contain("LEVEL "),
+                "The one-line question names the hero and the level reached - which is what a DOCKED " +
+                "level-up shows on the slim bar beside the paid/remaining count. " + Describe(model));
+            Assert.That(model.Count, Does.Contain("PAID ").And.Contain("REMAINING"), Describe(model));
+
+            // One control per option, each the candidate's whole printed face, each carrying the
+            // option's own detail (what is set aside, and the item it becomes) and the exact command
+            // the pause published.
+            Assert.That(model.Controls, Has.Count.EqualTo(prompt.Options.Count));
+            Assert.That(model.Controls.Select(control => control.Role),
+                Has.All.EqualTo(DecisionWindowControlRole.Answer));
+            Assert.That(model.Controls.Select(control => control.Card), Has.All.Not.Null,
+                "p.15 is a choice between CARDS, so every answer is the card itself. " + Describe(model));
+            Assert.That(model.Controls.Select(control => control.Label),
+                Is.EqualTo(prompt.Options.Select(option => option.Label)));
+            Assert.That(model.Controls.Select(control => control.Detail),
+                Is.EqualTo(prompt.Options.Select(option => option.Detail)));
+            Assert.That(model.Controls.Select(control => control.Command),
+                Is.EqualTo(prompt.Options.Select(option => option.Command)));
+            Assert.That(model.Controls.Select(control => control.UpgradeOption), Has.All.Not.Null,
+                "and carries the option WHOLE, so the gained item, the set-aside card and the pair " +
+                "it belongs to are read from the strip's own derivation rather than from a second one.");
+            Assert.That(
+                model.Controls.Select(control => control.UpgradeOption.SetAsideCardName),
+                Is.EqualTo(prompt.Options.Select(option => option.SetAsideCardName)),
+                "The card p.15 sets aside travels with the control that would set it aside.");
+            Assert.That(
+                model.Controls.Select(control => control.UpgradeOption.SourceCardInstanceId),
+                Is.EqualTo(prompt.Options.Select(option => option.SourceCardInstanceId)),
+                "and so does the card it upgrades, which is what the pairs are grouped by.");
+
+            // The pairs the pause itself grouped: one source card, two next-Tier candidates.
+            var pairs = model.Controls
+                .GroupBy(control => control.UpgradeOption.SourceCardInstanceId)
+                .ToArray();
+            Assert.That(pairs, Has.Length.EqualTo(3),
+                "p.15 offers one card of each colour. " + Describe(model));
+            Assert.That(pairs.Select(pair => pair.Count()), Has.All.EqualTo(2),
+                "and two candidates for each of them.");
+            Assert.That(model.Controls.Select(control => control.UpgradeOption.ItemIcon),
+                Is.EqualTo(prompt.Options.Select(option => option.ItemIcon)),
+                "The item each choice GAINS travels with the control that would take it.");
+
+            // "Show current hand (all 5 cards) above the offer" - the user's 2026-09-07 directive,
+            // inherited by the window rather than lost with the strip's prompt.
+            Assert.That(model.HandPreview, Is.Not.Empty);
+            Assert.That(
+                model.HandPreview.All(card => projection.Cards
+                    .Single(instance => instance.Id.Equals(card.CardInstanceId))
+                    .OwnerId.Equals(levellingHeroId)),
+                Is.True, "Exactly the deciding seat's own hand, and never another hero's.");
+            Assert.That(
+                model.HandPreview.Select(card => card.CardInstanceId).OrderBy(id => id.Value),
+                Is.EqualTo(projection.Cards
+                    .Where(card => card.OwnerId.Equals(levellingHeroId) &&
+                        card.State.Location == CardLocation.Hand)
+                    .Select(card => card.Id)
+                    .OrderBy(id => id.Value)),
+                "derived the same way the ordinary tray derives it - never a padded five.");
+        }
+
+        [Test]
+        public void ALevelUpUpgrade_MinimisesToTheSlimBar_AndShowsTheDirectorWhoseUpgradeItIs()
+        {
+            var session = ConfiguredMatchFixtures.CreateVerifiedMirrorPausedOnLevelUpUpgrade(
+                out var levellingHeroId);
+            var heroName = session.Projection.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(levellingHeroId)).DisplayName.ToUpperInvariant();
+
+            var director = DecisionWindowPresenter.CreateViewModel(
+                session.Projection, default(HeroId));
+            Assert.That(director, Is.Not.Null, "The Director answers for everybody.");
+            Assert.That(director.Title, Does.Contain(heroName),
+                "One Director screen carries every seat's questions, so its title says whose this " +
+                "is. " + Describe(director));
+            Assert.That(director.HandPreview, Is.Empty,
+                "and the Director gets no hand preview: an undefined viewer already sees every hand " +
+                "in the drawer. AUTHORIZATION FILTER IS NOT PROJECTION FILTER.");
+
+            var view = new CapturingDecisionWindowView();
+            var presenter = new DecisionWindowPresenter(
+                new DirectorMatchClient(session), view, levellingHeroId);
+            presenter.Refresh();
+            Assert.That(view.Model.State, Is.EqualTo(DecisionWindowState.Expanded));
+
+            Assert.That(presenter.ToggleState(), Is.True,
+                "The user asked for this family to be minimisable, which is what IsMinimisable means.");
+            Assert.That(view.Model.State, Is.EqualTo(DecisionWindowState.Docked));
+            Assert.That(view.Model.Question, Does.Contain(heroName),
+                "The docked bar keeps the one-line question with the hero's name. " +
+                Describe(view.Model));
+            Assert.That(view.Model.Count, Does.Contain("PAID ").And.Contain("REMAINING"),
+                "and the paid/remaining count beside it. " + Describe(view.Model));
+            Assert.That(view.Model.Controls.Select(control => control.UpgradeOption),
+                Has.All.Not.Null,
+                "Minimising is a reading preference, not an answer: every option survives it.");
+        }
+
+        // -------------------------------------------------------------------------------------
         // The state is re-decided per decision; a manual toggle survives exactly one
         // -------------------------------------------------------------------------------------
 

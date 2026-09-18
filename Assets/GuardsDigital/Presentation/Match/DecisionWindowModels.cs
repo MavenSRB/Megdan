@@ -45,7 +45,20 @@ namespace GuardsDigital.Presentation.Match
         Direction = 10,
         PieceOrSpace = 11,
         Correction = 12,
-        HeroRespawn = 13
+        HeroRespawn = 13,
+
+        /// <summary>
+        /// Milestone 8.46g. Rulebook p.15's Upgrade a Card, moved here mid-playtest on 2026-09-18 in
+        /// the user's own words: "players want the same treatment for level up screen, to be
+        /// minimisable. So we need to put it in new thing you made, and show all information that we
+        /// show now." It is the one family whose facts are not read from a pending choice but from the
+        /// prompt the strip already built - <c>RoundActionPresenter.CreateSystemTransitionPrompt</c> -
+        /// so the window and the strip cannot disagree about what the pause is offering.
+        ///
+        /// <para>The OTHER system-transition kind, p.8's blocked-Spawn Lane Push placement, is
+        /// answered by clicking a lit space and stays where it is.</para>
+        /// </summary>
+        LevelUp = 14
     }
 
     /// <summary>
@@ -90,7 +103,8 @@ namespace GuardsDigital.Presentation.Match
             bool isPrimary = false,
             bool isChosen = false,
             string unavailableReason = null,
-            HeroId hero = default)
+            HeroId hero = default,
+            SystemTransitionOptionViewModel upgradeOption = null)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A decision control requires a label.", nameof(label))
@@ -121,7 +135,21 @@ namespace GuardsDigital.Presentation.Match
             IsChosen = isChosen;
             UnavailableReason = unavailableReason;
             Hero = hero;
+            UpgradeOption = upgradeOption;
         }
+
+        /// <summary>
+        /// Milestone 8.46g. Rulebook p.15's own upgrade option, when this control IS one - and
+        /// <c>null</c> for every other control in the window.
+        ///
+        /// <para>It carries the option WHOLE rather than copied field by field, for the reason the
+        /// block was authorized with: "show all information that we show now". The strip's prompt is
+        /// the only place those facts are derived, so the item this choice gains, the card it sets
+        /// aside, the pair it belongs to and the colour it is are all read from the same object the
+        /// strip reads, and a window that disagreed with the strip about any of them would have to
+        /// have been built from a second derivation. There is not one.</para>
+        /// </summary>
+        public SystemTransitionOptionViewModel UpgradeOption { get; }
 
         /// <summary>
         /// The hero this control is ABOUT, when it is about one - a tied Initiative's candidate.
@@ -215,7 +243,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<DecisionWindowControlViewModel> controls = null,
             DecisionWindowControlViewModel cornerControl = null,
             IEnumerable<string> statements = null,
-            bool isMinimisable = true)
+            bool isMinimisable = true,
+            IEnumerable<TrayCardViewModel> handPreview = null)
         {
             if (family == DecisionWindowFamily.None)
             {
@@ -244,6 +273,8 @@ namespace GuardsDigital.Presentation.Match
             CornerControl = cornerControl;
             Statements = Array.AsReadOnly((statements ?? Enumerable.Empty<string>()).ToArray());
             IsMinimisable = isMinimisable;
+            HandPreview = Array.AsReadOnly((handPreview ??
+                Enumerable.Empty<TrayCardViewModel>()).ToArray());
 
             // Milestone 8.46c, the cross-cutting rule the user set for the whole series: NO UNDO
             // inside the window, ever. The seat undo square above it covers a wrong press inside a
@@ -287,6 +318,18 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Whether the player may toggle this window between its two states.</summary>
         public bool IsMinimisable { get; }
+
+        /// <summary>
+        /// Milestone 8.46g. The deciding seat's OWN current hand, shown above the offer and answering
+        /// nothing - the user's directive of 2026-09-07, "when leveling. Show current hand (all 5
+        /// cards) above the offer", carried over from the strip unchanged.
+        ///
+        /// <para>Empty for every family but <see cref="DecisionWindowFamily.LevelUp"/>, and empty on
+        /// the Director too: an undefined viewer already sees every hand in the drawer, which is the
+        /// same reading <c>RoundActionPresenter</c> makes for the strip's own preview. AUTHORIZATION
+        /// FILTER IS NOT PROJECTION FILTER.</para>
+        /// </summary>
+        public IReadOnlyList<TrayCardViewModel> HandPreview { get; }
     }
 
     /// <summary>

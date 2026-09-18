@@ -420,6 +420,22 @@ namespace GuardsDigital.Presentation.Match
                 BoardView.SetHoveredHero(heroId);
                 HeroOverviewsView?.SetHighlightedHero(heroId);
             };
+            // Milestone 8.46g. The level-up hand preview moved into the window and kept the HUD's ONE
+            // read-only inspection layer, which lives on the round strip and has been shared by the
+            // Defense offer and the preview since 8.35z58. The window raises the pointer; this
+            // composition brings it to that layer, so a card inspected from either surface is drawn by
+            // one builder at one position rather than by a second peek of the window's own.
+            DecisionWindowView.CardInspected += (card, anchor) =>
+            {
+                if (card == null)
+                {
+                    RoundView.ClearCardInspection();
+                }
+                else
+                {
+                    RoundView.ShowCardInspection(card, anchor);
+                }
+            };
 
             hud.Configure(
                 HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,

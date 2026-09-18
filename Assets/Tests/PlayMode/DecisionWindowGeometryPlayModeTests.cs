@@ -161,6 +161,157 @@ namespace GuardsDigital.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.46g. Rulebook p.15's Upgrade a Card, expanded: SIX candidate faces at the
+        /// tray's own footprint, the seat's hand above them at the one reduced scale this window
+        /// declares, and the whole of it inside the fixed rectangle at every viewport the two cases
+        /// above sweep.
+        ///
+        /// <para><b>Why the scale of the preview is measured and the scale of the candidates is
+        /// asserted to be none.</b> The user's rule for the series is "make sure you don't change the
+        /// scaling on the cards" - which is about the cards a player is CHOOSING BETWEEN. The hand
+        /// preview is not one of those: it is the reminder of what the seat is holding, it has been
+        /// drawn at a reduced scale since milestone 8.35z58, and the window's fixed 848-unit height
+        /// cannot hold the strip's own 0.85 above a full-footprint candidate row (see
+        /// <see cref="DecisionWindowUnityView.LevelUpHandPreviewHeight"/>, which carries the
+        /// arithmetic). So the candidates are asserted to be EXACTLY the tray's card, and the preview
+        /// is asserted to be exactly the scale the window derived - not merely "smaller".</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TheExpandedLevelUp_HoldsSixCandidatesAtTheTraysFootprintAboveTheSeatsHand()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            try
+            {
+                yield return LoadEngagedScene();
+                var root = Root();
+                // The three the cases above sweep, plus the SHORTEST viewport this project's
+                // journeys drive. That one is where the first Play Mode run of this block found the
+                // offer 16 units outside the rectangle: at 2560x540 one device pixel is 2.67
+                // reference units, and a column of stacked boxes measures a dozen of them taller
+                // than its declared sum. The arithmetic in `DecisionWindowUnityView` now carries
+                // that cost, and this is what proves it.
+                foreach (var viewport in Viewports()
+                    .Concat(new[] { (Width: 2560u, Height: 540u, Label: "a short 2560x540") }))
+                {
+                    UiPlayer.SetPlayerViewport(
+                        viewport.Width, viewport.Height, "8.46g level-up " + viewport.Label);
+                    yield return null;
+                    yield return null;
+
+                    StandLevelUp(root);
+                    yield return null;
+                    yield return null;
+
+                    var panel = ConfiguredMatchHudRenderer.PanelViewport;
+                    var expected = ConfiguredMatchHudRenderer.CalculateDecisionWindowExpandedRect(
+                        panel.x, panel.y);
+                    var live = Window(root).worldBound;
+                    AssertBoundsEqual(expected, live, viewport.Label);
+                    Assert.That(live.height,
+                        Is.GreaterThanOrEqualTo(
+                            DecisionWindowUnityView.ExpandedReferenceHeight - UiPlayer.PixelSnapping()),
+                        "The level-up's whole arithmetic is written against the reference height, " +
+                        "which the panel's Expand match mode makes the MINIMUM at " + viewport.Label + ".");
+                    AssertClearOfEverythingThatExists(root, live, panel, viewport.Label);
+                    AssertClearOfTheRoundDocksLiveContent(root, live, viewport.Label);
+
+                    // p.15's six candidates, at the tray's own card and wholly inside the window.
+                    var faces = UiPlayer.Descendants(Window(root))
+                        .Where(element => element.name == "gd-decision-window-face")
+                        .ToArray();
+                    Assert.That(faces, Has.Length.EqualTo(6),
+                        "Three pairs of two candidates at " + viewport.Label + ".");
+                    foreach (var face in faces)
+                    {
+                        AssertContains(live, face.worldBound,
+                            "Every candidate face is wholly inside the window at " + viewport.Label + ".");
+                        Assert.That(face.worldBound.width,
+                            Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()),
+                            "A candidate is the tray's own card at " + viewport.Label + ".");
+                        Assert.That(face.worldBound.height,
+                            Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()),
+                            "A candidate is the tray's own card at " + viewport.Label + ".");
+                    }
+
+                    for (var first = 0; first < faces.Length; first++)
+                    {
+                        for (var second = first + 1; second < faces.Length; second++)
+                        {
+                            Assert.That(
+                                faces[first].worldBound.Overlaps(faces[second].worldBound), Is.False,
+                                "No two candidates overlap at " + viewport.Label + ": " +
+                                faces[first].worldBound + " against " + faces[second].worldBound);
+                        }
+                    }
+
+                    // The pairs the pause grouped, and the option controls every level-up journey
+                    // presses by name.
+                    var band = UiPlayer.Descendants(Window(root))
+                        .Where(element => element.name == "gd-upgrade-comparison-band")
+                        .ToArray();
+                    Assert.That(band, Has.Length.EqualTo(1));
+                    AssertContains(live, band[0].worldBound,
+                        "The offer band is inside the window at " + viewport.Label + ".");
+                    Assert.That(
+                        UiPlayer.Descendants(band[0]).Count(element => element.name == "gd-upgrade-pair"),
+                        Is.EqualTo(3), "p.15's three source cards keep their pairs at " + viewport.Label + ".");
+                    var options = UiPlayer.Descendants(band[0])
+                        .Where(element => element.name == "gd-upgrade-option")
+                        .ToArray();
+                    Assert.That(options, Has.Length.EqualTo(6));
+                    foreach (var option in options)
+                    {
+                        AssertContains(live, option.worldBound,
+                            "A complete option, its gained-item fact included, fits the window at " +
+                            viewport.Label + ".");
+                        var item = UiPlayer.Descendants(option)
+                            .Single(element => element.name == "gd-upgrade-item");
+                        AssertContains(live, item.worldBound,
+                            "and so does the GAINS box drawn over its bottom band at " +
+                            viewport.Label + ".");
+                    }
+
+                    // The seat's own hand above the offer, at the derived scale, clear of the band.
+                    var preview = UiPlayer.Descendants(Window(root))
+                        .Single(element => element.name == "gd-levelup-hand-preview");
+                    var slots = UiPlayer.Descendants(preview)
+                        .Where(element => element.name == "gd-levelup-hand-preview-card")
+                        .ToArray();
+                    Assert.That(slots, Has.Length.EqualTo(5),
+                        "All five cards the seat is holding at " + viewport.Label + ".");
+                    foreach (var slot in slots)
+                    {
+                        AssertContains(live, slot.worldBound,
+                            "Every preview card is inside the window at " + viewport.Label + ".");
+                        Assert.That(slot.worldBound.height,
+                            Is.EqualTo(CardFootprint.Height *
+                                DecisionWindowUnityView.LevelUpHandPreviewScale)
+                                .Within(UiPlayer.PixelSnapping()),
+                            "at the scale the window's own arithmetic derived, at " + viewport.Label + ".");
+                        Assert.That(slot.worldBound.Overlaps(band[0].worldBound), Is.False,
+                            "and above the offer rather than over it, at " + viewport.Label + ".");
+                    }
+
+                    // Every drawn label outside the preview - whose slots clip their own scaled face
+                    // by construction - is laid out inside the window too.
+                    foreach (var label in UiPlayer.Descendants(Window(root)).OfType<Label>()
+                        .Where(candidate => UiPlayer.IsShown(candidate) &&
+                            !string.IsNullOrEmpty(candidate.text) &&
+                            !UiPlayer.Descendants(preview).Contains(candidate)))
+                    {
+                        AssertContains(live, label.worldBound,
+                            $"'{label.text}' is drawn inside the window at {viewport.Label}.");
+                    }
+                }
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(restoreWidth, restoreHeight, "8.46g restore");
+            }
+        }
+
         // -----------------------------------------------------------------------------------------
         // Staging
         // -----------------------------------------------------------------------------------------
@@ -194,6 +345,64 @@ namespace GuardsDigital.Tests.PlayMode
                     DecisionWindowPresenter.TakeTheHitLabel,
                     DirectorCommand.DeclineDefense(),
                     role: DecisionWindowControlRole.Corner)));
+        }
+
+        /// <summary>
+        /// Milestone 8.46g. p.15's pause as the window draws it, staged by hand for the reason every
+        /// case in this file stages by hand: the subject is the RENDERER's placement, and standing the
+        /// shape deterministically at three viewports is what makes the measurement about geometry
+        /// rather than about which decision a walk happened to reach. That the options are the
+        /// authority's own - and that every string the strip showed survives the move - is proved in
+        /// <c>DecisionWindowPresenterTests</c> against a live pause.
+        /// </summary>
+        private static void StandLevelUp(MatchSceneCompositionRoot root)
+        {
+            var runtime = root.Runtime;
+            var hand = runtime.HandsView.Model.ViewedHand.TrayCards.Take(5).ToArray();
+            Assert.That(hand, Has.Length.EqualTo(5),
+                "The staged hand must hold five faces for the preview measurement.");
+
+            var controls = new List<DecisionWindowControlViewModel>();
+            var colours = new[] { CardColor.Blue, CardColor.Green, CardColor.Red };
+            for (var pair = 0; pair < 3; pair++)
+            {
+                var source = new CardInstanceId("8-46g-upgraded-" + pair);
+                for (var candidate = 0; candidate < 2; candidate++)
+                {
+                    var face = hand[((pair * 2) + candidate) % hand.Length];
+                    var option = new SystemTransitionOptionViewModel(
+                        "UPGRADE " + face.DisplayName.ToUpperInvariant() + " INTO " +
+                            face.DisplayName.ToUpperInvariant(),
+                        "SETS " + face.DisplayName.ToUpperInvariant() + " ASIDE AS A MOVE +1 ITEM",
+                        DirectorCommand.AdvanceEndOfRound(),
+                        colours[pair],
+                        source,
+                        face,
+                        face.DisplayName,
+                        // Both arms of the shared GAINS overlay: a printed item, and the absence p.15
+                        // and p.16 produce between them, which the box states in words.
+                        candidate == 0 ? PrintedValueChannel.Attack : PrintedValueChannel.None,
+                        face.DisplayName);
+                    controls.Add(new DecisionWindowControlViewModel(
+                        option.Label,
+                        option.Command,
+                        card: option.Card,
+                        detail: option.Detail,
+                        upgradeOption: option));
+                }
+            }
+
+            runtime.DecisionWindowView.Render(new DecisionWindowViewModel(
+                3L,
+                DecisionWindowFamily.LevelUp,
+                DecisionWindowState.Expanded,
+                "8.46g-geometry-level-up",
+                "UPGRADE A CARD",
+                "LEVEL UP",
+                "RED WASP REACHED LEVEL 2 - UPGRADE A CARD",
+                "PAID 1 COIN - 1 REMAINING",
+                controls: controls,
+                handPreview: hand));
         }
 
         private static void StandMinionBattle(MatchSceneCompositionRoot root)

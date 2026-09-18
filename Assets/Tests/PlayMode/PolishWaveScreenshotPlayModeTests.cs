@@ -495,6 +495,11 @@ namespace GuardsDigital.Tests.PlayMode
             // through the existing presenter seam; never manufacture a preview model or hand.
             var heroId = runtime.Projection.PendingSystemTransitionDescription.HeroId;
             runtime.RoundPresenter.SetHomeHero(heroId);
+            // Milestone 8.46g. p.15's offer - the hand preview with it - opens in the DECISION WINDOW
+            // now, and a window opens only for the seat that owns the standing decision. The same
+            // presenter seam binds it, for the same reason the round strip's is bound here: never
+            // manufacture a preview model or a hand.
+            runtime.DecisionWindowPresenter.SetHomeHero(heroId);
             runtime.RefreshAll();
             yield return null;
             yield return null;
@@ -546,10 +551,14 @@ namespace GuardsDigital.Tests.PlayMode
                         .First(element => element.name == "gd-upgrade-option");
                     UiPlayer.EnsureVisible(option);
                     yield return null;
-                    var tray = UiPlayer.Descendants(hud.RootElement)
-                        .Single(element => element.name == "gd-tray-region").worldBound;
-                    Assert.That(option.worldBound.yMin, Is.GreaterThanOrEqualTo(tray.yMin - UiPlayer.PixelSnapping(2)));
-                    Assert.That(option.worldBound.yMax, Is.LessThanOrEqualTo(tray.yMax + UiPlayer.PixelSnapping(2)));
+                    // Milestone 8.46g: the offer is bounded by the DECISION WINDOW's own rectangle
+                    // now rather than by the tray band it used to reserve. The rectangle itself is
+                    // measured against every neighbour it must not cover in
+                    // `DecisionWindowGeometryPlayModeTests`.
+                    var window = UiPlayer.Descendants(hud.RootElement)
+                        .Single(element => element.name == "gd-decision-window").worldBound;
+                    Assert.That(option.worldBound.yMin, Is.GreaterThanOrEqualTo(window.yMin - UiPlayer.PixelSnapping(2)));
+                    Assert.That(option.worldBound.yMax, Is.LessThanOrEqualTo(window.yMax + UiPlayer.PixelSnapping(2)));
                     Assert.That(UiPlayer.Descendants(option).OfType<Label>().Any(label => label.text == "GAINS:"), Is.True);
                     yield return UiPlayer.CaptureGameView("8-36f1", $"upgrades-{size.x}-{size.y}");
                 }

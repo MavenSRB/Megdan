@@ -231,7 +231,7 @@ namespace GuardsDigital.Presentation.Match
                 : new DecisionWindowViewModel(
                     model.Version, model.Family, manualState, model.DecisionKey, model.Title,
                     model.Eyebrow, model.Question, model.Count, model.ContextCards, model.Controls,
-                    model.CornerControl, model.Statements, model.IsMinimisable);
+                    model.CornerControl, model.Statements, model.IsMinimisable, model.HandPreview);
         }
 
         /// <summary>
@@ -257,6 +257,7 @@ namespace GuardsDigital.Presentation.Match
 
             return CreateMinionBattle(projection, viewerHeroId) ??
                 CreateTiedInitiative(projection, viewerHeroId) ??
+                CreateLevelUp(projection, viewerHeroId) ??
                 CreateDefense(projection, viewerHeroId) ??
                 CreateRemovalPrevention(projection, viewerHeroId) ??
                 CreateEffectChoice(projection, viewerHeroId) ??
@@ -516,6 +517,77 @@ namespace GuardsDigital.Presentation.Match
                 "These cards tie on Initiative. Choose which hero takes the turn first.",
                 controls: controls,
                 statements: statements);
+        }
+
+        // ---------------------------------------------------------------------------------------
+        // Rulebook p.15's Upgrade a Card - expanded, minimisable, everything the strip showed.
+        // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.46g. p.15's Upgrade a Card as the window that asks it.
+        ///
+        /// <para><b>It derives nothing.</b> Every fact here comes from
+        /// <see cref="RoundActionPresenter.CreateSystemTransitionPrompt(IMatchReadModel)"/> - the
+        /// prompt the strip has built since milestone 7.8a - so the hero and the level reached, the
+        /// coins paid and remaining, each candidate's whole printed face, the card it sets aside and
+        /// the item that card becomes are read from one derivation rather than two. The three strings the
+        /// strip draws are carried WHOLE and unedited: its section label is this window's eyebrow, its
+        /// prompt line is the question, its status line is the count.</para>
+        ///
+        /// <para>The OTHER system-transition kind - p.8's blocked-Spawn Lane Push placement - is
+        /// answered by clicking a lit space on the board and is deliberately not taken: it opens no
+        /// window at all and keeps the strip's own explanation beside the board.</para>
+        /// </summary>
+        private static DecisionWindowViewModel CreateLevelUp(
+            IMatchReadModel projection, HeroId viewerHeroId)
+        {
+            var description = projection.PendingSystemTransitionDescription;
+            if (description == null ||
+                description.Kind != GuardsDigital.Core.Rules.Transitions.SystemTransitionPromptKind
+                    .LevelUpUpgrade)
+            {
+                return null;
+            }
+
+            var prompt = RoundActionPresenter.CreateSystemTransitionPrompt(projection);
+            if (prompt == null)
+            {
+                return null;
+            }
+
+            var controls = prompt.Options
+                .Select(option => new DecisionWindowControlViewModel(
+                    option.Label,
+                    option.Command,
+                    card: option.Card,
+                    detail: option.Detail,
+                    upgradeOption: option))
+                .ToArray();
+
+            // The user's 2026-09-07 directive, carried over from the strip with its own rule intact:
+            // "when leveling. Show current hand (all 5 cards) above the offer." It is the SAME
+            // per-hero derivation the ordinary tray uses - `DirectorHandsPresenter.BuildTray`,
+            // filtered to the cards actually in hand - rather than a second reading of the
+            // projection, and only a real seat gets one: an undefined viewer is the Director, who
+            // already sees every hand in the drawer.
+            var handPreview = viewerHeroId.IsDefined
+                ? DirectorHandsPresenter.BuildTray(projection, viewerHeroId, null)
+                    .Where(card => card.Group == TrayCardGroup.Available)
+                    .ToArray()
+                : Array.Empty<TrayCardViewModel>();
+
+            return new DecisionWindowViewModel(
+                projection.Version,
+                DecisionWindowFamily.LevelUp,
+                DecisionWindowState.Expanded,
+                "level-up/" + description.ItemId.Value + "/" + description.HeroId.Value + "/" +
+                    description.Level,
+                Scoped("UPGRADE A CARD", HeroName(projection, description.HeroId), viewerHeroId),
+                prompt.SectionLabel,
+                prompt.PromptLabel,
+                prompt.StatusLabel,
+                controls: controls,
+                handPreview: handPreview);
         }
 
         // ---------------------------------------------------------------------------------------
