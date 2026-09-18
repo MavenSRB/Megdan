@@ -260,6 +260,17 @@ cards' grants in one turn - a turn resolves one card, so there are never several
 turn shows the grant handing Bounce's own primary back after Bounce resolved, which is exactly the second
 performance the clause describes. The original note follows.
 
+**AND IT WAS STILL DEAD TEXT THROUGH RELOAD!, UNTIL MILESTONE 8.48.** The 2026-09-18 playtest reported it in
+one sentence - "Swift's gold didn't let me play her silver twice" - and the cause was the gate's reading, not
+the borrow: Bounce's `bounce-resolved` node asked `synthetic-source-card-in-discard@1` on the NARROW reading,
+true only of a card in the discard pile, while a card resolved this round sits in the turn area until the
+round ends - and Reload!'s pool names precisely such a card. Blizzard met the same shape at 8.37a and opted
+into the wide reading with `countResolvedPlayed`; Bounce now does the same at its one call site, so a borrow
+through Reload! offers the repeat and Bounce's own turn still does not (`BounceBorrowedRepeatTests`). Open:
+through BULLET TIME the granted performance runs while Bounce is still mid-resolution in the engine's state,
+so the repeat is not offered there - whether p.16's "when a basic card resolves" should count that card as
+already resolved is a ruling for the user.
+
 **SW-Q3. Does Bounce's "if this card is already resolved as you perform this action" ever hold?** It is
 the same shape as Blizzard's "if Blizzard is in your discard", which milestone 8.37a settled as open
 question 34 and implemented on the wide reading, opt-in at exactly one call site. Bounce's own text is
