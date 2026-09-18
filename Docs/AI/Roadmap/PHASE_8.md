@@ -471,7 +471,7 @@ Non-goals: deciding what pressed END TURN on 2026-09-18 - no log from that night
 
 Historical evidence: [8.51 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-851-hold-row-and-press-provenance-completion-evidence).
 
-### [~] 8.52 END TURN answers the pointer and nothing else
+### [x] 8.52 END TURN answers the pointer and nothing else
 
 Authorized 2026-09-19 by the user, relayed from the session that built 8.51: "have it make space and enter not end a turn." 8.51's provenance line proved how an alt-tabbing player ended Silverarrow's turn on 2026-09-18: a UI Toolkit Button presses itself on a `NavigationSubmitEvent`, and InputForUI maps Enter and Space to it for whichever control holds focus.
 
