@@ -435,7 +435,7 @@ Non-goals: Bullet Time's granted performance, which runs while Bounce is still m
 
 Historical evidence: [8.48 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-848-bounce-repeat-through-reload-completion-evidence).
 
-### [~] 8.50 The banner speaks only when you are up
+### [x] 8.50 The banner speaks only when you are up
 
 Authorized 2026-09-18 after the evening playtest, in the user's words: "I dont think i want those banner letters we implemented for all the players. Just when a player is up. So only COMMIT A CARD and YOUR TURN + MINNION BATTLE i think." - confirmed after the session ("Yes, to it for point 1").
 

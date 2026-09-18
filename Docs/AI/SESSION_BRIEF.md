@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.48**.
+- Current completed milestone: **8.50**.
 - Active authorized milestone: **None**.
 - Next proposed milestone: **8.35z71**.
 
@@ -29,6 +29,8 @@ On 2026-09-18 the user authorized two packages in turn. **[8.44](Roadmap/PHASE_8
 On 2026-09-18, three hours before the evening's invited playtest, the user asked for "the letters" in a build for that night. **[8.47](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.45a-phase-banner` and its ZIP are 8.45 plus one change, the transient phase banner - blood-red outlined letters centre screen announcing a new turn's commitment, a hero's card resolving and the Minion Battle, per seat, never taking a click - cut on top of 8.45 while the decision window (8.46) continued on its own branch. Both complete suites, the harness and the launch smoke were green at the packaged revision.
 
 During that playtest the user reported "swifts gold didnt let me play her silver twice". **[8.48](Roadmap/PHASE_8.md) is complete**: Bounce's "may repeat once" now holds when Reload! borrows it, because the gate reads a card resolved this round as already resolved (the wide reading Blizzard already used) rather than only a card in the discard pile; Swift's content revision is `swift-8-48-rev-1`. One ruling is left with the user in [HERO_SWIFT.md](Rules/HERO_SWIFT.md): whether Bullet Time's granted performance counts Bounce as already resolved.
+
+After the same playtest the user asked that the banner speak only when a player is up. **[8.50](Roadmap/PHASE_8.md) is complete**: the other seats' "<NAME>'S TURN" line is retired; a seat hears COMMIT A CARD, YOUR TURN and MINION BATTLE, and the Director hears no turn banner.
 
 The completed 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b** exclude the attacked unit from Shotgun's adjacent-hero discard, show revealed card-plus-item Initiative in the badge, and keep player trays on their own hero. **8.42d** then restored the seat UNDO square that a standing card-text prompt was hiding, the host's own rewind bounds unchanged; [playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns all four. Return to proposed cleanup 8.35z71.
 
