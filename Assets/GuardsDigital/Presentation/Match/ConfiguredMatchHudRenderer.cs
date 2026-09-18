@@ -1637,33 +1637,46 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// Milestone 8.46c. The EXPANDED decision window: <see cref="CalculatePlayfieldRect"/> inset by
-        /// the standing 12-unit margin, and nothing else.
+        /// Milestone 8.46c. The EXPANDED decision window: the whole open area BETWEEN THE TWO HERO
+        /// RAILS, from under the status strip down to the tray, one margin clear of each.
         ///
-        /// <para><b>It covers the board and only the board, by construction rather than by
-        /// measurement.</b> The playfield is already bounded against the status strip above it, the
-        /// tray below it, the Blue rail to its right and - since milestone 8.35z59's second finding -
-        /// the Red rail and the round dock to its left, so an inset of it cannot reach any of them.
-        /// At the 2560x1440 reference the playfield is (1228, 96, 1044, 870) and this window is
-        /// therefore (1240, 108, 1020, 846): 14 units clear of the tray's top edge at 968, 24 clear of
-        /// the Blue rail's left edge at 2284, 964 clear of the Red rail's right edge at 276, and 12
-        /// below the status strip's own 96-unit band - which is where End Turn and the seat undo
-        /// square live, so neither is ever covered.</para>
+        /// <para><b>Why the whole column and not an inset of the board.</b> The user's binding
+        /// instruction is "make sure you don't change the scaling on the cards": every face this
+        /// window draws is <see cref="CardFootprint"/>'s own 300.46 by 420, the same card the tray and
+        /// the Defense row draw, with no declared scale anywhere. A Defense of FOUR candidates plus
+        /// the attacker's own card is five of those side by side, and an inset of the playfield is
+        /// 1020 units wide at the reference - not enough for 1502 units of card. The open area between
+        /// the rails is, and taking it costs nothing: the board is covered in this state anyway, and
+        /// the column beside it is empty.</para>
         ///
-        /// <para>The inset yields on a panel too small to carry it, so the window is never inverted -
-        /// which cannot happen at any viewport this HUD lays out into (the panel is never smaller than
-        /// the reference in either dimension), and is stated anyway because every other rectangle
-        /// here states it.</para>
+        /// <para><b>The arithmetic, at the 2560x1440 reference.</b> The rails are 264 wide at x 12 and
+        /// x 2284, so this rectangle is (288, 108, 1984, 848). Inside
+        /// <see cref="DecisionWindowUnityView.WindowPadding"/> either side that is 1952 units of
+        /// content. Five faces at 300.4615 are 1502.31; the divider after the attacker's card
+        /// (<see cref="DecisionWindowUnityView.ContextGap"/>, 24) and the three gaps between the
+        /// candidates (<see cref="DecisionWindowUnityView.CardGap"/>, 8) add 48. That is 1550.31
+        /// against 1952 - 401.69 units spare, which is where the corner control and any wrapped label
+        /// live. Vertically, 848 less 32 of padding is 816 against a 420 face plus its caption, chip,
+        /// header and corner, which measure about 645.</para>
+        ///
+        /// <para><b>And it never covers anything that exists.</b> Its left edge is the Red rail's
+        /// right edge plus a margin and its right edge is the Blue rail's left edge minus one, so both
+        /// columns are clear - and the `DIRECTOR` toggle with them, since that toggle stands inside
+        /// the Red rail's own column at <c>rail.xMin</c>. Its top is one margin below the status
+        /// strip, where End Turn and the seat undo square live, and its bottom one margin above the
+        /// tray. It is ONE rectangle for every family, with the content centred inside it, so the
+        /// geometry gate measures one shape rather than one per decision.</para>
         /// </summary>
         public static Rect CalculateDecisionWindowExpandedRect(float panelWidth, float panelHeight)
         {
-            var playfield = CalculatePlayfieldRect(panelWidth, panelHeight);
-            var inset = Mathf.Min(Margin, Mathf.Min(playfield.width, playfield.height) * 0.25f);
-            return new Rect(
-                playfield.xMin + inset,
-                playfield.yMin + inset,
-                Mathf.Max(0f, playfield.width - (inset * 2f)),
-                Mathf.Max(0f, playfield.height - (inset * 2f)));
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
+            var red = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red);
+            var blue = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue);
+            var left = red.xMax + Margin;
+            var right = Mathf.Max(left, blue.xMin - Margin);
+            var top = StatusBarHeight + Margin;
+            var bottom = Mathf.Max(top, tray.yMin - Margin);
+            return new Rect(left, top, right - left, bottom - top);
         }
 
         /// <summary>

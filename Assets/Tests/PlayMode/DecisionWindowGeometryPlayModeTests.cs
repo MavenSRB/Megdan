@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Presentation.Interaction;
@@ -31,7 +32,8 @@ namespace GuardsDigital.Tests.PlayMode
     {
         /// <summary>
         /// The user's own acceptance sentence for the expanded state: "a defense window holding four
-        /// candidates", with every text fitting and nothing overlapping anything that exists.
+        /// candidates", at the tray's own card footprint - "make sure you don't change the scaling on
+        /// the cards" - with every text fitting and nothing overlapping anything that exists.
         /// </summary>
         [UnityTest]
         public IEnumerator TheExpandedWindow_HoldsFourDefenseCandidatesInsideTheBoardAndCoversNothingElse()
@@ -58,14 +60,14 @@ namespace GuardsDigital.Tests.PlayMode
                         panel.x, panel.y);
                     var live = Window(root).worldBound;
                     AssertBoundsEqual(expected, live, viewport.Label);
-                    AssertContains(
-                        ConfiguredMatchHudRenderer.CalculatePlayfieldRect(panel.x, panel.y), live,
-                        "The expanded window is an inset of the board and never reaches past it, at " +
-                        viewport.Label + ".");
                     AssertClearOfEverythingThatExists(root, live, panel, viewport.Label);
 
                     // The five faces the user's four-candidate sentence asks for - the attacker's
-                    // card and four answers - drawn, distinct, and wholly inside the window.
+                    // card and four answers - drawn at the TRAY'S OWN FOOTPRINT, distinct, and wholly
+                    // inside the window. The footprint is asserted here rather than taken on trust:
+                    // "make sure you don't change the scaling on the cards" is the user's own
+                    // instruction, and a window that quietly shrank a face to make one fit would
+                    // satisfy every other assertion in this case.
                     var faces = UiPlayer.Descendants(Window(root))
                         .Where(element => element.name == "gd-decision-window-face")
                         .ToArray();
@@ -75,6 +77,12 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         AssertContains(live, face.worldBound,
                             "Every face is wholly inside the window at " + viewport.Label + ".");
+                        Assert.That(face.worldBound.width,
+                            Is.EqualTo(CardFootprint.Width).Within(UiPlayer.PixelSnapping()),
+                            "A card is the tray's own card at " + viewport.Label + ".");
+                        Assert.That(face.worldBound.height,
+                            Is.EqualTo(CardFootprint.Height).Within(UiPlayer.PixelSnapping()),
+                            "A card is the tray's own card at " + viewport.Label + ".");
                     }
 
                     for (var first = 0; first < faces.Length; first++)

@@ -9,8 +9,9 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// Milestone 8.46c. The decision window's UI Toolkit surface: one expanded host that covers the
-    /// board only, one docked bar in the round dock's own rectangle, and nothing else.
+    /// Milestone 8.46c. The decision window's UI Toolkit surface: one expanded host filling the open
+    /// area between the two hero rails, one docked bar in the round dock's own rectangle, and nothing
+    /// else.
     ///
     /// <para><b>Element names, because a journey addresses this surface by them.</b> The root is
     /// <c>gd-decision-window</c>; its two hosts are <c>gd-decision-window-expanded</c> and
@@ -32,23 +33,18 @@ namespace GuardsDigital.Presentation.Match
     public sealed class DecisionWindowUnityView : IDecisionWindowView
     {
         /// <summary>
-        /// How large a complete card face is drawn inside the window, as a share of
-        /// <see cref="CardFootprint"/>.
+        /// A complete card face in this window is drawn at <see cref="CardFootprint"/> and nothing
+        /// else - the same 300.46-by-420 the tray, the Defense row and the level-up offer all draw.
         ///
-        /// <para><b>Computed against the narrowest expanded window this HUD can produce, not chosen by
-        /// eye.</b> The expanded window is <c>CalculatePlayfieldRect</c> inset by the standing 12-unit
-        /// margin, and the playfield's width is bounded by its own height at 16:9 and wider - so the
-        /// narrowest it ever is is the reference one: 1044 wide, 1020 after the inset, 988 inside this
-        /// window's own 16-unit padding. The user's rule is that a Defense of FOUR candidates fits, and
-        /// the widest such window draws five faces at once (the attacker's card plus four answers) with
-        /// <see cref="CardGap"/> between the answers and <see cref="ContextGap"/> after the attacker:
-        /// 5 x 300.4615 x 0.6 = 901.4, plus 24 + 3 x 8 = 48 of gutter, is 949.4 against 988. It fits at
-        /// the reference with 38.6 units to spare, and every wider or taller panel has more.</para>
+        /// <para><b>The user's instruction, 2026-09-18: "make sure you don't change the scaling on the
+        /// cards."</b> This window declares no scale of its own, expanded or docked. That is why the
+        /// expanded rectangle is the whole open area BETWEEN THE RAILS rather than an inset of the
+        /// board - see <c>ConfiguredMatchHudRenderer.CalculateDecisionWindowExpandedRect</c>, which
+        /// carries the five-face arithmetic. A card is the same size on every surface in this game.</para>
         /// </summary>
-        public const float CardFaceScale = 0.6f;
+        public const float CardFaceWidth = CardFootprint.Width;
 
-        public const float CardFaceWidth = CardFootprint.Width * CardFaceScale;
-        public const float CardFaceHeight = CardFootprint.Height * CardFaceScale;
+        public const float CardFaceHeight = CardFootprint.Height;
 
         /// <summary>The space between two answer faces.</summary>
         public const float CardGap = 8f;
@@ -120,8 +116,12 @@ namespace GuardsDigital.Presentation.Match
             header.style.flexShrink = 0f;
             expandedHost.Add(header);
 
+            // The expanded rectangle is ONE shape for every family - the whole open area between the
+            // rails - so the content is centred inside it rather than hugging a corner of a window
+            // that is nearly two thousand units wide whatever the question is.
             var headerText = new VisualElement();
             headerText.style.flexDirection = FlexDirection.Column;
+            headerText.style.alignItems = Align.Center;
             headerText.style.flexGrow = 1f;
             headerText.style.flexShrink = 1f;
             header.Add(headerText);
@@ -153,6 +153,7 @@ namespace GuardsDigital.Presentation.Match
                 string.Empty, QuestionFontSize, MatchHudTheme.PrimaryText);
             expandedQuestion.name = "gd-decision-window-question";
             expandedQuestion.style.marginTop = 6f;
+            expandedQuestion.style.unityTextAlign = TextAnchor.MiddleCenter;
             Wrapping(expandedQuestion);
             expandedHost.Add(expandedQuestion);
 
@@ -161,17 +162,20 @@ namespace GuardsDigital.Presentation.Match
             expandedCount.name = "gd-decision-window-count";
             expandedCount.style.marginTop = 2f;
             Wrapping(expandedCount);
+            expandedCount.style.unityTextAlign = TextAnchor.MiddleCenter;
             expandedHost.Add(expandedCount);
 
             expandedStatements = new VisualElement { name = "gd-decision-window-statements" };
             expandedStatements.style.flexDirection = FlexDirection.Column;
             expandedStatements.style.marginTop = 2f;
             expandedStatements.style.flexShrink = 0f;
+            expandedStatements.style.alignItems = Align.Center;
             expandedHost.Add(expandedStatements);
 
             var body = new VisualElement { name = "gd-decision-window-body" };
             body.style.flexDirection = FlexDirection.Row;
             body.style.alignItems = Align.FlexStart;
+            body.style.justifyContent = Justify.Center;
             body.style.flexWrap = Wrap.NoWrap;
             body.style.marginTop = 10f;
             body.style.flexGrow = 1f;
@@ -188,6 +192,7 @@ namespace GuardsDigital.Presentation.Match
             expandedControls = new VisualElement { name = "gd-decision-window-controls" };
             expandedControls.style.flexDirection = FlexDirection.Row;
             expandedControls.style.alignItems = Align.FlexStart;
+            expandedControls.style.justifyContent = Justify.Center;
             expandedControls.style.flexWrap = Wrap.Wrap;
             expandedControls.style.flexGrow = 1f;
             expandedControls.style.flexShrink = 1f;
@@ -614,28 +619,24 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// The tray's own complete face, drawn at <see cref="CardFaceScale"/>.
+        /// The tray's own complete face, at the tray's own footprint.
         /// </summary>
         /// <remarks>
-        /// The face is built at its full pinned footprint and SCALED, rather than built smaller: the
-        /// footprint is pinned on both ends by <see cref="CardFootprint"/> precisely so no container
-        /// can resize a card, and a transform is how milestone 8.35z58's level-up hand preview already
-        /// draws the same face smaller without arguing with that. The whole subtree is made
-        /// pointer-transparent for milestone 8.35z62's measured reason: UI Toolkit picks the DEEPEST
-        /// element under the pointer, so a face child that kept the default picking mode would take the
-        /// click from the control it is drawn inside.
+        /// <para>It is <see cref="DirectorHandsUnityView.BuildStandaloneCard"/> and nothing composed
+        /// beside it - the builder every other card surface in this HUD uses - with no transform, no
+        /// declared scale and no size of its own, so the card in the window and the same card in the
+        /// hand are ONE card. <see cref="CardFootprint.Apply"/> pins that size at both ends inside the
+        /// builder, which is what keeps this window from resizing a face however it lays it out.</para>
+        /// <para>The whole subtree is made pointer-transparent for milestone 8.35z62's measured
+        /// reason: UI Toolkit picks the DEEPEST element under the pointer, so a face child that kept
+        /// the default picking mode would take the click from the control it is drawn inside.</para>
         /// </remarks>
         private static VisualElement BuildFace(TrayCardViewModel card, CardShineSlot shineSlot)
         {
             var slot = new VisualElement { name = "gd-decision-window-face" };
-            slot.style.width = CardFaceWidth;
-            slot.style.height = CardFaceHeight;
-            slot.style.minWidth = CardFaceWidth;
-            slot.style.minHeight = CardFaceHeight;
-            slot.style.maxWidth = CardFaceWidth;
-            slot.style.maxHeight = CardFaceHeight;
+            slot.style.flexDirection = FlexDirection.Column;
+            slot.style.alignItems = Align.Center;
             slot.style.flexShrink = 0f;
-            slot.style.overflow = Overflow.Hidden;
             slot.pickingMode = PickingMode.Ignore;
 
             var face = DirectorHandsUnityView.BuildStandaloneCard(card);
@@ -644,13 +645,6 @@ namespace GuardsDigital.Presentation.Match
                 DirectorHandsUnityView.AddFaceShine(face, card, shineSlot);
             }
 
-            face.style.position = Position.Absolute;
-            face.style.left = 0f;
-            face.style.top = 0f;
-            face.style.width = CardFootprint.Width;
-            face.style.height = CardFootprint.Height;
-            face.style.scale = new Scale(new Vector3(CardFaceScale, CardFaceScale, 1f));
-            face.style.transformOrigin = new TransformOrigin(new Length(0f), new Length(0f));
             DirectorHandsUnityView.IgnorePickingRecursively(face);
             slot.Add(face);
             return slot;
