@@ -5,6 +5,7 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -31,6 +32,50 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class XargathaEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Her three Green faces ask twice, and the two questions are different. "before or
+        /// after movement" is mandatory - the card offers two sides and never standing aside - so its
+        /// two arms name WHEN the minion moves. The "you may" behind it is the move itself, and its
+        /// accepting words name which minions that face admits, because that is the whole difference
+        /// between Charm, Control and Dominate.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(XargathaCardContent.Cleave, "repeat",
+                "Attack a different enemy hero", "Don't attack again");
+            yield return DecisionStep(XargathaCardContent.RapidThrusts, "repeat",
+                "Attack a different enemy hero", "Don't attack again");
+            yield return DecisionStep(XargathaCardContent.FreshConverts, "converts-may",
+                "Retrieve a discarded card", "Leave my discard as it is");
+            yield return DecisionStep(XargathaCardContent.DevotedFollowers, "converts-may",
+                "Retrieve a discarded card", "Leave my discard as it is");
+
+            yield return DecisionArm(XargathaCardContent.Charm, "green-before",
+                "Move the minion before my movement");
+            yield return DecisionArm(XargathaCardContent.Charm, "green-after",
+                "Move the minion after my movement");
+            yield return DecisionStep(XargathaCardContent.Charm, "green-may",
+                "Move an enemy ranged minion up to 2 spaces", "Leave the minions where they are");
+
+            yield return DecisionArm(XargathaCardContent.Control, "green-before",
+                "Move the minion before my movement");
+            yield return DecisionArm(XargathaCardContent.Control, "green-after",
+                "Move the minion after my movement");
+            yield return DecisionStep(XargathaCardContent.Control, "green-may",
+                "Move an enemy ranged or melee minion up to 2 spaces",
+                "Leave the minions where they are");
+
+            yield return DecisionArm(XargathaCardContent.Dominate, "green-before",
+                "Move the minion before my movement");
+            yield return DecisionArm(XargathaCardContent.Dominate, "green-after",
+                "Move the minion after my movement");
+            yield return DecisionStep(XargathaCardContent.Dominate, "green-may",
+                "Move an enemy minion up to 2 spaces", "Leave the minions where they are");
+        }
         /// <summary>The Ultimate's rule identity, named here because the card content references it.</summary>
         public const string MetamorphosisRuleId = "xargatha-metamorphosis";
 

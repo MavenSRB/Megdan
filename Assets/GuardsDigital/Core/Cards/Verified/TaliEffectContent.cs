@@ -7,6 +7,7 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -53,6 +54,47 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class TaliEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para><b>"Up to" is optionality per copy, so Wall of Frost asks twice and Pack Ice three
+        /// times.</b> The first copy's declining words say that no token is placed at all; the later
+        /// ones say that no MORE are, because by then one is already on the board and a control
+        /// promising otherwise would be describing a different board.</para>
+        ///
+        /// <para>Blizzard's row keys a node in the End-of-turn body its Active effect names by
+        /// reference to the card that prints the clause, which is what the pause carries.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(TaliCardContent.CommuneWithSpirits, "commune-optional-discard",
+                "Discard a card of that colour", "Keep my hand");
+
+            yield return DecisionArm(TaliCardContent.SpiritWolf, "spirit-not-in-discard-gate",
+                "Target a unit in range");
+            yield return DecisionArm(TaliCardContent.SpiritWolf, "spirit-adjacent-hero",
+                "Target a hero adjacent to you");
+            yield return DecisionArm(TaliCardContent.SpiritBear, "spirit-not-in-discard-gate",
+                "Target a unit in range");
+            yield return DecisionArm(TaliCardContent.SpiritBear, "spirit-adjacent-hero",
+                "Target a hero adjacent to you");
+
+            yield return DecisionStep(TaliCardContent.Blizzard, "blizzard-repeat-optional",
+                "Move each enemy unit 1 space again", "Stop here");
+
+            yield return DecisionStep(TaliCardContent.WallOfFrost, "place-optional-0",
+                "Place an Ice token in radius", "Place no Ice tokens");
+            yield return DecisionStep(TaliCardContent.WallOfFrost, "place-optional-1",
+                "Place another Ice token in radius", "Place no more Ice tokens");
+            yield return DecisionStep(TaliCardContent.PackIce, "place-optional-0",
+                "Place an Ice token in radius", "Place no Ice tokens");
+            yield return DecisionStep(TaliCardContent.PackIce, "place-optional-1",
+                "Place another Ice token in radius", "Place no more Ice tokens");
+            yield return DecisionStep(TaliCardContent.PackIce, "place-optional-2",
+                "Place another Ice token in radius", "Place no more Ice tokens");
+        }
         /// <summary>p.16's permanent ability, identified for the continuous source it becomes.</summary>
         public const string ReignOfWinterRuleId = "tali-reign-of-winter";
 

@@ -7,12 +7,60 @@ using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>Source-backed Widget clauses; these factories do not deal cards or register handlers.</summary>
     public static class WidgetEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What his own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Dragon Bond asks twice and the second question only exists inside one arm: "in any
+        /// order" is a second <c>Choose</c> under the move bullet, so its two arms name which of the
+        /// pair goes first rather than repeating what the move does.</para>
+        ///
+        /// <para>Airborne Assault prints the same optional swap either side of the attack, and the
+        /// two bodies name their nodes differently - the before-attack one is a step in a sequence and
+        /// the after-attack one is the body's own root. Both say the same thing, because the card does
+        /// say the same thing twice.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionArm(WidgetCardContent.DragonBond, "place-pyro",
+                "Place Pyro into a space in radius");
+            yield return DecisionArm(WidgetCardContent.DragonBond, "move-both",
+                "Move both yourself and Pyro up to 2 spaces");
+            yield return DecisionArm(WidgetCardContent.DragonBond, "hero-first",
+                "Move yourself first");
+            yield return DecisionArm(WidgetCardContent.DragonBond, "pyro-first",
+                "Move Pyro first");
+
+            yield return DecisionStep(WidgetCardContent.AirborneAttack, "may-swap",
+                "Swap places with Pyro", "Stay where I am");
+            yield return DecisionStep(WidgetCardContent.AirborneAssault, "may-swap",
+                "Swap places with Pyro", "Stay where I am");
+            yield return DecisionStep(WidgetCardContent.AirborneAssault, "root",
+                "Swap places with Pyro", "Stay where I am");
+
+            yield return DecisionArm(WidgetCardContent.AllAboard, "self",
+                "Swap Pyro with yourself");
+            yield return DecisionArm(WidgetCardContent.AllAboard, "friendly",
+                "Swap Pyro with a friendly hero in range");
+            yield return DecisionArm(WidgetCardContent.TakeOff, "self",
+                "Swap Pyro with yourself");
+            yield return DecisionArm(WidgetCardContent.TakeOff, "friendly",
+                "Swap Pyro with a friendly hero in range");
+            yield return DecisionArm(WidgetCardContent.SafeLanding, "self",
+                "Swap Pyro with yourself");
+            yield return DecisionArm(WidgetCardContent.SafeLanding, "friendly",
+                "Swap Pyro with a friendly hero in range");
+            yield return DecisionStep(WidgetCardContent.SafeLanding, "may-move",
+                "Move Pyro 1 space", "Leave Pyro where it is");
+        }
         public static EffectDefinition DragonBond(CardDefinitionId card, string revision)
         {
             var nodes = new List<EffectNodeDefinition>

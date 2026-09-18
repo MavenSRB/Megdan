@@ -7,6 +7,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -37,6 +38,24 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class SabinaEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Her three Green faces print one sentence and differ only in how many times it may be
+        /// taken, so they say the same thing at the control: the count is what the repeat's own bound
+        /// enforces, and a label that named it would be reading the node rather than the card.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(SabinaCardContent.TroopMovement, "troop-repeat",
+                "Move a friendly minion again", "Stop here");
+            yield return DecisionStep(SabinaCardContent.MarchingOrders, "troop-repeat",
+                "Move a friendly minion again", "Stop here");
+            yield return DecisionStep(SabinaCardContent.PathToVictory, "troop-repeat",
+                "Move a friendly minion again", "Stop here");
+        }
         /// <summary>Big Sodding Gun's stable ability identity inside its card.</summary>
         public const string BigSoddingGunRuleId = "big-sodding-gun";
 

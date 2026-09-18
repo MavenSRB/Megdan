@@ -9,6 +9,7 @@ using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Setup;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -27,6 +28,24 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class ArienEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Violent Torrent's repeat keeps both halves of ledger question 13's sentence, because
+        /// "discards a card, or is defeated" is one step with two ways to complete and a label naming
+        /// only the discard would promise the softer of them.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(ArienCardContent.NobleBlade, "noble-may",
+                "Move another unit adjacent to the target 1 space", "Leave the units where they are");
+            yield return DecisionStep(ArienCardContent.ViolentTorrent, "current-repeat",
+                "Another enemy hero discards a card, or is defeated", "Stop here");
+            yield return DecisionStep(ArienCardContent.EbbAndFlow, "flow-repeat",
+                "Swap with an enemy minion again", "Stop here");
+        }
         /// <summary>
         /// Living Tsunami's permanent ability: "Once per turn, before performing an Attack action, you
         /// may move 1 space."

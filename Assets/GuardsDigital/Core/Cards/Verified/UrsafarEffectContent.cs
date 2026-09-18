@@ -9,6 +9,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -48,6 +49,40 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class UrsafarEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What his own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para><c>modal-may-retrieve</c> is one of the five nodes in this build that is BOTH an arm
+        /// of a <c>Choose</c> and a node opening rulebook p.10's confirm-or-decline: "• You may
+        /// retrieve a discarded card" is a printed bullet and a <c>may</c> at once. One declaration
+        /// answers both - its chosen words are what the modal's control says, and its declined words
+        /// are what the pause behind it offers.</para>
+        ///
+        /// <para>The three Blue swaps say what each face's own second clause buys, because the swap
+        /// itself is identical on all three and the extra spaces are the whole Tier difference.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionStep(UrsafarCardContent.ClawsThatCatch, "prowl-may-move",
+                "Move 1 space next to an enemy hero", "Stay where I am");
+            yield return DecisionStep(UrsafarCardContent.ProwlingBrute, "swap-may",
+                "Swap with a unit or a token adjacent to you", "Stay where I am");
+            yield return DecisionStep(UrsafarCardContent.RampagingBeast, "swap-may",
+                "Swap with an adjacent unit and move 1 more space", "Stay where I am");
+            yield return DecisionStep(UrsafarCardContent.UnstoppableForce, "swap-may",
+                "Swap with an adjacent unit and move up to 2 more spaces", "Stay where I am");
+
+            yield return DecisionArm(UrsafarCardContent.InstinctiveReaction, "modal-borrow",
+                "Perform the primary action on a discarded card");
+            yield return DecisionStep(UrsafarCardContent.InstinctiveReaction, "modal-may-retrieve",
+                "Retrieve a discarded card", "Leave my discard as it is");
+            yield return DecisionArm(UrsafarCardContent.EvolutionaryResponse, "modal-borrow",
+                "Perform the primary action on a discarded card");
+            yield return DecisionStep(UrsafarCardContent.EvolutionaryResponse, "modal-may-retrieve",
+                "Retrieve a discarded card", "Leave my discard as it is");
+        }
         /// <summary>p.16's permanent ability, identified for the continuous source it becomes.</summary>
         public const string UnboundFuryRuleId = "ursafar-unbound-fury";
 

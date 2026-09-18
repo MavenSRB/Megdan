@@ -5,6 +5,7 @@ using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -39,6 +40,35 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class DodgerEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Each arm names what that bullet DOES and leaves out the condition that decides whether
+        /// it is offered at all - Dread Razor's empty spawn point is a gate the offer already applies,
+        /// so a control repeating it would be telling a player why they may press it rather than what
+        /// pressing it does.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionArm(DodgerCardContent.DreadRazor, "razor-adjacent",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(DodgerCardContent.DreadRazor, "razor-range",
+                "Target a unit in range");
+            yield return DecisionArm(DodgerCardContent.LittlefingerOfDeath, "finger-adjacent",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(DodgerCardContent.LittlefingerOfDeath, "finger-range",
+                "Target a hero in range with cards in the discard");
+            yield return DecisionArm(DodgerCardContent.FingerOfDeath, "finger-adjacent",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(DodgerCardContent.FingerOfDeath, "finger-range",
+                "Target a hero in range with cards in the discard");
+            yield return DecisionArm(DodgerCardContent.MiddlefingerOfDeath, "middlefinger-adjacent",
+                "Target a unit adjacent to you");
+            yield return DecisionArm(DodgerCardContent.MiddlefingerOfDeath, "middlefinger-discard",
+                "Target a hero in range with cards in the discard");
+        }
         private const string SelectedCountOutput = "selectedCount";
         private const string FirstSpaceOutput = "firstSpace";
         private const string SecondSpaceOutput = "secondSpace";

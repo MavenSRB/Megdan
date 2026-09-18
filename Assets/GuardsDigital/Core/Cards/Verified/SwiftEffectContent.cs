@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -32,6 +33,29 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class SwiftEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Reload!'s two arms are the user's own worked example of the rule this whole milestone
+        /// serves: a control that read "MODE #1 RELOAD-BORROW-ARM" said nothing a player could act on,
+        /// and the printed bullet says everything.</para>
+        ///
+        /// <para>Her one Active-effect <c>may</c> - Mobile Scout's late fast travel - is a CAPABILITY
+        /// node, not an optional step, so the resolution session never stops on it and it owes no
+        /// words. It is reached from her card all the same, which is what makes that an answer rather
+        /// than a blind spot.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionArm(SwiftCardContent.Reload, "reload-borrow-arm",
+                "Perform the primary action of your rightmost resolved card");
+            yield return DecisionArm(SwiftCardContent.Reload, "reload-defeat-arm",
+                "Defeat a minion adjacent to you");
+            yield return DecisionStep(SwiftCardContent.Bounce, "bounce-repeat",
+                "Move 2 more spaces in a straight line", "Stop here");
+        }
         private const string ActorSpaceOutput = "space";
         private const string PresentOutput = "present";
         private const string LineDestinationOutput = "destination";

@@ -8,6 +8,7 @@ using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Timing;
+using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -36,6 +37,21 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static class MisaEffectContent
     {
+        /// <summary>
+        /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
+        /// own words, never the mechanism. <see cref="DecisionLabelCatalog"/> aggregates it and
+        /// <c>DecisionLabelCoverageTests</c> proves it complete against the resolver's own pause rule.
+        ///
+        /// <para>Her Gold basic is her whole contribution: no other face of hers prints a modal, and
+        /// none of her Active-effect clauses sits on a node the resolution session stops on.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> DecisionLabels()
+        {
+            yield return DecisionArm(MisaCardContent.WatchHowISoar, "soar-place-arm",
+                "Place yourself into a space at maximum range");
+            yield return DecisionArm(MisaCardContent.WatchHowISoar, "soar-defeat-arm",
+                "Defeat a minion adjacent to you");
+        }
         /// <summary>Power Overwhelming's stable ability identity inside its card.</summary>
         public const string PowerOverwhelmingRuleId = "power-overwhelming";
 
