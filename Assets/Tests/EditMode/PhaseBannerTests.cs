@@ -1,4 +1,10 @@
 using System;
+using System.Linq;
+using GuardsDigital.Application;
+using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -176,6 +182,43 @@ namespace GuardsDigital.Tests.EditMode
             var view = new PhaseBannerUnityView(() => null);
             view.Show(PhaseBannerLabels.MinionBattle(1));
             Assert.That(view.IsShowing, Is.False);
+        }
+
+        /// <summary>
+        /// Milestone 8.46e, owed by 8.47: the banner yields to the decision window opening expanded on
+        /// the same refresh, and the transition it yielded is not owed later.
+        /// </summary>
+        [Test]
+        public void TheBanner_YieldsToAnExpandedWindowOpeningOnTheSameRefresh_AndIsNotOwedLater()
+        {
+            var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
+            var view = new PhaseBannerUnityView(() => new VisualElement());
+            var presenter = new PhaseBannerPresenter(new DirectorMatchClient(session), view);
+            presenter.Refresh();
+            Assert.That(view.IsShowing, Is.False, "The first observation primes.");
+
+            var red = session.Projection.Cards.Single(card =>
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Red &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.LiftUp));
+            var blue = session.Projection.Cards.Single(card =>
+                session.Projection.Participants.GetTeamForHero(card.OwnerId).Side == TeamSide.Blue &&
+                card.State.Location == CardLocation.Hand &&
+                card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StopProjectiles));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(red.OwnerId, red.Id));
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.CommitCard(blue.OwnerId, blue.Id));
+            Assert.That(session.Projection.SelectedActor.IsDefined, Is.True,
+                "Both commitments in, a hero is acting: the transition a banner would announce.");
+
+            presenter.YieldsWhen = () => true;
+            presenter.Refresh();
+            Assert.That(view.IsShowing, Is.False, "An expanded window opening here is the thing nobody misses.");
+            Assert.That(presenter.LastYielded.HasBanner, Is.True);
+            Assert.That(presenter.LastAnnounced.HasBanner, Is.False);
+
+            presenter.YieldsWhen = () => false;
+            presenter.Refresh();
+            Assert.That(view.IsShowing, Is.False, "The yielded transition is not owed later.");
         }
     }
 }

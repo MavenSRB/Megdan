@@ -263,6 +263,18 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The banner most recently announced, for tests and diagnostics.</summary>
         public PhaseBannerViewModel LastAnnounced { get; private set; } = PhaseBannerViewModel.None;
 
+        /// <summary>
+        /// Milestone 8.46e (owed by 8.47). When this answers true at the moment a banner would show, the
+        /// banner yields and the transition counts as announced: the decision window opening EXPANDED
+        /// for this seat on the same refresh is itself the thing nobody misses, and two surfaces
+        /// drawn over the middle of the screen at once would make both harder to read. A docked bar
+        /// and a banner coexist, so the runtime wires this to the expanded state alone.
+        /// </summary>
+        public Func<bool> YieldsWhen { get; set; }
+
+        /// <summary>The banner most recently yielded rather than shown, for tests and diagnostics.</summary>
+        public PhaseBannerViewModel LastYielded { get; private set; } = PhaseBannerViewModel.None;
+
         public bool SetHomeHero(HeroId heroId)
         {
             var projection = session.Projection;
@@ -294,6 +306,12 @@ namespace GuardsDigital.Presentation.Match
                     .FirstOrDefault(hero => hero.HeroId.Equals(heroId))?.DisplayName);
             if (!banner.HasBanner)
             {
+                return;
+            }
+
+            if (YieldsWhen?.Invoke() == true)
+            {
+                LastYielded = banner;
                 return;
             }
 

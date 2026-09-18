@@ -176,6 +176,11 @@ namespace GuardsDigital.Presentation.Match
             // exist yet here.
             PhaseBannerView = new PhaseBannerUnityView(() => hud?.RootElement);
             PhaseBannerPresenter = new PhaseBannerPresenter(client, PhaseBannerView, Seat?.HeroId ?? default);
+            // Milestone 8.46e (owed by 8.47). The banner yields to the decision window opening
+            // EXPANDED on the same refresh: the window is refreshed first in the coordinator, so its
+            // model already reflects this projection when the banner decides.
+            PhaseBannerPresenter.YieldsWhen = () =>
+                DecisionWindowView.Model?.State == DecisionWindowState.Expanded;
 
             // The Director's own controls exist only in the Director's runtime. A seat's HUD is not
             // given an Undo it must remember to hide; it is given a composition that has none.
