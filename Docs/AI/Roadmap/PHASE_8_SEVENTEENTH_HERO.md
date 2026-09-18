@@ -26,7 +26,7 @@ Acceptance: owner/definition isolation, supply and board identity, ordinary toke
 
 Non-goals: paired enemy movement, borrowed actions, dealing or artwork registration.
 
-Paused prerequisite: **WI-Q3**, confirmation of Pyro's single-piece supply, before declaring executable hero component content. The generic single-token fact handlers and explicit retained-round lifetime are implemented and tested at `checkpoint/8.43a-token-groundwork`; no Widget token definition or card is registered. Still owed: source-backed component definition, complete placement/move/order/Swap compositions and their source-linked paused/restore/replay checks above. This checkpoint does not close the milestone. WI-Q2 separately gates 8.43c; WI-Q1 is answered.
+Paused prerequisite: **WI-Q3**, confirmation of Pyro's single-piece supply, before declaring executable hero component content. The generic single-token fact handlers and explicit retained-round lifetime are implemented and tested at `checkpoint/8.43a-token-groundwork`; no Widget token definition or card is registered. Still owed: source-backed component definition, complete placement/move/order/Swap compositions and their source-linked paused/restore/replay checks above. This checkpoint does not close the milestone. WI-Q1 is answered; WI-Q2 is source-checked and user-accepted, with implementation still owned by 8.43c.
 
 Checkpoint index: [8.43a token groundwork](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843a-widget-token-groundwork-checkpoint).
 

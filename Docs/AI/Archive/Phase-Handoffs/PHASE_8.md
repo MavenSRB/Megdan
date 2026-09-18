@@ -1786,3 +1786,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.43a checkpoint | Tested generic owned-token facts and explicit round retention; hero component supply and composed operation paths remain outstanding at WI-Q3. Not milestone completion. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md). | `checkpoint/8.43a-token-groundwork` |
+
+## Widget Dragon Knight rule clarification
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.43c prerequisite | Recorded the source-checked, user-accepted WI-Q2 face-up Skill pool; no implementation or milestone completion. [Rule owner](../../Rules/HERO_WIDGET.md#open-verification-points). | `checkpoint/widget-dragon-knight-ruling` |
