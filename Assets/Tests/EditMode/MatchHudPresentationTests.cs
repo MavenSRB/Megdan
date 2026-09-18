@@ -2259,7 +2259,13 @@ namespace GuardsDigital.Tests.EditMode
                     "visible icons are the count.");
             }
 
-            var railText = Descendants(view.Root).OfType<Label>().Select(label => label.text).ToArray();
+            // Milestone 8.49: the worth badge beside the level prints the one number the rail is
+            // meant to carry - p.13's price on the hero, 1, 2 or 3 - and is not a slot ordinal, so
+            // its digit is read out of this sweep of the two rows.
+            var railText = Descendants(view.Root).OfType<Label>()
+                .Where(label => label.name != "gd-hero-worth-value")
+                .Select(label => label.text)
+                .ToArray();
             foreach (var ordinal in new[] { "1", "2", "3", "4" })
             {
                 Assert.That(railText, Has.No.Member(ordinal),
