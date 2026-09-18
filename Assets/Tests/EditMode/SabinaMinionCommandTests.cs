@@ -485,8 +485,11 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(orDefeated.IsOnBoard(orDefeated.Enemy), Is.False,
                 "\"or is defeated\" is the escalation, and an empty hand is what reaches it.");
-            Assert.That(orDefeated.Lives(TeamSide.Red), Is.EqualTo(livesBefore - 1),
-                "p.13 charges the defeated hero's team a Life counter.");
+            // Milestone 8.49: p.13 charges the defeated hero's team its lowest card Tier in Life
+            // counters, and this Tier III board's Wasp holds Tier III cards - so three, not the one
+            // every hero used to cost while the Tier I cards in its deck were being read.
+            Assert.That(orDefeated.Lives(TeamSide.Red), Is.EqualTo(livesBefore - 3),
+                "p.13 charges the defeated hero's team Life counters equal to its lowest card Tier.");
         }
 
         // -----------------------------------------------------------------------------------------

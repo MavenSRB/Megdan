@@ -527,7 +527,15 @@ namespace GuardsDigital.Tests.EditMode
                 // 1-60 on this fixture found seed 2 ends on the final Wave after 16 rounds and 1,384
                 // commands with a plain CommitCard at its halfway index - the closest match in shape
                 // to what seed 60 used to give (15 rounds, 1,348).
-                "wave", 2, MatchVictoryCause.FinalWaveFlipped,
+                // Milestone 8.49 re-derived it again, 2 -> 40, by the same offline scan of seeds
+                // 1-80 on this fixture. A Defeat now costs the defeated hero's lowest card Tier in
+                // Life counters rather than always one, so every walk with a levelled Defeat reroutes
+                // from that Defeat onward: seed 2 still ends on the final Wave after 16 rounds and
+                // 1,383 commands, but no longer passes through a displaced-minion correction. Of the
+                // eleven seeds that end on the final Wave AND reach a correction, seed 40 - 16 rounds,
+                // 1,371 commands, a plain ReleaseTurn at its halfway index - is the closest in shape
+                // to what seed 2 gave.
+                "wave", 40, MatchVictoryCause.FinalWaveFlipped,
                 ConfiguredMatchFixtures.CreateOfficialSixPlayerSession);
             yield return new RecordedScenario(
                 // Milestone 8.35z20: correcting Blend Into Shadows' secondary rerouted even this
