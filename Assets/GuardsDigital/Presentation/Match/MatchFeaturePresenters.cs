@@ -692,6 +692,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly KineticCuePresenter kinetics;
         private readonly AttackSpotlightPresenter attackSpotlight;
         private readonly MatchLogPresenter matchLog;
+        private readonly PhaseBannerPresenter phaseBanner;
         private readonly Action<string, Exception> panelRefreshFailed;
         private IReadOnlyList<string> failedPanelNames = Array.Empty<string>();
 
@@ -717,13 +718,15 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.35z12. Same reason, same shape, and it is refreshed BEFORE the
             // kinetics below it deliberately: the spotlight's pacing decides whether that panel plays
             // its cues or holds them, so it has to have seen this projection first.
-            AttackSpotlightPresenter attackSpotlight = null)
+            AttackSpotlightPresenter attackSpotlight = null,
+            PhaseBannerPresenter phaseBanner = null)
         {
             this.panelRefreshFailed = panelRefreshFailed;
             this.heroOverviews = heroOverviews;
             this.kinetics = kinetics;
             this.attackSpotlight = attackSpotlight;
             this.matchLog = matchLog;
+            this.phaseBanner = phaseBanner;
             this.board = board ?? throw new ArgumentNullException(nameof(board));
             this.hands = hands ?? throw new ArgumentNullException(nameof(hands));
             this.round = round ?? throw new ArgumentNullException(nameof(round));
@@ -793,6 +796,7 @@ namespace GuardsDigital.Presentation.Match
             // one thing on this list that can never cost a player a fact on the surfaces above it.
             RefreshPanel("kinetics", () => kinetics?.Refresh(), failed, errors);
             RefreshPanel("match-log", () => matchLog?.Refresh(), failed, errors);
+            RefreshPanel("phase-banner", () => phaseBanner?.Refresh(), failed, errors);
 
             failedPanelNames = failed.Count == 0
                 ? Array.Empty<string>()
