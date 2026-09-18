@@ -767,6 +767,85 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.46e. The kinetic session with a SECOND Blue unit beside the Red hero: one Blue
+        /// melee minion relocated to another open neighbour whose push line runs clear, so Kinetic
+        /// Blast's "up to 2 enemy units adjacent to you" is really a choice of several. The mirrored
+        /// one-versus-one board offers exactly one adjacent enemy, which collapses the bound to one -
+        /// the decision window's first Unity run found its choose-several case asserting `up to 2`
+        /// over a choice the authority had already narrowed to one.
+        /// </summary>
+        public static MatchSession CreateKineticSessionWithTwoAdjacentEnemies(CardDefinitionId kineticCardId)
+        {
+            var configuration = WithCardSwappedIntoTheRedHand(kineticCardId, out var redHeroId);
+            var map = OfficialBoardMapCatalog.Load().Load(OfficialBoardMapCatalog.SelectedMap);
+            var setup = QuickGameSetupAuthority.Create(
+                QuickGameSetupConfiguration.CreateMirroredWaspOneVsOne(),
+                configuration.Participants,
+                map,
+                configuration.TieBreakerState);
+            var heroes = WithBlueHeroOnAPushLine(map, setup, stoppedShort: false);
+            var minions = WithABlueMeleeMinionBesideTheRedHero(map, setup, heroes);
+            var session = CreateSession(configuration, map, new QuickGameSetupState(
+                setup.SelectedMap,
+                setup.WaveCount,
+                setup.TieBreakerState,
+                setup.Teams,
+                heroes,
+                minions));
+            AssertTheHandStillHoldsFive(session, redHeroId);
+            return session;
+        }
+
+        private static IReadOnlyList<QuickGameMinionSetupState> WithABlueMeleeMinionBesideTheRedHero(
+            BoardMapDefinition map,
+            QuickGameSetupState setup,
+            IReadOnlyList<QuickGameHeroSetupState> heroes)
+        {
+            var redHero = heroes.Single(hero => hero.TeamSide == TeamSide.Red);
+            var playable = new HashSet<HexCoordinate>(map.Spaces
+                .Where(space => space.Kind == BoardMapSpaceKind.Playable)
+                .Select(space => space.Coordinate));
+            var occupied = new HashSet<HexCoordinate>(
+                heroes.Select(hero => hero.Coordinate)
+                    .Concat(setup.Minions.Select(minion => minion.Coordinate)));
+            bool RunsClear(HexCoordinate beside, int spaces)
+            {
+                var step = new HexCoordinate(
+                    beside.Q - redHero.Coordinate.Q, beside.R - redHero.Coordinate.R);
+                var walked = beside;
+                for (var space = 1; space <= spaces; space++)
+                {
+                    walked = new HexCoordinate(walked.Q + step.Q, walked.R + step.R);
+                    if (!playable.Contains(walked) || occupied.Contains(walked))
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            var beside = redHero.Coordinate.GetNeighbors()
+                .Where(coordinate => playable.Contains(coordinate) && !occupied.Contains(coordinate))
+                .FirstOrDefault(coordinate => RunsClear(coordinate, 4));
+            Assert.That(playable, Does.Contain(beside),
+                "The official map has to offer a second open space beside the Red hero whose push " +
+                "line runs clear, or this fixture proves nothing.");
+            var besideSpaceId = map.Spaces.Single(space =>
+                space.Kind == BoardMapSpaceKind.Playable &&
+                space.Coordinate.Equals(beside)).Id;
+            var relocated = setup.Minions.First(minion =>
+                minion.TeamSide == TeamSide.Blue && minion.MinionType == StandardMinionType.Melee);
+            return setup.Minions
+                .Select(minion => ReferenceEquals(minion, relocated)
+                    ? new QuickGameMinionSetupState(
+                        minion.MinionId, minion.TeamId, minion.TeamSide, minion.MinionType,
+                        minion.SpawnPoint, new ConfiguredSpaceReference(map.Id, besideSpaceId), beside)
+                    : minion)
+                .ToArray();
+        }
+
+        /// <summary>
         /// Milestone 8.10. The verified mirror with one of Wasp's Boomerangs in the Red hand, the Blue
         /// Wasp standing beside her, and one Blue melee minion inside Range 3 on no file through her.
         ///

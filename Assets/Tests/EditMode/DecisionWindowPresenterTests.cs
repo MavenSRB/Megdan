@@ -138,9 +138,11 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { choice.MinimumSelections, choice.MaximumSelections },
                 Is.EqualTo(new[] { 1, 1 }),
                 "p.10's discard names exactly one card, which is the rule this case is about.");
-            Assert.That(choice.ConfirmInvocation, Is.Not.Null,
-                "The authority still offers a confirm here, which is precisely why the window has to " +
-                "decide not to draw one.");
+            // Milestone 8.46b: an exactly-one choice resolves on its selection, so the authority never
+            // publishes a confirm for it - before a selection there is nothing to confirm, and after
+            // one there is no pause left. The window has nothing to decline to draw.
+            Assert.That(choice.ConfirmInvocation, Is.Null,
+                "An exactly-one choice never stands on a confirm once it answers in one press.");
 
             var model = DecisionWindowPresenter.CreateViewModel(session.Projection, choice.ChooserId);
             Assert.That(model.Family, Is.EqualTo(DecisionWindowFamily.CardChoice));
@@ -165,8 +167,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ABoardAnsweredChoiceOfSeveral_IsDockedWithNoCandidateControls_AndKeepsItsDone()
         {
-            var session = ConfiguredMatchFixtures.CreateKineticSession(
-                WaspCardContent.KineticBlast, stoppedShort: false);
+            // Milestone 8.46e. The mirrored one-versus-one board offers exactly ONE adjacent enemy, and
+            // the authority narrows `up to 2` to the candidates it can offer - so the first Unity run
+            // of this case asserted a bound of two over a choice already narrowed to one. Two Blue
+            // units beside Wasp is what makes this a choice of several at all.
+            var session = ConfiguredMatchFixtures.CreateKineticSessionWithTwoAdjacentEnemies(
+                WaspCardContent.KineticBlast);
             CommitAgainstStopProjectiles(session, WaspCardContent.KineticBlast);
             StartPrimary(session, ActionKind.Skill);
 
@@ -218,7 +224,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void APrintedMay_IsExpandedWithTwoControls_FallingBackToAcceptAndDecline()
+        public void APrintedMay_IsExpandedWithTwoControls_NamedByTheDeclaredConsequence()
         {
             var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
             CommitAgainstStopProjectiles(session, WaspCardContent.LiftUp);
@@ -236,10 +242,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.CornerControl, Is.Null,
                 "An optional step's decline IS one of its two answers, so it stands beside the " +
                 "accept rather than small in a corner. " + Describe(model));
+            // Milestone 8.46a declared both consequences for Lift Up's `may repeat once`; the window
+            // reads them through the catalog and upper-cases them, the way every HUD control is set.
+            Assert.That(
+                DecisionLabelCatalog.TryGetLabel(WaspCardContent.LiftUp, choice.NodeId, out var declared),
+                Is.True, "Lift Up's repeat carries a declared label after 8.46a.");
             Assert.That(model.Controls.Select(control => control.Label),
-                Is.EqualTo(new[] { EffectChoiceLabels.AcceptLabel, EffectChoiceLabels.DeclineLabel }),
-                "Milestone 8.46a will name both consequences; until its catalog answers, the window " +
-                "keeps today's two words rather than drawing a node id. " + Describe(model));
+                Is.EqualTo(new[] { declared.Chosen.ToUpperInvariant(), declared.Declined.ToUpperInvariant() }),
+                "The two answers say what accepting and declining DO, in the card's own words. " +
+                Describe(model));
             Assert.That(model.ContextCards, Has.Count.EqualTo(1),
                 "The card asking the question is shown, which is what makes the two answers " +
                 "readable at all.");
@@ -467,14 +478,10 @@ namespace GuardsDigital.Tests.EditMode
                 target.ResolutionId, target.ChoiceId, minionId));
 
             // The rider's first question names a hero; its second is the chosen hero's own hand.
-            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.SelectInvocations[0]));
-            var confirm = session.Projection.PendingEffectChoice?.ConfirmInvocation;
-            if (confirm != null)
-            {
-                ConfiguredMatchFixtures.Accept(
-                    session, DirectorCommand.AnswerEffectChoice(confirm));
-            }
+            // Milestone 8.46b: aimed at the question the selection went into, never at whatever
+            // stands next.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
 
             Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
                 "The card-valued pause must be standing, or every case built on this holds over " +
@@ -515,17 +522,11 @@ namespace GuardsDigital.Tests.EditMode
                 session, DirectorCommand.StartAction(offer.ActionDefinitionId));
         }
 
-        private static void AnswerFirstSelection(MatchSession session)
-        {
-            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.SelectInvocations[0]));
-            var confirm = session.Projection.PendingEffectChoice?.ConfirmInvocation;
-            if (confirm != null)
-            {
-                ConfiguredMatchFixtures.Accept(
-                    session, DirectorCommand.AnswerEffectChoice(confirm));
-            }
-        }
+        // Milestone 8.46b: a completion is aimed at the choice its selection went into. The unaimed
+        // form this replaced would have accepted Lift Up's `may repeat once` the moment it stood.
+        private static void AnswerFirstSelection(MatchSession session) =>
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                session, session.Projection.PendingEffectChoice.SelectInvocations[0]);
 
         private static CardInstance HandCard(
             MatchSession session, TeamSide side, CardDefinitionId cardId) =>
