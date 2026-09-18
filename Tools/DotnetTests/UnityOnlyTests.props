@@ -23,6 +23,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/DestinationHighlightMaterialOwnershipTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/DirectorHandPresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/EffectChoiceStatusNamingTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/EndTurnPressProvenanceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/FizzleNoticeStreamTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/FlatHexMeshBuilderTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/HeroRailPortraitTests.cs" />

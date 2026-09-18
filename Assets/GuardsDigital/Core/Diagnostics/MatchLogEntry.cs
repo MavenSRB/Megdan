@@ -131,7 +131,27 @@ namespace GuardsDigital.Core.Diagnostics
         /// uses - so the reveal is permanent, and the card stays readable after it goes back into a
         /// hand everybody has now seen it in.</para>
         /// </summary>
-        CardRevealedByCardText = 31
+        CardRevealedByCardText = 31,
+
+        /// <summary>
+        /// Milestone 8.51. Rulebook p.12's Hold: the acting hero resolved their card WITHOUT
+        /// performing its action, by their own seat's command - never the engine's doing.
+        ///
+        /// <para><b>Why this row exists.</b> At the 2026-09-18 playtest a player reported that
+        /// Silverarrow's Warning Shot "got resolved without input". The host's narration file
+        /// carried nothing for that turn at all, because a Hold and the turn release that follows
+        /// it were the two accepted commands the seat-public log had no word for; the turn could
+        /// only be read off the wire log's timing - two accepted submissions from one seat 67 ms
+        /// apart, the signature of one END TURN press composed over the network - which is a
+        /// reading, not a record. This row is the record: the hero and the card they held, so the
+        /// file and the in-game tray both state that the seat ended its turn on an untouched card.</para>
+        ///
+        /// <para>It is a hero row AND a card row: <c>Turn.HoldActionPerformed</c> names both, and
+        /// the card is a resolved turn card every seat already sees. The turn release itself stays
+        /// silent - <c>Turn.TurnReleased</c> is a checkpoint naming no hero, and the next actor's
+        /// own rows already state that the turn was handed on.</para>
+        /// </summary>
+        CardHeld = 32
     }
 
     /// <summary>

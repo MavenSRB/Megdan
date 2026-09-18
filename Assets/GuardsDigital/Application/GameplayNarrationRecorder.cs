@@ -84,14 +84,25 @@ namespace GuardsDigital.Application
                 return 0;
             }
 
-            // The window moved further than we did. Say so, in the file, naming the range.
-            if (lastWrittenSequence > 0 && fresh[0].Sequence > lastWrittenSequence + 1)
+            // Milestone 8.51. A row keeps the RULE-EVENT sequence it was derived from, and most
+            // rule events derive no row, so consecutive rows are almost never consecutive numbers:
+            // the 2026-09-18 host file reported 218 "gaps" of that kind and had lost nothing. A
+            // loss is possible only when the window's OLDEST retained row is itself one this
+            // recorder never wrote - then whatever left the window since the last write is gone.
+            // While the oldest retained row is at or behind the last written one, every row that
+            // ever left the window was written first, and a numbering gap is just the events in
+            // between that derived no row.
+            var oldestRetained = matchLog
+                .Where(entry => entry != null)
+                .Min(entry => entry.Sequence);
+            if (lastWrittenSequence > 0 && oldestRetained > lastWrittenSequence + 1)
             {
                 WriteLine(GameplayNarrationLog.SessionRow(
                     clock(), observedVersion, "NARRATION_GAP",
                     "rows " + (lastWrittenSequence + 1).ToString(CultureInfo.InvariantCulture) +
                     ".." + (fresh[0].Sequence - 1).ToString(CultureInfo.InvariantCulture) +
-                    " scrolled out of the retained window before they were written"));
+                    " left the retained window before they were written (rule-event numbers; " +
+                    "any that derived no row were never lines to lose)"));
             }
 
             var written = 0;

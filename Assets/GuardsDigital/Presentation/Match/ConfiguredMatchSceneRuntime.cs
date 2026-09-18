@@ -311,7 +311,23 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.35v: the drawn control raises this event unconditionally - whether a
             // direct invocation stands or the press must first discard an open Attack-target
             // selection - and `SubmitEndTurn` composes whichever the live projection calls for.
-            RoundView.EndTurnRequested += () => RoundPresenter.SubmitEndTurn();
+            RoundView.EndTurnRequested += () =>
+            {
+                // Milestone 8.51: every press is written to this player's own log, naming how the
+                // control was activated (pointer, keyboard submit, or a driver), at which version
+                // and for which actor, and whether anything composed from it - so "he says he
+                // pressed nothing" is answerable from the returned log next time. The view took
+                // the report at the moment of the press; the line is written after the press so
+                // that it can also say what came of it.
+                var pressedAgainst = client.Projection;
+                var actor = pressedAgainst.SelectedActor.IsDefined
+                    ? pressedAgainst.SelectedActor.ActorId.Value
+                    : pressedAgainst.PendingTurnRelease?.ActorId.Value;
+                var progressed = RoundPresenter.SubmitEndTurn();
+                UnityEngine.Debug.Log(EndTurnPressProvenance.Marker(
+                    RoundView.LastEndTurnPressReport, DateTimeOffset.UtcNow,
+                    pressedAgainst.Version, actor, progressed));
+            };
             RoundView.AgreementHeroHighlighted += heroId =>
             {
                 BoardView.SetHoveredHero(heroId);

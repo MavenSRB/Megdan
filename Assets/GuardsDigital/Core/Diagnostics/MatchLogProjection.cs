@@ -114,6 +114,11 @@ namespace GuardsDigital.Core.Diagnostics
             TurnPrefix + nameof(TurnResolutionEventKind.HeroRespawned);
         private static readonly string TurnEnded =
             TurnPrefix + nameof(TurnResolutionEventKind.TurnEnded);
+
+        // Milestone 8.51. Rulebook p.12's Hold, performed by the seat's own command. See
+        // MatchLogEntryKind.CardHeld for the playtest report this row answers.
+        private static readonly string HoldActionPerformed =
+            TurnPrefix + nameof(TurnResolutionEventKind.HoldActionPerformed);
         private static readonly string ImmediateLanePushResolved =
             TurnPrefix + nameof(TurnResolutionEventKind.ImmediateLanePushResolved);
 
@@ -561,6 +566,9 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == RoundCompleted) return MatchLogEntryKind.RoundCompleted;
             if (type == TurnSlotRecorded) return MatchLogEntryKind.TurnStarted;
             if (type == TurnEnded) return MatchLogEntryKind.TurnEnded;
+            // Milestone 8.51. Composed by the default arm: the event names the acting hero and the
+            // held card as `hero` and `card`, which is exactly the pair the row spends.
+            if (type == HoldActionPerformed) return MatchLogEntryKind.CardHeld;
             if (type == GameEnded) return MatchLogEntryKind.GameEnded;
             if (type == CardRevealed) return MatchLogEntryKind.CardRevealed;
             if (type == CardTextRevealedCard) return MatchLogEntryKind.CardRevealedByCardText;

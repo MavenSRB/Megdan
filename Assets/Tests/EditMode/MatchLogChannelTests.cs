@@ -134,7 +134,9 @@ namespace GuardsDigital.Tests.EditMode
                 ("Round.RoundCompleted", MatchLogEntryKind.RoundCompleted),
                 ("Round.PityCoinCollected", MatchLogEntryKind.PityCoinCollected),
                 ("Round.HeroLevelUpLevelPurchased", MatchLogEntryKind.LevelPurchased),
-                ("Turn.HeroRespawned", MatchLogEntryKind.HeroRespawned)
+                ("Turn.HeroRespawned", MatchLogEntryKind.HeroRespawned),
+                // Milestone 8.51: rulebook p.12's Hold, one line per performed Hold.
+                ("Turn.HoldActionPerformed", MatchLogEntryKind.CardHeld)
             };
 
             var covered = 0;
@@ -437,6 +439,34 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(row.SubjectHeroId, Is.EqualTo(new HeroId("sabina")));
             Assert.That(row.SubjectCardInstanceId.IsDefined, Is.False,
                 "The attacker's source card is not the defeated hero's card.");
+        }
+
+        /// <summary>
+        /// Milestone 8.51. Rulebook p.12's Hold is one line naming the hero and the card they held -
+        /// the row the 2026-09-18 host file lacked when a player's untouched card resolved with no
+        /// action and the file said nothing for his whole turn. The release that follows it stays a
+        /// silent checkpoint, as does the pause before it.
+        /// </summary>
+        [Test]
+        public void AHold_IsOneLine_NamingTheHeroAndTheCardTheyHeld()
+        {
+            var log = MatchLogProjection.Derive(new[]
+            {
+                Entry(2473, "Turn.HoldActionPerformed",
+                    "round=6;turn=2;hero=hero-silverarrow;card=red-02-silverarrow-warning-shot;action=primary-skill",
+                    "invocation=Direct"),
+                Entry(2474, "Turn.TurnReleaseAwaited", "round=6;turn=2", "accepted turn checkpoint"),
+                Entry(2480, "Turn.TurnReleased", "round=6;turn=2", "accepted turn checkpoint")
+            });
+
+            var row = log.Single();
+            Assert.That(row.Kind, Is.EqualTo(MatchLogEntryKind.CardHeld));
+            Assert.That(row.Sequence, Is.EqualTo(2473), "The row keeps the rule-event sequence it was derived from.");
+            Assert.That(row.RoundIndex, Is.EqualTo(6));
+            Assert.That(row.TurnIndex, Is.EqualTo(2));
+            Assert.That(row.SubjectHeroId, Is.EqualTo(new HeroId("hero-silverarrow")));
+            Assert.That(row.SubjectCardInstanceId.Value, Is.EqualTo("red-02-silverarrow-warning-shot"),
+                "The card they held is the card the line names.");
         }
 
         private static RuleEventLogEntry Entry(
