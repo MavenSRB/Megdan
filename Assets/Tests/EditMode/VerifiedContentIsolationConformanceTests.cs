@@ -44,7 +44,7 @@ namespace GuardsDigital.Tests.EditMode
         /// third case below, which fails when an entry stops referencing content at all. An exclusion
         /// list nothing reads is a place things go quietly.</para>
         ///
-        /// <para>All four are composition rather than resolution. Not one of them asks a question about
+        /// <para>All five are composition rather than resolution. Not one of them asks a question about
         /// a hero and acts on the answer: they say what this build registers, what each seat is dealt,
         /// and which content identity stands at which spawn.</para>
         /// </summary>
@@ -53,6 +53,16 @@ namespace GuardsDigital.Tests.EditMode
             (typeof(MatchContentCatalogs),
                 "declares what this build registers, which is where the triggered effects a hero's " +
                 "Ultimate runs join the one catalog a snapshot compares"),
+            // Milestone 8.46a. The same kind of site as MatchContentCatalogs above and named on the
+            // same terms: it aggregates one declared table per hero, and a hero's words for her own
+            // controls join the one table presentation asks here or nowhere. It is composition in the
+            // strictest sense this list admits - NOTHING reads it as a rule. No card definition,
+            // digest, snapshot schema or wire revision moves when a label is added or reworded, and
+            // the set of controls that must carry one is derived from the resolution session's own
+            // pause rule by `DecisionLabelRequirementQuery`, which has never heard of a hero.
+            (typeof(DecisionLabelCatalog),
+                "aggregates each hero's declared consequence labels for her own decision controls, " +
+                "which is presentation vocabulary rather than a rule: nothing branches on it"),
             (typeof(SyntheticComponentDefinitions),
                 "is the component catalog's single construction site, which milestone 8.23 made the " +
                 "same kind of site the capability catalog already was: Tigerclaw's Poison marker is " +

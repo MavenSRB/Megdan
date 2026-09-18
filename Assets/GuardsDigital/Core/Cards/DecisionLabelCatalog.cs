@@ -84,8 +84,8 @@ namespace GuardsDigital.Core.Cards
         ///
         /// <para>Silverarrow contributes nothing and is named all the same, for the reason Sabina's
         /// empty handler contribution is named in <see cref="MatchContentCatalogs"/>: no face of hers
-        /// prints a "Choose one" and none of her five <c>may</c> declarations sits on a node the
-        /// resolution session stops on - every one is a capability that may simply fail. That is an
+        /// prints a "Choose one", and every <c>may</c> she declares sits on a CAPABILITY node - a step
+        /// that may simply fail - rather than on one the resolution session stops on. That is an
         /// explicit empty contribution rather than a missing table, and
         /// <c>DecisionLabelCoverageTests</c> is what would say so if it stopped being true.</para>
         /// </summary>
