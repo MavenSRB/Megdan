@@ -152,8 +152,19 @@ namespace GuardsDigital.Tests.EditMode
         /// p.13 page-coverage assertion was weakened to fit, which is the same discipline 8.35g
         /// recorded: the Clear observed here is still one offered over a real candidate, and a narrow
         /// search is what the property costs.</para>
+        ///
+        /// <para>Milestone 8.46b re-derived it again, 15 -> 344, and widened the scan by a factor of
+        /// five to do it. A choice admitting exactly one selection is now answered in ONE accepted
+        /// command instead of two, so the walk draws a different command at every pause past the
+        /// first such answer and seed 15 takes no Clear at all. Seeds 1-200 under the new rule take
+        /// none either - the narrow search 8.35g and 8.35z35 both recorded is narrower still - so the
+        /// scan went to 900 and found TEN: 344, 354, 393, 505, 557, 634, 666, 763, 809 and 848. Seed
+        /// 344 is the lowest and keeps this run's recorded shape, spending its whole budget over 78
+        /// rounds without reaching an ending. Nothing about the p.13 page-coverage assertion was
+        /// weakened to fit; the search was widened instead, which is the discipline every
+        /// re-derivation above records.</para>
         /// </remarks>
-        private const int ClearReachabilitySeed = 15;
+        private const int ClearReachabilitySeed = 344;
 
         /// <summary>
         /// Generous enough that the three complete matches finish well inside it, and small enough that
