@@ -692,11 +692,18 @@ namespace GuardsDigital.Presentation.Match
             HeroCurrentCardViewModel currentCard = null,
             TrayCardViewModel ultimateCard = null,
             IEnumerable<HeroMarkerViewModel> heldMarkers = null,
-            bool isAwaited = false)
+            bool isAwaited = false,
+            int worth = 0)
         {
             if (!heroId.IsDefined)
             {
                 throw new ArgumentException("An overview names its hero.", nameof(heroId));
+            }
+
+            if (worth < 0 || worth > 3)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(worth), worth, "p.13's table prices a hero at 1, 2 or 3, or not at all.");
             }
 
             if (coins < 0)
@@ -732,6 +739,18 @@ namespace GuardsDigital.Presentation.Match
 
             TeamLabel = teamSide == TeamSide.Red ? "RED HERO" : "BLUE HERO";
             LevelLabel = "LVL " + level.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // Milestone 8.49. What defeating this hero is worth, next to the Level it follows: p.13's
+            // assist coins to every friendly hero of the attacker AND the Life counters the defeated
+            // team spends are one number, the hero's lowest card Tier read as 1, 2 or 3 - which is
+            // why the badge is half a coin and half a heart. The user asked for it at the table.
+            Worth = worth;
+            WorthLabel = worth == 0
+                ? string.Empty
+                : worth.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            WorthAssistiveLabel = worth == 0
+                ? string.Empty
+                : $"Worth {worth}: defeating this hero pays {worth} assist coin{(worth == 1 ? string.Empty : "s")} " +
+                    $"and costs their team {worth} life counter{(worth == 1 ? string.Empty : "s")}";
             CoinAmountLabel = coins.ToString(System.Globalization.CultureInfo.InvariantCulture);
             CoinAssistiveLabel = coins == 1 ? "1 coin" : CoinAmountLabel + " coins";
             DiscardLabel = "DISCARD";
@@ -794,6 +813,20 @@ namespace GuardsDigital.Presentation.Match
         public int Level { get; }
 
         public string LevelLabel { get; }
+
+        /// <summary>
+        /// Milestone 8.49. p.13's price on this hero - its lowest card Tier read as 1, 2 or 3, the
+        /// assist coins a Defeat pays and the Life counters it costs - or zero when the hero has no
+        /// Tier to read. Computed by <see cref="GuardsDigital.Core.Rules.Consequences.HeroDefeatCostQuery"/>, the same query the Defeat is
+        /// priced through, so the badge and the charge cannot disagree.
+        /// </summary>
+        public int Worth { get; }
+
+        /// <summary>The digit drawn inside the half-coin, half-heart badge; empty when there is none.</summary>
+        public string WorthLabel { get; }
+
+        /// <summary>What the badge reads as to a hover and to assistive technology.</summary>
+        public string WorthAssistiveLabel { get; }
 
         /// <summary>
         /// What this hero has to spend right now, from the one ledger rulebook p.13's Defeat reward,
@@ -1007,7 +1040,10 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.23a. The register's own order, kept rather than sorted: markers are
                 // given one at a time and the order they were given in is the only order there is.
                 projection.MarkersHeldBy(heroId).Select(marker => new HeroMarkerViewModel(marker)),
-                AwaitedInputQuery.IsHeroAwaited(projection, heroId));
+                AwaitedInputQuery.IsHeroAwaited(projection, heroId),
+                // Milestone 8.49. The same reading the Defeat is priced by, over the same cards.
+                GuardsDigital.Core.Rules.Consequences.HeroDefeatCostQuery.Worth(
+                    heroId, projection.Definitions, projection.Cards));
         }
     }
 

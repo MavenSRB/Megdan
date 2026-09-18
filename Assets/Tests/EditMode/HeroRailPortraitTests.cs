@@ -324,6 +324,40 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.49. Beside the level, what defeating the hero is worth: the half-coin,
+        /// half-heart badge carrying p.13's number - the assist coins a Defeat pays and the Life
+        /// counters it costs, one digit for both. Every hero in the official setup starts at Level 1
+        /// holding Tier I cards, so every badge reads 1 here; the number itself is
+        /// <c>HeroDefeatCostQuery</c>'s, proven on progressed boards in <c>DefeatCostByTierTests</c>.
+        /// </summary>
+        [Test]
+        public void TheWorthBadge_SitsBesideTheLevelAndReadsWhatDefeatingTheHeroIsWorth()
+        {
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(CreateOfficialSixPlayerSession(), view).Refresh();
+
+            Assert.That(view.Model.Heroes.Select(hero => hero.Worth), Has.All.EqualTo(1),
+                "Six Level 1 heroes holding Tier I cards are each worth one coin and one counter.");
+            var rails = Descendants(view.Root).Where(element => element.name == "gd-hero-rail").ToArray();
+            Assert.That(rails, Has.Length.EqualTo(6));
+            foreach (var rail in rails)
+            {
+                var levelRow = Descendants(rail).SingleOrDefault(element => element.name == "gd-hero-level-row");
+                Assert.That(levelRow, Is.Not.Null, "The level and the worth share one row.");
+                Assert.That(levelRow.Children().Any(child => child.name == "gd-hero-level"), Is.True);
+                var badge = levelRow.Children().SingleOrDefault(child => child.name == "gd-hero-worth");
+                Assert.That(badge, Is.Not.Null, "The worth badge sits beside the level.");
+                Assert.That(badge.Children().Any(child => child.name == "gd-hero-worth-coin"), Is.True);
+                Assert.That(badge.Children().Any(child => child.name == "gd-hero-worth-heart"), Is.True);
+                var digit = Descendants(badge).OfType<Label>()
+                    .SingleOrDefault(label => label.name == "gd-hero-worth-value");
+                Assert.That(digit, Is.Not.Null);
+                Assert.That(digit.text, Is.EqualTo("1"));
+                Assert.That(badge.tooltip, Does.Contain("1 assist coin").And.Contain("1 life counter"));
+            }
+        }
+
+        /// <summary>
         /// A rail with no content identity behind it - which no configured setup produces, and which a
         /// hand-built projection can - addresses no portrait and still draws a rail. The absence is
         /// stated rather than papered over with a letter.

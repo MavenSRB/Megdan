@@ -435,6 +435,30 @@ Non-goals: Bullet Time's granted performance, which runs while Bounce is still m
 
 Historical evidence: [8.48 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-848-bounce-repeat-through-reload-completion-evidence).
 
+### [x] 8.49 A Defeat costs what the hero is worth
+
+Authorized 2026-09-18 by the evening playtest's own report, in the user's words: "Lives are not being counted correctly. It just takes -1 from pool. It should take more and give more assit gold based on hero lvl, it is said so in the rulebook. And we need to show that on the map, next to hero level, show like half a coin and half a heart and a number in it, 1 2 or 3 depending on hero tier."
+
+Outcome: rulebook p.13's "that hero's lowest card Tier" is read over the cards the hero is playing with - hand, turn area and discard pile - through one query, `HeroDefeatCostQuery`, that both the combat backend and the hero rail use. The whole-pool reading milestone 7.4 shipped also counted the Tier I cards p.15's upgrades return to the deck face up, so every hero read as Tier I at every Level and every Defeat cost one Life counter and paid one assist coin; p.13's table (Level 1-3 -> 1, 4-6 -> 2, 7-8 -> 3) now holds on a real progressed board. Beside each rail's level, a half-coin half-heart badge carries that number, with a hover that says what it pays and what it costs.
+
+Acceptance: `HeroDefeatCostQueryTests` measures the defect (the returned Tier I card wins on the old reading) and the fix; `DefeatCostByTierTests` defeats a Tier II and a Tier III progressed hero on the staged boards and asserts two and three counters spent; `HeroRailPortraitTests` pins the badge beside the level. Complete offline harness, Edit Mode and Play Mode green, with every seeded walk the changed cost re-derives.
+
+Non-goals: the killer's own coins, which p.13 already prices by Level; a badge on the board piece itself.
+
+Historical evidence: [8.49 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-849-defeat-cost-by-tier-completion-evidence).
+
+### [x] 8.50 The banner speaks only when you are up
+
+Authorized 2026-09-18 after the evening playtest, in the user's words: "I dont think i want those banner letters we implemented for all the players. Just when a player is up. So only COMMIT A CARD and YOUR TURN + MINNION BATTLE i think." - confirmed after the session ("Yes, to it for point 1").
+
+Outcome: `PhaseBannerCueDetector` announces a seat's own commitment, its own turn and the Minion Battle, and nothing else: the other seats' "<NAME>'S TURN" line of 8.47 is retired, and the Director, who is up for nobody, hears no turn banner at all.
+
+Acceptance: `PhaseBannerTests` proves another hero's turn is silent while the viewer's next own turn is still announced, and that the Director still sees each commitment and the battle; `PhaseBannerPlayModeTests` unchanged and green.
+
+Non-goals: any change to the letters' look, timing or the window it yields to.
+
+Historical evidence: [8.50 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-850-banner-only-when-up-completion-evidence).
+
 ### [x] 8.51 Say when a seat held its card, and how END TURN was pressed
 
 Authorized 2026-09-18 after the evening playtest, in the user's words: "It looks like Silverarrows blue got resolved without player input, like he clicked end turn but he didnt" - and, once the host log had shown that the player's own client sent one END TURN press composition (a Hold, then the release one round trip later) 1.1 s into his turn while nothing on disk could say what pressed it: "close this gap, we need to know for sure." The player had been alt-tabbing; a click landing on the live control and Enter or Space reaching a focused one were both possible and both unrecorded.

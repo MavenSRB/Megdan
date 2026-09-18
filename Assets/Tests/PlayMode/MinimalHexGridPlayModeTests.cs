@@ -2238,8 +2238,11 @@ namespace GuardsDigital.Tests.PlayMode
             // search is scoped to the rails on purpose - the tray beside them is full of printed
             // numbers, and one of them is legitimately an Initiative of 3.
             var railView = runtime.HeroOverviewsView;
+            // Milestone 8.49: the worth badge's digit beside the level is p.13's price on the hero,
+            // not a slot ordinal, so it is read out of this sweep.
             var railText = Descendants(railView.Root)
                 .OfType<UnityEngine.UIElements.Label>()
+                .Where(label => label.name != "gd-hero-worth-value")
                 .Select(label => label.text)
                 .ToArray();
             foreach (var ordinal in new[] { "1", "2", "3", "4" })

@@ -75,6 +75,15 @@ namespace GuardsDigital.Tests.PlayMode
                     new SandboxMinionStaging(
                         BesideHim, TeamSide.Red,
                         StandardMinionType.Melee, BesideAt)
+                },
+                // Milestone 8.49: p.13 now charges a Tier III bounty-wearer four Life counters (the
+                // Tier's three plus the marker's one), more than the staged one-versus-one deals a
+                // side - so the enemy team is dealt p.6's six-player five, and a Defeat in this
+                // journey's first order no longer ends the match before its second order can open.
+                teamLifeCounts: new[]
+                {
+                    new KeyValuePair<TeamSide, int>(TeamSide.Red, 5),
+                    new KeyValuePair<TeamSide, int>(TeamSide.Blue, 5)
                 });
             yield return LoadStagedScene(content);
         }
@@ -302,6 +311,13 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 yield return null;
             }
+
+            // Milestone 8.49: the declined Defense is a Defeat that p.13 now prices at four Life
+            // counters (the Tier III hero's three plus the bounty marker's one), which the staging
+            // above dealt the team enough to pay - so the match goes on into the second order.
+            Assert.That(runtime.Phase, Is.Not.EqualTo(RoundResolutionPhase.GameEnded),
+                "The first order's Defeat spends four counters of five, not the last one. " +
+                Remaining(runtime));
 
             // ORDER TWO: a separate page, with its own target question and its own Defense window.
             var second = runtime.PendingAttackTargetChoice;

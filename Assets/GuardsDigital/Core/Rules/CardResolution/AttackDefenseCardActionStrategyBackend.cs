@@ -2281,14 +2281,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var defeatedTeamId = participants.GetTeamForHero(defeatedHeroId).Id;
 
             // p.13's two readings of the defeated hero, taken before anything moves. The Level is
-            // authoritative state; the lowest Tier is read from the hero's own cards, over every
-            // location they are in. p.15 asks the same question of the hand alone because it is
-            // choosing a card there to upgrade; p.13 attaches no location to "that hero's lowest card
-            // Tier", and only the whole-pool reading gives its table's answer whatever the hero has
-            // played, discarded or is still holding when it is defeated.
+            // authoritative state; the lowest Tier is read from the cards the hero is playing with -
+            // hand, turn area and discard pile - whatever it has played, discarded or is still holding
+            // when it is defeated. Milestone 8.49: the whole-pool reading this replaced also counted
+            // the Tier I cards p.15's upgrades RETURN TO THE DECK, so every hero read as Tier I at
+            // every Level and every Defeat cost one Life counter; `HeroDefeatCostQuery` states the
+            // scope once for this backend and for the rail's worth badge.
             var defeatedLevel = heroLevels.GetLevel(defeatedHeroId);
-            var hasTier = CardCharacteristicQuery.TryGetLowestNonBasicTier(
-                new CardCharacteristicCriteria(ownerId: defeatedHeroId),
+            var hasTier = HeroDefeatCostQuery.TryGetLowestCardTier(
+                defeatedHeroId,
                 definitions,
                 instances,
                 out var lowestTier);
