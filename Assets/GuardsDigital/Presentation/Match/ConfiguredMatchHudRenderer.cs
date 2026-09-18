@@ -424,6 +424,18 @@ namespace GuardsDigital.Presentation.Match
         private VisualElement trayFlow;
         private VisualElement traySidebar;
         private VisualElement statusDock;
+
+        /// <summary>Milestone 8.46c. The decision window, when this composition has one.</summary>
+        private DecisionWindowUnityView decisionWindow;
+
+        /// <summary>
+        /// Milestone 8.46c. What the window was drawing when it was last laid out, so the four style
+        /// writes its rectangle costs happen when the decision or its state changes rather than on
+        /// every frame - the same "two-state answer rather than twenty style writes a frame" rule
+        /// <see cref="ApplyExclusiveContext"/> already follows for the tray host.
+        /// </summary>
+        private string laidOutDecisionKey;
+        private DecisionWindowState laidOutDecisionState;
         private bool contextUsesTray;
 
         /// <summary>
@@ -539,7 +551,13 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.35z7. Optional, and appended, so every existing composition and fixture keeps
             // its exact call - the same reason milestone 8.20a's heroOverviews and 8.35y's kinetics
             // were appended rather than inserted.
-            MatchLogUnityView matchLogView = null)
+            MatchLogUnityView matchLogView = null,
+            // Milestone 8.46c. Optional, and appended, on the same terms as the two above: a
+            // composition that does not pass a window is a composition where the strip keeps drawing
+            // the families the window would otherwise take, rather than one where those decisions
+            // reach nobody. That is what `YieldedDecisionFamily` below states, and why the strip's own
+            // builders are yielded per family rather than deleted.
+            DecisionWindowUnityView decisionWindowView = null)
         {
             hands = handsView ?? throw new ArgumentNullException(nameof(handsView));
             hands.SetCompactPeekMode(true);
@@ -548,6 +566,17 @@ namespace GuardsDigital.Presentation.Match
             diagnostics = diagnosticView ?? throw new ArgumentNullException(nameof(diagnosticView));
             minionChoice = minionChoiceView ?? throw new ArgumentNullException(nameof(minionChoiceView));
             matchLog = matchLogView;
+            decisionWindow = decisionWindowView;
+            // Milestone 8.46c. The one signal that moves a family off the strip: the strip yields a
+            // decision to the window exactly while the window is DRAWING it. A composition with no
+            // window, and a window with no standing model, both read `None` here and the strip draws
+            // what it always drew - so no decision can fall between the two surfaces.
+            var window = decisionWindow;
+            Func<DecisionWindowFamily> yielded = window == null
+                ? (Func<DecisionWindowFamily>)null
+                : () => window.Model?.Family ?? DecisionWindowFamily.None;
+            round.YieldedDecisionFamily = yielded;
+            minionChoice.YieldedDecisionFamily = yielded;
             if (heroOverviews != null)
             {
                 heroOverviews.ColumnGeometryChanged -= LayoutResolvedHudGeometry;
@@ -709,6 +738,14 @@ namespace GuardsDigital.Presentation.Match
             if (trayBlocksPointer ||
                 (TryLiveRect(statusDock, out var liveStatusDock) &&
                     liveStatusDock.Contains(panelPosition)) ||
+                // Milestone 8.46c. An EXPANDED decision window is an inset of the board's own
+                // rectangle, so without this the click that answered a question would also reach the
+                // hex underneath it - the exact duplicate-input defect milestone 8.30b's own note
+                // records for End Turn's corner. It is asked only while a window is actually drawn,
+                // because the board is genuinely board when it is not.
+                (decisionWindow?.HasWindow == true &&
+                    TryLiveRect(decisionWindow.Root, out var liveDecisionWindow) &&
+                    liveDecisionWindow.Contains(panelPosition)) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
                 UnavailableCardsBlockPointerAt(panelPosition) ||
                 // Milestone 8.30b. End Turn's corner sits inside the tray band, and the band blocks
@@ -1220,6 +1257,18 @@ namespace GuardsDigital.Presentation.Match
             round.OptionalStepActionsRoot.RemoveFromHierarchy();
             round.OptionalStepActionsRoot.style.position = Position.Absolute;
             root.Add(round.OptionalStepActionsRoot);
+            // Milestone 8.46c. The decision window is placed on the panel like every other standing
+            // surface here, and added after the strip's own re-parented hosts so an expanded window
+            // paints above the board it insets into. Its two rectangles - an inset of the playfield,
+            // and the round dock's own bar - are clear of the rails, the status strip, End Turn, the
+            // seat undo square and the tray BY CONSTRUCTION; see the two Calculate methods below.
+            if (decisionWindow != null)
+            {
+                decisionWindow.Root.RemoveFromHierarchy();
+                decisionWindow.Root.style.position = Position.Absolute;
+                root.Add(decisionWindow.Root);
+            }
+
             if (heroOverviews != null)
             {
                 // Only the revealed face leaves the rail layer. Keeping the rail columns where they
@@ -1346,6 +1395,7 @@ namespace GuardsDigital.Presentation.Match
             LayoutDirectorControls();
             LayoutEndTurnControl();
             LayoutOptionalStepControls();
+            LayoutDecisionWindow(force: true);
             diagnostics?.Layout(GetRuleEventLogRect());
             PublishCameraSafeLayout(ordinaryTray, playfield, viewport);
         }
@@ -1374,6 +1424,11 @@ namespace GuardsDigital.Presentation.Match
 
             hands.SetContextOnly(retainsOrdinaryHand);
             hands.SetHidden(usesTray);
+            // Milestone 8.46c. The window's own rectangle follows the decision it is drawing, which
+            // can change without the header changing - a pause is rendered into it by its own
+            // presenter - so it is placed here, on the same per-frame pass and by the same
+            // changed-state rule the tray host above uses.
+            LayoutDecisionWindow(force: false);
             // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
             // that can change without the header changing - a paused prompt is rendered into the region
             // by its own presenter. Re-laying out only on the transition keeps this a two-state answer
@@ -1580,6 +1635,98 @@ namespace GuardsDigital.Presentation.Match
                 Mathf.Max(0f, right - left),
                 height);
         }
+
+        /// <summary>
+        /// Milestone 8.46c. The EXPANDED decision window: the whole open area BETWEEN THE TWO HERO
+        /// RAILS, from under the status strip down to the tray, one margin clear of each.
+        ///
+        /// <para><b>Why the whole column and not an inset of the board.</b> The user's binding
+        /// instruction is "make sure you don't change the scaling on the cards": every face this
+        /// window draws is <see cref="CardFootprint"/>'s own 300.46 by 420, the same card the tray and
+        /// the Defense row draw, with no declared scale anywhere. A Defense of FOUR candidates plus
+        /// the attacker's own card is five of those side by side, and an inset of the playfield is
+        /// 1020 units wide at the reference - not enough for 1502 units of card. The open area between
+        /// the rails is, and taking it costs nothing: the board is covered in this state anyway, and
+        /// the column beside it is empty.</para>
+        ///
+        /// <para><b>The arithmetic, at the 2560x1440 reference.</b> The rails are 264 wide at x 12 and
+        /// x 2284, so this rectangle is (288, 108, 1984, 848). Inside
+        /// <see cref="DecisionWindowUnityView.WindowPadding"/> either side that is 1952 units of
+        /// content. Five faces at 300.4615 are 1502.31; the divider after the attacker's card
+        /// (<see cref="DecisionWindowUnityView.ContextGap"/>, 24) and the three gaps between the
+        /// candidates (<see cref="DecisionWindowUnityView.CardGap"/>, 8) add 48. That is 1550.31
+        /// against 1952 - 401.69 units spare, which is where the corner control and any wrapped label
+        /// live. Vertically, 848 less 32 of padding is 816 against a 420 face plus its caption, chip,
+        /// header and corner, which measure about 645.</para>
+        ///
+        /// <para><b>And it never covers anything that exists.</b> Its left edge is the Red rail's
+        /// right edge plus a margin and its right edge is the Blue rail's left edge minus one, so both
+        /// columns are clear - and the `DIRECTOR` toggle with them, since that toggle stands inside
+        /// the Red rail's own column at <c>rail.xMin</c>. Its top is one margin below the status
+        /// strip, where End Turn and the seat undo square live, and its bottom one margin above the
+        /// tray. It is ONE rectangle for every family, with the content centred inside it, so the
+        /// geometry gate measures one shape rather than one per decision.</para>
+        /// </summary>
+        public static Rect CalculateDecisionWindowExpandedRect(float panelWidth, float panelHeight)
+        {
+            var tray = CalculateCardPanelRect(panelWidth, panelHeight);
+            var red = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red);
+            var blue = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue);
+            var left = red.xMax + Margin;
+            var right = Mathf.Max(left, blue.xMin - Margin);
+            var top = StatusBarHeight + Margin;
+            var bottom = Mathf.Max(top, tray.yMin - Margin);
+            return new Rect(left, top, right - left, bottom - top);
+        }
+
+        /// <summary>
+        /// Milestone 8.46c. The DOCKED decision window: a slim bar along the TOP of
+        /// <see cref="CalculateStatusDockRect"/>, yielding its left edge to the Red rail exactly as
+        /// <see cref="CalculateOptionalStepControlRect"/> and
+        /// <see cref="CalculateTeamAgreementControlRect"/> already do.
+        ///
+        /// <para><b>Why it shares the dock rather than replacing it.</b> The declared dock rectangle
+        /// starts at the Red rail's own left edge - "the dock and the rail share an outside margin",
+        /// per <see cref="CalculateStatusDockLeftEdge"/> - so a bar taking the whole of it would lie
+        /// across the rail column at every viewport, which is the structurally identical defect
+        /// milestone 8.35z2 and 8.35z6 each had to correct for the two panels above. The bar therefore
+        /// begins one margin past the rail. It takes the dock's TOP band because the dock's own live
+        /// contents (the round view, the minion prompt and the hand header) are laid out against
+        /// `DIRECTOR`'s bottom edge, which is the dock's LOWER band - so the two alternate by band
+        /// rather than by visibility, and the `DIRECTOR` toggle's own rectangle stays clear.</para>
+        ///
+        /// <para>At the reference this is (288, 838, 444, 96): the tray begins at y 968, the board's
+        /// left edge is at x 1228 - so a board-answered decision's bar never covers the pieces its own
+        /// question is about - and the `DIRECTOR` toggle occupies x 12 to 134, which this bar clears
+        /// HORIZONTALLY at every viewport because it begins one margin past the Red rail and the
+        /// toggle begins at that rail's own left edge. That is why the toggle's vertical position,
+        /// which follows the live hero column and cannot be resolved statically, does not matter
+        /// here.</para>
+        /// </summary>
+        public static Rect CalculateDecisionWindowDockedRect(float panelWidth, float panelHeight)
+        {
+            var dock = CalculateStatusDockRect(panelWidth, panelHeight);
+            var red = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Red);
+            var blue = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue);
+            var left = Mathf.Max(dock.xMin, red.xMax + Margin);
+            var right = Mathf.Max(left, Mathf.Min(dock.xMax, blue.xMin - Margin));
+            return new Rect(
+                left,
+                dock.yMin,
+                right - left,
+                Mathf.Min(DecisionWindowDockedHeight, dock.height));
+        }
+
+        /// <summary>
+        /// Milestone 8.46c. The docked bar's own height, inside the 128-unit dock: its two rows - the
+        /// question's title with its running count, and the question with its one verb - at
+        /// <see cref="DecisionWindowUnityView.DockedPadding"/> either side.
+        ///
+        /// <para>96 rather than the whole 128, so the bar takes the dock's TOP band and the dock's own
+        /// live contents keep the lower one. At the reference the bar therefore ends at y 934, clear
+        /// of the tray at 968 and of the `DIRECTOR` toggle's lane below the hero column.</para>
+        /// </summary>
+        public const float DecisionWindowDockedHeight = 96f;
 
         /// <summary>
         /// The round dock's own left edge. It is the Red rail's left edge - the dock and the rail
@@ -1809,6 +1956,7 @@ namespace GuardsDigital.Presentation.Match
             // separates from DIRECTOR after a resize or first live geometry resolution.
             LayoutEndTurnControl();
             LayoutOptionalStepControls();
+            LayoutDecisionWindow(force: true);
             var viewport = PanelViewport;
             var tray = CalculateCardPanelRect(viewport.x, viewport.y);
             var playfield = CalculatePlayfieldRect(viewport.x, viewport.y, tray);
@@ -1937,6 +2085,43 @@ namespace GuardsDigital.Presentation.Match
             var rect = round.HasTeamAgreementDecision
                 ? CalculateTeamAgreementControlRect(PanelViewport.x, PanelViewport.y)
                 : CalculateOptionalStepControlRect(PanelViewport.x, PanelViewport.y);
+            host.style.left = rect.x;
+            host.style.top = rect.y;
+            host.style.width = rect.width;
+            host.style.height = rect.height;
+        }
+
+        /// <summary>
+        /// Milestone 8.46c. Places the decision window in whichever of its two rectangles the standing
+        /// decision asked for.
+        ///
+        /// <para>It is re-laid only when the DECISION or its STATE changed, or when the caller states
+        /// that the viewport itself may have - the two-state answer <see cref="ApplyExclusiveContext"/>
+        /// already prefers to twenty style writes a frame.</para>
+        /// </summary>
+        private void LayoutDecisionWindow(bool force)
+        {
+            if (decisionWindow == null)
+            {
+                return;
+            }
+
+            var model = decisionWindow.Model;
+            var key = model?.DecisionKey;
+            var state = model?.State ?? DecisionWindowState.Docked;
+            if (!force && string.Equals(key, laidOutDecisionKey, StringComparison.Ordinal) &&
+                state == laidOutDecisionState)
+            {
+                return;
+            }
+
+            laidOutDecisionKey = key;
+            laidOutDecisionState = state;
+            var viewport = PanelViewport;
+            var rect = state == DecisionWindowState.Docked
+                ? CalculateDecisionWindowDockedRect(viewport.x, viewport.y)
+                : CalculateDecisionWindowExpandedRect(viewport.x, viewport.y);
+            var host = decisionWindow.Root;
             host.style.left = rect.x;
             host.style.top = rect.y;
             host.style.width = rect.width;

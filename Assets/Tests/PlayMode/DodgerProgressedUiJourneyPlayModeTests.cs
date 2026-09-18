@@ -396,7 +396,8 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 Assert.That(named.Kind, Is.EqualTo(AttackTargetKind.Hero),
                     "only a hero holds a hand to answer p.14 with. " + Remaining(runtime));
-                UiPlayer.Click(UiPlayer.Button(hud, "DECLINE DEFENSE"));
+                // Milestone 8.46c: the decline is the decision window's own corner answer now.
+                UiPlayer.ClickDecisionCorner(runtime, hud);
                 yield return null;
                 yield return null;
             }

@@ -39,6 +39,24 @@ namespace GuardsDigital.Presentation.Match
         public MinionChoiceViewModel Model { get; private set; }
 
         /// <summary>
+        /// Milestone 8.46c. Which decision the DECISION WINDOW is drawing, or
+        /// <see cref="DecisionWindowFamily.None"/> when it is drawing none; <c>null</c> in a
+        /// composition with no window.
+        ///
+        /// <para>Rulebook p.8's Minion Battle became a single-verb ratification on the docked bar:
+        /// `REMOVE THESE MINIONS` with the running count, and `NOT YET` for the one take-back the seat
+        /// undo cannot replace. The `TEAM AGREEMENT` heading, the agree-or-withdraw wording and the
+        /// per-hero ledger go with it. This prompt keeps its own header line and yields only the
+        /// controls, and only while the window is actually drawing them - so a composition with no
+        /// window still confirms a removal here.</para>
+        /// </summary>
+        public Func<DecisionWindowFamily> YieldedDecisionFamily { get; set; }
+
+        private bool YieldsMinionBattle =>
+            (YieldedDecisionFamily?.Invoke() ?? DecisionWindowFamily.None) ==
+            DecisionWindowFamily.MinionBattleRemoval;
+
+        /// <summary>
         /// The candidate the pointer or keyboard focus is currently on, or <c>null</c> when none is.
         /// </summary>
         public MinionChoiceCandidateViewModel HighlightedCandidate { get; private set; }
@@ -111,7 +129,7 @@ namespace GuardsDigital.Presentation.Match
             // stays honest - and clicking it selects or deselects it. The controls that used to name
             // them are gone; the confirm below stays, because agreeing to a completed selection is not
             // a thing anywhere on the map.
-            if (model.ConfirmInvocation != null)
+            if (model.ConfirmInvocation != null && !YieldsMinionBattle)
             {
                 var confirm = HudElements.Control(
                     model.ConfirmInvocation.Label, () => ConfirmRequested?.Invoke());
@@ -120,7 +138,7 @@ namespace GuardsDigital.Presentation.Match
                 controls.Add(confirm);
             }
 
-            if (model.Agreement != null)
+            if (model.Agreement != null && !YieldsMinionBattle)
             {
                 var publicStatus = string.Join("  ·  ", model.Agreement.Participants.Select(participant =>
                     participant.Label + " " + participant.Status));

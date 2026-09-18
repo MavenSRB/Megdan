@@ -152,15 +152,32 @@ namespace GuardsDigital.Tests.PlayMode
         /// confirm is looked up again after the select rather than remembered, because the model is
         /// rebuilt.</para>
         /// </summary>
+        /// <remarks>
+        /// <para><b>Milestone 8.46c: both halves now read the DECISION WINDOW's own model.</b> The
+        /// effect-choice controls moved off the round-action strip onto the window, and milestone
+        /// 8.46a is replacing every one of their labels with the consequence the content declares -
+        /// so a journey that pressed a literal string, or read a label off a model that is no longer
+        /// the one drawing the control, would press the wrong thing the moment those labels land.
+        /// The window's own control is what a player presses, so it is what these read.</para>
+        /// </remarks>
         internal static IEnumerator PressEffectControl(MatchSceneCompositionRoot root, string label)
         {
             var runtime = root.Runtime;
+            var standing = runtime.DecisionWindowView.Model?.DecisionKey;
             UiPlayer.Click(UiPlayer.Button(root.Hud, label));
             yield return null;
             yield return null;
 
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            // A choose-several still keeps its DONE; an exactly-one no longer has one at all,
+            // because the window follows the select with the confirm the authority itself offered.
+            // The confirm is looked up again after the select rather than remembered, and only while
+            // the SAME decision is still standing - otherwise a press would land on whatever question
+            // the answered one opened next.
+            var model = runtime.DecisionWindowView.Model;
+            var confirm = model != null && model.DecisionKey == standing
+                ? model.Controls.FirstOrDefault(control =>
+                    control.Role == DecisionWindowControlRole.Confirm)
+                : null;
             if (confirm != null)
             {
                 UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label));
@@ -173,15 +190,20 @@ namespace GuardsDigital.Tests.PlayMode
         internal static string BulletLabelFor(
             ConfiguredMatchSceneRuntime runtime, string optionNodeId)
         {
-            var bullets = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+            var model = runtime.DecisionWindowView.Model;
+            Assert.That(model, Is.Not.Null,
+                $"No decision window stands, so nothing answers '{optionNodeId}'. " +
+                Remaining(runtime));
+            var bullets = model.Controls
+                .Where(control => control.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    control.Command.EffectChoice.Candidate.OptionNodeId.IsDefined)
                 .ToArray();
-            var match = bullets.FirstOrDefault(value =>
-                value.Command.EffectChoice.Candidate.OptionNodeId.Value == optionNodeId);
+            var match = bullets.FirstOrDefault(control =>
+                control.Command.EffectChoice.Candidate.OptionNodeId.Value == optionNodeId);
             Assert.That(match, Is.Not.Null,
                 $"No standing bullet answers '{optionNodeId}'. Standing: " +
-                string.Join(", ", bullets.Select(value =>
-                    value.Command.EffectChoice.Candidate.OptionNodeId.Value + "='" + value.Label +
+                string.Join(", ", bullets.Select(control =>
+                    control.Command.EffectChoice.Candidate.OptionNodeId.Value + "='" + control.Label +
                     "'")) + ". " + Remaining(runtime));
             return match.Label;
         }
