@@ -4,7 +4,7 @@ Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
 ## Widget content ledger
 
-Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, capability mapping and interpretations. His deferred component and ordinary Place/Move/Swap compositions are implemented; full cards, dealing and the player gate remain outstanding.
+Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, capability mapping and interpretations. His deferred component, ordinary Place/Move/Swap, anchored Skills and coupled movement are implemented; Skill reuse, full cards, dealing and the player gate remain outstanding.
 
 ## Source authority
 
@@ -89,9 +89,9 @@ These routes separate inspected reusable contracts from missing vocabulary. Comp
 | Persistent named token | WI-Q3 confirms one Pyro; `WidgetComponentContent` declares its explicit retained-round lifetime and deferred identity/Range/Radius/supply handlers. No production registration | 8.43a |
 | Place Pyro / move actor and token in either order | `WidgetEffectContent.DragonBond` composes supply Place versus identity-preserving board Place, and two chosen direct-Move orders with live second-step state | 8.43a |
 | Direct token movement / Swap with Pyro | Ordinary direct-Move riders, optional actor Swap in Radius, and All Aboard/Take-Off/Safe Landing's separate Pyro/hero Range checks; Safe Landing rechecks after its optional exact one-space move | 8.43a |
-| Range plus Pyro line/adjacency | Existing target/presence geometry and typed exclusions; add the two-origin intersection not expressible by a single disk | 8.43b |
-| Coupled exact 2/3 movement | Existing direction/board-displacement primitives; Tali's one-space pre-effect-occupancy batch is NOT this contract; requires WI-Q1 | 8.43b |
-| Discard / Remove / Defeat / Remove Pyro | Existing ordinary consequence handlers, preserving immunity, owner choice, Lane timing and mandatory-step order | 8.43b, 8.43d |
+| Range plus Pyro line/adjacency | Deferred anchored selectors intersect Widget's actual Range Total with Pyro geometry; consumer feasibility, immunity and live typed outputs share the ordinary choice contract | 8.43b |
+| Coupled exact 2/3 movement | Deferred coupled direct Move follows WI-Q1; both full paths validate with partner-vacated occupancy, then commit synchronously. Tali's one-space batch is unchanged | 8.43b |
+| Discard / Remove / Defeat / Remove Pyro | Deferred Breath/Nibble/Gnaw compositions use ordinary discard and staged consequences, preserving chooser, immunity, reward distinction, Lane timing and mandatory-step order | 8.43b, 8.43d |
 | Resolved Skill primary, different unit | Existing borrowed-primary grants, but current pools cover discarded/active/rightmost/previous-slot cards, not arbitrary resolved Skills; carry original target exclusion | 8.43c |
 | Face-up Skill after Movement | Existing Ultimate/grant pipeline; new exact Movement trigger and distinct eligible pool require WI-Q2 | 8.43c |
 | Printed set, upgrades, items, registration and artwork | Existing verified-content/configuration/registration/player-gate routes | 8.43d-8.43f |

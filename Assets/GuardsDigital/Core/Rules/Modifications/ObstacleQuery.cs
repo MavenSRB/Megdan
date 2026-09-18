@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -135,6 +137,23 @@ namespace GuardsDigital.Core.Rules.Modifications
             moverIgnoresObstacles ||
             (mover.IsDefined && modifications.HasPermission(
                 mover, RulePermissionKind.MoveThroughObstacles, permittedActivity));
+
+        /// <summary>Same obstacle rule with only a simultaneous pair's old occupancy vacated.</summary>
+        public static bool BlocksTransitAfterVacating(AdjacentMoveAuthority board, HexCoordinate coordinate,
+            RuleObject mover, RuleModificationSet modifications, bool ignoresObstacles,
+            RuleActivity activity, IReadOnlyCollection<BoardObjectReference> vacating) =>
+            BlocksTransit(board, coordinate, mover, modifications, ignoresObstacles, activity) &&
+            !IsOnlyVacatingOccupancy(board, coordinate, modifications, vacating);
+
+        public static bool BlocksEndAfterVacating(AdjacentMoveAuthority board, HexCoordinate coordinate,
+            RuleModificationSet modifications, IReadOnlyCollection<BoardObjectReference> vacating) =>
+            BlocksEndOfMovement(board, coordinate, modifications) &&
+            !IsOnlyVacatingOccupancy(board, coordinate, modifications, vacating);
+
+        private static bool IsOnlyVacatingOccupancy(AdjacentMoveAuthority board, HexCoordinate coordinate,
+            RuleModificationSet modifications, IReadOnlyCollection<BoardObjectReference> vacating) =>
+            board.IsPlayable(coordinate) && !modifications.AnyOverlayMakesAnObstacleOf(coordinate) &&
+            board.TryGetObjectAt(coordinate, out var occupant) && vacating.Contains(occupant);
 
         /// <summary>
         /// Whether <paramref name="coordinate"/> may be a movement endpoint. Deliberately identical to

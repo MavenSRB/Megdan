@@ -228,5 +228,12 @@ namespace GuardsDigital.Core.Components
         DisplacementCommitResult CommitValidatedDisplacement(
             BoardObjectReference subject,
             HexCoordinate destination);
+
+        bool CanMoveCoupled(BoardObjectReference first, BoardObjectReference second, HexDirection direction,
+            int distance, RuleModificationSet modifications, bool ignoresObstacles);
+
+        /// <summary>Revalidates both complete paths before committing either endpoint.</summary>
+        bool TryMoveCoupled(BoardObjectReference first, BoardObjectReference second, HexDirection direction,
+            int distance, RuleModificationSet modifications, bool ignoresObstacles);
     }
 }

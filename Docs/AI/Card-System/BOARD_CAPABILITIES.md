@@ -22,6 +22,8 @@ Milestone 8.19b implements the roster-specific reusable layer without pretending
 
 ### Geometry
 
+Widget's deferred anchored selectors intersect the acting hero's printed Range Total with adjacency or a straight line from a separately bound space. The pair-movement selector instead asks only adjacency to that space. These are read-only intrinsic Hero/Minion/Unit selections over the shared presence, relation and immunity queries, with typed identity/coordinate outputs, consumer feasibility and fresh answer-time derivation. No line of sight is added. Cross-kind substitutions and further geometric shapes remain outside this narrow declaration.
+
 Printed-icon hero selection may additionally declare `chosenHeroSpace`, a live coordinate published beside the selected hero identity by the same read-only execution/feasibility query. Undeclared outputs remain absent, preserving existing identity-only nodes. Widget's All Aboard family uses it to feed the ordinary token/hero Swap, with consumer eligibility checking both participants and the Swap immunity before offering a partner; no hero name or card text selects the operation.
 
 Reusable geometry queries include:
@@ -73,6 +75,8 @@ Milestone 6.4 implements this as the registered `synthetic-direct-move` capabili
 Milestone 8.19b gives direct Move its own `RuleActivity.DirectMove` immunity identity. A node may carry a trusted Heavy-immunity override for exactly that activity; selection and final commit both ask it, and it bypasses only standing Heavy immunity. Source-declared immunity for the enclosing action or direct Move itself remains decisive.
 
 ### Ignore obstacles and Move Through
+
+The deferred `coupled-direct-move@1` implements Widget WI-Q1: one pair, one direction, one exact common distance selected through the first object's endpoint (2 or 3 in his definitions). `CoupledMoveQuery` validates both complete paths through the ordinary obstacle rules with only the two old occupancies vacated; overlays, off-map cells and illegal endpoints remain decisive. The board port revalidates before either commit and preserves both identities. The capability applies enclosing-action and direct-Move immunity to unit participants; minion correction remains at the enclosing action boundary. This does not widen Tali's one-space batch contract. Current token properties are continuous, not traversal-triggered; adding a token with an entry/traversal effect requires reassessing this endpoint-commit contract alongside ordinary direct Move.
 
 The deferred `move-adjacent-to-enemy-hero-for-push@1` (8.41b) shares the ordinary direct-Move executor and narrows its destinations to spaces beside an eligible opposing hero for a following Push. It moves only the actor. Reachability, distance policy, mover immunity, stale-answer validation and canonical coordinate ordering remain shared; endpoint qualification asks the existing Push immunity query. An adjacent zero-space choice is applied under Garrus GA-Q1, whereas declining the enclosing optional clause skips both Move and Push. The following ordinary target choice names one qualifying hero explicitly, independently of the earlier Attack target. No new persisted field or production registration is required until dealing.
 

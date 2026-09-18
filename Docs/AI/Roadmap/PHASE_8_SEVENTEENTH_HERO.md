@@ -32,13 +32,15 @@ Checkpoint index: [8.43a token groundwork](../Archive/Phase-Handoffs/PHASE_8.md#
 
 Historical evidence: [8.43a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843a-widget-ordinary-token-operations-completion-evidence).
 
-### [ ] 8.43b Support Pyro-anchored targeting and coupled displacement
+### [x] 8.43b Support Pyro-anchored targeting and coupled displacement
 
 Outcome: printed Range from Widget can be combined with adjacency/straight-line geometry from Pyro, and Drag Off/Carry Away move the selected token/enemy pair exactly as their resolved interpretation requires.
 
 Acceptance: independent origins and icon totals; enemy-hero discard-if-able versus discard-or-Defeat; Nibble's enemy-minion Remove versus Gnaw's unqualified minion Defeat; Pyro removal only after the mandatory predecessor succeeds; missing token, immune targets, empty hands, friendly minions, no line-of-sight invention. Resolve WI-Q1 before paired movement; prove distance 2/3, directions, blockers/transit/endpoints, atomic failure, both objects' identities, Heavy/immunity, token traversal consequences, minion after-action corrections, stale choice and restored/replayed continuation. Do not silently widen Tali's one-space batch movement semantics. T2 minimum, higher if persisted or shared boundaries require it.
 
 Non-goals: new card-state pools or production content registration.
+
+Historical evidence: [8.43b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843b-widget-anchored-skills-and-coupled-movement-completion-evidence).
 
 ### [ ] 8.43c Support Skill reuse and Dragon Knight's Movement trigger
 

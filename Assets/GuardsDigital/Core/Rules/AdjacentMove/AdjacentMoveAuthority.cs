@@ -802,6 +802,32 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             int maximumDistance) =>
             MovementReachabilityQuery.FindReachableThroughEmptySpaces(origin, this, maximumDistance);
 
+        public bool CanMoveCoupled(BoardObjectReference first, BoardObjectReference second, HexDirection direction,
+            int distance, RuleModificationSet modifications, bool ignoresObstacles) =>
+            CoupledMoveQuery.CanMove(this, first, second, direction, distance, modifications, ignoresObstacles);
+
+        public bool TryMoveCoupled(BoardObjectReference first, BoardObjectReference second, HexDirection direction,
+            int distance, RuleModificationSet modifications, bool ignoresObstacles)
+        {
+            if (!CanMoveCoupled(first, second, direction, distance, modifications, ignoresObstacles)) return false;
+            TryGetObjectCoordinate(first, out var firstAt);
+            TryGetObjectCoordinate(second, out var secondAt);
+            var firstEnd = StraightLineQuery.Step(firstAt, direction, distance);
+            var secondEnd = StraightLineQuery.Step(secondAt, direction, distance);
+            // Only a following endpoint can need the other's old occupancy. Vacate the front first;
+            // this is one synchronous commit after both paths passed, not two independent effects.
+            if (firstEnd.Equals(secondAt))
+            {
+                if (!CommitValidatedDisplacement(second, secondEnd).Accepted ||
+                    !CommitValidatedDisplacement(first, firstEnd).Accepted)
+                    throw new InvalidOperationException("A validated coupled displacement could not commit.");
+            }
+            else if (!CommitValidatedDisplacement(first, firstEnd).Accepted ||
+                !CommitValidatedDisplacement(second, secondEnd).Accepted)
+                throw new InvalidOperationException("A validated coupled displacement could not commit.");
+            return true;
+        }
+
         /// <summary>
         /// Moves p.8's Battle Zone to <paramref name="destination"/>, or refuses and leaves it where it
         /// is (milestone 6.10).

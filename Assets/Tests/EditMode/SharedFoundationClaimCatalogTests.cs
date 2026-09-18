@@ -101,11 +101,33 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "tokens.named-owned-facts", "tokens.explicit-round-retention", "targeting.hero-space-output"
+            "targeting.anchored-intersection", "movement.coupled-exact-pair"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "targeting.anchored-intersection",
+                new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticAnchoredTargetCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticAnchoredTargetCapabilities.Handler), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetAnchoredSkillTests),
+                    nameof(WidgetAnchoredSkillTests.BreathIntersectsWidgetRangeWithPyroLine), MemberTypes.Method),
+                    SharedFoundationEvidenceKind.BoundaryFixture, "actor Range intersected with separately bound straight line") },
+                new[] { "origin", "geometry", "kind", "relation", "immunity", "consumer" },
+                "Widget's intrinsic Hero/Minion/Unit selection with actor-origin Range and anchor line/adjacency, or anchor-only adjacent units; typed live outputs and normal consumer feasibility.",
+                "Reassess for another geometric shape, effective-kind substitution, or retaining the anchor across intervening movement."),
+            new SharedFoundationClaim(
+                "movement.coupled-exact-pair",
+                new MemberLocator(typeof(GuardsDigital.Core.Rules.Displacement.CoupledMoveQuery),
+                    nameof(GuardsDigital.Core.Rules.Displacement.CoupledMoveQuery.CanMove), MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetCoupledMoveTests),
+                    nameof(WidgetCoupledMoveTests.PairFollowsVacatedSpacesInEveryDirectionAtBothPrintedDistances), MemberTypes.Method),
+                    SharedFoundationEvidenceKind.BoundaryFixture, "two objects follow a common exact distance and direction") },
+                new[] { "direction", "distance", "occupancy", "immunity", "atomicity", "continuation" },
+                "One simultaneous two-object direct Move, both complete or neither, permitting partner-vacated transit and retaining ordinary obstacle endpoints. Widget selects exactly 2 or 3.",
+                "Reassess for larger batches, unequal routes/distances, partial success or a new traversal-trigger token. Tali's one-space batch is unchanged."),
             new SharedFoundationClaim(
                 "targeting.hero-space-output",
                 new MemberLocator(typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),

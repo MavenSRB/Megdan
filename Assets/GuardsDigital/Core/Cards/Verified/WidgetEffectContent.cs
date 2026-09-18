@@ -3,6 +3,7 @@ using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.Displacement;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Placement;
 
@@ -91,6 +92,84 @@ namespace GuardsDigital.Core.Cards.Verified
             }
             return Definition(card, revision, "skill", nodes);
         }
+
+        public static EffectDefinition DragOff(CardDefinitionId card, string revision, bool ignoresObstacles) =>
+            Definition(card, revision, "skill", new[]
+            {
+                Sequence("root", "pyro", "target", "move-pair"), Pyro("pyro"),
+                AnchoredTarget(WidgetComponentContent.DragTargetV1, "move-pair", Output("space", EffectValueKind.Coordinate)),
+                new EffectNodeDefinition(Id("move-pair"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticCoupledMoveCapabilities.MoveV1, inputs: new[]
+                    {
+                        From("first", "pyro", "space"), From("second", "target", "space"),
+                        EffectInputBinding.FromLiteral("leastDistance", EffectValue.Integer(2)),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
+                        EffectInputBinding.FromLiteral("ignoresObstacles", EffectValue.Boolean(ignoresObstacles))
+                    }, outputs: new[] { Output("firstAt", EffectValueKind.Coordinate), Output("secondAt", EffectValueKind.Coordinate) })
+            });
+
+        public static EffectDefinition Breath(CardDefinitionId card, string revision, bool defeatIfUnable)
+        {
+            var nodes = new List<EffectNodeDefinition>
+            {
+                Sequence("root", defeatIfUnable ? new[] { "pyro", "target", "discard", "if-unable" }
+                    : new[] { "pyro", "target", "discard" }), Pyro("pyro"),
+                AnchoredTarget(WidgetComponentContent.BreathTargetV1, null, Output("hero", EffectValueKind.Hero)),
+                new EffectNodeDefinition(Id("discard"), EffectNodeKind.Capability,
+                    defeatIfUnable ? EffectFailurePolicy.Mandatory : EffectFailurePolicy.IfAble,
+                    defeatIfUnable ? SyntheticCardStateCapabilities.DiscardChosenCardV2 : SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                    inputs: new[] { EffectInputBinding.FromNodeOutput("hero", Id("target"), "hero", EffectValueKind.Hero) },
+                    outputs: defeatIfUnable ? new[] { Output(SyntheticCardStateCapabilities.DiscardedOutput, EffectValueKind.CardInstance),
+                        Output(SyntheticCardStateCapabilities.UnableToDiscardOutput, EffectValueKind.Boolean) }
+                        : new[] { Output(SyntheticCardStateCapabilities.DiscardedOutput, EffectValueKind.CardInstance) })
+            };
+            if (defeatIfUnable)
+            {
+                nodes.Add(new EffectNodeDefinition(Id("if-unable"), EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticEffectCapabilities.IsFlaggedV1, childNodeIds: new[] { Id("defeat") },
+                    inputs: new[] { EffectInputBinding.FromNodeOutput("flag", Id("discard"),
+                        SyntheticCardStateCapabilities.UnableToDiscardOutput, EffectValueKind.Boolean) },
+                    outputs: new[] { Output("value", EffectValueKind.Boolean) }));
+                nodes.Add(new EffectNodeDefinition(Id("defeat"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticConsequenceCapabilities.DefeatHeroV1,
+                    inputs: new[] { EffectInputBinding.FromNodeOutput("hero", Id("target"), "hero", EffectValueKind.Hero) },
+                    outputs: new[] { Output(SyntheticConsequenceCapabilities.DefeatedHeroOutput, EffectValueKind.Hero) }));
+            }
+            return Definition(card, revision, "skill", nodes);
+        }
+
+        public static EffectDefinition Nibble(CardDefinitionId card, string revision, bool gnaw) =>
+            Definition(card, revision, "skill", new[]
+            {
+                Sequence("root", "pyro", "target", "minion", "pyro-after", "remove-pyro"), Pyro("pyro"),
+                AnchoredTarget(gnaw ? WidgetComponentContent.GnawTargetV1 : WidgetComponentContent.NibbleTargetV1,
+                    "minion", Output("space", EffectValueKind.Coordinate), Output("minion", EffectValueKind.Minion)),
+                gnaw ? new EffectNodeDefinition(Id("minion"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticConsequenceCapabilities.DefeatMinionV1,
+                    inputs: new[] { EffectInputBinding.FromNodeOutput("minion", Id("target"), "minion", EffectValueKind.Minion) },
+                    outputs: new[] { Output(SyntheticConsequenceCapabilities.DefeatedMinionOutput, EffectValueKind.Minion) })
+                    : Remove("minion", "target", RemoveEligiblePieceKind.MinionMiniature),
+                Pyro("pyro-after"), Remove("remove-pyro", "pyro-after", RemoveEligiblePieceKind.Token)
+            });
+
+        private static EffectNodeDefinition AnchoredTarget(EffectCapabilityReference capability, string consumer,
+            params EffectOutputBinding[] outputs)
+        {
+            var inputs = new List<EffectInputBinding> { From("anchor", "pyro", "space") };
+            if (consumer != null) inputs.Add(EffectInputBinding.FromLiteral(EffectSelectionDeclaration.ConsumerParameterName,
+                EffectValue.Node(Id(consumer))));
+            return new EffectNodeDefinition(Id("target"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                capability, inputs: inputs, outputs: outputs);
+        }
+
+        private static EffectNodeDefinition Remove(string id, string subject, RemoveEligiblePieceKind kind) =>
+            new EffectNodeDefinition(Id(id), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                SyntheticExchangeCapabilities.RemoveV2, inputs: new[]
+                {
+                    From("subject", subject, "space"),
+                    EffectInputBinding.FromClosedVocabulary(SyntheticExchangeCapabilities.EligiblePieceParameterName, kind)
+                }, outputs: new[] { Output("removed", EffectValueKind.Coordinate),
+                    Output(RecordedLanePushQuery.OutcomeFactName, EffectValueKind.Boolean) });
 
         private static EffectDefinition Definition(CardDefinitionId card, string revision, string suffix,
             IEnumerable<EffectNodeDefinition> nodes) => new EffectDefinition(
