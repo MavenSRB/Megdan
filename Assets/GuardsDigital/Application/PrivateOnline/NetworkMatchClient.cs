@@ -179,6 +179,14 @@ namespace GuardsDigital.Application
         /// network submission returns before the host's result and projection exist, so polling the
         /// adapter completes the same two-command continuation only after both authoritative facts
         /// arrive. The continuation is cleared before sending, making repeated renders idempotent.
+        ///
+        /// <para>Milestone 8.46b. A choice whose minimum and maximum are both one is now closed by
+        /// the host inside the Select, so the projection that comes back carries no such pause and
+        /// the guards below drop the continuation without sending anything - the one press really is
+        /// one command on the wire too, which is what the seat's rewind needs it to be. The arming
+        /// above still fires on any Select because the local client cannot know the host's verdict
+        /// yet, and what is left for this to finish is an `up to 1` or a choose-several that a
+        /// selection filled. No DTO, flag or revision moves for any of it.</para>
         /// </summary>
         private void ContinueEffectAutoConfirm()
         {

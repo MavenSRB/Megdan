@@ -110,13 +110,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(authority.PendingEffectChoice, Is.Not.Null);
             Assert.That(authority.SelectedActor.IsDefined, Is.False,
                 "The completed card may be acknowledged, but no next actor may be selected while the trigger is paused.");
+            // Milestone 8.46b: the trigger's question admits exactly one subject, so naming it is
+            // the whole answer and there is no completion behind it to submit.
             var selected = authority.TryAnswerEffectChoice(
                 authority.PendingEffectChoice.SelectInvocations[0]);
-            Assert.That(selected.Accepted, Is.True);
-            var completed = authority.TryAnswerEffectChoice(
-                authority.PendingEffectChoice.ConfirmInvocation);
 
-            Assert.That(completed.Accepted, Is.True);
+            Assert.That(selected.Accepted, Is.True);
             Assert.That(authority.PendingEffectChoice, Is.Null);
             // Milestone 8.35g. The resolution above finished this hero's turn, and it is
             // handed on only when that player releases it; before then nobody is selected.

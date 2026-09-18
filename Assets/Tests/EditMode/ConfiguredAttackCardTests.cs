@@ -197,8 +197,9 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(2),
                 "and it is inside the disk by distance rather than by having been placed there.");
 
-            Answer(session, heroChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, heroChoice.SelectInvocations.Single());
 
             var cardChoice = session.Projection.PendingEffectChoice;
             Assert.That(cardChoice, Is.Not.Null, "The chosen hero is now asked for a card.");
@@ -217,8 +218,9 @@ namespace GuardsDigital.Tests.EditMode
                 "would see.");
 
             var chosen = cardChoice.SelectInvocations.First().Candidate.Value.CardInstanceId;
-            Answer(session, cardChoice.SelectInvocations.First());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, cardChoice.SelectInvocations.First());
 
             Assert.That(session.Projection.PendingEffectChoice, Is.Null,
                 "Both questions are answered, so the page runs on.");
@@ -248,8 +250,9 @@ namespace GuardsDigital.Tests.EditMode
             var enemy = HeroOn(session, TeamSide.Blue);
             AttackTheAdjacentMinion(session, WaspCardContent.Shock, minionId);
 
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
 
             var beforeRestore = session.Projection.PendingEffectChoice;
             Assert.That(beforeRestore.ChooserId, Is.EqualTo(enemy));
@@ -289,8 +292,9 @@ namespace GuardsDigital.Tests.EditMode
                 "The chosen hero committed their last card to this turn, which is the position the " +
                 "second arm is about.");
 
-            Answer(session, heroChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, heroChoice.SelectInvocations.Single());
 
             Assert.That(session.Projection.PendingEffectChoice, Is.Null,
                 "Nobody is asked which card to give, because there is none and the page asks nothing " +
@@ -316,14 +320,16 @@ namespace GuardsDigital.Tests.EditMode
             var enemy = HeroOn(session, TeamSide.Blue);
 
             AttackTheAdjacentMinion(session, WaspCardContent.Shock, minionId);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
 
             var cardChoice = session.Projection.PendingEffectChoice;
             Assert.That(cardChoice, Is.Not.Null,
                 "A hero who holds cards is asked for one rather than removed.");
-            Answer(session, cardChoice.SelectInvocations.First());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, cardChoice.SelectInvocations.First());
 
             Assert.That(
                 session.Projection.Heroes.Any(occupancy => occupancy.HeroId.Equals(enemy)),
@@ -463,7 +469,11 @@ namespace GuardsDigital.Tests.EditMode
                 DirectorCommand.ChooseAttackTarget(
                     firstChoice.ResolutionId, firstChoice.ChoiceId, enemy));
             ResolveTheDefenseResponse(session);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             var second = session.Projection.PendingAttackTargetChoice;
             Assert.That(second.LegalTargetMinionIds, Does.Contain(minionId),

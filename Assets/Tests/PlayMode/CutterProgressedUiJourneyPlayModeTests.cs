@@ -201,8 +201,21 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(modal.Candidates.Count, Is.EqualTo(2),
                 "Both printed bullets reach the enemy seat. " + Remaining(runtime));
 
-            // The enemy seat answers through its own projected commands, exactly as Whisper's
-            // opponent-chosen modal is answered: selecting is not taking, so the confirm follows.
+            // The enemy seat answers through its own projected commands rather than through drawn
+            // controls, because the drawn ones are not this seat's.
+            //
+            // Milestone 8.46b rewrote what follows the bullet. "Choose one" admits exactly one
+            // selection, so TAKING THE BULLET IS THE ANSWER: the resolution session closes the
+            // choice inside that one command and offers no confirm behind it. The assertion is
+            // therefore that no completion control stands rather than that one does - the same
+            // question asked of the same moment, with the opposite verdict, which is the whole of
+            // the rule from this seat's side of the table.
+            Assert.That(modal.MinimumSelections, Is.EqualTo(1), Remaining(runtime));
+            Assert.That(modal.MaximumSelections, Is.EqualTo(1),
+                "Arrange: \"Choose one\" is the exactly-one shape the one-press rule is about. " +
+                Remaining(runtime));
+
+            var commandsBeforeTheBullet = runtime.AcceptedCommands.Count;
             var place = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
                 value.Command.EffectChoice.Candidate.OptionNodeId.Value == "chosen-place-arm");
@@ -210,13 +223,17 @@ namespace GuardsDigital.Tests.PlayMode
                 "The bullet is the enemy seat's to take. " + Remaining(runtime));
             yield return null;
             yield return null;
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(confirm, Is.Not.Null,
-                "The electing seat closes its own selection. " + Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(confirm.Command), Is.True);
-            yield return null;
-            yield return null;
+
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsBeforeTheBullet + 1),
+                "One press is one accepted command, which is what the seat's rewind steps back. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm &&
+                    value.Command.EffectChoice.ChoiceId.Equals(modal.ChoiceId)),
+                Is.False,
+                "and the modal it answered offers nothing further to press. Shown controls: " +
+                UiPlayer.Describe(hud));
 
             // AND THE PLACE COMES BACK TO HER. "YOU place that hero" - the enemy picked which thing
             // happens to them and she does it, which is the half a projection could get wrong in the
@@ -613,6 +630,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The enemy takes the coins rather than being repositioned - which on this card is the
             // bullet that loses them the game, and is a legal answer they are entitled to pick.
+            //
+            // Milestone 8.46b: THE ELECTING SEAT'S ONE PRESS CLOSES ITS OWN SELECTION. "Chooses
+            // one" admits exactly one, so the bullet is the whole answer and the coins are paid
+            // inside that command - there is no second control, which is what the assertion below
+            // now says in place of the confirm this journey used to press.
+            Assert.That(modal.MaximumSelections, Is.EqualTo(1),
+                "Arrange: the Tier III modal is the same exactly-one shape. " + Remaining(runtime));
             var coinArm = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
                 value.Command.EffectChoice.Candidate.OptionNodeId.Value == "chosen-coin-arm");
@@ -620,14 +644,13 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
-            // THE ELECTING SEAT CLOSES ITS OWN SELECTION, on its own drawn control.
-            var closing = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(closing, Is.Not.Null,
-                "The electing seat closes its own selection. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, closing.Label));
-            yield return null;
-            yield return null;
+            Assert.That(
+                runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm &&
+                    value.Command.EffectChoice.ChoiceId.Equals(modal.ChoiceId)),
+                Is.False,
+                "and nothing of that modal is left to press. Shown controls: " +
+                UiPlayer.Describe(hud));
 
             Assert.That(runtime.CoinsOf(cutterId), Is.EqualTo(13),
                 "Ten plus the printed three is the threshold the card names. Last refusal: '" +

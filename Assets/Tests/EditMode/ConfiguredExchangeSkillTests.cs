@@ -504,20 +504,24 @@ namespace GuardsDigital.Tests.EditMode
 
             var selection = paused.SelectInvocations
                 .Single(candidate => candidate.Candidate.Value.Coordinate.Equals(minionAt));
-            Accept(session, DirectorCommand.AnswerEffectChoice(selection));
-            var beforeConfirm = session.Projection.DiagnosticSnapshot;
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: naming the one subject this selection admits is the whole answer, in ONE
+            // accepted command - so the retained-prefix Undo below steps the whole of it back rather than
+            // half of it, and replaying it means sending that same command again.
+            var beforeTheAnswer = session.Projection.DiagnosticSnapshot;
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, selection);
             var afterCommit = session.Projection.DiagnosticSnapshot;
             Assert.That(Coordinate(RestoreBoard(session), actorId), Is.EqualTo(minionAt));
 
             Assert.That(session.Undo().Accepted, Is.True);
-            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeConfirm));
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeTheAnswer));
             Assert.That(Coordinate(RestoreBoard(session), actorId), Is.EqualTo(actorAt),
                 "Retained-prefix Undo puts both objects back.");
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, selection);
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterCommit),
                 "Replaying the same answer reproduces the same occupancy and the same ordered facts.");
         }
@@ -535,10 +539,13 @@ namespace GuardsDigital.Tests.EditMode
                 "Only the Hazard is a piece this Replace can act on.");
 
             var selection = paused.SelectInvocations.Single();
-            Accept(session, DirectorCommand.AnswerEffectChoice(selection));
-            var beforeConfirm = session.Projection.DiagnosticSnapshot;
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: naming the one subject this selection admits is the whole answer, in ONE
+            // accepted command - so the retained-prefix Undo below steps the whole of it back rather than
+            // half of it, and replaying it means sending that same command again.
+            var beforeTheAnswer = session.Projection.DiagnosticSnapshot;
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, selection);
             var afterCommit = session.Projection.DiagnosticSnapshot;
 
             var restored = Restore(session);
@@ -548,14 +555,15 @@ namespace GuardsDigital.Tests.EditMode
                 "A committed Replace round-trips with no field the writer and reader disagree on.");
 
             Assert.That(session.Undo().Accepted, Is.True);
-            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeConfirm));
+            Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(beforeTheAnswer));
             Assert.That(
                 RestoreBoard(session).PlacedTokens.Single().Definition.Reference,
                 Is.EqualTo(SyntheticComponentDefinitions.HazardV4),
                 "Retained-prefix Undo puts the Hazard back and the Ward into its supply.");
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, selection);
             Assert.That(session.Projection.DiagnosticSnapshot, Is.EqualTo(afterCommit),
                 "Replaying the same answer reproduces the same components and the same ordered facts.");
         }
@@ -867,19 +875,19 @@ namespace GuardsDigital.Tests.EditMode
         private static void ChooseBranch(MatchSession session, EffectNodeId branch)
         {
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
-                candidate => candidate.Candidate.OptionNodeId.Equals(branch))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.OptionNodeId.Equals(branch)));
         }
 
         private static void SelectSpace(MatchSession session, HexCoordinate coordinate)
         {
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations.Single(
-                candidate => candidate.Candidate.Value.Coordinate.Equals(coordinate))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single(
+                candidate => candidate.Candidate.Value.Coordinate.Equals(coordinate)));
         }
 
         private static CardActionResolutionEvent[] SkillFacts(MatchSession session) =>

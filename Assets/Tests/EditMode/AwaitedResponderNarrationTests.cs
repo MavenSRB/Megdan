@@ -76,9 +76,10 @@ namespace GuardsDigital.Tests.EditMode
             var target = session.Projection.PendingAttackTargetChoice;
             ConfiguredMatchFixtures.Accept(session, DirectorCommand.ChooseAttackTarget(target.ResolutionId, target.ChoiceId, minion));
             var heroChoice = session.Projection.PendingEffectChoice;
-            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(heroChoice.SelectInvocations
-                .Single(invocation => invocation.Candidate.Value.HeroId.Equals(blue.OwnerId))));
-            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - naming the one hero it admits closes it inside that command.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, heroChoice.SelectInvocations
+                .Single(invocation => invocation.Candidate.Value.HeroId.Equals(blue.OwnerId)));
 
             var host = new MatchHost(session);
             var choice = session.Projection.PendingEffectChoice;

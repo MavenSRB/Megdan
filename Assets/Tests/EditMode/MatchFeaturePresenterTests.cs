@@ -148,10 +148,10 @@ namespace GuardsDigital.Tests.EditMode
             var target = session.Projection.PendingAttackTargetChoice;
             Accept(session, DirectorCommand.ChooseAttackTarget(
                 target.ResolutionId, target.ChoiceId, minionId));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.SelectInvocations.Single()));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
+                session.Projection.PendingEffectChoice.SelectInvocations.Single());
             Assert.That(session.Projection.PendingEffectChoice?.ChooserId, Is.EqualTo(blue),
                 "The fixture must be standing on the chosen hero's own card question.");
 

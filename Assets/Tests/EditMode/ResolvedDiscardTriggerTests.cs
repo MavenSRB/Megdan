@@ -323,7 +323,10 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var choice = Choice;
                 Answer(choice.SelectInvocations.Single(command => command.Candidate.Value.Equals(value)));
-                if (Choice != null && Choice.ChoiceId.Equals(choice.ChoiceId)) Answer(Choice.ConfirmInvocation);
+                // Milestone 8.46b: the completion is asked for rather than assumed - a choice admitting
+                // exactly one selection is closed by the select itself, and the same node asking again
+                // is a fresh question rather than this one still open.
+                if (Choice != null && Choice.ChoiceId.Equals(choice.ChoiceId) && Choice.ConfirmInvocation != null) Answer(Choice.ConfirmInvocation);
             }
             internal void Answer(EffectChoiceCommand command)
             {

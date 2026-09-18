@@ -158,7 +158,10 @@ namespace GuardsDigital.Tests.EditMode
             var command = probe.Choice.SelectInvocations.Single(c => c.Candidate.Value.Equals(EffectValue.Space(At(2))));
             probe.Board.CommitValidatedDisplacement(BoardObjectReference.ForHero(Enemy), At(2));
             var result = EffectResolutionSession.Answer(probe.Step.Frame, command, probe.Context);
-            if (result.Accepted && result.Frame.PendingChoice != null)
+            // Milestone 8.46b: a choice of exactly one is closed by the select, so the completion is
+            // asked for rather than assumed - and a pause holding nothing is the next question.
+            if (result.Accepted && result.Frame?.PendingChoice?.ConfirmInvocation != null &&
+                result.Frame.PendingChoice.SelectedCandidates.Count > 0)
                 result = EffectResolutionSession.Answer(result.Frame, result.Frame.PendingChoice.ConfirmInvocation, probe.Context);
             // Out-of-band board changes are refused by the move handler as an impossible step;
             // the enclosing UpTo policy may finish the effect, but must never move into the occupant.

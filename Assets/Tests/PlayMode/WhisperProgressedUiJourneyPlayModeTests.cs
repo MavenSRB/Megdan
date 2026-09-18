@@ -224,7 +224,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             // THE MODAL, AND IT IS NOT HERS. This is the assertion the whole face exists for.
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+            var modal = runtime.PendingEffectChoice;
+            Assert.That(modal, Is.Not.Null,
                 "\"chooses one\" opens once Whisper has named whom it is put to. " +
                 Remaining(runtime));
             Assert.That(StandingChoiceBelongsTo(runtime, enemyId), Is.True,
@@ -262,27 +263,38 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The enemy TAKES the harmless bullet. Their control, submitted through the projection's
             // own minted command - which is how a seat that is not the acting one answers.
+            Assert.That(modal.MaximumSelections, Is.EqualTo(1),
+                "Arrange: \"chooses one\" is the exactly-one shape milestone 8.46b answers in one " +
+                "press. " + Remaining(runtime));
             Assert.That(runtime.SubmitProjectedCommand(bullets[1].Command), Is.True,
                 "The bullet that does nothing to them is a legal answer and the enemy seat may take " +
                 "it. " + Remaining(runtime));
             yield return null;
             yield return null;
 
-            // Milestone 8.35z53's first Play Mode run: SELECTING A BULLET IS NOT TAKING IT. The modal
-            // stands on `Deselect`/`Confirm` until the electing seat commits, which is the ordinary
-            // shape of every `Choose` in this build and not something the opponent-chooser changes -
-            // this journey was written blind and expected the selection to resolve on the Select
-            // alone. The enemy seat confirms through its own projected command, exactly as it
-            // selected.
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(confirm, Is.Not.Null,
-                "The electing seat closes its own selection. " + Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(confirm.Command), Is.True,
-                "and the confirm is theirs to submit, on the same projection the select came " +
-                "through. " + Remaining(runtime));
-            yield return null;
-            yield return null;
+            // Milestone 8.35z53's first Play Mode run found the opposite of what this journey was
+            // written blind to expect: SELECTING A BULLET WAS NOT TAKING IT, and the modal stood on
+            // `Deselect`/`Confirm` until the electing seat pressed again.
+            //
+            // Milestone 8.46b settled it the other way, on the user's own rule for the decision
+            // window: a choice admitting exactly one selection is answered in ONE press, closed by
+            // the resolution session inside that same command. So the journey that was corrected to
+            // press twice is corrected back to press once - and what it asserts is the stronger
+            // half, that the electing seat is offered nothing further for a modal it has already
+            // answered.
+            Assert.That(
+                runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm &&
+                    value.Command.EffectChoice.ChoiceId.Equals(modal.ChoiceId)),
+                Is.False,
+                "The bullet was the whole answer, so no completion control stands behind it. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.PendingEffectChoice == null ||
+                    !runtime.PendingEffectChoice.ChoiceId.Equals(modal.ChoiceId),
+                Is.True,
+                "and the modal itself is answered rather than still standing half-filled. " +
+                Remaining(runtime));
 
             Assert.That(
                 runtime.Cards.Count(card =>

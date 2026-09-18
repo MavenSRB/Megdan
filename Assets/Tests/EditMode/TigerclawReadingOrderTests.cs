@@ -137,7 +137,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.CandidateSpaces(board.Choice),
                 Has.Member(StagedHeroBoard.SecondAdjacent));
             board.Select(StagedHeroBoard.SecondAdjacent);
-            board.Confirm();
+            board.ConfirmIfStillOwed();
 
             var reachable = board.CandidateMinions(board.Choice);
 
@@ -170,7 +170,7 @@ namespace GuardsDigital.Tests.EditMode
             board.StartPrimary(TigerclawCardContent.CombatReflexes);
             board.Decline();
             board.Select(board.Enemy);
-            board.Confirm();
+            board.ConfirmIfStillOwed();
 
             Assert.That(board.Session.Projection.PendingDefensePreview, Is.Not.Null,
                 "Naming the target hands p.14 straight to its step 3.");
@@ -207,7 +207,7 @@ namespace GuardsDigital.Tests.EditMode
 
             board.StartPrimary(face);
             board.Select(StagedHeroBoard.ThirdAdjacent);
-            board.Confirm();
+            board.ConfirmIfStillOwed();
 
             Assert.That(board.HeroSpace(board.Hero), Is.EqualTo(StagedHeroBoard.ThirdAdjacent),
                 "The move stands. p.10 stops what FOLLOWS a mandatory step it cannot complete; it " +
@@ -266,9 +266,9 @@ namespace GuardsDigital.Tests.EditMode
                 "exactly the set of players who declined.");
 
             board.Select(StagedHeroBoard.FourthAdjacent);
-            board.Confirm();
+            board.ConfirmIfStillOwed();
             board.Select(board.MinionAt(StagedHeroBoard.FirstAdjacent));
-            board.Confirm();
+            board.ConfirmIfStillOwed();
 
             Assert.That(board.NodeApplied("reflexes-move"), Is.False,
                 "He moved, so the step-7 clause is false and its move never runs.");
@@ -375,7 +375,7 @@ namespace GuardsDigital.Tests.EditMode
                 minionPlacements: StagedHeroBoard.At("red-melee-01", StagedHeroBoard.FirstAdjacent));
             betweenTheTwo.StartPrimary(TigerclawCardContent.CombatReflexes);
             betweenTheTwo.Select(StagedHeroBoard.FourthAdjacent);
-            betweenTheTwo.Confirm();
+            betweenTheTwo.ConfirmIfStillOwed();
             Assert.That(betweenTheTwo.Choice?.NodeId.Value, Is.EqualTo("before-target"));
             betweenTheTwo.RoundTripThroughASnapshot();
 
@@ -387,7 +387,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(StagedHeroBoard.FourthAdjacent),
                 "and the move it carried is the one that was taken.");
             betweenTheTwo.Select(betweenTheTwo.MinionAt(StagedHeroBoard.FirstAdjacent));
-            betweenTheTwo.Confirm();
+            betweenTheTwo.ConfirmIfStillOwed();
             Assert.That(betweenTheTwo.Session.Projection.PendingEffectChoice, Is.Null,
                 "and the restored Attack resolves from there.");
         }

@@ -122,7 +122,7 @@ namespace GuardsDigital.Tests.EditMode
                 "\"Target a unit adjacent to you.\" - the second printed sentence.");
             Assert.That(board.CandidateHeroes(victim), Has.Member(board.Enemy));
             board.Select(board.Enemy);
-            board.Confirm();
+            board.ConfirmIfStillOwed();
 
             Assert.That(
                 Distance(board.HeroSpace(board.Hero), board.HeroSpace(board.Enemy)), Is.EqualTo(1),

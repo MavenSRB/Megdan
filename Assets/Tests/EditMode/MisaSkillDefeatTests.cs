@@ -58,13 +58,20 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(live.Execute(DirectorCommand.AnswerEffectChoice(invalid)).Accepted, Is.False);
                 Assert.That(live.CaptureSnapshot(), Is.EqualTo(beforeInvalid));
             }
-            Choose(live, candidates.Single(choice => choice.Candidate.Value.MinionId.Equals(target)), confirm: false);
+            // Milestone 8.46b. The capture moved one command earlier and the answer moved into one
+            // command, because the state this used to snapshot no longer exists: the removal admits
+            // exactly one subject, so naming it resolves the step rather than parking on a pause
+            // standing on Deselect and Confirm. What the case is about is untouched - the standing
+            // question restores and completes identically in both sessions, the answer can be taken
+            // back and given again, and a stale one cannot apply twice.
             var selected = live.CaptureSnapshot();
             var restored = new MatchSession(initial);
             Assert.That(restored.RestoreSnapshot(selected).Accepted, Is.True);
             foreach (var session in new[] { live, restored })
             {
-                Accept(session, DirectorCommand.AnswerEffectChoice(session.Projection.PendingEffectChoice.ConfirmInvocation));
+                Accept(session, DirectorCommand.AnswerEffectChoice(
+                    session.Projection.PendingEffectChoice.SelectInvocations.Single(choice =>
+                        choice.Candidate.Value.MinionId.Equals(target))));
                 if (guarded)
                 {
                     Assert.That(session.Projection.PendingRemovalPrevention, Is.Not.Null);
@@ -92,11 +99,14 @@ namespace GuardsDigital.Tests.EditMode
             if (!guarded)
             {
                 Assert.That(live.Undo().Accepted, Is.True);
-                Assert.That(live.CaptureSnapshot(), Is.EqualTo(selected));
-                var confirm = DirectorCommand.AnswerEffectChoice(live.Projection.PendingEffectChoice.ConfirmInvocation);
-                Accept(live, confirm);
+                Assert.That(live.CaptureSnapshot(), Is.EqualTo(selected),
+                    "One press back is the whole answer back, because giving it was one command.");
+                var naming = DirectorCommand.AnswerEffectChoice(
+                    live.Projection.PendingEffectChoice.SelectInvocations.Single(choice =>
+                        choice.Candidate.Value.MinionId.Equals(target)));
+                Accept(live, naming);
                 var complete = live.CaptureSnapshot();
-                Assert.That(live.Execute(confirm).Accepted, Is.False, "A stale confirmation cannot defeat or pay twice.");
+                Assert.That(live.Execute(naming).Accepted, Is.False, "A stale answer cannot defeat or pay twice.");
                 Assert.That(live.CaptureSnapshot(), Is.EqualTo(complete));
             }
         }
@@ -141,7 +151,9 @@ namespace GuardsDigital.Tests.EditMode
         private static void Choose(MatchSession session, GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommand command, bool confirm = true)
         {
             Accept(session, DirectorCommand.AnswerEffectChoice(command));
-            if (confirm) Accept(session, DirectorCommand.AnswerEffectChoice(session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and never reaches
+            // past the question it belongs to - a choice holding nothing is the next one.
+            if (confirm) ConfiguredMatchFixtures.ConfirmStandingEffectChoiceIfOwed(session, command.ChoiceId);
         }
         private static void Accept(MatchSession session, DirectorCommand command)
         {

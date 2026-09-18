@@ -79,7 +79,7 @@ namespace GuardsDigital.Tests.EditMode
             var before = board.HeroSpace(board.Hero);
             board.StartOffer(offer);
             board.SelectFirst();
-            board.Confirm();
+            board.ConfirmIfStillOwed();
             Assert.That(board.HeroSpace(board.Hero), Is.Not.EqualTo(before),
                 "The control has to actually swap, or it proves nothing about the blocked case.");
         }
@@ -113,7 +113,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var before = board.HeroSpace(board.Hero);
             board.SelectFirst();
-            board.Confirm();
+            board.ConfirmIfStillOwed();
             Assert.That(board.HeroSpace(board.Hero), Is.Not.EqualTo(before),
                 "and naming the one that is left still swaps.");
         }
@@ -216,7 +216,7 @@ namespace GuardsDigital.Tests.EditMode
             var before = board.HeroSpace(board.Hero);
             board.StartOffer(offer);
             board.SelectFirst();
-            board.Confirm();
+            board.ConfirmIfStillOwed();
             Assert.That(board.HeroSpace(board.Hero), Is.Not.EqualTo(before));
         }
 
@@ -256,7 +256,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(board.Choice, Is.Not.Null,
                 "The control has to reach the destination question the blocked case never drew.");
             board.SelectFirst();
-            board.Confirm();
+            board.ConfirmIfStillOwed();
             Assert.That(board.HeroSpace(board.Hero), Is.Not.EqualTo(before));
         }
 

@@ -414,14 +414,16 @@ namespace GuardsDigital.Tests.EditMode
                 "and Reflect excludes nobody, so the attacker is in range and offered.");
 
             var handBefore = HandCount(session, attacker);
-            Answer(session, choice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single());
 
             var cardChoice = session.Projection.PendingEffectChoice;
             Assert.That(cardChoice.ChooserId, Is.EqualTo(attacker),
                 "The card is the chosen hero's own decision, out of their own hand.");
-            Answer(session, cardChoice.SelectInvocations.First());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, cardChoice.SelectInvocations.First());
 
             Assert.That(HandCount(session, attacker), Is.EqualTo(handBefore - 1));
             Assert.That(

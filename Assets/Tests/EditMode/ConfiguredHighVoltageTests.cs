@@ -39,9 +39,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 minionChoice.SelectInvocations.Select(value => value.Candidate.Value.MinionId),
                 Does.Contain(fixture.TargetId));
+            // Milestone 8.46b: each of the three questions below admits exactly one subject, so
+            // naming one IS the answer and no completion follows it. The `may` above still takes
+            // its own Confirm, because a confirm-or-decline offers nothing to name.
             Answer(fixture.Turn, minionChoice.SelectInvocations.Single(value =>
                 value.Candidate.Value.MinionId.Equals(fixture.TargetId)));
-            Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.ConfirmInvocation);
 
             var heroChoice = fixture.Turn.PendingEffectChoice;
             Assert.That(heroChoice.ChooserId, Is.EqualTo(fixture.RedHeroId),
@@ -54,12 +56,10 @@ namespace GuardsDigital.Tests.EditMode
                 "'who was adjacent' is read while the staged target is still on the board.");
 
             Answer(fixture.Turn, heroChoice.SelectInvocations.Single());
-            Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.ConfirmInvocation);
             var discardChoice = fixture.Turn.PendingEffectChoice;
             Assert.That(discardChoice.ChooserId, Is.EqualTo(fixture.BlueHeroId));
             var discarded = discardChoice.SelectInvocations.First().Candidate.Value.CardInstanceId;
-            Answer(fixture.Turn, discardChoice.SelectInvocations.First());
-            var completed = Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.ConfirmInvocation);
+            var completed = Answer(fixture.Turn, discardChoice.SelectInvocations.First());
 
             Assert.That(fixture.Board.Minions.Any(value => value.MinionId.Equals(fixture.TargetId)),
                 Is.False);
@@ -119,8 +119,11 @@ namespace GuardsDigital.Tests.EditMode
                 adjacentEnemyHero: false, controllerOnBoard: true);
             StartBasicSkill(fixture);
             Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.ConfirmInvocation);
-            Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.SelectInvocations.Single());
-            var completed = Answer(fixture.Turn, fixture.Turn.PendingEffectChoice.ConfirmInvocation);
+
+            // Milestone 8.46b: the removal admits exactly one subject, so the command that NAMES it
+            // is the command that completes the step. It used to take a confirm behind it.
+            var completed = Answer(
+                fixture.Turn, fixture.Turn.PendingEffectChoice.SelectInvocations.Single());
 
             Assert.That(fixture.Board.Minions.Any(value => value.MinionId.Equals(fixture.TargetId)),
                 Is.False);
@@ -148,11 +151,12 @@ namespace GuardsDigital.Tests.EditMode
                     value.ConsequenceIntent == EffectChoiceConsequenceIntent.Removal),
                 Is.True,
                 "The target is previewed with the ordinary removal consequence before confirmation.");
+            // Milestone 8.46b: each of these selections admits exactly one subject, so naming one
+            // closes it and the completion is asked for rather than assumed - aimed at the question
+            // the answer went into, because a one-press answer can open the next one behind it.
             var minion = fixture.Session.Projection.PendingEffectChoice.SelectInvocations.Single(value =>
                 value.Candidate.Value.MinionId.Equals(fixture.TargetId));
-            Accept(fixture.Session, DirectorCommand.AnswerEffectChoice(minion));
-            Accept(fixture.Session, DirectorCommand.AnswerEffectChoice(
-                fixture.Session.Projection.PendingEffectChoice.ConfirmInvocation));
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(fixture.Session, minion);
 
             var snapshot = fixture.Session.CaptureSnapshot();
             var restoredFixture = CreateSessionFixture();
@@ -163,14 +167,12 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(value => value.Candidate.Value.HeroId),
                 Is.EqualTo(new[] { fixture.BlueHeroId }));
             Assert.That(restoredFixture.Session.CaptureSnapshot(), Is.EqualTo(snapshot));
-            Accept(restoredFixture.Session, DirectorCommand.AnswerEffectChoice(
-                restoredFixture.Session.Projection.PendingEffectChoice.SelectInvocations.Single()));
-            Accept(restoredFixture.Session, DirectorCommand.AnswerEffectChoice(
-                restoredFixture.Session.Projection.PendingEffectChoice.ConfirmInvocation));
-            Accept(restoredFixture.Session, DirectorCommand.AnswerEffectChoice(
-                restoredFixture.Session.Projection.PendingEffectChoice.SelectInvocations.First()));
-            Accept(restoredFixture.Session, DirectorCommand.AnswerEffectChoice(
-                restoredFixture.Session.Projection.PendingEffectChoice.ConfirmInvocation));
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                restoredFixture.Session,
+                restoredFixture.Session.Projection.PendingEffectChoice.SelectInvocations.Single());
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(
+                restoredFixture.Session,
+                restoredFixture.Session.Projection.PendingEffectChoice.SelectInvocations.First());
             Assert.That(
                 restoredFixture.Session.Projection.Minions.Any(value =>
                     value.MinionId.Equals(fixture.TargetId)),

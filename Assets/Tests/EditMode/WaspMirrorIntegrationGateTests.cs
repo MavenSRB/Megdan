@@ -62,8 +62,16 @@ namespace GuardsDigital.Tests.EditMode
         /// candidates - seeds 1, 3, 4, 8, 11, 14 and 19 all end this way but inside a single round,
         /// several of them in under ten commands. Seed 6 crosses a round boundary and takes two
         /// Attack targets on the way, which is the least this gate can be and still be a gate.</para>
+        ///
+        /// <para>Milestone 8.46b re-derived it again, 6 -> 12. A choice admitting exactly one
+        /// selection is now answered in ONE accepted command instead of two, so every trajectory past
+        /// the first such answer is a different match and seed 6 ends on the final Wave. A fresh scan
+        /// of seeds 1-40 kept the one-round rejection above: seeds 1, 3, 4, 7, 8, 11, 14, 19, 25, 26,
+        /// 27, 29, 33 and 38 all exhaust the Life counters inside a single round, several in under
+        /// twenty commands. Seed 12 takes 33 rounds and 1,009 commands to get there, which is the
+        /// longest honest candidate rather than the first one found.</para>
         /// </summary>
-        private const int LifeCounterMatchSeed = 6;
+        private const int LifeCounterMatchSeed = 12;
 
         /// <summary>
         /// Ends by p.8's last Wave counter on the engaged mirror carrying two Life counters a side
@@ -104,8 +112,15 @@ namespace GuardsDigital.Tests.EditMode
         /// counters, which this case does not assert. That the search is still this narrow is the
         /// same finding 8.35g recorded, and it is why the scan is widened rather than the claim
         /// weakened.</para>
+        ///
+        /// <para>Milestone 8.46b re-derived it again, 28 -> 26, for the reason the one-press rule
+        /// gives every seeded trajectory: seed 28 now ends on the final Wave. A 40-seed scan of this
+        /// fixture found three Throne captures (13, 22, 26) and seed 26 is the only one whose
+        /// `GameEnded` names NO stage - the mid-turn arm this case exists to be. 51 rounds, 1,599
+        /// commands, and both teams still holding a Life counter, which is what the case asserts
+        /// below.</para>
         /// </summary>
-        private const int MidTurnPushMatchSeed = 28;
+        private const int MidTurnPushMatchSeed = 26;
 
         /// <summary>
         /// Generous enough that every complete match above finishes well inside it, and small enough

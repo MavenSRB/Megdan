@@ -271,11 +271,9 @@ namespace GuardsDigital.Tests.EditMode
             var session = StartPrimaryMovementWith(AroundMovementCard);
             var ordering = session.Projection.PendingEffectChoice;
 
-            Accept(session, DirectorCommand.AnswerEffectChoice(ordering.SelectInvocations[1]));
-            Accept(
-                session,
-                DirectorCommand.AnswerEffectChoice(
-                    session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, ordering.SelectInvocations[1]);
 
             Assert.That(session.Projection.PendingMovementChoice, Is.Not.Null,
                 "The Movement runs first, and the work the actor placed after it waits.");

@@ -54,20 +54,30 @@ namespace GuardsDigital.Tests.EditMode
         /// The turn's close is withheld while the trigger's questions stand, and completes when they
         /// are answered - which is the handshake milestone 8.35z30 reasoned about and could not drive.
         ///
-        /// <para><b>Four pauses, not two, and the difference is a surface fact worth pinning.</b> The
-        /// face prints two questions - which enemy hero, then which card - and each of them reaches a
-        /// player as TWO commands: the node first offers its candidates and then offers a confirm. A
-        /// journey that drives this face therefore sends four commands, and one that sends two stops
-        /// halfway through a question rather than finishing it.</para>
+        /// <para><b>Two pauses, one per printed question, and the count is a surface fact worth
+        /// pinning.</b> The face prints two questions - which enemy hero, then which card - and each
+        /// names exactly one subject, so each reaches a player as ONE command that both names it and
+        /// closes the question.</para>
+        ///
+        /// <para>Milestone 8.46b is what made that true and this assertion is where the change is
+        /// measured on real content. Until then each of these two questions stood on Select and then
+        /// Confirm, this drive recorded FOUR pauses, and a journey that sent two commands stopped
+        /// halfway through a question rather than finishing it. The user's rule for the decision
+        /// window - "choose-exactly-one answers in one press" - halves that, and nothing else about
+        /// the face moved: the same two questions, the same choosers, the same discarded card.</para>
         /// </summary>
         [Test]
         public void WarningShot_WithholdsTheTurnsCloseUntilBothOfItsQuestionsAreAnswered()
         {
             var drive = Drive(separation: 3);
 
-            Assert.That(drive.Pauses, Has.Count.EqualTo(4),
-                "Two printed questions, each answered on its own candidate command and then its own " +
-                "confirm.");
+            Assert.That(drive.Pauses, Has.Count.EqualTo(2),
+                "Two printed questions, each of exactly one subject and so each answered by naming " +
+                "it.");
+            Assert.That(drive.Pauses.All(pause => pause.ResolvesOnSelection), Is.True,
+                "and that is why: both are exactly-one selections. Asked: " + string.Join(", ",
+                    drive.Pauses.Select(pause => pause.NodeId.Value + " " +
+                        pause.MinimumSelections + ".." + pause.MaximumSelections)));
             Assert.That(drive.EndedBeforeTheLastAnswer, Is.False,
                 "The work is printed as happening at the end of THIS turn, so the turn is not over " +
                 "while the question stands.");
@@ -91,10 +101,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(drive.Pauses[0].Candidates, Has.Count.EqualTo(1),
                 "One enemy hero stands inside her printed Radius 3.");
 
-            Assert.That(drive.Pauses[2].NodeId.Value, Is.EqualTo("warning-discard"));
-            Assert.That(drive.Pauses[2].ChooserId, Is.EqualTo(drive.Enemy),
+            // Milestone 8.46b: the discard is the SECOND pause rather than the third. Each question
+            // names exactly one subject and is therefore asked once, not once to offer and again to
+            // confirm - see WarningShot_WithholdsTheTurnsCloseUntilBothOfItsQuestionsAreAnswered.
+            Assert.That(drive.Pauses[1].NodeId.Value, Is.EqualTo("warning-discard"));
+            Assert.That(drive.Pauses[1].ChooserId, Is.EqualTo(drive.Enemy),
                 "It is their hand, so it is their choice - which is what \"discards a card\" means.");
-            Assert.That(drive.Pauses[2].Candidates, Has.Count.EqualTo(drive.EnemyHandBefore));
+            Assert.That(drive.Pauses[1].Candidates, Has.Count.EqualTo(drive.EnemyHandBefore));
         }
 
         /// <summary>The work actually happens: a card leaves the named hero's hand.</summary>
@@ -147,8 +160,12 @@ namespace GuardsDigital.Tests.EditMode
             var drive = Drive(separation: 3);
 
             Assert.That(drive.EffectPhase, Is.EqualTo(ActiveEffectPhase.Ended));
+            // Milestone 8.46b: once, not twice. The count used to be two because one question was
+            // asked once to offer its candidates and again to confirm; an exactly-one selection is
+            // now answered by naming it, so a single appearance is the whole of "asked once" and a
+            // second firing would still show up here as two.
             Assert.That(drive.Pauses.Count(pause => pause.NodeId.Value == "warning-select"),
-                Is.EqualTo(2),
+                Is.EqualTo(1),
                 "One question asked once - a second firing would ask it again.");
         }
 

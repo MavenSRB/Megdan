@@ -691,9 +691,9 @@ namespace GuardsDigital.Tests.EditMode
             var choice = session.Projection.PendingEffectChoice;
             var invocation = choice.SelectInvocations.Single(candidate =>
                 candidate.Candidate.OptionNodeId.Equals(mode));
-            Accept(session, DirectorCommand.AnswerEffectChoice(invocation));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         private static int FastTravelOfferCount(MatchSession session, HeroId actorId)

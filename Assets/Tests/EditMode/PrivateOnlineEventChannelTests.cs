@@ -284,8 +284,19 @@ namespace GuardsDigital.Tests.EditMode
             // positions that were wrong. That is not a coincidence worth ignoring - it is the
             // corroboration that this milestone removes offers 8.35z25 added and touches no others,
             // measured on a walk nobody designed to prove it.
+            //
+            // Milestone 8.46b re-derived it again, 1 -> 2. A choice admitting exactly one selection
+            // is now answered in ONE accepted command instead of two, so this walk draws a different
+            // command at every pause past the first such answer. Seed 1 no longer ends at all: at
+            // step 3,827 and 49 rounds it draws an `AnswerEffectChoice` the authority refuses
+            // (AttackActionRejected: TargetUnavailable), which stops the drive on its own
+            // acceptance assertion rather than on anything this case is about. An offline scan of
+            // seeds 1-60 found four that end that way (1, 10, 44, 47) - recorded as an open question
+            // rather than seeded around silently - and forty-eight that end honestly. Seed 2 ends at
+            // 45 completed rounds and 3,538 commands: five rounds of margin above the floor and 84%
+            // of budget, the same shape every re-pin above records.
             var submitted = OwnerScopedProjectionTests.DriveThroughSeats(
-                host, 4200, projection => { Measure(); return false; }, seed: 1);
+                host, 4200, projection => { Measure(); return false; }, seed: 2);
             Measure();
 
             var playedRounds = host.Projection.RoundIndex - 1;

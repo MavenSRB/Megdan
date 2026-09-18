@@ -8,6 +8,7 @@ using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Units.Minions;
@@ -39,6 +40,52 @@ namespace GuardsDigital.Tests.EditMode
             var result = session.Execute(command);
             Assert.That(result.Accepted, Is.True, result.Detail);
             return result;
+        }
+
+        /// <summary>
+        /// Milestone 8.46b. Names one candidate of the standing effect choice and, where the choice
+        /// is still unfinished afterwards, closes it - the commands a real seat submits, however
+        /// many that turns out to be.
+        /// </summary>
+        /// <remarks>
+        /// <para>Until this milestone it was always two: every choice stood on Select then Confirm,
+        /// and the fixtures that drive content through a paused frame wrote the pair out. The user's
+        /// rule for the decision window makes a choice admitting exactly one selection answer in ONE
+        /// press - the resolution session closes it inside the Select - so the second command is now
+        /// asked for rather than assumed. A choice admitting several still owes it and still gets
+        /// it, which is why this asks rather than simply dropping the confirm.</para>
+        /// <para>Answering one question can now open the NEXT one inside the same command, so a
+        /// completion has to be aimed at the question it belongs to. This one is: the selection
+        /// carries its own <see cref="EffectChoiceId"/>, and a following question - a printed `may`
+        /// drawn as a confirm-or-decline, most often - has a different one and is left standing for
+        /// the caller to answer on purpose. An unaimed "confirm whatever stands" takes that offer
+        /// unasked, which is the trap milestone 8.22's first Play Mode run recorded and which this
+        /// milestone made reachable in the offline fixtures for the first time.</para>
+        /// </remarks>
+        public static void AnswerEffectChoiceSelection(
+            MatchSession session, EffectChoiceCommand selection)
+        {
+            if (selection == null) throw new ArgumentNullException(nameof(selection));
+            Accept(session, DirectorCommand.AnswerEffectChoice(selection));
+            ConfirmStandingEffectChoiceIfOwed(session, selection.ChoiceId);
+        }
+
+        /// <summary>
+        /// Milestone 8.46b. Submits the named choice's completion command where that choice is still
+        /// standing and still offers one. See <see cref="AnswerEffectChoiceSelection"/>.
+        /// </summary>
+        public static void ConfirmStandingEffectChoiceIfOwed(
+            MatchSession session, EffectChoiceId answered)
+        {
+            var standing = session.Projection.PendingEffectChoice;
+            if (standing == null ||
+                !standing.ChoiceId.Equals(answered) ||
+                standing.ConfirmInvocation == null)
+            {
+                return;
+            }
+
+            Accept(session, DirectorCommand.AnswerEffectChoice(standing.ConfirmInvocation));
         }
 
         /// <summary>
@@ -1558,11 +1605,9 @@ namespace GuardsDigital.Tests.EditMode
             Accept(session, DirectorCommand.StartAction(
                 new ActionDefinitionId("primary-modification-skill")));
             var choice = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(choice.SelectInvocations
+            AnswerEffectChoiceSelection(session, choice.SelectInvocations
                 .Single(candidate => candidate.Candidate.OptionNodeId.Equals(
-                    new GuardsDigital.Core.Effects.EffectNodeId("bulwark-defense-bonus")))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+                    new GuardsDigital.Core.Effects.EffectNodeId("bulwark-defense-bonus"))));
 
             sourceCardId = bulwarkCardId;
             return session;

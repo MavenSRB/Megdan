@@ -73,28 +73,38 @@ namespace GuardsDigital.Tests.EditMode
             var paused = Start(definition);
             var choice = paused.Frame.PendingChoice;
 
+            // Milestone 8.46b: the Choose admits exactly one option, so naming it is the whole
+            // answer and no Confirm follows.
             var selected = EffectResolutionSession.Answer(
                 paused.Frame,
                 choice.SelectInvocations.Single(invocation =>
                     invocation.Candidate.OptionNodeId.Equals(new EffectNodeId("b"))),
                 Context(definition));
-            var confirmed = EffectResolutionSession.Answer(
-                selected.Frame, selected.Frame.PendingChoice.ConfirmInvocation, Context(definition));
 
-            Assert.That(confirmed.IsComplete, Is.True);
-            Assert.That(Nodes(confirmed), Does.Contain("b"));
-            Assert.That(Nodes(confirmed), Has.None.EqualTo("a"));
+            Assert.That(selected.IsComplete, Is.True);
+            Assert.That(Nodes(selected), Does.Contain("b"));
+            Assert.That(Nodes(selected), Has.None.EqualTo("a"));
         }
 
+        /// <summary>
+        /// Milestone 8.46b rewrote this from a one-of-two Choose to a two-of-three one. The property
+        /// it proves is unchanged and is the reason the two-step shape survives at all: while a
+        /// selection can still be unfinished, withdrawing one takes the decision back to where it
+        /// stood and makes it unconfirmable again. A choice admitting exactly one selection no
+        /// longer stands long enough to deselect anything, which is a different rule proved beside
+        /// this one in <c>ExactlyOneEffectChoiceTests</c>.
+        /// </summary>
         [Test]
         public void SelectThenDeselect_ReturnsToTheEarlierSelectionState()
         {
-            var definition = ChooseDefinition(EffectChooserRole.Actor);
+            var definition = ChooseDefinition(EffectChooserRole.Actor, 2, 2, "a", "b", "c");
             var paused = Start(definition);
 
             var selected = EffectResolutionSession.Answer(
                 paused.Frame, paused.Frame.PendingChoice.SelectInvocations[0], Context(definition));
             Assert.That(selected.Frame.PendingChoice.SelectedCandidates, Has.Count.EqualTo(1));
+            Assert.That(selected.Frame.PendingChoice.ConfirmInvocation, Is.Null,
+                "One of the two it needs is not an answer yet.");
 
             var deselected = EffectResolutionSession.Answer(
                 selected.Frame, selected.Frame.PendingChoice.DeselectInvocations[0], Context(definition));
@@ -174,17 +184,17 @@ namespace GuardsDigital.Tests.EditMode
                     live.PendingChoice.MaximumSelections,
                     live.PendingChoice.SelectedCandidates));
 
+            // Milestone 8.46b: the Choose admits exactly one, so each Select closes its own frame
+            // and the two answers are compared where they land rather than after a second command.
             var select = rebuilt.PendingChoice.SelectInvocations[0];
             var fromLive = EffectResolutionSession.Answer(live, select, Context(definition));
             var fromRebuilt = EffectResolutionSession.Answer(rebuilt, select, Context(definition));
 
-            var confirmedLive = EffectResolutionSession.Answer(
-                fromLive.Frame, fromLive.Frame.PendingChoice.ConfirmInvocation, Context(definition));
-            var confirmedRebuilt = EffectResolutionSession.Answer(
-                fromRebuilt.Frame, fromRebuilt.Frame.PendingChoice.ConfirmInvocation, Context(definition));
-
-            Assert.That(Nodes(confirmedRebuilt), Is.EqualTo(Nodes(confirmedLive)));
-            Assert.That(confirmedRebuilt.IsComplete, Is.EqualTo(confirmedLive.IsComplete));
+            Assert.That(Nodes(fromRebuilt), Is.EqualTo(Nodes(fromLive)));
+            Assert.That(fromRebuilt.IsComplete, Is.EqualTo(fromLive.IsComplete));
+            Assert.That(fromRebuilt.IsComplete, Is.True,
+                "A frame rebuilt from its serializable fields alone carries the same one-press " +
+                "answer to its end, which is what replay and restore reproduce the execution from.");
         }
 
         [Test]
@@ -228,13 +238,13 @@ namespace GuardsDigital.Tests.EditMode
             var paused = Start(definition);
             Assert.That(paused.Frame.PendingChoice.Kind, Is.EqualTo(EffectChoiceKind.SelectTarget));
 
+            // Milestone 8.46b: `choose-hero@1` asks for exactly one, so the selection resumes the
+            // handler inside its own command.
             var selected = EffectResolutionSession.Answer(
                 paused.Frame, paused.Frame.PendingChoice.SelectInvocations[0], Context(definition));
-            var confirmed = EffectResolutionSession.Answer(
-                selected.Frame, selected.Frame.PendingChoice.ConfirmInvocation, Context(definition));
 
-            Assert.That(confirmed.IsComplete, Is.True);
-            Assert.That(confirmed.Events.Single(value => value.NodeId.Equals(new EffectNodeId("pick")))
+            Assert.That(selected.IsComplete, Is.True);
+            Assert.That(selected.Events.Single(value => value.NodeId.Equals(new EffectNodeId("pick")))
                 .Outputs.Single().OutputName, Is.EqualTo("chosen"));
         }
 
@@ -288,15 +298,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(forgedResult.RejectionReason,
                 Is.EqualTo(EffectResolutionRejectionReason.IncompleteSelection));
 
-            // Selecting then confirming still runs the handler exactly as an ordinary mandatory
-            // single-target selection would - the fix narrows what an empty answer may do, not
-            // what a complete one can.
+            // Selecting still runs the handler exactly as an ordinary mandatory single-target
+            // selection would - the fix narrows what an empty answer may do, not what a complete
+            // one can. Milestone 8.46b: the handler needs exactly one, so that is one press and one
+            // command; the Decline above stays beside it because `may` is a real second answer.
             var selected = EffectResolutionSession.Answer(
                 paused.Frame, choice.SelectInvocations[0], Context(definition));
-            var confirmed = EffectResolutionSession.Answer(
-                selected.Frame, selected.Frame.PendingChoice.ConfirmInvocation, Context(definition));
-            Assert.That(confirmed.Accepted, Is.True);
-            Assert.That(confirmed.IsComplete, Is.True);
+            Assert.That(selected.Accepted, Is.True);
+            Assert.That(selected.IsComplete, Is.True);
         }
 
         [Test]
@@ -354,14 +363,19 @@ namespace GuardsDigital.Tests.EditMode
                 Leaf("else"));
 
         private static EffectDefinition ChooseDefinition(EffectChooserRole chooser) =>
+            ChooseDefinition(chooser, 1, 1, "a", "b");
+
+        private static EffectDefinition ChooseDefinition(
+            EffectChooserRole chooser, int minimum, int maximum, params string[] options) =>
             Definition(
-                new EffectNodeDefinition(
-                    new EffectNodeId("root"), EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
-                    childNodeIds: new[] { new EffectNodeId("a"), new EffectNodeId("b") },
-                    chooser: chooser,
-                    minimumSelections: 1,
-                    maximumSelections: 1),
-                Leaf("a"),
-                Leaf("b"));
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        new EffectNodeId("root"), EffectNodeKind.Choose, EffectFailurePolicy.Mandatory,
+                        childNodeIds: options.Select(option => new EffectNodeId(option)),
+                        chooser: chooser,
+                        minimumSelections: minimum,
+                        maximumSelections: maximum)
+                }.Concat(options.Select(Leaf)).ToArray());
     }
 }

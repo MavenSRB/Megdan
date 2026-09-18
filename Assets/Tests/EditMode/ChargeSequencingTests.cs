@@ -54,7 +54,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Nothing has moved yet: the destination question is asked from where he stands.");
 
             board.Select(Landing);
-            board.Confirm();
+            board.ConfirmIfStillOwed();
 
             Assert.That(board.HeroSpace(board.Hero), Is.EqualTo(Landing),
                 "The Move commits on the destination answer, in that same command.");
@@ -272,17 +272,45 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>Names the first candidate of the standing choice and closes it.</summary>
+        /// <summary>
+        /// Answers the standing choice the way its own shape says it is answered, and asserts that
+        /// it took the number of commands that shape owes.
+        /// </summary>
+        /// <remarks>
+        /// Milestone 8.46b. This used to say "a select is not an answer; the confirm behind it is",
+        /// unconditionally, because every choice really did stand on Select then Confirm. The user's
+        /// rule for the decision window makes a choice admitting exactly one selection answer in ONE
+        /// press, closed inside that command by the resolution session. The count is not incidental
+        /// here: the charges this fixture drives name their victim through <c>set-attack-target@1</c>
+        /// rather than through p.14's own command, so the number of commands the naming takes is
+        /// exactly what milestone 8.35p's wall has to rise on.
+        /// </remarks>
         private static void AnswerTheStandingChoice(IMatchHost host, SeatId seat)
         {
             var standing = host.Projection.PendingEffectChoice;
             Assert.That(standing, Is.Not.Null, "There is no standing choice to answer.");
             Assert.That(standing.SelectInvocations, Is.Not.Empty);
+            var answeredByNamingIt = standing.ResolvesOnSelection;
+            var before = host.Projection.AcceptedCommands.Count;
+
             SubmitFromSeat(host, seat, DirectorCommand.AnswerEffectChoice(
                 standing.SelectInvocations[0]));
 
             var selected = host.Projection.PendingEffectChoice;
+            if (answeredByNamingIt)
+            {
+                Assert.That(
+                    selected == null || !selected.ChoiceId.Equals(standing.ChoiceId), Is.True,
+                    "A choice of exactly one is answered by naming a candidate, so nothing of it " +
+                    "is left standing to press.");
+                Assert.That(host.Projection.AcceptedCommands.Count, Is.EqualTo(before + 1),
+                    "and naming it is ONE accepted command - the command the wall rises on and the " +
+                    "command a rewind would have to step back.");
+                return;
+            }
+
             Assert.That(selected?.ConfirmInvocation, Is.Not.Null,
-                "A select is not an answer; the confirm behind it is.");
+                "A selection that could still grow is not an answer; the confirm behind it is.");
             SubmitFromSeat(host, seat, DirectorCommand.AnswerEffectChoice(
                 selected.ConfirmInvocation));
         }

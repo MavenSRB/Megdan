@@ -241,7 +241,10 @@ namespace GuardsDigital.Tests.EditMode
                 // rerouted this trajectory and seed 6 no longer reaches a team-owned end-of-round
                 // pause inside 2,000 steps. An offline scan of seeds 1-30 found seed 22 reaches one
                 // at step 318, tied for the lowest of the thirty and far inside this budget.
-                22);
+                // Milestone 8.46b re-derived it again: the one-press rule moved every trajectory past the
+                // first exactly-one answer, and seed 22 no longer stops inside end of round. An offline scan
+                // of seeds 1-30 put the team-owned end-of-round pause on SEED 29, at step 558.
+                29);
             var source = host.Projection;
 
             Assert.That(source.Phase, Is.EqualTo(RoundResolutionPhase.EndOfRound),

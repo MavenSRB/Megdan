@@ -277,10 +277,11 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True,
                 "and the candidates are that hero's own cards.");
 
+            // Milestone 8.46b: "discards a card" names exactly one, so the recipient's single press
+            // is the whole answer and no completion follows it.
             var discarded = question.Candidates[0].Value.CardInstanceId;
             fixture.Answer(question.SelectInvocations.Single(candidate =>
                 candidate.Candidate.Value.CardInstanceId.Equals(discarded)));
-            fixture.Answer(fixture.Authority.PendingEffectChoice.ConfirmInvocation);
 
             Assert.That(fixture.Authority.PendingEffectInterrupt, Is.Null,
                 "The ability finished and the effect it interrupted was carried on.");
@@ -464,11 +465,11 @@ namespace GuardsDigital.Tests.EditMode
             var recipient = recipients.Candidates
                 .Select(candidate => candidate.Value.HeroId)
                 .First(hero => !hero.Equals(actor));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
                 recipients.SelectInvocations.Single(candidate =>
-                    candidate.Candidate.Value.HeroId.Equals(recipient))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+                    candidate.Candidate.Value.HeroId.Equals(recipient)));
 
             var question = session.Projection.PendingEffectChoice;
             Assert.That(question, Is.Not.Null,
@@ -484,11 +485,11 @@ namespace GuardsDigital.Tests.EditMode
                 Is.True);
 
             var discarded = question.Candidates[0].Value.CardInstanceId;
-            Accept(session, DirectorCommand.AnswerEffectChoice(
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
                 question.SelectInvocations.Single(candidate =>
-                    candidate.Candidate.Value.CardInstanceId.Equals(discarded))));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+                    candidate.Candidate.Value.CardInstanceId.Equals(discarded)));
 
             Assert.That(
                 session.Projection.Cards.Single(card => card.Id.Equals(discarded)).State.Location,
@@ -999,19 +1000,36 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(recipients, Is.Not.Null,
                     "Who receives the marker is the attachment decision, and the showcase give binds " +
                     "no holder, so every hero is offered.");
-                Answer(recipients.SelectInvocations.Single(candidate =>
-                    candidate.Candidate.Value.HeroId.Equals(recipient)));
-                var confirmation = Authority.PendingEffectChoice;
-                Answer(confirmation.ConfirmInvocation);
+                var naming = recipients.SelectInvocations.Single(candidate =>
+                    candidate.Candidate.Value.HeroId.Equals(recipient));
+                Answer(naming);
+                ConfirmIfStillOwed(naming);
                 return started;
             }
 
             private void ChooseOption(EffectNodeId option)
             {
                 var choice = Authority.PendingEffectChoice;
-                Answer(choice.SelectInvocations.Single(candidate =>
-                    candidate.Candidate.OptionNodeId.Equals(option)));
-                Answer(Authority.PendingEffectChoice.ConfirmInvocation);
+                var naming = choice.SelectInvocations.Single(candidate =>
+                    candidate.Candidate.OptionNodeId.Equals(option));
+                Answer(naming);
+                ConfirmIfStillOwed(naming);
+            }
+
+            /// <summary>
+            /// Milestone 8.46b. Closes the named choice where closing it is still a command of its
+            /// own - which for one admitting exactly one selection it no longer is - and aims at
+            /// that choice, so a question the same command opened is left standing.
+            /// </summary>
+            private void ConfirmIfStillOwed(EffectChoiceCommand naming)
+            {
+                var standing = Authority.PendingEffectChoice;
+                if (standing != null &&
+                    standing.ChoiceId.Equals(naming.ChoiceId) &&
+                    standing.ConfirmInvocation != null)
+                {
+                    Answer(standing.ConfirmInvocation);
+                }
             }
         }
 

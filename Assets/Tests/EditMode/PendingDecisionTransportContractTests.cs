@@ -98,8 +98,13 @@ namespace GuardsDigital.Tests.EditMode
             // rerouted this trajectory and seed 6 no longer reaches Minion Battle at all inside
             // 2,600 steps. A fresh offline scan of seeds 1-30 put every walked family on SEED 22,
             // the last of them (minion-battle) at step 319 - well inside this method's 1,900-step
+            // Milestone 8.46b re-derived it again. A choice admitting exactly one selection is now
+            // answered in ONE accepted command instead of two, so every seeded trajectory past the
+            // first such answer is a different match and seed 22 stopped reaching attack-target and
+            // minion-battle at all inside 1,800 steps. A fresh offline scan of seeds 1-30 put every
+            // walked family on SEED 29, the last of them (minion-battle) at step 558.
             // walk.
-            var random = new MatchLoopRandom(22);
+            var random = new MatchLoopRandom(29);
             var observed = new List<string>();
             var target = new[]
             {

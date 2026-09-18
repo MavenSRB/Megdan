@@ -547,9 +547,9 @@ namespace GuardsDigital.Tests.EditMode
             var modal = session.Projection.PendingEffectChoice;
             Accept(session, DirectorCommand.AnswerEffectChoice(modal.SelectInvocations[0]));
             var afterFirst = session.Projection.PendingEffectChoice;
-            Accept(session, DirectorCommand.AnswerEffectChoice(afterFirst.SelectInvocations[0]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, afterFirst.SelectInvocations[0]);
         }
 
         /// <summary>Answers the modal with one bullet: 1 for the adjacent unit, 2 for the pile clause.</summary>
@@ -557,10 +557,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             var modal = session.Projection.PendingEffectChoice;
             Assert.That(modal.SelectInvocations, Has.Count.EqualTo(2));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                modal.SelectInvocations[ordinal - 1]));
-            Accept(session, DirectorCommand.AnswerEffectChoice(
-                session.Projection.PendingEffectChoice.ConfirmInvocation));
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
+                modal.SelectInvocations[ordinal - 1]);
         }
 
         /// <summary>Runs the whole of the standing sequence's p.14 against its first legal hero.</summary>

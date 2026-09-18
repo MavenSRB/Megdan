@@ -182,12 +182,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(replay.Round, replay.Board), Is.EqualTo(payload));
             foreach (var branch in new[] { round, replay.Round })
             {
+                // Milestone 8.46b: the discard names exactly one card, so the select is the whole
+                // answer and re-sending it is a stale command against a question nobody is asking.
                 var choice = branch.CurrentTurnAuthority.PendingEffectChoice;
                 var select = choice.SelectInvocations.Single();
                 Assert.That(branch.TryAnswerEffectChoice(select).Accepted, Is.True);
                 Assert.That(branch.TryAnswerEffectChoice(select).Accepted, Is.False);
-                choice = branch.CurrentTurnAuthority.PendingEffectChoice;
-                Assert.That(branch.TryAnswerEffectChoice(choice.ConfirmInvocation).Accepted, Is.True);
             }
             var after = AuthoritativeSnapshotSerializer.Serialize(round, board);
             Assert.That(AuthoritativeSnapshotSerializer.Serialize(replay.Round, replay.Board), Is.EqualTo(after));

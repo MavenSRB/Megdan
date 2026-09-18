@@ -160,8 +160,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(choice.ConfirmInvocation, Is.Not.Null,
                 "`up to 2` includes none, so the decision may be closed with nothing named.");
 
-            Answer(session, choice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, choice.SelectInvocations.Single());
 
             Assert.That(session.Projection.PendingEffectChoice, Is.Null,
                 "`3 spaces` is one number, so nobody is asked how far.");
@@ -193,8 +194,9 @@ namespace GuardsDigital.Tests.EditMode
             var handBefore = HandCount(session, blueHeroId);
 
             StartSkill(session);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
 
             var after = HeroSpace(session, TeamSide.Blue);
             Assert.That(
@@ -218,8 +220,9 @@ namespace GuardsDigital.Tests.EditMode
                 "same suppression the hero would see.");
 
             var chosen = discard.SelectInvocations.First().Candidate.Value.CardInstanceId;
-            Answer(session, discard.SelectInvocations.First());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, discard.SelectInvocations.First());
 
             Assert.That(
                 session.Projection.Cards.Single(card => card.Id.Equals(chosen)).State.Location,
@@ -240,8 +243,9 @@ namespace GuardsDigital.Tests.EditMode
             var handBefore = HandCount(session, blueHeroId);
 
             StartSkill(session);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
 
             Assert.That(session.Projection.PendingEffectChoice, Is.Null,
                 "Nothing stopped this push, so the rider's predicate reads false and the branch " +
@@ -259,7 +263,11 @@ namespace GuardsDigital.Tests.EditMode
             var before = HeroSpace(session, TeamSide.Blue);
 
             StartSkill(session);
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b leaves this exactly as it was: nothing was selected into this question, so
+            // it is p.10s own confirm-or-decline being taken on purpose rather than a selection being
+            // closed - and the one-press rule touches neither.
+            ConfiguredMatchFixtures.Accept(session, DirectorCommand.AnswerEffectChoice(
+                session.Projection.PendingEffectChoice.ConfirmInvocation));
 
             Assert.That(HeroSpace(session, TeamSide.Blue), Is.EqualTo(before),
                 "p.10: an `up to` step nobody takes is not taken.");
@@ -281,8 +289,9 @@ namespace GuardsDigital.Tests.EditMode
             var actorAt = HeroSpace(session, TeamSide.Red);
 
             StartSkill(session);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
 
             var distance = session.Projection.PendingEffectChoice;
             Assert.That(distance, Is.Not.Null,
@@ -293,11 +302,10 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[] { 3, 4 }),
                 "The card names two numbers and nothing between them and zero.");
 
-            Answer(
-                session,
-                distance.SelectInvocations.Single(invocation =>
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, distance.SelectInvocations.Single(invocation =>
                     invocation.Candidate.Value.IntegerValue == 4));
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
 
             Assert.That(
                 HexDistanceQuery.Calculate(actorAt, HeroSpace(session, TeamSide.Blue)),
@@ -331,8 +339,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(units.DeclineInvocation, Is.Not.Null,
                 "and refusing the whole optional node is another.");
 
-            Answer(session, units.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, units.SelectInvocations.Single());
 
             var distance = session.Projection.PendingEffectChoice;
             Assert.That(distance, Is.Not.Null,
@@ -359,22 +368,23 @@ namespace GuardsDigital.Tests.EditMode
             var actorAt = HeroSpace(session, TeamSide.Red);
 
             StartSkill(session);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
             var betweenQuestions = session.CaptureSnapshot();
 
-            Answer(
-                session,
-                session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
                     invocation.Candidate.Value.IntegerValue == 3));
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
             var afterThePush = session.CaptureSnapshot();
             var pushedTo = HeroSpace(session, TeamSide.Blue);
             Assert.That(HexDistanceQuery.Calculate(actorAt, pushedTo), Is.EqualTo(4));
 
-            // Two commands closed the distance question - naming a number and confirming it - so two
-            // are undone to stand between the questions again.
-            Assert.That(session.Undo().Accepted, Is.True);
+            // Milestone 8.46b: ONE command closed the distance question - naming a number is the whole
+            // answer for a choice that admits exactly one - so one press back stands between the two
+            // questions again. It used to take two, and the first of them landed the player on a state
+            // they had never seen going forwards.
             Assert.That(session.Undo().Accepted, Is.True);
             Assert.That(session.CaptureSnapshot(), Is.EqualTo(betweenQuestions),
                 "Retained-prefix Undo puts the resolution back between its two questions.");
@@ -389,11 +399,10 @@ namespace GuardsDigital.Tests.EditMode
                 "The restored pause is the distance question, re-derived rather than replayed from a " +
                 "stored candidate list.");
 
-            Answer(
-                restored,
-                restored.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(restored, restored.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
                     invocation.Candidate.Value.IntegerValue == 3));
-            Answer(restored, restored.Projection.PendingEffectChoice.ConfirmInvocation);
 
             Assert.That(HeroSpace(restored, TeamSide.Blue), Is.EqualTo(pushedTo),
                 "and the same unit is pushed, because the answer the first question gave came back " +
@@ -425,17 +434,17 @@ namespace GuardsDigital.Tests.EditMode
             var actorAt = HeroSpace(session, TeamSide.Red);
 
             StartSkill(session);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
             var betweenQuestions = session.CaptureSnapshot();
 
             // Play PAST the pause, so the restore has real state to displace rather than an opening
             // position that happens to match.
-            Answer(
-                session,
-                session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
                     invocation.Candidate.Value.IntegerValue == 4));
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
             Assert.That(session.Projection.PendingEffectChoice, Is.Null,
                 "The push resolved, so the node is closed and there is something to come back from.");
 
@@ -455,11 +464,10 @@ namespace GuardsDigital.Tests.EditMode
                 "The restored question keeps its own floor, so it is the second question in full " +
                 "rather than a re-derived first one wearing the right candidates.");
 
-            Answer(
-                session,
-                distance.SelectInvocations.Single(invocation =>
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, distance.SelectInvocations.Single(invocation =>
                     invocation.Candidate.Value.IntegerValue == 3));
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
             Assert.That(
                 HexDistanceQuery.Calculate(actorAt, HeroSpace(session, TeamSide.Blue)),
                 Is.EqualTo(4),
@@ -486,17 +494,17 @@ namespace GuardsDigital.Tests.EditMode
             CommitAgainstStopProjectiles(session, WaspCardContent.KineticBlast);
 
             StartSkill(session);
-            Answer(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single());
 
-            Answer(
-                session,
-                session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
+            // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
+            // this answer went into - one admitting exactly one selection is closed by the select itself.
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, session.Projection.PendingEffectChoice.SelectInvocations.Single(invocation =>
                     invocation.Candidate.Value.IntegerValue == 4));
-            Answer(session, session.Projection.PendingEffectChoice.ConfirmInvocation);
 
-            // Two commands closed the distance question - naming a number and confirming it.
-            Assert.That(session.Undo().Accepted, Is.True);
+            // Milestone 8.46b: ONE command closed the distance question - naming a number is the whole
+            // answer for a choice that admits exactly one.
             Assert.That(session.Undo().Accepted, Is.True);
 
             var distance = session.Projection.PendingEffectChoice;
