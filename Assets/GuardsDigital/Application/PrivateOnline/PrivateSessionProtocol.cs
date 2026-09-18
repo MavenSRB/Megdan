@@ -241,7 +241,21 @@ namespace GuardsDigital.Application
         // SCHEMA IS UNMOVED at v42. The reveal's memory is the DERIVED seat-public log, re-derived
         // from the retained rule-event log on restore, replay and Undo exactly as every other row of
         // it is; nothing new is persisted, and no corpus digest or pinned constant moves with it.
-        public const int Version = 15;
+        //
+        // Version 16 (milestone 8.51) carries a HOLD. The seat-public match log gained one member -
+        // `MatchLogEntryKind.CardHeld`, rulebook p.12's Hold performed by the seat's own command -
+        // and `NetworkMatchLog.TryRead` validates every row's kind with `Enum.IsDefined`, so a
+        // version 15 peer meeting the new number refuses the whole frame exactly as a version 14
+        // peer did at 8.40f. The row spends `SubjectHeroId` and `SubjectCardInstanceId`, which the
+        // row layout has carried since 8.35r: NO BYTES GREW, only the vocabulary widened. It exists
+        // because the 2026-09-18 playtest's "Silverarrow's card got resolved without input" could
+        // be read off the wire log only by the timing of two silent submissions; the host narration
+        // and the in-game tray now state the Hold outright.
+        //
+        // SCHEMA IS UNMOVED at v42: the row is re-derived from the retained rule-event log, whose
+        // `Turn.HoldActionPerformed` event the engine has recorded for as long as the Hold existed;
+        // no corpus digest or pinned constant moves with it.
+        public const int Version = 16;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

@@ -298,6 +298,16 @@ namespace GuardsDigital.Presentation.Match
         public VisualElement EndTurnRoot => endTurnHost;
 
         /// <summary>
+        /// Milestone 8.51. How the last END TURN press reached this view - the report
+        /// <see cref="EndTurnPressProvenance.Take"/> composed at the moment of the press, read by
+        /// the runtime to write the player's own log line. Null until the first press.
+        /// </summary>
+        public string LastEndTurnPressReport { get; private set; }
+
+        private readonly EndTurnPressProvenance endTurnPress = new EndTurnPressProvenance();
+        private Button endTurnControl;
+
+        /// <summary>
         /// Milestone 8.35f. The seat undo square's own element, so the renderer can place it
         /// immediately to the left of End Turn on the status strip's top edge. Hidden in every state
         /// where the host has not published this seat a rewind it may take.
@@ -528,7 +538,21 @@ namespace GuardsDigital.Presentation.Match
         /// its rewind: the drawn control calls it unconditionally, and so can a driver or a fixture
         /// that has no live panel to press with.
         /// </summary>
-        public void RequestEndTurn() => EndTurnRequested?.Invoke();
+        public void RequestEndTurn()
+        {
+            // Milestone 8.51: name the press before anything composes from it, so the runtime can
+            // write the record beside the command. A driver reaching this directly reads as one.
+            LastEndTurnPressReport = endTurnPress.Take(FocusedElementName(endTurnControl));
+            EndTurnRequested?.Invoke();
+        }
+
+        private static string FocusedElementName(VisualElement control)
+        {
+            var focused = control?.focusController?.focusedElement as VisualElement;
+            return focused == null
+                ? null
+                : string.IsNullOrEmpty(focused.name) ? focused.GetType().Name : focused.name;
+        }
 
         public void ForwardInvocation(TypedInvocationViewModel invocation)
         {
@@ -1856,6 +1880,9 @@ namespace GuardsDigital.Presentation.Match
         private void RebuildEndTurn()
         {
             endTurnHost.Clear();
+            // Milestone 8.51: a rebuilt control starts with no press signals behind it.
+            endTurnPress.Reset();
+            endTurnControl = null;
             var invocation = Model?.EndTurnInvocation;
             var cancelsOpenAttack = Model?.EndTurnCancelsOpenAttack ?? false;
             var unavailableReason = Model?.EndTurnUnavailableReason;
@@ -1902,6 +1929,10 @@ namespace GuardsDigital.Presentation.Match
             var control = CreateCornerControl(
                 label, RequestEndTurn, "gd-end-turn-control",
                 ConfiguredMatchHudRenderer.EndTurnControlHeight, EndTurnControlFontSize);
+            // Milestone 8.51: the live control is the one whose pointer, key and submit signals
+            // name the press; the greyed one above cannot be pressed and is not observed.
+            endTurnPress.Observe(control);
+            endTurnControl = control;
             if (onlyOfferLeft)
             {
                 // Keep the existing sole-action cue outside the shared chrome, never over its face.

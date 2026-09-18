@@ -1147,6 +1147,16 @@ namespace GuardsDigital.Tests.EditMode
                         1,
                         subjectHeroId: hero),
                     "REVEALED", false),
+                // Milestone 8.51 minted the THIRTY-SECOND kind - rulebook p.12's Hold by the seat's
+                // own command - and sweeps this walk in the same change rather than leaving it to
+                // the next complete Unity run, as the two notes above record happening twice.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.CardHeld,
+                        1,
+                        1,
+                        subjectHeroId: hero),
+                    "HELD", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),

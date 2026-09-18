@@ -63,28 +63,35 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheViewersOwnTurn_ReadsYourTurn_AndAnotherHeros_ReadsTheirName()
+        public void TheViewersOwnTurn_ReadsYourTurn_AndAnotherHerosTurn_IsNotAnnounced()
         {
             var detector = new PhaseBannerCueDetector();
             detector.Observe(Committing(1, 1), Sabina, Name);
             var own = detector.Observe(Resolving(1, 1, Sabina), Sabina, Name);
             Assert.That(own.Eyebrow, Is.EqualTo(PhaseBannerLabels.ResolveOwnEyebrow));
             Assert.That(own.Line, Is.EqualTo(PhaseBannerLabels.ResolveOwnLine));
+            Assert.That(detector.Observe(Resolving(1, 1, Sabina), Sabina, Name).HasBanner, Is.False,
+                "A turn is announced when it begins, not on every refresh while it resolves.");
 
-            var other = detector.Observe(Resolving(1, 1, Tali), Sabina, Name);
-            Assert.That(other.Line, Is.EqualTo("TALI'S TURN"));
-            Assert.That(other.Eyebrow, Is.EqualTo("ROUND 1 · TURN 1"));
-            Assert.That(detector.Observe(Resolving(1, 1, Tali), Sabina, Name).HasBanner, Is.False,
-                "A hero's turn is announced when it begins, not on every refresh while it resolves.");
+            // Milestone 8.50, the user after the 2026-09-18 playtest: "Just when a player is up."
+            // Another hero's turn is not this player's moment, so nothing is said about it.
+            Assert.That(detector.Observe(Resolving(1, 2, Tali), Sabina, Name).HasBanner, Is.False,
+                "Another seat's turn is not announced to this seat.");
+            Assert.That(detector.Observe(Resolving(1, 3, Sabina), Sabina, Name).Eyebrow,
+                Is.EqualTo(PhaseBannerLabels.ResolveOwnEyebrow),
+                "and the viewer's next own turn is still announced after the silent one.");
         }
 
         [Test]
-        public void TheDirector_IsNeverToldItIsItsOwnTurn()
+        public void TheDirector_IsUpForNobody_AndHearsNoTurnBanner()
         {
             var detector = new PhaseBannerCueDetector();
             detector.Observe(Committing(1, 1), default, Name);
-            var banner = detector.Observe(Resolving(1, 1, Sabina), default, Name);
-            Assert.That(banner.Line, Is.EqualTo("SABINA'S TURN"));
+            Assert.That(detector.Observe(Resolving(1, 1, Sabina), default, Name).HasBanner, Is.False,
+                "Milestone 8.50: with no other-seat line left, the Director is told of no turn at all.");
+            Assert.That(detector.Observe(Committing(1, 2), default, Name).Line,
+                Is.EqualTo(PhaseBannerLabels.CommitLine),
+                "but still sees each commitment and the Minion Battle.");
         }
 
         [Test]
@@ -134,14 +141,12 @@ namespace GuardsDigital.Tests.EditMode
             detector.Reprime();
             Assert.That(detector.Observe(Resolving(1, 1, Sabina), Sabina, Name).HasBanner, Is.False,
                 "A rebound seat is joining a state, not watching it change.");
-            Assert.That(detector.Observe(Resolving(1, 1, Tali), Sabina, Name).HasBanner, Is.True);
+            Assert.That(detector.Observe(Committing(1, 2), Sabina, Name).HasBanner, Is.True);
         }
 
         [Test]
-        public void Labels_NameTheConsequence_AndAPossessiveSurvivesATrailingS()
+        public void Labels_NameTheConsequence()
         {
-            Assert.That(PhaseBannerLabels.HeroTurn("Garrus"), Is.EqualTo("GARRUS' TURN"));
-            Assert.That(PhaseBannerLabels.HeroTurn("Tali"), Is.EqualTo("TALI'S TURN"));
             Assert.That(PhaseBannerLabels.Commit(3, 2).Key, Is.EqualTo("commit:3:2"));
             Assert.That(() => new PhaseBannerViewModel("k", "eyebrow", " "), Throws.ArgumentException);
             Assert.That(() => new PhaseBannerViewModel(" ", "eyebrow", "line"), Throws.ArgumentException);

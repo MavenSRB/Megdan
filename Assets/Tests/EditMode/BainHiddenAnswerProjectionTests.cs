@@ -364,7 +364,8 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(15),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(16),
+                "8.51 then took it to 16 for the seat-public Hold row (CardHeld, rulebook p.12's Hold by the seat's own command), on the same terms: a version 15 peer meeting kind 32 refuses the whole frame, no bytes grew, schema v42 unmoved. At 8.40f: " +
                 "THE ROW GREW NO BYTES - it spends the subject hero and subject card the log has " +
                 "carried since 8.35r - so what moved is the VOCABULARY, and that is exactly what " +
                 "the decoder validates: a version 14 peer meeting kind 31 refuses the whole frame " +

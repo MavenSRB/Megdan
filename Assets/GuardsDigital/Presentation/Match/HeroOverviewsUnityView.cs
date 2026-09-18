@@ -528,7 +528,27 @@ namespace GuardsDigital.Presentation.Match
             level.name = "gd-hero-level";
             level.style.unityTextAlign = outward;
             level.style.letterSpacing = 0.8f;
-            identity.Add(level);
+            // Milestone 8.49. The level and, beside it, what defeating the hero is worth - the
+            // half-coin, half-heart badge the user asked for at the table: one digit, 1, 2 or 3,
+            // that is both the assist coins a Defeat pays and the Life counters it costs.
+            var levelRow = HudElements.Row(4f);
+            levelRow.name = "gd-hero-level-row";
+            levelRow.style.flexWrap = Wrap.NoWrap;
+            levelRow.style.alignItems = Align.Center;
+            levelRow.style.flexShrink = 1f;
+            levelRow.style.minWidth = 0f;
+            if (mirrored)
+            {
+                if (hero.Worth > 0) levelRow.Add(BuildWorthBadge(hero));
+                levelRow.Add(level);
+            }
+            else
+            {
+                levelRow.Add(level);
+                if (hero.Worth > 0) levelRow.Add(BuildWorthBadge(hero));
+            }
+
+            identity.Add(levelRow);
             var displayName = HudElements.Text(
                 hero.HeroDisplayName, 16f, MatchHudTheme.PrimaryText, FontStyle.Bold);
             displayName.name = "gd-hero-name";
@@ -1005,6 +1025,57 @@ namespace GuardsDigital.Presentation.Match
         /// what carries the identity. Falling back to the initial would keep the surface this milestone
         /// exists to replace alive in the tracked project.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.49. Half a coin and half a heart with the hero's worth in the middle: rulebook
+        /// p.13 pays the attacker's friends that many assist coins and takes that many Life counters
+        /// from the defeated hero's team, and one number drawn on both halves says both at once. The
+        /// left half is the coin's own face colour and the right half the Life counter's red; the two
+        /// halves are one rounded disc, so the badge reads as a single token beside the level.
+        /// </summary>
+        private static VisualElement BuildWorthBadge(HeroOverviewViewModel hero)
+        {
+            const float size = 16f;
+            var badge = new VisualElement { name = "gd-hero-worth", tooltip = hero.WorthAssistiveLabel };
+            badge.style.width = size;
+            badge.style.height = size;
+            badge.style.minWidth = size;
+            badge.style.flexShrink = 0f;
+            badge.style.flexDirection = FlexDirection.Row;
+            badge.style.overflow = Overflow.Hidden;
+            HudElements.Border(badge, MatchHudTheme.CoinEdge, 1f, size / 2f);
+
+            var coinHalf = new VisualElement { name = "gd-hero-worth-coin", pickingMode = PickingMode.Ignore };
+            coinHalf.style.width = size / 2f;
+            coinHalf.style.height = size;
+            coinHalf.style.backgroundColor = MatchHudTheme.CoinFace;
+            badge.Add(coinHalf);
+
+            var heartHalf = new VisualElement { name = "gd-hero-worth-heart", pickingMode = PickingMode.Ignore };
+            heartHalf.style.width = size / 2f;
+            heartHalf.style.height = size;
+            heartHalf.style.backgroundColor = WorthHeartFace;
+            badge.Add(heartHalf);
+
+            var digit = HudElements.Text(hero.WorthLabel, 10f, MatchHudTheme.CoinInk, FontStyle.Bold);
+            digit.name = "gd-hero-worth-value";
+            digit.pickingMode = PickingMode.Ignore;
+            digit.style.position = Position.Absolute;
+            digit.style.left = 0f;
+            digit.style.top = 0f;
+            digit.style.width = size;
+            digit.style.height = size;
+            digit.style.unityTextAlign = TextAnchor.MiddleCenter;
+            digit.style.marginLeft = 0f;
+            digit.style.marginRight = 0f;
+            digit.style.marginTop = 0f;
+            digit.style.marginBottom = 0f;
+            badge.Add(digit);
+            return badge;
+        }
+
+        /// <summary>The Life counter's red, for the badge's heart half.</summary>
+        private static readonly Color WorthHeartFace = new Color(0.78f, 0.16f, 0.2f, 1f);
+
         private VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
         {
             var medallion = new VisualElement { name = "gd-hero-medallion" };

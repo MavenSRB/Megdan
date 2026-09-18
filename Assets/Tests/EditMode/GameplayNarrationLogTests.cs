@@ -5,6 +5,7 @@ using System.Linq;
 using GuardsDigital.Application;
 
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Units.Heroes;
 using NUnit.Framework;
@@ -49,6 +50,53 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(line, Does.Contain("v276").And.Contain("r4"),
                 "The row is tied to the projection version and round it happened in, so it can be " +
                 "lined up against the wire log beside it.");
+        }
+
+        /// <summary>
+        /// Milestone 8.51. The 2026-09-18 report, stated as the question the host file could not
+        /// answer that night: "did Silverarrow's card resolve, and who resolved it". A Hold row
+        /// names the hero, the card, that no action was taken, and that the seat's own press did it.
+        /// </summary>
+        [Test]
+        public void TheLog_SaysWhenASeatHeldItsOwnCard()
+        {
+            var line = GameplayNarrationLog.Row(
+                Noon, 730,
+                new MatchLogEntry(
+                    2473, MatchLogEntryKind.CardHeld, 6, 2,
+                    subjectHeroId: new HeroId("hero-silverarrow"),
+                    subjectCardInstanceId: new CardInstanceId("red-02-silverarrow-warning-shot")));
+
+            Assert.That(line, Does.Contain("hero-silverarrow"), "The row names the player it is about.");
+            Assert.That(line, Does.Contain("red-02-silverarrow-warning-shot"), "and the card they held.");
+            Assert.That(line, Does.Contain("HELD").And.Contain("NO ACTION"), "and the fact.");
+            Assert.That(line, Does.Contain("END TURN"),
+                "and WHOSE doing it was - the seat's own press, never the engine's.");
+            Assert.That(line, Does.Contain("v730").And.Contain("r6").And.Contain("t2"));
+        }
+
+        /// <summary>
+        /// Milestone 8.51. A row keeps the rule-event sequence it was derived from, and most rule
+        /// events derive no row, so consecutive rows are rarely consecutive numbers: the
+        /// 2026-09-18 host file reported 218 such gaps as losses, and none was. A gap is a loss
+        /// only when the window's oldest retained row was itself never written.
+        /// </summary>
+        [Test]
+        public void TheRecorder_DoesNotCallAnInherentSequenceGapALoss()
+        {
+            var sink = new StringWriter();
+            var recorder = new GameplayNarrationRecorder(sink, () => Noon, ownsWriter: false);
+            var first = new MatchLogEntry(1, MatchLogEntryKind.RoundStarted, 1, 0);
+            var third = new MatchLogEntry(3, MatchLogEntryKind.TurnStarted, 1, 1);
+            var ninth = new MatchLogEntry(9, MatchLogEntryKind.TurnEnded, 1, 1);
+
+            Assert.That(recorder.Observe(1, new[] { first, third }), Is.EqualTo(2));
+            Assert.That(recorder.Observe(2, new[] { first, third, ninth }), Is.EqualTo(1));
+
+            Assert.That(sink.ToString(), Does.Not.Contain("NARRATION_GAP"),
+                "Sequences 2 and 4..8 were rule events that derived no row; the window still holds " +
+                "row 1, so nothing left it unwritten.");
+            Assert.That(recorder.RowsWritten, Is.EqualTo(3));
         }
 
         /// <summary>
