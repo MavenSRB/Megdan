@@ -119,6 +119,12 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(roster, Is.EqualTo(new[]
             {
+                // Milestone 8.46c. The FIFTH, and the tripwire worked again: the decision window
+                // opens only for the seat that OWNS the standing decision, and an unrepaired
+                // identity is the Director's - who owns every decision at once - so a networked
+                // seat left out of the fan-out would open a window for every other player's
+                // question.
+                nameof(DecisionWindowPresenter),
                 nameof(DirectorHandsPresenter),
                 nameof(FizzleNoticePresenter),
                 nameof(KineticCuePresenter),

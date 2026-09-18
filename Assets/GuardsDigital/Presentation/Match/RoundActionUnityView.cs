@@ -388,6 +388,56 @@ namespace GuardsDigital.Presentation.Match
 
         public bool RetainsOrdinaryHand => HasOptionalStepDecision || HasTeamAgreementDecision;
 
+        /// <summary>
+        /// Milestone 8.46c. Which decision the DECISION WINDOW is currently drawing, or
+        /// <see cref="DecisionWindowFamily.None"/> when it is drawing none - and <c>null</c> in a
+        /// composition that has no window at all.
+        ///
+        /// <para><b>Why the strip yields a family rather than losing it.</b> On 2026-09-18 the user
+        /// found that this strip reads as STATUS rather than as a QUESTION, and moved nine decision
+        /// families onto a window of their own. What stays here is everything that is not a question:
+        /// the narration line, the action row, END TURN, the seat undo square, FINISH MOVEMENT, the
+        /// level-up prompt, the turn release and the unavailable-action rows. What moves is drawn here
+        /// exactly until the window draws it - so a composition with no window (every fixture that
+        /// renders this view alone, and every HUD composed without one) still offers every decision,
+        /// and no decision can fall between the two surfaces.</para>
+        ///
+        /// <para><c>ConfiguredMatchHudRenderer.Configure</c> is the one place this is set, and the
+        /// window's own presenter refreshes BEFORE this view's in
+        /// <c>MatchFeatureCoordinator.RefreshAll</c>, so a rebuild here always reads the window's
+        /// current answer rather than the previous projection's.</para>
+        /// </summary>
+        public Func<DecisionWindowFamily> YieldedDecisionFamily { get; set; }
+
+        private DecisionWindowFamily Yielded =>
+            YieldedDecisionFamily?.Invoke() ?? DecisionWindowFamily.None;
+
+        private bool YieldsTiedInitiative => Yielded == DecisionWindowFamily.TiedInitiative;
+
+        private bool YieldsDefense => Yielded == DecisionWindowFamily.Defense;
+
+        private bool YieldsRemovalPrevention => Yielded == DecisionWindowFamily.RemovalPrevention;
+
+        private bool YieldsEffectChoice
+        {
+            get
+            {
+                switch (Yielded)
+                {
+                    case DecisionWindowFamily.Mode:
+                    case DecisionWindowFamily.Number:
+                    case DecisionWindowFamily.Colour:
+                    case DecisionWindowFamily.OptionalStep:
+                    case DecisionWindowFamily.CardChoice:
+                    case DecisionWindowFamily.Direction:
+                    case DecisionWindowFamily.PieceOrSpace:
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+        }
+
         public bool HasExclusiveDecision =>
             Model != null &&
             (Model.SystemTransitionPrompt != null ||
@@ -579,7 +629,11 @@ namespace GuardsDigital.Presentation.Match
                 status.Add(detail);
             }
 
-            if (HasTeamAgreementDecision)
+            // Milestone 8.46c: the tied-Initiative agreement is the window's, heading and per-hero
+            // ledger and all, whenever the window is drawing it. `RetainsOrdinaryHand` is unchanged -
+            // the hand stays visible under it either way - because it reads the MODEL rather than what
+            // this surface happened to draw.
+            if (HasTeamAgreementDecision && !YieldsTiedInitiative)
             {
                 BuildTeamAgreement(Model.TeamAgreement);
                 HideEmptySections();
@@ -601,7 +655,11 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            if (Model.DefenseChoices.Count > 0)
+            // Milestone 8.46c: p.11's Defense - the candidate faces, their printed values and
+            // DECLINE DEFENSE - is the window's while the window is drawing it. Falling through
+            // rather than returning is safe and deliberate: the authority offers this seat no turn
+            // action at all while a Defense stands, so the row below draws nothing.
+            if (Model.DefenseChoices.Count > 0 && !YieldsDefense)
             {
                 BuildDefense();
                 HideEmptySections();
@@ -613,7 +671,7 @@ namespace GuardsDigital.Presentation.Match
             // recorded its outcome and paid its reward; nothing else the model carries can be acted on
             // until the removal stage is answered, so drawing anything beside it would be drawing
             // refusals - and rulebook p.13's own ordering is why the tray is hidden with it.
-            if (Model.RemovalPreventionPrompt != null)
+            if (Model.RemovalPreventionPrompt != null && !YieldsRemovalPrevention)
             {
                 BuildRemovalPrevention(Model.RemovalPreventionPrompt);
                 HideEmptySections();
@@ -1641,9 +1699,14 @@ namespace GuardsDigital.Presentation.Match
             section.style.width = Length.Percent(100f);
             rows.Add(section);
             AddActionInvocation(section, Model.ContinueEndOfRoundInvocation);
-            foreach (var choice in Model.InitiativeChoices)
+            // Milestone 8.46c: the seat-pick form of a tied Initiative - the `ACT WITH <card>` row -
+            // is the window's too, as the tied cards' own faces with one button each.
+            if (!YieldsTiedInitiative)
             {
-                AddActionInvocation(section, choice);
+                foreach (var choice in Model.InitiativeChoices)
+                {
+                    AddActionInvocation(section, choice);
+                }
             }
 
             // Printed starts and the Clear/Fast Travel replacements attached to them are drawn on the
@@ -2098,7 +2161,11 @@ namespace GuardsDigital.Presentation.Match
         private void BuildEffectChoiceSection()
         {
             var prompt = Model.EffectChoicePrompt;
-            if (prompt == null)
+            // Milestone 8.46c: every effect choice the window draws - a card's `Choose one` modes, a
+            // printed number, a colour, a `may` step's two banners, a card chooser, and the two
+            // board-answered subjects whose docked bar asks the question - is drawn there and not
+            // here. What stays is the section this method builds for a composition with no window.
+            if (prompt == null || YieldsEffectChoice)
             {
                 return;
             }

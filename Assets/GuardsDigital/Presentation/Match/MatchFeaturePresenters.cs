@@ -692,6 +692,10 @@ namespace GuardsDigital.Presentation.Match
         private readonly KineticCuePresenter kinetics;
         private readonly AttackSpotlightPresenter attackSpotlight;
         private readonly MatchLogPresenter matchLog;
+
+        /// <summary>Milestone 8.46c. The one surface that asks the player a question.</summary>
+        private readonly DecisionWindowPresenter decisionWindow;
+
         private readonly Action<string, Exception> panelRefreshFailed;
         private IReadOnlyList<string> failedPanelNames = Array.Empty<string>();
 
@@ -717,9 +721,15 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.35z12. Same reason, same shape, and it is refreshed BEFORE the
             // kinetics below it deliberately: the spotlight's pacing decides whether that panel plays
             // its cues or holds them, so it has to have seen this projection first.
-            AttackSpotlightPresenter attackSpotlight = null)
+            AttackSpotlightPresenter attackSpotlight = null,
+            // Milestone 8.46c. Same reason, same shape, and it is refreshed immediately BEFORE the
+            // round panel deliberately: the strip yields a decision family to the window exactly
+            // while the window is drawing it, so the window must have observed this projection
+            // before the strip rebuilds against it.
+            DecisionWindowPresenter decisionWindow = null)
         {
             this.panelRefreshFailed = panelRefreshFailed;
+            this.decisionWindow = decisionWindow;
             this.heroOverviews = heroOverviews;
             this.kinetics = kinetics;
             this.attackSpotlight = attackSpotlight;
@@ -749,6 +759,10 @@ namespace GuardsDigital.Presentation.Match
             }
 
             minionChoice.SessionProjectionChanged += Changed;
+            if (decisionWindow != null)
+            {
+                decisionWindow.SessionProjectionChanged += Changed;
+            }
         }
 
         /// <summary>
@@ -780,6 +794,10 @@ namespace GuardsDigital.Presentation.Match
             var errors = new List<Exception>();
             RefreshPanel("board", board.Refresh, failed, errors);
             RefreshPanel("hands", hands.Refresh, failed, errors);
+            // Milestone 8.46c, immediately before the strip it takes the decision families from: the
+            // strip asks the window what it is drawing while it rebuilds, so the window has to have
+            // observed this projection first. Isolated like every other panel.
+            RefreshPanel("decision-window", () => decisionWindow?.Refresh(), failed, errors);
             RefreshPanel("round", round.Refresh, failed, errors);
             RefreshPanel("undo-restart", () => undoRestart?.Refresh(), failed, errors);
             RefreshPanel("diagnostics", () => diagnostics?.Refresh(), failed, errors);

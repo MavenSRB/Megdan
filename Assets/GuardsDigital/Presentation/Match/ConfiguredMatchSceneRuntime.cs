@@ -141,6 +141,10 @@ namespace GuardsDigital.Presentation.Match
             UndoRestartView = new UndoRestartUnityView();
             DiagnosticView = new DiagnosticLogUnityView();
             MinionChoiceView = new MinionChoiceUnityView();
+            // Milestone 8.46c. Composed beside every other view, and scoped to the same seat: a
+            // window opens only for the seat that owns the standing decision, so the Director's
+            // composition draws every question and a seat's draws only its own.
+            DecisionWindowView = new DecisionWindowUnityView();
             HeroOverviewsView = new HeroOverviewsUnityView();
             // Milestone 8.35z7 (the TENTH amendment's drop-down). Composed for both the Director and a
             // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
@@ -157,6 +161,8 @@ namespace GuardsDigital.Presentation.Match
             HeroOverviewsPresenter = new HeroOverviewsPresenter(
                 client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
             RoundPresenter = new RoundActionPresenter(client, RoundView, Seat?.HeroId ?? default);
+            DecisionWindowPresenter = new DecisionWindowPresenter(
+                client, DecisionWindowView, Seat?.HeroId ?? default);
 
             // Milestone 8.35z8 (SIXTH amendment part b, "old M7"). Composed independently of
             // MatchFeatureCoordinator/RoundActionPresenter, deliberately: the fizzle notice reads
@@ -391,9 +397,14 @@ namespace GuardsDigital.Presentation.Match
                 }
             };
 
+            // Milestone 8.46c. The window answers through its own presenter, exactly as every other
+            // surface here does: the view raises the press and composes nothing.
+            DecisionWindowView.ControlActivated += control => DecisionWindowPresenter.Submit(control);
+            DecisionWindowView.StateToggleRequested += () => DecisionWindowPresenter.ToggleState();
+
             hud.Configure(
                 HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,
-                HeroOverviewsView, MatchLogView);
+                HeroOverviewsView, MatchLogView, DecisionWindowView);
             coordinator = new MatchFeatureCoordinator(
                 BoardPresenter,
                 HandsPresenter,
@@ -421,7 +432,8 @@ namespace GuardsDigital.Presentation.Match
                 },
                 KineticPresenter,
                 MatchLogPresenter,
-                SpotlightPresenter);
+                SpotlightPresenter,
+                DecisionWindowPresenter);
             RefreshAll();
         }
 
@@ -536,7 +548,12 @@ namespace GuardsDigital.Presentation.Match
         public IReadOnlyList<ISeatScopedPresenter> SeatScopedPresenters =>
             new ISeatScopedPresenter[]
             {
-                HandsPresenter, RoundPresenter, KineticPresenter, FizzleNoticePresenter
+                HandsPresenter, RoundPresenter, KineticPresenter, FizzleNoticePresenter,
+                // Milestone 8.46c. The FIFTH, and the reason it must be here: a window opens only for
+                // the seat that OWNS the standing decision, and an unrepaired identity is the
+                // Director's - who owns every decision at once - so a networked seat left unbound
+                // would open a window for every other player's question.
+                DecisionWindowPresenter
             };
 
         /// <summary>
@@ -758,6 +775,15 @@ namespace GuardsDigital.Presentation.Match
         public UndoRestartUnityView UndoRestartView { get; }
         public DiagnosticLogUnityView DiagnosticView { get; }
         public MinionChoiceUnityView MinionChoiceView { get; }
+
+        /// <summary>
+        /// Milestone 8.46c. The one surface that asks the player a question, and its presenter.
+        /// Public for the reason every other pair here is: a journey reads the standing decision's own
+        /// labels off the model rather than pressing a literal string, which is what lets milestone
+        /// 8.46a reword every control in the game without touching a journey.
+        /// </summary>
+        public DecisionWindowUnityView DecisionWindowView { get; }
+
         public HeroOverviewsUnityView HeroOverviewsView { get; }
         public HeroOverviewsPresenter HeroOverviewsPresenter { get; }
 
@@ -786,6 +812,10 @@ namespace GuardsDigital.Presentation.Match
         public UndoRestartPresenter UndoRestartPresenter { get; }
         public DiagnosticLogPresenter DiagnosticPresenter { get; }
         public MinionChoicePresenter MinionChoicePresenter { get; }
+
+        /// <summary>Milestone 8.46c. The decision window's own seat-scoped presenter.</summary>
+        public DecisionWindowPresenter DecisionWindowPresenter { get; }
+
         public string LastOperationDetail { get; private set; }
 
         public void RefreshAll()
