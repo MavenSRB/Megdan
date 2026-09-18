@@ -68,7 +68,9 @@ namespace GuardsDigital.Tests.PlayMode
             // after the attack - so it is declined on its own visible control.
             if (runtime.PendingDefenseChoice != null)
             {
-                UiPlayer.Click(UiPlayer.Button(hud, "DECLINE DEFENSE"));
+                // Milestone 8.46c: declining is the decision window's small corner answer, named for
+                // what it costs rather than for the command behind it, and read off the model.
+                UiPlayer.ClickDecisionCorner(runtime, hud);
                 yield return null;
             }
 

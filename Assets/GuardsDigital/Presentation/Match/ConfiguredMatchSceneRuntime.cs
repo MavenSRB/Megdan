@@ -401,6 +401,13 @@ namespace GuardsDigital.Presentation.Match
             // surface here does: the view raises the press and composes nothing.
             DecisionWindowView.ControlActivated += control => DecisionWindowPresenter.Submit(control);
             DecisionWindowView.StateToggleRequested += () => DecisionWindowPresenter.ToggleState();
+            // The same board and rail cue the strip's own Initiative preference row raised, on the
+            // same two surfaces: a control about a hero points at that hero where they stand.
+            DecisionWindowView.HeroHighlighted += heroId =>
+            {
+                BoardView.SetHoveredHero(heroId);
+                HeroOverviewsView?.SetHighlightedHero(heroId);
+            };
 
             hud.Configure(
                 HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,

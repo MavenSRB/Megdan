@@ -326,7 +326,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
             if (defeatDefender)
             {
-                UiPlayer.Click(UiPlayer.Button(hud, "DECLINE DEFENSE"));
+                // Milestone 8.46c: the decline is the decision window's own corner answer now.
+                UiPlayer.ClickDecisionCorner(runtime, hud);
             }
             else
             {

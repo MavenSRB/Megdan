@@ -453,7 +453,8 @@ namespace GuardsDigital.Presentation.Match
                         // Re-pressing replaces a pick, so a stated preference is marked rather than
                         // withdrawn: the control stays live with the same command behind it.
                         isChosen: mine != null && mine.HasStatement &&
-                            mine.PreferredCardInstanceId.Equals(command.PreferredCardInstanceId)));
+                            mine.PreferredCardInstanceId.Equals(command.PreferredCardInstanceId),
+                        hero: hero));
                 }
 
                 statements.AddRange(agreement.Participants
@@ -480,7 +481,8 @@ namespace GuardsDigital.Presentation.Match
                             command => command.Kind == DirectorCommandKind.ChooseTiedActor &&
                                 command.TeamSide == pending.OwningSide &&
                                 command.CardInstanceId.Equals(captured)),
-                        card: CardFace(projection, cardId)));
+                        card: CardFace(projection, cardId),
+                        hero: owner));
                 }
 
                 key = "initiative/" + side + "/" + string.Join(

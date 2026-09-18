@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Presentation.Match
 {
@@ -88,7 +89,8 @@ namespace GuardsDigital.Presentation.Match
             CardShineSlot shineSlot = CardShineSlot.None,
             bool isPrimary = false,
             bool isChosen = false,
-            string unavailableReason = null)
+            string unavailableReason = null,
+            HeroId hero = default)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A decision control requires a label.", nameof(label))
@@ -118,7 +120,15 @@ namespace GuardsDigital.Presentation.Match
             IsPrimary = isPrimary;
             IsChosen = isChosen;
             UnavailableReason = unavailableReason;
+            Hero = hero;
         }
+
+        /// <summary>
+        /// The hero this control is ABOUT, when it is about one - a tied Initiative's candidate.
+        /// Pointing at such a control cues that hero where they stand, which is the affordance the
+        /// strip's own preference row had and this window inherits rather than loses.
+        /// </summary>
+        public HeroId Hero { get; }
 
         /// <summary>The words on the control - the consequence, never the mechanism.</summary>
         public string Label { get; }

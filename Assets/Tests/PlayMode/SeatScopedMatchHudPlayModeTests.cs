@@ -1282,10 +1282,27 @@ namespace GuardsDigital.Tests.PlayMode
             var agreement = runtime.RoundView.Model.TeamAgreement;
             Assert.That(agreement?.Kind, Is.EqualTo(TeamAgreementKind.Initiative));
             Assert.That(agreement.Heading, Is.EqualTo("WHO ACTS FIRST?"));
-            var buttons = runtime.RoundView.OptionalStepActionsRoot
-                .Query<Button>(name: "gd-initiative-preference").ToList();
-            Assert.That(buttons.Select(button => button.text),
-                Is.EqualTo(agreement.Choices.Select(choice => choice.Label)));
+            // Milestone 8.46c: the tied-Initiative agreement is the decision window's, expanded over
+            // the board, with the tied cards as faces and one button each reading "<HERO> ACTS
+            // FIRST" - so the controls are read off the window's own model rather than off the
+            // strip's retired preference row.
+            var window = runtime.DecisionWindowPresenter.Model;
+            Assert.That(window, Is.Not.Null,
+                "Every seat on the choosing side owns a tied Initiative, so each of them gets the " +
+                "window. Shown controls: " + UiPlayer.Describe(root.Hud));
+            Assert.That(window.Family, Is.EqualTo(DecisionWindowFamily.TiedInitiative));
+            var buttons = window.Controls
+                .Select(control => runtime.DecisionWindowView.ElementFor(control))
+                .ToList();
+            Assert.That(buttons, Has.All.Not.Null,
+                "Every control the model carries is drawn. " + UiPlayer.Describe(root.Hud));
+            Assert.That(
+                window.Controls.All(control =>
+                    UiPlayer.IsShown(runtime.DecisionWindowView.ElementFor(control))), Is.True,
+                "and shown, rather than built behind a hidden host.");
+            Assert.That(window.Controls.Select(control => control.Label),
+                Has.All.EndsWith(" ACTS FIRST"),
+                "Each button names the hero it would put first. " + UiPlayer.Describe(root.Hud));
             Assert.That(buttons.Select(button => button.worldBound.width).Max() -
                 buttons.Select(button => button.worldBound.width).Min(),
                 Is.LessThanOrEqualTo(UiPlayer.PixelSnapping() * 2f));

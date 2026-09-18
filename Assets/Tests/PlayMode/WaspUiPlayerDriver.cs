@@ -258,6 +258,26 @@ namespace GuardsDigital.Tests.PlayMode
             return buttons[0];
         }
 
+        /// <summary>
+        /// Milestone 8.46c. Presses the standing decision window's own corner answer - the small one
+        /// that is not a choice: `TAKE THE HIT`, `DON'T RESPAWN`, `NOT YET`.
+        ///
+        /// <para>The label is read off the window's model rather than typed, which is the whole point:
+        /// a journey that declined a Defense by pressing the literal string `DECLINE DEFENSE` was
+        /// pressing the MECHANISM, and the user's rule for this series is that every control names the
+        /// CONSEQUENCE instead. Reading the model means the words may be reworded - as milestone 8.46a
+        /// is rewording every declared label in the game - without a journey moving.</para>
+        /// </summary>
+        public static void ClickDecisionCorner(
+            ConfiguredMatchSceneRuntime runtime, ConfiguredMatchHudRenderer hud)
+        {
+            var corner = runtime.DecisionWindowView.Model?.CornerControl;
+            Assert.That(corner, Is.Not.Null,
+                "The standing decision offers no corner answer to press. The shown controls are: " +
+                Describe(hud));
+            Click(Button(hud, corner.Label));
+        }
+
         /// <summary>Whether exactly one shown button carries this label, for a journey asserting absence.</summary>
         public static bool HasButton(ConfiguredMatchHudRenderer hud, string label) =>
             Descendants(hud.RootElement)

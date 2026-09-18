@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Units.Heroes;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -271,6 +272,13 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The viewer asked to minimise or expand. It answers nothing and submits nothing.</summary>
         public event Action StateToggleRequested;
 
+        /// <summary>
+        /// The hero the pointer or keyboard focus is on, or the undefined hero when none is. A tied
+        /// Initiative's controls are about heroes, and pointing at one cues that hero where they
+        /// stand - the affordance the strip's own preference row had, inherited rather than lost.
+        /// </summary>
+        public event Action<HeroId> HeroHighlighted;
+
         /// <summary>Whether a window is currently drawn at all, for a driver with no pointer.</summary>
         public bool HasWindow => Model != null;
 
@@ -390,6 +398,13 @@ namespace GuardsDigital.Presentation.Match
                 var element = control.Card != null
                     ? BuildCardControl(control)
                     : BuildWordedControl(control);
+                if (control.Hero.IsDefined)
+                {
+                    var hero = control.Hero;
+                    HudElements.OnPointedAt(element, pointedAt =>
+                        HeroHighlighted?.Invoke(pointedAt ? hero : default));
+                }
+
                 element.style.marginRight = index == Model.Controls.Count - 1 ? 0f : CardGap;
                 element.style.marginBottom = CardGap;
                 expandedControls.Add(element);

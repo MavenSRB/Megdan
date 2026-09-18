@@ -164,15 +164,17 @@ namespace GuardsDigital.Tests.PlayMode
                 "The viewed hero's complete ordinary hand remains visible under the optional step.");
             Assert.That(handCards.All(card => UiPlayer.IsShown(card) && !card.focusable), Is.True,
                 "The retained cards are visible context, not keyboard choices.");
+            // Milestone 8.46c: a printed `may` is asked by the decision window, expanded over the
+            // board, with the card that is asking beside its two answers - so the two controls stand
+            // in the window's own control row rather than in the strip's banner host.
             Assert.That(acceptBanner.parent, Is.SameAs(declineBanner.parent));
-            Assert.That(acceptBanner.parent.name, Is.EqualTo("gd-optional-step-actions"));
+            Assert.That(acceptBanner.parent.name, Is.EqualTo("gd-decision-window-controls"));
             Assert.That(acceptBanner.worldBound.xMax,
                 Is.LessThanOrEqualTo(declineBanner.worldBound.xMin + UiPlayer.PixelSnapping()),
                 "ACCEPT and DECLINE stand side by side in projected order.");
             Assert.That(declineBanner.worldBound.xMin - acceptBanner.worldBound.xMax,
-                Is.GreaterThanOrEqualTo(RoundActionUnityView.OptionalStepActionGap -
-                    UiPlayer.PixelSnapping()),
-                "The compact banners retain a clear visual split.");
+                Is.GreaterThanOrEqualTo(DecisionWindowUnityView.CardGap - UiPlayer.PixelSnapping()),
+                "The two answers retain a clear visual split.");
             Assert.That(Mathf.Max(acceptBanner.worldBound.yMax, declineBanner.worldBound.yMax),
                 Is.LessThanOrEqualTo(handCards.Min(card => card.worldBound.yMin) +
                     UiPlayer.PixelSnapping()),
@@ -422,10 +424,11 @@ namespace GuardsDigital.Tests.PlayMode
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm), Is.True,
                 "with its own confirm-or-decline drawn again rather than the unit selection the " +
                 "Undo dropped. " + Remaining(runtime));
+            // Milestone 8.46c: the restored pause draws its two answers in the decision window again.
             Assert.That(UiPlayer.Button(hud, EffectChoiceLabels.AcceptLabel).parent.name,
-                Is.EqualTo("gd-optional-step-actions"));
+                Is.EqualTo("gd-decision-window-controls"));
             Assert.That(UiPlayer.Button(hud, EffectChoiceLabels.DeclineLabel).parent.name,
-                Is.EqualTo("gd-optional-step-actions"));
+                Is.EqualTo("gd-decision-window-controls"));
 
             // A snapshot taken on the stopped decision, restored onto the same session: the pause has
             // to come back as a pause a player can answer, not as a state that merely deserializes.
