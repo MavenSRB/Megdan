@@ -8,6 +8,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/AttackSpotlightGeometryTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/AttackSpotlightTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/AwaitedResponderNarrationTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/BoardDirectionAffordanceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/BoardOverlayVariantRetentionTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/BoardPieceDepthTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/BroganAlliedHeroCardTests.cs" />

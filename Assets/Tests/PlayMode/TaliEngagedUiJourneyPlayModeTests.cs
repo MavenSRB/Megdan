@@ -9,6 +9,7 @@ using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
+using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -101,9 +102,16 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>
         /// "Choose a direction. Move each enemy unit in radius 1 space in that direction, if able." -
-        /// Cold Snap, driven end to end: the free direction choice on its own control, then the batch
-        /// applying with no second question, because "each" names a set rather than opening a count.
+        /// Cold Snap, driven end to end: the free direction chosen BY PRESSING ITS ARROW ON THE BOARD,
+        /// then the batch applying with no second question, because "each" names a set rather than
+        /// opening a count.
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.46d converts this journey from the strip's six direction buttons to the six
+        /// board arrows, on the user's verdict that a direction is answered where directions are:
+        /// around the hero being asked. Nothing about the command changes - an arrow submits the same
+        /// Select the button submitted - so what this journey proves about Cold Snap is unchanged.
+        /// </remarks>
         [UnityTest]
         public IEnumerator ColdSnap_ChoosesAFreeDirectionThenMovesTheEnemyOneSpaceWithNoSecondQuestion()
         {
@@ -113,6 +121,7 @@ namespace GuardsDigital.Tests.PlayMode
             var hud = root.Hud;
             var taliId = TaliSeat(runtime).HeroId;
             var enemyId = OtherHeroId(runtime, taliId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
 
             CommitSoTheNamedSeatActs(runtime, taliId, TaliCardContent.ColdSnap);
             yield return YieldUntilTheNamedSeatActs(runtime, taliId);
@@ -124,38 +133,48 @@ namespace GuardsDigital.Tests.PlayMode
             yield return StartActionThroughControl(root, ActionKind.Skill);
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "\"Choose a direction\" opens unconditionally, on its own control. " + Remaining(runtime));
-            var directionCandidates = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(directionCandidates, Has.Length.EqualTo(6),
+                "\"Choose a direction\" opens unconditionally, on the board. " + Remaining(runtime));
+            var taliStoodAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(taliId)).Coordinate;
+            var directionCandidates = runtime.BoardView.Model.DirectionCandidates;
+            Assert.That(directionCandidates, Has.Count.EqualTo(6),
                 "All six of p.17's directions are always offered - the sentence names no origin and no " +
                 "destination to narrow them. " + Remaining(runtime));
+            Assert.That(runtime.BoardView.Model.DirectionChooserSpace, Is.EqualTo(taliStoodAt),
+                "The arrows are drawn around the hero being asked.");
+            foreach (var candidate in directionCandidates)
+            {
+                Assert.That(candidate.Neighbour,
+                    Is.EqualTo(taliStoodAt.GetNeighbor(candidate.Direction)),
+                    "Each arrow stands one step away, which is what makes it clickable as a space.");
+            }
 
-            Assert.That(
-                runtime.SubmitProjectedCommand(directionCandidates[0].Command), Is.True,
-                "The chosen direction is answered on its own control, never a board click.");
-            yield return null;
+            // The pieces the player can actually see, not only the model behind them.
+            var drawnArrows = runtime.BoardView.DirectionArrows.Where(value => value.IsVisible)
+                .ToArray();
+            Assert.That(drawnArrows, Has.Length.EqualTo(6),
+                "Six arrows are drawn while the pause stands.");
+            Assert.That(drawnArrows.Select(value => value.Space),
+                Is.EquivalentTo(directionCandidates.Select(value => value.Neighbour)),
+                "and each one is drawn on the space its own candidate names.");
 
-            // Selecting is not answering. A bounded selection stands with its answer HELD until the
-            // chooser confirms it - which is what makes the take-back beside it meaningful - so the
-            // direction question is still open here, now offering DONE and UNDO EAST rather than the
-            // six. This journey was written expecting the batch to fire on the select alone.
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The selection is held until it is confirmed. " + Remaining(runtime));
-            Assert.That(runtime.PendingEffectChoice.ConfirmInvocation, Is.Not.Null,
-                "A held direction offers the confirmation that spends it. " + Remaining(runtime));
+            var chosen = FirstClickableDirection(root, pointerInput);
             Assert.That(
-                runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(
-                    runtime.PendingEffectChoice.ConfirmInvocation)),
+                UiPlayer.ClickBoard(pointerInput, hud, Tile(chosen.Neighbour).transform.position),
                 Is.True,
-                "Confirming the direction is what runs the batch. " + Remaining(runtime));
+                $"The {chosen.Label} arrow answers the direction where it is drawn.");
             yield return null;
             yield return null;
 
+            // ONE PRESS. A choice whose minimum and maximum are both one is finished by the
+            // selection itself: the board forwards the Select and the confirm the authority offers
+            // immediately after it, so the batch has already run by the time the click returns.
             Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "The batch applies from the same node table with no second question - \"each\" names a " +
-                "set, so nobody is asked which enemy units move. " + Remaining(runtime));
+                "The press resolves the direction, and the batch applies from the same node table " +
+                "with no second question - \"each\" names a set, so nobody is asked which enemy " +
+                "units move. " + Remaining(runtime));
+            Assert.That(runtime.BoardView.DirectionArrows.Where(value => value.IsVisible),
+                Is.Empty,
+                "and the arrows are cleared with the pause that raised them.");
 
             var enemyNowAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate;
             // "If able": on this board the enemy stands within radius 2 of a two-space-apart engagement,
@@ -168,6 +187,51 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True,
                 $"The enemy either stayed (blocked or off-map, the \"if able\" fizzle) or moved exactly " +
                 $"one space (the printed distance). Was at {enemyStoodAt}, now at {enemyNowAt}.");
+        }
+
+        /// <summary>
+        /// Milestone 8.46d. The first offered direction whose arrow a player could really press: its
+        /// space is one the board draws, it is on screen, and the HUD is not standing over it.
+        ///
+        /// <para>It is chosen rather than fixed because the six arrows are placed by where the hero
+        /// happens to stand, and a staging can put one of them off the drawn map or under the hand -
+        /// the same reason <c>FirstClickableSpace</c> exists for lit destinations. A piece standing
+        /// on an arrow's space is deliberately NOT skipped: the hero and minion selectors claim that
+        /// click first and the presenter routes it to the same direction candidate, which is exactly
+        /// the arm this milestone added to <c>SubmitEffectChoiceAtSpace</c>.</para>
+        /// </summary>
+        internal static DirectionCandidateViewModel FirstClickableDirection(
+            MatchSceneCompositionRoot root, PrimitiveHeroPointerInput pointerInput)
+        {
+            var camera = pointerInput.EventCamera;
+            Assert.That(camera, Is.Not.Null, "The pointer input has no event camera configured.");
+            var drawn = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
+            foreach (var candidate in root.Runtime.BoardView.Model.DirectionCandidates)
+            {
+                var tile = drawn.FirstOrDefault(value =>
+                    value.Coordinate.Equals(candidate.Neighbour));
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                var screen = camera.WorldToScreenPoint(tile.transform.position);
+                if (screen.z <= 0f ||
+                    screen.x < 0f || screen.x > Screen.width ||
+                    screen.y < 0f || screen.y > Screen.height ||
+                    root.Hud.BlocksPointerAt(new Vector2(screen.x, screen.y)))
+                {
+                    continue;
+                }
+
+                return candidate;
+            }
+
+            Assert.Fail(
+                "No direction arrow is drawn on a space a player could click: " +
+                string.Join(", ", root.Runtime.BoardView.Model.DirectionCandidates.Select(value =>
+                    value.Label + "@" + value.Neighbour)));
+            return null;
         }
 
         /// <summary>

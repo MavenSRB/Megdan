@@ -108,6 +108,57 @@ namespace GuardsDigital.Presentation.Match
         public DirectorCommand Command { get; }
     }
 
+    /// <summary>
+    /// Milestone 8.46d. One of the six directions a declared
+    /// <see cref="EffectChoiceValueVocabulary.HexDirection"/> choice offers, carried as the board
+    /// affordance that answers it.
+    ///
+    /// <para>Shaped on <see cref="SystemTransitionDestinationViewModel"/>, which is this project's
+    /// precedent for a board candidate travelling with its own exact command: the arrow a player
+    /// clicks submits the Select the prompt control submits, and nothing reconstructs an answer from
+    /// a coordinate. The neighbour is where the arrow stands, and it is derived from the chooser's
+    /// own space through <see cref="HexCoordinate.GetNeighbor"/> rather than from anything drawn.</para>
+    /// </summary>
+    public sealed class DirectionCandidateViewModel
+    {
+        public DirectionCandidateViewModel(
+            HexDirection direction,
+            HexCoordinate neighbour,
+            string label,
+            DirectorCommand command)
+        {
+            if (!Enum.IsDefined(typeof(HexDirection), direction))
+            {
+                throw new ArgumentOutOfRangeException(nameof(direction));
+            }
+
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                throw new ArgumentException(
+                    "A direction candidate is named by its own declared vocabulary.", nameof(label));
+            }
+
+            Direction = direction;
+            Neighbour = neighbour;
+            Label = label;
+            Command = command != null && command.Kind == DirectorCommandKind.AnswerEffectChoice
+                ? command
+                : throw new ArgumentException(
+                    "A board direction candidate requires its exact projected command.",
+                    nameof(command));
+        }
+
+        public HexDirection Direction { get; }
+
+        /// <summary>The space one step that way, which is where the arrow is drawn and clicked.</summary>
+        public HexCoordinate Neighbour { get; }
+
+        /// <summary>The same words the prompt control wears - EAST, NORTH EAST, and so on.</summary>
+        public string Label { get; }
+
+        public DirectorCommand Command { get; }
+    }
+
     public sealed class BoardInteractionViewModel
     {
         public BoardInteractionViewModel(
@@ -131,7 +182,9 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<SystemTransitionDestinationViewModel> systemTransitionDestinations = null,
             IEnumerable<HexCoordinate> effectChoiceMovementDestinations = null,
             IEnumerable<AttackTargetDefensePreviewProjection> attackTargetDefensePreviews = null,
-            ActiveEffectVisibilityModel activeEffects = null)
+            ActiveEffectVisibilityModel activeEffects = null,
+            HexCoordinate? directionChooserSpace = null,
+            IEnumerable<DirectionCandidateViewModel> directionCandidates = null)
         {
             ActiveEffects = activeEffects ?? ActiveEffectVisibilityModel.Empty;
             Version = version;
@@ -234,6 +287,45 @@ namespace GuardsDigital.Presentation.Match
                     "A space is either an empty destination or a target, never both.",
                     nameof(effectChoiceTargetSpace));
             }
+
+            // Milestone 8.46d. The arrows are around ONE hero and each stands one step from them, so
+            // the two halves are checked against each other here rather than trusted from whoever
+            // derived them: a candidate whose space is not the chooser's own neighbour would draw an
+            // arrow the click path could never match back to this command.
+            DirectionChooserSpace = directionChooserSpace;
+            DirectionCandidates = Array.AsReadOnly((directionCandidates ??
+                Enumerable.Empty<DirectionCandidateViewModel>()).ToArray());
+            if (DirectionCandidates.Any(value => value == null))
+            {
+                throw new ArgumentException(
+                    "A direction candidate is a projected offer, never an absence.",
+                    nameof(directionCandidates));
+            }
+
+            if (DirectionCandidates.Count > 0 && !DirectionChooserSpace.HasValue)
+            {
+                throw new ArgumentException(
+                    "Direction arrows are drawn around the hero being asked, so the chooser's space " +
+                    "is required.", nameof(directionChooserSpace));
+            }
+
+            if (DirectionCandidates.Select(value => value.Direction).Distinct().Count() !=
+                    DirectionCandidates.Count ||
+                DirectionCandidates.Select(value => value.Command).Distinct().Count() !=
+                    DirectionCandidates.Count)
+            {
+                throw new ArgumentException(
+                    "Each offered direction maps one distinct direction to one exact command.",
+                    nameof(directionCandidates));
+            }
+
+            if (DirectionCandidates.Any(value =>
+                !DirectionChooserSpace.Value.GetNeighbor(value.Direction).Equals(value.Neighbour)))
+            {
+                throw new ArgumentException(
+                    "A direction candidate stands on the chooser's own neighbour in that direction.",
+                    nameof(directionCandidates));
+            }
         }
 
         public long Version { get; }
@@ -323,6 +415,20 @@ namespace GuardsDigital.Presentation.Match
         /// see the same rings and the same disks.</para>
         /// </summary>
         public ActiveEffectVisibilityModel ActiveEffects { get; }
+
+        /// <summary>
+        /// Milestone 8.46d: where the hero a standing direction choice is asking is standing, and null
+        /// whenever no such choice stands. It is the centre the six arrows are drawn around.
+        /// </summary>
+        public HexCoordinate? DirectionChooserSpace { get; }
+
+        /// <summary>
+        /// The six directions that choice offers, each with the space its arrow stands on and the
+        /// exact Select a click on it submits. Empty for every other decision, and empty for a seat
+        /// that does not own this one - a non-owner is published no effect choice and no contract at
+        /// all, so there is nothing to derive an offer from.
+        /// </summary>
+        public IReadOnlyList<DirectionCandidateViewModel> DirectionCandidates { get; }
     }
 
     public interface IBoardInteractionView

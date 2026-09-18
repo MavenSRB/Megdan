@@ -19,6 +19,7 @@ using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
+using static GuardsDigital.Tests.PlayMode.TaliEngagedUiJourneyPlayModeTests;
 using static GuardsDigital.Tests.PlayMode.TaliUiJourneyPlayModeTests;
 using static GuardsDigital.Tests.PlayMode.XargathaEngagedUiJourneyPlayModeTests;
 using static GuardsDigital.Tests.PlayMode.XargathaUiJourneyPlayModeTests;
@@ -527,9 +528,9 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, taliId);
             yield return StartActionThroughControl(root, ActionKind.Skill);
 
-            // Sentence one, on Cold Snap's own terms: six directions on their own control, the
-            // selection held until it is confirmed, then a batch with no second question.
-            yield return AnswerTheFreeDirection(runtime, "the printed pass");
+            // Sentence one, on Cold Snap's own terms: six directions as arrows around her, one press
+            // to answer, then a batch with no second question.
+            yield return AnswerTheFreeDirection(root, "the printed pass");
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The first batch applies from its own node table and asks nothing further. " +
                 Remaining(runtime));
@@ -572,9 +573,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "She takes the repeat. " + Remaining(runtime));
             yield return null;
 
-            // Sentence two asks the SAME two questions the printed pass asked, on a fresh control -
+            // Sentence two asks the SAME question the printed pass asked, on a fresh set of arrows -
             // never a repeat control, because nothing here is a p.10 repeat to the engine.
-            yield return AnswerTheFreeDirection(runtime, "the End-of-turn repeat");
+            yield return AnswerTheFreeDirection(root, "the End-of-turn repeat");
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The repeat's batch applies with no second question either. " + Remaining(runtime));
@@ -617,7 +618,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return PointTrayAt(root, taliId);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            yield return AnswerTheFreeDirection(runtime, "the printed pass");
+            yield return AnswerTheFreeDirection(root, "the printed pass");
 
             Assert.That(runtime.IsActiveEffectSource(blizzard.Id), Is.True,
                 "The arm stands on her own tray between the printed pass and the turn's close. " +
@@ -647,13 +648,20 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Answers one free-direction control the way a player does: pick a direction, then confirm it,
-        /// because a bounded selection is HELD until the chooser spends it. Cold Snap's own journey
-        /// records why that second step is not optional.
+        /// Answers one free direction the way a player does at milestone 8.46d: by pressing its arrow
+        /// on the board, around the hero being asked.
+        ///
+        /// <para>One press is the whole answer. A choice whose minimum and maximum are both one is
+        /// finished by the selection itself - the board forwards the Select and the confirm the
+        /// authority offers immediately after it - so nothing is left holding an unspent direction
+        /// and no second control is pressed. Cold Snap's own journey states the same reading.</para>
         /// </summary>
         private static IEnumerator AnswerTheFreeDirection(
-            ConfiguredMatchSceneRuntime runtime, string which)
+            MatchSceneCompositionRoot root, string which)
         {
+            yield return null;
+            var runtime = root.Runtime;
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 $"\"Choose a direction\" opens unconditionally on {which}. " + Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.ValueVocabulary,
@@ -661,25 +669,16 @@ namespace GuardsDigital.Tests.PlayMode
                 "Milestone 8.37b: the candidates are directions and must say so, or a player is " +
                 "offered the buttons \"0\" through \"5\". " + Remaining(runtime));
 
-            var directions = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(directions, Has.Length.EqualTo(6),
+            var directions = runtime.BoardView.Model.DirectionCandidates;
+            Assert.That(directions, Has.Count.EqualTo(6),
                 "All six of p.17's directions are always offered - the sentence names no origin and " +
                 "no destination to narrow them. " + Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(directions[0].Command), Is.True,
-                "The chosen direction is answered on its own control, never a board click.");
-            yield return null;
 
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "The selection is held until it is confirmed. " + Remaining(runtime));
-            Assert.That(runtime.PendingEffectChoice.ConfirmInvocation, Is.Not.Null,
-                "A held direction offers the confirmation that spends it. " + Remaining(runtime));
+            var chosen = FirstClickableDirection(root, pointerInput);
             Assert.That(
-                runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(
-                    runtime.PendingEffectChoice.ConfirmInvocation)),
+                UiPlayer.ClickBoard(pointerInput, root.Hud, Tile(chosen.Neighbour).transform.position),
                 Is.True,
-                "Confirming the direction is what runs the batch. " + Remaining(runtime));
+                $"The {chosen.Label} arrow answers {which} where it is drawn.");
             yield return null;
             yield return null;
         }

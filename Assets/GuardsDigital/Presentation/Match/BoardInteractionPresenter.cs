@@ -122,6 +122,7 @@ namespace GuardsDigital.Presentation.Match
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
+                var directions = CreateDirectionCandidates(projection);
                 lastViewModel = new BoardInteractionViewModel(
                     projection.Version,
                     projection.Heroes,
@@ -156,7 +157,12 @@ namespace GuardsDigital.Presentation.Match
                     // same identity gate every other member here rides, so the disks are re-anchored
                     // exactly when the board is rebuilt - which is p.17's "an Active effect's Radius
                     // moves with its hero" for free, and no per-frame work at all.
-                    ActiveEffectVisibility.Derive(projection, activeEffectCapabilities));
+                    ActiveEffectVisibility.Derive(projection, activeEffectCapabilities),
+                    // Milestone 8.46d. Derived on the same per-projection gate as everything else
+                    // here, so the arrows are cued exactly when the pause stands and cleared exactly
+                    // when it resolves - there is no arrow state of this presenter's own to go stale.
+                    directions.ChooserSpace,
+                    directions.Candidates);
             }
 
             view.Render(lastViewModel);
@@ -357,6 +363,106 @@ namespace GuardsDigital.Presentation.Match
                     admitted.ContainsKey(invocation.Candidate.Value))
                 .Select(invocation => admitted[invocation.Candidate.Value])
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 8.46d. The six arrows a declared
+        /// <see cref="EffectChoiceValueVocabulary.HexDirection"/> choice is answered by, and the space
+        /// they are drawn around.
+        ///
+        /// <para><b>Ownership is asked before a single command is bound.</b> A seat that does not own
+        /// the decision is published no <c>PendingEffectChoice</c> and no
+        /// <c>DecisionContract</c> at all (<c>SeatProjection</c>'s own scoping rule), and
+        /// <see cref="PendingDecisionCommandBinding.Require"/> THROWS on a null or other-family
+        /// contract rather than returning nothing - so the contract is checked here on
+        /// <c>AwaitedInputQuery</c>'s own reading of "owns a standing decision". A non-owner draws no
+        /// arrows because it has nothing to draw them from, not because it is filtered.</para>
+        ///
+        /// <para>Every candidate is matched by the vocabulary the handler DECLARED rather than by
+        /// guessing at integers, which is the rule <c>EffectChoiceValueVocabulary</c> exists to state:
+        /// the six values are directions because the capability that offered them said so.</para>
+        /// </summary>
+        private static DirectionChoiceOffer CreateDirectionCandidates(IMatchReadModel projection)
+        {
+            var choice = projection?.PendingEffectChoice;
+            if (choice == null ||
+                choice.ValueVocabulary != EffectChoiceValueVocabulary.HexDirection ||
+                projection.DecisionContract == null ||
+                !projection.DecisionContract.FamilyId.Equals(PendingDecisionFamilies.Effect))
+            {
+                return default;
+            }
+
+            var chooserId = choice.ChooserId.IsDefined
+                ? choice.ChooserId
+                : projection.SelectedActor.IsDefined
+                    ? projection.SelectedActor.ActorId
+                    : default;
+            if (!chooserId.IsDefined)
+            {
+                return default;
+            }
+
+            var chooser = projection.Heroes.FirstOrDefault(value => value.HeroId.Equals(chooserId));
+            if (!chooser.HeroId.IsDefined)
+            {
+                // The hero being asked is not standing anywhere this board draws, so there is no
+                // centre to put arrows around. The prompt's own controls still answer the choice.
+                return default;
+            }
+
+            var candidates = new List<DirectionCandidateViewModel>();
+            foreach (var invocation in choice.SelectInvocations)
+            {
+                var candidate = invocation.Candidate;
+                if (candidate.Kind != EffectChoiceCandidateKind.Value ||
+                    candidate.Value.Kind != EffectValueKind.Integer ||
+                    !Enum.IsDefined(typeof(HexDirection), candidate.Value.IntegerValue))
+                {
+                    continue;
+                }
+
+                var direction = (HexDirection)candidate.Value.IntegerValue;
+                candidates.Add(new DirectionCandidateViewModel(
+                    direction,
+                    chooser.Coordinate.GetNeighbor(direction),
+                    EffectChoiceLabels.VocabularyLabel(
+                        EffectChoiceValueVocabulary.HexDirection, candidate.Value.IntegerValue),
+                    PendingDecisionCommandBinding.Require(
+                        projection,
+                        PendingDecisionFamilies.Effect,
+                        command => command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                            ReferenceEquals(command.EffectChoice, invocation))));
+            }
+
+            return new DirectionChoiceOffer(chooser.Coordinate, candidates);
+        }
+
+        /// <summary>
+        /// The candidate whose arrow stands on this space, or null. Milestone 8.46d.
+        /// </summary>
+        private static DirectionCandidateViewModel FindDirectionCandidate(
+            IMatchReadModel projection, HexCoordinate space) =>
+            CreateDirectionCandidates(projection).Candidates
+                .FirstOrDefault(value => value.Neighbour.Equals(space));
+
+        /// <summary>The chooser's space and its arrows, derived together because neither is meaningful
+        /// alone. Milestone 8.46d.</summary>
+        private readonly struct DirectionChoiceOffer
+        {
+            private readonly IReadOnlyList<DirectionCandidateViewModel> candidates;
+
+            internal DirectionChoiceOffer(
+                HexCoordinate chooserSpace, IReadOnlyList<DirectionCandidateViewModel> candidates)
+            {
+                ChooserSpace = chooserSpace;
+                this.candidates = candidates;
+            }
+
+            internal HexCoordinate? ChooserSpace { get; }
+
+            internal IReadOnlyList<DirectionCandidateViewModel> Candidates =>
+                candidates ?? Array.Empty<DirectionCandidateViewModel>();
         }
 
         private static HexCoordinate? FindResultingSpace(
@@ -651,6 +757,17 @@ namespace GuardsDigital.Presentation.Match
             var effectChoice = session.Projection.PendingEffectChoice;
             if (effectChoice != null)
             {
+                // Milestone 8.46d. A direction is answered by clicking the arrow around the chooser,
+                // and an arrow stands on a neighbouring SPACE - so this click arrives here exactly as
+                // an empty-space candidate's does. It is asked first because the two can never
+                // collide: a direction's candidates are integers, so the space-valued lookup below
+                // finds nothing for them and would answer false on a space this one just matched.
+                var chosenDirection = FindDirectionCandidate(session.Projection, destination);
+                if (chosenDirection != null)
+                {
+                    return SubmitEffectChoiceSelection(chosenDirection.Command);
+                }
+
                 // Milestone 8.11a, at the user's request: every candidate answers from the board, the
                 // way an Attack target always has. Until now only an empty space did, and a candidate
                 // naming an object was answered by a control in the prompt instead - which meant the
@@ -765,6 +882,16 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private bool SubmitEffectChoiceAtSpace(HexCoordinate space)
         {
+            // Milestone 8.46d. A piece standing on a neighbouring hex is consumed by the hero and
+            // minion selectors before the board plane is ever asked, so an arrow drawn under a piece
+            // would be unanswerable if this route lived only in SubmitDestination. The click means
+            // the same thing wherever it was claimed: the arrow on that space.
+            var chosenDirection = FindDirectionCandidate(session.Projection, space);
+            if (chosenDirection != null)
+            {
+                return SubmitEffectChoiceSelection(chosenDirection.Command);
+            }
+
             var effectChoice = session.Projection.PendingEffectChoice;
             if (effectChoice == null ||
                 !SelectableEffectChoiceSpaces(session.Projection).Contains(space))
