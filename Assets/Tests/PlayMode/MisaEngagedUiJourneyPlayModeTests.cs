@@ -54,6 +54,23 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class MisaEngagedUiJourneyPlayModeTests
     {
+
+        /// <summary>
+        /// Milestone 8.46e. p.10's bullets are the decision window's own option controls now - the
+        /// strip no longer draws a family the window has taken - so they are counted here, and each
+        /// is pressed by the branch node it stands for rather than by position or typed words.
+        /// </summary>
+        private static DecisionWindowControlViewModel[] OfferedBullets(ConfiguredMatchSceneRuntime runtime)
+        {
+            var model = runtime.DecisionWindowView.Model;
+            return model == null
+                ? new DecisionWindowControlViewModel[0]
+                : model.Controls.Where(control =>
+                    control.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    control.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                    control.Command.EffectChoice.Candidate.OptionNodeId.IsDefined).ToArray();
+        }
+
         [UnityTest]
         public IEnumerator WatchHowISoar_DefeatBulletRemovesTheClickedMinion()
         {
@@ -65,10 +82,10 @@ namespace GuardsDigital.Tests.PlayMode
             yield return CommitEverySeat(root, misaId, NameOf(runtime, MisaCardContent.WatchHowISoar));
             yield return PointTrayAt(root, misaId);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            var bullets = runtime.RoundView.Model.EffectChoices.Where(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select).ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[1].Label));
+            // Milestone 8.46e: both bullets stand on the decision window; the Defeat arm is pressed by
+            // the branch node it stands for rather than by its position.
+            Assert.That(OfferedBullets(runtime), Has.Length.EqualTo(2));
+            UiPlayer.ClickEffectOption(runtime, root.Hud, "soar-defeat-arm");
             yield return null;
             yield return null;
             var at = runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate;
@@ -80,8 +97,9 @@ namespace GuardsDigital.Tests.PlayMode
                 MinionView(minion.MinionId).transform.position), Is.True);
             yield return null;
             yield return null;
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            // Milestone 8.46e, per 8.46b: an exactly-one target resolves on its own press, so the window
+            // draws no DONE for it; the window's model is asked, and null means nothing to press.
+            var confirm = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
             if (confirm != null)
             {
                 UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label));
@@ -136,15 +154,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "p.10's modal asks which bullet before either bullet asks anything. " +
                 Remaining(runtime));
-            var bullets = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2),
+            // Milestone 8.46e: the bullets are the decision window's own controls now, and the Place
+            // arm is pressed by the branch node it stands for rather than by its position.
+            Assert.That(OfferedBullets(runtime), Has.Length.EqualTo(2),
                 "Both printed bullets are drawn as their own controls. Her Ultimate is locked on " +
                 "this staging, so p.10's ceiling is one of them - which is the printed card. " +
                 Remaining(runtime));
 
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            UiPlayer.ClickEffectOption(runtime, hud, "soar-place-arm");
             yield return null;
             yield return null;
 
@@ -248,15 +265,24 @@ namespace GuardsDigital.Tests.PlayMode
             var standing = runtime.PendingEffectChoice;
             if (standing != null)
             {
-                var decline = DeclineControl(runtime);
+                // Milestone 8.46e: the retrieve's decline and its card chooser are the decision
+                // window's own controls, read off its model; a card-valued choice is pressed on the
+                // face the window draws for it, the way every card chooser is pressed.
+                var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
                 Assert.That(decline, Is.Not.Null,
                     "A `may` step is answerable both ways, so the standing prompt must draw its own " +
                     "decline. " + Remaining(runtime));
 
-                var cards = runtime.RoundView.Model.EffectChoices
-                    .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                var cards = runtime.DecisionWindowView.Model.Controls
+                    .Where(control => control.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                        control.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                     .ToArray();
-                if (cards.Length > 0)
+                if (cards.Length > 0 && cards[0].Card != null)
+                {
+                    UiPlayer.Click(UiPlayer.NamedElementWithText(
+                        hud, "gd-effect-card", cards[0].Card.DisplayName.ToUpperInvariant()));
+                }
+                else if (cards.Length > 0)
                 {
                     UiPlayer.Click(UiPlayer.Button(hud, cards[0].Label));
                 }
@@ -343,11 +369,13 @@ namespace GuardsDigital.Tests.PlayMode
             // action are pressed the way a player presses them.
             for (var budget = 0; budget < 6 && runtime.PendingEffectChoice != null; budget++)
             {
-                var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-                var select = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
-                var control = confirm ?? select ?? DeclineControl(runtime);
+                // Milestone 8.46e: whatever stands is read off the decision window's model - the
+                // strip no longer draws a family the window has taken.
+                var control = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm)
+                    ?? UiPlayer.DecisionControl(runtime, command =>
+                        command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                        command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                    ?? UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
                 if (control == null)
                 {
                     break;
@@ -479,7 +507,8 @@ namespace GuardsDigital.Tests.PlayMode
                 }
                 else
                 {
-                    var decline = DeclineControl(runtime);
+                    // Milestone 8.46e: the printed may is declined on the decision window, read off its model.
+                    var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
                     if (decline == null)
                     {
                         break;

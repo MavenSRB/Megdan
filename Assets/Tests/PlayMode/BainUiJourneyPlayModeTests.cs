@@ -414,9 +414,9 @@ namespace GuardsDigital.Tests.PlayMode
             // through the runtime's own method, because what this row claims is that a player meets
             // the choice - and declining is what makes this Attack a Defeat regardless of either
             // printed value.
-            var decline = runtime.RoundView.Model.DefenseChoices.Single(value =>
-                value.Command.Kind == DirectorCommandKind.DeclineDefense);
-            UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
+            // Milestone 8.46e: the Defense is drawn on the decision window, whose corner names the
+            // consequence - read off its model rather than the strip's, which no longer draws it.
+            UiPlayer.ClickDefenseDecline(runtime, hud);
             yield return null;
             yield return null;
 
@@ -572,11 +572,11 @@ namespace GuardsDigital.Tests.PlayMode
 
             // RETAINED-PREFIX UNDO, on the live session and through the drawer's own control.
             //
-            // ONE BOARD CLICK ON AN EFFECT CANDIDATE IS TWO ACCEPTED COMMANDS - the select and the
-            // confirm standing behind it - so reaching the question again takes two presses, and the
-            // state between them is worth asserting rather than skipping: the first press takes the
-            // give back and leaves the answer SELECTED with its DONE still standing, and the second
-            // drops the selection too.
+            // Milestone 8.46b: ONE BOARD CLICK ON A CHOICE OF EXACTLY ONE IS ONE ACCEPTED COMMAND -
+            // the select carries the confirm the authority offered behind it - so one press gives
+            // the question back with nothing selected on it, and a SECOND press reaches past it to
+            // the printed `may` the selection was opened by. Both states are asserted rather than
+            // skipped, because each says what an Undo retracts.
             OpenDirectorDrawer(hud);
             yield return null;
             UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
@@ -593,16 +593,28 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("bounty-select"),
                 Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.SelectedCandidates, Is.Empty,
+                "and nothing is selected on it, because the one press that answered it was the one " +
+                "command the Undo dropped. " + Remaining(runtime));
 
             UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
             yield return null;
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("bounty-may"),
+                "The second press retracts the taken `may`, the command before the give. " +
+                Remaining(runtime));
+
+            // Take the `may` again on the window's own control, which reopens the same selection.
+            UiPlayer.ClickEffectControl(runtime, hud, EffectChoiceCommandKind.Confirm);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("bounty-select"),
-                "The second press drops the selection and leaves the same question open. " +
+                "Taking the `may` again reopens the radius selection, unanswered. " +
                 Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.SelectedCandidates, Is.Empty,
-                "and nothing is selected on it any more, which is what makes the click below the " +
+                "and nothing is selected on it, which is what makes the click below the " +
                 "same click rather than a second one. " + Remaining(runtime));
 
             Assert.That(

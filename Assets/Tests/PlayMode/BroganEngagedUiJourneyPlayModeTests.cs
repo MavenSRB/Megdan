@@ -431,15 +431,20 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.Model.Status,
                 Does.EndWith($" card for {broganName} to retrieve, or decline."),
                 "The same frameless card chooser names retrieval rather than describing only its candidates.");
+            // Milestone 8.46e: the window's own eyebrow names the family; the STRIP is what must not
+            // print the heading a second time over faces that already say what they are.
             Assert.That(UiPlayer.Descendants(hud.RootElement).OfType<Label>()
-                    .Any(label => UiPlayer.IsShown(label) && label.text == "CARD CHOICE"),
+                    .Any(label => UiPlayer.IsShown(label) && label.text == "CARD CHOICE" &&
+                        UiPlayer.IsOutsideDecisionWindow(label)),
                 Is.False,
                 "Retrieval uses the same unlabelled card row as discard.");
+            // Milestone 8.46e: the whole-face retrieval controls are drawn on the decision window
+            // now, under the same `gd-effect-card` name every card-valued choice keeps.
             Assert.That(UiPlayer.Descendants(hud.RootElement)
-                    .Any(element => element.name == "gd-effect-card-section" &&
-                        UiPlayer.IsShown(element)),
+                    .Any(element => element.name == "gd-effect-card" && UiPlayer.IsShown(element) &&
+                        !UiPlayer.IsOutsideDecisionWindow(element)),
                 Is.True,
-                "The whole-face retrieval controls remain visible in their frameless row.");
+                "The whole-face retrieval controls are visible on the decision window.");
             var faceName = NameOf(runtime, discarded[0]);
             UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-effect-card", faceName));
             yield return null;

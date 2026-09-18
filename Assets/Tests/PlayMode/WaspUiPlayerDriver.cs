@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using NUnit.Framework;
@@ -276,6 +277,129 @@ namespace GuardsDigital.Tests.PlayMode
                 "The standing decision offers no corner answer to press. The shown controls are: " +
                 Describe(hud));
             Click(Button(hud, corner.Label));
+        }
+
+        /// <summary>
+        /// Milestone 8.46e. The standing decision window's control bound to the command the
+        /// predicate names - an answer, a chosen answer's deselect, the DONE, or the corner - or null
+        /// when the window is not drawing one.
+        ///
+        /// <para>Every journey that read a label off the round strip's model and then looked for a
+        /// button carrying it was pressing the MECHANISM - `ACCEPT`, `DECLINE`, `MODE #1 PLACE-PYRO`,
+        /// `DECLINE DEFENSE` - and the strip no longer draws a family the window has taken. The
+        /// window's control is what a player presses, its label names the CONSEQUENCE in the card's
+        /// own words (milestone 8.46a), and reading it off the model is what lets those words be
+        /// reworded without a journey moving.</para>
+        /// </summary>
+        public static DecisionWindowControlViewModel DecisionControl(
+            ConfiguredMatchSceneRuntime runtime, Func<DirectorCommand, bool> command)
+        {
+            var model = runtime.DecisionWindowView?.Model;
+            if (model == null)
+            {
+                return null;
+            }
+
+            var corner = model.CornerControl == null
+                ? Enumerable.Empty<DecisionWindowControlViewModel>()
+                : new[] { model.CornerControl };
+            return model.Controls.Concat(corner).FirstOrDefault(control =>
+                control.Command != null && command(control.Command));
+        }
+
+        /// <summary>The window's control answering the standing effect choice with this command kind.</summary>
+        public static DecisionWindowControlViewModel EffectControl(
+            ConfiguredMatchSceneRuntime runtime, EffectChoiceCommandKind kind) =>
+            DecisionControl(runtime, command =>
+                command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                command.EffectChoice.Kind == kind);
+
+        /// <summary>The window's option control standing for the named branch node, or null.</summary>
+        public static DecisionWindowControlViewModel EffectOption(
+            ConfiguredMatchSceneRuntime runtime, string optionNodeId) =>
+            DecisionControl(runtime, command =>
+                command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                command.EffectChoice.Candidate.OptionNodeId.IsDefined &&
+                command.EffectChoice.Candidate.OptionNodeId.Value == optionNodeId);
+
+        /// <summary>
+        /// Presses the window's control for this effect command kind - a printed `may`'s accept
+        /// (<see cref="EffectChoiceCommandKind.Confirm"/>) or its decline, a choose-several's DONE -
+        /// failing with the controls that were on screen when the window offers none.
+        /// </summary>
+        public static void ClickEffectControl(
+            ConfiguredMatchSceneRuntime runtime, ConfiguredMatchHudRenderer hud,
+            EffectChoiceCommandKind kind)
+        {
+            var control = EffectControl(runtime, kind);
+            Assert.That(control, Is.Not.Null,
+                $"The decision window offers no {kind} control. The shown controls are: " +
+                Describe(hud));
+            Click(Button(hud, control.Label));
+        }
+
+        /// <summary>Presses the window's option control for the named branch node.</summary>
+        public static void ClickEffectOption(
+            ConfiguredMatchSceneRuntime runtime, ConfiguredMatchHudRenderer hud, string optionNodeId)
+        {
+            var control = EffectOption(runtime, optionNodeId);
+            Assert.That(control, Is.Not.Null,
+                $"The decision window offers no option control for '{optionNodeId}'. The shown " +
+                "controls are: " + Describe(hud));
+            Click(Button(hud, control.Label));
+        }
+
+        /// <summary>
+        /// Declines the standing Defense on the window's own corner - `TAKE THE HIT` - read off its
+        /// model, the way <see cref="ClickDecisionCorner"/> reads every corner.
+        /// </summary>
+        public static void ClickDefenseDecline(
+            ConfiguredMatchSceneRuntime runtime, ConfiguredMatchHudRenderer hud)
+        {
+            var control = DecisionControl(runtime, command =>
+                command.Kind == DirectorCommandKind.DeclineDefense);
+            Assert.That(control, Is.Not.Null,
+                "The decision window offers no Defense decline. The shown controls are: " +
+                Describe(hud));
+            Click(Button(hud, control.Label));
+        }
+
+        /// <summary>
+        /// Clicks the element the decision window drew for one of its controls - the way a card-faced
+        /// control (a tied-initiative face, an upgrade candidate) is pressed, since a face carries no
+        /// button label to find it by.
+        /// </summary>
+        public static void ClickDecisionControl(
+            ConfiguredMatchSceneRuntime runtime, ConfiguredMatchHudRenderer hud,
+            DecisionWindowControlViewModel control)
+        {
+            Assert.That(control, Is.Not.Null,
+                "No decision-window control was named to press. The shown controls are: " +
+                Describe(hud));
+            var element = runtime.DecisionWindowView.ElementFor(control);
+            Assert.That(element, Is.Not.Null,
+                $"The decision window drew no element for '{control.Label}'. The shown controls " +
+                "are: " + Describe(hud));
+            EnsureVisible(element);
+            Click(element);
+        }
+
+        /// <summary>
+        /// Whether the element is drawn outside the decision window - for a journey asserting that
+        /// the STRIP prints no redundant heading, which the window's own eyebrow is not.
+        /// </summary>
+        public static bool IsOutsideDecisionWindow(VisualElement element)
+        {
+            for (var current = element; current != null; current = current.parent)
+            {
+                if (current.name == "gd-decision-window")
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>Whether exactly one shown button carries this label, for a journey asserting absence.</summary>

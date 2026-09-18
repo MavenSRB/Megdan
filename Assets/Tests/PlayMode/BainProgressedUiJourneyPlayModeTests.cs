@@ -459,9 +459,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(repeat.Kind, Is.EqualTo(EffectChoiceKind.ConfirmOrDecline), Remaining(runtime));
             Assert.That(DeclineControl(runtime), Is.Not.Null,
                 "\"MAY repeat once\" is answerable both ways. " + Remaining(runtime));
-            var confirm = runtime.RoundView.Model.EffectChoices.Single(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            // Milestone 8.46e: the accept is the decision window's control, labelled for what
+            // accepting does, so it is pressed by its command kind rather than by a strip label.
+            UiPlayer.ClickEffectControl(runtime, hud, EffectChoiceCommandKind.Confirm);
             yield return null;
             yield return null;
 

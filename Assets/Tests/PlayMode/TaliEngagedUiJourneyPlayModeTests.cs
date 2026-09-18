@@ -266,17 +266,18 @@ namespace GuardsDigital.Tests.PlayMode
             // with nothing answered, the step back is the commitment itself and the seat lands on
             // "choose an action", which is the engine reading correctly. Selecting first is what
             // makes the assertion below about the modal's own answer rather than about the turn.
-            var heldDirection = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(heldDirection, Has.Length.EqualTo(6), Remaining(runtime));
+            // Milestones 8.46b and 8.46d: a direction is a choice of exactly one, drawn as six arrows
+            // on the board and answered in ONE press - the select carries its own confirm - so there
+            // is no held, unconfirmed selection any more. What the Undo retracts is the whole answer,
+            // the batch it applied included, and the question then stands again exactly as it stood.
+            var arrows = runtime.BoardView.Model.DirectionCandidates;
+            Assert.That(arrows, Has.Count.EqualTo(6), Remaining(runtime));
             Assert.That(
-                runtime.SubmitProjectedCommand(heldDirection[0].Command), Is.True,
-                "A direction is held, not yet confirmed. " + Remaining(runtime));
+                runtime.SubmitProjectedCommand(arrows[0].Command), Is.True,
+                "A direction is answered in one press. " + Remaining(runtime));
             yield return null;
-            Assert.That(
-                runtime.PendingEffectChoice.SelectedCandidates, Is.Not.Empty,
-                "The held answer is what the Undo below has to find. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "and the question closes on that press. " + Remaining(runtime));
 
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             yield return null;
@@ -284,12 +285,11 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The Undo retracts the modal's own answer and not the whole turn; the direction " +
-                "question must still be standing. " + Remaining(runtime));
+                "question must be standing again. " + Remaining(runtime));
             Assert.That(
                 runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
                 Is.EqualTo(enemyStoodAt),
-                "Nothing has moved: the batch never applied before the Undo, so there is nothing to " +
-                "roll back beyond the choice itself.");
+                "Nothing stays moved: the batch the answer applied is retracted with the answer.");
 
             Assert.That(runtime.RestoreSnapshot(pausedSnapshot), Is.True,
                 "A restore into a match holding this pause must succeed.");
@@ -299,22 +299,15 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
                 Is.EqualTo(enemyStoodAt));
 
-            var directionCandidates = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(directionCandidates, Has.Length.EqualTo(6), Remaining(runtime));
+            var restoredArrows = runtime.BoardView.Model.DirectionCandidates;
+            Assert.That(restoredArrows, Has.Count.EqualTo(6), Remaining(runtime));
             Assert.That(
-                runtime.SubmitProjectedCommand(directionCandidates[0].Command), Is.True,
-                "The restored pause answers exactly like the original.");
-            yield return null;
-            Assert.That(
-                runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(
-                    runtime.PendingEffectChoice.ConfirmInvocation)),
-                Is.True,
-                "And is confirmed exactly like the original. " + Remaining(runtime));
+                runtime.SubmitProjectedCommand(restoredArrows[0].Command), Is.True,
+                "The restored pause answers exactly like the original, in one press.");
             yield return null;
             yield return null;
-            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "and closes on it exactly like the original. " + Remaining(runtime));
         }
 
         /// <summary>

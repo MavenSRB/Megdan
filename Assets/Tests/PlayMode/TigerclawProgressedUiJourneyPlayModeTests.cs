@@ -507,9 +507,11 @@ namespace GuardsDigital.Tests.PlayMode
                 "The performed basic action is what the Ultimate watches, so the game stops on its " +
                 "printed offer. " + Remaining(runtime));
             var repeat = StandingNode(runtime);
-            var decline = DeclineControl(runtime);
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            // Milestone 8.46e: both answers to the printed `may` are the decision window's controls
+            // now, so they are read off its model by command kind - what is SHOWN is the window's
+            // pair, labelled for their consequences, not the strip's `ACCEPT` and `DECLINE`.
+            var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
+            var confirm = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
             Assert.That(decline, Is.Not.Null,
                 "\"you may repeat it once\" - the decline is an answer a player has to be able to " +
                 "give by name. Shown: " + UiPlayer.Describe(hud));
@@ -567,8 +569,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The performed basic action is what the Ultimate watches, so the game stops on its " +
                 "printed offer once the Movement is spent. " + Remaining(runtime));
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            // Milestone 8.46e: the accept is the decision window's control, labelled for what taking
+            // the repeat does, so it is read off the window's model by command kind and pressed by
+            // that label rather than by the strip's.
+            var confirm = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
             Assert.That(confirm, Is.Not.Null,
                 "\"you may repeat it once\" - taking it is an answer a player has to be able to give " +
                 "by name. Shown: " + UiPlayer.Describe(hud));

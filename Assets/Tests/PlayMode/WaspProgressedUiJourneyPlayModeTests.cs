@@ -857,27 +857,29 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
         }
 
-        /// <summary>Clicks the paused frame's confirm control.</summary>
+        /// <summary>
+        /// Clicks the paused frame's confirm control - a printed `may`'s accept.
+        ///
+        /// <para>Milestone 8.46e: the accept is the decision window's control, labelled for what
+        /// accepting does, so it is found by its command kind rather than by a label read off the
+        /// strip. Every caller here presses a confirm-or-decline: Center of Mass and High Voltage
+        /// reach it after a board-answered exactly-one selection that already resolved on its own
+        /// click (milestone 8.46b), which is why the move is asserted BEFORE this is pressed and no
+        /// DONE is ever expected for that selection.</para>
+        /// </summary>
         private static IEnumerator ClickEffectConfirm(MatchSceneCompositionRoot root)
         {
-            var confirm = root.Runtime.RoundView.Model.EffectChoices.SingleOrDefault(value =>
-                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            Assert.That(confirm, Is.Not.Null,
-                "The frame offers its confirm. Shown controls: " + UiPlayer.Describe(root.Hud));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label));
+            UiPlayer.ClickEffectControl(root.Runtime, root.Hud, EffectChoiceCommandKind.Confirm);
             yield return null;
         }
 
-        /// <summary>Clicks the paused frame's decline control.</summary>
+        /// <summary>
+        /// Clicks the paused frame's decline control. Milestone 8.46e: the decision window draws it
+        /// beside the accept, named for what declining does, so it is found by command kind there.
+        /// </summary>
         private static IEnumerator ClickEffectDecline(MatchSceneCompositionRoot root)
         {
-            var decline = root.Runtime.RoundView.Model.EffectChoices.SingleOrDefault(value =>
-                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
-            Assert.That(decline, Is.Not.Null,
-                "The frame offers its decline. Shown controls: " + UiPlayer.Describe(root.Hud));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label));
+            UiPlayer.ClickEffectControl(root.Runtime, root.Hud, EffectChoiceCommandKind.Decline);
             yield return null;
         }
 

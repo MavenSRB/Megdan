@@ -48,6 +48,23 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class MisaProgressedUiJourneyPlayModeTests
     {
+
+        /// <summary>
+        /// Milestone 8.46e. p.10's bullets are the decision window's own option controls now - the
+        /// strip no longer draws a family the window has taken - so they are counted here, and each
+        /// is pressed by the branch node it stands for rather than by position or typed words.
+        /// </summary>
+        private static DecisionWindowControlViewModel[] OfferedBullets(ConfiguredMatchSceneRuntime runtime)
+        {
+            var model = runtime.DecisionWindowView.Model;
+            return model == null
+                ? new DecisionWindowControlViewModel[0]
+                : model.Controls.Where(control =>
+                    control.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    control.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
+                    control.Command.EffectChoice.Candidate.OptionNodeId.IsDefined).ToArray();
+        }
+
         /// <summary>
         /// Power Shot: "Target a unit in range. After the attack: If the target was at maximum range,
         /// you may move it 1 space, to a space farther away from you."
@@ -164,7 +181,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"After the attack: If the target was at maximum range\" was true at targeting " +
                 "time, so its `may` opens. " + Remaining(runtime));
-            var decline = DeclineControl(runtime);
+            // Milestone 8.46e: the printed may is declined on the decision window, read off its model.
+            var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
             Assert.That(decline, Is.Not.Null,
                 "A printed `you may` is answerable both ways, so the pause draws its own decline. " +
                 Remaining(runtime));
@@ -486,15 +504,14 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "p.10's modal asks which bullets. " + Remaining(runtime));
-            var bullets = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2), Remaining(runtime));
+            // Milestone 8.46e: the bullets are the decision window's own controls now.
+            Assert.That(OfferedBullets(runtime), Has.Length.EqualTo(2), Remaining(runtime));
 
             // RULING 28: with the Ultimate up the ceiling is TWO, so choosing one bullet must NOT
             // close the prompt. That is the whole observable difference from the printed card, and it
             // is what the ceiling being a live board question rather than a definition constant buys.
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            // Milestone 8.46e: the Place arm is pressed by the branch node it stands for.
+            UiPlayer.ClickEffectOption(runtime, hud, "soar-place-arm");
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
@@ -506,13 +523,10 @@ namespace GuardsDigital.Tests.PlayMode
             // still draws both controls after one selection - a selection is cumulative, not
             // consuming - so taking the first offered control a second time would re-answer the
             // bullet already chosen rather than add the second one.
-            var second = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .Where(value => value.Label != bullets[0].Label)
-                .ToArray();
-            Assert.That(second, Is.Not.Empty,
+            // Milestone 8.46e: the other bullet is the window's control for its own branch node.
+            Assert.That(UiPlayer.EffectOption(runtime, "soar-defeat-arm"), Is.Not.Null,
                 "and the other bullet is still offered. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, second[0].Label));
+            UiPlayer.ClickEffectOption(runtime, hud, "soar-defeat-arm");
             yield return null;
             yield return null;
 
@@ -651,11 +665,10 @@ namespace GuardsDigital.Tests.PlayMode
             var node = runtime.PendingEffectChoice.NodeId;
             var commandsAtPause = runtime.AcceptedCommands.Count;
 
-            var bullets = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                .ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2), Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            // Milestone 8.46e: the bullets are the decision window's own controls now, and the Place
+            // arm is pressed by the branch node it stands for.
+            Assert.That(OfferedBullets(runtime), Has.Length.EqualTo(2), Remaining(runtime));
+            UiPlayer.ClickEffectOption(runtime, hud, "soar-place-arm");
             yield return null;
 
             Assert.That(runtime.AcceptedCommands.Count, Is.GreaterThan(commandsAtPause),
@@ -678,10 +691,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.NodeId, Is.EqualTo(node),
                 "on the same Choose node.");
-            Assert.That(
-                runtime.RoundView.Model.EffectChoices.Count(value =>
-                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
-                Is.EqualTo(2),
+            // Milestone 8.46e: the bullets are counted on the decision window, where they stand.
+            Assert.That(OfferedBullets(runtime), Has.Length.EqualTo(2),
                 "with BOTH bullets offered again - an Undo that came back offering one would have " +
                 "kept the selection it claimed to drop. " + Remaining(runtime));
 
@@ -689,9 +700,8 @@ namespace GuardsDigital.Tests.PlayMode
             var payload = runtime.CaptureSnapshot();
             Assert.That(payload, Is.Not.Null.And.Not.Empty);
 
-            var again = runtime.RoundView.Model.EffectChoices
-                .First(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
-            UiPlayer.Click(UiPlayer.Button(hud, again.Label));
+            // Milestone 8.46e: a bullet is pressed on the decision window, by its branch node.
+            UiPlayer.ClickEffectOption(runtime, hud, "soar-place-arm");
             yield return null;
             yield return null;
 
@@ -703,10 +713,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "8.35i's corrective holding for a choice paused inside an enclosing action. " +
                 Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.NodeId, Is.EqualTo(node));
-            Assert.That(
-                runtime.RoundView.Model.EffectChoices.Count(value =>
-                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
-                Is.EqualTo(2),
+            // Milestone 8.46e: the bullets are counted on the decision window, where they stand.
+            Assert.That(OfferedBullets(runtime), Has.Length.EqualTo(2),
                 "and it is the MODAL that is standing with both bullets, rather than a child the " +
                 "restore resumed into. " + Remaining(runtime));
             Assert.That(runtime.AcceptedCommands, Is.Empty,
@@ -811,7 +819,8 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The present-tense condition read the LIVE board at p.14's step 7 and found the " +
                 "target still not adjacent, so its `may` opens. " + Remaining(runtime));
-            Assert.That(DeclineControl(runtime), Is.Not.Null,
+            // Milestone 8.46e: the decline is the decision window control, read off its model.
+            Assert.That(UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline), Is.Not.Null,
                 "A printed `you may` is answerable both ways. " + Remaining(runtime));
 
             var destinations = LitDestinations(runtime);
@@ -829,7 +838,8 @@ namespace GuardsDigital.Tests.PlayMode
             }
             else
             {
-                UiPlayer.Click(UiPlayer.Button(hud, DeclineControl(runtime).Label));
+                // Milestone 8.46e: the printed may is declined on the decision window, read off its model.
+                UiPlayer.ClickEffectControl(runtime, hud, EffectChoiceCommandKind.Decline);
             }
 
             yield return null;

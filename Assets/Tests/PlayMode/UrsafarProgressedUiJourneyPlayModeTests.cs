@@ -111,13 +111,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return YieldUntilTheNamedSeatActs(runtime, own);
             yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            var bullet = runtime.RoundView.Model.EffectChoices.First(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
-            UiPlayer.Click(UiPlayer.Button(root.Hud, bullet.Label)); yield return null;
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            if (confirm != null) { UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label)); yield return null; }
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            // Milestone 8.46e: the borrow bullet is the decision window's, taken by its branch node id.
+            yield return TakeTheBorrowBullet(root, runtime);
             var before = runtime.CaptureSnapshot();
             var source = runtime.Cards.Single(card => card.OwnerId.Equals(own) &&
                 card.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.ColdIre));
@@ -218,12 +213,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return YieldUntilTheNamedSeatActs(runtime, own);
             yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            var bullet = runtime.RoundView.Model.EffectChoices.First(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
-            UiPlayer.Click(UiPlayer.Button(root.Hud, bullet.Label)); yield return null;
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            if (confirm != null) { UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label)); yield return null; }
+            // Milestone 8.46e: the borrow bullet is the decision window's, taken by its branch node id.
+            yield return TakeTheBorrowBullet(root, runtime);
 
             var source = runtime.Cards.Single(card => card.OwnerId.Equals(own) &&
                 card.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.AngryRoar));
@@ -264,17 +255,38 @@ namespace GuardsDigital.Tests.PlayMode
                 KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Skill),
                 Is.True, "Instinctive Reaction must expose its Skill control. " + Remaining(runtime));
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            var bullet = runtime.RoundView.Model.EffectChoices.First(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
-            UiPlayer.Click(UiPlayer.Button(root.Hud, bullet.Label)); yield return null;
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            if (confirm != null)
-            {
-                UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label));
-                yield return null;
-            }
-            Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+            // Milestone 8.46e: the borrow bullet is the decision window's, taken by its branch node id.
+            yield return TakeTheBorrowBullet(root, runtime);
+        }
+
+        /// <summary>
+        /// Milestone 8.46e. Takes Instinctive Reaction's borrow bullet where a player now takes it:
+        /// on the decision window milestone 8.46 moved every `Choose one` to. The control is found by
+        /// its branch node id rather than by the strip's `MODE #1 MODAL-BORROW` label, because the
+        /// window names the consequence in the card's own words and the strip no longer draws the
+        /// family at all.
+        ///
+        /// <para>Re-derived per milestone 8.46b: a choice admitting exactly one selection resolves on
+        /// the select itself, so the window draws no DONE behind the bullets and there is nothing to
+        /// press after the one press - the borrow's own card chooser is what opens.</para>
+        /// </summary>
+        private static IEnumerator TakeTheBorrowBullet(
+            MatchSceneCompositionRoot root, ConfiguredMatchSceneRuntime runtime)
+        {
+            var modal = runtime.PendingEffectChoice;
+            Assert.That(modal, Is.Not.Null, Remaining(runtime));
+            Assert.That(modal.ResolvesOnSelection, Is.True,
+                "\"Choose one\" is the exactly-one shape milestone 8.46b answers in one press. " +
+                Remaining(runtime));
+            Assert.That(UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm), Is.Null,
+                "so the window draws no DONE behind the bullets. " + Remaining(runtime));
+            UiPlayer.ClickEffectOption(runtime, root.Hud, "modal-borrow");
+            yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The borrow's card chooser opens on that one press. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ChoiceId, Is.Not.EqualTo(modal.ChoiceId),
+                "and the modal itself is answered rather than still standing half-filled. " +
+                Remaining(runtime));
         }
 
         /// <summary>

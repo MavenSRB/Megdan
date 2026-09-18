@@ -40,8 +40,8 @@ namespace GuardsDigital.Tests.PlayMode
                 HeroView(OtherHeroId(runtime,actor)).transform.position), Is.True);
             yield return null;
             Assert.That(runtime.PendingDefenseChoice.AttackTotal, Is.EqualTo(4 + discards));
-            var decline = runtime.RoundView.Model.DefenseChoices.Single(value => value.Command.Kind == DirectorCommandKind.DeclineDefense);
-            UiPlayer.Click(UiPlayer.Button(root.Hud,decline.Label)); yield return null;
+            // Milestone 8.46e: the Defense decline is the decision window's corner, read off its model.
+            UiPlayer.ClickDefenseDecline(runtime,root.Hud); yield return null;
             Assert.That(runtime.PendingDefenseChoice, Is.Null);
             Healthy(runtime);
         }
@@ -57,8 +57,9 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return PointTrayAt(root,hand.HeroId);
                 yield return CommitThroughTray(root,NameOf(runtime,hand.Cards[0].DefinitionReference.DefinitionId));
             }
-            else if (runtime.RoundView.Model.InitiativeChoices.Count > 0)
-                UiPlayer.Click(UiPlayer.Button(root.Hud,runtime.RoundView.Model.InitiativeChoices[0].Label));
+            // Milestone 8.46e: a tied initiative is drawn on the decision window as card faces.
+            else if (UiPlayer.DecisionControl(runtime, command => command.Kind == DirectorCommandKind.ChooseTiedActor) != null)
+                UiPlayer.ClickDecisionControl(runtime, root.Hud, UiPlayer.DecisionControl(runtime, command => command.Kind == DirectorCommandKind.ChooseTiedActor));
             else if (runtime.BoardView.Model.SystemTransitionDestinations.Count > 0)
             {
                 var at = FirstClickableSpace(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -259,8 +260,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return StartActionThroughControl(root,ActionKind.Attack);
             Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),root.Hud,HeroView(actor).transform.position), Is.True);
             yield return null;
-            var decline = runtime.RoundView.Model.DefenseChoices.Single(value => value.Command.Kind == DirectorCommandKind.DeclineDefense);
-            UiPlayer.Click(UiPlayer.Button(root.Hud,decline.Label)); yield return null;
+            // Milestone 8.46e: the Defense decline is the decision window's corner, read off its model.
+            UiPlayer.ClickDefenseDecline(runtime,root.Hud); yield return null;
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(actor)), Is.False);
             yield return AdvanceToNextTurn(runtime);
             CommitSoTheNamedSeatActs(runtime,actor,GarrusCardContent.AngryStrike);

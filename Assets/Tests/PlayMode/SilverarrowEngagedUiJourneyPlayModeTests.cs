@@ -231,11 +231,12 @@ namespace GuardsDigital.Tests.PlayMode
                     pointerInput, root.Hud, HeroView(enemyId).transform.position), Is.True);
             yield return null;
 
-            var defenceDecline = runtime.RoundView.Model.DefenseChoices.FirstOrDefault(value =>
-                value.Command.Kind == DirectorCommandKind.DeclineDefense);
-            if (defenceDecline != null)
+            // Milestone 8.46e: a standing Defense is declined on the decision window's own corner
+            // (`TAKE THE HIT`), read off its model - the strip no longer draws `DECLINE DEFENSE`.
+            if (UiPlayer.DecisionControl(runtime, command =>
+                    command.Kind == DirectorCommandKind.DeclineDefense) != null)
             {
-                UiPlayer.Click(UiPlayer.Button(root.Hud, defenceDecline.Label));
+                UiPlayer.ClickDefenseDecline(runtime, root.Hud);
                 yield return null;
             }
             yield return null;

@@ -425,8 +425,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             if (runtime.PendingDefenseChoice != null)
             {
-                var decline = runtime.RoundView.Model.DefenseChoices.Single(value => value.Command.Kind == DirectorCommandKind.DeclineDefense);
-                UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label));
+                // Milestone 8.46e: the Defense is declined on the decision window's own corner
+                // (`TAKE THE HIT`), read off its model - the strip no longer draws `DECLINE DEFENSE`.
+                UiPlayer.ClickDefenseDecline(runtime, root.Hud);
                 yield return null;
             }
 

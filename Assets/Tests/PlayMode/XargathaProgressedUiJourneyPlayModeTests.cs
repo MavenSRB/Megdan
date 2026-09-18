@@ -490,11 +490,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return AdvanceToNextTurn(runtime);
         }
 
-        /// <summary>The standing pause's own confirm control, or null when it offers none.</summary>
-        internal static TypedInvocationViewModel ConfirmControl(
+        /// <summary>
+        /// The standing pause's own confirm control, or null when it offers none.
+        ///
+        /// <para>Milestone 8.46e: read off the decision window, which draws a printed `may`'s accept
+        /// beside its refusal and labels it for what accepting does, since the strip yields that
+        /// family to it. Both callers press the label this returns, so they press what is shown.</para>
+        /// </summary>
+        internal static DecisionWindowControlViewModel ConfirmControl(
             ConfiguredMatchSceneRuntime runtime) =>
-            runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
 
         /// <summary>One printed value off a named face, read from the definition the match dealt.</summary>
         private static int PrintedValue(

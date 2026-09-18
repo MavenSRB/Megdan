@@ -81,9 +81,13 @@ namespace GuardsDigital.Tests.PlayMode
         internal static IEnumerator Option(MatchSceneCompositionRoot root, string node)
         {
             var old = root.Runtime.PendingEffectChoice.NodeId;
-            var control = root.Runtime.RoundView.Model.EffectChoices.Single(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select &&
-                value.Command.EffectChoice.Candidate.OptionNodeId.Value == node);
+            // Milestone 8.46e: the bullet is the decision window's own control - the strip no longer
+            // draws a family the window has taken - so it is found there by the branch node it stands
+            // for, and its label is read off the model rather than typed.
+            var control = UiPlayer.EffectOption(root.Runtime, node);
+            Assert.That(control, Is.Not.Null,
+                $"The decision window offers no bullet for '{node}'. The shown controls are: " +
+                UiPlayer.Describe(root.Hud));
             var version = root.Runtime.Projection.Version;
             var commands = root.Runtime.AcceptedCommands.Count;
             var stale = control.Command;

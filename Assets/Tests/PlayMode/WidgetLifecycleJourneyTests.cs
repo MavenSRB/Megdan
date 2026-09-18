@@ -88,8 +88,8 @@ namespace GuardsDigital.Tests.PlayMode
             yield return StartActionThroughControl(root,ActionKind.Attack);
             Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),root.Hud,HeroView(actor).transform.position), Is.True);
             yield return null;
-            var decline = runtime.RoundView.Model.DefenseChoices.Single(value => value.Command.Kind == DirectorCommandKind.DeclineDefense);
-            UiPlayer.Click(UiPlayer.Button(root.Hud,decline.Label)); yield return null;
+            // Milestone 8.46e: the Defense decline is the decision window's corner, read off its model.
+            UiPlayer.ClickDefenseDecline(runtime,root.Hud); yield return null;
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(actor)), Is.False);
             Assert.That(runtime.BoardView.Model.PlacedTokens.Single().Id, Is.EqualTo(token.Id));
             yield return NextCommit(root);

@@ -202,20 +202,23 @@ namespace GuardsDigital.Tests.PlayMode
                 Does.Not.Contain("choose an action, or end your turn"),
                 "which is the line this discard chooser used to arrive under.");
 
+            // Milestone 8.46e: the window's own eyebrow names the family; the STRIP is what must not
+            // print the heading a second time over faces that already say what they are.
             var heading = UiPlayer.Descendants(hud.RootElement)
                 .OfType<Label>()
-                .Where(label => UiPlayer.IsShown(label) && label.text == prompt.SectionLabel)
+                .Where(label => UiPlayer.IsShown(label) && label.text == prompt.SectionLabel &&
+                    UiPlayer.IsOutsideDecisionWindow(label))
                 .ToArray();
             Assert.That(heading, Is.Empty,
                 "The redundant CARD CHOICE text is absent. " + UiPlayer.Describe(hud));
-            var choiceSection = UiPlayer.Descendants(hud.RootElement)
-                .Single(element => element.name == "gd-effect-card-section" &&
-                    UiPlayer.IsShown(element));
+            // Milestone 8.46e: the offered faces are drawn on the decision window now, under the
+            // same `gd-effect-card` name every card-valued choice keeps.
             Assert.That(
-                UiPlayer.Descendants(choiceSection)
-                    .Count(element => element.name == "gd-effect-card" && UiPlayer.IsShown(element)),
+                UiPlayer.Descendants(hud.RootElement)
+                    .Count(element => element.name == "gd-effect-card" && UiPlayer.IsShown(element) &&
+                        !UiPlayer.IsOutsideDecisionWindow(element)),
                 Is.EqualTo(EffectCardChoices(runtime).Length),
-                "Every offered face remains in the frameless row. " + UiPlayer.Describe(hud));
+                "Every offered face is drawn on the decision window. " + UiPlayer.Describe(hud));
 
             yield return null;
             yield return UiPlayer.CaptureGameView(
@@ -227,13 +230,12 @@ namespace GuardsDigital.Tests.PlayMode
             // Retained-prefix Undo first, because a restore adopts a state rather than a history and
             // leaves nothing to undo afterwards.
             //
-            // **One board click is two accepted commands here**, and the Undo is what makes that
-            // visible: the click submits the selection and, the selection being complete at its own
-            // printed maximum, the confirm behind it. So the first UNDO gives back the actor's own
-            // confirm-or-nothing step and the second gives back the board question itself, which is
-            // exactly the order a player pressing UNDO twice walks back through.
+            // Milestone 8.46b: **ONE BOARD CLICK ON A CHOICE OF EXACTLY ONE IS ONE ACCEPTED COMMAND** -
+            // the select carries the confirm the authority offered behind it - so one UNDO gives back
+            // the board question the click answered, which is the one step a player walks back
+            // through. (Before 8.46b the click was two commands and this took two presses.)
             //
-            // Each press is also this journey's replay evidence rather than a separate claim: Undo is
+            // The press is also this journey's replay evidence rather than a separate claim: Undo is
             // implemented as a reconstruction of the retained prefix into a fresh aggregate, so what
             // comes back on screen after a press is what replaying those commands produces.
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
@@ -242,24 +244,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtCapture - 1),
                 "One UNDO drops exactly one accepted command.");
+            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtBoardQuestion),
+                "and that one command was the whole click, so the board question is given back.");
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                "and Shock's rider is standing again rather than having resolved.");
+                "Shock's rider is standing again rather than having resolved.");
             Assert.That(EffectCardChoices(runtime), Is.Empty,
                 "The discard the Undo dropped leaves no card face on screen. " +
                 UiPlayer.Describe(hud));
-            Assert.That(
-                runtime.RoundView.Model.EffectChoices.Any(value =>
-                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm),
-                Is.True,
-                "and the actor's own confirm step is drawn again. " + UiPlayer.Describe(hud));
-
-            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
-            yield return null;
-            Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtBoardQuestion),
-                "The second UNDO gives back the board question the click answered.");
             Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Not.Empty,
-                "which is drawn on the board again, as candidates rather than controls. " +
-                UiPlayer.Describe(hud));
+                "and the hero question is drawn on the board again, as candidates rather than " +
+                "controls. " + UiPlayer.Describe(hud));
             // Close the drawer the same way it was opened, on the toggle rather than on its text: an
             // open drawer relabels its own control to "DIRECTOR" plus a chevron, so the label that
             // opened it finds nothing once it is open.
@@ -548,9 +542,9 @@ namespace GuardsDigital.Tests.PlayMode
             // and accepting it moves the same piece again without asking which piece.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The printed May repeat stops the Skill on its own question.");
-            var accept = runtime.RoundView.Model.EffectChoices.SingleOrDefault(value =>
-                value.Command.Kind == DirectorCommandKind.AnswerEffectChoice &&
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            // Milestone 8.46e: the printed may is drawn on the decision window, its two answers
+            // naming what accepting and declining DO - read off its model rather than the strip's.
+            var accept = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
             Assert.That(accept, Is.Not.Null,
                 "The repeat offers its confirm. Shown controls: " + UiPlayer.Describe(hud));
             UiPlayer.Click(UiPlayer.Button(hud, accept.Label));
@@ -702,7 +696,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadEngagedScene();
             var root = Root();
             var runtime = root.Runtime;
-            var random = new SeededChoice(29);
+            var random = new SeededChoice(58);
             var commandCount = 0;
 
             while (runtime.SystemTransitionPrompt?.Kind !=
@@ -737,8 +731,16 @@ namespace GuardsDigital.Tests.PlayMode
                 // different deck is, Unity disproved that scan's answer on the first focused run,
                 // and the corrected probe reproduces BOTH live numbers to the command - seed 4 ends
                 // with no command at round 9 turn 4, seed 7 stops at round 36 turn 1 in commitments.
+                //
+                // Milestone 8.46b re-derived it a third time, 29 -> 58, by the same corrected probe:
+                // a choice of exactly one now answers in ONE press, so every trajectory diverges from
+                // the first such choice onward. Seed 29 now plays to round 35 turn 2 at 1,100
+                // commands - the probe reproduces that live number to the command, which is what
+                // says it still walks the same walk. Of sixty seeds five reach the pause (14, 45,
+                // 49, 56, 58); seed 58 reaches it at command 203 in round 6, the latest arrival
+                // available, which keeps this the mid-match case it has always been.
                 Assert.That(commandCount, Is.LessThan(1100),
-                    $"Seed 7 did not reach the blocked Lane-Push respawn pause; stopped in " +
+                    $"Seed 58 did not reach the blocked Lane-Push respawn pause; stopped in " +
                     $"round {runtime.RoundIndex}, turn {runtime.TurnIndex}, phase {runtime.Phase}.");
                 var offered = runtime.EnumerateProjectedCommands();
                 Assert.That(offered, Is.Not.Empty,

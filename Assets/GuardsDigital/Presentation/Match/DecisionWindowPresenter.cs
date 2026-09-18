@@ -691,12 +691,20 @@ namespace GuardsDigital.Presentation.Match
             var subject = EffectChoicePromptLabels.SubjectOf(
                 choice, projection.PendingEffectChoicePreview);
             var family = FamilyOf(subject);
-            var boardAnswered = family == DecisionWindowFamily.Direction ||
-                family == DecisionWindowFamily.PieceOrSpace;
             var sourceCardId = SourceCardOf(projection, choice);
             var sourceDefinitionId = DefinitionIdOf(projection, sourceCardId);
             var previews = new HashSet<EffectValue>(
                 projection.PendingEffectChoicePreview.Select(preview => preview.CandidateValue));
+            // Milestone 8.46e. A piece-or-space question docks only when the board can answer ALL
+            // of it: every valued candidate is one the board previews, where clicking the piece or
+            // the space answers. Dodger's Necromastery asks which minion TYPE comes back from the
+            // SUPPLY - candidates with no piece on the board to click - and the first Play Mode run
+            // docked that question into a bar with no answers on it at all.
+            var boardAnswered = family == DecisionWindowFamily.Direction ||
+                (family == DecisionWindowFamily.PieceOrSpace &&
+                    choice.Candidates
+                        .Where(candidate => candidate.Kind == EffectChoiceCandidateKind.Value)
+                        .All(candidate => previews.Contains(candidate.Value)));
 
             var controls = new List<DecisionWindowControlViewModel>();
             DecisionWindowControlViewModel corner = null;

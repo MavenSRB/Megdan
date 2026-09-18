@@ -444,9 +444,12 @@ namespace GuardsDigital.Tests.PlayMode
                 .ToArray();
             Assert.That(cardCandidates, Has.Length.EqualTo(1),
                 "The card she spent is the one thing standing in her discard. " + Remaining(runtime));
+            // Milestone 8.46b: an exactly-one card choice resolves on its selection, so the node is
+            // read BEFORE the answer - afterwards there is no pause left to read one from.
+            var retrieveNode = StandingNode(runtime);
             Assert.That(runtime.SubmitProjectedCommand(cardCandidates[0].Command), Is.True);
             yield return null;
-            yield return ConfirmIfStillStanding(root, StandingNode(runtime));
+            yield return ConfirmIfStillStanding(root, retrieveNode);
 
             Assert.That(runtime.Cards.Single(card => card.Id.Equals(spent)).State.Location,
                 Is.EqualTo(CardLocation.Hand),

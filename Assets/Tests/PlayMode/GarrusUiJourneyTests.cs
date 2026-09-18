@@ -93,8 +93,11 @@ namespace GuardsDigital.Tests.PlayMode
             {
                 if (runtime.PendingTurnRelease == null && runtime.SelectedActor.IsDefined &&
                     runtime.SelectedActor.ActorId.Equals(actor)) yield break;
-                var initiative = runtime.RoundView.Model.InitiativeChoices.FirstOrDefault();
-                if (initiative != null) UiPlayer.Click(UiPlayer.Button(root.Hud, initiative.Label));
+                // Milestone 8.46e: a tied initiative is drawn on the decision window as card faces,
+                // so the first face is pressed through the window's own element for it.
+                var initiative = UiPlayer.DecisionControl(runtime, command =>
+                    command.Kind == DirectorCommandKind.ChooseTiedActor);
+                if (initiative != null) UiPlayer.ClickDecisionControl(runtime, root.Hud, initiative);
                 else
                 {
                     Assert.That(runtime.RoundView.Model.EndTurnInvocation, Is.Not.Null, Remaining(runtime));
@@ -110,8 +113,10 @@ namespace GuardsDigital.Tests.PlayMode
             var choice = root.Runtime.PendingEffectChoice;
             Assert.That(choice, Is.Not.Null, Remaining(root.Runtime));
             var kind = accept ? EffectChoiceCommandKind.Confirm : EffectChoiceCommandKind.Decline;
-            var control = root.Runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == kind);
-            UiPlayer.Click(UiPlayer.Button(root.Hud, control.Label));
+            // Milestone 8.46e: a printed `may` is answered on the decision window's own pair, whose
+            // labels name the consequence rather than ACCEPT/DECLINE, so the control is found by its
+            // command kind on the window's model and never by typed words.
+            UiPlayer.ClickEffectControl(root.Runtime, root.Hud, kind);
             yield return null;
             yield return null;
             Healthy(root.Runtime);
@@ -251,8 +256,8 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return Pick(root,runtime.PendingEffectChoice.Candidates.Single(value =>
                         value.Value.Kind == EffectValueKind.Hero && value.Value.HeroId.Equals(enemy)));
                     Assert.That(runtime.PendingDefenseChoice, Is.Not.Null, "The Move and binding precede the Attack response.");
-                    var decline = runtime.RoundView.Model.DefenseChoices.Single(value => value.Command.Kind == DirectorCommandKind.DeclineDefense);
-                    UiPlayer.Click(UiPlayer.Button(root.Hud,decline.Label));
+                    // Milestone 8.46e: the Defense decline is the decision window's corner, read off its model.
+                    UiPlayer.ClickDefenseDecline(runtime,root.Hud);
                     yield return null;
                 }
                 else
@@ -322,10 +327,12 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.ActiveEffectSourceCardInstanceIds, Is.Empty, "The aura follows Battle Fury, never precedes it.");
                 var pause = runtime.CaptureSnapshot();
                 OpenDirectorDrawer(root.Hud); yield return null;
+                // Milestone 8.46b: the pick of exactly one card is ONE accepted command - the select
+                // carries its own confirm - so one UNDO gives the discard question back unanswered.
                 UiPlayer.Click(UiPlayer.Button(root.Hud,"UNDO")); yield return null;
                 Assert.That(runtime.Cards.Single(card => card.Id.Equals(source.Id)).State.Location, Is.EqualTo(CardLocation.TurnArea));
-                UiPlayer.Click(UiPlayer.Button(root.Hud,"UNDO")); yield return null;
                 Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("discard"));
+                Assert.That(runtime.PendingEffectChoice.SelectedCandidates, Is.Empty);
                 UiPlayer.Click(UiPlayer.Button(root.Hud,"DIRECTOR ▾")); yield return null;
                 yield return Pick(root,runtime.PendingEffectChoice.Candidates.Single(value => value.Value.CardInstanceId.Equals(source.Id)));
                 Assert.That(runtime.CaptureSnapshot(), Is.EqualTo(pause), "Replaying the retained prefix reproduces the exact pause.");

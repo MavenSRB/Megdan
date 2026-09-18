@@ -628,8 +628,8 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             yield return null;
             Assert.That(hud.IsDirectorDrawerOpen, Is.True);
-            UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
-            yield return null;
+            // Milestone 8.46b: the amount is a choice of exactly one, answered in ONE press - the
+            // select carries its own confirm - so one Undo, not two, is what gives the question back.
             UiPlayer.Click(UiPlayer.Button(hud, "UNDO"));
             yield return null;
             // The drawer relabels its own toggle when open - "DIRECTOR" becomes "DIRECTOR" plus a

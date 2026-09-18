@@ -233,8 +233,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(DeclineControl(runtime), Is.Not.Null,
                 "A printed \"up to\" has to be declinable on its own control.");
 
-            var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            // Milestone 8.46e: the shove is a board-answered question drawn on the docked window,
+            // whose DONE stands only once a piece is chosen - so the confirm is read off the
+            // window's own model rather than the strip's, which still lists one it no longer draws.
+            var confirm = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
             if (confirm != null)
             {
                 UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
@@ -246,7 +248,7 @@ namespace GuardsDigital.Tests.PlayMode
             // standing: a step 7 left unanswered would end the turn on an open question.
             if (runtime.PendingEffectChoice != null)
             {
-                UiPlayer.Click(UiPlayer.Button(hud, DeclineControl(runtime).Label));
+                UiPlayer.ClickDecisionCorner(runtime, hud);
                 yield return null;
             }
 
@@ -793,10 +795,15 @@ namespace GuardsDigital.Tests.PlayMode
         /// miniature in the supply. Every assertion in this fixture that means "the type question"
         /// says so through this rather than through the node.</para>
         /// </summary>
-        private static TypedInvocationViewModel[] TypeControls(
+        // Milestone 8.46e: the type question is drawn on the decision window - its candidates are
+        // miniatures in the SUPPLY, with no piece on the board to click - so its controls are read
+        // off the window's model rather than the strip's, which no longer draws them.
+        private static DecisionWindowControlViewModel[] TypeControls(
             ConfiguredMatchSceneRuntime runtime) =>
-            runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+            (runtime.DecisionWindowView.Model?.Controls ??
+                (IReadOnlyList<DecisionWindowControlViewModel>)System.Array.Empty<DecisionWindowControlViewModel>())
+                .Where(control => control.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    control.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
 
         private static bool UltimateIsFaceup(

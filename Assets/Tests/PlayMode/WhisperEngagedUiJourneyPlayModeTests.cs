@@ -462,10 +462,18 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Skill);
             var node = StandingNode(runtime);
-            var bullets = runtime.RoundView.Model.EffectChoices.Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select).ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2));
+            // Milestone 8.46e: the modal's bullets are the decision window's controls, so the offer is
+            // read off its model and the immunity bullet is taken by its branch node id - the strip's
+            // `MODE #1 SEEKER-IMMUNITY` label is no longer drawn anywhere.
+            Assert.That(runtime.DecisionWindowView.Model, Is.Not.Null,
+                "The modal is asked on the decision window. " + Remaining(runtime));
+            var bullets = runtime.DecisionWindowView.Model.Controls
+                .Where(value => value.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                .ToArray();
+            Assert.That(bullets, Has.Length.EqualTo(2), Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice.MaximumSelections, Is.EqualTo(1));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[0].Label));
+            UiPlayer.ClickEffectOption(runtime, root.Hud, "seeker-immunity");
             yield return null;
             yield return ConfirmIfStillStanding(root, node);
             var card = runtime.Cards.Single(value => value.OwnerId.Equals(own) && value.DefinitionReference.DefinitionId.Equals(WhisperCardContent.DeathSeeker));

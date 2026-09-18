@@ -430,7 +430,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             var decline = DeclineControl(runtime);
             Assert.That(decline, Is.Not.Null, Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
+            // Milestone 8.46e: the refusal is drawn by the decision window beside the accept, so it
+            // is pressed by its command kind there rather than by the strip's label.
+            UiPlayer.ClickEffectControl(runtime, hud, EffectChoiceCommandKind.Decline);
             yield return null;
             yield return null;
 

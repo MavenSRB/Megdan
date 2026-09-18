@@ -695,10 +695,17 @@ namespace GuardsDigital.Tests.PlayMode
                 choice.DefenseBreakdown.CardInstanceId.HasValue &&
                 choice.DefenseBreakdown.Outcome == AttackResolutionOutcome.SuccessfullyDefended);
 
-        /// <summary>The standing pause's own decline control, or null when it offers none.</summary>
-        internal static TypedInvocationViewModel DeclineControl(ConfiguredMatchSceneRuntime runtime) =>
-            runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
+        /// <summary>
+        /// The standing pause's own decline control, or null when it offers none.
+        ///
+        /// <para>Milestone 8.46e: read off the decision window, which draws the refusal - beside the
+        /// accept for a printed `may`, in its corner otherwise - since the strip yields that family
+        /// to it. Its label names the consequence in the card's own words, so a journey that presses
+        /// this control's label presses what the player sees.</para>
+        /// </summary>
+        internal static DecisionWindowControlViewModel DeclineControl(
+            ConfiguredMatchSceneRuntime runtime) =>
+            UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
 
         internal static HeroId OtherHeroId(ConfiguredMatchSceneRuntime runtime, HeroId heroId) =>
             runtime.Setup.Heroes.Single(hero => !hero.HeroId.Equals(heroId)).HeroId;

@@ -308,7 +308,9 @@ namespace GuardsDigital.Tests.PlayMode
             // Greater Good's gate row carry no ConfirmOrDecline where this one does.
             if (runtime.PendingEffectChoice != null)
             {
-                var decline = DeclineControl(runtime);
+                // Milestone 8.46e: the `may` is answered on the decision window, whose decline names
+                // the consequence rather than the strip's `DECLINE`; its label is read off the model.
+                var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
                 Assert.That(decline, Is.Not.Null,
                     "\"You MAY defeat a minion\" is answerable both ways, and the election stayed " +
                     "hers even though the bullet was not. " + Remaining(runtime));
@@ -374,17 +376,24 @@ namespace GuardsDigital.Tests.PlayMode
                 "does - the escalation changed what bullet 1 costs, not whose choice it is. " +
                 Remaining(runtime));
 
-            var bullets = runtime.RoundView.Model.EffectChoices
-                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+            // Milestone 8.46e: the modal is asked on the decision window, so the whole offer is read
+            // off its controls - a bullet drawn unavailable there carries an UnavailableReason and no
+            // command - rather than off the strip, which no longer draws the family.
+            var decision = runtime.DecisionWindowView.Model;
+            Assert.That(decision, Is.Not.Null,
+                "The modal is asked on the decision window. " + Remaining(runtime));
+            var bullets = decision.Controls
+                .Where(value => value.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
             Assert.That(bullets, Has.Length.EqualTo(2), Remaining(runtime));
-            Assert.That(runtime.RoundView.Model.UnavailableEffectChoices, Is.Empty,
+            var greyed = decision.Controls.Where(value => value.UnavailableReason != null).ToArray();
+            Assert.That(greyed, Is.Empty,
                 "RULING 17's first half, asserted over the whole offer: \"You defeat up to 3 minions " +
                 "adjacent to you\" may have no minion to defeat and a floor of nought, so it can " +
                 "apply nothing - and an option that applies nothing is OFFERED. Before milestone " +
                 "8.35z35 it was greyed, which deleted the enemy's escape hatch from the board. " +
-                "Greyed: " + string.Join(", ",
-                    runtime.RoundView.Model.UnavailableEffectChoices.Select(value => value.Label)) +
+                "Greyed: " + string.Join(", ", greyed.Select(value => value.Label)) +
                 ". " + Remaining(runtime));
 
             var handBefore = runtime.Cards
@@ -399,7 +408,9 @@ namespace GuardsDigital.Tests.PlayMode
             // THE PRICE. Bullet 1 is mandatory with two ways to complete, and with cards in hand the
             // completion is the discard.
             var priceNode = StandingNode(runtime);
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            // Milestone 8.46e: bullet 1 is taken on the window by its branch node id, not by the
+            // strip's `MODE #1 MODAL-PRICE` label.
+            UiPlayer.ClickEffectOption(runtime, hud, "modal-price");
             yield return null;
             yield return ConfirmIfStillStanding(root, priceNode);
             yield return null;
@@ -936,18 +947,23 @@ namespace GuardsDigital.Tests.PlayMode
             yield return StartActionThroughControl(root, ActionKind.Skill);
             var node = StandingNode(runtime);
             Assert.That(runtime.PendingEffectChoice.MaximumSelections, Is.EqualTo(2));
-            var bullets = runtime.RoundView.Model.EffectChoices.Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select).ToArray();
-            Assert.That(bullets, Has.Length.EqualTo(2));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[0].Label));
+            // Milestone 8.46e: both bullets are the decision window's controls, taken by their branch
+            // node ids rather than the strip's `MODE #N` labels. A choose-two keeps its DONE, which
+            // ConfirmIfStillStanding presses only if the second select has not already completed the
+            // raised ceiling.
+            Assert.That(UiPlayer.EffectOption(runtime, "seeker-immunity"), Is.Not.Null, Remaining(runtime));
+            Assert.That(UiPlayer.EffectOption(runtime, "seeker-retrieve-may"), Is.Not.Null, Remaining(runtime));
+            UiPlayer.ClickEffectOption(runtime, root.Hud, "seeker-immunity");
             yield return null;
-            UiPlayer.Click(UiPlayer.Button(root.Hud, bullets[1].Label));
+            UiPlayer.ClickEffectOption(runtime, root.Hud, "seeker-retrieve-may");
             yield return null;
             yield return ConfirmIfStillStanding(root, node);
             var card = runtime.Cards.Single(value => value.OwnerId.Equals(own) && value.DefinitionReference.DefinitionId.Equals(WhisperCardContent.DeathSeeker));
             Assert.That(runtime.IsActiveEffectSource(card.Id), Is.True);
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
-            var accept = runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            UiPlayer.Click(UiPlayer.Button(root.Hud, accept.Label));
+            // Milestone 8.46e: "you may retrieve" is accepted on the window's own control, named for
+            // what accepting does rather than `ACCEPT`.
+            UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Confirm);
             yield return null;
             var handBefore = runtime.Cards.Count(value => value.OwnerId.Equals(own) && value.State.Location == CardLocation.Hand);
             node = StandingNode(runtime);

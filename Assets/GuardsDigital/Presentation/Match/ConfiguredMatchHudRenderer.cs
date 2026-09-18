@@ -436,6 +436,11 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private string laidOutDecisionKey;
         private DecisionWindowState laidOutDecisionState;
+        // Milestone 8.46e. The panel the window was last laid out against, because a window that
+        // stands through a resize keeps its decision and its state while both of its rectangles move:
+        // the geometry gate's viewport sweep found it drawn at the reference's numbers on every
+        // viewport after the first.
+        private Vector2 laidOutDecisionViewport;
         private bool contextUsesTray;
 
         /// <summary>
@@ -2109,15 +2114,16 @@ namespace GuardsDigital.Presentation.Match
             var model = decisionWindow.Model;
             var key = model?.DecisionKey;
             var state = model?.State ?? DecisionWindowState.Docked;
+            var viewport = PanelViewport;
             if (!force && string.Equals(key, laidOutDecisionKey, StringComparison.Ordinal) &&
-                state == laidOutDecisionState)
+                state == laidOutDecisionState && viewport == laidOutDecisionViewport)
             {
                 return;
             }
 
             laidOutDecisionKey = key;
             laidOutDecisionState = state;
-            var viewport = PanelViewport;
+            laidOutDecisionViewport = viewport;
             var rect = state == DecisionWindowState.Docked
                 ? CalculateDecisionWindowDockedRect(viewport.x, viewport.y)
                 : CalculateDecisionWindowExpandedRect(viewport.x, viewport.y);

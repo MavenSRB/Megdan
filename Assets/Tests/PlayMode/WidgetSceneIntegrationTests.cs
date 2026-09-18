@@ -54,10 +54,9 @@ namespace GuardsDigital.Tests.PlayMode
             yield return GarrusUiJourneyTests.WaitForActor(root, actor);
             yield return PointTrayAt(root, actor);
             yield return StartActionThroughControl(root, GuardsDigital.Core.Cards.ActionKind.Skill);
-            var option = root.Runtime.RoundView.Model.EffectChoices.Single(value =>
-                value.Command.EffectChoice.Kind == GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCommandKind.Select &&
-                value.Command.EffectChoice.Candidate.OptionNodeId.Value == "place-pyro");
-            UiPlayer.Click(UiPlayer.Button(root.Hud, option.Label));
+            // Milestone 8.46e: the bullet is the decision window's own control, pressed by the branch
+            // node it stands for; its label is the window's, read off the model rather than typed.
+            UiPlayer.ClickEffectOption(root.Runtime, root.Hud, "place-pyro");
             yield return null;
             yield return GarrusUiJourneyTests.Space(root);
             var token = Object.FindObjectsByType<GuardsDigital.Presentation.Board.PlacedTokenView>().Single();

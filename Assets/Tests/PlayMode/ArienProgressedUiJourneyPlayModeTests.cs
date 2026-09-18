@@ -434,8 +434,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(adjacentAt),
                 "The swap happened where the click asked for it.");
 
-            var decline = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
-                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
+            // Milestone 8.46e: the printed `may`'s two answers are the decision window's controls
+            // now, not the strip's, so the refusal is read off the window's model - by command kind,
+            // its label naming the consequence in the card's own words - and pressed by that label.
+            var decline = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline);
             Assert.That(decline, Is.Not.Null,
                 "The conditional repeat must be offered because the minion was adjacent. " +
                 Remaining(runtime));
