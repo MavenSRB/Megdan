@@ -76,6 +76,8 @@ namespace GuardsDigital.Tests.EditMode
                     .Concat(SyntheticResolvedDiscardCapabilities.DeferredHandlers())
                     .Concat(SyntheticNamedBorrowCapabilities.DeferredHandlers())
                     .Concat(GarrusActiveEffectContent.DeferredHandlers())
+                    .Concat(WidgetComponentContent.DeferredHandlers())
+                    .Concat(SyntheticCoupledMoveCapabilities.DeferredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();

@@ -196,7 +196,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         private sealed class SwapWithActorHandler :
             IEffectCapabilityHandler, IEffectImmunityOverrideCapabilityHandler,
-            IEffectRefusalExplainingCapabilityHandler
+            IEffectRefusalExplainingCapabilityHandler, IEffectActorRelocationCapabilityHandler
         {
             private readonly bool supportsImmunityOverrides;
 
@@ -269,6 +269,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectCapabilityContext context, out AppliedRuleModification blocking) =>
                 TryExplainSwapRefusal(
                     context, ActorSpace(context), context.Input("subject"), out blocking);
+
+            public bool TryAnticipateActorSpaces(EffectCapabilityContext context, out IReadOnlyList<HexCoordinate> spaces)
+            {
+                spaces = Array.Empty<HexCoordinate>();
+                // A token cannot become an Attack target. A unit exchange would also require a
+                // hypothetical target-occupancy view, not merely the actor-origin view supplied here.
+                if (!TryResolvePair(context, ActorSpace(context), context.Input("subject"), supportsImmunityOverrides,
+                    out _, out var partner) || partner.Kind != BoardObjectKind.Token) return false;
+                spaces = new[] { context.Input("subject").Coordinate };
+                return true;
+            }
 
             /// <summary>
             /// The space the acting hero stands in, or the undefined value when it stands nowhere -

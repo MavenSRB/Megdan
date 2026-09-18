@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.BoardObjects;
+using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Rules.Modifications;
@@ -56,6 +57,30 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 May("root", "exchange"), Sequence("exchange", "pyro", "swap"),
                 Pyro("pyro", WidgetComponentContent.PyroInRadiusV1), SwapActor("swap", "pyro")
+            });
+
+        public static EffectDefinition AirborneBeforeAttack(CardDefinitionId card, string revision) =>
+            Definition(card, revision, "before-attack", new[]
+            {
+                Sequence("root", "may-swap", "target", "bind"),
+                May("may-swap", "exchange"), Sequence("exchange", "pyro", "swap"),
+                Pyro("pyro", WidgetComponentContent.PyroInRadiusV1), SwapActor("swap", "pyro"),
+                new EffectNodeDefinition(Id("target"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.ChooseTargetV2, inputs: new[]
+                    {
+                        EffectInputBinding.FromClosedVocabulary(SyntheticRosterCapabilities.OriginParameter, RosterQueryOrigin.Actor),
+                        EffectInputBinding.FromLiteral(SyntheticRosterCapabilities.DistanceParameter, EffectValue.Integer(1)),
+                        EffectInputBinding.FromClosedVocabulary(SyntheticRosterCapabilities.UnitKindParameter, RosterUnitKind.Unit),
+                        EffectInputBinding.FromClosedVocabulary(SyntheticRosterCapabilities.RelationParameter, SourceTeamRelation.OpposingSource),
+                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Attack)
+                    }, outputs: new[] { Output("chosenHero", EffectValueKind.Hero), Output("chosenMinion", EffectValueKind.Minion) }),
+                new EffectNodeDefinition(Id("bind"), EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticContinuationCapabilities.SetAttackTargetV1, inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(SyntheticContinuationCapabilities.HeroParameter, Id("target"), "chosenHero", EffectValueKind.Hero),
+                        EffectInputBinding.FromNodeOutput(SyntheticContinuationCapabilities.MinionParameter, Id("target"), "chosenMinion", EffectValueKind.Minion)
+                    }, outputs: new[] { Output(SyntheticContinuationCapabilities.BoundHeroTargetOutput, EffectValueKind.Hero),
+                        Output(SyntheticContinuationCapabilities.BoundMinionTargetOutput, EffectValueKind.Minion) })
             });
 
         public static EffectDefinition AllAboard(CardDefinitionId card, string revision, bool safeLanding)
@@ -226,7 +251,7 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 From("subject", pyro, "space"),
                 EffectInputBinding.FromClosedVocabulary(SyntheticExchangeCapabilities.EligiblePieceParameterName, SwapEligiblePieceKind.GamePiece)
-            });
+            }, outputs: new[] { Output("actorAt", EffectValueKind.Coordinate), Output("subjectAt", EffectValueKind.Coordinate) });
         private static EffectInputBinding From(string name, string node, string output) =>
             EffectInputBinding.FromNodeOutput(name, Id(node), output, EffectValueKind.Coordinate);
         private static EffectOutputBinding Output(string name, EffectValueKind kind) => new EffectOutputBinding(name, kind);

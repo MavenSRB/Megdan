@@ -52,13 +52,15 @@ Non-goals: changes to previous heroes' borrowing or Ultimate meanings.
 
 Historical evidence: [8.43c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843c-widget-skill-reuse-completion-evidence).
 
-### [ ] 8.43d Compose Widget's eighteen playable faces
+### [x] 8.43d Compose Widget's eighteen playable faces
 
 Outcome: nineteen exact printed definitions, eighteen fully executable faces, starting hand and upgrade/item paths.
 
 Acceptance: literal source-linked rows for all values/text/items, absent icons remain absent; composition validation including deferred contracts; every distinct legal behavior and negative; all branch orders and pre/post-attack swaps; exact source-card state and target exclusions; source corpus sweep; no engine deferral on dealt faces and only the established odd-player Handicap deferral. Focused and directly affected T2 checks.
 
 Non-goals: dealing, artwork registration or player-gate completion claims.
+
+Historical evidence: [8.43d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-843d-widget-printed-set-completion-evidence).
 
 ### [ ] 8.43e Deal, register and artwork Widget
 

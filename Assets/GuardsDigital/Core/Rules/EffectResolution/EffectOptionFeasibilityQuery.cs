@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Rules.Modifications;
 
@@ -580,6 +581,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionContext context,
             IReadOnlyList<HexCoordinate> alreadyHypothetical)
         {
+            if (alreadyHypothetical == null && TryAnticipateActorSwapClause(nodeId, frame, carried, context, out var swappedSpaces))
+                return swappedSpaces;
             if (alreadyHypothetical != null ||
                 !context.Definition.TryGetNode(nodeId, out var node) ||
                 !context.Catalog.TryLoad(node.Capability, out var handler) ||
@@ -607,12 +610,55 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// unknown here, and there is nothing conservative about judging a later adjacency question
         /// against the square the piece is about to leave.</para>
         /// </summary>
-        private static bool MovesSomebodyThisWalkCannotFollow(
-            EffectNodeId nodeId, EffectResolutionContext context) =>
+        private static bool MovesSomebodyThisWalkCannotFollow(EffectNodeId nodeId, EffectResolutionContext context) =>
             context.Definition.TryGetNode(nodeId, out var node) &&
-            node.Kind == EffectNodeKind.Capability &&
-            node.Capability.Equals(
-                GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV3);
+            ((node.Kind == EffectNodeKind.Capability && node.Capability.Equals(
+                GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV3)) || ContainsActorSwap(nodeId, context));
+
+        private static bool ContainsActorSwap(EffectNodeId id, EffectResolutionContext context)
+        {
+            if (!context.Definition.TryGetNode(id, out var node)) return false;
+            if (node.Kind == EffectNodeKind.Capability)
+                return node.Capability.Equals(GuardsDigital.Core.Effects.Synthetic.SyntheticExchangeCapabilities.SwapWithActorV1);
+            return (node.Kind == EffectNodeKind.Optional || node.Kind == EffectNodeKind.Sequence) &&
+                node.ChildNodeIds.Any(child => ContainsActorSwap(child, context));
+        }
+
+        // Read-only facts followed by one actor Swap, optionally declined. Other shapes retain the
+        // existing conservative unknown-position result. No board mutation or rule-text inference.
+        private static bool TryAnticipateActorSwapClause(EffectNodeId id, PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes, EffectResolutionContext context, out IReadOnlyList<HexCoordinate> spaces)
+        {
+            spaces = Array.Empty<HexCoordinate>();
+            if (!context.Definition.TryGetNode(id, out var node) || !ContainsActorSwap(id, context)) return false;
+            var optional = node.Kind == EffectNodeKind.Optional;
+            if (optional && !context.Definition.TryGetNode(node.ChildNodeIds[0], out node)) return false;
+            var nodes = node.Kind == EffectNodeKind.Sequence ? node.ChildNodeIds : new[] { node.Id };
+            var carried = outcomes;
+            foreach (var child in nodes)
+            {
+                if (!context.Definition.TryGetNode(child, out var leaf) || leaf.Kind != EffectNodeKind.Capability ||
+                    !context.Catalog.TryLoad(leaf.Capability, out var handler)) return false;
+                var probe = EffectResolutionSession.BuildCapabilityContext(frame, leaf, carried, context);
+                if (!IsDecidable(handler, probe)) return false;
+                if (handler.Anticipate(probe) == EffectExecutionResultKind.ImpossibleMandatory)
+                {
+                    if (!optional || !context.Components.Board.TryGetObjectCoordinate(BoardObjectReference.ForHero(frame.ActorId), out var unchanged)) return false;
+                    spaces = new[] { unchanged };
+                    return true;
+                }
+                if (handler is IEffectActorRelocationCapabilityHandler relocating)
+                {
+                    if (!child.Equals(nodes.Last()) || !relocating.TryAnticipateActorSpaces(probe, out spaces)) return false;
+                    if (optional && context.Components.Board.TryGetObjectCoordinate(BoardObjectReference.ForHero(frame.ActorId), out var unchanged))
+                        spaces = spaces.Concat(new[] { unchanged }).Distinct().ToArray();
+                    return true;
+                }
+                if (!(handler is IEffectAnticipatedOutcomeCapabilityHandler publisher) || !publisher.PublishesWithoutApplying) return false;
+                carried = WithAnticipatedOutputs(child, frame, carried, context);
+            }
+            return false;
+        }
 
         /// <summary>
         /// One node's verdict, and its subtree's, in the order execution would reach them. The walk

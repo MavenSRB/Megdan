@@ -1508,12 +1508,14 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Accept(triggerEvents);
             }
 
+            var heldMovementGrant = consumedTurnScopedKeys.Contains(HeldMovementGrantKey);
+
             // Milestone 8.35z21. A held subject says the action itself has ended and the turn is only
             // waiting on the ability that may repeat it, so this is that action's end and p.8's push it
             // owes resolves here - before the answer below turns "you may repeat it once" into a second
             // instance. It is asked only for a held action: a trigger that finished with nothing held
             // may have fired in the middle of one, and a push must not run while p.14's page is open.
-            if (heldAction != null)
+            if (heldAction != null || heldMovementGrant)
             {
                 var pushed = ResolveOwedImmediateLanePush(triggerEvents);
                 if (pushed.HasValue)
@@ -1529,6 +1531,7 @@ namespace GuardsDigital.Core.Cards
             // Milestone 8.35z50. The borrow is offered its boundary BEFORE the repeat, because a
             // borrowed primary is part of resolving the text that asked for it, where an owed repeat
             // is a second instance of an action that has already finished.
+            consumedTurnScopedKeys.Remove(HeldMovementGrantKey);
             var borrowed = TryStartOwedBorrowedAction(triggerEvents);
             if (borrowed.HasValue)
             {
@@ -1541,7 +1544,7 @@ namespace GuardsDigital.Core.Cards
                 return repeated.Value;
             }
 
-            if (heldAction != null)
+            if (heldAction != null || heldMovementGrant)
             {
                 return CompleteTheActionTheTurnHeldOpen(triggerEvents);
             }
@@ -1653,6 +1656,15 @@ namespace GuardsDigital.Core.Cards
             if (held.HasValue)
             {
                 return held.Value;
+            }
+
+            // A non-basic Movement has no basic-action repeat subject, but an after-Movement
+            // grant still holds its played card and Initiative until its decision is answered.
+            // This existing serialized turn-key set carries the hold without inventing a basic fact.
+            if (cardActions?.IsPendingTriggeredEffect == true)
+            {
+                consumedTurnScopedKeys.Add(HeldMovementGrantKey);
+                return TurnResolutionResult.Accept(events);
             }
 
             if (cardActions?.HasBorrowedSkillParent == true)
@@ -3115,6 +3127,11 @@ namespace GuardsDigital.Core.Cards
             (card.Equals(initiative.SelectedActor.CardInstanceId) ||
                 ((invocation == ActionInvocationContext.TextGranted || invocation == ActionInvocationContext.Repeated) &&
                     (cardActions.HasBorrowedSkillParent || HasRunningGrant)));
+
+        /// <summary>
+        /// Keeps a non-basic Movement source unresolved while its after-action trigger is waiting.
+        /// </summary>
+        private const string HeldMovementGrantKey = "held-movement-trigger-grant";
 
         /// <summary>
         /// Milestone 8.38d. Whether a permanent ability of this turn's hero is standing an instance it

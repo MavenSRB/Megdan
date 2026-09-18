@@ -1810,3 +1810,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | ID | Outcome | Commit |
 | --- | --- | --- |
 | 8.43c | Implemented distinct Skill pools, actual Movement trigger and original-unit exclusion through restored/nested borrowed actions, preserving source cards and existing identities. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843c-support-skill-reuse-and-dragon-knights-movement-trigger). | `milestone/8.43c` |
+
+## Milestone 8.43d Widget printed set completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.43d | Composed all printed faces and progression; corrected pre-attack token-Swap feasibility and non-basic Movement trigger holding. [Definition](../../Roadmap/PHASE_8_SEVENTEENTH_HERO.md#x-843d-compose-widgets-eighteen-playable-faces). | `milestone/8.43d` |

@@ -14,13 +14,13 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.43c**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **8.43d**.
+- Current completed milestone: **8.43d**.
+- Active authorized milestone: **None**.
+- Next proposed milestone: **8.43e**.
 
 On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
 
-**8.43c is complete**: Pyro operations, anchored targeting, coupled movement and Skill reuse are tested. WI-Q1-WI-Q3 are resolved; full card composition follows at 8.43d. Widget is not yet playable.
+**8.43d is complete**: all eighteen playable faces and the boxed Handicap are composed; WI-Q1-WI-Q3 are resolved. Widget is not yet selectable. Registration, artwork and player-path validation follow.
 
 The user additionally authorized [8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md), out-of-turn waiting narration, **after 8.43f**. Ignatia was explicitly withdrawn; no hero follows Widget. Widget's local build-smoke exception is approved in his rules shard.
 

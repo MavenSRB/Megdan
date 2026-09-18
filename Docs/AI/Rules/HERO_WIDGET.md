@@ -4,7 +4,7 @@ Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
 ## Widget content ledger
 
-Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, capability mapping and interpretations. His deferred component, ordinary Place/Move/Swap, anchored Skills, coupled movement and Skill reuse are implemented; full cards, dealing and the player gate remain outstanding.
+Widget is the selected seventeenth hero. [The implementation series](../Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns execution and acceptance. This shard owns source facts, capability mapping and interpretations. His nineteen printed definitions, eighteen executable dealt faces, progression, Pyro operations and Skill reuse are composed; production registration, dealing, artwork and the player gate remain outstanding.
 
 ## Source authority
 
@@ -94,7 +94,7 @@ These routes separate inspected reusable contracts from missing vocabulary. Comp
 | Discard / Remove / Defeat / Remove Pyro | Deferred Breath/Nibble/Gnaw compositions use ordinary discard and staged consequences, preserving chooser, immunity, reward distinction, Lane timing and mandatory-step order | 8.43b, 8.43d |
 | Resolved Skill primary, different unit | Owned resolved Skill pool, after-Attack grant and original-unit exclusion throughout the borrowed chain; token-only Skills remain legal | 8.43c |
 | Face-up Skill after Movement | Exact Movement completion fact and WI-Q2 public face-up pool use the existing Ultimate/grant pipeline, with source-state preservation | 8.43c |
-| Printed set, upgrades, items, registration and artwork | Existing verified-content/configuration/registration/player-gate routes | 8.43d-8.43f |
+| Printed set, upgrades, items, registration and artwork | `WidgetCardContent` composes nineteen definitions, five starting cards, thirteen deck cards and the boxed Handicap; only the Handicap is deferred. Registration/artwork and configured player gate remain separate | 8.43d complete; 8.43e-8.43f outstanding |
 
 ## Open verification points
 

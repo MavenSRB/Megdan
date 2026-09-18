@@ -101,11 +101,22 @@ namespace GuardsDigital.Tests.EditMode
         // Every ID must resolve to one catalog entry before that batch can be scheduled.
         internal static readonly string[] CurrentFoundationDeltaClaimIds =
         {
-            "borrowing.public-skill-pools", "timing.actual-movement", "targeting.borrowed-skill-exclusion"
+            "targeting.pre-attack-token-swap", "timing.actual-movement"
         };
 
         internal static readonly SharedFoundationClaim[] Claims =
         {
+            new SharedFoundationClaim(
+                "targeting.pre-attack-token-swap",
+                new MemberLocator(typeof(GuardsDigital.Core.Rules.EffectResolution.EffectOptionFeasibilityQuery),
+                    "TryAnticipateActorSwapClause", MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetPrintedSetTests),
+                    nameof(WidgetPrintedSetTests.AirborneSwapsBeforeSelectingTheAttackTarget_ThenOptionallySwapsBack), MemberTypes.Method),
+                    SharedFoundationEvidenceKind.BoundaryFixture, "optional actor/token exchange before actor-relative Attack binding") },
+                new[] { "origin", "optional", "feasibility", "restore" },
+                "Read-only facts followed by one actor/token Swap can be judged from its legal destination or declined origin before selecting an Attack target, without applying the Swap.",
+                "Reassess for a unit partner, multiple hypothetical relocations or mutating precursor; these retain the conservative unknown-position path."),
             new SharedFoundationClaim(
                 "borrowing.public-skill-pools",
                 new MemberLocator(typeof(GuardsDigital.Core.Cards.BorrowedPrimaryActionDeclaration),
@@ -124,7 +135,10 @@ namespace GuardsDigital.Tests.EditMode
                 SharedFoundationClaimStatus.ExplicitlyNarrow,
                 new[] { new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetSkillReuseTests),
                     nameof(WidgetSkillReuseTests.DragonKnightFiresAfterActualMovement_AndCanReuseTheCurrentSkill), MemberTypes.Method),
-                    SharedFoundationEvidenceKind.BoundaryFixture, "zero/positive Movement end grants current Skill and restores its choices") },
+                    SharedFoundationEvidenceKind.BoundaryFixture, "zero/positive Movement end grants current Skill and restores its choices"),
+                    new FoundationEvidenceLocator(new MemberLocator(typeof(WidgetPrintedSetTests),
+                        nameof(WidgetPrintedSetTests.DecliningDragonKnightAfterNonBasicMovementReleasesTheHeldTurn_AfterRestore), MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture, "non-basic Movement holds Initiative without fabricating a basic repeat subject") },
                 new[] { "action kind", "timing", "owner", "continuation" },
                 "Actual Movement action completion including zero spaces; not direct Move, Place, Swap or Fast Travel. On-board unlocked owner only, optional Skill grant.",
                 "Reassess for an in-action movement checkpoint or trigger text continuing after its grant."),
