@@ -15,8 +15,10 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **8.44**.
-- Active authorized milestone: **None**.
-- Next proposed milestone: **8.35z71**.
+- Active authorized milestone: **8.46a**.
+- Next proposed milestone: **8.46a**.
+
+On 2026-09-18, after a row-by-row design review and a mockup drawn over live captures, the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)**: "Ok, get on it then." The sequence **8.46 -> 8.46a -> 8.46b -> 8.46c -> 8.46d -> 8.46e -> 8.46f** replaces the strip's prompts with one two-state window whose controls name their consequence, built in a separate worktree beside the concurrent 8.45 package and merged after; nothing new may overlap an existing element at any resolution, and every new element inherits `MatchHudPanelScaling`.
 
 On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
 
