@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -218,6 +219,76 @@ namespace GuardsDigital.Tests.EditMode
             AssertSharedCornerChrome(control);
             AssertScaleMotionIsWired(control, "the seat's own UNDO");
         }
+
+        /// <summary>
+        /// Milestone 8.42d, and the CLOSING CHECK of the user's 2026-09-18 playtest report: a
+        /// rewind the host has published is DRAWN, including while the acting seat's own card text
+        /// is asking it a question.
+        /// </summary>
+        /// <remarks>
+        /// <para>The report was "undo stops being available as soon as you select attack option on
+        /// a card, before the target is selected", against Whisper. Her Crimson Trail is the
+        /// measured case: the attack opens on <c>before-move</c>, one of whose six destinations
+        /// carries a preview that names an object, so the presenter routes that candidate to
+        /// <see cref="RoundActionViewModel.EffectChoiceTargets"/> - and
+        /// <c>HasExclusiveDecision</c> then removed the square from the FIRST prompt of the attack.
+        /// Brogan's charge reached the same place one click later, through the CONFIRM control a
+        /// select raises into <see cref="RoundActionViewModel.EffectChoices"/>. The host published
+        /// <see cref="IMatchReadModel.IsSeatUndoAvailable"/> throughout both and would have accepted
+        /// the press; nothing but this view stood between the player and their own rewind.</para>
+        /// <para>Both arms are asserted because they are two different routings of one prompt, and
+        /// a fix that only reads one of the lists would leave the other card class dark.</para>
+        /// </remarks>
+        [Test]
+        public void SeatUndo_StaysDrawnWhileTheActorsOwnCardTextChoiceStands()
+        {
+            var arms = new (string Name, RoundActionViewModel Model)[]
+            {
+                ("a card-text choice offering controls (Brogan's charge, after the select)",
+                    SeatUndoModelWith(EffectChoiceSubject.Mode, effectChoices: new[]
+                    {
+                        new TypedInvocationViewModel(
+                            "CONFIRM", DirectorCommand.PerformHold(new CardInstanceId("card-1")))
+                    })),
+                ("a card-text choice offering a named target (Whisper's Crimson Trail, at once)",
+                    SeatUndoModelWith(EffectChoiceSubject.Piece, effectChoiceTargets: new[]
+                    {
+                        new EffectChoiceTargetViewModel(
+                            "OPTION #1",
+                            new HexCoordinate(-2, 1),
+                            null,
+                            DirectorCommand.PerformHold(new CardInstanceId("card-1")))
+                    }))
+            };
+
+            foreach (var arm in arms)
+            {
+                var view = new RoundActionUnityView();
+                view.Render(arm.Model);
+
+                var control = Descendants(view.Root)
+                    .SingleOrDefault(element => element.name == "gd-seat-undo-control");
+                Assert.That(control, Is.Not.Null,
+                    arm.Name + ": the host published this seat's rewind, so the square is drawn.");
+                Assert.That(view.SeatUndoRoot.style.display.value,
+                    Is.EqualTo(DisplayStyle.Flex),
+                    arm.Name + ": its host surface is shown rather than collapsed.");
+                AssertSharedCornerChrome(control);
+            }
+        }
+
+        private static RoundActionViewModel SeatUndoModelWith(
+            EffectChoiceSubject subject,
+            IEnumerable<TypedInvocationViewModel> effectChoices = null,
+            IEnumerable<EffectChoiceTargetViewModel> effectChoiceTargets = null) =>
+            new RoundActionViewModel(
+                1, 1, 1, RoundResolutionPhase.ResolvingTurn, string.Empty,
+                Array.Empty<TypedInvocationViewModel>(), null, null,
+                Array.Empty<TypedInvocationViewModel>(), Array.Empty<TypedInvocationViewModel>(),
+                effectChoices: effectChoices,
+                effectChoiceTargets: effectChoiceTargets,
+                effectChoicePrompt: new EffectChoicePromptViewModel(subject),
+                seatUndoAvailable: true);
 
         [Test]
         public void DisabledEndTurn_KeepsTheSharedChromeAndItsReason()

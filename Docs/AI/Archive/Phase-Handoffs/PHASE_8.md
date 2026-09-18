@@ -1840,3 +1840,9 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
 | 8.44 | Cut `Builds/Playtest-8.44-seventeen-hero` and its ZIP from a green pre-build gate: seventeen dealt heroes, the 8.42 refinements and 8.42c's awaited-responder narration, stamped `1.0-8.44-seventeen-hero`. The gate found and fixed a harness build break 8.42c had introduced. [Definition](../../Roadmap/PHASE_8.md#x-844-package-the-seventeen-hero-private-playtest-build). | `milestone/8.44` |
+
+## Milestone 8.42d Visible seat rewind completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.42d | The seat's UNDO square now follows `IsSeatUndoAvailable` alone instead of also being suppressed by the action region's exclusive-decision rule, which had removed it during every card-text prompt - on Whisper's Crimson Trail from the first prompt of the attack, while the host went on publishing and would have accepted the rewind. The authority's turn floor, other-seat wall and target-lock attack wall are unchanged. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-842d-keep-the-seats-own-rewind-visible-while-its-card-text-is-asking). | `milestone/8.42d` |

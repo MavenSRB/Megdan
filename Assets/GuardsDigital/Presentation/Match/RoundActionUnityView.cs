@@ -1693,11 +1693,19 @@ namespace GuardsDigital.Presentation.Match
         /// command, so there is nothing here for a view to forward. The press raises an event, the
         /// presenter asks its client, and the host decides. A view that could compose an undo could
         /// compose one for another seat.</para>
+        /// <para><b>Milestone 8.42d: it is not suppressed by <see cref="HasExclusiveDecision"/>.</b>
+        /// That suppression is the action region's "one usable surface" rule for the hand and the
+        /// tray, and this square is not in that region - it is a status-strip corner control, like
+        /// END TURN, which milestone 8.35v stopped hiding there for the same reason. Hiding it cost
+        /// the player the rewind in exactly the states it exists for: a card whose text asks the
+        /// actor a question drew no square at all, while the host went on publishing the rewind and
+        /// would have accepted it. A seat the host offers nothing still gets no square, because
+        /// then there is genuinely nothing to press.</para>
         /// </remarks>
         private void RebuildSeatUndo()
         {
             seatUndoHost.Clear();
-            if (Model == null || !Model.SeatUndoAvailable || HasExclusiveDecision)
+            if (Model == null || !Model.SeatUndoAvailable)
             {
                 seatUndoHost.style.display = DisplayStyle.None;
                 return;

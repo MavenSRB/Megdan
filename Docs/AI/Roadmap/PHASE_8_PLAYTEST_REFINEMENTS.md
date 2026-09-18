@@ -45,3 +45,15 @@ Acceptance: reproduce the incorrect Defense narration before fixing it; derive t
 Non-goals: narration-bar redesign, new rule timing, unrelated HUD changes or packaging.
 
 Historical evidence: [8.42c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842c-awaited-responder-narration-completion-evidence).
+
+### [x] 8.42d Keep the seat's own rewind visible while its card text is asking
+
+Authorized 2026-09-18, after the 8.44 package: a playtester reported that undo stops being available as soon as the attack option is selected on a card, before any target is chosen, playing Whisper. Investigation measured the host still publishing the rewind throughout, so the loss was presentational.
+
+Outcome: the seat's UNDO square is drawn whenever the host publishes that seat's rewind, including while the acting seat's own card-text choice stands. The authority's bounds are untouched: the turn floor, the other-seat wall, and the attack wall that rises once a target is chosen still decide exactly what they decided before.
+
+Acceptance: reproduce the missing square before correcting it, on both routings of a card-text prompt - the CONFIRM control a select raises, and a candidate whose preview names an object; draw the square from `IsSeatUndoAvailable` alone, no longer suppressed by the action region's exclusive-decision rule, which does not own this status-strip control any more than it owns END TURN since 8.35v; a seat published no rewind still draws nothing rather than a greyed square. Preserve the glyph, tooltip, square geometry, shared button chrome and motion, the strip's pointer claim, END TURN's own slot, and every other use of that rule for the hand and tray. Focused HUD-treatment and seat-scoped regressions plus the complete Edit Mode and Play Mode suites (T2); no host, projection, protocol or schema change.
+
+Non-goals: the host's undo bounds; END TURN's cancel composition for a card-text-bound attack, which one press cannot discard and which would mislabel the control; an always-present greyed square for seats with no rewind; the action region's one-usable-surface rule for the hand and tray; packaging.
+
+Historical evidence: [8.42d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-842d-visible-seat-rewind-completion-evidence).
