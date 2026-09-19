@@ -394,7 +394,56 @@ namespace GuardsDigital.Presentation.Match
         /// element names are the rail's own - <c>gd-hero-worth</c>, <c>-coin</c>, <c>-heart</c>,
         /// <c>-value</c> - because fixtures address them by those names.</para>
         /// </summary>
-        internal static VisualElement WorthBadge(string digit, string assistiveLabel, float size = 16f)
+        /// <summary>
+        /// Milestone 8.58. The badge's own diameter, in reference units.
+        ///
+        /// <para>The user, on a crop of the rail badge on 2026-09-19: "Hard to see this number one
+        /// here." It was 16 units with a 10-unit digit painted straight onto two saturated halves - a
+        /// dark ink on gold and the same dark ink on red - and at a hero rail's own scale that digit was
+        /// smaller than the <c>LVL n</c> beside it. It is 22 now, and the digit is white over a dark
+        /// disc of its own, so it reads the same on either half rather than on the gold alone.</para>
+        /// </summary>
+        internal const float WorthBadgeSize = 22f;
+
+        /// <summary>
+        /// Milestone 8.58. The digit's own black outline, which is what lets it read on the gold half
+        /// and on the red one without a ground of its own.
+        ///
+        /// <para>It was a dark disc first, and the user struck that on the capture: "This is better, but
+        /// not the way I want the shape to be ... we can barely see red color now behind it. So a bit
+        /// better please, maybe no circle background for number, just black outline?" The disc was the
+        /// half of the badge that stopped being visible; an outline costs the halves nothing.</para>
+        /// </summary>
+        internal static readonly Color WorthDigitOutline = new Color(0f, 0f, 0f, 1f);
+
+        internal const float WorthDigitOutlineWidth = 1.5f;
+
+        /// <summary>
+        /// The digit's em as a fraction of the badge. The user: "number needs to be bigger I think.
+        /// Make it just barely fit the circle." A digit's cap height is about 0.72 of its em, so 1.05
+        /// badges puts the printed glyph at roughly 85% of the disc's inner diameter.
+        /// </summary>
+        internal const float WorthDigitScale = 1.05f;
+
+        /// <summary>
+        /// How far the digit's label is moved so its INK centres on the disc rather than its line box
+        /// doing so - the user, twice: "just center the number in the circle", then "number is not
+        /// vertically centered still".
+        ///
+        /// <para><b>Measured, not reasoned.</b> The first attempt pushed the label DOWN half a
+        /// descender, on the usual argument that a digit reserves descender room it never uses. The
+        /// 2560x1440 capture says this face does the opposite: with the label centred and pushed down
+        /// one unit, the rail badge's disc ran y 143-164 (centre 153.5) while the printed glyph's white
+        /// ink ran y 149-162 (centre 155.5). The ink sits one unit BELOW its own line box's centre at a
+        /// 23.1-unit em - this face carries more room above the cap line than under the baseline - so
+        /// the label is pulled UP by that unit: -1 / 23.1 of the em. It is a fraction of the em rather
+        /// than a pixel count, so the badge centres at every size the rail and the victory screen draw
+        /// it at.</para>
+        /// </summary>
+        internal const float WorthDigitInkNudge = -0.043f;
+
+        internal static VisualElement WorthBadge(
+            string digit, string assistiveLabel, float size = WorthBadgeSize)
         {
             var badge = new VisualElement { name = "gd-hero-worth", tooltip = assistiveLabel };
             badge.style.width = size;
@@ -417,12 +466,26 @@ namespace GuardsDigital.Presentation.Match
             heartHalf.style.backgroundColor = WorthHeartFace;
             badge.Add(heartHalf);
 
-            var value = Text(digit, size * 0.625f, MatchHudTheme.CoinInk, FontStyle.Bold);
+            // Milestone 8.58, the user's last word on it: "number needs to be bigger I think. Make it
+            // just barely fit the circle." A digit's cap height is about 0.72 of its em, so an em of
+            // 1.05 badges puts the printed glyph at roughly 85% of the disc's inner diameter - which is
+            // as large as it goes before the disc stops reading as a disc.
+            var digitSize = size * WorthDigitScale;
+            var value = Text(digit, digitSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
             value.name = "gd-hero-worth-value";
             value.pickingMode = PickingMode.Ignore;
+            // Milestone 8.58: the digit carries its OWN black outline rather than sitting on a disc,
+            // so both coloured halves stay fully visible behind it.
+            value.style.unityTextOutlineWidth = WorthDigitOutlineWidth;
+            value.style.unityTextOutlineColor = WorthDigitOutline;
             value.style.position = Position.Absolute;
             value.style.left = 0f;
-            value.style.top = 0f;
+            // Milestone 8.58, the user twice: "this is good, just center the number in the circle",
+            // then "number is not vertically centered still." `MiddleCenter` centres the LINE BOX, and
+            // a line box is not the ink. WHERE the ink sits inside it was measured off the 2560x1440
+            // capture rather than argued from the usual descender reasoning, which had this face
+            // backwards - see `WorthDigitInkNudge`.
+            value.style.top = digitSize * WorthDigitInkNudge;
             value.style.width = size;
             value.style.height = size;
             value.style.unityTextAlign = TextAnchor.MiddleCenter;

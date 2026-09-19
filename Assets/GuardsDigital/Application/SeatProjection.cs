@@ -726,6 +726,19 @@ namespace GuardsDigital.Application
             pending.SkillResolution;
         public bool HasPendingSkillResolution => PendingSkillResolution != null;
 
+        /// <summary>
+        /// Milestone 8.58. The resolving card. A seat keeps the frame whole (8.40f narrows what it may
+        /// NAME, never the frame's own source card), so this is the same read the host makes: whichever
+        /// of the three card-action frames is running.
+        /// </summary>
+        public CardInstanceId ResolvingSourceCardInstanceId =>
+            PendingSkillResolution?.SourceCardInstanceId ??
+            PendingAttackResolution?.SourceCardInstanceId ??
+            PendingMovementResolution?.SourceCardInstanceId ??
+            (PendingEffectChoice != null && SelectedActor.IsDefined
+                ? SelectedActor.CardInstanceId
+                : default);
+
         public PendingEffectChoice PendingEffectChoice => pending.EffectChoice;
 
         public IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.EffectChoiceCandidatePreview>

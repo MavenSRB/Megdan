@@ -33,14 +33,16 @@ namespace GuardsDigital.Presentation.Match
     /// </summary>
     public sealed class VictoryScreenUnityView : IVictoryScreenView
     {
-        /// <summary>The centred panel's own width, in reference units.</summary>
-        public const float PanelWidth = 1560f;
-
         /// <summary>The panel's inside padding.</summary>
         public const float PanelPadding = 28f;
 
         /// <summary>One block's inside padding, inside the panel's.</summary>
         public const float BlockPadding = 12f;
+
+        /// <summary>The panel's own border, and one block's - both spent on the table's width.</summary>
+        public const float PanelBorderWidth = 2f;
+
+        public const float BlockBorderWidth = 2f;
 
         /// <summary>The space between two blocks.</summary>
         public const float BlockGap = 14f;
@@ -88,6 +90,42 @@ namespace GuardsDigital.Presentation.Match
                 { VictoryScreenColumn.CoinsEarned, 180f }
             };
 
+        /// <summary>
+        /// Milestone 8.58. The table's own width: the hero column plus every number column, and nothing
+        /// else. One set of widths is shared by the header row and by every hero row, which is what
+        /// makes this a grid rather than two rows of boxes that happened to be laid out alike.
+        /// </summary>
+        public static float TableWidth
+        {
+            get
+            {
+                var width = HeroColumnWidth;
+                foreach (var column in VictoryScreenLabels.Columns)
+                {
+                    width += ColumnWidths[column];
+                }
+
+                return width;
+            }
+        }
+
+        /// <summary>
+        /// The centred panel's own width, DERIVED from the table it has to hold rather than declared
+        /// beside it.
+        ///
+        /// <para><b>Milestone 8.58, and the user's capture that forced it.</b> The panel was a flat
+        /// 1560, and the table plus the paddings and borders between it and the panel's edge measured
+        /// 1568: eight units of overflow, which clipped the last column - "Coins earned runs past the
+        /// panel's right edge" - and, because the hero cell was the one element in the row that could
+        /// shrink and the header's could not, pushed every row's numbers out of line with their own
+        /// headers. Both are the same arithmetic, so both are fixed by doing it rather than
+        /// writing it down.</para>
+        /// </summary>
+        public static float PanelWidth =>
+            TableWidth +
+            (BlockPadding * 2f) + (BlockBorderWidth * 2f) +
+            (PanelPadding * 2f) + (PanelBorderWidth * 2f);
+
         private readonly Label banner;
         private readonly Label cause;
         private readonly VisualElement panel;
@@ -119,7 +157,8 @@ namespace GuardsDigital.Presentation.Match
             panel.style.maxWidth = PanelWidth;
             panel.style.flexShrink = 0f;
             HudElements.Padding(panel, PanelPadding);
-            HudElements.Border(panel, MatchHudTheme.PanelBorder, 2f, MatchHudTheme.BandCornerRadius);
+            HudElements.Border(
+                panel, MatchHudTheme.PanelBorder, PanelBorderWidth, MatchHudTheme.BandCornerRadius);
             Root.Add(panel);
 
             banner = HudElements.Text(
@@ -253,10 +292,13 @@ namespace GuardsDigital.Presentation.Match
             // The winners' table - and the solo winner's - is rimmed in the coin's gold; everybody
             // else keeps the HUD's ordinary panel border.
             var isWinner = model.Kind != VictoryScreenBlockKind.Defeated;
+            // Milestone 8.58: the SAME border width either way, because the block's border is spent on
+            // the width the table has to fit inside and a winner's table cannot be two units narrower
+            // than a loser's or the two grids would not line up down the screen.
             HudElements.Border(
                 host,
                 isWinner ? MatchHudTheme.CoinFace : MatchHudTheme.PanelBorder,
-                isWinner ? 2f : 1f,
+                BlockBorderWidth,
                 10f);
 
             var header = new VisualElement { name = "gd-victory-block-header" };
@@ -302,16 +344,35 @@ namespace GuardsDigital.Presentation.Match
             return host;
         }
 
+        /// <summary>
+        /// Milestone 8.58. One column's geometry, applied identically to the header cell and to every
+        /// hero row's cell in that column - which is the whole of what makes the table a grid.
+        ///
+        /// <para>The hero column is the only flexible one, and it is flexible in BOTH rows with the same
+        /// basis and the same weight, so a narrow panel shortens the name and never moves a number out
+        /// from under its own header. Every number column is rigid in both.</para>
+        /// </summary>
+        private static void ApplyColumnGeometry(VisualElement cell, float width, bool isHeroColumn)
+        {
+            cell.style.width = width;
+            cell.style.minWidth = isHeroColumn ? 0f : width;
+            cell.style.maxWidth = width;
+            cell.style.flexBasis = width;
+            cell.style.flexGrow = 0f;
+            cell.style.flexShrink = isHeroColumn ? 1f : 0f;
+        }
+
         private static VisualElement BuildColumnHeaders()
         {
             var row = new VisualElement { name = "gd-victory-head" };
             row.style.flexDirection = FlexDirection.Row;
             row.style.alignItems = Align.Center;
             row.style.height = ColumnHeaderHeight;
+            row.style.flexShrink = 0f;
 
             var hero = HudElements.Text("Hero", 11f, MatchHudTheme.MutedText, FontStyle.Bold);
             hero.name = "gd-victory-head-hero";
-            hero.style.width = HeroColumnWidth;
+            ApplyColumnGeometry(hero, HeroColumnWidth, isHeroColumn: true);
             hero.style.letterSpacing = 1.4f;
             hero.style.whiteSpace = WhiteSpace.NoWrap;
             row.Add(hero);
@@ -321,10 +382,11 @@ namespace GuardsDigital.Presentation.Match
                 var cell = HudElements.Text(
                     VictoryScreenLabels.Header(column), 11f, MatchHudTheme.MutedText, FontStyle.Bold);
                 cell.name = VictoryScreenLabels.HeaderCellName(column);
-                cell.style.width = ColumnWidths[column];
+                ApplyColumnGeometry(cell, ColumnWidths[column], isHeroColumn: false);
                 cell.style.letterSpacing = 1.4f;
                 cell.style.whiteSpace = WhiteSpace.NoWrap;
                 cell.style.unityTextAlign = TextAnchor.MiddleRight;
+                cell.style.overflow = Overflow.Hidden;
                 row.Add(cell);
             }
 
@@ -337,13 +399,14 @@ namespace GuardsDigital.Presentation.Match
             row.style.flexDirection = FlexDirection.Row;
             row.style.alignItems = Align.Center;
             row.style.height = RowHeight;
+            row.style.flexShrink = 0f;
             row.style.borderTopWidth = 1f;
             row.style.borderTopColor = MatchHudTheme.PanelBorder;
 
             var identity = new VisualElement { name = "gd-victory-hero" };
             identity.style.flexDirection = FlexDirection.Row;
             identity.style.alignItems = Align.Center;
-            identity.style.width = HeroColumnWidth;
+            ApplyColumnGeometry(identity, HeroColumnWidth, isHeroColumn: true);
             identity.style.overflow = Overflow.Hidden;
             identity.Add(BuildPortrait(model));
 
@@ -356,7 +419,9 @@ namespace GuardsDigital.Presentation.Match
             identity.Add(name);
             if (model.Worth > 0)
             {
-                var badge = HudElements.WorthBadge(model.WorthLabel, model.WorthAssistiveLabel, 18f);
+                // Milestone 8.58: the rail's own badge at the rail's own size - one badge, not two that
+                // have to be kept looking alike.
+                var badge = HudElements.WorthBadge(model.WorthLabel, model.WorthAssistiveLabel);
                 badge.style.marginLeft = 8f;
                 identity.Add(badge);
             }
@@ -371,9 +436,10 @@ namespace GuardsDigital.Presentation.Match
                     cell.IsBest ? MatchHudTheme.ConfirmAccent : MatchHudTheme.PrimaryText,
                     cell.IsBest ? FontStyle.Bold : FontStyle.Normal);
                 label.name = cell.ElementName;
-                label.style.width = ColumnWidths[cell.Column];
+                ApplyColumnGeometry(label, ColumnWidths[cell.Column], isHeroColumn: false);
                 label.style.whiteSpace = WhiteSpace.NoWrap;
                 label.style.unityTextAlign = TextAnchor.MiddleRight;
+                label.style.overflow = Overflow.Hidden;
                 label.tooltip = cell.Header + ": " + cell.Text;
                 row.Add(label);
             }

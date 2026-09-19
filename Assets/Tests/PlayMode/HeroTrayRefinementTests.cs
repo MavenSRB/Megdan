@@ -149,6 +149,134 @@ namespace GuardsDigital.Tests.PlayMode
                   runtime.Projection.PendingSystemTransitionDescription.HeroId.Equals(owner)); step++)
                 yield return NextRoundDecision(root);
             Assert.That(runtime.SystemTransitionPrompt?.Kind, Is.EqualTo(SystemTransitionPromptKind.LevelUpUpgrade));
+
+            // -----------------------------------------------------------------------------------
+            // Milestone 8.58, the user on the two states of p.15's window, in two notes.
+            //
+            // DOCKED, on their own capture of the slim bar ("UPGRADE A CARD - PAID 2 COINS - 5
+            // REMAINING - EXPAND"): "hand should not disappear on these choices, it makes this bar
+            // float strangely in the air." The tray stays, blocked from taking a command exactly as
+            // 8.35z58's optional step already blocks it, but never taken away.
+            //
+            // EXPANDED, on the live capture of the offer: "hand can be removed from bottom left and
+            // shown below the offer window, like it was before." The panel draws the hand itself,
+            // under the six candidates, so the tray underneath would be the same five cards twice.
+            // -----------------------------------------------------------------------------------
+            var tray = runtime.HandsView.Root;
+            Assert.That(runtime.DecisionWindowView.Model, Is.Not.Null,
+                "The window owns p.15's upgrade.");
+            Assert.That(runtime.DecisionWindowView.Model.HandPreview, Is.Not.Empty,
+                "and it carries the LEVELLING hero's hand, whoever is looking at it.");
+            var preview = UiPlayer.Descendants(root.Hud.RootElement)
+                .Where(element => element.name == "gd-levelup-hand-preview-card" &&
+                    UiPlayer.IsShown(element))
+                .ToArray();
+            Assert.That(preview, Is.Not.Empty,
+                "The expanded panel draws that hand inside itself.");
+            var windowRoot = UiPlayer.Descendants(root.Hud.RootElement)
+                .Single(element => element.name == "gd-decision-window");
+            var band = UiPlayer.Descendants(windowRoot)
+                .Single(element => element.name == "gd-upgrade-comparison-band");
+            Assert.That(preview.Min(card => card.worldBound.yMin),
+                Is.GreaterThanOrEqualTo(band.worldBound.yMax - UiPlayer.PixelSnapping(2)),
+                "BELOW the offer, which is where the user asked for it: \"hand can be removed from " +
+                "bottom left and shown below the offer window, like it was before.\"");
+            Assert.That(UiPlayer.IsShown(tray), Is.False,
+                "and the tray at the bottom left is gone while that row is on screen, so the hand " +
+                "is drawn once.");
+
+            runtime.DecisionWindowView.ForwardStateToggle();
+            yield return null;
+            yield return null;
+            Assert.That(runtime.DecisionWindowView.Model.State,
+                Is.EqualTo(DecisionWindowState.Docked));
+            Assert.That(UiPlayer.IsShown(tray), Is.True,
+                "It comes back the moment the window minimises, which is the capture the user sent.");
+            Assert.That(runtime.HandsView.IsContextOnly, Is.True,
+                "and is blocked from answering, which is what makes keeping it safe.");
+            Assert.That(tray.worldBound.height, Is.GreaterThan(0f),
+                "drawn rather than merely displayed: " + tray.worldBound);
+            Assert.That(tray.worldBound.Overlaps(
+                    UiPlayer.Descendants(root.Hud.RootElement)
+                        .Single(element => element.name == "gd-decision-window").worldBound),
+                Is.False,
+                "and the docked bar sits above it rather than over it.");
+
+            runtime.DecisionWindowView.ForwardStateToggle();
+            yield return null;
+            yield return null;
+            Assert.That(runtime.DecisionWindowView.Model.State,
+                Is.EqualTo(DecisionWindowState.Expanded),
+                "The toggle comes back so the rest of this journey presses the expanded offer.");
+
+            // -----------------------------------------------------------------------------------
+            // Milestone 8.58. The level-up window photographed on a REAL pause, whose candidates are
+            // the Tier II and Tier III faces p.15 actually offers.
+            //
+            // The user withdrew a complaint about p.16's `GAINS:` box covering printed text once they
+            // saw which faces the first capture held: "Might be problem cuz you shown me tier one
+            // cards. I think it might be fine on T2 and higher and that is ok then." A staged frame
+            // built from a mirrored Tier I hand cannot answer that; this can, because these six faces
+            // are the authority's own offer.
+            // -----------------------------------------------------------------------------------
+            var captureWidth = (uint)Screen.width;
+            var captureHeight = (uint)Screen.height;
+            foreach (var viewport in new[] { (1280u, 720u), (1920u, 1080u), (2560u, 1440u) })
+            {
+                UiPlayer.SetPlayerViewport(viewport.Item1, viewport.Item2, "8.58 level-up captures");
+                yield return null;
+                yield return null;
+                root.Hud.Layout();
+                yield return null;
+                Assert.That(
+                    UiPlayer.Descendants(root.Hud.RootElement)
+                        .Count(element => element.name == "gd-upgrade-option" &&
+                            UiPlayer.IsShown(element)),
+                    Is.EqualTo(6),
+                    "p.15 offers six real candidates at " + viewport.Item1 + "x" + viewport.Item2 + ".");
+
+                // Milestone 8.58, the user's standing rule for every family in this window, applied to
+                // the one that used to be exempt: "No reason for this bigger box when we have smaller
+                // one already." p.15 held the WHOLE rectangle and painted its lower half empty; it is
+                // content-sized now - offer, hand, chrome - and centred in the bound like the rest.
+                var bound = UiPlayer.Descendants(root.Hud.RootElement)
+                    .Single(element => element.name == "gd-decision-window").worldBound;
+                var panel = UiPlayer.Descendants(root.Hud.RootElement)
+                    .Single(element => element.name == "gd-decision-window-expanded");
+                var drawn = UiPlayer.Descendants(panel)
+                    .Where(element => element.name == "gd-levelup-hand-preview-card" &&
+                        UiPlayer.IsShown(element))
+                    .Max(element => element.worldBound.yMax);
+                Assert.That(panel.worldBound.yMax - drawn,
+                    // Padding, border and at most one row gap: what this measures is that there is no
+                    // BAND of empty panel under the offer.
+                    Is.LessThanOrEqualTo(
+                        DecisionWindowUnityView.WindowPadding +
+                            DecisionWindowUnityView.PanelBorderWidth +
+                            DecisionWindowUnityView.LevelUpRowGap +
+                            UiPlayer.PixelSnapping(4)),
+                    "The panel ends where its content ends at " + viewport.Item1 + "x" +
+                    viewport.Item2 + " - no empty half under the offer: " + panel.worldBound);
+                Assert.That(
+                    Mathf.Abs(panel.worldBound.center.x - bound.center.x),
+                    Is.LessThanOrEqualTo(UiPlayer.PixelSnapping(2)),
+                    "and it is centred across the bound at " + viewport.Item1 + "x" + viewport.Item2 +
+                    ": " + panel.worldBound + " in " + bound);
+                Assert.That(
+                    Mathf.Abs(panel.worldBound.center.y - bound.center.y),
+                    Is.LessThanOrEqualTo(UiPlayer.PixelSnapping(2)),
+                    "and down it.");
+                yield return UiPlayer.CaptureScreen(
+                    "tmp/858-captures/level-up-expanded-live-" +
+                    viewport.Item1 + "x" + viewport.Item2 + ".png");
+            }
+
+            UiPlayer.SetPlayerViewport(captureWidth, captureHeight, "8.58 level-up restore");
+            yield return null;
+            yield return null;
+            root.Hud.Layout();
+            yield return null;
+
             var option = runtime.RoundView.Model.SystemTransitionPrompt.Options.First(value =>
                 value.Card != null && value.ItemIcon == PrintedValueChannel.Initiative);
             var button = UiPlayer.Descendants(root.Hud.RootElement).OfType<Button>().Single(element =>

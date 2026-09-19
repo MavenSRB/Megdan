@@ -93,7 +93,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The first bullet: "Target a unit adjacent to you", which the staged enemy Ranged minion
             // beside her answers.
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, bullets[0].Command);
             yield return null;
             yield return null;
 

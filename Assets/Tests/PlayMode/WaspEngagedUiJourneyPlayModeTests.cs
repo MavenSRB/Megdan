@@ -631,6 +631,39 @@ namespace GuardsDigital.Tests.PlayMode
             // The journey's subject: p.11's Defense response as the defender's own clicked card face.
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null);
             var lifeBefore = hud.Header.RedLifeLabel;
+            // Milestone 8.58, the user's last word on the Defense window: "Remove it and keep the old
+            // mouseover when mousing over the defense cards." The panel prints no arithmetic of its
+            // own; resting the pointer on a candidate opens the SAME per-card breakdown the strip's
+            // offer opened, on the same layer, because the decision moving into the window did not
+            // move the popup with it. Proved on a live pause, where there is a real
+            // `PendingDefensePreview` to break down.
+            var defenseCard =
+                UiPlayer.NamedElementWithText(hud, "gd-defense-card", "STOP PROJECTILES");
+            UiPlayer.EnsureVisible(defenseCard);
+            yield return null;
+            var breakdown = UiPlayer.Descendants(hud.RootElement)
+                .Single(element => element.name == "gd-defense-preview");
+            Assert.That(UiPlayer.IsShown(breakdown), Is.False,
+                "Nothing is open before the pointer rests on a face.");
+            UiPlayer.PointAt(defenseCard);
+            yield return null;
+            Assert.That(UiPlayer.IsShown(breakdown), Is.True,
+                "The old mouseover breakdown opens from inside the window.");
+            Assert.That(runtime.RoundView.ActiveDefensePreview, Is.Not.Null);
+            Assert.That(
+                UiPlayer.Descendants(breakdown).OfType<Label>()
+                    .Select(element => element.text),
+                Has.Some.StartsWith("ATTACK TOTAL"),
+                "and it is the whole reading - attack, defense, result - not a chip.");
+            UiPlayer.PointAway(defenseCard);
+            for (var frame = 0; frame < 300 && UiPlayer.IsShown(breakdown); frame++)
+            {
+                yield return null;
+            }
+
+            Assert.That(UiPlayer.IsShown(breakdown), Is.False,
+                "and it closes again when the pointer leaves.");
+
             UiPlayer.EnsureVisible(
                 UiPlayer.NamedElementWithText(hud, "gd-defense-card", "STOP PROJECTILES"));
             yield return null;

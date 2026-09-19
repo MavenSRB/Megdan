@@ -545,7 +545,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             var confirm = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, confirm.Command);
             yield return null;
             yield return null;
 

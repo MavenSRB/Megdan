@@ -290,6 +290,51 @@ namespace GuardsDigital.Tests.PlayMode
                 "BOTH printed bullets are live once a card has been resolved this round - the state " +
                 "worth asserting, because on her first turn the pool names nothing.");
 
+            // -----------------------------------------------------------------------------------
+            // Milestone 8.58. THE WINDOW, end to end, on the card the user photographed.
+            //
+            // Their words on the shipped build: "This sucks. We said we will show the card, and have
+            // nice labels on the buttons?" - over two controls reading `MODE #1 RELOAD-BORROW-ARM`
+            // and `MODE #2 RELOAD-DEFEAT-ARM`, on a card whose arms have both been DECLARED since
+            // 8.46a. What was missing was the source card the label is keyed on, and this is where a
+            // regression of that would show up in play rather than in a fixture.
+            // -----------------------------------------------------------------------------------
+            yield return null;
+            var window = runtime.DecisionWindowView.Model;
+            Assert.That(window, Is.Not.Null, "Reload!'s modal opens the decision window.");
+            Assert.That(window.Family, Is.EqualTo(DecisionWindowFamily.Mode));
+            Assert.That(window.ContextCards, Has.Count.EqualTo(1),
+                "The card whose printed text is asking is drawn beside the question.");
+            var reloadInstance = runtime.Cards.Single(card =>
+                card.DefinitionReference.DefinitionId.Equals(SwiftCardContent.Reload) &&
+                card.OwnerId.Equals(swiftId));
+            Assert.That(window.ContextCards[0].Card.CardInstanceId, Is.EqualTo(reloadInstance.Id),
+                "and it is Reload! itself.");
+            // `Scoped` appends the deciding hero on the DIRECTOR composition this scene runs, which is
+            // why this is a prefix rather than an equality: a seat's own screen reads "RELOAD!".
+            Assert.That(window.Title, Does.StartWith("RELOAD!"),
+                "The window is titled with the card rather than with `CHOOSE ONE`.");
+            Assert.That(
+                window.Controls.Select(control => control.Label),
+                Is.EquivalentTo(new[]
+                {
+                    "PERFORM THE PRIMARY ACTION OF YOUR RIGHTMOST RESOLVED CARD",
+                    "DEFEAT A MINION ADJACENT TO YOU"
+                }),
+                "and both controls say what pressing them does, in the printed text's own words. " +
+                "Drawn: " + string.Join(" | ", window.Controls.Select(control => control.Label)));
+            foreach (var control in window.Controls)
+            {
+                Assert.That(control.Label, Does.Not.Contain("MODE #"),
+                    "A seat never sees a node id.");
+            }
+
+            // The same photograph the staged frames in `DecisionWindowMockupCapturePlayModeTests`
+            // take, on the card the user actually photographed, reached by real play.
+            yield return UiPlayer.CaptureScreen(
+                "tmp/858-captures/mode-choice-reload-live-" +
+                Screen.width + "x" + Screen.height + ".png");
+
             Assert.That(runtime.SubmitEffectChoiceOption(modal.Candidates[0].OptionNodeId), Is.True);
             yield return null;
 

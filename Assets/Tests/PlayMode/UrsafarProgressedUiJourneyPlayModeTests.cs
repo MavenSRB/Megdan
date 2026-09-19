@@ -85,7 +85,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null, Remaining(runtime));
             yield return UrsafarAuditStaging.FinishMovement();
             var decline = runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
-            UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label)); yield return null;
+            UiPlayer.ClickEffectAnswer(runtime, root.Hud, decline.Command); yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
             Assert.That(runtime.PendingMovementChoice, Is.Null);
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);

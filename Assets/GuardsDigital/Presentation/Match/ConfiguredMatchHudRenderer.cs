@@ -63,9 +63,14 @@ namespace GuardsDigital.Presentation.Match
             RoundTurnLabel = roundIndex <= 0
                 ? "ROUND -"
                 : $"ROUND {roundIndex} · TURN {turnIndex}/{RoundResolutionAuthority.TurnsPerRound}";
-            RedLifeLabel = "RED " + Counters(setup, teamLifeCounters, TeamSide.Red)
+            // Milestone 8.58. The COUNT alone, because the strip draws it inside a heart in the team's
+            // own colour now - the user: "Maybe just lose red and blue words, and have a red and blue
+            // heart with a number in it to symbolise the lives left." Which team it is was never
+            // carried by the word anyway: it is the colour, exactly as a card's printed colour is, and
+            // the chip's own hover says it in full for anyone the colour does not reach.
+            RedLifeLabel = Counters(setup, teamLifeCounters, TeamSide.Red)
                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
-            BlueLifeLabel = "BLUE " + Counters(setup, teamLifeCounters, TeamSide.Blue)
+            BlueLifeLabel = Counters(setup, teamLifeCounters, TeamSide.Blue)
                 .ToString(System.Globalization.CultureInfo.InvariantCulture);
             // Milestone 8.35z60. "WAVES 3" read as a fixed printed total and never moved as
             // the pool spent down; the label now says REMAINING explicitly, matching the strip's own
@@ -458,6 +463,13 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         private string laidOutDecisionKey;
         private DecisionWindowState laidOutDecisionState;
+
+        /// <summary>
+        /// Milestone 8.58. The window model whose standing the strip's banner lane was last hidden for,
+        /// so the lane is re-hidden whenever that model changes and never written on a frame where
+        /// nothing did. <c>null</c> means no window stands and the strip owns its own lane again.
+        /// </summary>
+        private object stripBannerLaneYieldedFor;
         // Milestone 8.46e. The panel the window was last laid out against, because a window that
         // stands through a resize keeps its decision and its state while both of its rectangles move:
         // the geometry gate's viewport sweep found it drawn at the reference's numbers on every
@@ -1553,16 +1565,35 @@ namespace GuardsDigital.Presentation.Match
 
             hands.SetPrintedActionRegions(round.Model?.PrintedActionRegions);
             var retainsOrdinaryHand = round.RetainsOrdinaryHand;
-            var usesTray = (round.HasExclusiveDecision && !retainsOrdinaryHand) ||
-                minionChoice?.Model != null;
+            // Milestone 8.58, the user on the docked level-up bar: "hand should not disappear on these
+            // choices, it makes this bar float strangely in the air." A decision the WINDOW owns is
+            // asked on the window - the tray under it is neither the surface the question is on nor a
+            // set of controls that could be mistaken for one, because the hand is blocked exactly as
+            // 8.35z58's optional step already blocks it. The tray is taken away only for a decision the
+            // STRIP still hosts, where the exclusive context was the point.
+            var windowOwnsTheDecision = decisionWindow?.Model != null;
+            var usesTray = !windowOwnsTheDecision &&
+                ((round.HasExclusiveDecision && !retainsOrdinaryHand) ||
+                    minionChoice?.Model != null);
             var hostChanged = usesTray != contextUsesTray;
             if (hostChanged)
             {
                 HostContextViewsInTray(usesTray);
             }
 
-            hands.SetContextOnly(retainsOrdinaryHand);
-            hands.SetHidden(usesTray);
+            // Milestone 8.58, the user on the expanded level-up: "hand can be removed from bottom left
+            // and shown below the offer window, like it was before." p.15 is the one family that draws
+            // the seat's own hand INSIDE the panel, so leaving the tray under it would be the same five
+            // cards twice. Only p.15 and only EXPANDED - the docked bar keeps the tray, which is this
+            // user's own earlier rule: "hand should not disappear on these choices".
+            var windowDrawsTheHandItself =
+                windowOwnsTheDecision &&
+                decisionWindow.Model.Family == DecisionWindowFamily.LevelUp &&
+                decisionWindow.Model.State == DecisionWindowState.Expanded &&
+                decisionWindow.Model.HandPreview.Count > 0;
+            hands.SetContextOnly(retainsOrdinaryHand || windowOwnsTheDecision);
+            hands.SetHidden(usesTray || windowDrawsTheHandItself);
+            ApplyStripControlsYieldedToTheWindow(windowOwnsTheDecision);
             // Milestone 8.46c. The window's own rectangle follows the decision it is drawing, which
             // can change without the header changing - a pause is rendered into it by its own
             // presenter - so it is placed here, on the same per-frame pass and by the same
@@ -1580,6 +1611,54 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.53, last on this pass for the same reason it is last in `Layout`: every
             // write above is a surface the ended-match screen has to have covered.
             ApplyVictoryScreenState();
+        }
+
+        /// <summary>
+        /// Milestone 8.58. Nothing of the strip's own banner lane is drawn while the decision window
+        /// owns the standing decision.
+        ///
+        /// <para><b>The user's capture that forced it.</b> The docked Minion Battle bar had the old
+        /// pewter banner still painted behind it, peeking out under <c>EXPAND</c>. The strip yields its
+        /// CONTENT per family (<c>RoundActionUnityView.YieldedDecisionFamily</c>) but the host it draws
+        /// that content into is placed by <see cref="CalculateOptionalStepControlRect"/>, one lane above
+        /// the tray - which is the same band the docked bar and the bottom of the expanded panel
+        /// occupy. A host left displayed with a stale child in it therefore shows through whatever the
+        /// window draws.</para>
+        /// <para>Only that host is hidden, and only while a window stands. <c>FINISH MOVEMENT</c> is its
+        /// other occupant and never co-occurs with one: a stoppable Movement is a movement choice, not
+        /// one of the eleven pending decisions the window takes.</para>
+        /// </summary>
+        private void ApplyStripControlsYieldedToTheWindow(bool windowOwnsTheDecision)
+        {
+            if (round == null)
+            {
+                return;
+            }
+
+            // Re-asserted whenever the window's own model changes rather than only on the transition,
+            // because the strip rebuilds its hosts independently and a rebuild under a standing window
+            // would show the lane again.
+            var standing = windowOwnsTheDecision ? (object)decisionWindow.Model : null;
+            if (ReferenceEquals(standing, stripBannerLaneYieldedFor))
+            {
+                return;
+            }
+
+            stripBannerLaneYieldedFor = standing;
+            if (standing == null)
+            {
+                return;
+            }
+
+            if (round.OptionalStepActionsRoot != null)
+            {
+                round.OptionalStepActionsRoot.style.display = DisplayStyle.None;
+            }
+
+            if (round.DeclineDefenseRoot != null)
+            {
+                round.DeclineDefenseRoot.style.display = DisplayStyle.None;
+            }
         }
 
         private void HostContextViewsInTray(bool useTray)
@@ -1838,7 +1917,9 @@ namespace GuardsDigital.Presentation.Match
         /// `DIRECTOR`'s bottom edge, which is the dock's LOWER band - so the two alternate by band
         /// rather than by visibility, and the `DIRECTOR` toggle's own rectangle stays clear.</para>
         ///
-        /// <para>At the reference this is (288, 838, 444, 96): the tray begins at y 968, the board's
+        /// <para>At the reference this is (288, 838, 696, 96) - it was 444 until milestone 8.58 took
+        /// the mockup's own `.dock` width (see <see cref="DecisionWindowDockedWidth"/>): the tray
+        /// begins at y 968, the board's
         /// left edge is at x 1228 - so a board-answered decision's bar never covers the pieces its own
         /// question is about - and the `DIRECTOR` toggle occupies x 12 to 134, which this bar clears
         /// HORIZONTALLY at every viewport because it begins one margin past the Red rail and the
@@ -1853,6 +1934,15 @@ namespace GuardsDigital.Presentation.Match
             var blue = CalculateHeroRailRect(panelWidth, panelHeight, TeamSide.Blue);
             var left = Mathf.Max(dock.xMin, red.xMax + Margin);
             var right = Mathf.Max(left, Mathf.Min(dock.xMax, blue.xMin - Margin));
+            // Milestone 8.58: the mockup's own `.dock` width, where the board leaves room for it. The
+            // dock's right edge gave the bar 444 units and BOTH of its second lines ran out of bar at
+            // 1280x720 - `1 of 2 chosen - Click the board...`, `PAID 2 COINS - 5 REMAIN...` - and a
+            // line that ends in an ellipsis says less than a short one that finishes. The board's own
+            // left edge is the real bound, because the one thing this bar may never cover is the
+            // pieces a board-answered question is about; the dock's edge never was.
+            var board = CalculatePlayfieldRect(panelWidth, panelHeight);
+            var room = Mathf.Min(board.xMin - Margin, blue.xMin - Margin);
+            right = Mathf.Max(right, Mathf.Min(left + DecisionWindowDockedWidth, room));
             return new Rect(
                 left,
                 dock.yMin,
@@ -1870,6 +1960,14 @@ namespace GuardsDigital.Presentation.Match
         /// of the tray at 968 and of the `DIRECTOR` toggle's lane below the hero column.</para>
         /// </summary>
         public const float DecisionWindowDockedHeight = 96f;
+
+        /// <summary>
+        /// Milestone 8.58. What the docked bar WANTS to be wide: the mockup's own `.dock`, 27% of the
+        /// 2560-unit reference. It is a target rather than a size - the bar never grows past the
+        /// board's left edge, so a board-answered decision's bar still never covers the pieces its
+        /// own question is about.
+        /// </summary>
+        public const float DecisionWindowDockedWidth = 696f;
 
         /// <summary>
         /// The round dock's own left edge. It is the Red rail's left edge - the dock and the rail

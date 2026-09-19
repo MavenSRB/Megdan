@@ -69,7 +69,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return PointTrayAt(root, own);
             yield return StartActionThroughControl(root, ActionKind.Attack);
             var decline = DeclineControl(runtime);
-            if (decline != null) { UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label)); yield return null; }
+            if (decline != null) { UiPlayer.ClickEffectAnswer(runtime, root.Hud, decline.Command); yield return null; }
             Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud, HeroView(enemy).transform.position), Is.True);
             yield return null; yield return null;
             yield return UrsafarAuditStaging.AnswerDefense(false);
@@ -116,7 +116,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return UrsafarAuditStaging.FinishMovement();
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null, "The borrowed card still applies its swap text.");
             var decline = runtime.RoundView.Model.EffectChoices.Single(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
-            UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label)); yield return null;
+            UiPlayer.ClickEffectAnswer(runtime, root.Hud, decline.Command); yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }

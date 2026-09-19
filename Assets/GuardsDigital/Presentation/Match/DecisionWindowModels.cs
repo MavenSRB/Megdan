@@ -104,7 +104,8 @@ namespace GuardsDigital.Presentation.Match
             bool isChosen = false,
             string unavailableReason = null,
             HeroId hero = default,
-            SystemTransitionOptionViewModel upgradeOption = null)
+            SystemTransitionOptionViewModel upgradeOption = null,
+            DefenseBreakdownViewModel defenseBreakdown = null)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A decision control requires a label.", nameof(label))
@@ -136,6 +137,7 @@ namespace GuardsDigital.Presentation.Match
             UnavailableReason = unavailableReason;
             Hero = hero;
             UpgradeOption = upgradeOption;
+            DefenseBreakdown = defenseBreakdown;
         }
 
         /// <summary>
@@ -150,6 +152,19 @@ namespace GuardsDigital.Presentation.Match
         /// have been built from a second derivation. There is not one.</para>
         /// </summary>
         public SystemTransitionOptionViewModel UpgradeOption { get; }
+
+        /// <summary>
+        /// Milestone 8.58. The per-card Defense breakdown this control has on HOVER, and null for
+        /// every control that is not a Defense offer.
+        ///
+        /// <para>The user, on seeing the same arithmetic printed inline in the panel: "Remove it and
+        /// keep the old mouseover when mousing over the defense cards." So the window carries the
+        /// strip's own <see cref="DefenseBreakdownViewModel"/> - the SAME object
+        /// <c>RoundActionPresenter.CreateDefenseBreakdown</c> builds for the strip - and the HUD opens
+        /// it on the one breakdown layer that has always drawn it, rather than the window growing a
+        /// second reading of the same preview.</para>
+        /// </summary>
+        public DefenseBreakdownViewModel DefenseBreakdown { get; }
 
         /// <summary>
         /// The hero this control is ABOUT, when it is about one - a tied Initiative's candidate.
@@ -324,10 +339,10 @@ namespace GuardsDigital.Presentation.Match
         /// nothing - the user's directive of 2026-09-07, "when leveling. Show current hand (all 5
         /// cards) above the offer", carried over from the strip unchanged.
         ///
-        /// <para>Empty for every family but <see cref="DecisionWindowFamily.LevelUp"/>, and empty on
-        /// the Director too: an undefined viewer already sees every hand in the drawer, which is the
-        /// same reading <c>RoundActionPresenter</c> makes for the strip's own preview. AUTHORIZATION
-        /// FILTER IS NOT PROJECTION FILTER.</para>
+        /// <para>Empty for every family but <see cref="DecisionWindowFamily.LevelUp"/>. Milestone 8.58
+        /// made it the LEVELLING hero's hand rather than the viewer's, so the Director sees it too: the
+        /// hand shown is the hand being chosen for, the title already names whose upgrade it is, and a
+        /// Director screen drawing the offer with this row missing left half the panel empty.</para>
         /// </summary>
         public IReadOnlyList<TrayCardViewModel> HandPreview { get; }
     }

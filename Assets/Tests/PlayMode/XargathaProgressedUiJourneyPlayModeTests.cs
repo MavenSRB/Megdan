@@ -238,7 +238,7 @@ namespace GuardsDigital.Tests.PlayMode
             var placement = StandingNode(runtime);
             var side = runtime.RoundView.Model.EffectChoices.First(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
-            UiPlayer.Click(UiPlayer.Button(hud, side.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, side.Command);
             yield return null;
             yield return ConfirmIfStillStanding(root, placement);
             yield return null;

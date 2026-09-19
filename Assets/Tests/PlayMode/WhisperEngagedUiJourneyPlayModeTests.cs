@@ -123,10 +123,17 @@ namespace GuardsDigital.Tests.PlayMode
                 "Grim Reaper is locked on this staging, so the printed \"Choose one\" stands at one. " +
                 Remaining(runtime));
 
-            var adjacentBullet = bullets[1];
-            UiPlayer.Click(UiPlayer.Button(hud, adjacentBullet.Label));
+            // Milestone 8.58: addressed by the NODE the bullet is, not by its position in the
+            // strip's list. The literal `MODE #2 MODAL-ADJACENT-UNIT` this used to press named the
+            // node in its own text, so the press was node-addressed by accident; the window says what
+            // the card prints now, and an index is not what this journey means by "the second one".
+            UiPlayer.ClickEffectOption(runtime, hud, "modal-adjacent-unit");
             yield return null;
             yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "One press answers a choose-exactly-one: the window follows the select with the " +
+                "confirm the authority itself offered (8.46b), so the modal is gone. " +
+                Remaining(runtime));
 
             // The chosen bullet published its sentence and p.14 then ran its own opening question
             // against the board as it stands - which is the contract's whole claim.
@@ -226,7 +233,7 @@ namespace GuardsDigital.Tests.PlayMode
                 .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
             Assert.That(bullets, Has.Length.EqualTo(2), Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, bullets[0].Command);
             yield return null;
             yield return null;
 

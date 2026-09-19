@@ -949,6 +949,7 @@ namespace GuardsDigital.Tests.EditMode
             public PendingDefensePreviewProjection PendingDefensePreview => null;
             public PendingResolution PendingSkillResolution => null;
             public bool HasPendingSkillResolution => false;
+            public CardInstanceId ResolvingSourceCardInstanceId => default;
             public PendingEffectChoice PendingEffectChoice => null;
 
             public IReadOnlyList<EffectChoiceCandidatePreview> PendingEffectChoicePreview =>

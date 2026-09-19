@@ -288,14 +288,27 @@ namespace GuardsDigital.Presentation.Match
                 viewerHeroId,
                 heroId => projection.Setup?.Heroes?
                     .FirstOrDefault(hero => hero.HeroId.Equals(heroId))?.DisplayName);
-            if (!banner.HasBanner)
+            // Milestone 8.58. The yield is asked on EVERY refresh rather than only when a new banner
+            // would show, and it CUTS one that is already on screen.
+            //
+            // The user's live Reload! capture is why: a banner announcing the turn was still fading
+            // when the decision window expanded over it, so its letters read through the panel's right
+            // half. 8.47's rule is that the banner yields to a window opening on the same refresh; a
+            // banner that had already opened was outside it, and "the window is the thing nobody
+            // misses" is not true while another surface is drawn through it.
+            if (YieldsWhen?.Invoke() == true)
             {
+                view.Hide();
+                if (banner.HasBanner)
+                {
+                    LastYielded = banner;
+                }
+
                 return;
             }
 
-            if (YieldsWhen?.Invoke() == true)
+            if (!banner.HasBanner)
             {
-                LastYielded = banner;
                 return;
             }
 

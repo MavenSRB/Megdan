@@ -237,17 +237,80 @@ namespace GuardsDigital.Presentation.Match
             content.Add(TeamChip(TeamSide.Blue, model.BlueLifeLabel));
         }
 
+        /// <summary>
+        /// Milestone 8.58. One team's Life counters as a HEART in that team's colour with the number
+        /// inside it.
+        ///
+        /// <para>The user, on the strip: "these dots moved up for some reason? Maybe just lose red and
+        /// blue words, and have a red and blue heart with a number in it to symbolise the lives left."
+        /// The word and the drifting dot are gone; what is left is the counter itself, drawn the way
+        /// p.13 talks about it. The digit carries the same black outline 8.49's worth badge digit does,
+        /// so it reads on either colour, and the glyph and the digit are stacked in one fixed box that
+        /// is centred on the strip's own row rather than laid out beside the text.</para>
+        /// </summary>
         private static VisualElement TeamChip(TeamSide side, string label)
         {
-            var chip = HudElements.Row(6f);
-            var swatch = new VisualElement();
-            swatch.style.width = 10f;
-            swatch.style.height = 10f;
-            swatch.style.backgroundColor = MatchHudTheme.TeamFace(side);
-            HudElements.Border(swatch, MatchHudTheme.PanelBorder, 1f, 5f);
-            chip.Add(swatch);
-            chip.Add(HudElements.Text(label, 12f, MatchHudTheme.PrimaryText, FontStyle.Bold));
+            var chip = new VisualElement { name = "gd-life-counter" };
+            chip.style.width = LifeCounterSize;
+            chip.style.height = LifeCounterSize;
+            chip.style.minWidth = LifeCounterSize;
+            chip.style.flexShrink = 0f;
+            chip.style.alignSelf = Align.Center;
+            chip.tooltip = (side == TeamSide.Red ? "Red" : "Blue") + " team life counters: " + label;
+
+            var heart = HudElements.Text(
+                "♥", LifeCounterSize, MatchHudTheme.TeamFace(side), FontStyle.Bold);
+            heart.name = "gd-life-counter-heart";
+            heart.pickingMode = PickingMode.Ignore;
+            heart.style.position = Position.Absolute;
+            heart.style.left = 0f;
+            // Milestone 8.58, the user: "center them a bit up, in line with text, no need for this
+            // offset that is lowering them." A heart glyph's ink sits low in its em box - it hangs off
+            // the baseline rather than centring on it - so the BOX is nudged up by the difference,
+            // which is what puts the drawn heart on the same line as the words beside it.
+            heart.style.top = -LifeCounterSize * HeartInkOffset;
+            heart.style.width = LifeCounterSize;
+            heart.style.height = LifeCounterSize;
+            heart.style.unityTextAlign = TextAnchor.MiddleCenter;
+            heart.style.unityTextOutlineWidth = 1f;
+            heart.style.unityTextOutlineColor = HudElements.WorthDigitOutline;
+            chip.Add(heart);
+
+            var value = HudElements.Text(
+                label, LifeCounterDigitSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            value.name = "gd-life-counter-value";
+            value.pickingMode = PickingMode.Ignore;
+            value.style.position = Position.Absolute;
+            value.style.left = 0f;
+            // A heart is widest above its middle, so the number sits a little high inside it - and it
+            // follows the glyph's own upward nudge, or it would slide off the ink.
+            value.style.top = -LifeCounterSize * (HeartInkOffset + 0.06f);
+            value.style.width = LifeCounterSize;
+            value.style.height = LifeCounterSize;
+            value.style.unityTextAlign = TextAnchor.MiddleCenter;
+            value.style.unityTextOutlineWidth = HudElements.WorthDigitOutlineWidth;
+            value.style.unityTextOutlineColor = HudElements.WorthDigitOutline;
+            chip.Add(value);
             return chip;
         }
+
+        /// <summary>
+        /// The heart's own box, sized to the strip's 56-unit identity row rather than to its text - the
+        /// counter is one of the three facts this strip exists to carry, and the dot it replaces was
+        /// ten units tall and drifting above the words beside it.
+        /// </summary>
+        public const float LifeCounterSize = 36f;
+
+        /// <summary>
+        /// The number inside the heart. It is a third of the glyph rather than a half, because a heart's
+        /// ink does not fill its em box and a digit sized to the box would spill over the lobes.
+        /// </summary>
+        public const float LifeCounterDigitSize = 14f;
+
+        /// <summary>
+        /// How far the heart GLYPH sits below its own em box's centre, as a fraction of the box. The
+        /// box is drawn that much higher so the ink lands on the strip's own text line.
+        /// </summary>
+        private const float HeartInkOffset = 0.12f;
     }
 }

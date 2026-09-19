@@ -458,6 +458,22 @@ namespace GuardsDigital.Presentation.Match
                 }
             };
 
+            // Milestone 8.58. The per-card Defense breakdown the strip's own offer opened on hover,
+            // kept exactly where it was when the question moved into the window: "Remove it and keep
+            // the old mouseover when mousing over the defense cards." One breakdown layer, one
+            // builder, one dismissal clock - the window only says which card the pointer is over.
+            DecisionWindowView.DefenseBreakdownPointedAt += (control, anchor) =>
+            {
+                if (control?.DefenseBreakdown == null || anchor == null)
+                {
+                    RoundView.ScheduleDefensePreviewDismissal(
+                        UnityEngine.Time.realtimeSinceStartupAsDouble);
+                    return;
+                }
+
+                RoundView.ShowDefensePreview(control.DefenseBreakdown, anchor.worldBound);
+            };
+
             hud.Configure(
                 HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,
                 HeroOverviewsView, MatchLogView, DecisionWindowView, VictoryScreenView);

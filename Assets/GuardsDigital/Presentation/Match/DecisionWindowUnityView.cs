@@ -57,16 +57,28 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The window's own inside padding, inside the rectangle the renderer hands down.</summary>
         public const float WindowPadding = 16f;
 
+        /// <summary>
+        /// The expanded panel's own border, which a measurement of where its content ends has to allow
+        /// for: `worldBound` is the BORDER box, and the padding is inside it.
+        /// </summary>
+        public const float PanelBorderWidth = 2f;
+
         /// <summary>The docked bar's own inside padding, which is tighter because the bar is slim.</summary>
         public const float DockedPadding = 8f;
 
         /// <summary>
-        /// The verb banner's footprint - the optional step's own two numbers, because that pair IS the
-        /// banner language this window inherits and two sizes for one control would be two languages.
+        /// Milestone 8.58. One worded ANSWER's own footprint - the mockup's `.btn.tall`. It is a target
+        /// the size of a decision rather than a chip the size of its text, and it is the same shape for
+        /// a modal arm, an optional step's two answers and the Minion Battle's ratification alike.
         /// </summary>
-        public const float VerbWidth = RoundActionUnityView.OptionalStepActionWidth;
+        public const float AnswerHeight = RoundActionUnityView.OptionalStepActionHeight;
 
-        public const float VerbHeight = RoundActionUnityView.OptionalStepActionHeight;
+        public const float AnswerMinimumWidth = RoundActionUnityView.OptionalStepActionWidth;
+
+        public const float AnswerFontSize = 14f;
+
+        /// <summary>The same control at the slim bar's own height, which is what the bar has room for.</summary>
+        public const float DockedControlHeight = 26f;
 
         // -------------------------------------------------------------------------------------
         // Milestone 8.46g. Rulebook p.15's Upgrade a Card, drawn inside the FIXED expanded
@@ -109,6 +121,13 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// One upgrade candidate's full footprint: the tray's own 420-unit face plus the exterior
         /// outline the strip's own option control reserves above and below it.
+        ///
+        /// <para><b>Milestone 8.58 moved p.16's `GAINS:` box below the face and moved it back.</b> The
+        /// user saw it over the printed text on a capture ("Gain symbols are clipping the text"), then
+        /// withdrew that on seeing which faces the capture held: "Might be problem cuz you shown me
+        /// tier one cards. I think it might be fine on T2 and higher and that is ok then." A real
+        /// upgrade candidate is always a Tier II or III face, whose bottom band is the item-icon zone
+        /// the box is drawn over on purpose (8.30j). The overlay stays.</para>
         /// </summary>
         public const float LevelUpOptionHeight =
             CardFootprint.Height + (CardFootprint.ExteriorOutlineWidth * 2f);
@@ -160,8 +179,42 @@ namespace GuardsDigital.Presentation.Match
         public const float ChipFontSize = 12f;
         public const float CornerFontSize = 12f;
 
+        /// <summary>
+        /// Milestone 8.58. The narrowest the content-sized panel may be: wide enough for a header, a
+        /// card face at the tray's own footprint, and a control row beside it, so a one-card yes-or-no
+        /// still reads as a window rather than as a tooltip. It is a MINIMUM, not a width: a defense of
+        /// four candidates plus the attacker grows past it and is bounded only by the rectangle.
+        /// </summary>
+        public const float MinimumPanelWidth = 720f;
+
+        /// <summary>
+        /// Milestone 8.58. The rectangle behind the expanded panel is a CLICK SHIELD and nothing else:
+        /// fully transparent, no border, no dimming.
+        ///
+        /// <para>The user, on the first captures: "No reason for this bigger box when we have smaller
+        /// one already." A painted scrim read as a second, larger box with its own edge - which is the
+        /// same complaint the whole block began with, one layer out. The mockup has no scrim: the panel
+        /// floats over the board it covers. The shield stays because the renderer has blocked the
+        /// pointer over this rectangle since 8.46c, and a press outside the panel must not reach a piece
+        /// underneath; it just stops being visible.</para>
+        /// </summary>
+        public static readonly Color ScrimColor = Color.clear;
+
         /// <summary>The words on the control that puts the window out of the way, and brings it back.</summary>
         public const string MinimiseLabel = "MINIMISE";
+
+        /// <summary>
+        /// Milestone 8.58. The width `MINIMISE` is given in the header, and the width of the empty
+        /// column standing opposite it.
+        ///
+        /// <para>The user, on the optional-step capture: "This drifted a bit to the right." A control
+        /// on ONE side of a centred column pushes that column off the panel's centre by half its own
+        /// width, and every family drew the same drift because every family has this header. The
+        /// answer is a matching column on the other side rather than an absolute corner, so the
+        /// header still MEASURES what it occupies and the panel that sizes itself to its content
+        /// cannot be surprised by it.</para>
+        /// </summary>
+        public const float MinimiseAllowance = 96f;
 
         public const string ExpandLabel = "EXPAND";
 
@@ -173,6 +226,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly Label expandedCount;
         private readonly VisualElement expandedStatements;
         private readonly VisualElement expandedContext;
+        private VisualElement expandedBody;
+        private VisualElement expandedDivider;
         private readonly VisualElement expandedControls;
         private readonly VisualElement expandedCorner;
         private readonly Button minimiseControl;
@@ -191,16 +246,30 @@ namespace GuardsDigital.Presentation.Match
             Root = new VisualElement { name = "gd-decision-window" };
             Root.style.position = Position.Absolute;
             Root.style.flexDirection = FlexDirection.Column;
+            // Milestone 8.58. The ROOT is the BOUND the renderer states, and the panel inside it is
+            // sized to its own content and centred in it. The user's words on the shipped window:
+            // "This box is a waste of space like this." A yes-or-no question used to be drawn on a
+            // panel nineteen hundred units wide because the panel WAS the bound.
+            Root.style.justifyContent = Justify.Center;
+            Root.style.alignItems = Align.Center;
             Root.style.display = DisplayStyle.None;
 
             expandedHost = HudElements.Panel(MatchHudTheme.PanelBackground);
             expandedHost.name = "gd-decision-window-expanded";
             expandedHost.style.flexDirection = FlexDirection.Column;
-            expandedHost.style.flexGrow = 1f;
+            expandedHost.style.flexGrow = 0f;
+            expandedHost.style.flexShrink = 1f;
+            expandedHost.style.alignItems = Align.Center;
+            expandedHost.style.maxWidth = Length.Percent(100f);
+            expandedHost.style.maxHeight = Length.Percent(100f);
+            expandedHost.style.minWidth = MinimumPanelWidth;
             expandedHost.style.display = DisplayStyle.None;
             HudElements.Padding(expandedHost, WindowPadding);
             HudElements.Border(
-                expandedHost, MatchHudTheme.PanelBorder, 2f, MatchHudTheme.BandCornerRadius);
+                expandedHost,
+                MatchHudTheme.PanelBorder,
+                PanelBorderWidth,
+                MatchHudTheme.BandCornerRadius);
             Root.Add(expandedHost);
 
             var header = new VisualElement { name = "gd-decision-window-header" };
@@ -208,11 +277,24 @@ namespace GuardsDigital.Presentation.Match
             header.style.alignItems = Align.FlexStart;
             header.style.justifyContent = Justify.SpaceBetween;
             header.style.flexShrink = 0f;
+            // Milestone 8.58: stretched rather than sized. The panel's width is decided by its BODY -
+            // the card and the controls - and the header, the question, the count and the corner each
+            // take whatever that turned out to be.
+            header.style.alignSelf = Align.Stretch;
             expandedHost.Add(header);
 
             // The expanded rectangle is ONE shape for every family - the whole open area between the
             // rails - so the content is centred inside it rather than hugging a corner of a window
             // that is nearly two thousand units wide whatever the question is.
+            // Milestone 8.58: the column that balances `MINIMISE`. Without it the header's centred text
+            // - and, through the header's own measured width, the whole content-sized panel - sits half
+            // a control to the left of where the eye puts the panel's centre.
+            var headerBalance = new VisualElement { name = "gd-decision-window-header-balance" };
+            headerBalance.style.width = MinimiseAllowance + 12f;
+            headerBalance.style.flexShrink = 0f;
+            headerBalance.pickingMode = PickingMode.Ignore;
+            header.Add(headerBalance);
+
             var headerText = new VisualElement();
             headerText.style.flexDirection = FlexDirection.Column;
             headerText.style.alignItems = Align.Center;
@@ -241,6 +323,7 @@ namespace GuardsDigital.Presentation.Match
             minimiseControl.style.fontSize = CornerFontSize;
             minimiseControl.style.flexShrink = 0f;
             minimiseControl.style.marginLeft = 12f;
+            minimiseControl.style.minWidth = MinimiseAllowance;
             header.Add(minimiseControl);
 
             expandedQuestion = HudElements.Text(
@@ -248,6 +331,7 @@ namespace GuardsDigital.Presentation.Match
             expandedQuestion.name = "gd-decision-window-question";
             expandedQuestion.style.marginTop = 6f;
             expandedQuestion.style.unityTextAlign = TextAnchor.MiddleCenter;
+            expandedQuestion.style.alignSelf = Align.Stretch;
             Wrapping(expandedQuestion);
             expandedHost.Add(expandedQuestion);
 
@@ -257,6 +341,7 @@ namespace GuardsDigital.Presentation.Match
             expandedCount.style.marginTop = 2f;
             Wrapping(expandedCount);
             expandedCount.style.unityTextAlign = TextAnchor.MiddleCenter;
+            expandedCount.style.alignSelf = Align.Stretch;
             expandedHost.Add(expandedCount);
 
             expandedStatements = new VisualElement { name = "gd-decision-window-statements" };
@@ -266,13 +351,18 @@ namespace GuardsDigital.Presentation.Match
             expandedStatements.style.alignItems = Align.Center;
             expandedHost.Add(expandedStatements);
 
-            var body = new VisualElement { name = "gd-decision-window-body" };
+            var body = expandedBody = new VisualElement { name = "gd-decision-window-body" };
             body.style.flexDirection = FlexDirection.Row;
             body.style.alignItems = Align.FlexStart;
             body.style.justifyContent = Justify.Center;
             body.style.flexWrap = Wrap.NoWrap;
             body.style.marginTop = 10f;
             body.style.flexGrow = 1f;
+            // Milestone 8.58, the user: "This drifted a bit to the right." The body spans the panel's
+            // whole content box and centres its own row inside it, so the gap left of the card and the
+            // gap right of the answers are the SAME gap by construction rather than by whatever the
+            // header, the question and the controls happened to measure.
+            body.style.alignSelf = Align.Stretch;
             expandedHost.Add(body);
 
             expandedContext = new VisualElement { name = "gd-decision-window-context" };
@@ -283,12 +373,25 @@ namespace GuardsDigital.Presentation.Match
             expandedContext.style.display = DisplayStyle.None;
             body.Add(expandedContext);
 
+            expandedDivider = new VisualElement { name = "gd-decision-window-divider" };
+            expandedDivider.style.width = 2f;
+            expandedDivider.style.alignSelf = Align.Stretch;
+            expandedDivider.style.marginRight = ContextGap;
+            expandedDivider.style.flexShrink = 0f;
+            expandedDivider.style.backgroundColor = MatchHudTheme.PanelBorder;
+            expandedDivider.style.display = DisplayStyle.None;
+            expandedDivider.pickingMode = PickingMode.Ignore;
+            body.Add(expandedDivider);
+
             expandedControls = new VisualElement { name = "gd-decision-window-controls" };
             expandedControls.style.flexDirection = FlexDirection.Row;
             expandedControls.style.alignItems = Align.FlexStart;
             expandedControls.style.justifyContent = Justify.Center;
             expandedControls.style.flexWrap = Wrap.Wrap;
-            expandedControls.style.flexGrow = 1f;
+            // Never GROWS into the body's spare width: a control row that took the leftover space put
+            // its own centre where the space ended rather than where the panel's centre is, which is
+            // the drift the user saw. The body centres this row; this row centres its controls.
+            expandedControls.style.flexGrow = 0f;
             expandedControls.style.flexShrink = 1f;
             body.Add(expandedControls);
 
@@ -298,19 +401,25 @@ namespace GuardsDigital.Presentation.Match
             expandedCorner.style.alignItems = Align.Center;
             expandedCorner.style.flexShrink = 0f;
             expandedCorner.style.marginTop = 8f;
+            expandedCorner.style.alignSelf = Align.Stretch;
             expandedCorner.style.display = DisplayStyle.None;
             expandedHost.Add(expandedCorner);
 
-            // The docked bar is TWO ROWS rather than one, which is a width decision and not a taste
-            // one: it is bounded by the round dock's 720 units and yields its left edge to the Red
-            // rail, so at the reference it is 444 wide. One row would leave a wrapped question a few
-            // dozen units beside a verb, a count and EXPAND. Two rows give each line the bar's whole
-            // width, and the host clips rather than spilling past the rectangle the renderer states.
+            // Milestone 8.58, the mockup's `.dock`: TWO lines, and the question owns the first of them
+            // outright. It used to share that line with the count and `EXPAND`, which left
+            // `UPGRADE A CARD` wrapping to two lines inside a two-line bar (the user's own capture);
+            // the count moved down beside the verb, so the question has the bar's whole width minus
+            // `EXPAND` and never wraps or ellipsises at the reference. Whatever does give ground gives
+            // it by ellipsis rather than by taking the other line.
             dockedHost = HudElements.Panel(MatchHudTheme.PanelBackground);
             dockedHost.name = "gd-decision-window-docked";
             dockedHost.style.flexDirection = FlexDirection.Column;
             dockedHost.style.justifyContent = Justify.Center;
             dockedHost.style.flexGrow = 1f;
+            // The docked bar is the WHOLE of its own rectangle - the root centres the expanded panel,
+            // which would otherwise shrink this bar to its text too.
+            dockedHost.style.width = Length.Percent(100f);
+            dockedHost.style.height = Length.Percent(100f);
             dockedHost.style.overflow = Overflow.Hidden;
             dockedHost.style.display = DisplayStyle.None;
             HudElements.Padding(dockedHost, DockedPadding);
@@ -321,22 +430,16 @@ namespace GuardsDigital.Presentation.Match
             dockedTopRow.style.flexDirection = FlexDirection.Row;
             dockedTopRow.style.alignItems = Align.Center;
             dockedTopRow.style.flexShrink = 0f;
+            dockedTopRow.style.overflow = Overflow.Hidden;
             dockedHost.Add(dockedTopRow);
 
             dockedTitle = HudElements.Text(
                 string.Empty, QuestionFontSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
             dockedTitle.name = "gd-decision-window-docked-title";
             dockedTitle.style.letterSpacing = 0.4f;
+            OneLine(dockedTitle);
             dockedTitle.style.flexGrow = 1f;
-            Wrapping(dockedTitle);
             dockedTopRow.Add(dockedTitle);
-
-            dockedCount = HudElements.Text(
-                string.Empty, CountFontSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
-            dockedCount.name = "gd-decision-window-docked-count";
-            dockedCount.style.flexShrink = 0f;
-            dockedCount.style.marginLeft = 8f;
-            dockedTopRow.Add(dockedCount);
 
             expandControl = HudElements.Control(
                 ExpandLabel, () => StateToggleRequested?.Invoke(), 22f);
@@ -350,14 +453,25 @@ namespace GuardsDigital.Presentation.Match
             dockedBottomRow.style.flexDirection = FlexDirection.Row;
             dockedBottomRow.style.alignItems = Align.Center;
             dockedBottomRow.style.flexShrink = 0f;
-            dockedBottomRow.style.marginTop = 4f;
+            dockedBottomRow.style.marginTop = 2f;
+            dockedBottomRow.style.overflow = Overflow.Hidden;
             dockedHost.Add(dockedBottomRow);
+
+            dockedCount = HudElements.Text(
+                string.Empty, CountFontSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
+            dockedCount.name = "gd-decision-window-docked-count";
+            OneLine(dockedCount);
+            // The count is the fact the bar is COUNTING and is never the half that gives ground: the
+            // question beside it is what shortens. (After `OneLine`, which sets a shrink of its own.)
+            dockedCount.style.flexShrink = 0f;
+            dockedBottomRow.Add(dockedCount);
 
             dockedQuestion = HudElements.Text(
                 string.Empty, CountFontSize, MatchHudTheme.MutedText);
             dockedQuestion.name = "gd-decision-window-docked-question";
+            OneLine(dockedQuestion);
             dockedQuestion.style.flexGrow = 1f;
-            Wrapping(dockedQuestion);
+            dockedQuestion.style.minWidth = 0f;
             dockedBottomRow.Add(dockedQuestion);
 
             dockedControls = new VisualElement { name = "gd-decision-window-docked-controls" };
@@ -374,6 +488,19 @@ namespace GuardsDigital.Presentation.Match
             dockedCorner.style.marginLeft = 6f;
             dockedCorner.style.display = DisplayStyle.None;
             dockedBottomRow.Add(dockedCorner);
+        }
+
+        /// <summary>
+        /// Milestone 8.58. A line of the docked bar: one line, clipped with an ellipsis rather than
+        /// wrapped, because the bar has exactly two lines and a wrapped question takes the other one.
+        /// </summary>
+        private static void OneLine(VisualElement element)
+        {
+            element.style.whiteSpace = WhiteSpace.NoWrap;
+            element.style.overflow = Overflow.Hidden;
+            element.style.textOverflow = TextOverflow.Ellipsis;
+            element.style.flexShrink = 1f;
+            element.style.maxWidth = Length.Percent(100f);
         }
 
         public VisualElement Root { get; }
@@ -404,6 +531,17 @@ namespace GuardsDigital.Presentation.Match
         /// the preview into this window did not make that two layers.</para>
         /// </summary>
         public event Action<TrayCardViewModel, VisualElement> CardInspected;
+
+        /// <summary>
+        /// Milestone 8.58. A Defense offer was pointed at, or the pointer left it (a null control).
+        ///
+        /// <para>The user, after seeing the same arithmetic printed inline: "Remove it and keep the old
+        /// mouseover when mousing over the defense cards." The window raises the pointer and the HUD
+        /// opens the breakdown on <c>RoundActionUnityView</c>'s own layer - the layer that has drawn it
+        /// since 8.11b - so the window did not have to grow a second copy of the popup when it took
+        /// the question off the strip.</para>
+        /// </summary>
+        public event Action<DecisionWindowControlViewModel, VisualElement> DefenseBreakdownPointedAt;
 
         /// <summary>Whether a window is currently drawn at all, for a driver with no pointer.</summary>
         public bool HasWindow => Model != null;
@@ -466,6 +604,9 @@ namespace GuardsDigital.Presentation.Match
 
             Root.style.display = DisplayStyle.Flex;
             var expanded = Model.State == DecisionWindowState.Expanded;
+            // Milestone 8.58: the rectangle is a transparent click shield while the window is expanded
+            // and paints nothing at all - see `ScrimColor`.
+            Root.style.backgroundColor = expanded ? ScrimColor : Color.clear;
             expandedHost.style.display = expanded ? DisplayStyle.Flex : DisplayStyle.None;
             dockedHost.style.display = expanded ? DisplayStyle.None : DisplayStyle.Flex;
             minimiseControl.style.display = Model.IsMinimisable ? DisplayStyle.Flex : DisplayStyle.None;
@@ -483,6 +624,13 @@ namespace GuardsDigital.Presentation.Match
 
         private void BuildExpanded()
         {
+            // Milestone 8.58. EVERY family is sized to what it has to show, p.15's included. The
+            // level-up offer's arithmetic is absolute rather than proportional (a 220-unit preview
+            // row, an 8-unit gap, a 428-unit band of faces), so a host that shrinks to its content
+            // still hands the offer every unit it declared. The expanded rectangle is the BOUND -
+            // `maxWidth`/`maxHeight` are 100% of it - and the root centres whatever is smaller.
+            expandedHost.style.width = StyleKeyword.Auto;
+            expandedHost.style.height = StyleKeyword.Auto;
             expandedEyebrow.text = Model.Eyebrow;
             expandedEyebrow.style.display = string.IsNullOrEmpty(Model.Eyebrow)
                 ? DisplayStyle.None
@@ -499,8 +647,13 @@ namespace GuardsDigital.Presentation.Match
 
             foreach (var statement in Model.Statements)
             {
-                var line = HudElements.Text(statement, CaptionFontSize, MatchHudTheme.MutedText);
+                // Milestone 8.58: bold, because this row is a SECTION now as well as a ledger of what
+                // teammates said - a Defense states its modifiers here ("ATTACK 5 = 4 PRINTED + 1
+                // ITEM", "MINIONS BESIDE: 1 MINION"), which is a reading a player compares cards by.
+                var line = HudElements.Text(
+                    statement, CaptionFontSize, MatchHudTheme.MutedText, FontStyle.Bold);
                 line.name = "gd-decision-window-statement";
+                line.style.letterSpacing = 0.6f;
                 Wrapping(line);
                 expandedStatements.Add(line);
             }
@@ -517,31 +670,89 @@ namespace GuardsDigital.Presentation.Match
             expandedContext.style.display = Model.ContextCards.Count == 0
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
+            // Milestone 8.58, the mockup's defense frame: the incoming attack sits on its own side of a
+            // rule, and the cards that could answer it sit on the other. Nowhere else needs a divider,
+            // because nowhere else shows a card the player is being asked ABOUT beside cards they are
+            // being asked to choose BETWEEN.
+            expandedDivider.style.display =
+                Model.ContextCards.Count > 0 &&
+                (Model.Family == DecisionWindowFamily.Defense ||
+                    Model.Family == DecisionWindowFamily.RemovalPrevention ||
+                    Model.Family == DecisionWindowFamily.CardChoice)
+                    ? DisplayStyle.Flex
+                    : DisplayStyle.None;
 
             // Milestone 8.46g. p.15's question is not a row of independent answers: it is the seat's
             // own hand above three PAIRS, and each pair is one card the hero may upgrade. It is laid
             // out as the one shape it is rather than fed through the generic control loop.
             if (Model.Family == DecisionWindowFamily.LevelUp)
             {
-                // A DEFINITE height for the offer to be bounded against. The arithmetic in
-                // `LevelUpHandPreviewHeight` is what makes the offer fit; this is what keeps a
-                // candidate face inside the rectangle even if it one day did not - the preview row
-                // gives its height up first, and the row of faces the player is choosing between is
-                // the last thing in this window that may move.
-                expandedControls.style.height = Length.Percent(100f);
+                // The offer's own arithmetic is ABSOLUTE - a 220-unit preview row, an 8-unit gap and
+                // a 428-unit band of candidate faces at the tray's own footprint - so the row that
+                // carries it asks for exactly what those three declare and not one unit more. The
+                // rectangle BOUNDS the offer (`maxHeight` above) rather than being filled by it,
+                // which is what stops the empty lower half the user struck on the mode choice: "No
+                // reason for this bigger box when we have smaller one already."
+                expandedControls.style.height = StyleKeyword.Auto;
+                expandedControls.style.flexDirection = FlexDirection.Row;
+                expandedControls.style.alignItems = Align.FlexStart;
+                expandedControls.style.alignSelf = Align.Auto;
+                expandedControls.style.flexWrap = Wrap.NoWrap;
+                expandedBody.style.alignItems = Align.FlexStart;
                 expandedControls.Add(BuildLevelUpOffer());
             }
             else
             {
                 expandedControls.style.height = StyleKeyword.Auto;
+                // Milestone 8.58, the mockup's `.stack`: a card's printed bullets are a LIST, read top
+                // to bottom beside the card they are printed on, so a modal's worded arms stack. Faces,
+                // values and an optional step's two answers stay a row.
+                var worded = Model.Controls.Count > 0 &&
+                    Model.Controls.All(control => control.Card == null);
+                // The mockup's `.stack` of `.btn.tall{flex:1}`: a card's printed answers are STACKED
+                // beside the card and together fill its height. The user settled the optional step onto
+                // the same shape after seeing both - "Arrange the buttons like on Swift's gold in this
+                // scenario. It's better looking." - so a printed `may`'s two answers read exactly like
+                // a `Choose one`'s two bullets, the accepting one on top.
+                var stacked = worded &&
+                    (Model.Family == DecisionWindowFamily.Mode ||
+                        Model.Family == DecisionWindowFamily.OptionalStep);
+                var fillsTheCardsHeight = stacked;
+                expandedControls.style.flexDirection = stacked
+                    ? FlexDirection.Column
+                    : FlexDirection.Row;
+                expandedControls.style.alignItems =
+                    stacked || fillsTheCardsHeight ? Align.Stretch : Align.FlexStart;
+                // Milestone 8.58, from the first capture of this block: worded answers beside a card
+                // face left a block of empty panel under them, which is the same "waste of space" the
+                // user struck at full size. A card's printed bullets FILL the height of the card they
+                // are printed on (the mockup's `.btn.tall{flex:1}` inside its `.stack`); every other
+                // worded row is centred against the face instead of hanging from its top edge.
+                expandedBody.style.alignItems = fillsTheCardsHeight
+                    ? Align.Stretch
+                    : worded ? Align.Center : Align.FlexStart;
+                expandedControls.style.alignSelf =
+                    fillsTheCardsHeight ? Align.Stretch : Align.Auto;
+                // A printed `may`'s TWO answers stand SIDE BY SIDE, always - it is the one row whose
+                // order is part of the reading ("accept, then decline"), and a wrap would put the
+                // second answer under the first. They shrink and wrap their own text instead; every
+                // other row keeps the wrap it has had since 8.46c, because six value buttons on one
+                // line would run out of window before they ran out of words.
+                expandedControls.style.flexWrap = worded && !stacked && Model.Controls.Count <= 2
+                    ? Wrap.NoWrap
+                    : Wrap.Wrap;
                 for (var index = 0; index < Model.Controls.Count; index++)
                 {
                     var control = Model.Controls[index];
+                    // Milestone 8.58, the user on the shipped optional step and again on the Minion
+                    // Battle bar: "Old buttons here instead of new ones." There is ONE control style in
+                    // this window now - the shared `HudElements.Control` the mockup draws - and the
+                    // leading answer is told apart by a gold border rather than by being a different
+                    // object. The pewter swallowtail keeps END TURN, CONFIRM FACEDOWN and PASS, which
+                    // are the strip's own controls and not this window's.
                     var element = control.Card != null
                         ? BuildCardControl(control)
-                        : control.IsPrimary
-                            ? BuildVerbBanner(control)
-                            : (VisualElement)BuildWordedControl(control);
+                        : (VisualElement)BuildWordedControl(control);
                     if (control.Hero.IsDefined)
                     {
                         var hero = control.Hero;
@@ -549,8 +760,21 @@ namespace GuardsDigital.Presentation.Match
                             HeroHighlighted?.Invoke(pointedAt ? hero : default));
                     }
 
-                    element.style.marginRight = index == Model.Controls.Count - 1 ? 0f : CardGap;
-                    element.style.marginBottom = CardGap;
+                    var last = index == Model.Controls.Count - 1;
+                    element.style.marginRight = stacked || last ? 0f : CardGap;
+                    element.style.marginBottom = stacked && last ? 0f : CardGap;
+                    if (fillsTheCardsHeight)
+                    {
+                        element.style.flexGrow = 1f;
+                    }
+
+                    if (!stacked && expandedControls.style.flexWrap == Wrap.NoWrap)
+                    {
+                        // A row that may not wrap has to be able to give ground instead, so the two
+                        // answers share the width they have and wrap their own words inside it.
+                        element.style.minWidth = 0f;
+                        element.style.flexShrink = 1f;
+                    }
                     expandedControls.Add(element);
                     drawnControls.Add(
                         new KeyValuePair<DecisionWindowControlViewModel, VisualElement>(
@@ -573,23 +797,42 @@ namespace GuardsDigital.Presentation.Match
         private void BuildDocked()
         {
             dockedTitle.text = Model.Title;
-            dockedQuestion.text = Model.Question;
-            dockedQuestion.style.display = string.IsNullOrEmpty(Model.Question)
-                ? DisplayStyle.None
-                : DisplayStyle.Flex;
+            // The mockup's second line: the count, then the question, on ONE line with a separator
+            // between them - `1 of 2 chosen · click the board`.
             dockedCount.text = Model.Count ?? string.Empty;
             dockedCount.style.display = string.IsNullOrEmpty(Model.Count)
                 ? DisplayStyle.None
                 : DisplayStyle.Flex;
+            // Milestone 8.58, the mockup's `.count` and the user's capture of the shipped bar. That line
+            // is short BY CONSTRUCTION: the Minion Battle bar reads `1 of 2 chosen - click the board`,
+            // and p.15's reads `PAID 2 COINS - 5 REMAINING` and stops there. The line above it already
+            // says UPGRADE A CARD and names the hero, so `RED WASP REACHED LEVEL 2 - ...` was the one
+            // thing on this bar that said nothing new - and it was what pushed both bars into an
+            // ellipsis. It is still the expanded panel's question, where there is room to read it.
+            var saysTheQuestion = Model.Family != DecisionWindowFamily.LevelUp &&
+                !string.IsNullOrEmpty(Model.Question);
+            dockedQuestion.text = !saysTheQuestion
+                ? string.Empty
+                : string.IsNullOrEmpty(Model.Count)
+                    ? Model.Question
+                    : " · " + Model.Question;
+            dockedQuestion.style.display = saysTheQuestion
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
 
             // "at most one verb" - the docked bar's own rule. A docked decision that offers several
             // answers is answered on the board; the one verb here is the ratification.
             var verb = Model.Controls.FirstOrDefault(control => control.Card == null);
             if (verb != null)
             {
-                var element = verb.IsPrimary
-                    ? BuildVerbBanner(verb, compact: true)
-                    : (VisualElement)BuildWordedControl(verb);
+                var element = (VisualElement)BuildWordedControl(verb);
+                // The slim bar is bounded by the round dock's own width and shares its lower row with
+                // the question and the corner answer, so the verb is content-sized there rather than
+                // taking the expanded window's own target size. It keeps the same chrome and motion -
+                // it is the same control, at the size the bar has.
+                element.style.minWidth = 0f;
+                element.style.minHeight = DockedControlHeight;
+                element.style.fontSize = CountFontSize;
                 dockedControls.Add(element);
                 drawnControls.Add(
                     new KeyValuePair<DecisionWindowControlViewModel, VisualElement>(verb, element));
@@ -619,6 +862,34 @@ namespace GuardsDigital.Presentation.Match
                 : "gd-decision-control";
             element.style.flexShrink = 1f;
             element.style.maxWidth = Length.Percent(100f);
+            if (control.Role == DecisionWindowControlRole.Corner)
+            {
+                // The mockup's `.btn.quiet`: transparent, muted, smaller - a control that is not one of
+                // the choices should not look like one.
+                element.style.fontSize = CornerFontSize;
+                element.style.backgroundColor = Color.clear;
+                element.style.color = MatchHudTheme.MutedText;
+                HudElements.Border(
+                    element, MatchHudTheme.PanelBorder, 1f, MatchHudTheme.ButtonCornerRadius);
+            }
+            else
+            {
+                // The mockup's `.btn.tall`: an answer is a target, not a chip.
+                element.style.minHeight = AnswerHeight;
+                element.style.minWidth = AnswerMinimumWidth;
+                element.style.fontSize = AnswerFontSize;
+                element.style.unityTextAlign = TextAnchor.MiddleCenter;
+            }
+
+            if (control.IsPrimary && control.Role != DecisionWindowControlRole.Corner)
+            {
+                // The mockup's `.btn.primary`: the leading answer wears the gold border and stays the
+                // same control underneath. That is the whole of "one control style, everywhere" - an
+                // emphasis, never a second object with a look of its own.
+                HudElements.Border(
+                    element, MatchHudTheme.CoinFace, 2f, MatchHudTheme.ButtonCornerRadius);
+            }
+
             if (control.Swatch != CardColor.None)
             {
                 // Milestone 8.37's rule, unchanged: a control that NAMES a printed colour wears it,
@@ -643,69 +914,6 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return element;
-        }
-
-        /// <summary>
-        /// The one control that moves the game on, in the HUD's own pewter-banner language - the
-        /// swallowtailed silver cloth END TURN, CONFIRM FACEDOWN, PASS and the optional step's two
-        /// answers already wear. It is the same class, not a copy of it.
-        /// </summary>
-        /// <remarks>
-        /// <para>The shine follows the rule that language already carries: a banner standing ALONE in
-        /// the window is the player's one move and takes the full warm glow, exactly as END TURN does
-        /// when nothing else is offered; two banners beside each other (a printed `may`'s two answers)
-        /// withhold their shine until the pointer enters, as those two do today; and a single banner
-        /// beside other controls keeps the modest steady glow.</para>
-        /// <para>The Button's own <c>text</c> stays set under the cloth, because it is the selector a
-        /// journey finds this control by - the same reason <c>PewterBanner</c>'s own remarks give for
-        /// END TURN.</para>
-        /// </remarks>
-        private RoundActionUnityView.PewterBanner BuildVerbBanner(
-            DecisionWindowControlViewModel control, bool compact = false)
-        {
-            var captured = control;
-            var banners = Model.Controls.Count(value => value.IsPrimary && value.Card == null);
-            var alone = Model.Controls.Count == 1;
-            var banner = new RoundActionUnityView.PewterBanner(
-                () =>
-                {
-                    if (captured.IsAnswerable)
-                    {
-                        ControlActivated?.Invoke(captured);
-                    }
-                },
-                alone && banners == 1,
-                DirectorHandsUnityView.CornerBannerFontSize,
-                "gd-decision-verb-label",
-                hoverOnlyShine: banners > 1)
-            {
-                name = "gd-decision-verb",
-                text = control.Label
-            };
-            banner.SetVisibleLabel(control.Label);
-            banner.style.minHeight = VerbHeight;
-            banner.style.height = VerbHeight;
-            banner.style.whiteSpace = WhiteSpace.Normal;
-            if (compact)
-            {
-                // The slim bar is bounded by the round dock's own width and shares its lower row with
-                // the question and the corner answer, so the verb is content-sized there rather than
-                // taking the expanded window's fixed 240. It keeps the same cloth, height and motion.
-                banner.style.minWidth = 0f;
-                banner.style.flexShrink = 1f;
-            }
-            else
-            {
-                banner.style.width = VerbWidth;
-                banner.style.flexShrink = 0f;
-            }
-            if (control.UnavailableReason != null)
-            {
-                banner.tooltip = control.UnavailableReason;
-                HudElements.MarkUnavailable(banner);
-            }
-
-            return banner;
         }
 
         /// <summary>
@@ -747,17 +955,53 @@ namespace GuardsDigital.Presentation.Match
             caption.style.marginTop = 4f;
             caption.style.width = CardFaceWidth;
             Wrapping(caption);
+            if (DrawsItsAnswerAsAControl(Model.Family))
+            {
+                // Milestone 8.58. The mockup puts a `.btn` under each tied card ("Sabina acts first");
+                // the caption alone read as a label rather than as the answer. It is the control's own
+                // chrome painted on the caption - the same background, border and radius
+                // `HudElements.Control` uses - rather than a Button inside a Button, because the FACE
+                // is the control and a nested one would take its click.
+                caption.style.fontSize = CaptionFontSize + 1f;
+                caption.style.paddingLeft = 10f;
+                caption.style.paddingRight = 10f;
+                caption.style.paddingTop = 6f;
+                caption.style.paddingBottom = 6f;
+                caption.style.marginTop = 8f;
+                caption.style.backgroundColor = MatchHudTheme.ButtonIdleBackground;
+                caption.pickingMode = PickingMode.Ignore;
+                HudElements.Border(
+                    caption,
+                    control.IsChosen ? MatchHudTheme.CoinFace : MatchHudTheme.ButtonBorder,
+                    control.IsChosen ? 2f : 1f,
+                    MatchHudTheme.ButtonCornerRadius);
+            }
+
             element.Add(caption);
 
             if (!string.IsNullOrEmpty(control.ValueChip))
             {
+                // Milestone 8.58: the mockup's `.chip.gold` - the candidate the AUTHORITY says would
+                // stop this attack is the one the eye lands on, in the coin's own gold, and the rest
+                // keep the ordinary accent.
                 var chip = HudElements.Text(
-                    control.ValueChip, ChipFontSize, MatchHudTheme.ConfirmAccent, FontStyle.Bold);
+                    control.ValueChip,
+                    ChipFontSize,
+                    control.IsPrimary ? MatchHudTheme.CoinFace : MatchHudTheme.ConfirmAccent,
+                    FontStyle.Bold);
                 chip.name = "gd-decision-window-card-chip";
                 chip.style.unityTextAlign = TextAnchor.MiddleCenter;
                 chip.style.width = CardFaceWidth;
                 Wrapping(chip);
                 element.Add(chip);
+            }
+
+            if (control.DefenseBreakdown != null)
+            {
+                var hovered = control;
+                var anchor = element;
+                HudElements.OnPointedAt(element, pointedAt =>
+                    DefenseBreakdownPointedAt?.Invoke(pointedAt ? hovered : null, anchor));
             }
 
             if (control.IsChosen)
@@ -773,8 +1017,8 @@ namespace GuardsDigital.Presentation.Match
         // -------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The whole level-up offer: the seat's own hand above it, and p.15's three source-card pairs
-        /// of complete candidate faces below.
+        /// The whole level-up offer: p.15's three source-card pairs of complete candidate faces, and
+        /// the seat's own hand beneath them.
         ///
         /// <para>Everything a player reads here is what the round-action strip drew before this block
         /// moved the question - the user's own condition, "show all information that we show now" -
@@ -790,13 +1034,18 @@ namespace GuardsDigital.Presentation.Match
             offer.style.flexShrink = 1f;
             offer.style.maxHeight = Length.Percent(100f);
 
+            // Milestone 8.58, the user: "hand can be removed from bottom left and shown below the offer
+            // window, like it was before." The OFFER leads - the six faces the seat is choosing between
+            // are the question - and the hand they already hold is the reminder underneath it, where
+            // the tray itself used to sit. The tray is hidden while this row is drawn
+            // (`ConfiguredMatchHudRenderer.ApplyExclusiveContext`), so the hand is on screen once.
+            offer.Add(BuildUpgradeComparisonBand());
             var preview = BuildLevelUpHandPreviewRow();
             if (preview != null)
             {
                 offer.Add(preview);
             }
 
-            offer.Add(BuildUpgradeComparisonBand());
             return offer;
         }
 
@@ -829,7 +1078,7 @@ namespace GuardsDigital.Presentation.Match
             row.style.minHeight = 0f;
             row.style.flexShrink = 1f;
             row.style.overflow = Overflow.Hidden;
-            row.style.marginBottom = LevelUpRowGap;
+            row.style.marginTop = LevelUpRowGap;
             row.pickingMode = PickingMode.Ignore;
 
             for (var index = 0; index < Model.HandPreview.Count; index++)
@@ -1011,7 +1260,34 @@ namespace GuardsDigital.Presentation.Match
             }
         }
 
+        /// <summary>
+        /// A card the window SHOWS but does not offer, named for what it is doing there.
+        ///
+        /// <para>Milestone 8.58's two names, because a journey addresses them and the two say different
+        /// things: <c>gd-decision-attack-card</c> is the attack a Defense is being asked about, and
+        /// <c>gd-decision-source-card</c> is the card whose own printed text raised the question - the
+        /// face the user asked for by name ("We said we will show the card"). Both keep
+        /// <c>gd-decision-window-context-card</c> as well, so the 8.46 geometry gate's own descendant
+        /// walk is untouched.</para>
+        /// </summary>
         private VisualElement BuildContextCard(DecisionWindowCardViewModel card)
+        {
+            var host = new VisualElement
+            {
+                name = Model.Family == DecisionWindowFamily.Defense ||
+                    Model.Family == DecisionWindowFamily.RemovalPrevention
+                    ? "gd-decision-attack-card"
+                    : "gd-decision-source-card"
+            };
+            host.style.flexDirection = FlexDirection.Column;
+            host.style.alignItems = Align.Center;
+            host.style.flexShrink = 0f;
+            host.pickingMode = PickingMode.Ignore;
+            host.Add(BuildContextCardBody(card));
+            return host;
+        }
+
+        private VisualElement BuildContextCardBody(DecisionWindowCardViewModel card)
         {
             var slot = new VisualElement { name = "gd-decision-window-context-card" };
             slot.style.flexDirection = FlexDirection.Column;
@@ -1022,8 +1298,10 @@ namespace GuardsDigital.Presentation.Match
             slot.Add(BuildFace(card.Card, CardShineSlot.None));
             if (!string.IsNullOrEmpty(card.Caption))
             {
+                // Milestone 8.58: the mockup's `.chip.gold`. The incoming attack's own total is the
+                // fact the whole question turns on, so it is drawn as a chip rather than as a line.
                 var caption = HudElements.Text(
-                    card.Caption, ChipFontSize, MatchHudTheme.PrimaryText, FontStyle.Bold);
+                    card.Caption, ChipFontSize, MatchHudTheme.CoinFace, FontStyle.Bold);
                 caption.name = "gd-decision-window-context-caption";
                 caption.style.unityTextAlign = TextAnchor.MiddleCenter;
                 caption.style.marginTop = 4f;
@@ -1084,6 +1362,18 @@ namespace GuardsDigital.Presentation.Match
         /// journey that clicks a face finds it by one of them - so the family decides the name and the
         /// journeys did not have to move with the control.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.58. Whether a card-faced control's caption is drawn as the ANSWER - the
+        /// mockup's `.btn` under each face - rather than as a fact about the card.
+        ///
+        /// <para>A tied Initiative's caption is a sentence about what pressing does ("Sabina acts
+        /// first"), which is a control's words. A Defense candidate's caption is the card's own NAME
+        /// with its printed Defense chip under it, which is a reading of the card; painting a button
+        /// around a card's name would say the name is the answer.</para>
+        /// </summary>
+        private static bool DrawsItsAnswerAsAControl(DecisionWindowFamily family) =>
+            family == DecisionWindowFamily.TiedInitiative;
+
         private static string NameForCardControl(DecisionWindowFamily family)
         {
             switch (family)

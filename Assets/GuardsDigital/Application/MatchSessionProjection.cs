@@ -1287,6 +1287,31 @@ namespace GuardsDigital.Application
         public GuardsDigital.Core.Rules.EffectResolution.PendingResolution PendingSkillResolution { get; }
         public bool HasPendingSkillResolution => PendingSkillResolution != null;
 
+        /// <summary>
+        /// Milestone 8.58. The resolving card, read off whichever card-action frame is running.
+        ///
+        /// <para>Three frames can carry a printed text that asks a question, and a decision window is
+        /// opened by any of them: a Skill's own body, an Attack's before/after text (rulebook p.14's
+        /// riders) and a Movement's. The order is the order the authority itself resolves them in, and
+        /// only one stands at a time.</para>
+        ///
+        /// <para><b>And a fourth that publishes no frame at all.</b> p.14's own before/after card text
+        /// runs on the attack-defense backend's effect session, which the projection has never
+        /// published - measured on 2026-09-19 with Wasp's Shock, whose "After the attack" discard
+        /// chooser stands with all three frames null and a resolution id reading
+        /// <c>card-text-red-wasp-shock-primary-attack-AfterTheAttack</c>. Rather than parse that id,
+        /// the card in play answers it: while an effect choice stands, the acting hero's own selected
+        /// card IS the card whose printed text raised it - the same reading the tray makes to draw
+        /// that card at full strength, from the same public facts, on a host and on a seat alike.</para>
+        /// </summary>
+        public CardInstanceId ResolvingSourceCardInstanceId =>
+            PendingSkillResolution?.SourceCardInstanceId ??
+            PendingAttackResolution?.SourceCardInstanceId ??
+            PendingMovementResolution?.SourceCardInstanceId ??
+            (PendingEffectChoice != null && SelectedActor.IsDefined
+                ? SelectedActor.CardInstanceId
+                : default);
+
         public PendingEffectChoice PendingEffectChoice { get; }
 
         /// <summary>

@@ -143,10 +143,19 @@ namespace GuardsDigital.Tests.PlayMode
                         panel.x, panel.y);
                     var live = Window(root).worldBound;
                     AssertBoundsEqual(expected, live, viewport.Label);
-                    AssertContains(
-                        ConfiguredMatchHudRenderer.CalculateStatusDockRect(panel.x, panel.y), live,
-                        "The docked window stands inside the round dock's own rectangle at " +
-                        viewport.Label + ".");
+                    // Milestone 8.58: the bar takes the dock's TOP BAND and begins inside the dock,
+                    // but it is no longer bounded by the dock's right edge. The user's capture showed
+                    // both of its second lines ending in an ellipsis inside 444 units; the mockup's
+                    // own `.dock` is 27% of the reference, and the dock's right edge at 732 is not a
+                    // thing a player can see. What the bar must respect is the RAIL it begins past and
+                    // the BOARD it may never cover, and both are asserted below.
+                    var dock = ConfiguredMatchHudRenderer.CalculateStatusDockRect(panel.x, panel.y);
+                    Assert.That(live.xMin, Is.GreaterThanOrEqualTo(dock.xMin - UiPlayer.PixelSnapping()),
+                        "The docked window begins inside the round dock at " + viewport.Label + ".");
+                    Assert.That(live.yMin, Is.GreaterThanOrEqualTo(dock.yMin - UiPlayer.PixelSnapping()),
+                        "and takes its top band at " + viewport.Label + ".");
+                    Assert.That(live.yMax, Is.LessThanOrEqualTo(dock.yMax + UiPlayer.PixelSnapping()),
+                        "without reaching past its bottom at " + viewport.Label + ".");
                     AssertClearOfEverythingThatExists(root, live, panel, viewport.Label);
                     Assert.That(
                         ConfiguredMatchHudRenderer.CalculatePlayfieldRect(panel.x, panel.y)

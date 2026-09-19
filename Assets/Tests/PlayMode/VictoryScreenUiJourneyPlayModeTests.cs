@@ -164,7 +164,7 @@ namespace GuardsDigital.Tests.PlayMode
                 // ---------------------------------------------------------------------------------
                 // and it fits, at the smallest supported desktop viewport and at the reference
                 // ---------------------------------------------------------------------------------
-                foreach (var viewport in new[] { (1280u, 720u), (2560u, 1440u) })
+                foreach (var viewport in new[] { (1280u, 720u), (1920u, 1080u), (2560u, 1440u) })
                 {
                     UiPlayer.SetPlayerViewport(
                         viewport.Item1, viewport.Item2, "8.53 victory screen fit");
@@ -225,6 +225,67 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single(element => element.name == "gd-victory-legend");
             Assert.That(legend.worldBound.yMax, Is.LessThanOrEqualTo(panel.worldBound.yMax + snap),
                 "and the legend under the tables is inside it too at " + label + ".");
+
+            AssertTheTableIsAGrid(panel, label, snap);
+        }
+
+        /// <summary>
+        /// Milestone 8.58. The user's capture of RED WINS: "the numbers do not sit under their headers"
+        /// and "Coins earned runs past the panel's right edge".
+        ///
+        /// <para>Both were one arithmetic mistake. The hero cell was the only element in a row that
+        /// could shrink and the header's could not, so every row's numbers slid out from under their own
+        /// headers by exactly the eight units the table overflowed the panel by. The check is therefore
+        /// the two facts together: every cell shares its header's left and right edge, and the last
+        /// column is inside the panel - at every viewport, because the overflow was invisible at some of
+        /// them.</para>
+        /// </summary>
+        private static void AssertTheTableIsAGrid(VisualElement panel, string label, float snap)
+        {
+            var blocks = UiPlayer.Descendants(panel)
+                .Where(element => element.name == "gd-victory-block")
+                .ToArray();
+            Assert.That(blocks, Is.Not.Empty, "The screen draws at least one table at " + label + ".");
+
+            foreach (var block in blocks)
+            {
+                var headers = UiPlayer.Descendants(block)
+                    .Where(element => element.name == "gd-victory-head")
+                    .ToArray();
+                Assert.That(headers, Has.Length.EqualTo(1));
+                var rows = UiPlayer.Descendants(block)
+                    .Where(element => element.name == "gd-victory-row")
+                    .ToArray();
+                Assert.That(rows, Is.Not.Empty);
+
+                foreach (var column in VictoryScreenLabels.Columns)
+                {
+                    var header = UiPlayer.Descendants(headers[0])
+                        .Single(element => element.name == VictoryScreenLabels.HeaderCellName(column));
+                    Assert.That(header.worldBound.xMax,
+                        Is.LessThanOrEqualTo(panel.worldBound.xMax + snap),
+                        "The " + VictoryScreenLabels.Header(column) + " header is inside the panel " +
+                        "at " + label + ": " + header.worldBound + " against " + panel.worldBound);
+
+                    foreach (var row in rows)
+                    {
+                        var cell = UiPlayer.Descendants(row)
+                            .Single(element => element.name == VictoryScreenLabels.CellName(column));
+                        Assert.That(cell.worldBound.xMin,
+                            Is.EqualTo(header.worldBound.xMin).Within(snap),
+                            "The " + VictoryScreenLabels.Header(column) + " cell sits under its own " +
+                            "header at " + label + ": " + cell.worldBound + " against " +
+                            header.worldBound);
+                        Assert.That(cell.worldBound.xMax,
+                            Is.EqualTo(header.worldBound.xMax).Within(snap),
+                            "on both edges, which is what a shared column width means.");
+                        Assert.That(cell.worldBound.xMax,
+                            Is.LessThanOrEqualTo(panel.worldBound.xMax + snap),
+                            "and the last column is never cut off the panel's right edge at " +
+                            label + ".");
+                    }
+                }
+            }
         }
 
         internal static VisualElement Screen_(ConfiguredMatchHudRenderer hud)

@@ -720,6 +720,36 @@ namespace GuardsDigital.Application
         public PendingResolution PendingSkillResolution => null;
         public bool HasPendingSkillResolution =>
             Detail?.PendingSkillResolution != null;
+
+        /// <summary>
+        /// Milestone 8.58. WHICH card is resolving, which the wire has carried on its own resolution
+        /// row since milestone 8.32 and this client threw away with the rest of the frame.
+        ///
+        /// <para>The frame itself stays <c>null</c> here - 8.40f's privacy arm, and the reason the
+        /// lobby bot's own comment above says so out loud. This is the one field of it that is public
+        /// by construction: the card left a hand and stands in the turn area where every seat can see
+        /// it, and a decision window that could not name it drew a node id instead.</para>
+        /// </summary>
+        public CardInstanceId ResolvingSourceCardInstanceId
+        {
+            get
+            {
+                // The same three frames, in the same order, the host reads - see
+                // `MatchSessionProjection.ResolvingSourceCardInstanceId`. Only the Skill frame is
+                // withheld here; the other two already cross whole.
+                var skill = Detail?.PendingSkillResolution?.SourceCardInstanceId;
+                if (!string.IsNullOrWhiteSpace(skill))
+                {
+                    return new CardInstanceId(skill);
+                }
+
+                return PendingAttackResolution?.SourceCardInstanceId ??
+                    PendingMovementResolution?.SourceCardInstanceId ??
+                    (PendingEffectChoice != null && SelectedActor.IsDefined
+                        ? SelectedActor.CardInstanceId
+                        : default);
+            }
+        }
         public PendingEffectChoice PendingEffectChoice
         {
             get

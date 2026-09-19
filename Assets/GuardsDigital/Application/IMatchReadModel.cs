@@ -218,6 +218,27 @@ namespace GuardsDigital.Application
         PendingDefensePreviewProjection PendingDefensePreview { get; }
         PendingResolution PendingSkillResolution { get; }
         bool HasPendingSkillResolution { get; }
+
+        /// <summary>
+        /// Milestone 8.58. The card whose printed text the running resolution is resolving - a Skill's
+        /// own body, an Attack's before/after text, a Movement's - or the undefined instance when
+        /// nothing is resolving.
+        ///
+        /// <para><b>Why it is stated here rather than read off
+        /// <see cref="PendingSkillResolution"/>.</b> A NETWORK seat's read model reports that frame as
+        /// <c>null</c> on purpose - milestone 8.40f's privacy arm, because the frame carries completed
+        /// outcomes and accepted choices that can name another seat's cards - so every surface that
+        /// asked the frame which card was speaking got nothing on a networked client and everything on
+        /// the host. That is exactly what the 2026-09-19 packaged playtest showed: Swift's Reload! drew
+        /// <c>MODE #1 RELOAD-BORROW-ARM</c> with no card beside it, for a card that HAS declared labels,
+        /// because the label is keyed on the source card's definition and the source card could not be
+        /// named.</para>
+        /// <para>WHICH card is resolving is public - every seat watches it leave the hand and stand in
+        /// the turn area, and the wire has carried <c>SourceCardInstanceId</c> on its own resolution row
+        /// since milestone 8.32 - so this is the frame's one public field published on its own, with no
+        /// wire revision, no schema move and none of the frame's private parts.</para>
+        /// </summary>
+        CardInstanceId ResolvingSourceCardInstanceId { get; }
         PendingEffectChoice PendingEffectChoice { get; }
         IReadOnlyList<EffectChoiceCandidatePreview> PendingEffectChoicePreview { get; }
         GuardsDigital.Core.Rules.Displacement.PendingDisplacedMinionCorrection

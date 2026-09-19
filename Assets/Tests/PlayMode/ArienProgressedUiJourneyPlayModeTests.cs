@@ -335,7 +335,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "and one they can take, which is the half no journey had ever pressed. " +
                 Remaining(runtime));
             var commandsBefore = runtime.AcceptedCommands.Count;
-            UiPlayer.Click(UiPlayer.Button(hud, take.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, take.Command);
             yield return null;
             yield return null;
 

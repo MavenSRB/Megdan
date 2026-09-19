@@ -840,7 +840,7 @@ namespace GuardsDigital.Tests.PlayMode
                 .ToArray();
             Assert.That(bullets, Has.Length.EqualTo(2), Remaining(runtime));
 
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, bullets[0].Command);
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "One selection of two does not close a modal whose ceiling is two - the second bullet " +
@@ -851,7 +851,7 @@ namespace GuardsDigital.Tests.PlayMode
                 .ToArray();
             Assert.That(remaining, Is.Not.Empty,
                 "The unchosen bullet is still offered after the first is taken. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, remaining[0].Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, remaining[0].Command);
             yield return null;
             yield return null;
 

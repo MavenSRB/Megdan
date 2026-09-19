@@ -169,12 +169,19 @@ namespace GuardsDigital.Tests.PlayMode
             // in the window's own control row rather than in the strip's banner host.
             Assert.That(acceptBanner.parent, Is.SameAs(declineBanner.parent));
             Assert.That(acceptBanner.parent.name, Is.EqualTo("gd-decision-window-controls"));
-            Assert.That(acceptBanner.worldBound.xMax,
-                Is.LessThanOrEqualTo(declineBanner.worldBound.xMin + UiPlayer.PixelSnapping()),
-                "ACCEPT and DECLINE stand side by side in projected order.");
-            Assert.That(declineBanner.worldBound.xMin - acceptBanner.worldBound.xMax,
+            // Milestone 8.58, the user's own settling of the shape after seeing both: "Arrange the
+            // buttons like on Swift's gold in this scenario. It's better looking." A printed `may`'s
+            // two answers are STACKED beside the card exactly like a `Choose one`'s printed bullets -
+            // the accepting one on top - rather than laid out side by side.
+            Assert.That(acceptBanner.worldBound.yMax,
+                Is.LessThanOrEqualTo(declineBanner.worldBound.yMin + UiPlayer.PixelSnapping()),
+                "The accepting answer stands ABOVE the declining one, in projected order.");
+            Assert.That(declineBanner.worldBound.yMin - acceptBanner.worldBound.yMax,
                 Is.GreaterThanOrEqualTo(DecisionWindowUnityView.CardGap - UiPlayer.PixelSnapping()),
                 "The two answers retain a clear visual split.");
+            Assert.That(acceptBanner.worldBound.width,
+                Is.EqualTo(declineBanner.worldBound.width).Within(UiPlayer.PixelSnapping()),
+                "and they are one stack rather than two shapes.");
             Assert.That(Mathf.Max(acceptBanner.worldBound.yMax, declineBanner.worldBound.yMax),
                 Is.LessThanOrEqualTo(handCards.Min(card => card.worldBound.yMin) +
                     UiPlayer.PixelSnapping()),
@@ -182,7 +189,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.IsShown(UiPlayer.Descendants(hud.RootElement)
                     .Single(element => element.name == "gd-context-only-hand-blocker")), Is.True,
                 "A transparent input shield keeps even the full-strength resolving card contextual.");
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, confirm.Command);
             yield return null;
 
             // "another unit that is adjacent to the target" - whichever piece that is on this staged
@@ -405,7 +412,7 @@ namespace GuardsDigital.Tests.PlayMode
             // Undo half is proved on the live session and the restore half after it.
             var confirmControl = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            UiPlayer.Click(UiPlayer.Button(hud, confirmControl.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, confirmControl.Command);
             yield return null;
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtPause + 1),
                 "One click is one accepted command.");
@@ -436,7 +443,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(payload, Is.Not.Null.And.Not.Empty);
             var declineFirst = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
-            UiPlayer.Click(UiPlayer.Button(hud, declineFirst.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, declineFirst.Command);
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null, "The declined pause is gone.");
 
@@ -455,7 +462,7 @@ namespace GuardsDigital.Tests.PlayMode
             // and it is answerable on the same visible surface, by clicking the same real control.
             var confirm = runtime.RoundView.Model.EffectChoices.Single(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, confirm.Command);
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The confirmed step asks which unit moves, exactly as it does without a restore.");

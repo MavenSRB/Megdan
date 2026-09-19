@@ -140,7 +140,7 @@ namespace GuardsDigital.Tests.PlayMode
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
             Assert.That(confirm, Is.Not.Null,
                 "and it has to be takeable on its own control too. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, confirm.Command);
             yield return null;
             yield return null;
 
@@ -359,7 +359,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The side is a modal-style selection: picking it leaves the node standing with its own
             // confirm, so the placement is not made until that confirm is pressed.
-            UiPlayer.Click(UiPlayer.Button(hud, sides[0].Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, sides[0].Command);
             yield return null;
             var placement = StandingNode(runtime);
             yield return ConfirmIfStillStanding(root, placement);
@@ -518,7 +518,7 @@ namespace GuardsDigital.Tests.PlayMode
             // Answered, then taken back. The answer is an ordinary recorded command, so the retained
             // prefix replays every command before it - the commitment, the Attack, the target - and
             // stops on the same question.
-            UiPlayer.Click(UiPlayer.Button(hud, DeclineControl(runtime).Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, DeclineControl(runtime).Command);
             yield return null;
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsAtPause + 1),
                 "One click on the repeat's control is one accepted command.");
@@ -543,7 +543,7 @@ namespace GuardsDigital.Tests.PlayMode
             // A snapshot taken on the stopped decision and restored onto the same session.
             var payload = runtime.CaptureSnapshot();
             Assert.That(payload, Is.Not.Null.And.Not.Empty);
-            UiPlayer.Click(UiPlayer.Button(hud, DeclineControl(runtime).Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, DeclineControl(runtime).Command);
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The declined repeat is gone and the card is finished.");
@@ -560,7 +560,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(restored, Is.Not.Null,
                 "and it offers what the live pause offered, because nothing about the options is " +
                 "persisted. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(hud, restored.Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, restored.Command);
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The click a player made after the restore answered the restored decision.");
@@ -836,7 +836,7 @@ namespace GuardsDigital.Tests.PlayMode
                 yield break;
             }
 
-            UiPlayer.Click(UiPlayer.Button(root.Hud, confirm.Label));
+            UiPlayer.ClickEffectAnswer(runtime, root.Hud, confirm.Command);
             yield return null;
         }
 

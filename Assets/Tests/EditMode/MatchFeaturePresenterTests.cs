@@ -4612,7 +4612,10 @@ namespace GuardsDigital.Tests.EditMode
         /// about. When the interface grows, this fails to compile - which is the loud answer, since
         /// the wire's own conformance rule already forces a decision about every new member.</para>
         /// </summary>
-        private class DelegatingReadModel : IMatchReadModel
+        // Milestone 8.58: internal rather than private, so `DecisionWindowPresenterTests` can pose the
+        // NETWORK shape - a projection that withholds the running frame and still names the resolving
+        // card - through the one double that already delegates every member of this interface.
+        internal class DelegatingReadModel : IMatchReadModel
         {
             private readonly IMatchReadModel inner;
 
@@ -4693,6 +4696,8 @@ namespace GuardsDigital.Tests.EditMode
                 inner.PendingDefensePreview;
             public virtual PendingResolution PendingSkillResolution => inner.PendingSkillResolution;
             public virtual bool HasPendingSkillResolution => inner.HasPendingSkillResolution;
+            public virtual CardInstanceId ResolvingSourceCardInstanceId =>
+                inner.ResolvingSourceCardInstanceId;
             public virtual PendingEffectChoice PendingEffectChoice => inner.PendingEffectChoice;
             public virtual IReadOnlyList<EffectChoiceCandidatePreview> PendingEffectChoicePreview =>
                 inner.PendingEffectChoicePreview;

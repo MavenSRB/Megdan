@@ -70,7 +70,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.Model.EffectChoiceTargets, Is.Empty,
                 "A bullet is a printed sentence rather than a piece, so nothing is offered on the " +
                 "board while the mode is being chosen.");
-            UiPlayer.Click(UiPlayer.Button(hud, bullets[1].Label));
+            UiPlayer.ClickEffectAnswer(runtime, hud, bullets[1].Command);
             yield return null;
 
             // "You may discard a card" - the printed may, answered on the whole face of the card spent.

@@ -183,6 +183,43 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
+        /// Milestone 8.58. Photographs the live screen into <c>tmp/</c> and says so, in BATCH MODE TOO.
+        ///
+        /// <para><see cref="CaptureGameView"/> above deliberately captures nothing in batch, because
+        /// <c>ScreenCapture.CaptureScreenshot</c> writes a file the Editor's own Game View owns. This
+        /// one reads the back buffer into a texture instead, which a batch run with graphics has, and
+        /// encodes it here - so the evidence the user is shown comes from the same run the assertions
+        /// come from rather than from a second, hand-driven one.</para>
+        /// <para>The caller owns the path under <c>tmp/</c> (git-ignored) and the viewport it is
+        /// capturing at.</para>
+        /// </summary>
+        public static System.Collections.IEnumerator CaptureScreen(string relativePath)
+        {
+            // The back buffer is only complete at the end of a rendered frame.
+            yield return new WaitForEndOfFrame();
+            var full = System.IO.Path.GetFullPath(relativePath);
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(full));
+            Texture2D texture = null;
+            try
+            {
+                texture = ScreenCapture.CaptureScreenshotAsTexture();
+                Assert.That(texture, Is.Not.Null, "No frame could be photographed for " + relativePath);
+                System.IO.File.WriteAllBytes(full, texture.EncodeToPNG());
+            }
+            finally
+            {
+                if (texture != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(texture);
+                }
+            }
+
+            Assert.That(System.IO.File.Exists(full), Is.True, "The capture must land at " + full);
+            Assert.That(new System.IO.FileInfo(full).Length, Is.GreaterThan(1024L),
+                "and hold a real image rather than an empty frame: " + full);
+        }
+
+        /// <summary>
         /// Scrolls the control into its enclosing scroll view's visible area, as a player would before
         /// clicking something the tray has scrolled away. A control in no scroll view is left alone.
         /// The caller yields a frame afterwards so the scroll's layout resolves before the click.
@@ -335,6 +372,37 @@ namespace GuardsDigital.Tests.PlayMode
             var control = EffectControl(runtime, kind);
             Assert.That(control, Is.Not.Null,
                 $"The decision window offers no {kind} control. The shown controls are: " +
+                Describe(hud));
+            Click(Button(hud, control.Label));
+        }
+
+        /// <summary>
+        /// Milestone 8.58. Presses the DECISION WINDOW's control for an effect-choice invocation a
+        /// journey found on the round strip's own model.
+        ///
+        /// <para><b>Why it exists, and what it replaced.</b> Sixteen journeys read a label off
+        /// <c>RoundView.Model.EffectChoices</c> and then looked for a button carrying that exact text.
+        /// That worked only while the two surfaces agreed - and they agreed by accident: the window's
+        /// declared label was unreachable because the source card it is keyed on was undefined, so the
+        /// window fell back to the strip's own <c>ACCEPT</c> / <c>MODE #n &lt;node-id&gt;</c>
+        /// vocabulary. Milestone 8.58 fixes that lookup, the window now says what the card prints, and
+        /// a journey pressing the strip's word is pressing something no player can see.</para>
+        /// <para>The INVOCATION is what the two surfaces really share - the same object the pause
+        /// published - so the journey keeps finding its answer on the model it already read and presses
+        /// it where the player does.</para>
+        /// </summary>
+        public static void ClickEffectAnswer(
+            ConfiguredMatchSceneRuntime runtime,
+            ConfiguredMatchHudRenderer hud,
+            DirectorCommand answer)
+        {
+            Assert.That(answer, Is.Not.Null, "The journey named no effect-choice answer to press.");
+            Assert.That(answer.Kind, Is.EqualTo(DirectorCommandKind.AnswerEffectChoice));
+            var control = DecisionControl(runtime, command =>
+                command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                ReferenceEquals(command.EffectChoice, answer.EffectChoice));
+            Assert.That(control, Is.Not.Null,
+                "The decision window draws no control for this answer. The shown controls are: " +
                 Describe(hud));
             Click(Button(hud, control.Label));
         }

@@ -561,6 +561,18 @@ namespace GuardsDigital.Tests.EditMode
                 { "PendingDefensePreview", nameof(NetworkProjectionDetailRecord.PendingDefensePreview) },
                 { "PendingSkillResolution", nameof(NetworkProjectionDetailRecord.PendingSkillResolution) },
                 { "HasPendingSkillResolution", nameof(NetworkProjectionDetailRecord.PendingSkillResolution) },
+                // Milestone 8.58. CARRIED, and it cost no new bytes and no protocol move: the
+                // resolution row on this record has carried `SourceCardInstanceId` since milestone
+                // 8.32. What was missing was the READ-MODEL declaration. `PendingSkillResolution`
+                // itself is materialized as null on a network client on purpose - 8.40f's privacy arm,
+                // because the frame carries completed outcomes and accepted choices that can name
+                // another seat's cards - and WHICH card is resolving is not one of those: every seat
+                // watches it leave the hand and stand in the turn area. Publishing that one field on
+                // its own is what lets the decision window name the card and find its declared labels
+                // on a client, which the 2026-09-19 packaged playtest showed it could not.
+                { "ResolvingSourceCardInstanceId",
+                    nameof(NetworkProjectionDetailRecord.PendingSkillResolution) + " plus " +
+                        nameof(NetworkSeatProjectionRecord.SelectedActor) },
                 { "PendingEffectChoice", nameof(NetworkProjectionDetailRecord.PendingEffectChoice) },
                 { "PendingEffectChoicePreview",
                     nameof(NetworkProjectionDetailRecord.PendingEffectChoicePreview) },

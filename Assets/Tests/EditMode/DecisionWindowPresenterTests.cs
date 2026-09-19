@@ -49,12 +49,18 @@ namespace GuardsDigital.Tests.EditMode
                 "A Defense is answered by pressing a card, so it opens over the board.");
             Assert.That(model.Title, Does.StartWith("DEFEND AGAINST "),
                 "The title asks the question in the player's own words. " + Describe(model));
-            Assert.That(model.Question, Is.EqualTo("Choose a card to defend with, or take the hit."));
+            Assert.That(model.Question,
+                Is.EqualTo("Discard a card for its printed defense, or take the hit."),
+                "Milestone 8.58: the mockup's own sentence, which says what the answer COSTS.");
 
             Assert.That(model.ContextCards, Has.Count.EqualTo(1),
                 "The attacker's own played card is shown beside the offer rather than summarised.");
+            Assert.That(model.ContextCards[0].Card, Is.Not.Null,
+                "and it is a real printed face, which is what `gd-decision-attack-card` draws.");
             Assert.That(model.ContextCards[0].Caption,
-                Is.EqualTo("ATTACK " + choice.AttackTotal));
+                Does.StartWith("ATTACK " + choice.AttackTotal),
+                "The chip names the composed attack total the p.14 preview already published. " +
+                Describe(model));
 
             Assert.That(model.Controls, Has.Count.EqualTo(choice.LegalDefenseOffers.Count),
                 "One control per legal Defense offer, and no more. " + Describe(model));
@@ -68,6 +74,51 @@ namespace GuardsDigital.Tests.EditMode
                 "prints none - what the Block does. " + Describe(model));
             Assert.That(model.Controls.Select(control => control.Command), Has.All.Not.Null,
                 "Each carries the exact command the standing contract published.");
+
+            // Milestone 8.58, the user on the shipped window: "This is not showing the attack card,
+            // nor our defense breakdown popup". The breakdown is the AUTHORITY'S OWN preview, read
+            // card by card and never re-derived from the two numbers here.
+            var preview = session.Projection.PendingDefensePreview;
+            foreach (var control in model.Controls)
+            {
+                var offer = preview.Choices.Single(value =>
+                    value.CardInstanceId.HasValue &&
+                    value.CardInstanceId.Value.Equals(control.Card.CardInstanceId));
+                if (offer.DefenseTotal.HasValue)
+                {
+                    Assert.That(control.ValueChip,
+                        Does.StartWith("DEFENSE " + offer.DefenseTotal.Value),
+                        "A candidate's chip is its previewed Defense. " + Describe(model));
+                }
+
+                var holds = offer.Outcome == AttackResolutionOutcome.SuccessfullyDefended;
+                Assert.That(control.ValueChip.Contains("HOLDS"), Is.EqualTo(holds),
+                    "`HOLDS` appears exactly where the authority's preview says this card would stop " +
+                    $"the attack ('{control.ValueChip}', outcome {offer.Outcome}). " + Describe(model));
+                Assert.That(control.IsPrimary, Is.EqualTo(holds),
+                    "and that candidate is the emphasised one.");
+            }
+
+            // Milestone 8.58, the user's LAST word on the arithmetic they had asked for one round
+            // earlier: "Remove it and keep the old mouseover when mousing over the defense cards."
+            // The window carries the chips and the BREAKDOWN OBJECT, and prints no section of its own.
+            Assert.That(model.Statements, Is.Empty,
+                "No modifiers section is printed in the panel. " + Describe(model));
+            foreach (var control in model.Controls)
+            {
+                Assert.That(control.DefenseBreakdown, Is.Not.Null,
+                    "Every candidate carries the hover breakdown the strip's own offer opened, so the " +
+                    "popup did not move away with the question. " + Describe(model));
+                Assert.That(control.DefenseBreakdown.CardInstanceId.HasValue, Is.True);
+                Assert.That(
+                    control.DefenseBreakdown.CardInstanceId.Value.Equals(
+                        control.Card.CardInstanceId),
+                    Is.True,
+                    "and it is THAT card's breakdown.");
+                Assert.That(control.DefenseBreakdown.AttackTotal,
+                    Is.EqualTo(choice.AttackTotal),
+                    "read off the same standing preview the chips are read from.");
+            }
 
             Assert.That(model.CornerControl, Is.Not.Null);
             Assert.That(model.CornerControl.Label,
@@ -528,9 +579,17 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(director.Title, Does.Contain(heroName),
                 "One Director screen carries every seat's questions, so its title says whose this " +
                 "is. " + Describe(director));
-            Assert.That(director.HandPreview, Is.Empty,
-                "and the Director gets no hand preview: an undefined viewer already sees every hand " +
-                "in the drawer. AUTHORIZATION FILTER IS NOT PROJECTION FILTER.");
+            Assert.That(
+                director.HandPreview.Select(card => card.CardInstanceId).OrderBy(id => id.Value),
+                Is.EqualTo(session.Projection.Cards
+                    .Where(card => card.OwnerId.Equals(levellingHeroId) &&
+                        card.State.Location == CardLocation.Hand)
+                    .Select(card => card.Id)
+                    .OrderBy(id => id.Value)),
+                "and the hand the Director sees above the offer is THE LEVELLING HERO'S, not the " +
+                "viewer's. 8.46g read it from the viewer and gave a Director screen none at all, " +
+                "which left the panel drawing the offer with an empty row where the hand belongs - " +
+                "the hand shown is the hand being chosen FOR, which is one hero either way.");
 
             var view = new CapturingDecisionWindowView();
             var presenter = new DecisionWindowPresenter(
@@ -549,6 +608,202 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(view.Model.Controls.Select(control => control.UpgradeOption),
                 Has.All.Not.Null,
                 "Minimising is a reading preference, not an answer: every option survives it.");
+        }
+
+        // -------------------------------------------------------------------------------------
+        // Milestone 8.58: the card in the window, and the words on its controls
+        // -------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The user, on the shipped window, 2026-09-19: "This sucks. We said we will show the card, and
+        /// have nice labels on the buttons? This box is a waste of space like this."
+        ///
+        /// <para>Every family whose question comes from a card's printed text shows that card - a
+        /// modal's arms, a printed number, a printed `may`, and the card chooser, which at 8.46c was
+        /// the one that deliberately showed none because its ANSWERS were already cards. The card the
+        /// question comes from and the cards the question is between are different cards.</para>
+        /// </summary>
+        [Test]
+        public void EveryCardTextQuestion_ShowsTheCardItComesFrom_AndIsTitledWithThatCardsName()
+        {
+            foreach (var staged in new (string Name, Func<MatchSession> Stage)[]
+            {
+                ("a printed number", () =>
+                {
+                    var session = ConfiguredMatchFixtures.CreateKineticSession(
+                        WaspCardContent.KineticBlast, stoppedShort: false);
+                    CommitAgainstStopProjectiles(session, WaspCardContent.KineticBlast);
+                    StartPrimary(session, ActionKind.Skill);
+                    AnswerFirstSelection(session);
+                    return session;
+                }),
+                ("a printed may", () =>
+                {
+                    var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
+                    CommitAgainstStopProjectiles(session, WaspCardContent.LiftUp);
+                    StartPrimary(session, ActionKind.Skill);
+                    AnswerFirstSelection(session);
+                    AnswerFirstSelection(session);
+                    return session;
+                }),
+                ("a card chooser", CreateSessionAwaitingTheDiscardChooser)
+            })
+            {
+                var session = staged.Stage();
+                var projection = session.Projection;
+                var choice = projection.PendingEffectChoice;
+                var model = DecisionWindowPresenter.CreateViewModel(projection, choice.ChooserId);
+
+                Assert.That(model.ContextCards, Has.Count.EqualTo(1),
+                    $"{staged.Name}: the card whose text is asking is drawn beside the question. " +
+                    Describe(model));
+                var sourceCardId = projection.ResolvingSourceCardInstanceId;
+                Assert.That(sourceCardId.IsDefined, Is.True,
+                    $"{staged.Name}: the projection names the resolving card.");
+                Assert.That(model.ContextCards[0].Card.CardInstanceId, Is.EqualTo(sourceCardId),
+                    $"{staged.Name}: and it is THAT card, not another.");
+                Assert.That(model.ContextCards[0].Caption, Is.Null,
+                    $"{staged.Name}: with no `MODE CHOICE` gutter under it - the title is its name.");
+                Assert.That(model.Title, Does.StartWith(CardName(projection, sourceCardId)),
+                    $"{staged.Name}: the window is titled with the card. " + Describe(model));
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.58, and the defect the 2026-09-19 packaged playtest photographed.
+        ///
+        /// <para>A NETWORK seat's read model withholds the running frame on purpose (8.40f's privacy
+        /// arm), and the window used to read the source card off that frame alone - so on every client
+        /// in that playtest Swift's Reload! drew <c>MODE #1 RELOAD-BORROW-ARM</c> with no card beside
+        /// it, although both of its arms have been declared since 8.46a. The projection publishes WHICH
+        /// card is resolving on its own now, and this poses exactly that shape: a real projection with
+        /// the frame taken away.</para>
+        /// </summary>
+        [Test]
+        public void AProjectionThatWithholdsTheRunningFrame_StillShowsTheCardAndItsDeclaredLabels()
+        {
+            var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
+            CommitAgainstStopProjectiles(session, WaspCardContent.LiftUp);
+            StartPrimary(session, ActionKind.Skill);
+            AnswerFirstSelection(session);
+            AnswerFirstSelection(session);
+
+            var projection = session.Projection;
+            var choice = projection.PendingEffectChoice;
+            var whole = DecisionWindowPresenter.CreateViewModel(projection, choice.ChooserId);
+            var withheld = DecisionWindowPresenter.CreateViewModel(
+                new FrameWithheldReadModel(projection), choice.ChooserId);
+
+            Assert.That(withheld, Is.Not.Null);
+            Assert.That(withheld.ContextCards, Has.Count.EqualTo(1),
+                "The card is shown from the published resolving-card fact alone. " + Describe(withheld));
+            Assert.That(withheld.ContextCards[0].Card.CardInstanceId,
+                Is.EqualTo(whole.ContextCards[0].Card.CardInstanceId));
+            Assert.That(withheld.Title, Is.EqualTo(whole.Title));
+            Assert.That(withheld.Controls.Select(control => control.Label),
+                Is.EqualTo(whole.Controls.Select(control => control.Label)),
+                "and the declared labels are found, because they are keyed on that card. " +
+                Describe(withheld));
+        }
+
+        /// <summary>
+        /// A seat never sees a node id. The engine's own <c>MODE #n &lt;node-id&gt;</c> vocabulary is a
+        /// DIRECTOR diagnostic; the window's own fallback is the printed bullet's position, and the
+        /// content check makes even that unreachable for dealt content.
+        /// </summary>
+        [Test]
+        public void NoDrawnControl_EverNamesANodeIdOrTheWordAcceptOrDecline()
+        {
+            var seen = 0;
+            foreach (var stage in new Func<MatchSession>[]
+            {
+                CreateSessionAwaitingTheDiscardChooser,
+                () =>
+                {
+                    var session = ConfiguredMatchFixtures.CreateEngagedVerifiedMirrorSession();
+                    CommitAgainstStopProjectiles(session, WaspCardContent.LiftUp);
+                    StartPrimary(session, ActionKind.Skill);
+                    AnswerFirstSelection(session);
+                    AnswerFirstSelection(session);
+                    return session;
+                }
+            })
+            {
+                var session = stage();
+                var choice = session.Projection.PendingEffectChoice;
+                var model = DecisionWindowPresenter.CreateViewModel(
+                    session.Projection, choice.ChooserId);
+                foreach (var control in model.Controls.Concat(
+                    model.CornerControl == null
+                        ? Enumerable.Empty<DecisionWindowControlViewModel>()
+                        : new[] { model.CornerControl }))
+                {
+                    seen++;
+                    Assert.That(control.Label, Does.Not.StartWith("MODE #"),
+                        "A node id is engine vocabulary and never reaches a seat. " + Describe(model));
+                    Assert.That(control.Label, Does.Not.Contain("-ARM"), Describe(model));
+                    Assert.That(control.Label, Is.Not.EqualTo(EffectChoiceLabels.AcceptLabel),
+                        "\"never ACCEPT/DECLINE\" is the user's own row. " + Describe(model));
+                    Assert.That(control.Label, Is.Not.EqualTo(EffectChoiceLabels.DeclineLabel),
+                        Describe(model));
+                }
+            }
+
+            Assert.That(seen, Is.GreaterThan(0), "A sweep that drew nothing proves nothing.");
+            Assert.That(DecisionWindowPresenter.PrintedBulletLabel(1), Is.EqualTo("OPTION 1"),
+                "and a bullet with no declared words is named by its position on the card.");
+        }
+
+        /// <summary>
+        /// Milestone 8.58. The two cards the user photographed, read through the one lookup the window
+        /// makes: Swift's Reload! - both printed bullets - and Bounce's borrowed "may repeat once".
+        ///
+        /// <para>Reload!'s modal is driven end to end by
+        /// <c>SwiftProgressedUiJourneyPlayModeTests.ReloadOffersItsTwoBulletsAndDefeatsAnAdjacentMinion</c>,
+        /// which asserts the drawn window itself. Bounce's repeat is only reachable THROUGH Reload!'s
+        /// borrow (8.48's own finding) and its fixture drives the turn authority rather than a match
+        /// session, so what is asked here is the half a session-level case would add: that the words the
+        /// window would draw for those exact nodes are the printed consequences, keyed on the card the
+        /// window names.</para>
+        /// </summary>
+        [Test]
+        public void TheTwoCardsTheUserPhotographed_DeclareThePrintedConsequenceForEveryControl()
+        {
+            Assert.That(
+                DecisionLabelCatalog.TryGetLabel(
+                    SwiftCardContent.Reload, new EffectNodeId("reload-borrow-arm"), out var borrow),
+                Is.True);
+            Assert.That(borrow.Chosen.ToUpperInvariant(),
+                Is.EqualTo("PERFORM THE PRIMARY ACTION OF YOUR RIGHTMOST RESOLVED CARD"));
+            Assert.That(borrow.HasDeclined, Is.False, "A Choose arm declines nothing of its own.");
+
+            Assert.That(
+                DecisionLabelCatalog.TryGetLabel(
+                    SwiftCardContent.Reload, new EffectNodeId("reload-defeat-arm"), out var defeat),
+                Is.True);
+            Assert.That(defeat.Chosen.ToUpperInvariant(),
+                Is.EqualTo("DEFEAT A MINION ADJACENT TO YOU"));
+
+            Assert.That(
+                DecisionLabelCatalog.TryGetLabel(
+                    SwiftCardContent.Bounce, new EffectNodeId("bounce-repeat"), out var repeat),
+                Is.True);
+            Assert.That(repeat.Chosen.ToUpperInvariant(),
+                Is.EqualTo("MOVE 2 MORE SPACES IN A STRAIGHT LINE"),
+                "\"Move it again\", in the card's own printed words.");
+            Assert.That(repeat.Declined.ToUpperInvariant(), Is.EqualTo("STOP HERE"),
+                "and the decline names the consequence too - never `DECLINE`.");
+        }
+
+        /// <summary>A projection that names the resolving card and withholds the frame that holds it.</summary>
+        private sealed class FrameWithheldReadModel : MatchFeaturePresenterTests.DelegatingReadModel
+        {
+            public FrameWithheldReadModel(IMatchReadModel inner)
+                : base(inner)
+            {
+            }
+
+            public override PendingResolution PendingSkillResolution => null;
         }
 
         // -------------------------------------------------------------------------------------

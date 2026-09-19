@@ -398,9 +398,11 @@ namespace GuardsDigital.Presentation.Match
             }
             else if (selected < required)
             {
-                question = required == 1
-                    ? "Click a minion on the board."
-                    : "Click " + required + " minions on the board.";
+                // Milestone 8.58, the mockup's own second line: `1 of 2 chosen - click the board`. The
+                // COUNT standing beside it already says how many are wanted and how many are in, so
+                // the question says only where the answer is given. `Click 2 minions on the board.`
+                // ran out of bar at 1280x720 and ended in an ellipsis, which said less than this.
+                question = "Click the board.";
             }
             else if (ready.Length > 0)
             {
@@ -409,6 +411,17 @@ namespace GuardsDigital.Presentation.Match
             else
             {
                 question = "Remove these minions?";
+            }
+
+            // Milestone 8.58, the mockup's own bar, and the user's note on the shipped one: the verb is
+            // DRAWN AND DISABLED while the bar is still counting, rather than appearing out of nowhere
+            // on the last click. A control drawn unavailable carries no command at all, so a press
+            // cannot reach the session by any route - the structural rule
+            // `DecisionWindowControlViewModel` has enforced since 8.46c.
+            if (controls.Count == 0)
+            {
+                controls.Add(new DecisionWindowControlViewModel(
+                    RemoveTheseMinionsLabel, isPrimary: true, unavailableReason: question));
             }
 
             return new DecisionWindowViewModel(
@@ -424,8 +437,11 @@ namespace GuardsDigital.Presentation.Match
                 question,
                 $"{selected} of {required} chosen",
                 controls: controls,
-                cornerControl: corner,
-                statements: ready);
+                cornerControl: corner);
+            // Milestone 8.58: NO `statements`. The user's capture of the expanded Minion Battle read
+            // "Sabina the Gunslinger is ready." twice - once as the question line and once as a small
+            // status line underneath - because the same `ready` list fed both. The question carries it;
+            // the per-hero ledger the user struck out at 8.46 does not come back as a second line.
         }
 
         // ---------------------------------------------------------------------------------------
@@ -570,11 +586,18 @@ namespace GuardsDigital.Presentation.Match
             // filtered to the cards actually in hand - rather than a second reading of the
             // projection, and only a real seat gets one: an undefined viewer is the Director, who
             // already sees every hand in the drawer.
-            var handPreview = viewerHeroId.IsDefined
-                ? DirectorHandsPresenter.BuildTray(projection, viewerHeroId, null)
-                    .Where(card => card.Group == TrayCardGroup.Available)
-                    .ToArray()
-                : Array.Empty<TrayCardViewModel>();
+            // Milestone 8.58. THE LEVELLING HERO'S hand, whoever is looking at it.
+            //
+            // 8.46g read it from the VIEWER and therefore gave the Director none, on the reasoning that
+            // an undefined viewer already sees every hand in the drawer. The live capture of a real
+            // p.15 pause is what retired that: the window's own directive is "show current hand (all 5
+            // cards) above the offer", the deciding seat is named in the title, and a Director screen
+            // that drew the offer with the row above it missing left the panel half empty - the same
+            // "waste of space" the user struck out everywhere else in this block. The hand shown is the
+            // hand being chosen FOR, which is one hero either way.
+            var handPreview = DirectorHandsPresenter.BuildTray(projection, description.HeroId, null)
+                .Where(card => card.Group == TrayCardGroup.Available)
+                .ToArray();
 
             return new DecisionWindowViewModel(
                 projection.Version,
@@ -616,28 +639,57 @@ namespace GuardsDigital.Presentation.Match
                 var face = CardFace(projection, attack.SourceCardInstanceId);
                 if (face != null)
                 {
-                    // Milestone 8.57g. The PRINTED classification, then p.13's own overlay: Rowenna's
-                    // Fabled Lance makes every Attack action of hers Ranged while it is unlocked, and
-                    // her Attack faces print NonRanged - so the chip has to ask the same question the
-                    // defence preview beside it asks. The offer's classification deliberately stays
-                    // printed (ActionOffer equality guards authorization), which is why the overlay is
-                    // applied by the drawing rather than read off the offer.
-                    var printedRange = projection.Definitions
+                    var action = projection.Definitions
                         .Where(definition => definition.Reference.Equals(attack.SourceDefinitionReference))
                         .SelectMany(definition => definition.ActionDefinitions)
-                        .Where(action => action.Id.Equals(attack.ActionDefinitionId))
-                        .Select(action => action.AttackRange)
-                        .FirstOrDefault();
-                    var range = GuardsDigital.Core.Rules.CardResolution.RangedAttackOverlayQuery
-                        .ClassifyFromUnlockedUltimates(
-                            printedRange,
-                            attack.ActorId,
-                            GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
-                                projection.Definitions, projection.Cards));
-                    contextCards.Add(new DecisionWindowCardViewModel(
-                        face,
-                        "ATTACK " + choice.AttackTotal,
-                        range == AttackRangeKind.Ranged ? "RANGED" : null));
+                        .FirstOrDefault(value => value.Id.Equals(attack.ActionDefinitionId));
+                    // Milestone 8.58. The attack's own total, and its Range where p.13 classifies it
+                    // ranged, as ONE chip - the mockup's `Attack 5 · Range 4` - because the two facts
+                    // are one sentence about the card the player is being asked to answer. The total is
+                    // the authority's composed value off the standing choice, never re-added here.
+                    // Milestone 8.57g. The classification is the PRINTED one, then p.13's own overlay:
+                    // Rowenna's Fabled Lance makes every Attack action of hers Ranged while it is
+                    // unlocked, and her Attack faces print NonRanged - so the chip has to ask the same
+                    // question the defence preview beside it asks. The offer's classification
+                    // deliberately stays printed (ActionOffer equality guards authorization), which is
+                    // why the overlay is applied by the drawing rather than read off the offer; the
+                    // Range the chip names is then the printed icon where the card prints one and the
+                    // Ultimate's declared printed Range where it does not.
+                    var printedClassification = action == null ? AttackRangeKind.NonRanged : action.AttackRange;
+                    var unlockedUltimates = GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                        projection.Definitions, projection.Cards);
+                    var classification = RangedAttackOverlayQuery.ClassifyFromUnlockedUltimates(
+                        printedClassification, attack.ActorId, unlockedUltimates);
+                    var chip = "ATTACK " + choice.AttackTotal;
+                    if (classification == AttackRangeKind.Ranged)
+                    {
+                        var range = action == null
+                            ? null
+                            : action.BaseValues
+                                .Where(value => value.Channel == PrintedValueChannel.Range)
+                                .Select(value => (int?)value.Amount)
+                                .FirstOrDefault();
+                        if (!range.HasValue || range.Value <= 0)
+                        {
+                            var declared = RangedAttackOverlayQuery.DeclaredPrintedRangeFromUnlockedUltimates(
+                                attack.ActorId, unlockedUltimates);
+                            if (declared > 0)
+                            {
+                                range = declared;
+                            }
+                        }
+
+                        if (range.HasValue)
+                        {
+                            chip += " · RANGE " + range.Value;
+                        }
+                    }
+
+                    // Milestone 8.58, the user on the inline arithmetic: "Remove it and keep the old
+                    // mouseover when mousing over the defense cards." The card and its one chip stay;
+                    // what the total is MADE OF is the hover breakdown's to say, on the one layer that
+                    // has said it since 8.11b.
+                    contextCards.Add(new DecisionWindowCardViewModel(face, chip));
                 }
             }
 
@@ -670,14 +722,31 @@ namespace GuardsDigital.Presentation.Match
                     card: CardFace(projection, offer.SourceCardInstanceId),
                     // Rulebook p.14's Block prints no Defense value at all, so it is named by what it
                     // does rather than by a number it does not have.
-                    valueChip: offerPreview.DefenseTotal.HasValue
+                    //
+                    // Milestone 8.58, the user on the shipped window: "This is not showing the attack
+                    // card, nor our defense breakdown popup". `HOLDS` is the AUTHORITY'S OWN VERDICT
+                    // for this exact card against this exact attack - `PendingDefensePreview`'s
+                    // outcome, which p.14's comparison, Block and every contribution already produced -
+                    // and is never re-derived here from the two numbers.
+                    valueChip: (offerPreview.DefenseTotal.HasValue
                         ? "DEFENSE " + offerPreview.DefenseTotal.Value
                         : offerPreview.BlockResult == DefenseBlockResult.Blocked
                             ? "BLOCK - CONDITION MET"
-                            : "BLOCK - CONDITION NOT MET",
+                            : "BLOCK - CONDITION NOT MET") +
+                        (offerPreview.Outcome == AttackResolutionOutcome.SuccessfullyDefended
+                            ? " · HOLDS"
+                            : string.Empty),
+                    isPrimary: offerPreview.Outcome == AttackResolutionOutcome.SuccessfullyDefended,
                     shineSlot: action?.Origin == ActionDefinitionOrigin.PrintedPrimary
                         ? CardShineSlot.PrimaryRing
-                        : CardShineSlot.SecondaryDefense));
+                        : CardShineSlot.SecondaryDefense,
+                    // Milestone 8.58, the user: "Remove it and keep the old mouseover when mousing
+                    // over the defense cards." The SAME breakdown the strip's own offer opened - built
+                    // by the strip's own presenter off the same preview - so the window did not lose the
+                    // popup when it took the question, and the two surfaces cannot disagree about a
+                    // single contribution.
+                    defenseBreakdown: RoundActionPresenter.CreateDefenseBreakdown(
+                        projection.Version, preview, offerPreview)));
             }
 
             var corner = choice.CanDecline
@@ -706,7 +775,7 @@ namespace GuardsDigital.Presentation.Match
                     HeroName(projection, choice.ChooserId),
                 controls.Count == 0
                     ? "No card can answer this attack."
-                    : "Choose a card to defend with, or take the hit.",
+                    : "Discard a card for its printed defense, or take the hit.",
                 controls: controls,
                 cornerControl: corner,
                 contextCards: contextCards);
@@ -811,20 +880,27 @@ namespace GuardsDigital.Presentation.Match
             // rather than small in a corner: "two buttons naming the consequence" is the user's row.
             if (family == DecisionWindowFamily.OptionalStep && corner != null)
             {
-                // Both are primary: a printed `may`'s two answers are the pair of submit-style pewter
-                // banners the strip already draws for it, not one banner and one chip.
+                // Milestone 8.58: the accept leads and the decline stands beside it, both in the one
+                // control style, the leading one told apart by the mockup's gold border. They were both
+                // "primary" at 8.46c because both were pewter banners; there are no banners here now,
+                // and two gold borders would emphasise nothing.
                 controls.Add(new DecisionWindowControlViewModel(
-                    corner.Label, corner.Command, role: DecisionWindowControlRole.Answer,
-                    isPrimary: true));
+                    corner.Label, corner.Command, role: DecisionWindowControlRole.Answer));
                 corner = null;
             }
 
+            // Milestone 8.58. EVERY expanded window whose question comes from a card's text shows that
+            // card's face - the card chooser included, where the card asking and the cards offered are
+            // different cards and the strip could only ever draw the second set. A board-answered
+            // question is the slim bar and shows none.
             var contextCards = new List<DecisionWindowCardViewModel>();
-            if (!boardAnswered && family != DecisionWindowFamily.CardChoice)
+            if (!boardAnswered)
             {
                 var face = CardFace(projection, sourceCardId);
                 if (face != null)
                 {
+                    // No caption: the window's own title IS this card's name, and a second copy of it
+                    // under the face would be the strip's `MODE CHOICE` gutter back again.
                     contextCards.Add(new DecisionWindowCardViewModel(face));
                 }
             }
@@ -1043,8 +1119,11 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The one take-back the seat undo cannot replace.</summary>
         public const string NotYetLabel = "NOT YET";
 
-        /// <summary>Declining rulebook p.11's Defense, named for what it costs.</summary>
-        public const string TakeTheHitLabel = "TAKE THE HIT";
+        /// <summary>
+        /// Declining rulebook p.11's Defense, named for what it costs - the mockup's quiet corner
+        /// control, "Take the hit · no defense".
+        /// </summary>
+        public const string TakeTheHitLabel = "TAKE THE HIT · NO DEFENSE";
 
         /// <summary>Resolving the card without coming back onto the board.</summary>
         public const string DontRespawnLabel = "DON'T RESPAWN";
@@ -1095,31 +1174,72 @@ namespace GuardsDigital.Presentation.Match
                 }
             }
 
-            return EffectChoiceLabels.CandidateLabel(candidate.OptionNodeId, ordinal);
+            return PrintedBulletLabel(ordinal);
         }
+
+        /// <summary>
+        /// Milestone 8.58. What a printed bullet is called when the content declares no words for it.
+        ///
+        /// <para><b>A seat never sees a node id.</b> <c>EffectChoiceLabels.CandidateLabel</c> answers
+        /// <c>MODE #1 RELOAD-BORROW-ARM</c> - the engine's own vocabulary, and the exact string the user
+        /// photographed on 2026-09-19 - which is a DIRECTOR diagnostic and stays one: the Director's
+        /// surface and the headless command list still print it. In the window a missing label falls
+        /// back to the bullet's own position on the card, beside the card face itself, so the worst case
+        /// is "the first printed option" rather than an identifier out of the source. The content check
+        /// <c>DecisionLabelCoverageTests</c> is what makes this unreachable for dealt content.</para>
+        /// </summary>
+        public static string PrintedBulletLabel(int ordinal) => "OPTION " + ordinal;
+
+        /// <summary>
+        /// Milestone 8.58. A printed `may` accepted in the card's own words - and, where the content
+        /// declares none, named for what the step DOES rather than with the word `ACCEPT`, which the
+        /// user struck out of this window by name ("two buttons whose labels NAME THE CONSEQUENCE ...
+        /// never ACCEPT/DECLINE").
+        /// </summary>
+        public const string DoItLabel = "DO IT";
+
+        /// <summary>The undeclared decline, named for the board rather than for the mechanism.</summary>
+        public const string StopHereLabel = "STOP HERE";
 
         private static string AcceptLabelFor(
             CardDefinitionId sourceDefinitionId, PendingEffectChoice choice) =>
             DecisionLabelCatalog.TryGetLabel(sourceDefinitionId, choice.NodeId, out var declared)
                 ? declared.Chosen.ToUpperInvariant()
-                : EffectChoiceLabels.AcceptLabel;
+                : DoItLabel;
 
         private static string DeclineLabelFor(
             EffectChoiceSubject subject, CardDefinitionId sourceDefinitionId, PendingEffectChoice choice) =>
-            subject == EffectChoiceSubject.OptionalStep &&
-            DecisionLabelCatalog.TryGetLabel(sourceDefinitionId, choice.NodeId, out var declared) &&
-            declared.HasDeclined
-                ? declared.Declined.ToUpperInvariant()
-                : EffectChoiceLabels.DeclineLabel;
+            subject != EffectChoiceSubject.OptionalStep
+                ? EffectChoiceLabels.DeclineLabel
+                : DecisionLabelCatalog.TryGetLabel(sourceDefinitionId, choice.NodeId, out var declared) &&
+                    declared.HasDeclined
+                    ? declared.Declined.ToUpperInvariant()
+                    : StopHereLabel;
 
+        /// <summary>
+        /// Milestone 8.58. The window's title is the CARD wherever a card's text is asking.
+        ///
+        /// <para>The user's words on the shipped window: "We said we will show the card". A title that
+        /// read <c>DO IT?</c> or <c>CHOOSE ONE</c> over an empty box named neither the card nor the
+        /// question; those two strings survive only where nothing names a card at all, which for dealt
+        /// content is unreachable now that the resolving card is published (8.58's
+        /// <see cref="IMatchReadModel.ResolvingSourceCardInstanceId"/>).</para>
+        /// </summary>
         private static string TitleOf(
             EffectChoiceSubject subject, CardInstanceId sourceCardId, IMatchReadModel projection)
         {
-            var name = CardName(projection, sourceCardId);
+            var name = CardName(projection, sourceCardId)?.ToUpperInvariant();
+            if (name != null)
+            {
+                // One rule for every family a card's text raises: the card's own name, because the
+                // card is drawn beside it and the eyebrow already says what kind of question it is.
+                return subject == EffectChoiceSubject.OptionalStep ? name + "?" : name;
+            }
+
             switch (subject)
             {
                 case EffectChoiceSubject.OptionalStep:
-                    return name == null ? "DO IT?" : name.ToUpperInvariant() + "?";
+                    return "DO IT?";
                 case EffectChoiceSubject.Colour:
                     return "NAME A COLOUR";
                 case EffectChoiceSubject.Direction:
@@ -1129,7 +1249,7 @@ namespace GuardsDigital.Presentation.Match
                 case EffectChoiceSubject.Card:
                     return "WHICH CARD?";
                 case EffectChoiceSubject.Mode:
-                    return name == null ? "CHOOSE ONE" : name.ToUpperInvariant();
+                    return "CHOOSE ONE";
                 default:
                     return "WHICH ONE?";
             }
@@ -1165,13 +1285,29 @@ namespace GuardsDigital.Presentation.Match
                 ? title
                 : title + " — " + scope.ToUpperInvariant();
 
+        /// <summary>
+        /// The card whose printed text is asking.
+        ///
+        /// <para><b>Milestone 8.58, and the defect the 2026-09-19 packaged playtest photographed.</b>
+        /// This read used to be the running frame's own source card and nothing else - and a NETWORK
+        /// seat's read model reports that frame as <c>null</c> on purpose (8.40f's privacy arm), so on
+        /// every client in that playtest the source card was undefined: no face beside the question,
+        /// and no card id to look a declared label up by, which is why Swift's Reload! - a card that
+        /// HAS both its arms declared - drew <c>MODE #1 RELOAD-BORROW-ARM</c>. The projection now
+        /// publishes WHICH card is resolving on its own
+        /// (<see cref="IMatchReadModel.ResolvingSourceCardInstanceId"/>), which is public by
+        /// construction, and this reads that wherever the frame is withheld.</para>
+        /// </summary>
         private static CardInstanceId SourceCardOf(
             IMatchReadModel projection, PendingEffectChoice choice)
         {
             var resolution = projection.PendingSkillResolution;
-            return resolution != null && resolution.ResolutionId.Equals(choice.ResolutionId)
-                ? resolution.SourceCardInstanceId
-                : default;
+            if (resolution != null && resolution.ResolutionId.Equals(choice.ResolutionId))
+            {
+                return resolution.SourceCardInstanceId;
+            }
+
+            return projection.ResolvingSourceCardInstanceId;
         }
 
         private static CardDefinitionId DefinitionIdOf(

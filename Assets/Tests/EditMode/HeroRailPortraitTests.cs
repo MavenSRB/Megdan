@@ -354,6 +354,44 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(digit, Is.Not.Null);
                 Assert.That(digit.text, Is.EqualTo("1"));
                 Assert.That(badge.tooltip, Does.Contain("1 assist coin").And.Contain("1 life counter"));
+
+                // Milestone 8.58. The user, on a crop of this badge: "Hard to see this number one
+                // here." It was 16 units with a 10-unit digit painted straight onto the two saturated
+                // halves. It is 22 now, the digit is 62% of that, and it stands white on a dark disc
+                // of its own so it reads the same over the gold half and over the red one.
+                Assert.That(badge.style.width.value.value,
+                    Is.EqualTo(HudElements.WorthBadgeSize).Within(0.001f));
+                Assert.That(badge.style.height.value.value,
+                    Is.EqualTo(HudElements.WorthBadgeSize).Within(0.001f));
+                Assert.That(digit.style.fontSize.value.value,
+                    Is.GreaterThanOrEqualTo(13f),
+                    "The digit is read at a hero rail's own scale, so it is bigger than the LVL " +
+                    "label beside it rather than smaller.");
+                Assert.That(digit.style.color.value, Is.EqualTo(MatchHudTheme.PrimaryText),
+                    "White, not the coin's dark ink, because half the badge behind it is red.");
+                // Milestone 8.58, the user on the first attempt: "maybe no circle background for
+                // number, just black outline?" - the disc was the half of the badge that stopped
+                // being visible.
+                Assert.That(badge.Children().Any(child => child.name == "gd-hero-worth-ink"),
+                    Is.False,
+                    "No disc behind the digit: both coloured halves stay fully visible.");
+                Assert.That(digit.style.unityTextOutlineWidth.value,
+                    Is.EqualTo(HudElements.WorthDigitOutlineWidth).Within(0.001f),
+                    "The digit carries its own black outline instead.");
+                Assert.That(digit.style.unityTextOutlineColor.value,
+                    Is.EqualTo(HudElements.WorthDigitOutline));
+                Assert.That(digit.style.fontSize.value.value,
+                    Is.EqualTo(HudElements.WorthBadgeSize * HudElements.WorthDigitScale)
+                        .Within(0.001f),
+                    "\"Make it just barely fit the circle\" - the digit is larger than the badge's own " +
+                    "box, because a cap height is about 0.72 of an em.");
+                Assert.That(digit.style.top.value.value,
+                    Is.EqualTo(HudElements.WorthBadgeSize * HudElements.WorthDigitScale *
+                        HudElements.WorthDigitInkNudge).Within(0.001f),
+                    "and it is moved by the MEASURED difference between its line box's centre and its " +
+                    "ink's, so the glyph centres on the disc rather than the box doing so: \"just " +
+                    "center the number in the circle\", then \"number is not vertically centered " +
+                    "still\".");
             }
         }
 

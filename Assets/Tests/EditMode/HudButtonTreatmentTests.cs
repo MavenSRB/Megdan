@@ -407,32 +407,48 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The one control that moves the game on wears the pewter swallowtail END TURN, CONFIRM
-        /// FACEDOWN and the optional step's two answers already wear - the same class, not a copy.
+        /// Milestone 8.58, and the user's note on two separate captures of the shipped window - the
+        /// optional step and the Minion Battle bar - "Old buttons here instead of new ones."
+        ///
+        /// <para>The window's one leading control is now the SAME control every other answer in it is,
+        /// told apart by the mockup's gold border alone. The pewter swallowtail is the STRIP's language
+        /// - END TURN, CONFIRM FACEDOWN, PASS - and no longer appears inside the window at all.</para>
         /// </summary>
         [Test]
-        public void DecisionWindowVerb_WearsTheSharedPewterBannerLanguage()
+        public void DecisionWindowVerb_IsTheOneControlStyleWithTheGoldBorderForEmphasis()
         {
             var view = new DecisionWindowUnityView();
 
-            view.Render(DecisionWindow(new DecisionWindowControlViewModel(
-                DecisionWindowPresenter.RemoveTheseMinionsLabel,
-                DirectorCommand.ReleaseTurn(),
-                isPrimary: true)));
+            view.Render(DecisionWindow(
+                new DecisionWindowControlViewModel(
+                    DecisionWindowPresenter.RemoveTheseMinionsLabel,
+                    DirectorCommand.ReleaseTurn(),
+                    isPrimary: true),
+                new DecisionWindowControlViewModel("STOP HERE", DirectorCommand.ReleaseTurn())));
 
-            var banner = Descendants(view.Root).OfType<Button>()
-                .Single(element => element.name == "gd-decision-verb");
-            Assert.That(banner.Q("gd-banner-cloth"), Is.Not.Null,
-                "The verb is painted in the shared pewter cloth rather than as a coloured chip.");
-            Assert.That(banner.text, Is.EqualTo(DecisionWindowPresenter.RemoveTheseMinionsLabel),
-                "Its own text stays set under the cloth, because that is what a journey finds it by.");
             Assert.That(
-                Descendants(banner).OfType<Label>().Any(label =>
-                    label.name == "gd-decision-verb-label" &&
-                    label.text == DecisionWindowPresenter.RemoveTheseMinionsLabel),
-                Is.True,
-                "and the visible words are the banner's own label above that cloth.");
-            AssertScaleMotionIsWired(banner, "the decision window's verb");
+                Descendants(view.Root).Any(element =>
+                    element.name == "gd-decision-verb" || element.Q("gd-banner-cloth") != null),
+                Is.False,
+                "No pewter banner is drawn inside the decision window at all: there is one control " +
+                "style in it, which is what the user asked for twice.");
+
+            var controls = Descendants(view.Root).OfType<Button>()
+                .Where(element => element.name == "gd-decision-control")
+                .ToArray();
+            Assert.That(controls, Has.Length.EqualTo(2));
+            var verb = controls.Single(
+                control => control.text == DecisionWindowPresenter.RemoveTheseMinionsLabel);
+            var other = controls.Single(control => control.text == "STOP HERE");
+
+            Assert.That(verb.style.backgroundColor.value,
+                Is.EqualTo(MatchHudTheme.ButtonIdleBackground),
+                "The leading answer is the shared chrome, not a treatment of its own.");
+            Assert.That(verb.style.borderTopColor.value, Is.EqualTo(MatchHudTheme.CoinFace),
+                "and the emphasis is the mockup's gold border.");
+            Assert.That(other.style.borderTopColor.value, Is.EqualTo(MatchHudTheme.ButtonBorder),
+                "which the answer beside it does not wear.");
+            AssertScaleMotionIsWired(verb, "the decision window's leading answer");
         }
 
         /// <summary>
