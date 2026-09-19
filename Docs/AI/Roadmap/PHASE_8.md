@@ -235,7 +235,7 @@ Also in scope, from the same review: the worth badge grows and its digit gets a 
 
 Non-goals: docked geometry; direction on the board; the level-up window's content.
 
-### [ ] 8.59 Bounce offers only the spaces it can reach
+### [x] 8.59 Bounce offers only the spaces it can reach
 
 Asked by the user 2026-09-19 morning on a screenshot of Swift's Silver: "why are unavailable spaces offered for this silver? It should just offer legal spaces 2 away, not this space 1 away which is illegal." Bounce's line picker is bound "up to 2" while its move is "exactly 2", so the picker offers 1-away spaces the move can never take.
 
@@ -244,3 +244,7 @@ Outcome: `choose-line-destination@1` takes an optional minimum distance, Bounce 
 Acceptance: an offer test proving Bounce's candidates are exactly the reachable distance-2 line spaces and nothing 1 away, the p.11 stop when none exists, the repeat's second offer; the sweep table recorded; Swift's revision, identity pin and artwork row moved together; harness, focused Edit Mode and the Bounce journeys green.
 
 Non-goals: any card printing "up to".
+
+Completed 2026-09-19 (`f6f651d5`). `choose-line-destination@1` gains an optional Integer `minimumDistance` (unbound or 0 reads as the floor of one the walk already had, so no earlier body's candidate set moves; the floor sits on the OFFER because by the time the Move reads a named space the space has been named). The sweep of every binding against printed text corrected two faces: Bounce (max 2 -> floor 2) and Silverarrow's Wild Hunt ("you may move 2 spaces" - the "may" governs whether, not how far; its Move bound no least distance, so the short walk was performed, not refused). Every "up to", enumerated ("1 or 2", "1, 2 or 3") and RULING 37 binding is unchanged; the charge-line family already binds both bounds. Revisions `swift-8-48-rev-1` -> `swift-8-59-rev-1` and `silverarrow-8-35z46-rev-1` -> `silverarrow-8-59-rev-1`, each with its eighteen catalog rows and identity pin measured on a complete run (swift `147f9266...`, silverarrow `7550446c...`); the other fifteen pins, sixteen corpus digests and both scenario-digest families byte-identical; shine sprites key on content id, local id and slot, never the revision. `BounceOfferTests` (9) and three turn-level cases on `BounceBorrowedRepeatTests`. Harness 3563/3563; focused Edit Mode 350/351 (the one red is the pre-existing `ConfiguredCardArtworkCatalogTests` case that reflects on `RowennaCardContent`'s missing `DealtDefinitions` - owned by 8.57f); focused Play Mode 43/43 with both tightened journeys.
+
+Historical evidence: [8.59 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-859-bounce-offer-completion-evidence).

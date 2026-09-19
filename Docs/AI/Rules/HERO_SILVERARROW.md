@@ -20,7 +20,7 @@ text, ordered steps and choice owners, typed effect-node bindings, capability id
 contributions, Active-effect versus continuous-source classification, and the source-linked scenarios each
 row rests on.
 
-Her identity is pinned at content revision `silverarrow-8-35z46-rev-1`, measured rather than predicted by
+Her identity is pinned at content revision `silverarrow-8-59-rev-1`, measured rather than predicted by
 `VerifiedContentIdentityTests` on a complete unfiltered run. That is her ninth-pin entry; the eight pins
 above it came back byte-identical in the same run, which is what attributes the movement to her content
 and to nothing else.
@@ -56,7 +56,7 @@ rulebook; the 2026-09-06 "third-printing playtest" reading is superseded (see th
 | --- | --- |
 | Content set id | `silverarrow` |
 | Display name | `Silverarrow the Pathfinder` (dashboard); `Silverarrow` on the profile card |
-| Content revision | `silverarrow-8-35z46-rev-1` |
+| Content revision | `silverarrow-8-59-rev-1` |
 | Complexity | two stars, p.21's "Complex" - the first non-`Challenging` hero inventoried |
 | Roles | Sniper, Damager, Disabler, Healer, Farming |
 | Stat profile | Attack 2, Defense 1, Initiative 7, Movement 6 + 1 conditional |
