@@ -44,13 +44,17 @@ Completed 2026-09-19 (`71307821`). The three Blues compose on the printed-icon U
 
 Historical evidence: [8.57b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857b-rowenna-swap-and-gauntlet-completion-evidence).
 
-### [ ] 8.57c Support surrender
+### [x] 8.57c Support surrender
 
 Outcome: an effect-invoked Defeat narrowed to an adjacent enemy hero with no cards in hand, and a Defeat whose assist coins are tripled for Rowenna's team-mates.
 
 Acceptance: hand means hand (played, resolved and discarded cards do not count); the ordinary p.13 Defeat consequences (Life counters by lowest Tier, Defeat coins by level to Rowenna, assist coins by Tier to her team-mates) and Glorious Triumph's tripled assist coins at the one spend site through both entrances; 8.53's scoreboard credits the Kill to Rowenna; immunity and a hero who draws a card before resolution. T2 minimum.
 
 Non-goals: minion placement, the Ultimate, dealing.
+
+Completed 2026-09-19 (`d792482d`). Both faces compose on `choose-target@2` (origin Actor, reach 1 as a LITERAL - neither face prints a Range or Radius icon, Silverarrow's 8.35z46 lesson - unitKind Hero, relation OpposingSource) and `synthetic-defeat-hero@1` (8.22's effect-invoked p.13 Defeat). Deltas, all optional: `choose-target@2` gains `requiresEmptyHand` (a BOOLEAN, because an unbound optional Integer reads as zero and a `maximumCardsInHand` of 0 could not be told from no narrowing; named beside 8.40f's `minimumCardsInHand`, declared on the roster arm only; `HeroHandQuery.IsEmpty` beside `HasAtLeast`); `synthetic-defeat-hero@1` gains `assistCoinMultiplier` (input and published output - it rides with the REQUEST, since the clause is true of one Defeat and a modification set derived at the command boundary cannot say "this one"); `RequestedHeroDefeatQuery` returns `RequestedHeroDefeat` (hero + multiplier) threaded to `ResolveHeroDefeat`'s eighth argument, p.14's step 6 passing `UnmultipliedAssistCoins`; `HeroDefeatRewardSchedule.AssistCoins(tier, multiplier)` is one grant, not a second payment. No new capability, handler type or deferred id. Readings: RO-Q3 confirmed end to end (assist I/II/III -> 3/6/9; Defeat coins and Life counters unmoved), RO-Q9 (hand means hand), RO-Q9a (the clause narrows who may be chosen; nobody qualifying greys the Skill), RO-Q9b (a hero who gains a card between offer and answer is p.10's impossible step, not a refusal), RO-Q9c (RO-03 changes nothing composed). Four neighbouring fixtures corrected. `RowennaSurrenderTests` 30 cases; harness 3509/3509; focused Edit Mode 308/308 over 27 fixtures; no pin moved.
+
+Historical evidence: [8.57c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857c-rowenna-surrender-completion-evidence).
 
 ### [ ] 8.57d Support close quarters and the opening shots
 
