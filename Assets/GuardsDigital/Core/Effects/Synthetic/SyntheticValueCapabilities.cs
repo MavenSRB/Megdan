@@ -99,7 +99,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.ActionDefinitionId,
                     context.CardState.Definitions,
                     context.ActorId,
-                    context.HeroItems).Total;
+                    context.HeroItems,
+                    context.Modifications).Total;
             }
         }
     }

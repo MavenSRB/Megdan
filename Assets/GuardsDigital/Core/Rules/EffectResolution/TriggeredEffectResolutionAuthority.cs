@@ -187,7 +187,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // Milestone 8.25e. Only an occurrence derived from a completed action can ask
                     // whether that action could be performed again, so the probe travels with the
                     // candidate that has one rather than with the checkpoint.
-                    repeatCanBePerformed: candidate.TriggeringBasicAction.IsDefined
+                    repeatCanBePerformed: candidate.HasCompletedActionSubject
                         ? repeatCanBePerformed
                         : null);
                 var step = EffectResolutionSession.Start(
@@ -233,7 +233,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 ActionKind enclosingActionKind,
                 EffectDefinitionReference triggeredEffect,
                 long orderingSequence,
-                PerformedBasicAction triggeringBasicAction)
+                PerformedBasicAction triggeringBasicAction,
+                PerformedAttackAction triggeringAttackAction)
             {
                 SourceId = sourceId;
                 ControllerHeroId = controllerHeroId;
@@ -245,6 +246,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 TriggeredEffect = triggeredEffect;
                 OrderingSequence = orderingSequence;
                 TriggeringBasicAction = triggeringBasicAction;
+                TriggeringAttackAction = triggeringAttackAction;
             }
 
             public string SourceId { get; }
@@ -265,6 +267,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             public PerformedBasicAction TriggeringBasicAction { get; }
 
             /// <summary>
+            /// The completed ATTACK action this occurrence fired for, when it was derived from one.
+            /// Milestone 8.61h; <see cref="PerformedAttackAction.None"/> for every Active-effect
+            /// trigger and for every continuous source whose condition reads a different fact.
+            /// </summary>
+            public PerformedAttackAction TriggeringAttackAction { get; }
+
+            /// <summary>
             /// Whether a repeat node in this occurrence has something to repeat. Rulebook p.10 forbids
             /// repeating a repeated action, an occurrence derived from no completed action has no
             /// subject at all, and milestone 8.25e added the third case the page states: two of the
@@ -276,8 +285,23 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             /// from the board as it now stands, because that is not a fact about the action that
             /// ended. The authority holding the subject answers that one, through
             /// <see cref="EffectResolutionContext.RepeatIsUnavailableFor"/>.</para>
+            ///
+            /// <para>Milestone 8.61h adds the second fact, read on the same terms: Min's Flurry of
+            /// Blows fires off <see cref="PerformedAttackAction"/>, whose own
+            /// <c>CanBeRepeated</c> answers the same two of p.10's three sentences. Either fact
+            /// offering a repeat is enough, because an occurrence carries at most one of them and a
+            /// basic Attack that carries both names one action through either.</para>
             /// </summary>
-            public bool RepeatIsUnavailable => !TriggeringBasicAction.CanBeRepeated;
+            public bool RepeatIsUnavailable =>
+                !TriggeringBasicAction.CanBeRepeated && !TriggeringAttackAction.CanBeRepeated;
+
+            /// <summary>
+            /// Whether this occurrence came from a completed action at all, which is what decides
+            /// whether the authority's live feasibility probe travels with it. Milestone 8.61h reads
+            /// both facts for the reason <see cref="RepeatIsUnavailable"/> does.
+            /// </summary>
+            public bool HasCompletedActionSubject =>
+                TriggeringBasicAction.IsDefined || TriggeringAttackAction.IsDefined;
 
             public static TriggerCandidate FromActive(
                 ActiveEffectInstance source,
@@ -293,7 +317,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     actionKind,
                     source.Definition.TriggeredEffect.Value,
                     source.CreationSequence,
-                    PerformedBasicAction.None);
+                    PerformedBasicAction.None,
+                    PerformedAttackAction.None);
 
             public static TriggerCandidate FromContinuous(ContinuousTriggeredEffectSource source) =>
                 new TriggerCandidate(
@@ -306,7 +331,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     source.EnclosingActionKind,
                     source.TriggeredEffect,
                     source.OrderingSequence,
-                    source.TriggeringBasicAction);
+                    source.TriggeringBasicAction,
+                    source.TriggeringAttackAction);
         }
 
         public EffectResolutionStepResult Answer(

@@ -511,6 +511,47 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string GrantedItemOrderOutput = "grantedItemOrder";
 
         /// <summary>
+        /// Milestone 8.61h. `take-deck-card-as-item@1` - rulebook p.16's Gain an Item performed on a
+        /// card the hero takes out of her own DECK, chosen by her, at a moment that is not p.15's
+        /// Upgrade step: Min the Dragonmonk's Perfect Self, "Take a Tier II card from your deck and
+        /// add it to your dashboard as a permanent item."
+        ///
+        /// <para><b>It is a third way to gain an item because the page has three sources and this
+        /// build now prints all three.</b> p.15's Upgrade step sets a card aside and p.16 tucks it
+        /// under the dashboard - that is <c>HeroLevelUp</c>'s, and it asks nobody anything.
+        /// <c>gain-item-from-the-box@1</c> takes a spare card with no rules on it - that is Dodger's
+        /// Darkest Ritual. This one takes a REAL card out of the deck: the card leaves the deck
+        /// permanently, so the hero's remaining upgrade ladder is one card shorter, which neither of
+        /// the others does.</para>
+        ///
+        /// <para><b>It is synthetic rather than hero-owned because the shape is hero-neutral.</b>
+        /// "Take a Tier N card from your deck and add it as an item" is a p.15/p.16 operation any
+        /// printed face could carry; nothing in it names Min, her colours or her cards. The Tier is
+        /// the declaration's own parameter for the same reason.</para>
+        ///
+        /// <para><b>The slot is not a parameter and neither is the icon.</b> p.16 decides both: the
+        /// card names the icon it prints and the dashboard names the slot that accepts it. A
+        /// declaration able to name either would be able to file a card under a slot the page does
+        /// not.</para>
+        ///
+        /// <para><b>It offers rather than takes.</b> p.10 puts every choice a card does not assign to
+        /// the hero performing it, so the deck's qualifying cards are candidates and Min picks one -
+        /// even when only one qualifies, which is this codebase's uniform precedent for a
+        /// chooser-owned selection.</para>
+        /// </summary>
+        public static EffectCapabilityReference TakeDeckCardAsItemV1 =>
+            Reference("take-deck-card-as-item", 1);
+
+        /// <summary>
+        /// The Tier a card must print to be taken by `take-deck-card-as-item@1` - Perfect Self says
+        /// "a Tier II card" and means that Tier and no other. Milestone 8.61h.
+        /// </summary>
+        public const string ItemCardTierParameter = "itemCardTier";
+
+        /// <summary>The card instance `take-deck-card-as-item@1` turned into an item.</summary>
+        public const string TakenItemCardOutput = "takenItemCard";
+
+        /// <summary>
         /// How many qualifying Spawn points an empty-spawn-point question found. Milestone 8.35z28, and
         /// spelled the same as <c>presence-count@1</c>'s because it is the same kind of answer.
         /// </summary>
@@ -1028,6 +1069,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers()
         {
             yield return new PlayedAttackThisTurnHandler();
+
+            // Milestone 8.61h. `take-deck-card-as-item@1`, minted for Min the Dragonmonk's Perfect
+            // Self - "Take a Tier II card from your deck and add it to your dashboard as a permanent
+            // item." It is deferred on the standing terms: 8.61h composes three of her faces and does
+            // not deal her, so no card a configured match deals starts this contract, and milestone
+            // 7.9's deferral gate refuses a registration no card can reach. Milestone 8.61j is what
+            // moves this line into the registration list, together with the showcase consumer the
+            // gate's second half requires of a NEW handler type - which this is.
+            yield return new TakeDeckCardAsItemHandler();
 
             // MILESTONE 8.35z38'S SIX HAVE LEFT THIS LIST - see `RegisteredHandlers` below. Misa the
             // Samurai is dealt, so her Red ranged pair, her five Blue Skills and her two Swap Skills
@@ -3257,7 +3307,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.ActionDefinitionId,
                     context.CardState.Definitions,
                     context.ActorId,
-                    context.HeroItems);
+                    context.HeroItems,
+                    context.Modifications);
                 if (radius.Total <= 0)
                 {
                     // A card printing no Radius icon has no disk, and p.16 does not invent one. The
@@ -4087,6 +4138,205 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     : EffectExecutionResultKind.ImpossibleMandatory;
         }
 
+        /// <summary>
+        /// `take-deck-card-as-item@1`. p.16's Gain an Item, performed on a Tier the hero picks out of
+        /// her own deck - Min the Dragonmonk's Perfect Self. Milestone 8.61h.
+        ///
+        /// <para><b>The candidate set is the whole of the printed sentence.</b> "A Tier II card from
+        /// your deck" is three conditions - the owner, <c>CardLocation.Deck</c> and the Tier - and
+        /// <see cref="CardCharacteristicQuery"/> answers all three, which is why nothing here walks
+        /// instances itself. A Tier II card RETURNED to the deck by a Tier III upgrade is in the deck,
+        /// so it qualifies: p.15 says the upgraded card "returns it to the deck", and the sentence
+        /// asks where the card is rather than how it got there (MI-Q5).</para>
+        ///
+        /// <para><b>Two conditions beyond the sentence, and both are p.16's own.</b> A candidate must
+        /// print an Item icon and its owner's dashboard must have a slot that accepts it - the page
+        /// conditions the whole item on the match, and milestone 8.40g's law is that the offer must
+        /// admit exactly what the answer can perform. Every Tier II and Tier III card in the corpus
+        /// prints an icon and every dashboard accepts all six, so today these drop nothing; they are
+        /// asked so that a card which could not become an item is never offered as one, rather than
+        /// discovered after the card has already left the deck.</para>
+        ///
+        /// <para><b>The two mutations are ordered and the second cannot fail.</b>
+        /// <c>TrySetAsideFromDeck</c> is p.15's own Deck-to-SetAside transition and
+        /// <c>TryPlaceSetAsideCard</c> is p.16's SetAside-to-ItemSlot one; the card has to pass through
+        /// the page's intermediate state because that is the state the item placement reads. The
+        /// candidate filter has already answered every refusal the placement can state, so a refusal
+        /// here is an engine defect - reported as <see cref="EffectExecutionResultKind.ImpossibleMandatory"/>
+        /// rather than thrown, for the reason every other capability in this file reports one.</para>
+        /// </summary>
+        private sealed class TakeDeckCardAsItemHandler
+            : IEffectCapabilityHandler, IEffectSelectionCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => TakeDeckCardAsItemV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter("hero", EffectValueKind.Hero),
+
+                        // p.15's Tier, closed to the four the page prints. Required, because a
+                        // declaration naming none would take any card out of the deck and the printed
+                        // sentence names one.
+                        new EffectCapabilityParameter(
+                            ItemCardTierParameter,
+                            EffectValueKind.Integer,
+                            isRequired: true,
+                            integerDomain: EffectIntegerDomain.All<CardTier>())
+                    },
+                    new[]
+                    {
+                        new EffectOutputBinding("hero", EffectValueKind.Hero),
+                        new EffectOutputBinding(TakenItemCardOutput, EffectValueKind.CardInstance),
+                        new EffectOutputBinding(GrantedItemOrderOutput, EffectValueKind.Integer)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var candidates = Candidates(context);
+                if (candidates.Count == 0)
+                {
+                    // p.10's impossible step. The bullet that prints this is one of a modal's, and a
+                    // bullet nothing can perform is not offered - which `Anticipate` below reports so
+                    // the offer never admits it in the first place.
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // One card, chosen by the hero whose deck it is, even when the deck holds exactly one
+                // candidate: p.10 gives her the decision and a rule that took her last Tier II card
+                // for her would be deciding it.
+                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
+                    EffectChooserRole.None,
+                    candidates.Select(EffectValue.Card).ToArray(),
+                    1,
+                    1,
+                    Chooser(context)));
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
+            {
+                if (selected == null || selected.Count != 1 ||
+                    selected[0].Kind != EffectValueKind.CardInstance)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Re-derived, not trusted: the answer is checked against the deck as it stands now, so
+                // a card that has moved between the offer and the answer is refused rather than taken
+                // from wherever it has got to. Nothing is mutated on that path.
+                if (!Candidates(context).Any(candidate => candidate.Equals(selected[0].CardInstanceId)))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var card = context.CardState.Instances.FirstOrDefault(
+                    instance => instance != null && instance.Id.Equals(selected[0].CardInstanceId));
+                if (card == null || !CardLifecycleAuthority.TrySetAsideFromDeck(card))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var placement = context.HeroItems.TryPlaceSetAsideCard(
+                    card, context.CardState.Definitions);
+                if (!placement.IsPlaced)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("hero", EffectValue.Hero(placement.Item.OwnerId)),
+                    new EffectOutcomeFact(
+                        TakenItemCardOutput, EffectValue.Card(placement.Item.SourceCardInstanceId)),
+                    new EffectOutcomeFact(
+                        GrantedItemOrderOutput, EffectValue.Integer(placement.Item.Order))
+                });
+            }
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Candidates(context).Count == 0
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.NeedsChoice;
+
+            public IReadOnlyList<EffectValue> AnticipateCandidates(EffectCapabilityContext context) =>
+                Candidates(context).Select(EffectValue.Card).ToArray();
+
+            /// <summary>One card, which is what "a Tier II card" asks for.</summary>
+            public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
+
+            /// <summary>The hero whose deck is read and whose decision this is.</summary>
+            private static HeroId Chooser(EffectCapabilityContext context)
+            {
+                var declared = context.Input("hero");
+                return declared.Kind == EffectValueKind.Hero && declared.HeroId.IsDefined
+                    ? declared.HeroId
+                    : default;
+            }
+
+            /// <summary>p.15's Tier the declaration names, read back out of its closed vocabulary.</summary>
+            private static CardTier Tier(EffectCapabilityContext context)
+            {
+                var declared = context.Input(ItemCardTierParameter);
+                return declared.Kind == EffectValueKind.Integer &&
+                    Enum.IsDefined(typeof(CardTier), declared.IntegerValue)
+                    ? (CardTier)declared.IntegerValue
+                    : CardTier.None;
+            }
+
+            /// <summary>
+            /// The cards this sentence can take, in the query's deterministic order - and the one place
+            /// the set is decided, so the offer, the probe and the answer cannot disagree about it.
+            /// </summary>
+            private static IReadOnlyList<CardInstanceId> Candidates(EffectCapabilityContext context)
+            {
+                var chooser = Chooser(context);
+                var tier = Tier(context);
+                if (!chooser.IsDefined || tier == CardTier.None ||
+                    context.HeroItems == null || !context.CardState.IsAvailable)
+                {
+                    return Array.Empty<CardInstanceId>();
+                }
+
+                var definitions = context.CardState.Definitions;
+                return Array.AsReadOnly(CardCharacteristicQuery
+                    .FindCandidates(
+                        new CardCharacteristicCriteria(
+                            ownerId: chooser,
+                            tiers: new[] { tier },
+                            locations: new[] { CardLocation.Deck }),
+                        definitions,
+                        context.CardState.Instances)
+                    .Where(candidateId => AcceptsAsItem(context, candidateId, definitions))
+                    .ToArray());
+            }
+
+            /// <summary>
+            /// p.16's two conditions on the card itself: it prints an Item icon, and its owner's
+            /// dashboard has a slot that accepts that icon. See the type remarks for why they are
+            /// asked at the offer rather than discovered at the placement.
+            /// </summary>
+            private static bool AcceptsAsItem(
+                EffectCapabilityContext context,
+                CardInstanceId candidateId,
+                IReadOnlyList<CardDefinition> definitions)
+            {
+                var card = context.CardState.Instances.FirstOrDefault(
+                    instance => instance != null && instance.Id.Equals(candidateId));
+                var definition = card == null
+                    ? null
+                    : definitions.FirstOrDefault(
+                        value => value != null && value.Reference.Equals(card.DefinitionReference));
+                return definition != null &&
+                    definition.Progression.HasItemIcon &&
+                    context.HeroItems.AcceptsIcon(card.OwnerId, definition.Progression.ItemIcon);
+            }
+        }
+
         private sealed class GainResourceHandler : IEffectCapabilityHandler
         {
             public EffectCapabilityReference Reference => GainResourceV1;
@@ -4762,7 +5012,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.ActionDefinitionId,
                         context.CardState.Definitions,
                         context.ActorId,
-                        context.HeroItems).Total;
+                        context.HeroItems,
+                        context.Modifications).Total;
         }
 
         private static bool TryOrigin(
@@ -5089,7 +5340,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.ActionDefinitionId,
                     context.CardState.Definitions,
                     context.ActorId,
-                    context.HeroItems);
+                    context.HeroItems,
+                    context.Modifications);
                 if (radius.Total <= 0)
                 {
                     return false;

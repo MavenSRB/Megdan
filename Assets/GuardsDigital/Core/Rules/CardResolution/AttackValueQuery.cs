@@ -54,7 +54,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PrintedValueChannel.Attack);
             var composed = heroItems == null
                 ? printed
-                : ItemBonusQuery.Apply(printed, heroItems, offer.ActorId);
+                : ItemBonusQuery.Apply(printed, heroItems, offer.ActorId, modifications);
             var declared = modifications.ValueContributions(
                 RuleObject.ForHero(offer.ActorId),
                 PrintedValueChannel.Attack,

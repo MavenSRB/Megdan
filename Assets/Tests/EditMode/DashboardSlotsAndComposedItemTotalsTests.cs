@@ -155,9 +155,12 @@ namespace GuardsDigital.Tests.EditMode
 
             // This is the case milestone 7.2's slot-as-icon model could not represent: one slot, two
             // items, two different totals raised by one each.
-            var movement = ItemBonusQuery.Apply(PrintedIcon(PrintedValueChannel.Movement, 2), items, owner);
-            var range = ItemBonusQuery.Apply(PrintedIcon(PrintedValueChannel.Range, 2), items, owner);
-            var radius = ItemBonusQuery.Apply(PrintedIcon(PrintedValueChannel.Radius, 2), items, owner);
+            var movement = ItemBonusQuery.Apply(
+                PrintedIcon(PrintedValueChannel.Movement, 2), items, owner, ItemBonusQuery.BonusPerItem);
+            var range = ItemBonusQuery.Apply(
+                PrintedIcon(PrintedValueChannel.Range, 2), items, owner, ItemBonusQuery.BonusPerItem);
+            var radius = ItemBonusQuery.Apply(
+                PrintedIcon(PrintedValueChannel.Radius, 2), items, owner, ItemBonusQuery.BonusPerItem);
 
             Assert.That(movement.Total, Is.EqualTo(3));
             Assert.That(range.Total, Is.EqualTo(3));

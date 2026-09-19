@@ -319,6 +319,23 @@ namespace GuardsDigital.Core.Rules.Progression
         /// the icon on one of four slots on the top of your hero dashboard" - and until a hero had
         /// slots, this placement could only assume the match succeeded.
         /// </summary>
+        /// <summary>
+        /// Whether one of <paramref name="ownerId"/>'s four p.16 dashboard slots accepts
+        /// <paramref name="icon"/> - the page's "matches the icon on one of four slots on the top of
+        /// your hero dashboard", asked without moving anything. Milestone 8.61h.
+        ///
+        /// <para><b>It exists so an OFFER can admit exactly what the answer will accept.</b> Every
+        /// placement before this one came from p.15's Upgrade step, where the card set aside is
+        /// already decided and a refusal is an engine defect. Min's Perfect Self instead OFFERS her the
+        /// Tier II cards in her deck, and milestone 8.40g's law is that an offer admitting more than
+        /// its answer can perform is the defect - so the candidate list asks this question, and
+        /// <see cref="TryPlaceSetAsideCard"/> asks it again before it moves anything.</para>
+        /// </summary>
+        public bool AcceptsIcon(HeroId ownerId, PrintedValueChannel icon) =>
+            icon != PrintedValueChannel.None &&
+            dashboardsByHero.TryGetValue(ownerId, out var dashboard) &&
+            dashboard.TryFindSlotAccepting(icon, out _);
+
         public HeroItemPlacementResult TryPlaceSetAsideCard(
             CardInstance card,
             IEnumerable<CardDefinition> definitions)

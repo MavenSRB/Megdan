@@ -66,10 +66,17 @@ namespace GuardsDigital.Core.Rules.Progression
         /// </summary>
         public ContinuousRuleSource Source { get; }
 
+        /// <param name="triggeringAttackAction">
+        /// Milestone 8.61h. The completed Attack this occurrence fired for, where the condition read
+        /// one - Min's Flurry of Blows. It travels beside the basic fact rather than instead of it
+        /// because five of her six Attack faces are not basic cards, so the basic fact is absent for
+        /// most of the Attacks her clause is about.
+        /// </param>
         public ContinuousTriggeredEffectSource TriggeredSource(
             MatchParticipants participants,
             long orderingSequence = 0,
-            GuardsDigital.Core.Cards.PerformedBasicAction triggeringBasicAction = default)
+            GuardsDigital.Core.Cards.PerformedBasicAction triggeringBasicAction = default,
+            GuardsDigital.Core.Cards.PerformedAttackAction triggeringAttackAction = default)
         {
             if (!Rule.TriggeredEffect.HasValue) return null;
             if (participants == null) throw new ArgumentNullException(nameof(participants));
@@ -85,7 +92,8 @@ namespace GuardsDigital.Core.Rules.Progression
                 Rule.TriggeredEffect.Value,
                 Rule.TriggerCheckpoints,
                 orderingSequence,
-                triggeringBasicAction);
+                triggeringBasicAction,
+                triggeringAttackAction);
         }
 
         /// <summary>

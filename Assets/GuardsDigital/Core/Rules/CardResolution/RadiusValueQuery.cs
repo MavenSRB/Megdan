@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
@@ -29,13 +30,51 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the Defense total expresses. p.16's Item Bonus is decided by <see cref="ItemBonusQuery"/>
         /// and not here.
         /// </param>
+        /// <param name="modifications">
+        /// Milestone 8.61h. The live set, so a source that changed p.16's own arithmetic reaches this
+        /// total too - Min's "This round: Double your item bonuses", which the Radius icon is one of
+        /// the six channels of. Required rather than optional by milestone 6.8f's rule: a caller that
+        /// forgot it would compose a disk a source has already widened.
+        /// <see cref="RuleModificationSet.Empty"/> is the named none.
+        /// </param>
         public static ValueResult Calculate(
             CardInstanceId sourceCardInstanceId,
             CardDefinitionReference sourceDefinitionReference,
             ActionDefinitionId actionDefinitionId,
             IEnumerable<CardDefinition> definitions,
             HeroId actorId,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications)
+        {
+            if (modifications == null)
+            {
+                throw new ArgumentNullException(nameof(modifications));
+            }
+
+            return Calculate(
+                sourceCardInstanceId,
+                sourceDefinitionReference,
+                actionDefinitionId,
+                definitions,
+                actorId,
+                heroItems,
+                ItemBonusMultiplierQuery.BonusPerItem(actorId, modifications));
+        }
+
+        /// <summary>
+        /// The same total for a caller that holds no rules set at all - <c>MinionDefeatBountyQuery</c>
+        /// measures a standing promise's disk from a lifecycle and a ledger, and states p.16's
+        /// per-item amount by name rather than by fabricating an empty set that would silently mean
+        /// "unmodified". Milestone 8.61h.
+        /// </summary>
+        public static ValueResult Calculate(
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            IEnumerable<CardDefinition> definitions,
+            HeroId actorId,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            int bonusPerItem)
         {
             if (!actorId.IsDefined)
             {
@@ -51,20 +90,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 PrintedValueChannel.Radius);
             return heroItems == null
                 ? printed
-                : ItemBonusQuery.Apply(printed, heroItems, actorId);
+                : ItemBonusQuery.Apply(printed, heroItems, actorId, bonusPerItem);
         }
 
         /// <summary>The same total for a caller holding the offer, as the other four totals take it.</summary>
         public static ValueResult Calculate(
             ActionOffer offer,
             IEnumerable<CardDefinition> definitions,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems) =>
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications) =>
             Calculate(
                 offer.SourceCardInstanceId,
                 offer.SourceDefinitionReference,
                 offer.ActionDefinitionId,
                 definitions,
                 offer.ActorId,
-                heroItems);
+                heroItems,
+                modifications);
     }
 }

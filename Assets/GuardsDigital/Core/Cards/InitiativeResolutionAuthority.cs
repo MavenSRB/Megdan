@@ -419,7 +419,7 @@ namespace GuardsDigital.Core.Cards
                 var value = PrintedValueQuery.CalculatePrintedInitiative(card, definitionArray);
                 if (heroItems != null)
                 {
-                    value = ItemBonusQuery.Apply(value, heroItems, card.OwnerId);
+                    value = ItemBonusQuery.Apply(value, heroItems, card.OwnerId, modifications);
                 }
 
                 // Milestone 8.19c. A source-declared Initiative modifier is composed here, beside the

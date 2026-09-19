@@ -269,16 +269,32 @@ namespace GuardsDigital.Tests.EditMode
         public void TheSetAsideLocation_HasExactlyOneWriterAndItIsPageFifteensUpgradeStep()
         {
             // p.16's Gain an Item takes every card in the set-aside location, which is correct only
-            // while that location has one writer. Milestone 8.14 assessed scoping the sweep instead
+            // while nothing ELSE leaves a card there. Milestone 8.14 assessed scoping the sweep instead
             // (F-PROG-08) and withdrew it, because the scope a completed item can carry is the hero
             // and not the card: a hero who both levelled and had a card set aside by some other rule
             // would defeat that scope anyway, so it would buy confidence rather than correctness.
-            // This rule fails the day a second writer is added, which is the moment the decision has
-            // to be made again - and then against the rule that actually needs it.
+            //
+            // MILESTONE 8.61h ADDED THE SECOND WRITER, and the decision this rule exists to force was
+            // made: Min the Dragonmonk's Perfect Self takes a Tier II card out of her deck and adds it
+            // to her dashboard as a permanent item, which is p.16's own path and therefore goes
+            // through p.15's set-aside state - there is no Deck-to-ItemSlot transition and there
+            // should not be one. What keeps the sweep correct is that the second writer is a
+            // PASS-THROUGH: the same method that sets the card aside places it as an item, with no
+            // pause, no decision and no early return between the two, and every refusal the placement
+            // can state has already been answered by the candidate filter that built the offer. So no
+            // card of Min's is ever resting in that location when p.16's step sweeps it, and the
+            // location still needs no provenance. The second assertion below is that structural fact
+            // rather than a comment: a future edit that set a card aside and did not place it would
+            // red here.
             var writer = ILConformanceScanner.Method(
                 typeof(CardLifecycleAuthority),
                 nameof(CardLifecycleAuthority.TrySetAsideFromDeck),
                 typeof(CardInstance));
+            var placement = ILConformanceScanner.Method(
+                typeof(HeroItemState),
+                nameof(HeroItemState.TryPlaceSetAsideCard),
+                typeof(CardInstance),
+                typeof(IEnumerable<CardDefinition>));
 
             var production = new[]
                 {
@@ -293,20 +309,37 @@ namespace GuardsDigital.Tests.EditMode
                     !type.Namespace.StartsWith("GuardsDigital.Tests", StringComparison.Ordinal))
                 .ToArray();
 
-            var callers = ILConformanceScanner.Scan(production)
-                .Where(scanned => scanned.Calls(writer))
-                .Select(scanned => scanned.Method.DeclaringType?.FullName + "." + scanned.Method.Name)
+            var scanned = ILConformanceScanner.Scan(production)
+                .Where(method => method.Calls(writer))
+                .ToArray();
+            var callers = scanned
+                .Select(method => method.Method.DeclaringType?.FullName + "." + method.Method.Name)
                 .Distinct()
                 .OrderBy(name => name, StringComparer.Ordinal)
                 .ToArray();
 
+            var deckCardAsItem =
+                typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities).FullName +
+                "+TakeDeckCardAsItemHandler.Resume";
+
             Assert.That(callers, Is.EqualTo(new[]
                 {
+                    deckCardAsItem,
                     typeof(HeroLevelUpStepRules).FullName + "." + nameof(HeroLevelUpStepRules.ApplyAnswer)
                 }),
-                "p.15's \"set the other one aside\" is the only rule that may put a card there. A new " +
-                "one means p.16's sweep can no longer read the location alone, and needs the card's " +
-                "own provenance rather than its owner's.");
+                "p.15's \"set the other one aside\" and p.16's take-a-deck-card-as-an-item are the two " +
+                "rules that may put a card there. A THIRD one means p.16's sweep can no longer read " +
+                "the location alone, and needs the card's own provenance rather than its owner's.");
+
+            Assert.That(
+                scanned
+                    .Where(method =>
+                        method.Method.DeclaringType?.FullName + "." + method.Method.Name ==
+                        deckCardAsItem)
+                    .All(method => method.Calls(placement)),
+                Is.True,
+                "The second writer is a pass-through: whatever it sets aside, it places as an item in " +
+                "the same method, so p.16's own sweep never finds a card of its making resting there.");
         }
 
         // ----- p.16's Ultimate -----

@@ -3054,15 +3054,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .FirstOrDefault();
         }
 
+        /// <summary>
+        /// One printed channel of this attack with p.16's items composed onto it - the local name the
+        /// attack's own re-derivations reach for a channel that has no promoted query of its own.
+        ///
+        /// <para>Milestone 8.61h makes <paramref name="modifications"/> a required argument rather than
+        /// a convenience: the page's "+1 per matching item" is what Min's "This round: Double your item
+        /// bonuses" changes, and a composition here that could not see the live set would answer this
+        /// attack's total differently from the five promoted queries beside it.</para>
+        /// </summary>
         private ValueResult ComposeItems(
             ActionOffer offer,
             IReadOnlyList<CardDefinition> definitions,
-            PrintedValueChannel channel)
+            PrintedValueChannel channel,
+            RuleModificationSet modifications)
         {
             var printed = PrintedValueQuery.CalculatePrintedValue(offer, definitions, channel);
             return heroItems == null
                 ? printed
-                : ItemBonusQuery.Apply(printed, heroItems, offer.ActorId);
+                : ItemBonusQuery.Apply(
+                    printed, heroItems, offer.ActorId, modifications ?? RuleModificationSet.Empty);
         }
 
         /// <summary>

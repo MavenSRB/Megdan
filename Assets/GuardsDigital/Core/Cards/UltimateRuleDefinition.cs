@@ -151,7 +151,44 @@ namespace GuardsDigital.Core.Cards
         AfterOwnedResolvedCardDiscarded = 8,
 
         /// <summary>Dragon Knight: every completed Movement action, primary or secondary.</summary>
-        AfterControllerPerformsMovementAction = 9
+        AfterControllerPerformsMovementAction = 9,
+
+        /// <summary>
+        /// Milestone 8.61h. Min the Dragonmonk's Flurry of Blows, printed whole: "Each time after you
+        /// perform an attack action you may repeat it once on a different target."
+        ///
+        /// <para><b>A tenth condition, because no existing one can see the actions this clause is
+        /// mostly played off.</b> <see cref="AfterControllerPerformsBasicAction"/> is matched against
+        /// <see cref="GuardsDigital.Core.Cards.PerformedBasicAction"/>, which
+        /// <c>BasicActionQuery.ForCompletedAction</c> leaves undefined for every card that is not p.9's
+        /// Gold or Silver - and five of Min's six Attack faces are her coloured Red Stances. That is
+        /// the same structural blindness milestone 8.39f1 measured when Cutter's Legend of the Skies
+        /// needed a non-basic primary, and it is answered the same way: a fact of its own,
+        /// <see cref="GuardsDigital.Core.Cards.PerformedAttackAction"/>, produced at the one site that
+        /// records a completed action, from the inputs already in its hand.</para>
+        ///
+        /// <para><b>It is not <see cref="AfterControllerPerformsPrimaryAction"/> either, and the two
+        /// are orthogonal rather than narrower and wider.</b> Cutter's clause asks which BAND the
+        /// action came from and never its kind; this one asks the kind and never the band. A secondary
+        /// Attack is an attack action, and performing the printed primary of a Skill card is not one.
+        /// Neither question answers the other.</para>
+        ///
+        /// <para><b>"An attack action" is <see cref="ActionKind.Attack"/> and nothing else</b>, so
+        /// p.11's Fast Travel, p.12's Hold, p.13's Clear, a Movement, a Skill and p.14's Defense are
+        /// all excluded by construction rather than by a condition somebody has to remember. A Clear
+        /// taken INSTEAD of the Attack is the page's own replacement and is its own kind, which is why
+        /// it reaches nothing here.</para>
+        ///
+        /// <para><b>"Each time" is unbounded, and the repeated instance is what the page bounds.</b>
+        /// Nothing keys this condition in the turn's consumed-key set - the printed sentence states no
+        /// limit, so it fires after every Attack of hers, exactly as Wasp's and Tigerclaw's fire after
+        /// every basic action. p.10's "You cannot repeat a repeated action!" is what stops the loop,
+        /// and it is enforced where milestone 8.23 enforces it: on the SUBJECT the authority holds,
+        /// through <c>PerformedAttackAction.CanBeRepeated</c>. So the second instance still fires the
+        /// trigger and the trigger finds nothing to offer, which is the reading that keeps
+        /// "each time" true without letting the repeat repeat itself.</para>
+        /// </summary>
+        AfterControllerPerformsAttackAction = 10
     }
 
     /// <summary>

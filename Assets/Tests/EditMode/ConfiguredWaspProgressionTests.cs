@@ -7,6 +7,7 @@ using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Progression;
 using GuardsDigital.Core.Rules.Transitions;
 using GuardsDigital.Core.Replay;
@@ -413,7 +414,8 @@ namespace GuardsDigital.Tests.EditMode
                     definition.UltimateRule.EffectSourceId,
                     Configuration.CardDefinitions,
                     HeroId,
-                    withItems ? Items : null).Total;
+                    withItems ? Items : null,
+                    RuleModificationSet.Empty).Total;
             }
 
             public int Total(
@@ -425,7 +427,7 @@ namespace GuardsDigital.Tests.EditMode
                 var printed = PrintedValueQuery.CalculatePrintedValue(
                     card.Id, card.DefinitionReference, actionDefinitionId,
                     Configuration.CardDefinitions, channel);
-                return ItemBonusQuery.Apply(printed, Items, HeroId).Total;
+                return ItemBonusQuery.Apply(printed, Items, HeroId, ItemBonusQuery.BonusPerItem).Total;
             }
 
             public int InitiativeTotal(CardDefinitionId definitionId)
@@ -433,7 +435,7 @@ namespace GuardsDigital.Tests.EditMode
                 var card = CardWithDefinition(HeroId, definitionId);
                 var printed = PrintedValueQuery.CalculatePrintedInitiative(
                     card, Configuration.CardDefinitions);
-                return ItemBonusQuery.Apply(printed, Items, HeroId).Total;
+                return ItemBonusQuery.Apply(printed, Items, HeroId, ItemBonusQuery.BonusPerItem).Total;
             }
 
             private CardDefinition DefinitionOf(CardDefinitionId definitionId) =>

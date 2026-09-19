@@ -1107,7 +1107,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.ActionDefinitionId,
                         context.CardState.Definitions,
                         context.ActorId,
-                        context.HeroItems).Total
+                        context.HeroItems,
+                        context.Modifications).Total
                     : GuardsDigital.Core.Rules.CardResolution.RangeValueQuery.Calculate(
                         context.SourceCardInstanceId,
                         context.SourceDefinitionReference,
@@ -1497,7 +1498,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.ActionDefinitionId,
                         context.CardState.Definitions,
                         context.ActorId,
-                        context.HeroItems);
+                        context.HeroItems,
+                        context.Modifications);
                     if (radius.Total <= 0)
                     {
                         // p.16 raises a printed icon and never invents one, so a card printing no

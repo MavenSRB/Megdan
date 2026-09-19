@@ -768,6 +768,103 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess for a third pass, for an exclusion of a minion or a space, for one read " +
                 "from something other than a previous pass's own published hero, or for a printed " +
                 "count above two.")
+            ,
+
+            // Milestone 8.61h (merged after 8.61a, 8.61g, 8.61f and 8.61d).
+            new SharedFoundationClaim(
+                "values.item-bonus-multiplier",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Rules.Modifications.RuleModification),
+                    nameof(GuardsDigital.Core.Rules.Modifications.RuleModification
+                        .ForItemBonusMultiplier),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinItemAndFlurryTests),
+                            nameof(MinItemAndFlurryTests
+                                .TheDoubling_ReachesEveryChannelPageSixteenNames),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "one item adds two points on each of p.16's six icons at once"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinItemAndFlurryTests),
+                            nameof(MinItemAndFlurryTests
+                                .TheDoubling_AddsNothingToACardPrintingNoMatchingIcon),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "p.16's matching-icon condition still refuses before the multiplier is read")
+                },
+                new[] { "value channel", "owner", "lifetime", "projection" },
+                "One multiplier on p.16's per-item amount, declared about one hero by a ThisRound " +
+                "Active effect scoped to its own controller, read wherever that bonus is composed. " +
+                "Several declarations take the largest; the matching-icon condition is unchanged.",
+                "Reassess for a declaration scoped to somebody other than its controller, for one " +
+                "qualified to a single icon, or for a printed face that reduces an item bonus."),
+            new SharedFoundationClaim(
+                "timing.attack-action",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Cards.PerformedAttackAction),
+                    nameof(GuardsDigital.Core.Cards.PerformedAttackAction.ForCompletedAction),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinItemAndFlurryTests),
+                            nameof(MinItemAndFlurryTests
+                                .FlurryOfBlows_FiresAfterABasicAttackAndAfterAColouredOne),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a completed Attack off a basic card and off a coloured one both reach it"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinItemAndFlurryTests),
+                            nameof(MinItemAndFlurryTests
+                                .ThePerformedAttackFact_IsProducedForAnAttackAndForNoOtherKind),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "every other action kind, p.13's Clear and p.11's Fast Travel included, " +
+                        "records nothing")
+                },
+                new[] { "action kind", "card supertype", "repeat", "owner" },
+                "One completed Attack action of the acting hero's, whatever card it came off, " +
+                "carrying whether that instance was itself a repeat. It feeds one trigger condition " +
+                "and one repeat subject; p.10's no-second-repeat is read off the fact rather than " +
+                "suppressing it.",
+                "Reassess for a condition that reads what the Attack DID rather than that it " +
+                "happened, or for a second consumer of the fact beside the after-attack trigger."),
+            new SharedFoundationClaim(
+                "progression.deck-card-as-item",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities
+                        .TakeDeckCardAsItemV1),
+                    MemberTypes.Property),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinItemAndFlurryTests),
+                            nameof(MinItemAndFlurryTests
+                                .PerfectSelf_TakingOnlyTheDeckCard_MakesItAPermanentItemUnderItsOwnIcon),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "one chosen deck card becomes an item under the slot its own icon matches"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinItemAndFlurryTests),
+                            nameof(MinItemAndFlurryTests
+                                .PerfectSelf_RefusesAnAnswerNamingACardThatHasLeftTheDeck),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "an answer re-derived against the live deck refuses and mutates nothing")
+                },
+                new[] { "card location", "tier", "owner", "item slot", "continuation" },
+                "One card the acting hero owns, in her deck, printing the declared Tier and an Item " +
+                "icon her dashboard accepts, chosen by her and placed as a permanent item through " +
+                "p.15's set-aside state. It moves no Level, spends no coin and asks nobody else.",
+                "Reassess for a source zone other than the deck, for a chooser other than the card's " +
+                "owner, or for a face that names the icon rather than reading the card's own.")
         };
     }
 

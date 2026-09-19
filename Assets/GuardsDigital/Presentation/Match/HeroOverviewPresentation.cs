@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -1018,6 +1019,7 @@ namespace GuardsDigital.Presentation.Match
         private readonly IMatchClient session;
         private readonly IHeroOverviewsView view;
         private readonly Func<HeroId> viewedHero;
+        private readonly EffectCapabilityCatalog activeEffectCapabilities;
         private IMatchReadModel lastProjection;
         private HeroId lastViewedHero;
         private HeroOverviewsViewModel lastViewModel;
@@ -1028,19 +1030,29 @@ namespace GuardsDigital.Presentation.Match
         public HeroOverviewsPresenter(
             IMatchSession session,
             IHeroOverviewsView view,
-            Func<HeroId> viewedHero = null)
-            : this(new DirectorMatchClient(session), view, viewedHero)
+            Func<HeroId> viewedHero = null,
+            EffectCapabilityCatalog activeEffectCapabilities = null)
+            : this(new DirectorMatchClient(session), view, viewedHero, activeEffectCapabilities)
         {
         }
 
+        /// <param name="activeEffectCapabilities">
+        /// Milestone 8.61h. The catalog this composition was given, threaded to the Initiative badge
+        /// so it can read p.16's item bonus as the rules do while Min's "This round: Double your item
+        /// bonuses" stands. Optional and defaulting to none, on
+        /// <c>BoardInteractionPresenter</c>'s own precedent (milestone 8.35z63): a composition naming
+        /// no catalog reads the page unmodified rather than reaching for the build's.
+        /// </param>
         public HeroOverviewsPresenter(
             IMatchClient session,
             IHeroOverviewsView view,
-            Func<HeroId> viewedHero = null)
+            Func<HeroId> viewedHero = null,
+            EffectCapabilityCatalog activeEffectCapabilities = null)
         {
             this.session = session ?? throw new ArgumentNullException(nameof(session));
             this.view = view ?? throw new ArgumentNullException(nameof(view));
             this.viewedHero = viewedHero ?? (() => default);
+            this.activeEffectCapabilities = activeEffectCapabilities;
         }
 
         public void Refresh()
@@ -1059,6 +1071,7 @@ namespace GuardsDigital.Presentation.Match
                         .ThenBy(hero => hero.HeroId.Value, StringComparer.Ordinal)
                         .Select(hero => Build(
                             projection,
+                            activeEffectCapabilities,
                             hero.HeroId,
                             hero.TeamSide,
                             // Milestone 8.25c: the rail's portrait is addressed by this, so it comes
@@ -1074,6 +1087,7 @@ namespace GuardsDigital.Presentation.Match
 
         private static HeroOverviewViewModel Build(
             IMatchReadModel projection,
+            EffectCapabilityCatalog activeEffectCapabilities,
             HeroId heroId,
             TeamSide teamSide,
             HeroContentId contentId,
@@ -1095,7 +1109,7 @@ namespace GuardsDigital.Presentation.Match
                 CurrentRoundCards.TurnSlots(projection, heroId),
                 CurrentRoundCards.DiscardedCards(projection, heroId),
                 heroId.Equals(viewedHeroId),
-                CurrentRoundCards.CurrentCard(projection, heroId),
+                CurrentRoundCards.CurrentCard(projection, heroId, activeEffectCapabilities),
                 CurrentRoundCards.UnlockedUltimate(projection, heroId),
                 // Milestone 8.23a. The register's own order, kept rather than sorted: markers are
                 // given one at a time and the order they were given in is the only order there is.
@@ -1255,9 +1269,20 @@ namespace GuardsDigital.Presentation.Match
         /// find it would be presentation deciding to know something the rules are withholding. What is
         /// left after that refusal is exactly a status, which is all the facedown marker draws.</para>
         /// </summary>
+        /// <param name="activeEffectCapabilities">
+        /// Milestone 8.61h. The catalog this composition was given, so the badge's item reading can
+        /// ask whether a live Active effect of this hero's doubles p.16's bonus - Min the Dragonmonk's
+        /// "This round: Double your item bonuses", which makes one item read `+2`.
+        ///
+        /// <para>Optional and defaulting to none, on milestone 8.35z63's own precedent for the aura
+        /// derivation: a composition that names no catalog reads p.16 unmodified rather than reaching
+        /// for <c>MatchContentCatalogs.ForThisBuild</c>, which
+        /// <c>EffectSeamConformanceTests</c> forbids a production type doing.</para>
+        /// </param>
         public static HeroCurrentCardViewModel CurrentCard(
             IMatchReadModel projection,
-            HeroId heroId)
+            HeroId heroId,
+            EffectCapabilityCatalog activeEffectCapabilities = null)
         {
             if (projection == null) throw new ArgumentNullException(nameof(projection));
             var commitment = projection.Commitments
@@ -1309,7 +1334,15 @@ namespace GuardsDigital.Presentation.Match
                     false,
                     true),
                 printedInitiative.Total,
-                ItemBonusQuery.ProjectedItemBonus(printedInitiative, initiativeItems));
+                // Milestone 8.61h. What one Initiative item adds right now - p.16's own +1, or the
+                // double Min's Inner Strength and Perfect Self state for the round. The rail then
+                // reads `6+2` with one item under the doubling, which is the same two numbers 8.55
+                // split apart rather than a third reading of them.
+                ItemBonusQuery.ProjectedItemBonus(
+                    printedInitiative,
+                    initiativeItems,
+                    ActiveEffectVisibility.ItemBonusPerItem(
+                        projection, heroId, activeEffectCapabilities)));
         }
 
         /// <summary>

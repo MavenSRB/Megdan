@@ -205,6 +205,12 @@ namespace GuardsDigital.Tests.EditMode
         /// matched against a completed action at all, which is why
         /// <c>UltimateTriggeredEffectSourceQuery</c> answers it <c>false</c> and
         /// <c>MarkerGivenTriggerTests</c> owns what it means.</para>
+        ///
+        /// <para>Milestone 8.61h extended it once more, and the tripwire did its job again: a tenth
+        /// condition arrived - Min the Dragonmonk's "each time after you perform an attack action" -
+        /// which reads its own <c>PerformedAttackAction</c> because p.9's basic supertype is a fact
+        /// about the CARD and five of her six Attack faces are coloured. <c>MinItemAndFlurryTests</c>
+        /// owns what it means.</para>
         /// </summary>
         [Test]
         public void TheFifthTriggerCondition_IsDistinctFromTheFourBeforeIt()
@@ -214,9 +220,10 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(9),
-                "Nine since 8.43c adds actual Movement completion, proved by WidgetSkillReuseTests. A new condition is " +
-                "classified in UltimateTriggeredEffectSourceQuery and proved in its own fixture.");
+            Assert.That(conditions.Length, Is.EqualTo(10),
+                "Ten since 8.61h adds the completed Attack action, proved by MinItemAndFlurryTests. " +
+                "A new condition is classified in UltimateTriggeredEffectSourceQuery and proved in " +
+                "its own fixture.");
             Assert.That(
                 conditions, Does.Contain(UltimateTriggerCondition.AfterControllerResolvesBasicCard));
             Assert.That(

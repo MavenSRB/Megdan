@@ -202,19 +202,36 @@ namespace GuardsDigital.Tests.EditMode
             var printed = PrintedIcon(PrintedValueChannel.Initiative, 6);
             var items = ItemsHolding(participants, owner,
                 Enumerable.Repeat(PrintedValueChannel.Initiative, count).ToArray());
-            Assert.That(ItemBonusQuery.TotalWithProjectedItems(printed, count), Is.EqualTo(6 + count));
-            Assert.That(ItemBonusQuery.TotalWithProjectedItems(printed, count),
-                Is.EqualTo(ItemBonusQuery.Apply(printed, items, owner).Total));
+            Assert.That(
+                ItemBonusQuery.TotalWithProjectedItems(
+                    printed, count, ItemBonusQuery.BonusPerItem),
+                Is.EqualTo(6 + count));
+            Assert.That(
+                ItemBonusQuery.TotalWithProjectedItems(
+                    printed, count, ItemBonusQuery.BonusPerItem),
+                Is.EqualTo(
+                    ItemBonusQuery.Apply(printed, items, owner, ItemBonusQuery.BonusPerItem).Total));
             Assert.That(ItemBonusQuery.TotalWithProjectedItems(
-                new ValueResult(PrintedValueChannel.Initiative, Array.Empty<ValueContribution>()), count), Is.Zero);
+                new ValueResult(PrintedValueChannel.Initiative, Array.Empty<ValueContribution>()),
+                count,
+                ItemBonusQuery.BonusPerItem), Is.Zero);
         }
 
         [Test]
         public void ProjectedItemCounts_RejectInvalidInputs()
         {
-            Assert.Throws<ArgumentNullException>(() => ItemBonusQuery.TotalWithProjectedItems(null, 1));
+            Assert.Throws<ArgumentNullException>(() =>
+                ItemBonusQuery.TotalWithProjectedItems(null, 1, ItemBonusQuery.BonusPerItem));
             Assert.Throws<ArgumentOutOfRangeException>(() =>
-                ItemBonusQuery.TotalWithProjectedItems(PrintedIcon(PrintedValueChannel.Initiative, 6), -1));
+                ItemBonusQuery.TotalWithProjectedItems(
+                    PrintedIcon(PrintedValueChannel.Initiative, 6), -1, ItemBonusQuery.BonusPerItem));
+
+            // Milestone 8.61h. p.16 raises a matching icon by at least one point per item, so a
+            // per-item bonus below the page's own is refused rather than composed - the other half of
+            // the guard `RuleModification.ForItemBonusMultiplier` states from the declaration's side.
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+                ItemBonusQuery.TotalWithProjectedItems(
+                    PrintedIcon(PrintedValueChannel.Initiative, 6), 1, 0));
         }
 
         [Test]
@@ -239,7 +256,8 @@ namespace GuardsDigital.Tests.EditMode
                 foreach (var channel in channels)
                 {
                     var printed = PrintedIcon(channel, 3);
-                    var composed = ItemBonusQuery.Apply(printed, items, owner);
+                    var composed = ItemBonusQuery.Apply(
+                        printed, items, owner, ItemBonusQuery.BonusPerItem);
 
                     if (channel == slot)
                     {
@@ -260,7 +278,8 @@ namespace GuardsDigital.Tests.EditMode
             var doubled = ItemBonusQuery.Apply(
                 PrintedIcon(PrintedValueChannel.Attack, 2),
                 ItemsHolding(participants, owner, PrintedValueChannel.Attack, PrintedValueChannel.Attack),
-                owner);
+                owner,
+                ItemBonusQuery.BonusPerItem);
             Assert.That(doubled.Total, Is.EqualTo(4));
             Assert.That(
                 doubled.Contributions.Count(value => value.Kind == ValueContributionKind.ItemModifier),
@@ -271,7 +290,8 @@ namespace GuardsDigital.Tests.EditMode
                 ItemBonusQuery.Contributions(
                     PrintedIcon(PrintedValueChannel.Attack, 2),
                     ItemsHolding(participants, owner, PrintedValueChannel.Attack),
-                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue),
+                    ItemBonusQuery.BonusPerItem),
                 Is.Empty);
         }
 
@@ -289,14 +309,14 @@ namespace GuardsDigital.Tests.EditMode
             var noRangeIcon = new ValueResult(PrintedValueChannel.Range, Array.Empty<ValueContribution>());
             Assert.That(noRangeIcon.Total, Is.Zero);
 
-            var composed = ItemBonusQuery.Apply(noRangeIcon, items, owner);
+            var composed = ItemBonusQuery.Apply(noRangeIcon, items, owner, ItemBonusQuery.BonusPerItem);
             Assert.That(composed.Total, Is.Zero);
             Assert.That(composed.Contributions, Is.Empty);
 
             // A printed zero is still a printed icon, and the page raises the icon's value rather than
             // its size: a card that prints Range 0 does benefit.
             var printedZero = PrintedIcon(PrintedValueChannel.Range, 0);
-            Assert.That(ItemBonusQuery.Apply(printedZero, items, owner).Total, Is.EqualTo(1));
+            Assert.That(ItemBonusQuery.Apply(printedZero, items, owner, ItemBonusQuery.BonusPerItem).Total, Is.EqualTo(1));
         }
 
         // ----- Check 3: never card text, and every contribution keeps its provenance -----
@@ -315,7 +335,7 @@ namespace GuardsDigital.Tests.EditMode
                 }));
 
             var printed = PrintedIcon(PrintedValueChannel.Movement, 2);
-            var contributions = ItemBonusQuery.Contributions(printed, items, owner);
+            var contributions = ItemBonusQuery.Contributions(printed, items, owner, ItemBonusQuery.BonusPerItem);
 
             Assert.That(contributions, Has.Count.EqualTo(1));
             Assert.That(contributions[0].Kind, Is.EqualTo(ValueContributionKind.ItemModifier));
@@ -335,7 +355,7 @@ namespace GuardsDigital.Tests.EditMode
                 PrintedValueChannel.Movement,
                 2);
             var textOnly = new ValueResult(PrintedValueChannel.Movement, new[] { cardText });
-            var composed = ItemBonusQuery.Apply(textOnly, items, owner);
+            var composed = ItemBonusQuery.Apply(textOnly, items, owner, ItemBonusQuery.BonusPerItem);
             Assert.That(composed.Contributions, Is.EqualTo(new[] { cardText }));
             Assert.That(composed.Total, Is.EqualTo(2));
         }

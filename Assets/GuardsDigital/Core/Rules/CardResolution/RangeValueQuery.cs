@@ -88,7 +88,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications);
             var composed = heroItems == null
                 ? overlaid
-                : ItemBonusQuery.Apply(overlaid, heroItems, actorId);
+                : ItemBonusQuery.Apply(overlaid, heroItems, actorId, modifications);
             var declared = modifications.ValueContributions(
                 RuleObject.ForHero(actorId), PrintedValueChannel.Range, performedAction);
             return declared.Count == 0

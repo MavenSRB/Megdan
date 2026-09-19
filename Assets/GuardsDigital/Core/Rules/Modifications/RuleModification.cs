@@ -316,7 +316,54 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// named activity in it - it is true of every movement, every card-text move and every push
         /// alike - so a member that says the sentence loses nothing.</para>
         /// </summary>
-        MayBeMovedThrough = 15
+        MayBeMovedThrough = 15,
+
+        /// Milestone 8.61h. Every one of the affected hero's rulebook p.16 items raises its matching
+        /// icon by <see cref="RuleModification.Amount"/> points instead of the page's one - Min the
+        /// Dragonmonk's Inner Strength and Perfect Self, printed whole: "This round: Double your item
+        /// bonuses."
+        ///
+        /// <para><b>It is a fourteenth family because it changes the RULE p.16 states rather than any
+        /// value a card prints.</b> The page says "Each item increases the value of the matching icon
+        /// on each of your Action cards by +1", and the sentence Min prints replaces the +1. Nothing
+        /// above can say that. <see cref="ValueModifier"/> is the shape that looks right and is wrong
+        /// for two separate reasons, each fatal on its own: a fixed "+1 Attack" would double nothing
+        /// when she holds two Attack items and would bite a hero holding none, since a contribution to
+        /// a channel knows nothing about how many items produced the rest of the total; and p.16's own
+        /// condition - "If an Action card has no matching icon, the item has no effect on that
+        /// particular Action card" - is asked of the PRINTED result inside
+        /// <see cref="GuardsDigital.Core.Cards.ItemBonusQuery"/>, while a declared contribution is
+        /// composed afterwards and would raise a card that prints no such icon at all. Doubling the
+        /// item bonus and adding a number are different sentences.</para>
+        ///
+        /// <para><b>The multiplier is <see cref="RuleModification.Amount"/> and there is no new public
+        /// property</b>, for the reason milestones 8.35z28, 8.35z29, 8.40a and 8.57e each recorded in
+        /// turn: a property added to this type moves the content digest of every hero whose
+        /// declarations reach it - which milestone 8.38d measured at the cost of all twelve pins at
+        /// once - and an added enum member no earlier declaration names moves nothing.
+        /// <see cref="RuleModification.Channel"/> reads <see cref="PrintedValueChannel.None"/>,
+        /// because the sentence names no icon: it reaches every channel an item can supply, which is
+        /// all six of p.16's, and a declaration carrying one would have been a card that doubled only
+        /// Attack items.</para>
+        ///
+        /// <para><b>It is declared about the hero and read wherever p.16's bonus is composed.</b>
+        /// "Your item bonuses" names the item's owner, so <see cref="RuleObject.ForHero"/> is the
+        /// affected object and <c>ItemBonusMultiplierQuery</c> is the one place the number is read -
+        /// which is what puts it on the Attack, Defense, Movement, Range, Radius and Initiative totals,
+        /// on p.7's turn order, on an Active effect's declared Radius and on the hero rail's badge
+        /// without any of them knowing that a multiplier exists.</para>
+        ///
+        /// <para><b>Several declarations take the LARGEST rather than multiplying together, and that
+        /// is a printed fact rather than a simplification.</b> p.15 replaces the lower Tier when a card
+        /// is upgraded, so Inner Strength (Green II) and Perfect Self (Green III) can never sit in one
+        /// deck, and p.10's "Only one instance of an active effect per card can be active" stops one
+        /// card doubling twice. No two declarations of this family can therefore stand at once in this
+        /// build's content, and a product would be a stacking rule no printed face asks for. The
+        /// largest is what two hypothetical sources both obey, exactly as
+        /// <see cref="ActivityLimit"/> takes the smallest for the same reason from the other
+        /// side.</para>
+        /// </summary>
+        ItemBonusMultiplier = 16
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -1008,6 +1055,47 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RuleValueApplicability.Always,
                 SourceValueQueryKind.None);
 
+        /// <summary>
+        /// Milestone 8.61h. Every p.16 item the affected hero holds raises its matching icon by
+        /// <paramref name="multiplier"/> points instead of the page's one - Min's "This round: Double
+        /// your item bonuses." See <see cref="RuleModificationKind.ItemBonusMultiplier"/> for why this
+        /// is its own family and why it names no channel.
+        /// </summary>
+        /// <param name="multiplier">
+        /// What one item now adds, as a multiple of p.16's own +1. Two or more, because a multiplier
+        /// of one is the page unmodified and a declaration contributing nothing is not a rule - the
+        /// same statement <see cref="ForValue(PrintedValueChannel,int)"/> makes by refusing a zero
+        /// amount - and because a multiplier below one would be a card that REDUCED item bonuses,
+        /// which nothing in the corpus prints and which p.16's own arithmetic could not express
+        /// without a rounding rule no page states.
+        /// </param>
+        public static RuleModification ForItemBonusMultiplier(int multiplier)
+        {
+            if (multiplier < 2)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(multiplier),
+                    multiplier,
+                    "An item-bonus multiplier states what one item now adds as a multiple of " +
+                    "rulebook p.16's +1. One is the page unmodified, and anything below it would be a " +
+                    "card that reduced item bonuses, which no printed face states.");
+            }
+
+            return new RuleModification(
+                RuleModificationKind.ItemBonusMultiplier,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+
+                // No channel: "your item bonuses" names all six of p.16's icons at once, and a
+                // declaration carrying one would have been a card that doubled only that icon's items.
+                PrintedValueChannel.None,
+                multiplier,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+        }
+
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
         {
             if (!cost.IsDeclared)
@@ -1218,6 +1306,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return $"Attack actions are Ranged at printed {Channel} {Amount}";
                 case RuleModificationKind.EnemyHeroesCannotTargetThroughThisTokensSpace:
                     return "Enemy heroes cannot target through this token's space";
+                case RuleModificationKind.ItemBonusMultiplier:
+                    return $"Item bonuses multiplied by {Amount}";
                 default:
                     return "Undeclared modification";
             }

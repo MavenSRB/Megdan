@@ -478,14 +478,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null,
             PerformedBasicAction basicAction = default,
-            AttackTarget completedAttackTarget = default)
+            AttackTarget completedAttackTarget = default,
+            PerformedAttackAction attackAction = default)
         {
             // Milestone 8.23. The subject is held before the trigger runs, because the trigger may open
             // a decision and the action it is about has already finished by then. It is cleared again
             // the moment the trigger's frame completes without asking for it, which is the ordinary
             // case and every case before this milestone.
-            repeatSubject = PendingAfterActionRepeat.For(
-                basicAction, RepeatResolutionIdFor(basicAction), completedAttackTarget);
+            //
+            // Milestone 8.61h. p.9's basic supertype is a property of the CARD, so a coloured card's
+            // Attack records no basic fact at all - and Min's Flurry of Blows is mostly played off
+            // exactly those. The basic reading stays FIRST so nothing about a basic action changes:
+            // when both facts are defined they name one card, one action and one hero, so the two
+            // subjects are identical and the order decides nothing; when only the attack fact is
+            // defined it is the only subject there is.
+            repeatSubject =
+                PendingAfterActionRepeat.For(
+                    basicAction, RepeatResolutionIdFor(basicAction), completedAttackTarget) ??
+                PendingAfterActionRepeat.For(
+                    attackAction, RepeatResolutionIdFor(attackAction), completedAttackTarget);
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ??
@@ -651,6 +662,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ? new ActionResolutionId(
                     $"after-action-repeat:{basicAction.SourceCardInstanceId.Value}:" +
                     $"{basicAction.ActionDefinitionId.Value}")
+                : default;
+
+        /// <summary>
+        /// The same identity minted from the completed ATTACK fact. Milestone 8.61h.
+        ///
+        /// <para>It is the identical string a basic Attack would mint, deliberately: the id is a pure
+        /// function of the card and the action, which is what makes it reproducible by a replay and a
+        /// restore, and a basic Attack that defines both facts must not get two different ones
+        /// depending on which fact the standing ability happened to read.</para>
+        /// </summary>
+        private static ActionResolutionId RepeatResolutionIdFor(PerformedAttackAction attackAction) =>
+            attackAction.IsDefined
+                ? new ActionResolutionId(
+                    $"after-action-repeat:{attackAction.SourceCardInstanceId.Value}:" +
+                    $"{attackAction.ActionDefinitionId.Value}")
                 : default;
 
         /// <summary>

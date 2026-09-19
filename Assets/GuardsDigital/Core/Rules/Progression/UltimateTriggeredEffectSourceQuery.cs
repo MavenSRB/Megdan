@@ -22,21 +22,28 @@ namespace GuardsDigital.Core.Rules.Progression
             MatchParticipants participants,
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction = default,
-            PerformedMovementAction movementAction = default)
+            PerformedMovementAction movementAction = default,
+            PerformedAttackAction attackAction = default)
         {
             if (ultimates == null) throw new ArgumentNullException(nameof(ultimates));
             if (board == null) throw new ArgumentNullException(nameof(board));
             if (participants == null) throw new ArgumentNullException(nameof(participants));
-            if (!basicAction.IsDefined && !primaryAction.IsDefined && !movementAction.IsDefined)
+            if (!basicAction.IsDefined && !primaryAction.IsDefined && !movementAction.IsDefined &&
+                !attackAction.IsDefined)
                 return Array.Empty<ContinuousTriggeredEffectSource>();
 
             return ultimates.Ultimates
                 .Where(ultimate =>
-                    Applies(ultimate.Rule.TriggerCondition, basicAction, primaryAction, movementAction) &&
+                    Applies(
+                        ultimate.Rule.TriggerCondition,
+                        basicAction, primaryAction, movementAction, attackAction) &&
                     board.TryGetHeroCoordinate(ultimate.OwnerId, out _) &&
                     ultimate.OwnerId.Equals(
-                        ActorOf(ultimate.Rule.TriggerCondition, basicAction, primaryAction, movementAction)))
-                .Select((ultimate, index) => ultimate.TriggeredSource(participants, index, basicAction))
+                        ActorOf(
+                            ultimate.Rule.TriggerCondition,
+                            basicAction, primaryAction, movementAction, attackAction)))
+                .Select((ultimate, index) =>
+                    ultimate.TriggeredSource(participants, index, basicAction, attackAction))
                 .Where(source => source != null)
                 .ToArray();
         }
@@ -139,7 +146,12 @@ namespace GuardsDigital.Core.Rules.Progression
             UltimateTriggerCondition condition,
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction,
-            PerformedMovementAction movementAction) =>
+            PerformedMovementAction movementAction,
+            PerformedAttackAction attackAction) =>
+            // Milestone 8.61h. Min's Flurry of Blows reads the fourth fact, for the reason
+            // `AfterControllerPerformsAttackAction` records: her Red Stances are not basic cards, so
+            // the basic fact is absent for most of the Attacks the clause is about.
+            condition == UltimateTriggerCondition.AfterControllerPerformsAttackAction ? attackAction.IsDefined :
             condition == UltimateTriggerCondition.AfterControllerPerformsMovementAction ? movementAction.IsDefined :
             condition == UltimateTriggerCondition.AfterControllerPerformsPrimaryAction
                 ? primaryAction.IsDefined
@@ -155,7 +167,9 @@ namespace GuardsDigital.Core.Rules.Progression
             UltimateTriggerCondition condition,
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction,
-            PerformedMovementAction movementAction) =>
+            PerformedMovementAction movementAction,
+            PerformedAttackAction attackAction) =>
+            condition == UltimateTriggerCondition.AfterControllerPerformsAttackAction ? attackAction.ActorId :
             condition == UltimateTriggerCondition.AfterControllerPerformsMovementAction ? movementAction.ActorId :
             condition == UltimateTriggerCondition.AfterControllerPerformsPrimaryAction
                 ? primaryAction.ActorId
@@ -218,6 +232,12 @@ namespace GuardsDigital.Core.Rules.Progression
                 // checkpoint such a rule names, which is the second guard keeping the two apart.
                 case UltimateTriggerCondition.AfterControllerGivesMarker:
                 case UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded:
+
+                // Milestone 8.61h. Min's Flurry of Blows reads `PerformedAttackAction`, a fact this
+                // method is not given, and is answered by `Applies` before it reaches here. Stated
+                // rather than left to the default for the reason the two lines above are: the switch
+                // stays exhaustive and the negative is a decision rather than an omission.
+                case UltimateTriggerCondition.AfterControllerPerformsAttackAction:
                     return false;
                 default:
                     return false;

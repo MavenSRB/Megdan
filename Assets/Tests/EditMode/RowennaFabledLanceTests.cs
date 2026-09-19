@@ -798,7 +798,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Total;
 
             internal int RadiusTotalOf(CardDefinitionId cardId) => RadiusValueQuery
-                .Calculate(AttackOffer(Rowenna, cardId), definitions, heroItems)
+                .Calculate(AttackOffer(Rowenna, cardId), definitions, heroItems, Modifications())
                 .Total;
 
             internal IReadOnlyList<HeroId> TargetsOf(

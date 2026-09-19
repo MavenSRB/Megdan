@@ -304,6 +304,12 @@ namespace GuardsDigital.Tests.EditMode
         /// precedent: a seventh condition arrived - Bain's "after you give a hero the bounty marker" -
         /// and <c>MarkerGivenTriggerTests</c> owns what it means. It is the first that reads neither of
         /// the two completed-action facts, which is why nothing else here moved.</para>
+        ///
+        /// <para>Milestone 8.61h extended it once more: a tenth condition arrived - Min's "each time
+        /// after you perform an attack action" - which reads a THIRD completed-action fact of its own,
+        /// <c>PerformedAttackAction</c>, and is proved by <c>MinItemAndFlurryTests</c>. It asks the
+        /// action's KIND where this one asks its BAND, so neither is the other's wider reading and
+        /// nothing else here moved.</para>
         /// </summary>
         [Test]
         public void TheSixthTriggerCondition_IsDistinctFromTheFiveBeforeIt()
@@ -313,7 +319,9 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(condition => condition != UltimateTriggerCondition.None)
                 .ToArray();
 
-            Assert.That(conditions.Length, Is.EqualTo(9), "Widget adds the distinct Movement-action condition.");
+            Assert.That(
+                conditions.Length, Is.EqualTo(10),
+                "Min adds the distinct Attack-action condition beside Widget's Movement one.");
             Assert.That(
                 conditions,
                 Does.Contain(UltimateTriggerCondition.AfterControllerPerformsPrimaryAction));

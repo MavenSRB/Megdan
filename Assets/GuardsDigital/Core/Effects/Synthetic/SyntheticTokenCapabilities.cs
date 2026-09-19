@@ -288,7 +288,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         context.ActionDefinitionId,
                         context.CardState.Definitions,
                         context.ActorId,
-                        context.HeroItems)
+                        context.HeroItems,
+                        context.Modifications)
                     : RangeValueQuery.Calculate(
                         context.SourceCardInstanceId,
                         context.SourceDefinitionReference,

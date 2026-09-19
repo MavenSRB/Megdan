@@ -113,6 +113,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     completedAttackTarget)
                 : null;
 
+        /// <summary>
+        /// The owed repeat for one completed ATTACK action, or <c>null</c> when the fact names none.
+        /// Milestone 8.61h.
+        ///
+        /// <para><b>A second reading of the same page, for the actions the first one cannot see.</b>
+        /// p.9's basic supertype is a property of the CARD, so the fact above is absent for every
+        /// Attack performed off a coloured card - which is five of Min the Dragonmonk's six Attack
+        /// faces, and what Flurry of Blows is mostly played off. The kind this records is always
+        /// <see cref="ActionKind.Attack"/>, which is one of the four
+        /// <see cref="PerformedBasicAction.KindCanBeRepeated"/> admits, so the subject it builds is
+        /// indistinguishable from the one a basic Attack builds and the same resolver starts the
+        /// second instance.</para>
+        ///
+        /// <para>p.10's "You cannot repeat a repeated action!" is enforced here exactly as it is
+        /// above, and for the same reason: it is a property of what ended rather than of who is
+        /// asking, so a repeated instance produces nothing to hold and the ability's node finds
+        /// nothing to offer.</para>
+        /// </summary>
+        public static PendingAfterActionRepeat For(
+            PerformedAttackAction attackAction,
+            ActionResolutionId resolutionId,
+            AttackTarget completedAttackTarget = default) =>
+            attackAction.IsDefined && !attackAction.WasRepeatedInstance && resolutionId.IsDefined
+                ? new PendingAfterActionRepeat(
+                    resolutionId,
+                    attackAction.SourceCardInstanceId,
+                    attackAction.ActionDefinitionId,
+                    attackAction.ActorId,
+                    ActionKind.Attack,
+                    completedAttackTarget)
+                : null;
+
         public override string ToString() =>
             $"repeat of {Kind} on {SourceCardInstanceId.Value} by {ActorId.Value}";
     }

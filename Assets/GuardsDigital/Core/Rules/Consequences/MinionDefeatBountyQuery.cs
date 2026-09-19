@@ -93,7 +93,14 @@ namespace GuardsDigital.Core.Rules.Consequences
                     effect.Phase == ActiveEffectPhase.Active &&
                     string.Equals(effect.Definition.EffectKind, EffectKind, StringComparison.Ordinal) &&
                     Covers(
-                        effect, board, participants, items, definitions, instances, defeatedMinion))
+                        effect, board, participants, items, definitions, instances, defeatedMinion,
+                        // Milestone 8.61h. p.16's item bonus is what Min's "This round: Double your
+                        // item bonuses" scales, and this promise's disk is a printed Radius icon like
+                        // any other - so the multiplier is read here too. It comes off the lifecycle
+                        // rather than off a modification set because this query is composed with no
+                        // set at all; `ItemBonusMultiplierQuery` owns both readings so the promise and
+                        // the Skill that made it cannot measure different disks.
+                        ItemBonusMultiplierQuery.BonusPerItem(effect.ControllerHeroId, timing)))
                 .OrderBy(effect => effect.CreationSequence)
                 .FirstOrDefault();
             if (spendable == null)
@@ -125,7 +132,8 @@ namespace GuardsDigital.Core.Rules.Consequences
             HeroItemState items,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
-            MinionOccupancy defeatedMinion)
+            MinionOccupancy defeatedMinion,
+            int bonusPerItem)
         {
             if (!effect.ControllerHeroId.IsDefined ||
                 !board.TryGetHeroCoordinate(effect.ControllerHeroId, out var controllerAt))
@@ -164,7 +172,8 @@ namespace GuardsDigital.Core.Rules.Consequences
                 effect.SourceActionDefinitionId,
                 definitions,
                 effect.ControllerHeroId,
-                items).Total;
+                items,
+                bonusPerItem).Total;
             return radius > 0 &&
                 HexDistanceQuery.Calculate(controllerAt, defeatedMinion.Coordinate) <= radius;
         }

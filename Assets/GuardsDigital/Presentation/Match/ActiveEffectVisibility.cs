@@ -165,7 +165,14 @@ namespace GuardsDigital.Presentation.Match
                     continue;
                 }
 
-                var radiusItemBonus = RadiusItemBonus(heroProgression, controller);
+                // Milestone 8.61h. The projection carries a COUNT of Radius items; what each one adds
+                // is p.16's +1 or the multiple Min's "This round: Double your item bonuses" states,
+                // read from the same live-effect facts this loop is already walking. Composed here so
+                // the disk a seat draws and the disk the authority measures move together.
+                var radiusItemBonus = RadiusItemBonus(heroProgression, controller) *
+                    ItemBonusPerItem(
+                        controller, activeEffectSourceCardInstanceIds, cards, definitions,
+                        capabilities);
                 foreach (var action in definition.ActionDefinitions)
                 {
                     if (action == null)
@@ -197,6 +204,96 @@ namespace GuardsDigital.Presentation.Match
 
             return new ActiveEffectVisibilityModel(markedHeroes, auras);
         }
+
+        /// <summary>
+        /// Milestone 8.61h. What one of <paramref name="heroId"/>'s rulebook p.16 items adds to a
+        /// matching icon right now, as a seat can read it - <c>ItemBonusQuery.BonusPerItem</c>, or the
+        /// multiple Min the Dragonmonk's "This round: Double your item bonuses" states while it
+        /// stands.
+        ///
+        /// <para><b>It widens no projection and reaches no authority state, for the reason this whole
+        /// type does not.</b> <see cref="IMatchReadModel.ActiveEffectSourceCardInstanceIds"/> is the
+        /// card-level live-effect fact every seat already holds, a <see cref="CardInstance"/> names its
+        /// owner, and the definition that card carries names, in content, every Active effect it can
+        /// create - which is exactly the derivation <see cref="Derive"/> already performs for the
+        /// disks. The authority's own reading is <c>ItemBonusMultiplierQuery</c>'s and is untouched;
+        /// this is the same declaration read from the seat's side, so the badge and the Attack total
+        /// cannot disagree about whether the doubling is up.</para>
+        ///
+        /// <para><b>A composition naming no catalog reads rulebook p.16 unmodified</b>, exactly as one
+        /// draws no aura - <c>EffectSeamConformanceTests</c> forbids a production type reaching for
+        /// <c>MatchContentCatalogs.ForThisBuild</c> on its own, so a null catalog is the honest "this
+        /// reader was told nothing" rather than a guess.</para>
+        /// </summary>
+        public static int ItemBonusPerItem(
+            HeroId heroId,
+            IReadOnlyList<CardInstanceId> activeEffectSourceCardInstanceIds,
+            IReadOnlyList<CardInstance> cards,
+            IReadOnlyList<CardDefinition> definitions,
+            EffectCapabilityCatalog capabilities)
+        {
+            var largest = ItemBonusMultiplierQuery.PrintedMultiplier;
+            if (!heroId.IsDefined || activeEffectSourceCardInstanceIds == null ||
+                cards == null || definitions == null || capabilities == null)
+            {
+                return ItemBonusQuery.BonusPerItem * largest;
+            }
+
+            foreach (var cardInstanceId in activeEffectSourceCardInstanceIds)
+            {
+                var card = cards.FirstOrDefault(value =>
+                    value != null && value.Id.Equals(cardInstanceId));
+                if (card == null || !card.OwnerId.Equals(heroId))
+                {
+                    continue;
+                }
+
+                var definition = definitions.FirstOrDefault(value =>
+                    value != null && value.Id.Equals(card.DefinitionReference.DefinitionId));
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                foreach (var action in definition.ActionDefinitions)
+                {
+                    foreach (var declared in DeclaredActiveEffects(action, capabilities))
+                    {
+                        // "Your item bonuses" is a sentence about the hero whose card it is, so only
+                        // the controller-scoped declaration is read - the same structural narrowing
+                        // the authority's own query applies.
+                        if (declared.AffectedScope != ActiveEffectAffectedScopeKind.ControllerHero)
+                        {
+                            continue;
+                        }
+
+                        foreach (var modification in declared.Modifications)
+                        {
+                            if (modification != null &&
+                                modification.Kind == RuleModificationKind.ItemBonusMultiplier &&
+                                modification.Amount > largest)
+                            {
+                                largest = modification.Amount;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return ItemBonusQuery.BonusPerItem * largest;
+        }
+
+        /// <summary>The same reading over a whole projection. Milestone 8.61h.</summary>
+        public static int ItemBonusPerItem(
+            IMatchReadModel projection, HeroId heroId, EffectCapabilityCatalog capabilities) =>
+            projection == null
+                ? ItemBonusQuery.BonusPerItem * ItemBonusMultiplierQuery.PrintedMultiplier
+                : ItemBonusPerItem(
+                    heroId,
+                    projection.ActiveEffectSourceCardInstanceIds,
+                    projection.Cards,
+                    projection.Definitions,
+                    capabilities);
 
         /// <summary>
         /// Every Active effect the two printed bodies of one action can create, in declaration order
@@ -341,6 +438,11 @@ namespace GuardsDigital.Presentation.Match
         /// holds - and p.16's rule is exactly <c>ItemBonusQuery.BonusPerItem</c> (+1) per matching
         /// item, applied to a PRINTED icon and never to a number the sentence writes down. So the two
         /// arms here are the two arms there, and the same rule decides both.</para>
+        ///
+        /// <para>Milestone 8.61h: <paramref name="radiusItemBonus"/> is the POINTS those items add
+        /// rather than how many there are, because what one item adds is no longer always one - see
+        /// <see cref="ItemBonusPerItem(HeroId, IReadOnlyList{CardInstanceId}, IReadOnlyList{CardInstance}, IReadOnlyList{CardDefinition}, EffectCapabilityCatalog)"/>.
+        /// The two were the same number until a card printed "Double your item bonuses".</para>
         /// </summary>
         public static int ResolveRadius(DeclaredRadius radius, int radiusItemBonus) =>
             radius.Source == DeclaredRadiusSource.PrintedIcon

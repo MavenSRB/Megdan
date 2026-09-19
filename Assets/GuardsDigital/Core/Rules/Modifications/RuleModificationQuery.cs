@@ -148,7 +148,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     continue;
                 }
 
-                var radius = ResolveRadius(effect, heroItems);
+                var radius = ResolveRadius(
+                    effect, heroItems, ItemBonusPerItemFor(effect.ControllerHeroId, timing));
                 for (var index = 0; index < effect.Definition.ObstacleOverlays.Count; index++)
                 {
                     yield return AppliedObstacleOverlay.Bind(
@@ -180,7 +181,9 @@ namespace GuardsDigital.Core.Rules.Modifications
                     continue;
                 }
 
-                foreach (var affectedObject in AffectedObjects(effect, board, participants, heroItems))
+                foreach (var affectedObject in AffectedObjects(
+                    effect, board, participants, heroItems,
+                    ItemBonusPerItemFor(effect.ControllerHeroId, timing)))
                 {
                     foreach (var modification in effect.Definition.Modifications)
                     {
@@ -211,7 +214,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             ActiveEffectInstance effect,
             AdjacentMoveAuthority board,
             MatchParticipants participants,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            int bonusPerItem)
         {
             switch (effect.Definition.AffectedScope)
             {
@@ -253,7 +257,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     // because the disk, the anchor and the side are one reading whichever kinds it
                     // admits, and four copies could disagree about any of the three.
                     foreach (var unit in UnitsInRadius(
-                        effect, board, participants, heroItems, effect.Definition.AffectedScope))
+                        effect, board, participants, heroItems, effect.Definition.AffectedScope,
+                        bonusPerItem))
                     {
                         yield return unit;
                     }
@@ -304,7 +309,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             AdjacentMoveAuthority board,
             MatchParticipants participants,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            ActiveEffectAffectedScopeKind scope)
+            ActiveEffectAffectedScopeKind scope,
+            int bonusPerItem)
         {
             var admitsHeroes = scope != ActiveEffectAffectedScopeKind.MinionsInRadius;
             var admitsMinions = scope != ActiveEffectAffectedScopeKind.HeroesInRadius &&
@@ -333,7 +339,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                         effect.SourceCardInstanceId,
                         effect.SourceActionDefinitionId,
                         PrintedValueChannel.Radius,
-                        ResolveRadius(effect, heroItems))
+                        ResolveRadius(effect, heroItems, bonusPerItem))
                 });
             var relation = effect.Definition.AffectedUnitRelation;
 
@@ -384,12 +390,29 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// </summary>
         private static int ResolveRadius(
             ActiveEffectInstance effect,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems) =>
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            int bonusPerItem) =>
             effect.Definition.Radius.Resolve(
                 effect.ControllerHeroId,
                 effect.SourceCardInstanceId,
                 effect.SourceActionDefinitionId,
-                heroItems);
+                heroItems,
+                bonusPerItem);
+
+        /// <summary>
+        /// Milestone 8.61h. What one of <paramref name="controllerHeroId"/>'s p.16 items adds to the
+        /// disk an Active effect of theirs draws - the page's own +1, or the multiple a standing
+        /// <see cref="RuleModificationKind.ItemBonusMultiplier"/> declaration of theirs states.
+        ///
+        /// <para><b>It is read off the effects rather than off a modification set, because this is
+        /// where that set is being built.</b> Asking <c>ItemBonusMultiplierQuery</c>'s bound overload
+        /// here would be asking for the answer this method's own caller is in the middle of computing.
+        /// The lifecycle overload is the same query one step earlier in the same derivation, which is
+        /// why it lives there rather than being written out again here - two derivations of one rule
+        /// are how a disk and a total come to disagree.</para>
+        /// </summary>
+        private static int ItemBonusPerItemFor(HeroId controllerHeroId, ActiveEffectLifecycle timing) =>
+            ItemBonusMultiplierQuery.BonusPerItem(controllerHeroId, timing);
 
         /// <summary>
         /// Milestone 8.19c. One declaration with its derived count already taken, or <c>null</c> when

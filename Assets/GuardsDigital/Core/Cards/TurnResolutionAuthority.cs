@@ -3637,7 +3637,16 @@ namespace GuardsDigital.Core.Cards
             AddTiming(
                 events, TimingCheckpoint.ActionEnded, default, sourceCardInstanceId, basicAction,
                 completedAttackTarget, primaryAction,
-                PerformedMovementAction.ForCompletedAction(actorId, sourceCardInstanceId, actionDefinitionId, kind));
+                PerformedMovementAction.ForCompletedAction(actorId, sourceCardInstanceId, actionDefinitionId, kind),
+                // Milestone 8.61h. The third question this completion can already answer: was the
+                // action that ended an ATTACK, whatever card it came off? p.9's basic supertype above
+                // is a fact about the card and is absent for every coloured one; this is a fact about
+                // the action's kind, and Min's Flurry of Blows is the first printed sentence to ask
+                // it. Decided here because here is where the answer is in hand, which is the
+                // discipline `PerformedBasicAction` records for itself.
+                PerformedAttackAction.ForCompletedAction(
+                    actorId, sourceCardInstanceId, actionDefinitionId, kind,
+                    invocationContext == ActionInvocationContext.Repeated));
         }
 
         private void AddTiming(
@@ -3648,7 +3657,8 @@ namespace GuardsDigital.Core.Cards
             PerformedBasicAction basicAction = default,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget completedAttackTarget = default,
             PerformedPrimaryAction primaryAction = default,
-            PerformedMovementAction movementAction = default)
+            PerformedMovementAction movementAction = default,
+            PerformedAttackAction attackAction = default)
         {
             if (!affectedHeroId.IsDefined && initiative.SelectedActor.IsDefined)
                 affectedHeroId = initiative.SelectedActor.ActorId;
@@ -3670,9 +3680,10 @@ namespace GuardsDigital.Core.Cards
                 ? cardActions.ApplyTriggeredActionEnded(
                     timing, context, initiative.TieBreakerState, definitions, instances,
                     participants, CurrentModifications(),
-                    ContinuousTriggersFor(basicAction, primaryAction, movementAction),
+                    ContinuousTriggersFor(basicAction, primaryAction, movementAction, attackAction),
                     basicAction,
-                    completedAttackTarget)
+                    completedAttackTarget,
+                    attackAction)
                 : timing.ApplyCheckpoint(context, initiative.TieBreakerState);
             foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));
         }
@@ -3701,7 +3712,8 @@ namespace GuardsDigital.Core.Cards
         private IEnumerable<ContinuousTriggeredEffectSource> ContinuousTriggersFor(
             PerformedBasicAction basicAction,
             PerformedPrimaryAction primaryAction = default,
-            PerformedMovementAction movementAction = default)
+            PerformedMovementAction movementAction = default,
+            PerformedAttackAction attackAction = default)
         {
             if (cardActions == null)
                 return Array.Empty<ContinuousTriggeredEffectSource>();
@@ -3710,7 +3722,8 @@ namespace GuardsDigital.Core.Cards
             return GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.ArmUnspent(
                 ultimates,
                 GuardsDigital.Core.Rules.Progression.UltimateTriggeredEffectSourceQuery.Derive(
-                    ultimates, cardActions.Board, participants, basicAction, primaryAction, movementAction),
+                    ultimates, cardActions.Board, participants, basicAction, primaryAction,
+                    movementAction, attackAction),
                 consumedTurnScopedKeys);
         }
 

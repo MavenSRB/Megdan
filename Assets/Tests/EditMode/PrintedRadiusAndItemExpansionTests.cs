@@ -63,7 +63,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(composed.Total, Is.EqualTo(PrintedRadius + 1));
             Assert.That(
                 composed.Contributions,
-                Is.EqualTo(ItemBonusQuery.Apply(printed, items, RedHeroId).Contributions));
+                Is.EqualTo(ItemBonusQuery.Apply(printed, items, RedHeroId, ItemBonusQuery.BonusPerItem).Contributions));
 
             var itemContributions = composed.Contributions
                 .Where(value => value.Kind == ValueContributionKind.ItemModifier)
@@ -546,7 +546,8 @@ namespace GuardsDigital.Tests.EditMode
                     RadiusAction,
                     definitions,
                     RedHeroId,
-                    items);
+                    items,
+                    RuleModificationSet.Empty);
 
             /// <summary>The same total asked of an ordinary card, which prints no Radius icon.</summary>
             public ValueResult OrdinarySkillTotal(HeroItemState items)
@@ -558,7 +559,8 @@ namespace GuardsDigital.Tests.EditMode
                 var action = DefinitionOf(ordinary).ActionDefinitions
                     .First(value => value.Kind == ActionKind.Movement);
                 return RadiusValueQuery.Calculate(
-                    ordinary.Id, ordinary.DefinitionReference, action.Id, definitions, RedHeroId, items);
+                    ordinary.Id, ordinary.DefinitionReference, action.Id, definitions, RedHeroId, items,
+                    RuleModificationSet.Empty);
             }
 
             public HeroItemState ItemsFor(HeroId owner, params PrintedValueChannel[] icons) =>

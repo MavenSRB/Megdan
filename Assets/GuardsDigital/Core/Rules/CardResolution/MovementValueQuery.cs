@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 offer, materialized, PrintedValueChannel.Movement);
             var composed = heroItems == null
                 ? printed
-                : ItemBonusQuery.Apply(printed, heroItems, offer.ActorId);
+                : ItemBonusQuery.Apply(printed, heroItems, offer.ActorId, modifications);
             var declared = modifications.ValueContributions(
                 RuleObject.ForHero(offer.ActorId),
                 PrintedValueChannel.Movement,

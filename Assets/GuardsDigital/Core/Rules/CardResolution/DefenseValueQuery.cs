@@ -66,7 +66,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // positive number by an adjacent friendly melee minion is still a card with no Defense icon.
             if (heroItems != null)
             {
-                contributions.AddRange(ItemBonusQuery.Contributions(printed, heroItems, defenderId));
+                contributions.AddRange(ItemBonusQuery.Contributions(
+                    printed, heroItems, defenderId, modifications ?? RuleModificationSet.Empty));
             }
 
             var action = ActionOfferQuery.FindActionDefinition(defenseOffer, definitions);

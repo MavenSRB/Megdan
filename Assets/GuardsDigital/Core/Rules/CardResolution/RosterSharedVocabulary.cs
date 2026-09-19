@@ -456,7 +456,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             foreach (var declaration in declarations)
             {
                 var matches = DefenseMatchCount(
-                    declaration.Query, defenseOffer, definitions, board, heroItems,
+                    declaration.Query, defenseOffer, definitions, board, heroItems, modifications,
                     // The defender is the one performing the Defense action, so the overlay is read
                     // from her. That is the user's 2026-09-06 D-02 ruling in composed form: p.14 says
                     // "perform a Defense action", Tide of Darkness says "an action" and narrows
@@ -488,6 +488,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority board,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications,
             SpawnPointOverlay overlay)
         {
             if (query != RosterValueQueryKind
@@ -506,7 +507,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 return 0;
             }
 
-            var radius = RadiusValueQuery.Calculate(defenseOffer, definitions, heroItems);
+            var radius = RadiusValueQuery.Calculate(
+                defenseOffer, definitions, heroItems, modifications ?? RuleModificationSet.Empty);
             if (radius.Total <= 0)
             {
                 // p.16 raises a printed icon and never invents one, so a card that prints no Radius has

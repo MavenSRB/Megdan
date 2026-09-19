@@ -98,7 +98,8 @@ namespace GuardsDigital.Core.Cards.Verified
                     // public list here so the corpus sweeps read the whole set composed so far.
                     ComposedFaces().Concat(BorrowedRiderDefinitions)
                         .Concat(GrenadeCards().Select(GrenadeDefinition))
-                        .Concat(MineDefinitions()).ToArray()));
+                        .Concat(MineDefinitions())
+                        .Concat(DisciplineDefinitions).ToArray()));
 
         private static readonly Lazy<CardDefinition> LazySmokeBomb =
             new Lazy<CardDefinition>(BuildSmokeBomb);

@@ -108,7 +108,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     var reach = reachChannel == PrintedValueChannel.Radius
                         ? RadiusValueQuery.Calculate(context.SourceCardInstanceId,
                             context.SourceDefinitionReference, context.ActionDefinitionId,
-                            context.CardState.Definitions, context.ActorId, context.HeroItems).Total
+                            context.CardState.Definitions, context.ActorId, context.HeroItems,
+                            context.Modifications).Total
                         : RangeValueQuery.Calculate(context.SourceCardInstanceId,
                             context.SourceDefinitionReference, context.ActionDefinitionId,
                             context.CardState.Definitions, context.ActorId, context.HeroItems,

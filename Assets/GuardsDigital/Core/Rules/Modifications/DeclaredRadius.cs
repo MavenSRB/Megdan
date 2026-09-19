@@ -109,11 +109,25 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// The match's items, or <c>null</c> in a composition that holds none - the same named absence
         /// <see cref="GuardsDigital.Core.Rules.CardResolution.RadiusValueQuery"/> expresses.
         /// </param>
+        /// <param name="bonusPerItem">
+        /// Milestone 8.61h. What one matching item adds right now -
+        /// <see cref="ItemBonusQuery.BonusPerItem"/> for rulebook p.16 unmodified, or the multiple
+        /// <c>ItemBonusMultiplierQuery</c> reads while Min's "This round: Double your item bonuses"
+        /// stands.
+        ///
+        /// <para><b>It is a number rather than the live rules set, and the reason is where this is
+        /// asked from.</b> <c>RuleModificationQuery</c> resolves an Active effect's disk while it is
+        /// DERIVING that very set, so handing it one would be a circular question. It derives the
+        /// multiplier from the same pass over the same effects instead, which is a local fact about
+        /// declarations it is already reading, and hands the answer here. Every other caller composes
+        /// its disk through <c>RadiusValueQuery</c>, which does take the set.</para>
+        /// </param>
         public int Resolve(
             HeroId controllerHeroId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId sourceActionDefinitionId,
-            HeroItemState items)
+            HeroItemState items,
+            int bonusPerItem)
         {
             if (!IsDefined)
             {
@@ -146,7 +160,7 @@ namespace GuardsDigital.Core.Rules.Modifications
                         PrintedValueChannel.Radius,
                         Value)
                 });
-            return ItemBonusQuery.Apply(printed, items, controllerHeroId).Total;
+            return ItemBonusQuery.Apply(printed, items, controllerHeroId, bonusPerItem).Total;
         }
 
         public bool Equals(DeclaredRadius other) => Source == other.Source && Value == other.Value;

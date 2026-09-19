@@ -611,10 +611,15 @@ namespace GuardsDigital.Tests.EditMode
                     // and the case below is what keeps the other six naming the action window.
                     UltimateTriggerCondition.AfterControllerGivesMarker,
                     UltimateTriggerCondition.AfterOwnedResolvedCardDiscarded,
-                    UltimateTriggerCondition.AfterControllerPerformsMovementAction
+                    UltimateTriggerCondition.AfterControllerPerformsMovementAction,
+
+                    // Milestone 8.61h. Min's Flurry of Blows declares the attack-action condition;
+                    // it names ActionEnded like the six, which the case below keeps true.
+                    UltimateTriggerCondition.AfterControllerPerformsAttackAction
                 }),
                 "The six conditions dealt heroes declared before this series still are what they " +
-                "were; Bain adds marker-given, Garrus resolved-card-discarded, and Widget actual Movement.");
+                "were; Bain adds marker-given, Garrus resolved-card-discarded, Widget actual Movement, " +
+                "and Min any attack action.");
             Assert.That(
                 declared.All(rule =>
                     rule.TriggerCondition == UltimateTriggerCondition.AfterControllerGivesMarker

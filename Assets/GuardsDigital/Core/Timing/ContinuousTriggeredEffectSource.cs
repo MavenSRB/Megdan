@@ -27,7 +27,8 @@ namespace GuardsDigital.Core.Timing
             EffectDefinitionReference triggeredEffect,
             IEnumerable<TimingCheckpoint> triggerCheckpoints,
             long orderingSequence = 0,
-            PerformedBasicAction triggeringBasicAction = default)
+            PerformedBasicAction triggeringBasicAction = default,
+            PerformedAttackAction triggeringAttackAction = default)
         {
             if (string.IsNullOrWhiteSpace(sourceId)) throw new ArgumentException("A continuous trigger requires stable identity.", nameof(sourceId));
             if (!controllerHeroId.IsDefined || !sourceCardInstanceId.IsDefined ||
@@ -58,6 +59,7 @@ namespace GuardsDigital.Core.Timing
             TriggerCheckpoints = new ReadOnlyCollection<TimingCheckpoint>(checkpoints);
             OrderingSequence = orderingSequence;
             TriggeringBasicAction = triggeringBasicAction;
+            TriggeringAttackAction = triggeringAttackAction;
         }
 
         public string SourceId { get; }
@@ -79,5 +81,19 @@ namespace GuardsDigital.Core.Timing
         /// by the time the effect runs.
         /// </summary>
         public PerformedBasicAction TriggeringBasicAction { get; }
+
+        /// <summary>
+        /// The completed ATTACK action this occurrence fired for, or
+        /// <see cref="PerformedAttackAction.None"/> for a source that is not derived from one.
+        /// Milestone 8.61h.
+        ///
+        /// <para>It travels beside <see cref="TriggeringBasicAction"/> rather than replacing it
+        /// because the two answer different sentences and most sources carry exactly one of them:
+        /// Tigerclaw's Cloak and Daggers fires on p.9's basic supertype and Min's Flurry of Blows on
+        /// p.13's action kind. A BASIC Attack defines both, and both name the same card, action and
+        /// hero - so whichever an occurrence reads, the subject it offers to repeat is the same
+        /// one.</para>
+        /// </summary>
+        public PerformedAttackAction TriggeringAttackAction { get; }
     }
 }
