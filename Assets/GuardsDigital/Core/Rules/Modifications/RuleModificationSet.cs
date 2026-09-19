@@ -83,6 +83,17 @@ namespace GuardsDigital.Core.Rules.Modifications
                 .ThenBy(modification => modification.SourceId, StringComparer.Ordinal)
                 .ThenBy(modification => modification.Modification.Kind)
                 .ToArray());
+
+            // Milestone 8.61a. Taken once, here, rather than filtered at each ask: TargetQuery.
+            // IsPrevented is the innermost call of every disk walk in the engine, and the set is
+            // rebuilt per command anyway, so the screens are a field and the overwhelmingly common
+            // answer - there are none - costs one count.
+            TargetingScreens = Array.AsReadOnly(Modifications
+                .Where(modification =>
+                    modification.Modification.Kind ==
+                    RuleModificationKind.EnemyHeroesCannotTargetThroughThisTokensSpace &&
+                    modification.AffectedObject.Kind == RuleObjectKind.Token)
+                .ToArray());
         }
 
         /// <summary>The Tie-Breaker state this order was resolved against, when one was supplied.</summary>
@@ -97,6 +108,19 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// obstacle question.
         /// </summary>
         public IReadOnlyList<AppliedObstacleOverlay> ObstacleOverlays { get; }
+
+        /// <summary>
+        /// Milestone 8.61a. The placed tokens whose properties screen p.19's targeting along a
+        /// straight line - Min's Smoke Bomb, and nothing else today. Each entry names the token it is
+        /// addressed to and the side that placed it; <b>where</b> that token stands is the board's
+        /// answer and is asked at the one query that consults this, because a coordinate copied into
+        /// this value would be a second place the token's position could be wrong.
+        ///
+        /// <see cref="TargetQuery.IsPrevented"/> is the only consumer, for the reason
+        /// <see cref="AnyOverlayMakesAnObstacleOf"/> has exactly one: the rulebook gives the question
+        /// one owner.
+        /// </summary>
+        public IReadOnlyList<AppliedRuleModification> TargetingScreens { get; }
 
         public IReadOnlyList<ActionTargetExclusion> TargetExclusions { get; }
         public bool ExcludesTarget(RuleObject target, RuleObject actor) => actor.Kind == RuleObjectKind.Hero &&

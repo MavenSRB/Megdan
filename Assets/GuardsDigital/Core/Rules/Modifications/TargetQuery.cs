@@ -33,9 +33,115 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool IsPrevented(RuleObject target, RuleActivity activity, RuleObject actingUnit,
             IBoardDisplacementAuthority board, MatchParticipants participants, RuleModificationSet modifications,
             IReadOnlyList<ImmunityOverrideDeclaration> overrides = null, RuleActivity overrideActivity = RuleActivity.None) =>
-            modifications.ExcludesTarget(target, actingUnit) || ImmunityQuery.IsImmuneTo(target, activity, actingUnit,
+            modifications.ExcludesTarget(target, actingUnit) ||
+            IsScreened(target, actingUnit, board, participants, modifications) ||
+            ImmunityQuery.IsImmuneTo(target, activity, actingUnit,
                 board, participants, modifications, overrides ?? Array.Empty<ImmunityOverrideDeclaration>(),
                 overrideActivity == RuleActivity.None ? activity : overrideActivity);
+
+        /// <summary>
+        /// Milestone 8.61a. Whether a token standing between the two of them stops this hero targeting
+        /// this unit - Min the Dragonmonk's Smoke Bomb, "enemy heroes cannot target you or another
+        /// unit if the smoke bomb token is on a straight line between that enemy hero and their
+        /// target".
+        ///
+        /// <para><b>It is here, beside immunity and the borrowed-Skill exclusion, because this method
+        /// is where p.19's Target already has its one owner.</b> That page defines targeting as broadly
+        /// as it can - "Whenever your action has any effect on another unit in any way, you target that
+        /// unit" - and every attack target, push subject, swap subject and card-text unit choice in
+        /// this engine reaches that definition through this call. Screening them anywhere else would
+        /// have meant screening them in one place and forgetting them in the next.</para>
+        ///
+        /// <para><b>Four conditions, and each is one printed word.</b> "Enemy <em>heroes</em>" makes an
+        /// acting minion no screen's business, which is also what leaves p.8's Minion Battle untouched -
+        /// nothing there is a hero performing an action. "<em>Enemy</em>" is measured against the side
+        /// that placed the token, so Min's own team targets through her smoke freely. "You or another
+        /// <em>unit</em>" is p.19's units, heroes and minions, which is why the token itself stays
+        /// targetable - a token reaches this method as <see cref="RuleObject.None"/> and a space never
+        /// reaches it at all. And "on a straight line <em>between</em>" is
+        /// <see cref="StraightLineQuery.LiesStrictlyBetween"/>, under which an adjacent pair has
+        /// nothing between it.</para>
+        ///
+        /// <para><b>Presence is not targeting</b>, and needs no condition here to stay that way:
+        /// <see cref="UnitPresenceQuery"/> is the other half of the pair this type's own remarks
+        /// describe and consults no modification at all, so "if you are adjacent to a minion" is
+        /// unaffected by construction.</para>
+        ///
+        /// <para>The board and the participants are consulted only once a screen is actually standing,
+        /// so a caller that has neither - and there are such callers, asking in the abstract - answers
+        /// exactly as it did before this milestone.</para>
+        /// </summary>
+        private static bool IsScreened(
+            RuleObject target,
+            RuleObject actingUnit,
+            IBoardDisplacementAuthority board,
+            MatchParticipants participants,
+            RuleModificationSet modifications)
+        {
+            var screens = modifications.TargetingScreens;
+            if (screens.Count == 0 ||
+                actingUnit.Kind != RuleObjectKind.Hero ||
+                board == null ||
+                participants == null)
+            {
+                return false;
+            }
+
+            if (!TryFindSpaceOf(target, board, out var targetAt) ||
+                !board.TryGetObjectCoordinate(
+                    BoardObjectReference.ForHero(actingUnit.HeroId), out var actorAt))
+            {
+                return false;
+            }
+
+            // A hero the match does not list is on no side, so no token can be its enemy - the same
+            // answer StandsInRelationTo gives rather than the exception GetTeamForHero would throw.
+            if (!participants.Heroes.Any(hero => hero.Id.Equals(actingUnit.HeroId)))
+            {
+                return false;
+            }
+
+            var actingSide = participants.GetTeamForHero(actingUnit.HeroId).Side;
+            for (var index = 0; index < screens.Count; index++)
+            {
+                var screen = screens[index];
+                if (screen.ControllerTeamSide == actingSide ||
+                    !board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForToken(screen.AffectedObject.TokenInstanceId),
+                        out var tokenAt))
+                {
+                    continue;
+                }
+
+                if (StraightLineQuery.LiesStrictlyBetween(actorAt, tokenAt, targetAt))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Where one p.19 unit is standing, or <c>false</c> for an object that is not one - a token,
+        /// which this vocabulary can name since milestone 8.35z32, or the named absence.
+        /// </summary>
+        private static bool TryFindSpaceOf(
+            RuleObject unit, IBoardDisplacementAuthority board, out HexCoordinate coordinate)
+        {
+            switch (unit.Kind)
+            {
+                case RuleObjectKind.Hero:
+                    return board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(unit.HeroId), out coordinate);
+                case RuleObjectKind.Minion:
+                    return board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForMinion(unit.MinionId), out coordinate);
+                default:
+                    coordinate = default;
+                    return false;
+            }
+        }
 
         /// <summary>
         /// Every board object within <paramref name="range"/> spaces of <paramref name="origin"/> that

@@ -611,6 +611,52 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess for a face pairing the clause with a Range icon, for a clause about a third " +
                 "party's pile, or for one that reads how MANY cards a pile holds rather than whether " +
                 "it holds any.")
+            ,
+
+            // Milestone 8.61a. One NEW production member on p.19's straight-line owner, plus the one
+            // new reading of it at p.19's Target owner. Min's Smoke Bomb is the first printed rule in
+            // this project that answers about a PAIR of positions rather than about an object, so the
+            // geometry is stated once, beside the rule it reads, and consulted from one place.
+            new SharedFoundationClaim(
+                "targeting.token-screened-straight-line",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Board.StraightLineQuery),
+                    nameof(GuardsDigital.Core.Board.StraightLineQuery.LiesStrictlyBetween),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinSmokeBombTests),
+                            nameof(MinSmokeBombTests
+                                .TheScreenHoldsOnEverySixAxisWithTheBombStrictlyBetween),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "six files measured with the token one or two spaces along and the unit two " +
+                        "or three"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinSmokeBombTests),
+                            nameof(MinSmokeBombTests.AnAdjacentPairIsNeverScreened),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a separation of one space admits no token between it, from either side"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinSmokeBombTests),
+                            nameof(MinSmokeBombTests
+                                .NoScreenReachesAnActingMinionOrASystemLevelResolutionThatNamesNoActor),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "an acting minion and a resolution naming no acting hero pass untouched")
+                },
+                new[] { "geometry", "actor", "target kind", "side", "lifetime" },
+                "One placed token bars the opponents of its controller from targeting a hero or a " +
+                "minion while its own space lies strictly between the two on one of p.19's six " +
+                "files, read once at TargetQuery.IsPrevented and re-derived per command from live " +
+                "occupancy; presence questions, a token target, an acting minion, a resolution " +
+                "naming no acting hero and the controller's own side are untouched.",
+                "Reassess for a screen measured from spaces other than the two units' own, for one " +
+                "shaped as a disk rather than a file, for a second token definition declaring this " +
+                "kind, or for a face that screens something p.19 does not call a unit.")
         };
     }
 

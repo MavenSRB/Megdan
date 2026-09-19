@@ -246,7 +246,48 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// asks it only of an action rulebook p.13 classifies. Her Movement and Skill faces are
         /// therefore untouched by construction rather than by a second condition.</para>
         /// </summary>
-        AttackActionsCountAsRangedAtPrintedRange = 13
+        AttackActionsCountAsRangedAtPrintedRange = 13,
+
+        /// <summary>
+        /// Milestone 8.61a. While the affected TOKEN stands, no hero on the team opposing its
+        /// controller may target a unit whose line to that hero runs through the token's space - Min
+        /// the Dragonmonk's Smoke Bomb, printed whole: "Place a [Smoke bomb] smoke bomb token in
+        /// radius; enemy heroes cannot target you or another unit if the smoke bomb token is on a
+        /// straight line between that enemy hero and their target."
+        ///
+        /// <para><b>It is declared about the token and not about the enemy heroes, though the sentence
+        /// names them.</b> The rule's whole content is geometric and the geometry is anchored on the
+        /// token: which heroes it stops depends on where each of them is standing relative to a space
+        /// that only the token knows. p.19 puts a placed token's own rules exactly there - "Once a
+        /// token is placed, it retains all its properties until that token is removed" - and
+        /// <see cref="Components.TokenPropertyAffectedObject.TheTokenItself"/> is the declaration that
+        /// says so. Addressed to every enemy hero instead, each copy would have had to carry the
+        /// token's coordinate, which an applied modification bound to a hero cannot; and "enemy" is
+        /// already carried, because every applied modification names its source's
+        /// <see cref="AppliedRuleModification.ControllerTeamSide"/>.</para>
+        ///
+        /// <para><b>It is not <see cref="Immunity"/>.</b> p.18's immunity is a property of the
+        /// protected unit and is true of it from every direction at once; this one is true of a PAIR -
+        /// the same hero and the same unit are screened from one side of the board and not from
+        /// another, and a hero who takes one step out of the file targets freely. Declaring it as
+        /// immunity would have made a screened unit untargetable by everybody, Min's own team
+        /// included.</para>
+        ///
+        /// <para><b>It is not <see cref="Restriction"/> either.</b> A restriction bars an object from
+        /// performing a named activity, optionally naming who is barred; it says nothing about which
+        /// targets, and p.19's Target is the only thing this sentence is about - "Whenever your action
+        /// has any effect on another unit in any way, you target that unit". So the screen is read
+        /// where every attack target, push subject, swap subject and card-text unit choice already
+        /// meets one question, <see cref="TargetQuery.IsPrevented"/>, and nowhere else.</para>
+        ///
+        /// <para><b>It carries nothing</b> - no amount, no channel, no activity - for the reason
+        /// milestones 8.35z28, 8.35z31 and 8.40a each recorded: a property added to this type moves the
+        /// content digest of every hero whose declarations reach it, while an added enum member no
+        /// earlier declaration names moves nothing. The printed sentence has no number in it, and the
+        /// line it draws is p.19's own, measured by
+        /// <see cref="Board.StraightLineQuery.LiesStrictlyBetween"/>.</para>
+        /// </summary>
+        EnemyHeroesCannotTargetThroughThisTokensSpace = 14
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -902,6 +943,24 @@ namespace GuardsDigital.Core.Rules.Modifications
                 SourceValueQueryKind.None);
         }
 
+        /// <summary>
+        /// Milestone 8.61a. Min's Smoke Bomb screen, declared on the token that draws it. See
+        /// <see cref="RuleModificationKind.EnemyHeroesCannotTargetThroughThisTokensSpace"/> for why it
+        /// is addressed to the token, why it is neither an immunity nor a restriction, and why it
+        /// carries nothing.
+        /// </summary>
+        public static RuleModification ForEnemyHeroTargetingScreen() =>
+            new RuleModification(
+                RuleModificationKind.EnemyHeroesCannotTargetThroughThisTokensSpace,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
         {
             if (!cost.IsDeclared)
@@ -1110,6 +1169,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return $"No more than {Amount} with a {named} action";
                 case RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange:
                     return $"Attack actions are Ranged at printed {Channel} {Amount}";
+                case RuleModificationKind.EnemyHeroesCannotTargetThroughThisTokensSpace:
+                    return "Enemy heroes cannot target through this token's space";
                 default:
                     return "Undeclared modification";
             }

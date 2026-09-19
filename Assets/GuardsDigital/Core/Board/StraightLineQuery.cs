@@ -126,6 +126,38 @@ namespace GuardsDigital.Core.Board
         }
 
         /// <summary>
+        /// Whether <paramref name="between"/> is a space p.19's straight line puts <em>strictly
+        /// between</em> <paramref name="first"/> and <paramref name="second"/>: all three share one
+        /// file, and the middle one is neither endpoint. Milestone 8.61a, for Min the Dragonmonk's
+        /// Smoke Bomb - "if the smoke bomb token is on a straight line between that enemy hero and
+        /// their target".
+        ///
+        /// <para>It is stated here, beside the rule it reads, rather than at the one query that
+        /// consults it, for the reason <see cref="FilterOutStraightLine"/> is: the complement of a rule
+        /// is still that rule, and a caller re-deriving "between" could disagree with this file about
+        /// the two cases the page decides by itself.</para>
+        ///
+        /// <para>Both are decided by the direction arm rather than by
+        /// <see cref="AreInStraightLine"/>, and that is what makes the two corner cases come out right
+        /// with no extra condition. <b>An adjacent pair is never screened</b>: their separation is one
+        /// space, so no space can step once from the first towards the middle and once again from the
+        /// middle towards the second. And <b>neither endpoint screens itself</b>, because
+        /// <see cref="TryGetDirection"/> reports no direction between a coordinate and itself - which
+        /// is exactly where this parts company with the membership reading, under which a space is in
+        /// a straight line with itself.</para>
+        ///
+        /// <para>Purely geometric, like everything else here: it reads no occupancy and no map, so it
+        /// answers about spaces rather than about what is standing on them.</para>
+        /// </summary>
+        public static bool LiesStrictlyBetween(
+            HexCoordinate first,
+            HexCoordinate between,
+            HexCoordinate second) =>
+            TryGetDirection(first, between, out var towardsMiddle, out _) &&
+            TryGetDirection(between, second, out var onwards, out _) &&
+            towardsMiddle == onwards;
+
+        /// <summary>
         /// The candidates that are **not** in a straight line from <paramref name="origin"/>, in
         /// canonical axial order - p.19's rule read as a complement, which is what Wasp's Telekinesis,
         /// Mass Telekinesis and both Boomerangs print: "in range, which is not in a straight line".
