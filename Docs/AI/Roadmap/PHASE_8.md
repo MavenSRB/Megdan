@@ -231,6 +231,8 @@ Outcome: every expanded card-text question shows the asking card's face beside a
 
 Acceptance: presenter tests for the face, the title and the labels on each family; the corpus label test green over all dealt heroes; geometry inside the 8.46 bound at 1280x720 and 2560x1440; Play Mode journeys through Swift's Reload! modal and Bounce's repeat showing the face and the printed labels; the complete Play Mode suite green.
 
+Also in scope, from the same review ("Hard to see this number one here"): the rail's worth badge grows and its digit gets a legible treatment, on the rail and on the victory screen alike.
+
 Non-goals: docked geometry; direction on the board; the level-up window's content.
 
 ### [ ] 8.59 Bounce offers only the spaces it can reach
