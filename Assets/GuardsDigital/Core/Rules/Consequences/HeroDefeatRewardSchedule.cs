@@ -53,6 +53,38 @@ namespace GuardsDigital.Core.Rules.Consequences
         public static int AssistCoins(CardTier lowestCardTier) => TierOrdinal(lowestCardTier, nameof(lowestCardTier));
 
         /// <summary>
+        /// Milestone 8.57c. The same number with a printed clause's multiplier composed into it -
+        /// Rowenna's Glorious Triumph, "your friendly heroes gain <em>triple</em> assist coins".
+        ///
+        /// <para>It is one number rather than a second payment for the reason
+        /// <see cref="LifeCounters(CardTier,int)"/> is one: the coins are produced in exactly one
+        /// place, and a card that tripled them by paying twice more would show each team-mate two
+        /// collections for one Defeat - which the scoreboard counts and a restore taken between the
+        /// two would disagree about. So the multiplication happens where the page's own number is
+        /// produced, and every Defeat in this build that prints no such clause passes
+        /// <see cref="GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities
+        /// .UnmultipliedAssistCoins"/> and reads exactly what it read before.</para>
+        ///
+        /// <para>It multiplies the ASSIST column and nothing else. The defeating hero's own Defeat
+        /// coins are a different sentence on the same page and the Life counters are a third; RO-Q3
+        /// is the recorded reading, and the separation is the same one this type's remarks give for
+        /// keeping assist coins and Life counters apart in the first place.</para>
+        /// </summary>
+        public static int AssistCoins(CardTier lowestCardTier, int multiplier)
+        {
+            if (multiplier < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(multiplier),
+                    multiplier,
+                    "A printed clause multiplies p.13's assist coins; nothing printed reduces them, " +
+                    "so the smallest legal multiplier is the page's own schedule.");
+            }
+
+            return AssistCoins(lowestCardTier) * multiplier;
+        }
+
+        /// <summary>
         /// p.13: "Defeated hero's team spends the number of Life counters, equal to that hero's lowest
         /// card Tier."
         /// </summary>

@@ -331,11 +331,16 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticRosterCapabilities.AdjacentToAnotherEnemyUnitParameter,
                     SyntheticRosterCapabilities.ExcludeAdjacentParameter,
                     SyntheticRosterCapabilities.ContinuedLineFromParameter,
-                    SyntheticRosterCapabilities.HoldsTheActorsMarkerParameter
+                    SyntheticRosterCapabilities.HoldsTheActorsMarkerParameter,
+
+                    // Milestone 8.57c. Rowenna's two Blue Defeats, "an enemy hero adjacent to you
+                    // with no cards in hand" - appended rather than inserted, which is exactly what
+                    // this assertion exists to notice.
+                    SyntheticRosterCapabilities.RequiresEmptyHandParameter
                 }),
                 "The six printed narrowings this milestone found, in their own order, with the " +
                 "seventh appended - measured rather than remembered, so a later insertion that " +
-                "reordered them is told about here.");
+                "reordered them is told about here. 8.57c appended the eighth.");
         }
 
         /// <summary>
@@ -351,11 +356,10 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(57),
-                "MEASURED at 8.43f: the previous 55 plus Widget's two unnarrowed adjacent target nodes, " +
-                "one each on Airborne Attack and Airborne Assault. A different count means " +
-                "a face was added or removed - read which, then re-measure rather than editing this " +
-                "number to match.");
+            Assert.That(nodes.Length, Is.EqualTo(59),
+                "RE-MEASURED at 8.57c: 8.43f's 57 plus Rowenna's two victim selections, one each on " +
+                "Accept Surrender and Glorious Triumph. A different count means a face was added or " +
+                "removed - read which, then re-measure rather than editing this number to match.");
             Assert.That(
                 nodes.SelectMany(node => node.Inputs).Select(input => input.ParameterName).Distinct()
                     .OrderBy(name => name, StringComparer.Ordinal).ToArray(),
@@ -371,11 +375,21 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticRosterCapabilities.PlayedAttackThisTurnParameter,
                     SyntheticRosterCapabilities.DistanceParameter,
                     SyntheticRosterCapabilities.RelationParameter,
-                    SyntheticRosterCapabilities.UnitKindParameter
+                    SyntheticRosterCapabilities.UnitKindParameter,
+
+                    // Milestone 8.57c. Rowenna's two Blue Defeats bind the empty-hand narrowing, so
+                    // the corpus now contains it - and 8.40c's marker narrowing is still bound by
+                    // nobody, which is what this case is about.
+                    SyntheticRosterCapabilities.RequiresEmptyHandParameter
                 }.OrderBy(name => name, StringComparer.Ordinal).ToArray()),
                 "and the parameter this milestone added is bound by none of them, which is the whole " +
                 "of what \"every declaration keeps its exact candidate set\" means for a filter that " +
                 "does nothing unless it is switched on.");
+            Assert.That(
+                nodes.SelectMany(node => node.Inputs).Select(input => input.ParameterName),
+                Has.No.Member(SyntheticRosterCapabilities.HoldsTheActorsMarkerParameter),
+                "8.40c's own parameter, stated as its own assertion now that the list above has " +
+                "grown a later milestone's entry: the claim is about the MARKER narrowing.");
         }
 
         /// <summary>

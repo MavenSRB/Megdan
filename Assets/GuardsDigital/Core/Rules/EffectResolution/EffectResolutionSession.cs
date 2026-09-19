@@ -104,7 +104,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             IEnumerable<EffectResolutionEvent> events,
             RepeatRequest repeatRequested,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause,
-            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats,
+            IReadOnlyList<RequestedHeroDefeat> requestedHeroDefeats,
             IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
             GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =
@@ -136,8 +136,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 (events ?? Enumerable.Empty<EffectResolutionEvent>()).ToArray());
             RepeatRequested = repeatRequested;
             LanePushCause = lanePushCause;
-            RequestedHeroDefeats = new ReadOnlyCollection<GuardsDigital.Core.Units.Heroes.HeroId>(
-                (requestedHeroDefeats ?? Array.Empty<GuardsDigital.Core.Units.Heroes.HeroId>())
+            RequestedHeroDefeats = new ReadOnlyCollection<RequestedHeroDefeat>(
+                (requestedHeroDefeats ?? Array.Empty<RequestedHeroDefeat>())
                     .ToArray());
             RequestedMinionDefeats = new ReadOnlyCollection<GuardsDigital.Core.Setup.MinionId>(
                 (requestedMinionDefeats ?? Array.Empty<GuardsDigital.Core.Setup.MinionId>())
@@ -203,7 +203,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// and the Life counters, and the card action asks it - the same division
         /// <see cref="LanePushCause"/> draws.
         /// </summary>
-        public IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> RequestedHeroDefeats { get; }
+        public IReadOnlyList<RequestedHeroDefeat> RequestedHeroDefeats { get; }
 
         public IReadOnlyList<GuardsDigital.Core.Setup.MinionId> RequestedMinionDefeats { get; }
 
@@ -292,7 +292,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RepeatRequest repeatRequested = default,
             GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind lanePushCause =
                 GuardsDigital.Core.Rules.BoardObjects.LanePushCauseKind.None,
-            IReadOnlyList<GuardsDigital.Core.Units.Heroes.HeroId> requestedHeroDefeats = null,
+            IReadOnlyList<RequestedHeroDefeat> requestedHeroDefeats = null,
             IReadOnlyList<GuardsDigital.Core.Setup.MinionId> requestedMinionDefeats = null,
             GuardsDigital.Core.Rules.CardResolution.AttackTarget boundAttackTarget = default,
             GuardsDigital.Core.Rules.CardResolution.PreActionPlacement aroundActionPlacement =

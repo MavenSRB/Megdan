@@ -11,18 +11,29 @@ using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// The effect bodies Rowenna the Vanguard's printed card text composes to - milestones 8.57a and
-    /// 8.57b, the first two vocabulary blocks of the eighteenth hero.
+    /// The effect bodies Rowenna the Vanguard's printed card text composes to - milestones 8.57a,
+    /// 8.57b and 8.57c, the first three vocabulary blocks of the eighteenth hero.
     ///
     /// <para><b>This file is deliberately partial.</b> 8.57a owns six of her nineteen faces - the one
     /// that hands a retrieve to the hero she just targeted, and the five Reds that pay or heal a
     /// team-mate after the attack and may then repeat. 8.57b adds four: the three Blue faces that swap
-    /// with a friendly unit, and her Silver basic Throw the Gauntlet. Her surrenders, her minion
-    /// placement, her opening shots and her Ultimate belong to 8.57c through 8.57e, and her whole set
-    /// is composed at 8.57f. Nothing here is registered: <see cref="MatchContentCatalogs"/> names no
-    /// Rowenna content until 8.57g deals her, which is milestone 7.9's gate - a registration no dealt
-    /// card can start moves the pinned registration list, every snapshot's bytes and every corpus
-    /// digest while the content never moved.</para>
+    /// with a friendly unit, and her Silver basic Throw the Gauntlet. 8.57c adds the two Blue faces
+    /// that defeat a surrendering enemy. Her minion placement, her opening shots and her Ultimate
+    /// belong to 8.57d and 8.57e, and her whole set is composed at 8.57f. Nothing here is registered:
+    /// <see cref="MatchContentCatalogs"/> names no Rowenna content until 8.57g deals her, which is
+    /// milestone 7.9's gate - a registration no dealt card can start moves the pinned registration
+    /// list, every snapshot's bytes and every corpus digest while the content never moved.</para>
+    ///
+    /// <para><b>What 8.57c costs the shared vocabulary is one PARAMETER on a selection, one parameter
+    /// and one OUTPUT on the Defeat, and one argument at rulebook p.13's single spend site.</b>
+    /// <c>choose-target@2</c> gains
+    /// <see cref="SyntheticRosterCapabilities.RequiresEmptyHandParameter"/> - the complement of
+    /// milestone 8.40f's <c>minimumCardsInHand</c>, carried under that family's own name;
+    /// <c>synthetic-defeat-hero@1</c> gains
+    /// <see cref="SyntheticConsequenceCapabilities.AssistCoinMultiplierParameter"/> and publishes it
+    /// back for a node that declared it, so the multiplier rides to the spend site the way the request
+    /// itself does. All three are optional, so every body composed before this milestone offers,
+    /// publishes and prices exactly what it did. No new capability and no new handler type.</para>
     ///
     /// <para><b>What 8.57b costs the shared vocabulary is one DECLARATION, one PARAMETER on each of two
     /// registered capabilities, and one OUTPUT.</b> <c>synthetic-place-in-range-beside-a-named-hero@1</c>
@@ -78,6 +89,16 @@ namespace GuardsDigital.Core.Cards.Verified
         private const string RewardPrefix = "reward";
         private const string GuardPrefix = "guard";
         private const string GauntletPrefix = "gauntlet";
+        private const string SurrenderPrefix = "surrender";
+
+        /// <summary>
+        /// Milestone 8.57c. Glorious Triumph's "TRIPLE assist coins" as the number the card prints.
+        ///
+        /// <para>It is written here rather than at the binding for the reason every printed number in
+        /// this file is: the definition is the card's own words and values, and a bare <c>3</c> inside
+        /// a node list says nothing about which word it came from.</para>
+        /// </summary>
+        private const int TripledAssistCoins = 3;
 
         /// <summary>
         /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
@@ -560,6 +581,19 @@ namespace GuardsDigital.Core.Cards.Verified
                 return CreateThrownGauntlet(cardId, contentRevision);
             }
 
+            if (cardId.Equals(RowennaCardContent.AcceptSurrender))
+            {
+                return CreateAcceptedSurrender(
+                    cardId, contentRevision,
+                    assistCoinMultiplier: SyntheticConsequenceCapabilities.UnmultipliedAssistCoins);
+            }
+
+            if (cardId.Equals(RowennaCardContent.GloriousTriumph))
+            {
+                return CreateAcceptedSurrender(
+                    cardId, contentRevision, assistCoinMultiplier: TripledAssistCoins);
+            }
+
             return null;
         }
 
@@ -897,6 +931,167 @@ namespace GuardsDigital.Core.Cards.Verified
                             new EffectOutputBinding("recipient", EffectValueKind.Hero),
                             new EffectOutputBinding("amount", EffectValueKind.Integer)
                         })
+                });
+        }
+
+        /// <summary>
+        /// "Defeat an enemy hero adjacent to you with no cards in hand[; your friendly heroes gain
+        /// triple assist coins]." - Accept Surrender without the second clause, Glorious Triumph with
+        /// it, and the only sentence in the corpus that defeats a hero for holding nothing.
+        ///
+        /// <para><b>One factory for two faces, and the only difference is a number.</b> Both print
+        /// the identical first sentence at the identical reach; what the Tier III adds is the
+        /// multiplier on the coins its own Defeat pays out. Nothing else about the two bodies differs,
+        /// which is why writing them twice would be writing one sentence twice.</para>
+        ///
+        /// <para><b>"Adjacent to you" is card TEXT and is never read off an icon.</b> Neither face
+        /// prints a Range or a Radius - see her shard's printed table - so the reach is the number the
+        /// sentence itself writes down, which is what the written-distance roster selection takes and
+        /// what a printed-icon selection could not: p.16's items raise a printed icon and never invent
+        /// one, so a face with no icon has no bound for an item to widen. That is Silverarrow's
+        /// milestone 8.35z46 lesson stated for a second hero, and it is why this composes on
+        /// <c>choose-target@2</c> with <c>reach</c> 1 rather than on
+        /// <c>synthetic-radius-hero-target@1</c>.</para>
+        ///
+        /// <para><b>"With no cards in hand" narrows WHO may be chosen.</b> It is part of the printed
+        /// subject rather than a condition on what happens to him, which is the reading milestone
+        /// 8.21's <c>playedAttackThisTurn</c>, 8.35z28's <c>hasCardInDiscard</c> and 8.40f's
+        /// <c>minimumCardsInHand</c> each record for the same grammar - and here the reading is
+        /// load-bearing rather than merely tidy, because the consequence is a Defeat: a hero offered
+        /// and then refused would have been removed from the board first. The narrowing is
+        /// <see cref="SyntheticRosterCapabilities.RequiresEmptyHandParameter"/>, whose name is the
+        /// printed-icon family's own so that a card author cannot declare one half of the pair and
+        /// mistype the other, and it asks
+        /// <see cref="GuardsDigital.Core.Cards.HeroHandQuery"/> - so "in hand" means here exactly what
+        /// p.10 means and what every seat's own hand count already shows. A hero who has played,
+        /// resolved or discarded every card he had qualifies; a hero holding one does not.</para>
+        ///
+        /// <para><b>Nobody qualifying is the card having no legal target, and the offer greys.</b> The
+        /// selection is mandatory - the face prints no "may" and no "if able" - so an empty candidate
+        /// set is <c>ImpossibleMandatory</c>, which is p.10's own answer, and the selection's
+        /// <c>Anticipate</c> derives that from the same candidate list its execution uses. That is
+        /// what makes the Skill's own offer unavailable rather than a card that starts and stops.
+        /// </para>
+        ///
+        /// <para><b>The Defeat is p.13's ordinary one, reached through the one spend site.</b>
+        /// <c>synthetic-defeat-hero@1</c> declares the consequence and performs none of it - milestone
+        /// 8.10's shape and 8.22's effect-invoked entrance - so the defeated hero's team spends Life
+        /// counters by its lowest Tier, Rowenna collects Defeat coins equal to his Level, her
+        /// team-mates collect assist coins by that Tier, his unresolved card resolves, his Active
+        /// effects cancel, his markers return, and the match can END here if the last counter goes.
+        /// Every one of those is the Attack's own list, unchanged, because it is the same method.
+        /// </para>
+        ///
+        /// <para><b>"Your friendly heroes gain triple assist coins" multiplies ONE column, and RO-Q3
+        /// is the reading.</b> The assist coins her team-mates collect for THIS Defeat are tripled -
+        /// Tier I to 3, Tier II to 6, Tier III to 9. Her own Defeat coins are not: she collects Defeat
+        /// coins rather than assist coins, and p.13 gives those two different sentences. The Life
+        /// counters are a third sentence and do not move either. The multiplier rides to the spend
+        /// site with the request and is composed into the number there rather than paid as a second
+        /// grant afterwards, so each team-mate collects once - which is what the scoreboard counts and
+        /// what a restore taken mid-consequence cannot double.</para>
+        ///
+        /// <para><b>Rowenna is never among her own candidates and neither is a friendly hero.</b> The
+        /// selection is <see cref="SourceTeamRelation.OpposingSource"/> and the roster arm excludes
+        /// the actor unconditionally, which is the printed "enemy hero". A hero immune to her Skill is
+        /// not a candidate at all - p.12 makes the Skill the activity and p.18's "you cannot target
+        /// that unit" is asked about it - which is the one exclusion the empty-hand clause could
+        /// otherwise be blamed for.</para>
+        /// </summary>
+        private static EffectDefinition CreateAcceptedSurrender(
+            CardDefinitionId cardId, string contentRevision, int assistCoinMultiplier)
+        {
+            var root = new EffectNodeId(SurrenderPrefix + "-root");
+            var victim = new EffectNodeId(SurrenderPrefix + "-victim");
+            var defeat = new EffectNodeId(SurrenderPrefix + "-defeat");
+
+            var multiplied =
+                assistCoinMultiplier > SyntheticConsequenceCapabilities.UnmultipliedAssistCoins;
+            var defeatInputs = new List<EffectInputBinding>
+            {
+                EffectInputBinding.FromNodeOutput(
+                    SyntheticConsequenceCapabilities.HeroParameter, victim,
+                    SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero)
+            };
+            if (multiplied)
+            {
+                defeatInputs.Add(EffectInputBinding.FromLiteral(
+                    SyntheticConsequenceCapabilities.AssistCoinMultiplierParameter,
+                    EffectValue.Integer(assistCoinMultiplier)));
+            }
+
+            var defeatOutputs = new List<EffectOutputBinding>
+            {
+                new EffectOutputBinding(
+                    SyntheticConsequenceCapabilities.DefeatedHeroOutput, EffectValueKind.Hero)
+            };
+            if (multiplied)
+            {
+                // Declared only by the face that prints the clause, because a node that declared an
+                // output it does not carry would publish a fact nothing asks for - and the spend site
+                // reads the request's own number, so a face publishing the page's own schedule would
+                // be saying the same thing twice.
+                defeatOutputs.Add(new EffectOutputBinding(
+                    SyntheticConsequenceCapabilities.AssistCoinMultiplierOutput,
+                    EffectValueKind.Integer));
+            }
+
+            return new EffectDefinition(
+                SkillEffectId(cardId),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { victim, defeat }),
+
+                    new EffectNodeDefinition(
+                        victim, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.ChooseTargetV2,
+                        inputs: new[]
+                        {
+                            // "adjacent to you" - measured from her, at the one space p.19 makes the
+                            // word mean.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.OriginParameter,
+                                RosterQueryOrigin.Actor),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.DistanceParameter,
+                                EffectValue.Integer(1)),
+
+                            // "an enemy hero" - p.19's hero and not its unit, on the side opposing
+                            // hers.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.UnitKindParameter,
+                                RosterUnitKind.Hero),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.RelationParameter,
+                                SourceTeamRelation.OpposingSource),
+
+                            // p.12: a Skill's effect is the action, so the immunity question this
+                            // selection asks is the Skill's own. There is no enclosing Attack to
+                            // inherit one from.
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity", RuleActivity.Skill),
+
+                            // "with no cards in hand".
+                            EffectInputBinding.FromLiteral(
+                                SyntheticRosterCapabilities.RequiresEmptyHandParameter,
+                                EffectValue.Boolean(true))
+                        },
+                        outputs: new[]
+                        {
+                            // One output, because the selection admits one kind: a hero.
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.ChosenHeroOutput, EffectValueKind.Hero)
+                        }),
+
+                    new EffectNodeDefinition(
+                        defeat, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticConsequenceCapabilities.DefeatHeroV1,
+                        inputs: defeatInputs,
+                        outputs: defeatOutputs)
                 });
         }
 

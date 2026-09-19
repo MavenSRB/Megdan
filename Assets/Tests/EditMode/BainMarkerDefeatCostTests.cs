@@ -800,7 +800,15 @@ namespace GuardsDigital.Tests.EditMode
                     configuration.CardInstances,
                     configuration.Participants,
                     DerivedModifications(),
-                    steps
+                    steps,
+
+                    // Milestone 8.57c gave the seam an eighth argument - what THIS Defeat multiplies
+                    // p.13's assist coins by, for Rowenna's Glorious Triumph. It carries a default, so
+                    // every production caller composed before her is unchanged; a reflected invoke
+                    // has to supply it, and what this fixture is about is the Life cost, which the
+                    // multiplier does not touch. The page's own schedule is therefore what it passes.
+                    GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities
+                        .UnmultipliedAssistCoins
                 });
                 lastSteps = steps;
                 return resolved;

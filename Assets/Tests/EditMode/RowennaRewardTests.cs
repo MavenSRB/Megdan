@@ -589,9 +589,10 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(composed, Is.EqualTo(10),
-                "Ten faces: 8.57a's six - Token of Gratitude and Fair Share are two cards printing " +
-                "one sentence at two Radii and each carries its own body - and 8.57b's four.");
+            Assert.That(composed, Is.EqualTo(12),
+                "Twelve faces: 8.57a's six - Token of Gratitude and Fair Share are two cards printing " +
+                "one sentence at two Radii and each carries its own body - 8.57b's four, and 8.57c's " +
+                "two Blue Defeats.");
         }
 
         /// <summary>

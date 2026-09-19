@@ -31,6 +31,20 @@ namespace GuardsDigital.Tests.EditMode
             {
                 "amount",
                 "actorRadius",
+                // Milestone 8.57c. The printed multiplier Rowenna's Glorious Triumph applies to
+                // rulebook p.13's assist coins - "your friendly heroes gain TRIPLE assist coins". It
+                // is an ordinary quantity in every sense this list means: it multiplies a number the
+                // page already produces, a second card printing a different word - double, quadruple -
+                // costs a binding rather than a capability, and there is no closed set of legal
+                // multipliers to enumerate. It is named the way this list's own precedent names a
+                // qualified quantity, beside `minimumCardsInHand` and `maximumCounted`: WHAT is
+                // multiplied is said in the name, because the same request's other numbers - the
+                // Defeat coins and the Life counters - are two different sentences on that page.
+                //
+                // It reaches this rule immediately rather than at a dealing, for the reason
+                // `minimumCardsInHand` records: the handler it joins is already REGISTERED, so an
+                // added parameter is inside the registered set the moment it is written.
+                "assistCoinMultiplier",
                 "distance",
                 "leastDistance",
                 "length",

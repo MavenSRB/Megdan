@@ -841,6 +841,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
             SyntheticTargetingCapabilities.ExcludeAdjacentParameterName;
 
         /// <summary>
+        /// Milestone 8.57c. Whether the selection admits only candidates holding no cards at all -
+        /// Rowenna's Accept Surrender and Glorious Triumph, "Defeat an enemy hero adjacent to you
+        /// <b>with no cards in hand</b>".
+        ///
+        /// <para>It narrows the candidates for the reason
+        /// <see cref="PlayedAttackThisTurnParameter"/> does: the clause is part of who may be picked,
+        /// so a hero holding a card is not one to offer and then refuse - and here the point is
+        /// sharper than usual, because the consequence is a Defeat and an offer that had to be taken
+        /// back would have removed a hero from the board first.</para>
+        ///
+        /// <para><b>The spelling is the printed-icon family's own constant</b>, exactly as
+        /// <see cref="ExcludeAdjacentParameter"/> is, and for the same reason milestone 8.39h gave:
+        /// this clause is the complement of that family's <c>minimumCardsInHand</c>, and a card
+        /// author declaring one of the two must not be able to mistype the other. Her faces print no
+        /// icon at all, so the arm that carries it is this one - "adjacent to you" is card text and
+        /// p.16's items do not raise a bound a card never printed.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every declaration written before this
+        /// milestone keeps its exact candidate set.</para>
+        /// </summary>
+        public const string RequiresEmptyHandParameter =
+            SyntheticTargetingCapabilities.RequiresEmptyHandParameterName;
+
+        /// <summary>
         /// Milestone 8.40c. Whether the selection admits only candidates wearing a marker the ACTOR's
         /// own content put out - Bain the Bounty Hunter's Hand Crossbow, "Target a hero in range with a
         /// [bounty] bounty marker".
@@ -1799,7 +1823,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // bounty marker" - the seventh narrowing and the first about a COMPONENT rather
                     // than about the board, the geometry or a candidate's own cards.
                     new EffectCapabilityParameter(
-                        HoldsTheActorsMarkerParameter, EffectValueKind.Boolean, isRequired: false)
+                        HoldsTheActorsMarkerParameter, EffectValueKind.Boolean, isRequired: false),
+
+                    // Milestone 8.57c. Rowenna's two Blue Defeats, "an enemy hero adjacent to you
+                    // with no cards in hand" - the eighth narrowing, and the printed-icon family's
+                    // `minimumCardsInHand` complement carried under that family's own name.
+                    new EffectCapabilityParameter(
+                        RequiresEmptyHandParameter, EffectValueKind.Boolean, isRequired: false)
                 },
                 new[]
                 {
@@ -1855,6 +1885,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (context.Input(HoldsTheActorsMarkerParameter).BooleanValue)
                 {
                     declared = WearingAMarkerTheActorDeclared(context, declared);
+                }
+
+                // Milestone 8.57c, and it filters in its turn for the same reason.
+                if (context.Input(RequiresEmptyHandParameter).BooleanValue)
+                {
+                    declared = HoldingNoCardsAtAll(context, declared);
                 }
 
                 if (!context.Input(PlayedAttackThisTurnParameter).BooleanValue)
@@ -1923,6 +1959,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// alternatives are a widened offer and a card greyed for nothing, and only one of them is
             /// a refusal the player can see.</para>
             /// </summary>
+            /// <summary>
+            /// Milestone 8.57c. The candidates holding no cards at all - Rowenna's Accept Surrender
+            /// and Glorious Triumph, "an enemy hero adjacent to you with no cards in hand".
+            ///
+            /// <para><b>A minion is dropped rather than admitted</b>, on the reading
+            /// <see cref="WearingAMarkerTheActorDeclared"/> records: p.10 gives cards to heroes, so a
+            /// clause about a hand that let every minion through would be reading the sentence as if
+            /// it were not there. Both faces that print the clause admit only heroes anyway, so this
+            /// changes nothing for them and states the rule rather than relying on the caller.</para>
+            ///
+            /// <para><b>Card state the fixture did not bind admits nobody rather than everybody</b>,
+            /// which is the same answer <see cref="AlongTheContinuedLine"/> gives an absent board: a
+            /// narrowing that silently does nothing would offer a Defeat the sentence forbids, and of
+            /// the two silent alternatives only a greyed card is one the player can see.</para>
+            /// </summary>
+            private static IReadOnlyList<BoardObjectReference> HoldingNoCardsAtAll(
+                EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
+            {
+                if (!context.CardState.IsAvailable)
+                {
+                    return Array.Empty<BoardObjectReference>();
+                }
+
+                return declared
+                    .Where(target => target.Kind == BoardObjectKind.Hero &&
+                        GuardsDigital.Core.Cards.HeroHandQuery.IsEmpty(
+                            context.CardState.Instances, target.HeroId))
+                    .ToArray();
+            }
+
             private static IReadOnlyList<BoardObjectReference> WearingAMarkerTheActorDeclared(
                 EffectCapabilityContext context, IReadOnlyList<BoardObjectReference> declared)
             {

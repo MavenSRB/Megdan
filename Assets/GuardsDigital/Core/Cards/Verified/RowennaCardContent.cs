@@ -6,22 +6,24 @@ using GuardsDigital.Core.Rules.CardResolution;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// Rowenna the Vanguard's printed faces as definition content - milestones 8.57a and 8.57b, and the
-    /// eighteenth hero this project builds.
+    /// Rowenna the Vanguard's printed faces as definition content - milestones 8.57a, 8.57b and
+    /// 8.57c, and the eighteenth hero this project builds.
     ///
     /// <para><b>This file is deliberately partial, and it says so rather than pretending otherwise.</b>
     /// Her shard records nineteen printed faces. 8.57a composed the SIX whose clauses that block owned
-    /// - Code of Chivalry and the five Reds that reward a team-mate after the attack - and 8.57b adds
-    /// FOUR more: her Silver basic Throw the Gauntlet and the three Blue faces that swap with a
-    /// friendly unit. <see cref="AllDefinitions"/> is therefore ten cards and not nineteen, there is no
-    /// starting hand, no deck, no boxed Handicap and no dealt set: p.5's shape is a statement about a
-    /// complete set, and stating it over half of one would be false. Milestone 8.57f composes the
-    /// remaining nine and adds those members; 8.57g deals her.</para>
+    /// - Code of Chivalry and the five Reds that reward a team-mate after the attack - 8.57b added
+    /// FOUR more - her Silver basic Throw the Gauntlet and the three Blue faces that swap with a
+    /// friendly unit - and 8.57c adds the TWO Blue faces that defeat a surrendering enemy.
+    /// <see cref="AllDefinitions"/> is therefore twelve cards and not nineteen, there is no starting
+    /// hand, no deck, no boxed Handicap and no dealt set: p.5's shape is a statement about a complete
+    /// set, and stating it over two thirds of one would be false. Milestone 8.57f composes the
+    /// remaining seven and adds those members; 8.57g deals her.</para>
     ///
-    /// <para><b>The Blue upgrade pairs are named only as far as this block composes them.</b> Stand
-    /// Guard upgrades to Protect the Weak or Accept Surrender and Protect the Weak to Defend the
-    /// Innocent or Glorious Triumph; the two Defeat faces belong to 8.57c, so each candidate list here
-    /// names the sibling that exists. 8.57f states both pairs whole.</para>
+    /// <para><b>Her whole Blue ladder is composed, so both of its upgrade pairs are now stated
+    /// whole.</b> Stand Guard upgrades to Protect the Weak or Accept Surrender, and each of those to
+    /// Defend the Innocent or Glorious Triumph. 8.57b could name only the sibling that existed at the
+    /// time; nothing on the ladder is deferred any more. Her Red ladder is whole too; what 8.57f still
+    /// owes is the Green one, the Ultimate and the boxed Handicap.</para>
     ///
     /// <para><b>The revision is a placeholder and is not a valid content identity.</b>
     /// <see cref="ContentRevision"/> reads <c>rowenna-8-57a-prep</c>, which follows no dealt hero's
@@ -40,9 +42,14 @@ namespace GuardsDigital.Core.Cards.Verified
     /// recorded in the <c>Docs/AI/Rules/HERO_ROWENNA.md</c> shard. The table there and the rows here
     /// are meant to be read side by side. Nothing is derived.</para>
     ///
-    /// <para><b>RO-03 is open and none of these ten faces is touched by it.</b> The printed colour
+    /// <para><b>RO-03 is open and TWO of these twelve faces are touched by it.</b> The printed colour
     /// conflict her shard holds for the user is on Accept Surrender, Glorious Triumph, Melee and Grand
-    /// Melee; every face composed here prints a corner letter that agrees with its own ribbon.</para>
+    /// Melee - each carries a ribbon, band and frame of one colour and a corner letter of another. The
+    /// shard's working assumption is the RIBBON, which makes both of this block's faces Blue, and the
+    /// rows below state that. What the open question can move is which colour's p.15 ladder they sit
+    /// on and nothing else: their text, values, Initiative, item and Tier are printed and read, and
+    /// the two Defeat bodies do not consult a colour at all. Milestone 8.57f states the whole set and
+    /// is where a user answer would land.</para>
     /// </summary>
     public static class RowennaCardContent
     {
@@ -99,6 +106,17 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>The Blue Tier III that adds her own retrieval to the swap.</summary>
         public static CardDefinitionId DefendTheInnocent { get; } = Id("defend-the-innocent");
 
+        /// <summary>
+        /// Milestone 8.57c. The second Blue Tier II sibling, and the only face in the corpus that
+        /// defeats a hero for holding nothing.
+        /// </summary>
+        public static CardDefinitionId AcceptSurrender { get; } = Id("accept-surrender");
+
+        /// <summary>
+        /// Milestone 8.57c. The Blue Tier III that adds the tripled assist coins to that Defeat.
+        /// </summary>
+        public static CardDefinitionId GloriousTriumph { get; } = Id("glorious-triumph");
+
         // -----------------------------------------------------------------------------------------
         // Local action identities, local to a card exactly as every earlier set's are.
         // -----------------------------------------------------------------------------------------
@@ -131,7 +149,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 Array.AsReadOnly(Profiles().Select(Build).ToArray()));
 
         /// <summary>
-        /// The ten faces these two blocks compose, in her shard's printed-value table order.
+        /// The twelve faces these three blocks compose, in her shard's printed-value table order.
         ///
         /// <para>Built lazily, which is the convention milestone 8.38d adopted after a
         /// static-initialization cycle cost milestone 8.37 1,423 failing cases on one
@@ -143,7 +161,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static CardDefinition Definition(CardDefinitionId id) =>
             AllDefinitions.FirstOrDefault(definition => definition.Id.Equals(id)) ??
             throw new ArgumentException(
-                $"Milestones 8.57a and 8.57b compose no Rowenna card '{id}'.", nameof(id));
+                $"Milestones 8.57a, 8.57b and 8.57c compose no Rowenna card '{id}'.", nameof(id));
 
         private static CardDefinitionId Id(string cardId) =>
             new CardDefinitionId($"{ContentSetId}-{cardId}");
@@ -211,13 +229,14 @@ namespace GuardsDigital.Core.Cards.Verified
                 "may move 1 space; if they do, gain 2 coins.",
                 RowennaPrimaryKind.BasicSkill, range: 4),
 
-            // Stand Guard's upgrade pair is Protect the Weak and Accept Surrender, and only the first
-            // is composed at this block - 8.57c owns the Defeat faces. The candidate list therefore
-            // names what this file can name; 8.57f composes the whole set and states both pairs.
+            // Milestone 8.57c completes both Blue upgrade pairs: Stand Guard upgrades to Protect the
+            // Weak or Accept Surrender, and Protect the Weak to Defend the Innocent or Glorious
+            // Triumph. 8.57b could name only the sibling that existed; both pairs are whole here.
             new RowennaCardProfile(
                 StandGuard, "Stand Guard", 9, 6, 2, 0, 0,
                 CardProgressionProfile.NonBasicCard(
-                    CardColor.Blue, CardTier.I, PrintedValueChannel.None, ProtectTheWeak),
+                    CardColor.Blue, CardTier.I, PrintedValueChannel.None,
+                    ProtectTheWeak, AcceptSurrender),
                 "Swap with a friendly unit in range which is adjacent to an enemy hero, or has a " +
                 "card in the discard.",
                 RowennaPrimaryKind.Skill, range: 3),
@@ -225,10 +244,28 @@ namespace GuardsDigital.Core.Cards.Verified
             new RowennaCardProfile(
                 ProtectTheWeak, "Protect the Weak", 10, 6, 2, 0, 0,
                 CardProgressionProfile.NonBasicCard(
-                    CardColor.Blue, CardTier.II, PrintedValueChannel.Attack, DefendTheInnocent),
+                    CardColor.Blue, CardTier.II, PrintedValueChannel.Attack,
+                    DefendTheInnocent, GloriousTriumph),
                 "Swap with a friendly unit in range which is adjacent to an enemy hero, or has a " +
                 "card in the discard.",
                 RowennaPrimaryKind.Skill, range: 4),
+
+            // Milestone 8.57c. Her two Defeat faces print NO Range and NO Radius icon at all - RO-05's
+            // rule again, and the reason their reach is the word "adjacent" rather than a number p.16
+            // could raise. The Range column is therefore 0 and the builder expresses that by defining
+            // the Skill without a printed icon rather than with a zero one.
+            //
+            // RO-03 is OPEN on both of these faces and neither reading changes what is composed here:
+            // the shard's working assumption is the RIBBON, which is Blue, and the corner letter reads
+            // G. What the open question decides is which colour's upgrade ladder they sit on - which
+            // is why the pairs above name them - and nothing about their text, values or item.
+            new RowennaCardProfile(
+                AcceptSurrender, "Accept Surrender", 10, 6, 2, 0, 0,
+                CardProgressionProfile.NonBasicCard(
+                    CardColor.Blue, CardTier.II, PrintedValueChannel.Defense,
+                    DefendTheInnocent, GloriousTriumph),
+                "Defeat an enemy hero adjacent to you with no cards in hand.",
+                RowennaPrimaryKind.Skill),
 
             new RowennaCardProfile(
                 DefendTheInnocent, "Defend the Innocent", 10, 7, 2, 0, 0,
@@ -236,7 +273,15 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Blue, CardTier.III, PrintedValueChannel.Radius),
                 "Swap with a friendly unit in range which is adjacent to an enemy hero, or has a " +
                 "card in the discard; you may retrieve a discarded card.",
-                RowennaPrimaryKind.Skill, range: 4)
+                RowennaPrimaryKind.Skill, range: 4),
+
+            new RowennaCardProfile(
+                GloriousTriumph, "Glorious Triumph", 10, 7, 2, 0, 0,
+                CardProgressionProfile.NonBasicCard(
+                    CardColor.Blue, CardTier.III, PrintedValueChannel.Movement),
+                "Defeat an enemy hero adjacent to you with no cards in hand; your friendly heroes " +
+                "gain triple assist coins.",
+                RowennaPrimaryKind.Skill)
         };
 
         private static CardDefinition Build(RowennaCardProfile profile) =>

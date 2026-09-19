@@ -3115,11 +3115,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             var materializedInstances = instances as IReadOnlyList<CardInstance> ?? instances.ToArray();
-            foreach (var heroId in result.RequestedHeroDefeats)
+            foreach (var request in result.RequestedHeroDefeats)
             {
+                var heroId = request.HeroId;
                 var defeat = attackDefenseBackend.ResolveEffectInvokedHeroDefeat(
                     source, heroId, definitions, materializedInstances, participants, modifications,
-                    steps);
+                    steps, request.AssistCoinMultiplier);
                 if (defeat == null)
                 {
                     throw new InvalidOperationException(
@@ -4409,7 +4410,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private CardActionResolutionResult WithSkillRequestedHeroDefeats(
             CardActionResolutionResult result,
-            IReadOnlyList<HeroId> requestedHeroDefeats,
+            IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.RequestedHeroDefeat> requestedHeroDefeats,
             ActionResolutionId resolutionId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
@@ -4578,7 +4579,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     definitions, instances));
 
         private void AppendSkillRequestedHeroDefeats(
-            IReadOnlyList<HeroId> requestedHeroDefeats,
+            IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.RequestedHeroDefeat> requestedHeroDefeats,
             ActionResolutionId resolutionId,
             CardInstanceId sourceCardInstanceId,
             ActionDefinitionId actionDefinitionId,
@@ -4594,11 +4595,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var source = EffectInvokedDefeatSource.FromSkill(
                 resolutionId, sourceCardInstanceId, actionDefinitionId, actorId);
             var modifications = CurrentModificationsFor(boundary, actorId);
-            foreach (var heroId in requestedHeroDefeats)
+            foreach (var request in requestedHeroDefeats)
             {
+                var heroId = request.HeroId;
                 var defeat = attackDefenseBackend.ResolveEffectInvokedHeroDefeat(
                     source, heroId, boundary.Definitions, boundary.Instances, boundary.Participants,
-                    modifications, steps);
+                    modifications, steps, request.AssistCoinMultiplier);
                 if (defeat == null)
                 {
                     throw new InvalidOperationException(

@@ -46,6 +46,63 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string DefeatedHeroOutput = "defeatedHero";
 
+        /// <summary>
+        /// Milestone 8.57c. What rulebook p.13's ASSIST coins are multiplied by for this one Defeat -
+        /// Rowenna's Glorious Triumph, "Defeat an enemy hero adjacent to you with no cards in hand;
+        /// <b>your friendly heroes gain triple assist coins</b>".
+        ///
+        /// <para><b>It is a parameter on the request rather than a rule, and RO-Q3 is why.</b> Bain's
+        /// <c>AdditionalDefeatLifeCostWhenDefeated</c> is the near miss worth naming: that is a
+        /// standing property of a marker its holder wears, derived at the command boundary and true
+        /// of every Defeat while it stands. This clause is true of exactly ONE Defeat - the one the
+        /// same sentence just asked for - and a modification set has no way to say "this one". So the
+        /// multiplier rides with the request, the way the request itself does.</para>
+        ///
+        /// <para><b>The multiplier is expressed at the spend site rather than paid afterwards.</b>
+        /// p.13's assist coins are produced in exactly one place -
+        /// <c>HeroDefeatRewardSchedule.AssistCoins</c>, read by <c>ResolveHeroDefeat</c> - and
+        /// tripling the number there gives each team-mate ONE grant of the tripled amount. Paying
+        /// twice as a second step would show the scoreboard two collections per hero for one Defeat,
+        /// and would leave a second mutation for a restore mid-consequence to disagree about. The
+        /// same rule Ursafar's Tear is composed under, applied to the other column of the same
+        /// table.</para>
+        ///
+        /// <para><b>ASSIST coins only.</b> The defeating hero collects Defeat coins equal to the
+        /// defeated hero's Level, and those are a different sentence on the same page; Life counters
+        /// are a third. Neither moves, which is what makes this parameter narrow enough to name.
+        /// </para>
+        ///
+        /// <para>Optional. An unbound parameter is p.13's own schedule - a sentence that multiplies
+        /// nothing multiplies by one - so every body composed before this milestone asks for exactly
+        /// the Defeat it asked for.</para>
+        /// </summary>
+        public const string AssistCoinMultiplierParameter = "assistCoinMultiplier";
+
+        /// <summary>
+        /// Milestone 8.57c. The multiplier this request carries, published beside
+        /// <see cref="DefeatedHeroOutput"/> and only for a node that declared it.
+        ///
+        /// <para>It is published rather than read back off the definition because a completed node
+        /// outcome is this build's transport for a Defeat request: milestone 8.10's remarks on
+        /// <c>RequestedHeroDefeatQuery</c> state the reason, and it holds for the number as much as
+        /// for the hero - a fact in the completed frame survives a pause, a snapshot restore, a
+        /// replay and a retained-prefix Undo without a field of its own. Reading the input from the
+        /// trusted definition instead would work for a literal and break the moment a face binds the
+        /// number from another node.</para>
+        /// </summary>
+        public const string AssistCoinMultiplierOutput = "assistCoinMultiplier";
+
+        /// <summary>
+        /// Milestone 8.57c. What p.13's assist coins are multiplied by when no card text says
+        /// otherwise, which is the whole of this build before Glorious Triumph: one.
+        ///
+        /// <para>It is named rather than written as a literal at the three places that need it - this
+        /// handler, the request the query rebuilds, and the p.14 step-6 entrance that never carries a
+        /// clause - because "unmultiplied" is a statement about rulebook p.13 and a bare <c>1</c>
+        /// appearing in a spend site is not.</para>
+        /// </summary>
+        public const int UnmultipliedAssistCoins = 1;
+
         public const string MinionParameter = "minion";
 
         public const string DefeatedMinionOutput = "defeatedMinion";
@@ -221,8 +278,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public EffectCapabilityReference Reference => DefeatHeroV1;
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                new[] { new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero) },
-                new[] { new EffectOutputBinding(DefeatedHeroOutput, EffectValueKind.Hero) });
+                new[]
+                {
+                    new EffectCapabilityParameter(HeroParameter, EffectValueKind.Hero),
+
+                    // Milestone 8.57c. Glorious Triumph's "triple assist coins" - see
+                    // AssistCoinMultiplierParameter. Optional, so every body composed before this
+                    // milestone asks for exactly the Defeat it asked for.
+                    new EffectCapabilityParameter(
+                        AssistCoinMultiplierParameter, EffectValueKind.Integer, isRequired: false)
+                },
+                new[]
+                {
+                    new EffectOutputBinding(DefeatedHeroOutput, EffectValueKind.Hero),
+                    new EffectOutputBinding(AssistCoinMultiplierOutput, EffectValueKind.Integer)
+                });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -237,10 +307,33 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                return EffectExecutionResult.Applied(new[]
+                var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact(DefeatedHeroOutput, EffectValue.Hero(hero))
-                });
+                };
+
+                // Only for a node that declared it. An unbound parameter is p.13's own schedule, so
+                // the number a declaring node publishes is never less than one - a face that
+                // multiplied assist coins by nothing would be a sentence no card prints, and the
+                // spend site refuses to be told to pay less than the page.
+                if (context.Publishes(AssistCoinMultiplierOutput))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        AssistCoinMultiplierOutput,
+                        EffectValue.Integer(DeclaredMultiplier(context))));
+                }
+
+                return EffectExecutionResult.Applied(facts);
+            }
+
+            /// <summary>
+            /// The multiplier this request carries, as a number the spend site can use: the declared
+            /// one where a face prints a clause, and p.13's own schedule - one - where none does.
+            /// </summary>
+            private static int DeclaredMultiplier(EffectCapabilityContext context)
+            {
+                var declared = context.Input(AssistCoinMultiplierParameter).IntegerValue;
+                return declared < UnmultipliedAssistCoins ? UnmultipliedAssistCoins : declared;
             }
 
             /// <summary>

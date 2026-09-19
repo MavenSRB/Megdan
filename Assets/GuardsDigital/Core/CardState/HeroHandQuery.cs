@@ -51,5 +51,27 @@ namespace GuardsDigital.Core.Cards
         public static bool HasAtLeast(
             IEnumerable<CardInstance> instances, HeroId ownerId, int minimum) =>
             minimum <= 0 || Count(instances, ownerId) >= minimum;
+
+        /// <summary>
+        /// Milestone 8.57c. Whether <paramref name="ownerId"/> holds NO cards at all - Rowenna's
+        /// Accept Surrender and Glorious Triumph, "Defeat an enemy hero adjacent to you <b>with no
+        /// cards in hand</b>".
+        ///
+        /// <para><b>It is the complement of <see cref="HasAtLeast"/> and it is stated here rather
+        /// than negated at a call site</b>, which is the whole reason this type exists: the seat
+        /// summary, the "with two or more" narrowing and this one must agree about what "cards in
+        /// hand" means, and rulebook p.10 is emphatic that a card is in exactly one place - a card
+        /// that has been played, resolved, turned facedown or discarded is not in the hand it came
+        /// from. <see cref="Count"/> reads <see cref="CardLocation.Hand"/> and nothing else, so all
+        /// three readings answer the same question about the same pile.</para>
+        ///
+        /// <para><b>A hero nobody names holds nothing, and therefore holds an empty hand.</b> That
+        /// is the same answer <see cref="Count"/> gives, and it is deliberate rather than
+        /// convenient: every caller reaches this with a candidate it has already decided is a hero,
+        /// so an undefined id here is a defect in the caller and not a narrowing that should
+        /// silently keep it.</para>
+        /// </summary>
+        public static bool IsEmpty(IEnumerable<CardInstance> instances, HeroId ownerId) =>
+            Count(instances, ownerId) == 0;
     }
 }

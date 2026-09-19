@@ -472,6 +472,44 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string MinimumCardsInHandParameterName = "minimumCardsInHand";
 
         /// <summary>
+        /// Milestone 8.57c. Whether a selection admits only candidates holding NO cards at all -
+        /// Rowenna's Accept Surrender and Glorious Triumph, "Defeat an enemy hero adjacent to you
+        /// <b>with no cards in hand</b>".
+        ///
+        /// <para><b>It is <see cref="MinimumCardsInHandParameterName"/>'s complement and it is a
+        /// BOOLEAN rather than a second count, which is measurement rather than taste.</b> The
+        /// obvious spelling - a <c>maximumCardsInHand</c> bound to zero - cannot be written in this
+        /// vocabulary: an unbound optional Integer reads as zero, so "at most zero cards" and "no
+        /// narrowing at all" would be the same declaration, and every hero selection in the corpus
+        /// would silently start demanding an empty hand. A flag says what the card says and an
+        /// unbound one narrows nothing, which is the shape
+        /// <see cref="HasCardInDiscardParameterName"/> and
+        /// <see cref="AdjacentToEmptyMinionSpawnPointParameterName"/> already take.</para>
+        ///
+        /// <para><b>The hand is the hand, and p.10 is what makes that a complete answer.</b> A card
+        /// is in exactly one place: played, resolved, facedown and discarded cards are not in hand,
+        /// so a hero whose whole hand has been played qualifies and a hero holding one card does
+        /// not. Both readings ask <see cref="GuardsDigital.Core.Cards.HeroHandQuery"/> -
+        /// <c>IsEmpty</c> here, <c>HasAtLeast</c> for the count form - so the two clauses and the
+        /// hand count every seat is already shown cannot come apart.</para>
+        ///
+        /// <para><b>It discloses nothing</b>, for the reason
+        /// <see cref="MinimumCardsInHandParameterName"/> records at length: hand SIZE crosses the
+        /// wire to every seat on every frame, so any client can verify this greying for itself.
+        /// </para>
+        ///
+        /// <para><b>Where it is declared.</b> Her two faces print no Range and no Radius icon at all
+        /// - the clause is "adjacent to you", which is card text and never an icon - so the arm that
+        /// carries it is the written-distance roster selection, which names this constant through
+        /// <c>SyntheticRosterCapabilities.RequiresEmptyHandParameter</c> exactly as milestone 8.39h
+        /// made one name serve both families for "not adjacent to you". The name lives here beside
+        /// the clause it complements so a card author cannot declare one of the two and mistype the
+        /// other; no printed-icon arm declares it, because no face in the corpus pairs the clause
+        /// with an icon.</para>
+        /// </summary>
+        public const string RequiresEmptyHandParameterName = "requiresEmptyHand";
+
+        /// <summary>
         /// Milestone 8.35z28. Whether a printed-icon hero selection admits only heroes standing beside an
         /// empty minion Spawn point of the current Battle Zone - Dodger's Death Trap, "An enemy hero in
         /// radius <b>who is adjacent to an empty spawn point in the battle zone</b> discards a card, if

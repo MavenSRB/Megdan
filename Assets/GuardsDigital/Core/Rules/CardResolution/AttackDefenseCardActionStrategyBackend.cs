@@ -2264,6 +2264,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// so a composition that cannot finish the list never starts it: the hero is still standing, its
         /// card is still unresolved, its team still has its counters, and the command is refused whole.
         /// </summary>
+        /// <param name="assistCoinMultiplier">
+        /// Milestone 8.57c. What THIS Defeat multiplies p.13's assist coins by - Rowenna's Glorious
+        /// Triumph, "your friendly heroes gain triple assist coins". p.14's step 6 and every Defeat
+        /// composed before her pass the page's own schedule, so the number they read is unchanged.
+        /// It is an argument rather than a rule because the clause is true of one Defeat and a
+        /// modification set, derived once at the command boundary, cannot say "this one".
+        /// </param>
         private HeroDefeatResolution ResolveHeroDefeat(
             EffectInvokedDefeatSource completedResolution,
             HeroId defeatedHeroId,
@@ -2271,7 +2278,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
             RuleModificationSet modifications,
-            ICollection<ResolutionStep> events)
+            ICollection<ResolutionStep> events,
+            int assistCoinMultiplier =
+                GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities
+                    .UnmultipliedAssistCoins)
         {
             if (heroLevels == null || teamLives == null)
             {
@@ -2294,7 +2304,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 instances,
                 out var lowestTier);
             var defeatCoins = HeroDefeatRewardSchedule.DefeatCoins(defeatedLevel);
-            var assistCoins = hasTier ? HeroDefeatRewardSchedule.AssistCoins(lowestTier) : 0;
+            // Milestone 8.57c. The ASSIST column with this one Defeat's printed multiplier composed
+            // into it, read here for the reason 8.35z31's additional Life counter is read here: p.13's
+            // numbers are produced once and spent once, so a clause that changes one of them changes
+            // it where it is produced rather than paying a second time afterwards. The defeating
+            // hero's own coins above are a different sentence and do not move.
+            var assistCoins = hasTier
+                ? HeroDefeatRewardSchedule.AssistCoins(lowestTier, assistCoinMultiplier)
+                : 0;
             // Milestone 8.35z31. p.13's own number, plus whatever the attacking hero has
             // declared it adds - Ursafar's Tear, and nothing else in the roster. It is composed into
             // the count here rather than spent again later because the ruling that admits it says the
@@ -2486,7 +2503,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
             RuleModificationSet modifications,
-            ICollection<ResolutionStep> events) =>
+            ICollection<ResolutionStep> events,
+            int assistCoinMultiplier =
+                GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities
+                    .UnmultipliedAssistCoins) =>
             ResolveHeroDefeat(
                 source,
                 defeatedHeroId,
@@ -2494,7 +2514,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 instances,
                 participants,
                 modifications,
-                events);
+                events,
+                assistCoinMultiplier);
 
         internal AttackDefenseBackendRestoreState CaptureRestoreState() =>
             new AttackDefenseBackendRestoreState(pendingAttackResolution, pendingSequenceChain);

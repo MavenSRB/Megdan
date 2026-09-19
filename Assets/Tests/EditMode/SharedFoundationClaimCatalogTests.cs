@@ -502,7 +502,76 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { "move", "condition", "publication", "continuation" },
                 "Whether a card-text Move was committed, published only on success and only for a " +
                 "node declaring the output - 8.40i's didRetrieve and 8.57a's didGrant for a Move.",
-                "Reassess for a Push, a Place, or a condition that needs how far rather than whether.")
+                "Reassess for a Push, a Place, or a condition that needs how far rather than whether."),
+
+            // Milestone 8.57c. One PARAMETER on the written-distance selection and one parameter plus
+            // one OUTPUT on the Defeat, each widening a foundation this build already registers.
+            new SharedFoundationClaim(
+                "targeting.empty-hand-narrowing",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .RequiresEmptyHandParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSurrenderTests),
+                            nameof(RowennaSurrenderTests
+                                .AcceptSurrender_AdmitsAHeroWhoseOnlyCardsArePlayedResolvedOrDiscarded),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a hero whose whole hand has been played or discarded holds nothing"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSurrenderTests),
+                            nameof(RowennaSurrenderTests
+                                .AcceptSurrender_LeavesOutAnAdjacentEnemyHoldingASingleCard),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "one card in hand is not no cards, and the candidate is dropped")
+                },
+                new[] { "selection arm", "hand", "candidate kind", "offer feasibility" },
+                "One optional flag on the written-distance hero selection: a candidate holding zero " +
+                "cards in its own hand, read through HeroHandQuery as milestone 8.40f's count form " +
+                "reads it. It narrows who may be picked and nothing else, and it is unbound on every " +
+                "printed-icon arm.",
+                "Reassess for a face printing the clause beside a Range or Radius icon, for a clause " +
+                "about a hand size other than zero, or for a sentence that reads a hand's COLOURS " +
+                "rather than its size."),
+            new SharedFoundationClaim(
+                "consequences.assist-coin-multiplier",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities
+                        .AssistCoinMultiplierParameter),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSurrenderTests),
+                            nameof(RowennaSurrenderTests
+                                .GloriousTriumph_TriplesTheAssistCoinsAndNothingElse),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "one printed clause multiplies one column of p.13's table for one Defeat"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSurrenderTests),
+                            nameof(RowennaSurrenderTests
+                                .ThePageFourteenAttackEntrance_StillPaysThePagesOwnAssistCoins),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "the entrance that carries no clause is priced by the page alone")
+                },
+                new[] { "defeat request", "assist coins", "spend site", "entrance" },
+                "One optional integer on the Defeat request, multiplying rulebook p.13's ASSIST coins " +
+                "for that one Defeat where a face prints a clause; the Defeat coins and the Life " +
+                "counters are two other sentences and do not move. Unbound, it is the page's own " +
+                "schedule, which is what both entrances of the spend site read today.",
+                "Reassess for a clause that multiplies the Defeat coins or the Life counters, for one " +
+                "that reduces a column rather than multiplying it, or for a standing rule about every " +
+                "Defeat rather than about one - which is a RuleModificationKind and not this.")
         };
     }
 
