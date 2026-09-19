@@ -75,7 +75,10 @@ namespace GuardsDigital.Core.Cards.Verified
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =
             new Lazy<IReadOnlyList<CardDefinition>>(
-                () => Array.AsReadOnly(ComposedFaces().ToArray()));
+                () => Array.AsReadOnly(
+                    // Until 8.61i mints the real aggregate, every parallel block appends its own
+                    // public list here so the corpus sweeps read the whole set composed so far.
+                    ComposedFaces().Concat(BorrowedRiderDefinitions).ToArray()));
 
         private static readonly Lazy<CardDefinition> LazySmokeBomb =
             new Lazy<CardDefinition>(BuildSmokeBomb);

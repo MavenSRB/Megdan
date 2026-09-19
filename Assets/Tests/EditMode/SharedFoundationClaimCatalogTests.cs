@@ -657,6 +657,79 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess for a screen measured from spaces other than the two units' own, for one " +
                 "shaped as a disk rather than a file, for a second token definition declaring this " +
                 "kind, or for a face that screens something p.19 does not call a unit.")
+            ,
+
+            // Milestone 8.61g. A NEW capability and a widening of the seam that applies rulebook
+            // p.14's card text: Min's two Gold faces apply the "After the attack" text of another card
+            // of hers inside their own Attack.
+            new SharedFoundationClaim(
+                "borrowing.after-attack-card-text",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Cards.BorrowedCardTextDeclaration),
+                    nameof(GuardsDigital.Core.Cards.BorrowedCardTextDeclaration
+                        .FromResolvedOrDiscardedCards),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinBorrowedRiderTests),
+                            nameof(MinBorrowedRiderTests.ThePool_IsHerRedCard_OnlyWhileItIsResolvedOrDiscarded),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "owned card resolved or discarded supplies the rider; neither state does not"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinBorrowedRiderTests),
+                            nameof(MinBorrowedRiderTests
+                                .ThePool_RefusesAnUltimate_AParkedHandicap_AndAFaceWithNoAfterAttackText),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "no printed primary, deferred text, or no step-7 body leaves the pool empty")
+                },
+                new[] { "pool", "ownership", "colour", "moment", "composition" },
+                "One owned card of a named colour, resting resolved in the turn area or in the discard " +
+                "pile, whose printed primary carries a composed body at rulebook p.14's step 7; the " +
+                "card asking is excluded and the borrowed card's state is untouched.",
+                "Reassess for a clause naming another hero's card, a pool admitting a card in hand or " +
+                "committed-unresolved, or a borrow of card text at p.14's step 1 or step 4."),
+            new SharedFoundationClaim(
+                "resolution.borrowed-after-attack-splice",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Rules.CardResolution.CardActionResolutionAuthority),
+                    "AppendBorrowedAfterAttackText",
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinBorrowedRiderTests),
+                            nameof(MinBorrowedRiderTests
+                                .TheBorrowedReach_IsTheRedCardsPrintedRadius_AndNeverFastAsLightnings),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the borrowed body reads the borrowed card's Radius icon with p.16's items"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinBorrowedRiderTests),
+                            nameof(MinBorrowedRiderTests
+                                .APausePausedInsideABorrowedBody_RoundTripsThroughASnapshotAndStillOffersWhatItOffered),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a pause inside the borrowed frame restores and still offers its candidates"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinBorrowedRiderTests),
+                            nameof(MinBorrowedRiderTests
+                                .TheRiderAppliesNothing_AndTheAttackIsUnaffected_WhenTheRedCardIsNeither),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "an unrequested borrow splices nothing and the attack still completes once")
+                },
+                new[] { "moment", "source card", "remainder", "continuation", "persistence" },
+                "One further p.14 step-7 card-text step, named by a completed step-7 body's own borrow " +
+                "node, carrying the same attack and outcome as its remainder; the borrowed card is the " +
+                "frame's source, so its printed values and icons are what the body reads, and no " +
+                "second AttackResolutionCompleted or ActionEnded is produced.",
+                "Reassess for a borrow read at p.14's step 1 or step 4, for a body with work after its " +
+                "borrow node, or for a borrowed body that would itself borrow.")
         };
     }
 

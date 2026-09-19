@@ -664,25 +664,12 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static IEnumerable<(CardDefinitionId CardId, ActionDefinition Action)> DealtBlocks()
         {
-            var contentTypes = typeof(WaspCardContent).Assembly.GetTypes()
-                .Where(type =>
-                    type.IsClass && type.IsAbstract && type.IsSealed &&
-                    type.Namespace == typeof(WaspCardContent).Namespace &&
-                    type.Name.EndsWith("CardContent", StringComparison.Ordinal))
-                .OrderBy(type => type.Name, StringComparer.Ordinal);
-
-            foreach (var type in contentTypes)
+            // Milestone 8.61g. The reflection is shared rather than copied, and it now admits a hero
+            // whose set is composed by a parallel wave and therefore has no aggregate yet - see
+            // VerifiedContentCorpus for the whole reading.
+            foreach (var type in VerifiedContentCorpus.ContentClasses())
             {
-                var property = type.GetProperty(
-                    "AllDefinitions", BindingFlags.Public | BindingFlags.Static);
-                var field = property == null
-                    ? type.GetField("AllDefinitions", BindingFlags.Public | BindingFlags.Static)
-                    : null;
-                var cards = (IEnumerable<CardDefinition>)(property != null
-                    ? property.GetValue(null)
-                    : field?.GetValue(null));
-                Assert.That(cards, Is.Not.Null,
-                    $"{type.Name} exposes AllDefinitions, or this sweep cannot see its faces.");
+                var cards = VerifiedContentCorpus.AllDefinitionsOf(type);
 
                 foreach (var card in cards)
                 {

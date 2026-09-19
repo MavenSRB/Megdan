@@ -613,23 +613,18 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static IEnumerable<CardDefinition> EveryDealtDefinition()
         {
-            var contentClasses = typeof(WaspCardContent).Assembly.GetTypes()
-                .Where(type =>
-                    type.IsClass && type.IsAbstract && type.IsSealed &&
-                    type.Namespace == typeof(WaspCardContent).Namespace &&
-                    type.Name.EndsWith("CardContent", StringComparison.Ordinal))
-                .ToArray();
+            var contentClasses = VerifiedContentCorpus.ContentClasses().ToArray();
             Assert.That(contentClasses, Is.Not.Empty,
                 "The reflection must find the verified content classes at all.");
 
+            // Milestone 8.61g. A content class whose set is composed by a PARALLEL WAVE has no
+            // aggregate yet - 8.61i mints Min's - and a hero who deals nothing contributes nothing to
+            // an artwork walk over dealt faces. See VerifiedContentCorpus for the whole reading.
             var everyDealtDefinition = new List<CardDefinition>();
             foreach (var contentClass in contentClasses)
             {
-                var property = contentClass.GetProperty(
-                    "DealtDefinitions",
-                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                Assert.That(property, Is.Not.Null, contentClass.Name);
-                everyDealtDefinition.AddRange((IReadOnlyList<CardDefinition>)property.GetValue(null));
+                everyDealtDefinition.AddRange(
+                    VerifiedContentCorpus.DealtDefinitionsOf(contentClass));
             }
 
             return everyDealtDefinition;

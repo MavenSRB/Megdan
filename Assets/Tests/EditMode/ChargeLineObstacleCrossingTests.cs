@@ -628,24 +628,14 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static IEnumerable<(string Owner, EffectDefinition Definition)> VerifiedCorpus()
         {
-            var contentClasses = typeof(WaspCardContent).Assembly.GetTypes()
-                .Where(type =>
-                    type.IsClass && type.IsAbstract && type.IsSealed &&
-                    type.Namespace == typeof(WaspCardContent).Namespace &&
-                    type.Name.EndsWith("CardContent", StringComparison.Ordinal))
-                .OrderBy(type => type.Name, StringComparer.Ordinal);
-
-            foreach (var type in contentClasses)
+            // Milestone 8.61g. The reflection is shared rather than copied, and it now admits a hero
+            // whose set is composed by a parallel wave and therefore has no aggregate yet - see
+            // VerifiedContentCorpus for the whole reading.
+            foreach (var type in VerifiedContentCorpus.ContentClasses())
             {
-                var owner = type.Name
-                    .Substring(0, type.Name.Length - "CardContent".Length)
-                    .ToLowerInvariant();
-                var property = type.GetProperty(
-                    "AllDefinitions", BindingFlags.Public | BindingFlags.Static);
-                Assert.That(property, Is.Not.Null,
-                    $"{type.Name} declares no AllDefinitions, so this sweep would skip it silently.");
+                var owner = VerifiedContentCorpus.OwnerOf(type);
 
-                foreach (var card in (IReadOnlyList<CardDefinition>)property.GetValue(null))
+                foreach (var card in VerifiedContentCorpus.AllDefinitionsOf(type))
                 {
                     foreach (var action in card.ActionDefinitions)
                     {

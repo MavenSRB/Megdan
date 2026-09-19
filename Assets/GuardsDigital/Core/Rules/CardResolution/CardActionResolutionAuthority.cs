@@ -2177,6 +2177,21 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // card-text repeat is, and read from the same completed result. The actor is the hero whose
             // text asked - the borrowing hero performs the borrowed primary, never its owner.
             RecordOwedBorrowedAction(result, step.CardTextActorId);
+            // Milestone 8.61g. A rider borrow is read from the same completed result and produces the
+            // one thing a borrowed PRIMARY cannot: another card text, at this same moment, inside this
+            // same attack. It is appended to the produced stream rather than owed to the turn, because
+            // rulebook p.14 has not finished - the steps the backend queued after this moment are still
+            // standing behind it, and the materializer walks what is returned here first.
+            AppendBorrowedAfterAttackText(
+                action.CardTextAt(step.CardTextTiming),
+                result.Events,
+                step.CardTextTiming,
+                step.CardTextActorId,
+                step.CardTextRemainderResolution,
+                step.CardTextRemainderOutcome,
+                materializedDefinitions,
+                materializedInstances,
+                steps);
 
             // Milestone 8.22, finding `F-ATK-02`. The two things this altitude used to drop, both of
             // which the Skill altitude has carried since 6.9 and 8.19c1: rulebook p.8's recorded cause,
@@ -2294,6 +2309,93 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             RecordAttackLanePush(continued, resolutionId, participants, modifications);
             return continued.Steps;
+        }
+
+        /// <summary>
+        /// Milestone 8.61g. Splices the borrowed "After the attack" text a finished card text asked
+        /// for, as one more rulebook p.14 step-7 application whose source card is the BORROWED one.
+        ///
+        /// <para><b>Everything the printed clause promises falls out of that one decision.</b> Min's
+        /// Fast as Lightning reads "Apply the \"After the attack\" text of your resolved or discarded
+        /// red card. (If it has radius, use that card's value)". A card-text step names the card, the
+        /// action and the hero, and <see cref="ApplyCardText"/> builds the resolution context from
+        /// exactly those - so the borrowed body's "in radius" reads the RED card's printed icon with
+        /// p.16's items through <c>synthetic-card-radius@1</c> and <c>RadiusValueQuery</c>, while the
+        /// attack it is running inside is still the one this step carries, so "the target" is the unit
+        /// Fast as Lightning just attacked. Nothing is copied from one card to the other, which is what
+        /// stops anything being copied wrongly - the same argument
+        /// <see cref="GuardsDigital.Core.Cards.BorrowedPrimaryActionDeclaration"/> makes about a
+        /// borrowed primary's values.</para>
+        ///
+        /// <para><b>It carries the SAME remainder the borrowing text carried, and that is deliberate.</b>
+        /// The steps p.14 leaves after step 7 are generated from the attack's identity whether or not
+        /// anything paused, so a borrowed body that stops on a question hands its pause the attack the
+        /// rest of the page belongs to and the page is rebuilt once, by the one generator, when the
+        /// answer arrives. A borrowed body that stops on nothing leaves the queued remainder standing
+        /// behind it untouched. Either way the attack reaches exactly one
+        /// <c>AttackResolutionCompleted</c> and one <c>ActionEnded</c>, which is what keeps the
+        /// scoreboard counting one Attack.</para>
+        ///
+        /// <para><b>Nothing new is persisted.</b> The pause a borrowed body opens is an ordinary
+        /// <see cref="PendingAttackCardTextResolution"/> whose frame happens to name a different card,
+        /// and the snapshot has written a paused card-text frame's own card, action and effect body
+        /// since milestone 8.10 - so
+        /// <c>AuthoritativeSnapshotSerializer.CurrentSchemaVersion</c> does not move, and milestone
+        /// 8.35i's restore re-asks the borrowed frame with the enclosing Attack it was written under.</para>
+        /// </summary>
+        private static void AppendBorrowedAfterAttackText(
+            EffectDefinition body,
+            IReadOnlyList<GuardsDigital.Core.Rules.EffectResolution.EffectResolutionEvent> events,
+            CardTextTiming moment,
+            HeroId actorId,
+            PendingAttackResolution attack,
+            AttackResolutionOutcome outcome,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            List<ResolutionStep> steps)
+        {
+            // p.14 prints one "After the attack" moment and this clause names it, so a body reached at
+            // any other moment cannot have asked. The attack is what the borrowed body reads its target
+            // and its remainder from; text applied outside one has neither.
+            if (body == null || attack == null ||
+                moment != GuardsDigital.Core.Cards.BorrowedCardTextDeclaration.BorrowedMoment)
+            {
+                return;
+            }
+
+            var request = GuardsDigital.Core.Rules.EffectResolution.BorrowedCardTextQuery.Requested(
+                body, events);
+            if (!request.IsRequested)
+            {
+                return;
+            }
+
+            var card = instances.FirstOrDefault(
+                candidate => candidate.Id.Equals(request.BorrowedCardId));
+            var definition = card == null
+                ? null
+                : definitions.FirstOrDefault(
+                    candidate => candidate.Reference.Equals(card.DefinitionReference));
+            var borrowed =
+                GuardsDigital.Core.Cards.BorrowedCardTextDeclaration.AfterTheAttackAction(definition);
+            if (borrowed == null)
+            {
+                // The capability names only cards whose printed primary carries a composed body at this
+                // moment - one function, asked there and here - so reaching this is a content fault
+                // rather than a rules outcome, and it is stated rather than silently skipped.
+                throw new InvalidOperationException(
+                    $"A borrowed \"After the attack\" rider named card '{request.BorrowedCardId}', " +
+                    "which supplies no composed text at rulebook p.14's step 7; the pool and this " +
+                    "splice read one function and cannot disagree.");
+            }
+
+            steps.Add(ResolutionStep.ApplyCardText(
+                card.Id,
+                borrowed.Id,
+                actorId,
+                GuardsDigital.Core.Cards.BorrowedCardTextDeclaration.BorrowedMoment,
+                attack,
+                outcome));
         }
 
         /// <summary>
@@ -3275,6 +3377,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 facts);
             RecordOwedAttackRepeat(step, paused.Attack);
             RecordOwedBorrowedAction(step, paused.Frame.ActorId);
+            // Milestone 8.61g, the resume half of the same splice the start half makes. A rider borrow
+            // whose own pool question was answered on this pass asks for its body here, and the
+            // borrowed step is appended BEFORE the remainder below so that p.14's step 7 finishes
+            // before the outcome and `ActionEnded` that close the page.
+            AppendBorrowedAfterAttackText(
+                effectRoot,
+                step.Events,
+                paused.Moment,
+                paused.Frame.ActorId,
+                paused.Attack,
+                paused.Outcome,
+                materializedDefinitions,
+                materializedInstances,
+                facts);
 
             // Milestone 8.22, finding `F-ATK-02`, the resume half. A card text that asked a question
             // does its work here rather than where it started, so p.8's recorded cause and the Pushes
