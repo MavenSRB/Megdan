@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.57**.
+- Current completed milestone: **8.57a**.
 - Active authorized milestone: **None**.
-- Next proposed milestone: **8.57a**.
+- Next proposed milestone: **8.57b**.
 
 On 2026-09-18, after a row-by-row design review and a mockup drawn over live captures, the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** - "Ok, get on it then." **8.46 is complete** (blocks 8.46a-8.46g, landed after 8.47-8.52): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press. Next, at the user's word after the same playtest: **8.53**, a victory screen that replaces the HUD when the game ends (winner, win condition, both teams' scoreboards, Cutter's solo win split out), then a package.
 
@@ -34,7 +34,7 @@ The playtest's third report - "Lives are not being counted correctly. It just ta
 
 From the same night's "Silverarrow" report, once 8.51 had named the press: **[8.52](Roadmap/PHASE_8.md) is complete** - the drawn END TURN control no longer answers Enter or Space, only the pointer.
 
-**[8.53](Roadmap/PHASE_8.md) is complete** (`87dacf6c`): when a match ends the whole HUD gives way to the victory screen - the winner in team colour (or `CUTTER WINS`), the cause sentence, the winners' block above the defeated with every hero's token, level, worth and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned, a solo winner split above her crew. The numbers are the authority's `MatchScoreboard` (snapshot **v43**, wire `guards-private-online/17`). **[8.56](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.53-victory-screen` (+ zip) carries 8.46-8.53; 8.54 and 8.55 remain queued. The user's next order is the EIGHTEENTH hero, **Rowenna the Vanguard** ("After the build start implementing Rowenna"): **[8.57](Roadmap/PHASE_8_EIGHTEENTH_HERO.md) is complete** - [her shard](Rules/HERO_ROWENNA.md) holds the inventory, stat bars, capability map and the printed colour-letter conflict RO-03 the user must settle from the physical cards - and **8.57a -> 8.57h** is the proposed series.
+**[8.53](Roadmap/PHASE_8.md) is complete** (`87dacf6c`): when a match ends the whole HUD gives way to the victory screen - the winner in team colour (or `CUTTER WINS`), the cause sentence, the winners' block above the defeated with every hero's token, level, worth and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned, a solo winner split above her crew. The numbers are the authority's `MatchScoreboard` (snapshot **v43**, wire `guards-private-online/17`). **[8.56](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.53-victory-screen` (+ zip) carries 8.46-8.53; 8.54 and 8.55 remain queued. The user's next order is the EIGHTEENTH hero, **Rowenna the Vanguard** ("After the build start implementing Rowenna"): **[8.57](Roadmap/PHASE_8_EIGHTEENTH_HERO.md) is complete** - [her shard](Rules/HERO_ROWENNA.md) holds the inventory, stat bars, capability map and the printed colour-letter conflict RO-03 the user must settle from the physical cards - **8.57a is complete** (`686af16e`: the retrieve-and-reward riders and the rider-gated repeat, two optional outputs, nothing registered); **8.57b -> 8.57h** is the proposed series.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 

@@ -20,13 +20,17 @@ Completed 2026-09-19. All nineteen fronts, the selection card and the dashboard 
 
 Historical evidence: [8.57 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857-rowenna-inventory-completion-evidence).
 
-### [ ] 8.57a Support retrieve and reward for another hero, and the rider-gated repeat
+### [x] 8.57a Support retrieve and reward for another hero, and the rider-gated repeat
 
 Outcome: a card can let a named other hero retrieve their own discarded card or collect coins, chosen by whom the text says; "if they do" reads that rider's performed output; an after-attack repeat can be gated on it and exclude the first target.
 
 Acceptance: both parties retrieving on Code of Chivalry and Earn the Spurs with each hero choosing their own card and able to decline; a friendly hero in radius chosen by Rowenna gaining 1 coin or retrieving on the Reds; the Paragons' repeat offered only when the rider was performed, on a different target, never a third time; no hero retrieving another's card; declined riders and empty discards; snapshot/replay continuations and narrow foundation claims. T2 minimum.
 
 Non-goals: swaps, defeats, the Ultimate, dealing.
+
+Completed 2026-09-19 (`686af16e`). No new capability and no new handler type: `retrieve-card@1` (owner = chooser = the retrieving hero), `synthetic-radius-hero-target@1` (AlliedWithSource, includeSelf unset, the card's own Radius), `gain-resource@1`, `synthetic-is-flagged@1` over a Conditional, `synthetic-attack-took-a-hero@1` and Thunder Boomerang's `RepeatTargetBinding.DifferentTarget` declaration compose all five faces. Two optional OUTPUTS were added - `attackTargetHero` on the took-a-hero predicate (8.40c forbids a branch binding its own Conditional's output) and `didGrant` on `gain-resource@1` (8.40i's `didRetrieve` for coins) - published only when declared, so no digest moved. `RowennaEffectContent` / `RowennaCardContent` carry six faces under the placeholder revision `rowenna-8-57a-prep`, registered nowhere. Readings settled: RO-Q7 (step 1 already knows the Attack's target), RO-Q7b (nobody in radius = p.10 stop, no repeat, the Attack not greyed), RO-Q7c (an empty-discard hero is not offered), RO-Q7d (each "may retrieve" is its hero's own decline on that hero's prompt). `RowennaRewardTests` 25 cases; harness 3450/3450; focused Edit Mode 111/111 over eleven fixtures, no pin moved. Noted for 8.57b: `EffectChooserRole.BoundHero` reaches only `Choose` nodes today, and the unit selector arm has no `includeSelf`.
+
+Historical evidence: [8.57a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857a-rowenna-reward-completion-evidence).
 
 ### [ ] 8.57b Support the vanguard's swap and the gauntlet
 
