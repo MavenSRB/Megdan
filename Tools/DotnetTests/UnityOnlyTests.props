@@ -72,6 +72,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/StandardMinionViewTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/StatusDerivationConformanceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/UrpMigrationTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/VictoryScreenPresenterTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/WaveRemainingHudTests.cs" />
   </ItemGroup>
 </Project>

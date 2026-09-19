@@ -428,6 +428,28 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>Milestone 8.46c. The decision window, when this composition has one.</summary>
         private DecisionWindowUnityView decisionWindow;
 
+        /// <summary>Milestone 8.53. The victory screen, when this composition has one.</summary>
+        private VictoryScreenUnityView victoryScreen;
+
+        /// <summary>
+        /// Milestone 8.53. Whether the ended-match screen is currently standing, and what every other
+        /// surface's <c>display</c> was before it hid them - so a Restart puts the HUD back exactly as
+        /// it was rather than showing every surface this renderer had deliberately left hidden.
+        /// </summary>
+        private bool victoryScreenStanding;
+        private Vector2 laidOutVictoryViewport;
+
+        private readonly Dictionary<VisualElement, StyleEnum<DisplayStyle>> displayBeforeVictoryScreen =
+            new Dictionary<VisualElement, StyleEnum<DisplayStyle>>();
+
+        /// <summary>
+        /// Milestone 8.35z62. The root children another owner put on this shared root before this
+        /// composition ran - a <c>PrivateLobbyDriver</c>'s connection banner is the one case. They are
+        /// not this renderer's to hide, which is what
+        /// <see cref="ApplyVictoryScreenState"/> reads them for.
+        /// </summary>
+        private readonly List<VisualElement> foreignChildren = new List<VisualElement>();
+
         /// <summary>
         /// Milestone 8.46c. What the window was drawing when it was last laid out, so the four style
         /// writes its rectangle costs happen when the decision or its state changes rather than on
@@ -562,7 +584,12 @@ namespace GuardsDigital.Presentation.Match
             // the families the window would otherwise take, rather than one where those decisions
             // reach nobody. That is what `YieldedDecisionFamily` below states, and why the strip's own
             // builders are yielded per family rather than deleted.
-            DecisionWindowUnityView decisionWindowView = null)
+            DecisionWindowUnityView decisionWindowView = null,
+            // Milestone 8.53. Optional and appended, on the same terms as the four above: a
+            // composition with no victory screen is a composition where an ended match keeps the
+            // terminal HUD it had before this milestone, rather than one where the ending reaches
+            // nobody.
+            VictoryScreenUnityView victoryScreenView = null)
         {
             hands = handsView ?? throw new ArgumentNullException(nameof(handsView));
             hands.SetCompactPeekMode(true);
@@ -572,6 +599,7 @@ namespace GuardsDigital.Presentation.Match
             minionChoice = minionChoiceView ?? throw new ArgumentNullException(nameof(minionChoiceView));
             matchLog = matchLogView;
             decisionWindow = decisionWindowView;
+            victoryScreen = victoryScreenView;
             // Milestone 8.46c. The one signal that moves a family off the strip: the strip yields a
             // decision to the window exactly while the window is DRAWING it. A composition with no
             // window, and a window with no standing model, both read `None` here and the strip draws
@@ -1030,6 +1058,12 @@ namespace GuardsDigital.Presentation.Match
             var foreign = root.Children().Where(child => !composedChildren.Contains(child)).ToList();
             root.Clear();
             composedChildren.Clear();
+            // Milestone 8.53 remembers the same set: the ended-match screen hides everything on this
+            // root EXCEPT another owner's surfaces and its own.
+            foreignChildren.Clear();
+            foreignChildren.AddRange(foreign);
+            displayBeforeVictoryScreen.Clear();
+            victoryScreenStanding = false;
             root.name = "gd-root";
             root.pickingMode = PickingMode.Ignore;
             root.style.position = Position.Absolute;
@@ -1291,6 +1325,18 @@ namespace GuardsDigital.Presentation.Match
             root.Add(tooltipLayer.Root);
             tooltipLayer.Install(root);
 
+            // Milestone 8.53. THE LAST SURFACE ON THE PANEL, after even the tooltip layer, because it
+            // is the one surface that is never drawn beside another: the user's rule for the ended
+            // match is "Everything else should disappear and this pops up", and being last is what
+            // makes that true of the two layers that attach to this root lazily (the phase banner, the
+            // kinetics) as well as of the ones composed above.
+            if (victoryScreen != null)
+            {
+                victoryScreen.Root.RemoveFromHierarchy();
+                victoryScreen.Root.style.position = Position.Absolute;
+                root.Add(victoryScreen.Root);
+            }
+
             // Everything on the root now is this renderer's, so remember it: the next composition
             // removes exactly this set and nothing else. Then every other owner's elements go back
             // on top, in the order they held.
@@ -1403,6 +1449,94 @@ namespace GuardsDigital.Presentation.Match
             LayoutDecisionWindow(force: true);
             diagnostics?.Layout(GetRuleEventLogRect());
             PublishCameraSafeLayout(ordinaryTray, playfield, viewport);
+            // Last, and after every other region has been placed: when the match has ended this hides
+            // all of them again.
+            ApplyVictoryScreenState();
+        }
+
+        /// <summary>
+        /// Milestone 8.53. The ended-match screen, and the one rule that makes it a SCREEN rather than
+        /// another panel: while it stands, nothing else this HUD draws is displayed.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why it hides by walking the root rather than by asking each surface to yield.</b>
+        /// A dozen presenters would each need a "and stop drawing when the match is over" branch, every
+        /// one of them a place the next surface could forget - and the two layers that attach to this
+        /// root lazily (<c>PhaseBannerUnityView</c>, <c>KineticCueUnityView</c>, the attack spotlight)
+        /// are not composed here at all and could not be reached that way. Hiding the root's own
+        /// children covers every surface that exists and every surface added later, by construction.
+        /// Another owner's elements - a <c>PrivateLobbyDriver</c>'s connection banner, remembered at
+        /// composition - are left alone, on the same 8.35z62 rule that stops a re-composition wiping
+        /// them.</para>
+        /// <para><b>And it restores.</b> Several of this HUD's surfaces are deliberately hidden in
+        /// their ordinary state (the sandbox banner, the tie-breaker rail banner, the closed Director
+        /// drawer), so showing everything again after a Director's Restart would be a different HUD
+        /// from the one that was playing. The <c>display</c> each element had is remembered when it is
+        /// hidden and written back when the screen comes down.</para>
+        /// <para>It re-asserts on every pass rather than only on the transition, because the passes it
+        /// shares a frame with - <see cref="ApplyDirectorDrawerState"/>, <see cref="Layout"/>,
+        /// <see cref="HostContextViewsInTray"/> - each write <c>display</c> on surfaces of their own,
+        /// and a surface re-shown behind the screen would paint through it.</para>
+        /// </remarks>
+        private void ApplyVictoryScreenState()
+        {
+            if (victoryScreen == null || root == null)
+            {
+                return;
+            }
+
+            var host = victoryScreen.Root;
+            if (victoryScreen.Model == null)
+            {
+                // The ordinary state costs one reference comparison a frame and no style write at
+                // all: the view itself keeps its own root hidden while it has nothing to draw.
+                if (!victoryScreenStanding)
+                {
+                    return;
+                }
+
+                host.style.display = DisplayStyle.None;
+                foreach (var entry in displayBeforeVictoryScreen)
+                {
+                    entry.Key.style.display = entry.Value;
+                }
+
+                displayBeforeVictoryScreen.Clear();
+                victoryScreenStanding = false;
+                return;
+            }
+
+            foreach (var child in root.Children())
+            {
+                if (ReferenceEquals(child, host) || foreignChildren.Contains(child) ||
+                    child.style.display.value == DisplayStyle.None)
+                {
+                    continue;
+                }
+
+                if (!displayBeforeVictoryScreen.ContainsKey(child))
+                {
+                    displayBeforeVictoryScreen[child] = child.style.display;
+                }
+
+                child.style.display = DisplayStyle.None;
+            }
+
+            // The rectangle is the whole panel, re-measured only when the panel itself changed - the
+            // same "two-state answer rather than twenty style writes a frame" rule
+            // `LayoutDecisionWindow` follows, and this pass runs on every LateUpdate.
+            var viewport = PanelViewport;
+            if (!victoryScreenStanding || viewport != laidOutVictoryViewport)
+            {
+                host.style.left = 0f;
+                host.style.top = 0f;
+                host.style.width = viewport.x;
+                host.style.height = viewport.y;
+                host.style.display = DisplayStyle.Flex;
+                laidOutVictoryViewport = viewport;
+            }
+
+            victoryScreenStanding = true;
         }
 
         /// <summary>
@@ -1442,6 +1576,10 @@ namespace GuardsDigital.Presentation.Match
             {
                 Layout();
             }
+
+            // Milestone 8.53, last on this pass for the same reason it is last in `Layout`: every
+            // write above is a surface the ended-match screen has to have covered.
+            ApplyVictoryScreenState();
         }
 
         private void HostContextViewsInTray(bool useTray)

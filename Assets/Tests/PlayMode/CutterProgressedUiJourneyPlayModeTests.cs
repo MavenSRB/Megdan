@@ -682,6 +682,42 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(outcome.HasSoloWinner, Is.True);
             Assert.That(outcome.WinningHeroId, Is.EqualTo(cutterId),
                 "The hero who resolved the branch holding thirteen is the one who won, alone.");
+
+            // Milestone 8.53. The screen this ending draws, and the SPLIT the user asked for by name:
+            // "if Cutter solo wins, split him up above the others, and represent all the same stuff".
+            yield return null;
+            var screen = runtime.VictoryScreenView.Model;
+            Assert.That(screen, Is.Not.Null,
+                "A solo ending draws the victory screen like any other. " + UiPlayer.Describe(hud));
+            Assert.That(screen.HasSoloWinner, Is.True);
+            Assert.That(
+                VictoryScreenUiJourneyPlayModeTests.Text(hud, "gd-victory-banner"),
+                Is.EqualTo(runtime.Setup.Heroes.Single(hero => hero.HeroId.Equals(cutterId))
+                    .DisplayName.ToUpperInvariant() + " WINS"),
+                "The banner names the HERO, because a solo ending has no winning team to name.");
+            Assert.That(
+                VictoryScreenUiJourneyPlayModeTests.Text(hud, "gd-victory-cause"),
+                Is.EqualTo("THIRTEEN COINS WERE HOARDED"),
+                "and it stands on the card's own sentence rather than one of p.8's three.");
+
+            Assert.That(screen.Blocks[0].Kind, Is.EqualTo(VictoryScreenBlockKind.SoloWinner));
+            Assert.That(screen.Blocks[0].Tag, Is.EqualTo(VictoryScreenLabels.SoloTag));
+            Assert.That(screen.Blocks[0].Rows.Select(row => row.HeroId),
+                Is.EqualTo(new[] { cutterId }),
+                "She is alone in the block above the others.");
+            Assert.That(screen.Blocks.Skip(1).Select(block => block.Kind).Distinct(),
+                Is.EqualTo(new[] { VictoryScreenBlockKind.Defeated }),
+                "and every block under it is a defeated one - her own team-mates included, which " +
+                "is what \"you alone win the game\" leaves them.");
+            Assert.That(screen.Blocks.Skip(1).SelectMany(block => block.Rows)
+                    .Select(row => row.HeroId),
+                Has.No.Member(cutterId));
+            Assert.That(screen.Rows.Count(), Is.EqualTo(runtime.Setup.Heroes.Count),
+                "and nobody lost their line to the split: \"represent all the same stuff\".");
+
+            Assert.That(UiPlayer.IsShown(
+                VictoryScreenUiJourneyPlayModeTests.Screen_(hud)), Is.True);
+            VictoryScreenUiJourneyPlayModeTests.AssertFits(hud, "the solo split at the live viewport");
         }
     }
 }

@@ -2418,32 +2418,18 @@ namespace GuardsDigital.Presentation.Match
                     HeroDisplayName(projection.Setup.Heroes, participant.HeroId))
                 .ToArray());
 
-        private static string FormatVictoryCause(MatchVictoryCause cause)
-        {
-            switch (cause)
-            {
-                case MatchVictoryCause.FinalWaveFlipped:
-                    return "the final Wave counter was flipped";
-                case MatchVictoryCause.ThroneCaptured:
-                    return "the enemy Throne was captured";
-                case MatchVictoryCause.LifeCountersExhausted:
-                    return "the opposing team ran out of Life counters";
-
-                // Milestone 8.39j. THE FOURTH CAUSE, and the one sentence that was missing when the
-                // match it ends actually ended. Milestone 8.39g added the solo winner to the status
-                // line above and left this switch at p.8's three team sentences, so the very moment A
-                // Fistful of Coins won the game the round panel threw
-                // `An ended match requires one rulebook victory cause` and the HUD stopped refreshing
-                // - the win was never announced to anybody. Measured in Play Mode at this milestone
-                // by driving the card: 26 of 27 journeys green and this one red on the panel's own
-                // error. It is a card sentence rather than a rulebook one, which is why it reads as
-                // the card rather than as a page.
-                case MatchVictoryCause.CoinHoardClaimed:
-                    return "thirteen coins were hoarded";
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(cause), cause, "An ended match requires one rulebook victory cause.");
-            }
-        }
+        /// <summary>
+        /// The status line's own cause sentence.
+        ///
+        /// <para><b>Milestone 8.53 moved the words to <see cref="VictoryCauseLabels"/> and kept this
+        /// method.</b> The victory screen prints the same sentence under its banner, and two copies of
+        /// these four strings would let the screen and the status line give a player two different
+        /// answers to "why did the match end". The method itself stays because
+        /// <c>SeatScopedMatchHudTests.EveryVictoryCause_HasAWordedSentenceTheStatusLineCanSay</c>
+        /// reflects on it by name to walk the enum - the guard milestone 8.39j added after a cause
+        /// shipped with no sentence at all and the HUD threw at the moment somebody won.</para>
+        /// </summary>
+        private static string FormatVictoryCause(MatchVictoryCause cause) =>
+            VictoryCauseLabels.Describe(cause);
     }
 }

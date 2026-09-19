@@ -706,6 +706,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly DecisionWindowPresenter decisionWindow;
         private readonly PhaseBannerPresenter phaseBanner;
 
+        /// <summary>Milestone 8.53. The one surface that is drawn when the match is over.</summary>
+        private readonly VictoryScreenPresenter victoryScreen;
+
         private readonly Action<string, Exception> panelRefreshFailed;
         private IReadOnlyList<string> failedPanelNames = Array.Empty<string>();
 
@@ -737,10 +740,16 @@ namespace GuardsDigital.Presentation.Match
             // while the window is drawing it, so the window must have observed this projection
             // before the strip rebuilds against it.
             DecisionWindowPresenter decisionWindow = null,
-            PhaseBannerPresenter phaseBanner = null)
+            PhaseBannerPresenter phaseBanner = null,
+            // Milestone 8.53. Same reason, same shape, and it is refreshed FIRST: every surface below
+            // it is hidden while a victory screen stands, and the renderer reads the screen's own
+            // model to decide that - so the screen has to have observed this projection before the
+            // pass that hides them runs.
+            VictoryScreenPresenter victoryScreen = null)
         {
             this.panelRefreshFailed = panelRefreshFailed;
             this.decisionWindow = decisionWindow;
+            this.victoryScreen = victoryScreen;
             this.heroOverviews = heroOverviews;
             this.kinetics = kinetics;
             this.attackSpotlight = attackSpotlight;
@@ -804,6 +813,10 @@ namespace GuardsDigital.Presentation.Match
         {
             var failed = new List<string>();
             var errors = new List<Exception>();
+            // Milestone 8.53, first: the renderer hides every other surface from this one's model, so
+            // it must have observed this projection before any of them draws into a HUD that is about
+            // to disappear.
+            RefreshPanel("victory-screen", () => victoryScreen?.Refresh(), failed, errors);
             RefreshPanel("board", board.Refresh, failed, errors);
             RefreshPanel("hands", hands.Refresh, failed, errors);
             // Milestone 8.46c, immediately before the strip it takes the decision families from: the

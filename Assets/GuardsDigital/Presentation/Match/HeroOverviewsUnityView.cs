@@ -1032,49 +1032,13 @@ namespace GuardsDigital.Presentation.Match
         /// left half is the coin's own face colour and the right half the Life counter's red; the two
         /// halves are one rounded disc, so the badge reads as a single token beside the level.
         /// </summary>
-        private static VisualElement BuildWorthBadge(HeroOverviewViewModel hero)
-        {
-            const float size = 16f;
-            var badge = new VisualElement { name = "gd-hero-worth", tooltip = hero.WorthAssistiveLabel };
-            badge.style.width = size;
-            badge.style.height = size;
-            badge.style.minWidth = size;
-            badge.style.flexShrink = 0f;
-            badge.style.flexDirection = FlexDirection.Row;
-            badge.style.overflow = Overflow.Hidden;
-            HudElements.Border(badge, MatchHudTheme.CoinEdge, 1f, size / 2f);
-
-            var coinHalf = new VisualElement { name = "gd-hero-worth-coin", pickingMode = PickingMode.Ignore };
-            coinHalf.style.width = size / 2f;
-            coinHalf.style.height = size;
-            coinHalf.style.backgroundColor = MatchHudTheme.CoinFace;
-            badge.Add(coinHalf);
-
-            var heartHalf = new VisualElement { name = "gd-hero-worth-heart", pickingMode = PickingMode.Ignore };
-            heartHalf.style.width = size / 2f;
-            heartHalf.style.height = size;
-            heartHalf.style.backgroundColor = WorthHeartFace;
-            badge.Add(heartHalf);
-
-            var digit = HudElements.Text(hero.WorthLabel, 10f, MatchHudTheme.CoinInk, FontStyle.Bold);
-            digit.name = "gd-hero-worth-value";
-            digit.pickingMode = PickingMode.Ignore;
-            digit.style.position = Position.Absolute;
-            digit.style.left = 0f;
-            digit.style.top = 0f;
-            digit.style.width = size;
-            digit.style.height = size;
-            digit.style.unityTextAlign = TextAnchor.MiddleCenter;
-            digit.style.marginLeft = 0f;
-            digit.style.marginRight = 0f;
-            digit.style.marginTop = 0f;
-            digit.style.marginBottom = 0f;
-            badge.Add(digit);
-            return badge;
-        }
-
-        /// <summary>The Life counter's red, for the badge's heart half.</summary>
-        private static readonly Color WorthHeartFace = new Color(0.78f, 0.16f, 0.2f, 1f);
+        /// <remarks>
+        /// Milestone 8.53 moved the badge itself to <see cref="HudElements.WorthBadge"/>, where the
+        /// victory screen's own rows draw the same one. Two builders for one token would be two things
+        /// to keep looking alike; this stays as the rail's own call into the shared one.
+        /// </remarks>
+        private static VisualElement BuildWorthBadge(HeroOverviewViewModel hero) =>
+            HudElements.WorthBadge(hero.WorthLabel, hero.WorthAssistiveLabel);
 
         private VisualElement BuildHeroPortrait(HeroOverviewViewModel hero, Color accent)
         {

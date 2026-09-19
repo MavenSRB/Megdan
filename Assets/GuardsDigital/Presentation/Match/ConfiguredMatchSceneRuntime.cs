@@ -145,6 +145,10 @@ namespace GuardsDigital.Presentation.Match
             // window opens only for the seat that owns the standing decision, so the Director's
             // composition draws every question and a seat's draws only its own.
             DecisionWindowView = new DecisionWindowUnityView();
+            // Milestone 8.53. Composed for the Director and for every seat alike and NOT scoped to
+            // either: the outcome and the match scoreboard are public information in every projection,
+            // so the ended match reads the same on all six screens.
+            VictoryScreenView = new VictoryScreenUnityView();
             HeroOverviewsView = new HeroOverviewsUnityView();
             // Milestone 8.35z7 (the TENTH amendment's drop-down). Composed for both the Director and a
             // seat, unlike the Director-only diagnostics beside it: the match log's own contract is
@@ -163,6 +167,7 @@ namespace GuardsDigital.Presentation.Match
             RoundPresenter = new RoundActionPresenter(client, RoundView, Seat?.HeroId ?? default);
             DecisionWindowPresenter = new DecisionWindowPresenter(
                 client, DecisionWindowView, Seat?.HeroId ?? default);
+            VictoryScreenPresenter = new VictoryScreenPresenter(client, VictoryScreenView);
 
             // Milestone 8.35z8 (SIXTH amendment part b, "old M7"). Composed independently of
             // MatchFeatureCoordinator/RoundActionPresenter, deliberately: the fizzle notice reads
@@ -455,7 +460,7 @@ namespace GuardsDigital.Presentation.Match
 
             hud.Configure(
                 HandsView, RoundView, UndoRestartView, DiagnosticView, MinionChoiceView,
-                HeroOverviewsView, MatchLogView, DecisionWindowView);
+                HeroOverviewsView, MatchLogView, DecisionWindowView, VictoryScreenView);
             coordinator = new MatchFeatureCoordinator(
                 BoardPresenter,
                 HandsPresenter,
@@ -485,7 +490,8 @@ namespace GuardsDigital.Presentation.Match
                 MatchLogPresenter,
                 SpotlightPresenter,
                 DecisionWindowPresenter,
-                PhaseBannerPresenter);
+                PhaseBannerPresenter,
+                VictoryScreenPresenter);
             RefreshAll();
         }
 
@@ -872,6 +878,15 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Milestone 8.46c. The decision window's own seat-scoped presenter.</summary>
         public DecisionWindowPresenter DecisionWindowPresenter { get; }
+
+        /// <summary>
+        /// Milestone 8.53. The ended-match screen and its presenter. Public on the same terms as every
+        /// other pair here: a journey reads the printed banner, cause and rows off the model rather
+        /// than re-deriving what it expects to see.
+        /// </summary>
+        public VictoryScreenUnityView VictoryScreenView { get; }
+
+        public VictoryScreenPresenter VictoryScreenPresenter { get; }
 
         public string LastOperationDetail { get; private set; }
 

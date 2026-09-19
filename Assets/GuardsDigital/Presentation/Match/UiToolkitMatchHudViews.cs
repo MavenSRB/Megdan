@@ -379,6 +379,61 @@ namespace GuardsDigital.Presentation.Match
             return element;
         }
 
+        /// <summary>The Life counter's red, for the worth badge's heart half.</summary>
+        internal static readonly Color WorthHeartFace = new Color(0.78f, 0.16f, 0.2f, 1f);
+
+        /// <summary>
+        /// Milestone 8.49's worth badge: half a coin and half a heart with the hero's worth in the
+        /// middle. Rulebook p.13 pays the attacker's friends that many assist coins and takes that many
+        /// Life counters from the defeated hero's team, and one number drawn on both halves says both
+        /// at once. The left half is the coin's own face colour and the right half the Life counter's
+        /// red; the two halves are one rounded disc, so the badge reads as a single token.
+        ///
+        /// <para>Milestone 8.53 moved it here from <c>HeroOverviewsUnityView</c> so the hero rail and
+        /// the victory screen draw ONE badge rather than two that have to be kept looking alike. The
+        /// element names are the rail's own - <c>gd-hero-worth</c>, <c>-coin</c>, <c>-heart</c>,
+        /// <c>-value</c> - because fixtures address them by those names.</para>
+        /// </summary>
+        internal static VisualElement WorthBadge(string digit, string assistiveLabel, float size = 16f)
+        {
+            var badge = new VisualElement { name = "gd-hero-worth", tooltip = assistiveLabel };
+            badge.style.width = size;
+            badge.style.height = size;
+            badge.style.minWidth = size;
+            badge.style.flexShrink = 0f;
+            badge.style.flexDirection = FlexDirection.Row;
+            badge.style.overflow = Overflow.Hidden;
+            Border(badge, MatchHudTheme.CoinEdge, 1f, size / 2f);
+
+            var coinHalf = new VisualElement { name = "gd-hero-worth-coin", pickingMode = PickingMode.Ignore };
+            coinHalf.style.width = size / 2f;
+            coinHalf.style.height = size;
+            coinHalf.style.backgroundColor = MatchHudTheme.CoinFace;
+            badge.Add(coinHalf);
+
+            var heartHalf = new VisualElement { name = "gd-hero-worth-heart", pickingMode = PickingMode.Ignore };
+            heartHalf.style.width = size / 2f;
+            heartHalf.style.height = size;
+            heartHalf.style.backgroundColor = WorthHeartFace;
+            badge.Add(heartHalf);
+
+            var value = Text(digit, size * 0.625f, MatchHudTheme.CoinInk, FontStyle.Bold);
+            value.name = "gd-hero-worth-value";
+            value.pickingMode = PickingMode.Ignore;
+            value.style.position = Position.Absolute;
+            value.style.left = 0f;
+            value.style.top = 0f;
+            value.style.width = size;
+            value.style.height = size;
+            value.style.unityTextAlign = TextAnchor.MiddleCenter;
+            value.style.marginLeft = 0f;
+            value.style.marginRight = 0f;
+            value.style.marginTop = 0f;
+            value.style.marginBottom = 0f;
+            badge.Add(value);
+            return badge;
+        }
+
         /// <summary>
         /// Milestone 8.35z7. Whether <paramref name="candidate"/> is <paramref name="ancestor"/> itself
         /// or is nested inside it - the match-log drop-down's click-away test, so a click on the
