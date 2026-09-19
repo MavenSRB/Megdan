@@ -274,3 +274,33 @@ Non-goals: new gameplay beyond the blocks named; a build before 8.54 and 8.55 ha
 Completed 2026-09-19, after 8.54 and 8.55 landed - the user's order ("Just finish everything and then do the build"). `Builds/Playtest-8.55-rowenna` and `Builds/Playtest-8.55-rowenna.zip` (185 entries, no logs, no debug folder, 69 MB), built from main at `cdbf4d71` (tag `milestone/8.55`) with bundleVersion `1.0-8.55-rowenna`, stamp `1.0-8.55-rowenna+20260919163202-9d3386dd`; protocol `guards-private-online/17` and schema 43 unchanged; the configured content digest re-measured at this commit is `36da22a7...`, moved from `ff41228b...` by Rowenna's registration (her eighteen definitions and two placement capabilities), so this build refuses every older copy at the join. The gate on the packaged tree: complete Edit Mode 4608 / 4572 / 0 / 36 established skips; complete Play Mode 661/661 with zero skips; harness 3631/3631; the build-and-launch smoke (GATE PASSED); the packaged exe launched once from its own folder to `LOBBY_BEGIN`. Manifest, READ ME FIRST (what is new: Rowenna and her three cross-seat questions, the rebuilt window, the hearts, the badge, the victory grid, the Bounce and Wild Hunt offers, Bounce through Bullet Time, the "6+1" badge; known problems: Rowenna unplayed by people so far, the window checked on screenshots, the two same-day fixes) and BUILD IDENTITY written by hand per the 8.44 recipe.
 
 Historical evidence: [8.60 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-860-eighteen-hero-package-completion-evidence).
+
+### [ ] 8.62 Targeting cues read as blood-red light
+
+Authorized 2026-09-19 by the user, from a screenshot of an attack's targets: "can you make targeting highlights more visible, they are almost impossible to see like this.. Blood red light instead of this pink i think."
+
+Outcome: a hero or minion that is a legal target of an attack, a removal or a card-text choice is unmistakable at every supported viewport - the piece cue reads as a strong blood-red (or, for a non-harmful effect, its own consequence colour) ring and wash rather than the faint pink tint the 18% wash produced over a portrait - with the selected and hovered states stronger still, and the tile's corner marks no weaker than before.
+
+Acceptance: `BoardTargetRing`'s eligible, selected and hovered washes and ring widths re-tuned and re-pinned in `PrimitiveHeroViewTests` with the user's words as the rationale (the old "never exceeds the transparent-overlay cap" pin retired on the user's direction); the attack-target corner marks and their halo kept or strengthened, never weakened; before-and-after photographs of a hero and a minion as attack targets and of a hero as an effect target, at 1920x1080 and 2560x1440, written under `tmp/862-captures/` by a batch-mode Play Mode fixture that stays as the cue's permanent photograph; every journey asserting a cue state still green; the complete Play Mode suite with zero skips. The user approves the photographs before the block completes.
+
+Non-goals: the board's team rings, hex corner geometry for movement or respawn, the attack spotlight.
+
+### [ ] 8.63 The decision window is drawn above every other panel
+
+Authorized 2026-09-19 by the user, from a screenshot of a defense window partly covered by the defense-preview panel: "popup should be on top, not behind stuff :D".
+
+Outcome: whenever the decision window is open, expanded or docked, nothing else in the HUD draws over it - not the defense preview, the hero overviews, the log drawer, the phase banner, the attack spotlight or a hover preview - and the window's own hover tooltip stays inside it.
+
+Acceptance: the window's host is the topmost element of the HUD's overlay layer whenever it is shown (brought to the front on every open and on every later sibling addition, or hosted in a dedicated top layer), proved by a Play Mode assertion over the live hierarchy for each family the 8.58 capture fixture stages plus the defense window with its preview panel open; the 8.46 rule that the phase banner yields to a window opening on the same refresh preserved; before-and-after photographs of the defense window over its preview panel at 1920x1080 under `tmp/863-captures/`; the complete Play Mode suite with zero skips. The user approves the photograph before the block completes.
+
+Non-goals: the preview panel's own layout, the window's content or controls.
+
+### [ ] 8.64 The victory screen drops its column legend
+
+Authorized 2026-09-19 by the user, from a screenshot of the legend strip under the victory tables ("Level p.15's Hero Level as the match ended - Kills ... - Worth what defeating this hero pays and costs"): "Remove this from victory screen."
+
+Outcome: the victory screen shows the winners' and the defeated blocks with their column headers and numbers and nothing explaining the columns; the space the legend took goes back to the tables.
+
+Acceptance: `VictoryScreenModels.Legend` and its `VictoryScreenLegendEntry` rows retired from the view (and from the models if nothing else reads them), the 8.53 fixtures that asserted the legend re-stated to assert its absence, the 8.58 capture fixture's victory photographs re-taken under `tmp/864-captures/` at 1920x1080 in both variants (team win, solo win), the complete Play Mode suite with zero skips. The user approves the photograph before the block completes.
+
+Non-goals: the columns, their numbers or their headers.
