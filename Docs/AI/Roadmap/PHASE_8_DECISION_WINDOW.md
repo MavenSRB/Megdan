@@ -28,9 +28,11 @@ One new HUD element, the **decision window**, with two states. **Expanded** cove
 
 Cross-cutting rules: no undo inside the window (the top seat undo covers a wrong press inside a turn; every answer outside a turn is final on press or restatable already); choose-exactly-one answers in one press; choose-several keeps Done and a chosen control toggles off when pressed again; Withdraw My Agreement survives as "Not yet", the one take-back the seat undo cannot replace; labels name the consequence, never the mechanism; **card faces keep the tray's own footprint** (300.46 by 420 reference units) and are never drawn at a smaller scale, so the expanded window spans the whole open area between the two hero rails - 1,984 units at the reference - rather than the board alone, which is what lets four defense candidates and the attacker sit side by side at full size. **Every control wears the HUD's shared button treatment** - the shared chrome and press-and-hover motion of `HudElements.Control`, the silver swallowtail banner for the one control that moves the game on, the Defense option's scale motion for a card face used as a control, the strip's own selected and unavailable states - and `HudButtonTreatmentTests` gains the window's cases, so no control in the window has a look of its own. **The phase banner (8.47) yields to an expanded window opening on the same refresh** - the window is then the thing nobody misses, and the transition is not owed later - while a docked bar and the banner coexist, since they never share the middle of the screen. **Minion Battle single-verb ratification**: the bar reads "Remove 2 minions" with the count; anyone on the side clicks minions and everyone sees the highlights; when the count is met everyone gets `REMOVE THESE MINIONS`; on a solo side that is the confirm; on a team the first press marks that hero ready ("Waiting for Sabina" plus a small `NOT YET`), teammates read "Arien is ready. Remove these minions?" with the same verb, and the last press resolves. Any board click by anyone reopens the selection, which the authority already does because a proposal is identified by its selected set. The `TEAM AGREEMENT` heading, the agree-or-withdraw labels and the per-hero ledger go.
 
-### 8.46 The series head
+### [x] 8.46 The series head
 
 Outcome: this shard, the inert label vocabulary both parallel blocks build against (`DecisionLabel` and `DecisionLabelCatalog` in `Core/Cards`, answering nothing until 8.46a fills them), and the mockup evidence. Completes with the series.
+
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).
 
 ### [x] 8.46a Decision labels
 
@@ -40,6 +42,8 @@ Acceptance: a per-hero label table beside each hero's effect content, aggregated
 
 Non-goals: labels for board-answered candidates; reading printed text at runtime; presentation changes.
 
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).
+
 ### [x] 8.46b One press for a choice of exactly one
 
 Outcome: an effect choice whose minimum and maximum are both one resolves on the selection itself, so no `Done` follows; a choice admitting several keeps Select, Deselect and Done exactly as today.
@@ -47,6 +51,8 @@ Outcome: an effect choice whose minimum and maximum are both one resolves on the
 Acceptance: the rule lives in the resolution session where Select is applied, not in presentation; the pause for an exactly-one choice never stands on Deselect and Confirm; a seat rewind steps back the single accepted command; confirm-or-decline, stop and decline are unchanged. Every seeded expectation that walked through a one-of-N effect choice is re-derived and the count recorded; the offline harness and focused Edit Mode are green. Card-text attack targets named through `set-attack-target@1` still raise the attack wall on that one command.
 
 Non-goals: any change to the command DTO, the pause's projected shape, or the schema; the Minion Battle confirm; defense.
+
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).
 
 ### [x] 8.46c The decision window
 
@@ -56,6 +62,8 @@ Acceptance: expanded is one fixed rectangle from the Red rail's right edge to th
 
 Non-goals: movement, attack target, commitment, End Turn, level-up, fast travel, turn release; the attack spotlight's own staging, which the defense window sits beside rather than over; new authority commands.
 
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).
+
 ### [x] 8.46d Direction on the board
 
 Outcome: a declared `HexDirection` choice is answered by six arrow affordances around the choosing hero on the board, and the docked bar asks "Choose a direction".
@@ -63,6 +71,8 @@ Outcome: a declared `HexDirection` choice is answered by six arrow affordances a
 Acceptance: the arrows are board interaction, composed like every other board-answered candidate, cued and cleared with the pause; each arrow submits the same Select the button did; the board-visual smoke still passes; a focused Play Mode case drives Cold Snap through an arrow.
 
 Non-goals: any other vocabulary; changing what Cold Snap does.
+
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).
 
 ### [x] 8.46e Geometry, readability and journeys
 
@@ -72,7 +82,9 @@ Acceptance: a Play Mode gate measures the window's live bounds in both states ag
 
 Non-goals: new families; packaging.
 
-### [~] 8.46g The level-up upgrade in the window
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).
+
+### [x] 8.46g The level-up upgrade in the window
 
 Authorized 2026-09-18 at 23:00, mid-playtest, in the user's words: "I lied, players want the same tretmant for level up screen, to be minimisable. So we need to put it in new thing you made, and show all information that we show now."
 
@@ -82,8 +94,12 @@ Acceptance: `DecisionWindowPresenter` composes a `LevelUp` family from `PendingS
 
 Non-goals: the Lane-Push placement prompt, which stays on the board; any change to what p.15 offers.
 
-### [~] 8.46f Integration and evidence
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).
+
+### [x] 8.46f Integration and evidence
 
 Outcome: the four parallel branches merged onto the series branch and then onto main behind 8.45; complete Edit Mode, Play Mode and offline harness runs (T2 promoted to complete suites because the change crosses Core, Application-facing presentation and Play Mode journeys); baselines and archive rows recorded; the design shard, brief and testing shard updated.
 
 Non-goals: a new package.
+
+Historical evidence: [8.46 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-846-decision-window-completion-evidence).

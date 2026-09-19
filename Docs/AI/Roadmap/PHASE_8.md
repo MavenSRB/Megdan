@@ -482,3 +482,22 @@ Acceptance: `EndTurnPressProvenancePlayModeTests` presses the live control with 
 Non-goals: any other control's keyboard behaviour; the tray's Confirm and Pass banners, which a keyboard may still submit.
 
 Historical evidence: [8.52 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-852-end-turn-keyboard-completion-evidence).
+
+### [~] 8.53 The victory screen
+
+Authorized 2026-09-19 by the user from a mockup drawn over the 18 September playtest's own numbers: "I like this, implement it before the build. Everything else should disappear and this pops up." With two amendments in the same breath: no "Cards played" column, "Minions Killed" as the wording, and a "Times defended" column.
+
+Outcome: when the match ends, the whole HUD gives way to one screen: the winner in big letters ("BLUE WINS", or "CUTTER WINS" for her solo victory), the win condition under it in words (the last Wave pushed, the Throne captured, the last Life counter spent, A Fistful of Coins), then a scoreboard - the winning team's block above the losing team's, each hero as its own token with name, level and worth, and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned. A Cutter solo win splits her out above her own crew, who show the same numbers with no share of the win. The numbers are the authority's: a per-hero match scoreboard accumulated where the log rows are emitted, carried in the snapshot and on the wire, so every seat sees the same board and a restored match keeps it.
+
+Acceptance: the accumulator proven on the defeat, attack, defense, minion-defeat and coin facts and across snapshot restore and replay; the screen proven to show on every ending cause with the strip, rails, tray and window hidden beneath it; a Play Mode journey to each ending; every control on the shared button treatment.
+
+Non-goals: per-round breakdowns; a replay viewer; changing what ends the game.
+
+### [ ] 8.54 Bounce's repeat through Bullet Time
+
+Ruled by the user 2026-09-19: "Bounce through Bullet Time counts as already resolved. Bounce moves 2, the card resolves, the Ultimate grants the primary on the resolved card, and that performance offers the repeat. Three moves of 2." The Ultimate's granted performance must see Bounce as resolved; `GrantedTargetExclusionTests.BulletTime_PerformsThePrimaryOfTheBasicCardItJustResolved` becomes the witness of three moves and HERO_SWIFT.md closes SW-Q3.
+
+### [ ] 8.55 The initiative badge reads card plus item
+
+Asked by the user 2026-09-18 with a screenshot: the hero rail's revealed-card initiative badge must read "6+1" - the printed Initiative and what the item adds - rather than the summed 7 that 8.42a draws.
+
