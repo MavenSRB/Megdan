@@ -252,7 +252,8 @@ namespace GuardsDigital.Core.Components
             int supplyCount,
             IEnumerable<TokenPropertyDefinition> properties,
             TokenRemovalCondition removalCondition,
-            string supplyGroupId = null)
+            string supplyGroupId = null,
+            TokenDefinition facedownFace = null)
         {
             Reference = new TokenDefinitionReference(definitionId, revision);
 
@@ -261,6 +262,24 @@ namespace GuardsDigital.Core.Components
                 throw new ArgumentException(
                     "A shared supply is named or absent; a blank name is neither.",
                     nameof(supplyGroupId));
+            }
+
+            if (facedownFace != null)
+            {
+                if (facedownFace.HidesItsKind)
+                {
+                    throw new ArgumentException(
+                        "A facedown face names no kind of its own, so it cannot itself hide one; " +
+                        "a chain of substitutions would leave 'what does another seat see' with two " +
+                        "answers.",
+                        nameof(facedownFace));
+                }
+
+                if (facedownFace.Id.Equals(definitionId))
+                {
+                    throw new ArgumentException(
+                        "A definition cannot be its own facedown face.", nameof(facedownFace));
+                }
             }
 
             if (string.IsNullOrWhiteSpace(displayName))
@@ -300,6 +319,7 @@ namespace GuardsDigital.Core.Components
             Properties = new ReadOnlyCollection<TokenPropertyDefinition>(materializedProperties);
             RemovalCondition = removalCondition;
             SupplyGroupId = supplyGroupId;
+            FacedownFace = facedownFace;
         }
 
         public TokenDefinitionReference Reference { get; }
@@ -346,6 +366,37 @@ namespace GuardsDigital.Core.Components
         /// Whether this definition shares its supply with others rather than owning one alone.
         /// </summary>
         public bool SharesASupply => !string.IsNullOrWhiteSpace(SupplyGroupId);
+
+        /// <summary>
+        /// The definition every seat but the controller's sees in place of this one, or <c>null</c> for
+        /// a token whose kind is public - which is every definition written before milestone 8.61d.
+        ///
+        /// <para><b>Why the fact is here.</b> Min the Dragonmonk's three Blue faces place their mines
+        /// <b>facedown</b>, and blast and dud are two definitions of one pile. p.4 makes what a facedown
+        /// component is hidden information, so the kind is knowable to the hero who placed it and to
+        /// nobody else until the mine is removed. That is a statement about the piece, made by the card
+        /// that prints the word, so it is declared by the content that needs it - the shape
+        /// <see cref="SupplyGroupId"/> took at milestone 8.35z32 for the same reason, an optional
+        /// trailing declaration every earlier definition leaves unset and is unchanged by.</para>
+        ///
+        /// <para><b>What reads it, and what does not.</b> It is a PROJECTION filter and never an
+        /// authorization one (milestone 8.40f's rule): the authority, the Director's read model, the
+        /// snapshot, the replay and the match's own rules always hold the real definition, and the
+        /// substitution happens where one seat's view is composed. Nothing about the rules consults
+        /// this - both kinds of mine print the same properties, so a masked board and the real one
+        /// answer every movement, push, Place, Clear and cleanup question identically, which is what
+        /// keeps a masked client's legality byte-for-byte the host's.</para>
+        ///
+        /// <para>A facedown face is an ordinary definition that names no kind. It is registered so a
+        /// client can load it by id, and no handler ever places one.</para>
+        /// </summary>
+        public TokenDefinition FacedownFace { get; }
+
+        /// <summary>
+        /// Whether this definition's kind is hidden from every seat but its controller's - p.4's
+        /// facedown component, and the question the seat projection asks.
+        /// </summary>
+        public bool HidesItsKind => FacedownFace != null;
 
         public override string ToString() =>
             SharesASupply

@@ -287,7 +287,36 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// line it draws is p.19's own, measured by
         /// <see cref="Board.StraightLineQuery.LiesStrictlyBetween"/>.</para>
         /// </summary>
-        EnemyHeroesCannotTargetThroughThisTokensSpace = 14
+        EnemyHeroesCannotTargetThroughThisTokensSpace = 14,
+
+        /// Milestone 8.61d. The affected object is an obstacle any unit may pass through while moving -
+        /// Min the Dragonmonk's three Blue faces, "Place [N] mine tokens ... facedown in radius;
+        /// <b>units may move through them</b>."
+        ///
+        /// <para><b>It is the obstacle's side of rulebook p.18, and the roster had only the mover's.</b>
+        /// The page states one rule with two sources: "If the push is 'ignoring obstacles', <em>or the
+        /// obstacle can be 'moved through'</em>, the pushed target is moved through obstacles as long as
+        /// it can reach an empty space." <see cref="RulePermissionKind.MoveThroughObstacles"/> is the
+        /// first clause - a grant a card makes to a UNIT, Bain's Vantage Point - and no vocabulary
+        /// existed for the second, which is a property of the thing standing in the way and holds for
+        /// every unit of either team without anybody being granted anything.</para>
+        ///
+        /// <para><b>It answers transit and never an endpoint.</b> p.18's own next sentence is
+        /// unconditional - "a unit can never end its movement on the same space as an obstacle, and any
+        /// special effects of tokens are still applied" - so a mine is walked over and never stood on,
+        /// is never an empty space for a Place or a Fast Travel, and still counts as an obstacle for
+        /// everything else. <see cref="ObstacleQuery"/> is the one owner of that classification and the
+        /// one consumer of this family; <see cref="ObstacleQuery.BlocksEndOfMovement"/> is deliberately
+        /// not offered it, exactly as it is not offered the permission.</para>
+        ///
+        /// <para><b>It carries nothing, and there is no new public property</b>, for the reason
+        /// milestones 8.35z28, 8.35z29, 8.40a and 8.57e each recorded: a property added to this type
+        /// moves the content digest of every hero whose declarations reach it, while an added member no
+        /// earlier declaration names moves nothing. The printed clause has no number, no channel and no
+        /// named activity in it - it is true of every movement, every card-text move and every push
+        /// alike - so a member that says the sentence loses nothing.</para>
+        /// </summary>
+        MayBeMovedThrough = 15
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -952,6 +981,24 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static RuleModification ForEnemyHeroTargetingScreen() =>
             new RuleModification(
                 RuleModificationKind.EnemyHeroesCannotTargetThroughThisTokensSpace,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+
+        /// <summary>
+        /// Milestone 8.61d. The object this is declared on is an obstacle any unit may move through -
+        /// Min's mines, "units may move through them". See
+        /// <see cref="RuleModificationKind.MayBeMovedThrough"/> for why the whole printed clause is the
+        /// member's name and why it carries no argument.
+        /// </summary>
+        public static RuleModification ForMayBeMovedThrough() =>
+            new RuleModification(
+                RuleModificationKind.MayBeMovedThrough,
                 Array.Empty<RuleActivity>(),
                 RulePermissionKind.None,
                 PrintedValueChannel.None,

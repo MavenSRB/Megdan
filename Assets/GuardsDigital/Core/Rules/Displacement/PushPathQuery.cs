@@ -176,12 +176,6 @@ namespace GuardsDigital.Core.Rules.Displacement
                     targetCoordinate, requestedDistance, PushStoppingReason.NotInStraightLine);
             }
 
-            // The permission is asked once, not per space: it is a property of the pushed object and the
-            // pushing effect, neither of which changes as the target crosses the line.
-            var mayPassObstacles = pushIgnoresObstacles ||
-                (target.IsDefined &&
-                    modifications.HasPermission(target, RulePermissionKind.MoveThroughObstacles));
-
             var endpoint = targetCoordinate;
             var actualDistance = 0;
             var stoppingReason = PushStoppingReason.ReachedRequestedDistance;
@@ -198,7 +192,16 @@ namespace GuardsDigital.Core.Rules.Displacement
                     break;
                 }
 
-                if (!mayPassObstacles && ObstacleQuery.IsObstacle(board, current, modifications))
+                // Milestone 8.61d. The transit question is asked of the one query that owns it rather
+                // than of the classification plus a locally composed permission, which is what this
+                // line used to do. The two were equal for every push in the roster - the walk has
+                // already answered off-map above, and BlocksTransit composes exactly the same
+                // "this push ignores obstacles OR the target was granted Move Through" - and they stop
+                // being equal for p.18's third source, an obstacle whose own text says units may move
+                // through it. Composing it here would have given that sentence a second reader that
+                // could disagree with the movement walk's.
+                if (ObstacleQuery.BlocksTransit(
+                    board, current, target, modifications, pushIgnoresObstacles))
                 {
                     stoppingReason = PushStoppingReason.BlockedByObstacle;
                     break;

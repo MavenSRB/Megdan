@@ -81,11 +81,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// One placement handler for one token definition, reaching the distance that definition's
         /// placing card prints on the named channel.
         /// </summary>
+        /// <param name="instanceIdentityLabel">
+        /// Milestone 8.61d. What this placement writes into the minted instance ID where it would
+        /// otherwise write the definition's own ID, or <c>null</c> for the definition's ID - which is
+        /// every instance written before that milestone and leaves their IDs byte-identical.
+        ///
+        /// <para><b>Why a placement ever needs this.</b> The instance ID is the handle the wire writes
+        /// on every token row, and a facedown token's row is the one place a seat could read a kind the
+        /// per-seat masking has just taken out of the definition ID. Min's mines therefore mint
+        /// <c>...:mine:...</c> for a blast and for a dud alike. Uniqueness is unharmed: the segment the
+        /// definition contributed exists to tell two ROLES of one pile apart when they land on the same
+        /// space in the same turn, and Min's placements are one node each, so the node ID the ID already
+        /// carries tells them apart on its own.</para>
+        /// </param>
         public static IEffectCapabilityHandler PlaceHandler(
             EffectCapabilityReference reference,
             TokenDefinition definition,
-            PrintedValueChannel reachChannel) =>
-            new PlaceHeroTokenHandler(reference, definition, reachChannel);
+            PrintedValueChannel reachChannel,
+            string instanceIdentityLabel = null) =>
+            new PlaceHeroTokenHandler(reference, definition, reachChannel, instanceIdentityLabel);
 
         /// <summary>
         /// One p.18 short-supply handler for one token definition. It offers back every token in that
@@ -116,11 +130,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
         {
             private readonly TokenDefinition definition;
             private readonly PrintedValueChannel reachChannel;
+            private readonly string instanceIdentityLabel;
 
             public PlaceHeroTokenHandler(
                 EffectCapabilityReference reference,
                 TokenDefinition definition,
-                PrintedValueChannel reachChannel)
+                PrintedValueChannel reachChannel,
+                string instanceIdentityLabel = null)
             {
                 if (reachChannel != PrintedValueChannel.Radius && reachChannel != PrintedValueChannel.Range)
                 {
@@ -130,9 +146,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         nameof(reachChannel));
                 }
 
+                if (instanceIdentityLabel != null && string.IsNullOrWhiteSpace(instanceIdentityLabel))
+                {
+                    throw new ArgumentException(
+                        "An instance-identity label is named or absent; a blank one is neither.",
+                        nameof(instanceIdentityLabel));
+                }
+
                 Reference = reference;
                 this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
                 this.reachChannel = reachChannel;
+                this.instanceIdentityLabel = instanceIdentityLabel;
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -192,10 +216,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // Deterministic under replay and unique across placements: the round and turn
                         // distinguish a token from a later one that happens to occupy the space the
                         // first was reclaimed from, and the definition distinguishes two roles of the
-                        // one pile placed on the same space in the same turn.
+                        // one pile placed on the same space in the same turn - unless the placing
+                        // content supplied a label of its own, which milestone 8.61d added for a
+                        // facedown token whose kind the instance ID must not carry to another seat.
                         new TokenInstanceId(
                             $"{context.SourceCardInstanceId.Value}:{context.NodeId.Value}" +
-                            $":{definition.Id.Value}:r{context.RoundIndex}t{context.TurnIndex}" +
+                            $":{instanceIdentityLabel ?? definition.Id.Value}" +
+                            $":r{context.RoundIndex}t{context.TurnIndex}" +
                             $":{coordinate.Q}:{coordinate.R}"),
                         definition,
                         context.ActorId,

@@ -16,6 +16,135 @@ using GuardsDigital.Core.Units.Minions;
 namespace GuardsDigital.Application
 {
     /// <summary>
+    /// Milestone 8.61d. Rulebook p.4's facedown component, applied to one seat's view of the board.
+    ///
+    /// <para><b>What the source says.</b> Min the Dragonmonk's three Blue faces place their mines
+    /// "facedown in radius", and her pile holds two kinds - a blast and a dud - that differ only in
+    /// what happens when one is removed. p.4 makes a facedown component hidden information: the hero
+    /// who placed it knows which is which and nobody else does, until the mine is removed and 8.61e
+    /// reveals it.</para>
+    ///
+    /// <para><b>It is a projection filter and never an authorization filter</b> - milestone 8.40f's
+    /// rule. The authority, the Director's read model, the snapshot, the restore and the replay all
+    /// carry the real definitions and are untouched here; what changes is the object one seat is
+    /// handed. So an Undo, a resync and a reconnect re-derive the mask from authoritative state rather
+    /// than having to remember it, exactly as the narrowed effect frame does.</para>
+    ///
+    /// <para><b>The wire keeps its shape.</b> <c>NetworkTokenRow</c> already writes the definition ID
+    /// of whatever <c>SeatProjection.PlacedTokens</c> holds, so masking before the codec runs masks the
+    /// wire as well - and a masked row is the same seven fields it always was. The instance ID is NOT
+    /// masked, because it is the handle the Clear offer and every displacement name and a substituted
+    /// one would leave a seat unable to answer its own offers; the kind is kept out of it at the source
+    /// instead - see <c>SyntheticTokenCapabilities.PlaceHandler</c>'s instance-identity label.</para>
+    ///
+    /// <para><b>Nothing about the rules reads the mask.</b> Both kinds print the same properties, so a
+    /// masked board answers every movement, push, Place, Clear and cleanup question exactly as the real
+    /// one does. That is what keeps a masked client's own legality byte-for-byte the host's rather than
+    /// a second opinion about it.</para>
+    /// </summary>
+    internal static class FacedownTokenMask
+    {
+        /// <summary>
+        /// <paramref name="placedTokens"/> as <paramref name="seat"/> may see it: every token whose
+        /// definition hides its kind, and whose controller this seat does not own, wearing the
+        /// definition's own facedown face instead.
+        /// </summary>
+        /// <remarks>
+        /// The ordinary case - a board with no facedown token on it, which is every board in the build
+        /// until Min is dealt - is answered with the source list itself, so this allocates nothing on
+        /// every path it has nothing to say about.
+        /// </remarks>
+        internal static IReadOnlyList<PlacedToken> Mask(
+            IReadOnlyList<PlacedToken> placedTokens, MatchSeat seat)
+        {
+            if (placedTokens == null || placedTokens.Count == 0)
+            {
+                return placedTokens;
+            }
+
+            var masked = (PlacedToken[])null;
+            for (var index = 0; index < placedTokens.Count; index++)
+            {
+                var substitute = Substitute(placedTokens[index], seat);
+                if (ReferenceEquals(substitute, placedTokens[index]))
+                {
+                    continue;
+                }
+
+                if (masked == null)
+                {
+                    masked = placedTokens.ToArray();
+                }
+
+                masked[index] = substitute;
+            }
+
+            return masked == null ? placedTokens : Array.AsReadOnly(masked);
+        }
+
+        /// <summary>
+        /// The same substitution applied to the tokens one Clear option offers, which carry the
+        /// board's own instances and are where the label a player reads is composed from.
+        /// </summary>
+        /// <remarks>
+        /// The instance IDs and their order are untouched, so every subset invocation the rebuilt
+        /// option enumerates is the same command the authority would accept.
+        /// </remarks>
+        internal static IReadOnlyList<ClearOptionProjection> MaskClearOptions(
+            IReadOnlyList<ClearOptionProjection> options, MatchSeat seat)
+        {
+            if (options == null || options.Count == 0)
+            {
+                return options;
+            }
+
+            var masked = (ClearOptionProjection[])null;
+            for (var index = 0; index < options.Count; index++)
+            {
+                var option = options[index];
+                var tokens = Mask(option.AdjacentTokens, seat);
+                if (ReferenceEquals(tokens, option.AdjacentTokens))
+                {
+                    continue;
+                }
+
+                if (masked == null)
+                {
+                    masked = options.ToArray();
+                }
+
+                masked[index] = new ClearOptionProjection(
+                    option.ReplacementOffer, option.ReplacedAttackActionDefinitionId, tokens);
+            }
+
+            return masked == null ? options : Array.AsReadOnly(masked);
+        }
+
+        /// <summary>
+        /// One token as this seat sees it. The controller's own seat, and only it, sees the kind: p.4's
+        /// hidden information is hidden from allies too, because the card's own "facedown" says the
+        /// piece is face down on the table and an ally reads the same table an opponent does.
+        /// </summary>
+        private static PlacedToken Substitute(PlacedToken token, MatchSeat seat)
+        {
+            if (token == null || !token.Definition.HidesItsKind ||
+                (seat != null && token.ControllerHeroId.IsDefined &&
+                    seat.Owns(token.ControllerHeroId)))
+            {
+                return token;
+            }
+
+            return new PlacedToken(
+                token.Id,
+                token.Definition.FacedownFace,
+                token.OwnerHeroId,
+                token.ControllerHeroId,
+                token.SourceCardInstanceId,
+                token.Coordinate);
+        }
+    }
+
+    /// <summary>
     /// Milestone 8.30a. Who the authority is currently waiting on, and nothing about what they were
     /// asked.
     /// </summary>
@@ -274,8 +403,15 @@ namespace GuardsDigital.Application
             FastTravelOptions = offering
                 ? source.AvailableFastTravelOptions
                 : Array.Empty<FastTravelOptionProjection>();
+            // Milestone 8.61d. A Clear option carries the board's own PlacedToken instances, and the
+            // selection label a player reads is composed from each one's DisplayName - so an enemy hero
+            // standing beside a facedown mine would have been offered "Mine (blast)" in a list. The
+            // same substitution SeatProjection applies to the board applies here, for the same reason
+            // and from the same one owner. The wire is unaffected either way: the detail codec writes
+            // instance IDs only, and a network client rebuilds this option from ITS OWN already-masked
+            // PlacedTokens.
             ClearOptions = offering
-                ? source.AvailableClearOptions
+                ? FacedownTokenMask.MaskClearOptions(source.AvailableClearOptions, seat)
                 : Array.Empty<ClearOptionProjection>();
             HoldOffer = offering ? source.AvailableHoldOffer : null;
         }
@@ -549,7 +685,14 @@ namespace GuardsDigital.Application
             Heroes = source.Heroes;
             Minions = source.Minions;
             Obstacles = source.Obstacles;
-            PlacedTokens = source.PlacedTokens;
+            // Milestone 8.61d. The one place a facedown token stops naming its kind. See
+            // MaskFacedownTokens: it is a projection filter and never an authorization one, so the
+            // authority, the Director's read model, the snapshot and the replay are untouched, and
+            // every seat that is not the token's controller is handed a board whose mines are mines.
+            //
+            // It is done in the constructor rather than derived in SeatProjectionFactory.ForSeat, so
+            // that no present or future composer of a seat view can build one that forgot.
+            PlacedTokens = FacedownTokenMask.Mask(source.PlacedTokens, seat);
             HeldMarkers = source.HeldMarkers;
             RoundIndex = source.RoundIndex;
             TurnIndex = source.TurnIndex;
