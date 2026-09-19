@@ -343,7 +343,71 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 string.Empty,
                 "reassess when a pending family, answer shape, interactive surface, driver, or " +
-                "projection lifecycle is added or widened")
+                "projection lifecycle is added or widened"),
+
+            // Milestone 8.57a. Two OUTPUTS added to capabilities this build already registers, each
+            // publishing a fact its own handler already answered - see each claim's supported shape.
+            new SharedFoundationClaim(
+                "consequence.attack-target-identity",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticConsequenceCapabilities
+                        .AttackTargetHeroOutput),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaRewardTests),
+                            nameof(RowennaRewardTests
+                                .CodeOfChivalry_AgainstAHero_OffersEachHeroTheirOwnPileAndNobodyElses),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "step-1 rider names the enclosing Attack's hero target as a step's subject"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaRewardTests),
+                            nameof(RowennaRewardTests
+                                .CodeOfChivalry_AgainstAMinion_OffersNeitherRetrieval),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "minion target publishes no hero and the dependent step is not reached")
+                },
+                new[] { "enclosing action", "target kind", "publication", "timing" },
+                "The enclosing Attack's hero target, published by the predicate that already reports " +
+                "whether one exists, only for a node declaring the output and only when the target " +
+                "is a hero.",
+                "Reassess for a minion target named as a step's subject, for text outside an " +
+                "enclosing Attack, or for a second unit an Attack could take."),
+            new SharedFoundationClaim(
+                "resources.grant-performed-flag",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities
+                        .DidGrantOutputName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaRewardTests),
+                            nameof(RowennaRewardTests
+                                .ParagonOfGrace_AsksForOneRepeatOnADifferentTarget_OnceTheCoinIsPaid),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a credited coin gates a repeat that binds nothing from the grant"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaRewardTests),
+                            nameof(RowennaRewardTests
+                                .ParagonOfGrace_AsksForNoRepeatWhenNoFriendlyHeroIsInRadius),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "an ungranted coin leaves the flag unbound and the gated step unoffered")
+                },
+                new[] { "grant", "condition", "publication", "continuation" },
+                "Whether a positive coin grant was committed, published only on success and only " +
+                "for a node declaring the output; transfers and p.13's reward schedule are unchanged.",
+                "Reassess for a spend, a transfer, or a condition that needs the amount rather than " +
+                "the fact.")
         };
     }
 

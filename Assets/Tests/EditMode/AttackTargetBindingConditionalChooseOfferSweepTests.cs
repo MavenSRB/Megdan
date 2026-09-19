@@ -187,6 +187,11 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var card in BainCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("bain", d);
             foreach (var card in GarrusCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("garrus", d);
             foreach (var card in WidgetCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("widget", d);
+            // Milestone 8.57a. The eighteenth hero's first composed faces - five of nineteen at this
+            // block, which is the whole point of the case below reading the content CLASSES rather
+            // than a list: her line is owed the moment a `RowennaCardContent` exists, dealt or not.
+            // None of her five bodies binds an Attack target by card text, so she adds no at-risk gate.
+            foreach (var card in RowennaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("rowenna", d);
         }
 
         /// <summary>

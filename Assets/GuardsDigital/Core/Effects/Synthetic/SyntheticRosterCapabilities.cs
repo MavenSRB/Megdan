@@ -1291,6 +1291,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string DidRetrieveOutputName = "didRetrieve";
 
         /// <summary>
+        /// Milestone 8.57a. Whether a <c>gain-resource@1</c> node actually credited its coins,
+        /// published only on success - the "if they do" of Rowenna's Paragon of Grace, "A friendly hero
+        /// in radius gains 1 coin. <b>If they do</b>, repeat once on a different target".
+        ///
+        /// <para><b>It is <see cref="DidRetrieveOutputName"/>'s twin and exists for the identical
+        /// recorded reason.</b> That output's remarks explain why Silverarrow's binding trick does not
+        /// generalise: reading "if they do" through a later step's own binding works only while the
+        /// dependent step is ABOUT the hero the first one published. What Paragon of Grace does next is
+        /// repeat the whole Attack - a step about nobody in particular - so there is nothing for a
+        /// binding to carry, and the condition needs the fact as a Boolean a
+        /// <see cref="EffectNodeKind.Conditional"/> over <c>synthetic-is-flagged@1</c> can read.</para>
+        ///
+        /// <para><b>"They do" is the GRANT happening, which is not the same as a hero existing.</b> The
+        /// clause before it is mandatory - "gains 1 coin", with no "may" - so the only ways it does not
+        /// happen are the ways the step itself cannot: no friendly hero in radius for the selection to
+        /// name, or a ledger that refuses the credit. Both leave this unpublished, and an unbound flag
+        /// reads as false, which is exactly what the printed "if" asks for.</para>
+        ///
+        /// <para>Published only for a node that declared it, so the eleven coin grants composed before
+        /// this milestone are byte-identical without naming it - and an added OUTPUT moves no corpus
+        /// digest, for the reason <see cref="DidRetrieveOutputName"/> states.</para>
+        /// </summary>
+        public const string DidGrantOutputName = "didGrant";
+
+        /// <summary>
         /// The Zone reach a card-text Fast Travel declares - p.11's own, or the "adjacent zone" both
         /// of Silverarrow's Gold basics print.
         /// </summary>
@@ -3981,7 +4006,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new[]
                     {
                         new EffectOutputBinding("recipient", EffectValueKind.Hero),
-                        new EffectOutputBinding("amount", EffectValueKind.Integer)
+                        new EffectOutputBinding("amount", EffectValueKind.Integer),
+
+                        // Milestone 8.57a. Whether the credit happened, for a card whose "if they do"
+                        // gates a step about nobody in particular - see DidGrantOutputName.
+                        new EffectOutputBinding(DidGrantOutputName, EffectValueKind.Boolean)
                     });
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -3997,11 +4026,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     CoinGrantKind.CardEffect,
                     out var operation))
                     return EffectExecutionResult.ImpossibleMandatory();
-                return EffectExecutionResult.Applied(new[]
+                var facts = new List<EffectOutcomeFact>
                 {
                     new EffectOutcomeFact("recipient", EffectValue.Hero(operation.RecipientHeroId)),
                     new EffectOutcomeFact("amount", EffectValue.Integer(operation.Amount))
-                });
+                };
+                if (context.Publishes(DidGrantOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        DidGrantOutputName, EffectValue.Boolean(true)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
             }
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>

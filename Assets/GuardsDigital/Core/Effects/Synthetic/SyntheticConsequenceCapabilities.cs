@@ -75,6 +75,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string TookAHeroOutput = "tookAHero";
 
         /// <summary>
+        /// Milestone 8.57a. WHO the enclosing Attack's target is, published only when that target is a
+        /// hero - Rowenna's Code of Chivalry, "If you target a hero, both you and <b>the target</b> may
+        /// retrieve a discarded card".
+        ///
+        /// <para><b>It is the same fact as <see cref="TookAHeroOutput"/> and not a second reading of
+        /// it.</b> Both are <c>EnclosingAttackFacts.HeroTargetId</c>: one says whether it is defined and
+        /// this one says which hero it is. Splitting them across two capabilities would be two answers
+        /// to one question, which is exactly what this catalog's rule 1 refuses; adding an output is
+        /// what milestone 8.40i did to <c>retrieve-card@1</c> for the identical reason, and its remarks
+        /// record that an added OUTPUT moves no corpus digest, because the identity walker digests a
+        /// capability's reference and its Active-effect definitions and never its parameter
+        /// schema.</para>
+        ///
+        /// <para><b>Why the predicate had to carry it rather than the branch reading it.</b> Milestone
+        /// 8.40c's rule is that a <see cref="EffectNodeKind.Conditional"/>'s branch cannot bind that
+        /// Conditional's own output - so a card whose "if" is about the target and whose consequence is
+        /// ALSO about the target needs the fact published by an earlier sibling. Code of Chivalry is
+        /// the first face in the corpus that names the Attack's target as the SUBJECT of a step rather
+        /// than only as the thing the Attack happened to, so the sibling is this capability asked
+        /// plainly, and the Conditional over <c>synthetic-is-flagged@1</c> reads its Boolean - Bain's
+        /// Drinking Buddies' exact shape.</para>
+        ///
+        /// <para><b>Published only for a node that declared it</b>, and only when the target is a hero,
+        /// so Thunder Boomerang's shipped conditional is byte-identical without naming it and a minion
+        /// target leaves the binding undefined - which is the answer a step naming "the target" needs,
+        /// because p.13 lets an Attack take a minion and a minion has no hand to retrieve into.</para>
+        /// </summary>
+        public const string AttackTargetHeroOutput = "attackTargetHero";
+
+        /// <summary>
         /// Milestone 8.11. Whether the Attack this card text is answering is p.13's Ranged subtype,
         /// which is the Block condition all three of Wasp's Green cards print: "Block a ranged attack."
         ///
@@ -141,7 +171,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
                 Array.Empty<EffectCapabilityParameter>(),
-                new[] { new EffectOutputBinding(TookAHeroOutput, EffectValueKind.Boolean) });
+                new[]
+                {
+                    new EffectOutputBinding(TookAHeroOutput, EffectValueKind.Boolean),
+
+                    // Milestone 8.57a. The same fact as an identity, for a card whose consequence is
+                    // about the target - see AttackTargetHeroOutput.
+                    new EffectOutputBinding(AttackTargetHeroOutput, EffectValueKind.Hero)
+                });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -151,13 +188,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// an Attack that took a minion is an ordinary legal Attack rather than a step that could
             /// not be carried out.
             /// </summary>
-            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
-                EffectExecutionResult.Applied(new[]
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var target = context.EnclosingAttack.HeroTargetId;
+                var facts = new List<EffectOutcomeFact>
                 {
-                    new EffectOutcomeFact(
-                        TookAHeroOutput,
-                        EffectValue.Boolean(context.EnclosingAttack.HeroTargetId.IsDefined))
-                });
+                    new EffectOutcomeFact(TookAHeroOutput, EffectValue.Boolean(target.IsDefined))
+                };
+
+                // Only for a node that declared it, and only where there is a hero to name: a minion
+                // target leaves the binding undefined, which is what a step about "the target" needs.
+                if (target.IsDefined && context.Publishes(AttackTargetHeroOutput))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        AttackTargetHeroOutput, EffectValue.Hero(target)));
+                }
+
+                return EffectExecutionResult.Applied(facts);
+            }
 
             /// <summary>Unreachable: this capability opens no choice.</summary>
             public EffectExecutionResult Resume(
