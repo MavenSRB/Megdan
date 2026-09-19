@@ -277,6 +277,21 @@ namespace GuardsDigital.Tests.EditMode
                     TeamSide.Blue, DodgerUpgradeBranch.FirstSibling));
 
         /// <summary>
+        /// Milestone 8.54. Swift at rulebook p.15's Tier III stage with p.16's Bullet Time standing
+        /// unlocked on her rail, on the board the two heroes are engaged on.
+        ///
+        /// <para><b>Why Tier III and why this hero.</b> Bullet Time is the one permanent ability in the
+        /// build that grants an action off the card its controller has just resolved, and both of her
+        /// branches keep Reload! and Bounce in hand - so the whole of "Bounce through Bullet Time"
+        /// stands on either. The first branch is taken because nothing of this milestone's reads a Tier
+        /// III face at all, and choosing the arm the rest of the staged fixtures use keeps one board.</para>
+        /// </summary>
+        public static MatchSession CreateEngagedStagedSwiftTierThreeSession() =>
+            CreateEngagedFixtureSession(
+                MatchConfiguration.CreateStagedSwiftTierThreeForInternalTest(
+                    TeamSide.Blue, GuardsDigital.Core.Cards.Verified.SwiftUpgradeBranch.FirstSibling));
+
+        /// <summary>
         /// Milestone 8.35z27. The modal-Attack content on the board p.8's mid-turn Lane
         /// Push needs: Blue holds exactly one minion, it is standing in the starting Battle Zone, and
         /// both heroes are standing beside it.

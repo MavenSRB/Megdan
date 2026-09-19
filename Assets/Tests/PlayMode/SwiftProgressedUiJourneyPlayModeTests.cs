@@ -1026,6 +1026,14 @@ namespace GuardsDigital.Tests.PlayMode
         ///
         /// <para>The grant is a `may`, so the journey asserts it is OFFERED before taking it: an
         /// Ultimate that fired silently would be a different rule from the one printed.</para>
+        ///
+        /// <para><b>Milestone 8.54 carried it one performance further, and that performance is the
+        /// shape Bounce's own gate row has always rested on this journey for.</b> The instance the
+        /// Ultimate grants is taken off a card p.16 has already resolved, so Bounce's printed "may
+        /// repeat once" is asked of it - and until 8.54 it was not, because the engine commits the
+        /// card's resolution status below the checkpoint the grant fires at. The repeat is answered in
+        /// the DECISION WINDOW the way a player answers it (milestone 8.58), and the board is measured:
+        /// three legs of exactly two spaces onto three spaces she had not been standing on.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator BulletTimeGrantsTheResolvedCardsPrimary_AndNamesItsOwnRefusal()
@@ -1133,6 +1141,157 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(finished, Is.EqualTo(second));
             Assert.That(finished, Is.Not.EqualTo(start),
                 "Two performances of the same printed primary moved her twice in one turn.");
+
+            // Milestone 8.54, and the shape Bounce's own row has always rested on this journey for:
+            // RepeatDecision. The granted performance was taken off a card p.16 has already resolved,
+            // so Bounce's "may repeat once" is asked - in the decision window, where a player answers
+            // it.
+            yield return YieldUntilTheRepeatStands(runtime);
+            var hud = root.Hud;
+            var take = TheRepeatsAnswer(runtime, EffectChoiceCommandKind.Confirm);
+            Assert.That(take, Is.Not.Null,
+                "The repeat is a decision the player takes. " + Remaining(runtime));
+            Assert.That(TheRepeatsAnswer(runtime, EffectChoiceCommandKind.Decline), Is.Not.Null,
+                "and one they may refuse, which is what makes it an offer rather than a rule that " +
+                "fires. " + Remaining(runtime));
+            UiPlayer.ClickEffectAnswer(runtime, hud, take);
+            yield return null;
+
+            var third = runtime.PendingEffectChoice;
+            Assert.That(third, Is.Not.Null,
+                "Taking the repeat asks where to bounce a third time. " + Remaining(runtime));
+            var last = third.Candidates
+                .First(candidate => candidate.Value.Kind == EffectValueKind.Coordinate)
+                .Value.Coordinate;
+            Assert.That(runtime.SubmitEffectChoiceValue(last), Is.True);
+            yield return null;
+
+            var ended = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+            Assert.That(ended, Is.EqualTo(last));
+            var walk = string.Join(" -> ", new[] { start, first, second, ended });
+            foreach (var leg in new[] { (start, first), (first, second), (second, ended) })
+            {
+                Assert.That(leg.Item2, Is.Not.EqualTo(leg.Item1),
+                    "Each of the three performances moved her: " + walk);
+                Assert.That(HexDistanceQuery.Calculate(leg.Item1, leg.Item2), Is.EqualTo(2),
+                    "\"Move 2 spaces\" is a count, and every one of the three legs walked it: " +
+                    walk);
+            }
         }
+
+        /// <summary>
+        /// Milestone 8.54's other half, driven the same way: the repeat is REFUSABLE in the decision
+        /// window, and refusing it leaves the two moves p.16's grant alone buys.
+        ///
+        /// <para>A separate journey rather than a branch of the one above, because the two arms end in
+        /// different board states and a `may` is only proved an offer when both of its answers are
+        /// shown to be reachable through the control a player presses.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator BulletTimesGrantedRepeat_IsRefusedInTheDecisionWindow_AndLeavesTwoMoves()
+        {
+            yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedSwift);
+            var root = Root();
+            var runtime = root.Runtime;
+            var swiftId = SwiftSeat(runtime).HeroId;
+
+            yield return HerTurnOn(root, swiftId, SwiftCardContent.Bounce);
+            var start = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+
+            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
+            var landing = runtime.PendingEffectChoice;
+            Assert.That(landing, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.SubmitEffectChoiceValue(landing.Candidates
+                .First(candidate => candidate.Value.Kind == EffectValueKind.Coordinate)
+                .Value.Coordinate), Is.True);
+            yield return null;
+            var first = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+
+            // The grant, then the card it names, then the granted performance's own destination.
+            yield return null;
+            for (var step = 0; step < 8; step++)
+            {
+                var standing = runtime.PendingEffectChoice;
+                if (standing == null)
+                {
+                    yield return null;
+                    continue;
+                }
+
+                if (standing.Candidates.Any(candidate =>
+                        candidate.Value.Kind == EffectValueKind.Coordinate))
+                {
+                    break;
+                }
+
+                var answer = standing.SelectInvocations.Count > 0
+                    ? standing.SelectInvocations[0]
+                    : standing.ConfirmInvocation;
+                Assert.That(answer, Is.Not.Null, Remaining(runtime));
+                Assert.That(runtime.SubmitProjectedCommand(
+                    DirectorCommand.AnswerEffectChoice(answer)), Is.True);
+                yield return null;
+            }
+
+            var granted = runtime.PendingEffectChoice;
+            Assert.That(granted, Is.Not.Null, Remaining(runtime));
+            Assert.That(runtime.SubmitEffectChoiceValue(granted.Candidates
+                .First(candidate => candidate.Value.Kind == EffectValueKind.Coordinate)
+                .Value.Coordinate), Is.True);
+            yield return null;
+            var second = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+
+            yield return YieldUntilTheRepeatStands(runtime);
+            var refuse = TheRepeatsAnswer(runtime, EffectChoiceCommandKind.Decline);
+            Assert.That(refuse, Is.Not.Null,
+                "A printed `may` is refusable through a control of its own. " + Remaining(runtime));
+            UiPlayer.ClickEffectAnswer(runtime, root.Hud, refuse);
+            yield return null;
+            yield return null;
+
+            var ended = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+            Assert.That(ended, Is.EqualTo(second),
+                "A refused repeat performs nothing, so she is standing where the grant left her: " +
+                string.Join(" -> ", new[] { start, first, second, ended }));
+            Assert.That(HexDistanceQuery.Calculate(start, first), Is.EqualTo(2),
+                "Her own primary walked the printed count.");
+            Assert.That(HexDistanceQuery.Calculate(first, second), Is.EqualTo(2),
+                "and so did the one the Ultimate granted - two legs of two, and no third.");
+        }
+
+        /// <summary>
+        /// Waits for Bounce's own repeat question to stand, which is the node the granted performance
+        /// reaches after its move. Milestone 8.54.
+        /// </summary>
+        private static IEnumerator YieldUntilTheRepeatStands(ConfiguredMatchSceneRuntime runtime)
+        {
+            for (var step = 0; step < 12; step++)
+            {
+                var standing = runtime.PendingEffectChoice;
+                if (standing != null && standing.NodeId.Value == "bounce-repeat")
+                {
+                    yield break;
+                }
+
+                yield return null;
+            }
+
+            Assert.Fail(
+                "The granted performance never reached Bounce's \"may repeat once\". " +
+                Remaining(runtime));
+        }
+
+        /// <summary>
+        /// The repeat question's own invocation of the named kind, read off the round model the
+        /// pause published - which is the same object the decision window's control is bound to.
+        /// Milestone 8.54.
+        /// </summary>
+        private static DirectorCommand TheRepeatsAnswer(
+            ConfiguredMatchSceneRuntime runtime, EffectChoiceCommandKind kind) =>
+            runtime.RoundView.Model.EffectChoices
+                .Select(choice => choice.Command)
+                .FirstOrDefault(command =>
+                    command.Kind == DirectorCommandKind.AnswerEffectChoice &&
+                    command.EffectChoice.Kind == kind);
     }
 }

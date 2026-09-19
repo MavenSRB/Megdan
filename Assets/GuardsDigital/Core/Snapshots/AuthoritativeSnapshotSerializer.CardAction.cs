@@ -1536,7 +1536,13 @@ namespace GuardsDigital.Core.Snapshots
                 enclosingAttack: resolution.EnclosingAttack,
                 rosterState: resolution.RosterState,
                 immunityOverrides: node.ImmunityOverrides,
-                capabilities: resolution.Catalog));
+                capabilities: resolution.Catalog,
+                // Milestone 8.54, and the fifth link in the chain this method's remarks describe. A
+                // capability may now read which performance the frame is - the payload restored one,
+                // so the re-ask carries it rather than the named absence a context built without one
+                // would carry. No capability in this build derives CANDIDATES from it, so no restored
+                // set moves; threading it is what keeps that true of the next one that does.
+                invocationContext: restored.InvocationContext));
             if (offered.Choice == null)
             {
                 throw Malformed(

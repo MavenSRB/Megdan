@@ -369,6 +369,14 @@ namespace GuardsDigital.Tests.EditMode
         /// <para>Bounce is the basic card here because Bullet Time fires on a BASIC card resolving and
         /// Swift has exactly two - Reload! and Bounce - which is also the measured reason the clause's
         /// own target arm is proved at the offer rather than through this drive.</para>
+        ///
+        /// <para><b>Milestone 8.54 moved the count from two to three</b>, and the extra move is not a
+        /// second grant: it is Bounce's own printed "may repeat once", which the granted performance is
+        /// offered because p.16 has already resolved the card it was taken from. The user's ruling of
+        /// 2026-09-19 is the spec - "three moves of 2" - and the reading and its blast radius belong to
+        /// <see cref="BounceBulletTimeRepeatTests"/>, which is where the repeat's own shape is proved.
+        /// What this case keeps saying is what it always said: the grant happens, it names itself while
+        /// it runs, and it stops naming itself when its instance ends.</para>
         /// </summary>
         [Test]
         public void BulletTime_PerformsThePrimaryOfTheBasicCardItJustResolved()
@@ -385,18 +393,45 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.GrantWasRunning, Is.True,
                 "The grant names itself for as long as the instance it produced is standing, which is " +
                 "what a target answered by a later command is measured against.");
-            Assert.That(fixture.PerformedMoves, Is.EqualTo(2),
-                "Her own primary, then the instance the ability granted - two performances of one " +
-                "card's printed Move, which is exactly what p.16's sentence buys.");
+            Assert.That(fixture.RepeatOffered, Is.True,
+                fixture.Trace() + " | Milestone 8.54: the granted performance is taken off a card " +
+                "p.16 has already resolved, so Bounce's own \"may repeat once\" is asked - and the " +
+                "trace names the node that asked it.");
+            Assert.That(fixture.RepeatWasDeclinable, Is.True,
+                fixture.Trace() + " | Offered rather than taken for her: a `may` the player refuses " +
+                "is a different rule from one that fires.");
+            Assert.That(fixture.PerformedMoves, Is.EqualTo(3),
+                fixture.Trace() + " | Her own primary, the instance the ability granted, and that " +
+                "instance's one repeat - three performances of one card's printed Move.");
             Assert.That(
                 GrantedTargetExclusionQuery.RunningGrant(fixture.TurnScopedKeys()), Is.Null,
                 "The grant stops running when its instance ends, at the same boundary a card-text " +
                 "borrow hands its parent frame back.");
         }
 
+        /// <summary>
+        /// Milestone 8.54's other half, on the same drive: the repeat is a decision, so refusing it
+        /// leaves the two moves p.16 alone buys and the turn finishes all the same.
+        /// </summary>
+        [Test]
+        public void TheGrantsRepeat_IsRefusable_AndRefusingItLeavesTwoPerformances()
+        {
+            var fixture = new BulletTimeTurn(declineTheRepeat: true);
+
+            fixture.Drive();
+
+            Assert.That(fixture.RepeatOffered, Is.True, fixture.Trace());
+            Assert.That(fixture.PerformedMoves, Is.EqualTo(2),
+                fixture.Trace() + " | A refused `may` performs nothing.");
+            Assert.That(
+                GrantedTargetExclusionQuery.RunningGrant(fixture.TurnScopedKeys()), Is.Null,
+                "and the grant still stops running when its instance ends.");
+        }
+
         /// <summary>One of Swift's turns, staged so p.16's ability can fire on a basic card.</summary>
         private sealed class BulletTimeTurn
         {
+            private readonly bool declineTheRepeat;
             private readonly MatchConfiguration configuration;
             private readonly CardDefinition[] definitions;
             private readonly CardInstance[] instances;
@@ -406,8 +441,9 @@ namespace GuardsDigital.Tests.EditMode
             private readonly List<CardInstanceId> borrowCandidates = new List<CardInstanceId>();
             private TurnResolutionAuthority turn;
 
-            public BulletTimeTurn()
+            public BulletTimeTurn(bool declineTheRepeat = false)
             {
+                this.declineTheRepeat = declineTheRepeat;
                 configuration =
                     MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(TeamSide.Red);
                 var actor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
@@ -495,6 +531,12 @@ namespace GuardsDigital.Tests.EditMode
 
             public bool GrantWasRunning { get; private set; }
 
+            /// <summary>Milestone 8.54. Whether Bounce's own "may repeat once" was asked at all.</summary>
+            public bool RepeatOffered { get; private set; }
+
+            /// <summary>Milestone 8.54. Whether that question carried its own Decline.</summary>
+            public bool RepeatWasDeclinable { get; private set; }
+
             public int PerformedMoves { get; private set; }
 
             public IReadOnlyList<CardInstanceId> BorrowCandidates => borrowCandidates;
@@ -543,6 +585,23 @@ namespace GuardsDigital.Tests.EditMode
                                 .Select(candidate => candidate.Value.CardInstanceId));
                         }
 
+                        var answer = effect.SelectInvocations.Count > 0
+                            ? effect.SelectInvocations[0]
+                            : effect.ConfirmInvocation;
+
+                        // Milestone 8.54. Bounce's own repeat, asked of the granted performance
+                        // because p.16 has already resolved the card that performance came off.
+                        if (effect.NodeId.Value == "bounce-repeat")
+                        {
+                            RepeatOffered = true;
+                            RepeatWasDeclinable = effect.DeclineInvocation != null;
+                            if (declineTheRepeat)
+                            {
+                                answer = effect.DeclineInvocation;
+                                trace.Add("decline:repeat");
+                            }
+                        }
+
                         // One line choice is visited twice - once to select the destination and once
                         // to confirm it - so the instance is counted at its first visit rather than at
                         // every one.
@@ -552,10 +611,7 @@ namespace GuardsDigital.Tests.EditMode
                             PerformedMoves++;
                         }
 
-                        Assert.That(turn.TryAnswerEffectChoice(
-                            effect.SelectInvocations.Count > 0
-                                ? effect.SelectInvocations[0]
-                                : effect.ConfirmInvocation).Accepted, Is.True);
+                        Assert.That(turn.TryAnswerEffectChoice(answer).Accepted, Is.True);
                         GrantWasRunning |= GrantedTargetExclusionQuery
                             .RunningGrant(TurnScopedKeys()) != null;
                         continue;

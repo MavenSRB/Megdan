@@ -1711,7 +1711,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 context.RosterState,
                 node.ImmunityOverrides,
                 node.Outputs,
-                context.Catalog);
+                context.Catalog,
+                prospectiveActorSpace: null,
+                // Milestone 8.54. The performance this frame IS - the card's own resolution, a p.10
+                // repeat, or an instance card text or a permanent ability granted off it. The frame
+                // has carried it since the borrow paths were built and a snapshot already persists it;
+                // this is where it becomes readable by a capability, because Bounce's "if this card is
+                // already resolved as you perform this action" is a question about the performance and
+                // not only about the card.
+                invocationContext: frame.InvocationContext);
         }
 
         /// <summary>

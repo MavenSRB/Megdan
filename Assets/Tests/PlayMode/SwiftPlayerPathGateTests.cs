@@ -87,6 +87,13 @@ namespace GuardsDigital.Tests.PlayMode
         private const string BulletTimeJourney =
             "BulletTimeGrantsTheResolvedCardsPrimary_AndNamesItsOwnRefusal";
 
+        // Milestone 8.54. The refusal arm of the repeat the grant's performance is offered, which is
+        // the other half of Bounce's own `RepeatDecision` shape: a `may` is only proved an offer when
+        // both of its answers are reached through the control a player presses. It proves no shape the
+        // table did not already declare - it is a second journey over one of them.
+        private const string BulletTimeRefusalJourney =
+            "BulletTimesGrantedRepeat_IsRefusedInTheDecisionWindow_AndLeavesTwoMoves";
+
         // -------------------------------------------------------------------------------------------
         // The table. Every row's shapes are the probe's output for that face, copied, not invented.
         // -------------------------------------------------------------------------------------------
@@ -150,12 +157,19 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn),
                         Prove(ConfirmOrDecline, BounceJourney),
                         Prove(RepeatDecision, BulletTimeJourney),
+                        // Milestone 8.54. The same shape, refused rather than taken. The row's SHAPE
+                        // set is unchanged - it is one more journey over a shape the content already
+                        // introduced - and it is here rather than on Bullet Time's row because the
+                        // repeat being refused is BOUNCE's printed sentence.
+                        Prove(RepeatDecision, BulletTimeRefusalJourney),
                         Prove(BoardSpaceSelection, BounceJourney)
                     },
                     new[]
                     {
                         "SwiftPrintedSetTests.Bounce_PrintsADefenseSecondaryAndNoMovementSecondary",
-                        "SwiftPrintedSetTests.HerSet_IsNineteenFacesInThePrintedColourShape"
+                        "SwiftPrintedSetTests.HerSet_IsNineteenFacesInThePrintedColourShape",
+                        "BounceBulletTimeRepeatTests" +
+                            ".TheGrantedPerformance_IsOfferedBouncesRepeat_AndTakingItIsAThirdMoveOfTwo"
                     }),
 
                 // The Red line. Tier I, and milestone 8.38a's straight-line band at maximum range.

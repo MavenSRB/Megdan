@@ -246,8 +246,10 @@ namespace GuardsDigital.Core.Effects
             IReadOnlyList<ImmunityOverrideDeclaration> immunityOverrides = null,
             IReadOnlyList<EffectOutputBinding> declaredOutputs = null,
             EffectCapabilityCatalog capabilities = null,
-            HexCoordinate? prospectiveActorSpace = null)
+            HexCoordinate? prospectiveActorSpace = null,
+            ActionInvocationContext invocationContext = ActionInvocationContext.None)
         {
+            InvocationContext = invocationContext;
             ProspectiveActorSpace = prospectiveActorSpace;
             Capabilities = capabilities;
             EnclosingAttack = enclosingAttack;
@@ -490,6 +492,29 @@ namespace GuardsDigital.Core.Effects
         public HexCoordinate? ProspectiveActorSpace { get; }
 
         /// <summary>
+        /// Rulebook p.10's question about the performance this effect is running as: the card's own
+        /// resolution, a repeat, a borrowed or ability-granted instance, or a p.14 Defense. Milestone
+        /// 8.54.
+        ///
+        /// <para><b>Why a handler may need it.</b> The frame has always carried it - it is what
+        /// <c>PendingResolution.InvocationContext</c> records and what every snapshot of a paused
+        /// resolution already persists - but no capability had a question that turned on it. Bounce's
+        /// "if this card is already resolved as you perform this action" is the first: the engine
+        /// commits a card's resolution status BELOW the <c>ActionEnded</c> checkpoint (milestone
+        /// 8.25e, so a held action still has an unresolved card and a selected actor to run on), so an
+        /// instance Bullet Time grants at that checkpoint reads a card the rulebook has already
+        /// resolved as mid-resolution. The performance's own invocation is what tells the two apart,
+        /// and <c>BasicActionQuery.IsPerformedOffACardAlreadyResolved</c> is the one place that
+        /// reading is decided.</para>
+        ///
+        /// <para><see cref="ActionInvocationContext.None"/> is the named absence, which is every
+        /// context built outside a resolution frame - the offer-feasibility walk's probes and the
+        /// fixtures that ask a handler directly. It classifies as "not performed off a resolved card",
+        /// so a context that names no performance changes no answer.</para>
+        /// </summary>
+        public ActionInvocationContext InvocationContext { get; }
+
+        /// <summary>
         /// This same context, asked as if the acting hero already stood on <paramref name="space"/>.
         ///
         /// <para>Everything else is carried across unchanged, because nothing else about the question
@@ -522,7 +547,8 @@ namespace GuardsDigital.Core.Effects
                 ImmunityOverrides,
                 DeclaredOutputs,
                 Capabilities,
-                space);
+                space,
+                InvocationContext);
 
         public EffectValue Input(string parameterName) =>
             Inputs.TryGetValue(parameterName, out var value) ? value : default;

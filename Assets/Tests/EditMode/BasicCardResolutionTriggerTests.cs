@@ -84,6 +84,63 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Milestone 8.54. The other side of the same page: is THE CARD resolved while this runs?
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The sibling classification, enumerated the same way and for the same reason. It is what
+        /// Bounce's "if this card is already resolved as you perform this action" reads once the
+        /// engine's own status flip is known to arrive below the checkpoint a grant fires at.
+        /// </summary>
+        [Test]
+        public void EveryInvocationContext_IsClassifiedAsPerformedOffAResolvedCardOrNot()
+        {
+            var contexts = Enum.GetValues(typeof(ActionInvocationContext))
+                .Cast<ActionInvocationContext>()
+                .ToArray();
+
+            Assert.That(contexts.Length, Is.EqualTo(8),
+                "If a context has been added, classify it in " +
+                "BasicActionQuery.IsPerformedOffACardAlreadyResolved as well.");
+
+            Assert.That(
+                contexts.Where(BasicActionQuery.IsPerformedOffACardAlreadyResolved),
+                Is.EquivalentTo(new[] { ActionInvocationContext.TextGranted }),
+                "Every printed borrow and every printed grant names a card whose resolution has " +
+                "already happened - Reload!'s rightmost RESOLVED card, Ursafar's already-active " +
+                "cards, and Bullet Time's \"after you RESOLVE a basic card\".");
+        }
+
+        /// <summary>
+        /// The case that makes this a second question rather than the negation of the first: a p.10
+        /// repeat is not a card resolution AND is not performed off a resolved card, because
+        /// milestones 8.25a and 8.25e hold the card unresolved while the repeat runs.
+        /// </summary>
+        [Test]
+        public void ARepeat_IsNeitherACardResolutionNorPerformedOffAResolvedCard()
+        {
+            Assert.That(
+                BasicActionQuery.IsCardResolution(ActionInvocationContext.Repeated), Is.False);
+            Assert.That(
+                BasicActionQuery.IsPerformedOffACardAlreadyResolved(
+                    ActionInvocationContext.Repeated), Is.False,
+                "The turn holds its card unresolved while an owed repeat runs, so \"already " +
+                "resolved\" is false there - which is why this is not !IsCardResolution.");
+            Assert.That(
+                BasicActionQuery.IsPerformedOffACardAlreadyResolved(
+                    ActionInvocationContext.Reaction), Is.False,
+                "and a p.14 Defense is spent rather than resolved.");
+        }
+
+        [Test]
+        public void AnUndeclaredContext_IsRefusedByTheResolvedCardClassificationToo()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(
+                () => BasicActionQuery.IsPerformedOffACardAlreadyResolved(
+                    (ActionInvocationContext)99));
+        }
+
+        // -------------------------------------------------------------------------------------------
         // The fact the condition reads
         // -------------------------------------------------------------------------------------------
 

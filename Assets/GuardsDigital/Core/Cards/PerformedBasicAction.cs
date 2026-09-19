@@ -284,6 +284,57 @@ namespace GuardsDigital.Core.Cards
             }
         }
 
+        /// <summary>
+        /// Whether an action performed under <paramref name="invocationContext"/> is one TAKEN FROM a
+        /// card whose own resolution is already behind it - the other side of
+        /// <see cref="IsCardResolution"/>, and not its negation. Milestone 8.54.
+        ///
+        /// <para><b>Why it is not simply <c>!IsCardResolution</c>.</b> That question is about whether
+        /// THIS performance resolves the card. This one is about whether THE CARD is resolved while
+        /// this performance runs, and two of the false arms above answer it differently.
+        /// <see cref="ActionInvocationContext.Repeated"/> is p.10's second instance of an action the
+        /// turn is still holding open: milestones 8.25a and 8.25e put it deliberately above the card's
+        /// own resolution, "while the hero it belongs to is still the one Initiative selected and their
+        /// card is still unresolved", so a repeat runs on a card that is not resolved yet.
+        /// <see cref="ActionInvocationContext.Reaction"/> is a p.14 Defense spent on somebody else's
+        /// turn, where the card is not being resolved at all.</para>
+        ///
+        /// <para><b><see cref="ActionInvocationContext.TextGranted"/> is the one true arm</b>, and it
+        /// is true by the printed sentences that produce it. Reload! borrows "your rightmost resolved
+        /// card"; Ursafar's Silver borrows from cards already active; Bullet Time reads "After you
+        /// RESOLVE a basic card you may perform the primary action on that card". Every one of them
+        /// names a card whose resolution has happened before the instance they grant begins - which is
+        /// what milestone 8.54 needed said out loud, because the engine commits the card's status flip
+        /// BELOW the <c>ActionEnded</c> checkpoint the grant fires at, so the state alone reads a
+        /// Bullet Time grant as running on a card mid-resolution.</para>
+        ///
+        /// <para>A named rule beside <see cref="IsCardResolution"/> rather than a comparison at its
+        /// call site, for the reason that one is: a context added later is classified here or the
+        /// switch refuses it.</para>
+        /// </summary>
+        public static bool IsPerformedOffACardAlreadyResolved(
+            ActionInvocationContext invocationContext)
+        {
+            switch (invocationContext)
+            {
+                case ActionInvocationContext.TextGranted:
+                    return true;
+                case ActionInvocationContext.PrintedPrimary:
+                case ActionInvocationContext.PrintedSecondary:
+                case ActionInvocationContext.GeneralRuleSecondary:
+                case ActionInvocationContext.Replacement:
+                case ActionInvocationContext.Repeated:
+                case ActionInvocationContext.Reaction:
+                case ActionInvocationContext.None:
+                    return false;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(invocationContext), invocationContext,
+                        "Every invocation context states whether the card it is performed on has " +
+                        "already resolved; a new one is classified here rather than defaulting.");
+            }
+        }
+
         public static PerformedBasicAction ForCompletedAction(
             HeroId actorId,
             CardInstanceId sourceCardInstanceId,

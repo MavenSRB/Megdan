@@ -125,6 +125,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// of turn:" - where the narrow reading is false by construction and would make the clause
         /// dead text. See open question 34: the widening is an interpretation, so it is opt-in and
         /// named at its one call site rather than applied to everybody.</para>
+        ///
+        /// <para><b>Milestone 8.54 widened what "resolved" reads, and only under this same opt-in.</b>
+        /// A card's resolution STATUS is committed below the <c>ActionEnded</c> checkpoint - milestone
+        /// 8.25e put it there so an action the turn holds open still has an unresolved card and a
+        /// selected actor to run on - and Swift's Bullet Time grants its instance AT that checkpoint.
+        /// So the rulebook has resolved the card ("After you RESOLVE a basic card you may perform the
+        /// primary action on that card", p.16) while the state has not yet said so, and Bounce's repeat
+        /// read false through the one path it was printed for. A performance taken off the card rather
+        /// than resolving it now counts the card as resolved; a p.10 repeat does not, because a repeat
+        /// runs while the card genuinely is still being resolved.</para>
         /// </summary>
         public const string CountResolvedPlayedParameter = "countResolvedPlayed";
 
@@ -181,6 +191,30 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
 
+            /// <summary>
+            /// The widened reading's own question: has this card been played and resolved this round,
+            /// as the table counts it? Milestone 8.37a, corrected at milestone 8.54.
+            ///
+            /// <para><b>The status field alone answers it in one direction only.</b> A card whose
+            /// status says <see cref="CardResolutionStatus.Resolved"/> certainly has resolved. A card
+            /// whose status still says <see cref="CardResolutionStatus.Unresolved"/> may nonetheless be
+            /// one the rulebook has finished resolving, because the flip is committed below the
+            /// <c>ActionEnded</c> checkpoint and a permanent ability that grants an instance AT that
+            /// checkpoint therefore runs before it. Which performance is running is what separates the
+            /// two, and that is a question with exactly one answer in this build:
+            /// <c>BasicActionQuery.IsPerformedOffACardAlreadyResolved</c>.</para>
+            ///
+            /// <para>The card is still required to be a PLAYED card standing in the turn area, so
+            /// nothing here reaches a card in hand, in deck, or spent as a Defense.</para>
+            /// </summary>
+            private static bool CountsAsResolvedAndPlayed(
+                CardInstance card, ActionInvocationContext invocationContext) =>
+                card.State.Location == CardLocation.TurnArea &&
+                card.State.HasBeenPlayed &&
+                (card.State.ResolutionStatus == CardResolutionStatus.Resolved ||
+                    (card.State.ResolutionStatus == CardResolutionStatus.Unresolved &&
+                        BasicActionQuery.IsPerformedOffACardAlreadyResolved(invocationContext)));
+
             private static bool TryFindSourceCard(EffectCapabilityContext context, out CardInstance card)
             {
                 card = null;
@@ -203,9 +237,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 var inDiscard = card.State.Location == CardLocation.DiscardPile ||
                     (context.Input(CountResolvedPlayedParameter).BooleanValue &&
-                        card.State.Location == CardLocation.TurnArea &&
-                        card.State.HasBeenPlayed &&
-                        card.State.ResolutionStatus == CardResolutionStatus.Resolved);
+                        CountsAsResolvedAndPlayed(card, context.InvocationContext));
                 var negate = context.Input(NegateParameter).BooleanValue;
                 return EffectExecutionResult.Applied(new[]
                 {
