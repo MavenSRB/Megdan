@@ -179,7 +179,12 @@ namespace GuardsDigital.Tests.EditMode
 
             return DefenseBlockQuery.Evaluate(
                 BlockOffer(definitions[1]), definitions, definitions[0].Reference, attackAction,
-                markers: null);
+                markers: null,
+                // Milestone 8.57e. This fixture asks the condition of the printed classification
+                // alone, which is what the undefined attacker and the empty set state: no hero is
+                // named, so no standing declaration can be about one.
+                attackerId: default,
+                modifications: GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
         }
 
         private static ActionOffer BlockOffer(CardDefinition blockCard) =>
@@ -216,7 +221,9 @@ namespace GuardsDigital.Tests.EditMode
 
             return DefenseBlockQuery.Evaluate(
                 BlockOffer(definitions[1]), definitions, definitions[0].Reference, movementAction,
-                markers: null);
+                markers: null,
+                attackerId: default,
+                modifications: GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
         }
 
         private static IEnumerable<(CardDefinitionId CardId, ActionDefinition Action)> VerifiedBlocks()

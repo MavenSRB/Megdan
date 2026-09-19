@@ -467,6 +467,45 @@ namespace GuardsDigital.Core.Rules.Modifications
                 .ToArray());
 
         /// <summary>
+        /// Milestone 8.57e. The printed Range value every Attack action of <paramref name="attacker"/>
+        /// counts as having, or zero when no source declares one - Rowenna's Fabled Lance, "All your
+        /// attack actions gain the &quot;Ranged&quot; subtype, target a unit in range, and count as
+        /// having a printed Range value of 2."
+        ///
+        /// <para>Zero is the named absence rather than a Range of zero: p.9's icons are positive and
+        /// <see cref="RuleModification.ForAttackActionsCountAsRangedAtPrintedRange"/> refuses anything
+        /// smaller than one, so the two can never be confused. The answer is the LARGEST declared
+        /// value, which is the only reading under which a second source saying something is not
+        /// silently dropped - the roster has exactly one, and a smaller one taking precedence would
+        /// mean a card that said "count as Range 2" could shorten a card that said "count as Range 3".
+        /// Declarations are not summed for the reason this family is not a value modifier at all: each
+        /// states what the printed icon IS, and two statements of an icon's value are not an
+        /// arithmetic.</para>
+        /// </summary>
+        public int AttackActionsCountAsRangedAtPrintedRange(RuleObject attacker)
+        {
+            if (!attacker.IsDefined)
+            {
+                return 0;
+            }
+
+            var declared = 0;
+            for (var index = 0; index < Modifications.Count; index++)
+            {
+                var modification = Modifications[index];
+                if (modification.AffectedObject.Equals(attacker) &&
+                    modification.Modification.Kind ==
+                        RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange &&
+                    modification.Modification.Amount > declared)
+                {
+                    declared = modification.Modification.Amount;
+                }
+            }
+
+            return declared;
+        }
+
+        /// <summary>
         /// The typed contributions this set adds to one value channel for one object, in canonical order.
         /// Each keeps its own source discriminator, so they compose with the printed, minion, item, and
         /// card-text contributions rather than replacing them.

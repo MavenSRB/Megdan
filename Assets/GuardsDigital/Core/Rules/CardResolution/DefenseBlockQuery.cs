@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
@@ -41,13 +43,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <c>null</c> is a composition with no register at all rather than a board with no marker on
         /// it, and it is refused rather than answered - see the type's own remarks.
         /// </param>
+        /// <param name="attackerId">
+        /// Milestone 8.57e. The hero whose Attack opened p.14's window. p.13 classifies an Attack, and
+        /// a standing declaration can change what that classification is - Rowenna's Fabled Lance -
+        /// so the condition can no longer be answered from the attacking CARD alone. The undefined
+        /// hero is a composition naming no attacker, and then the card's own printed classification is
+        /// the whole answer, which is what it was before this milestone.
+        /// </param>
+        /// <param name="modifications">
+        /// The live set the overlay is read from. Required rather than optional, by milestone 6.8f's
+        /// rule and by milestone 8.11a's: a preview handed none while the resolution was handed the
+        /// live set would predict a Block the Attack then refuses, which is the disagreement this
+        /// query exists to prevent. <see cref="RuleModificationSet.Empty"/> is the named none.
+        /// </param>
         public static DefenseBlockResult Evaluate(
             ActionOffer defenseOffer,
             IReadOnlyList<CardDefinition> definitions,
             CardDefinitionReference attackDefinitionReference,
             ActionDefinitionId attackActionDefinitionId,
-            MarkerAttachmentRegister markers)
+            MarkerAttachmentRegister markers,
+            HeroId attackerId,
+            RuleModificationSet modifications)
         {
+            if (modifications == null) throw new ArgumentNullException(nameof(modifications));
+
             if (definitions == null)
             {
                 return DefenseBlockResult.None;
@@ -76,11 +95,22 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // this at all. Which classification fulfils it is the defending card's own printed word:
             // milestone 8.11 could assume "ranged" because all three of Wasp's Blocks print it, and
             // milestone 8.23 cannot, because Tigerclaw's Parry and Riposte print the other arm.
+            //
+            // Milestone 8.57e. The classification is still the attacking card's, read through the one
+            // query that also decides the attack's reach and its target set - Rowenna's Fabled Lance
+            // makes every Attack of hers Ranged, so a "Block a ranged attack" now answers her Code of
+            // Chivalry and a "Block a non-ranged attack" no longer does. Asking the overlay here rather
+            // than letting the resolver hand this query an already-classified value is what keeps the
+            // preview and the resolution reading one answer: both call this, and this calls one thing.
             var attack = definitions
                 .FirstOrDefault(definition => definition.Reference.Equals(attackDefinitionReference))
                 ?.ActionDefinitions
                 .FirstOrDefault(candidate => candidate.Id.Equals(attackActionDefinitionId));
-            return attack != null && Fulfils(action.BlockCondition, attack.AttackRange)
+            return attack != null &&
+                Fulfils(
+                    action.BlockCondition,
+                    RangedAttackOverlayQuery.Classify(
+                        attack.AttackRange, attackerId, modifications))
                 ? DefenseBlockResult.Blocked
                 : DefenseBlockResult.ConditionUnfulfilled;
         }

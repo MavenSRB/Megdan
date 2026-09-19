@@ -6,24 +6,27 @@ using GuardsDigital.Core.Rules.CardResolution;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// Rowenna the Vanguard's printed faces as definition content - milestones 8.57a through 8.57d,
+    /// Rowenna the Vanguard's printed faces as definition content - milestones 8.57a through 8.57e,
     /// and the eighteenth hero this project builds.
     ///
     /// <para><b>This file is deliberately partial, and it says so rather than pretending otherwise.</b>
     /// Her shard records nineteen printed faces. 8.57a composed the SIX whose clauses that block owned
     /// - Code of Chivalry and the five Reds that reward a team-mate after the attack - 8.57b added
     /// FOUR more - her Silver basic Throw the Gauntlet and the three Blue faces that swap with a
-    /// friendly unit - 8.57c added the TWO Blue faces that defeat a surrendering enemy, and 8.57d adds
-    /// the FIVE Green ones. <see cref="AllDefinitions"/> is therefore seventeen cards and not
-    /// nineteen, there is no starting hand, no deck, no boxed Handicap and no dealt set: p.5's shape is
-    /// a statement about a complete set, and stating it over most of one would be false. Milestone
-    /// 8.57f composes the remaining two and adds those members; 8.57g deals her.</para>
+    /// friendly unit - 8.57c added the TWO Blue faces that defeat a surrendering enemy, 8.57d added
+    /// the FIVE Green ones, and 8.57e adds her Purple Ultimate. <see cref="AllDefinitions"/> is
+    /// therefore eighteen cards and not nineteen, there is no starting hand, no deck, no boxed
+    /// Handicap and no dealt set: p.5's shape is a statement about a complete set, and stating it over
+    /// most of one would be false. Milestone 8.57f composes the remaining one and adds those members;
+    /// 8.57g deals her.</para>
     ///
     /// <para><b>All three coloured ladders are composed, so every upgrade pair she prints is now
     /// stated whole.</b> Stand Guard upgrades to Protect the Weak or Accept Surrender, and each of
     /// those to Defend the Innocent or Glorious Triumph; Close Quarters upgrades to Melee or Opening
-    /// Shots, and each of those to Grand Melee or Opening Volley. What 8.57f still owes is the Ultimate
-    /// and the boxed Handicap - two faces, and neither of them sits on a ladder.</para>
+    /// Shots, and each of those to Grand Melee or Opening Volley. What 8.57f still owes is the boxed
+    /// Handicap - one face, and it sits on no ladder: p.20 keeps Earn the Spurs in the box, and p.16
+    /// UNLOCKS Fabled Lance rather than upgrading into it, which is why the Ultimate this block adds
+    /// names no upgrade pair and is named by none.</para>
     ///
     /// <para><b>The revision is a placeholder and is not a valid content identity.</b>
     /// <see cref="ContentRevision"/> reads <c>rowenna-8-57a-prep</c>, which follows no dealt hero's
@@ -32,7 +35,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// one, and the real revision is minted at 8.57f/8.57g where the whole set moves together.</para>
     ///
     /// <para><b>Nothing here is registered.</b> <see cref="MatchContentCatalogs"/> names no Rowenna
-    /// content, so no configured match can deal these seventeen cards and nothing reachable can start them.
+    /// content, so no configured match can deal these eighteen cards and nothing reachable can start them.
     /// That is milestone 7.9's gate rather than an oversight - the registered content list is
     /// serialized, and registering a card before it can be dealt moves the pinned list, every
     /// snapshot's bytes and every corpus digest while the content never moved.</para>
@@ -42,7 +45,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// recorded in the <c>Docs/AI/Rules/HERO_ROWENNA.md</c> shard. The table there and the rows here
     /// are meant to be read side by side. Nothing is derived.</para>
     ///
-    /// <para><b>RO-03 is open and FOUR of these seventeen faces are touched by it.</b> The printed colour
+    /// <para><b>RO-03 is open and FOUR of these eighteen faces are touched by it.</b> The printed colour
     /// conflict her shard holds for the user is on Accept Surrender, Glorious Triumph, Melee and Grand
     /// Melee - each carries a ribbon, band and frame of one colour and a corner letter of another. The
     /// shard's working assumption is the RIBBON, which makes the first two Blue and the second two
@@ -54,7 +57,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static class RowennaCardContent
     {
         /// <summary>
-        /// The revision these seventeen definitions carry. A PLACEHOLDER, deliberately not shaped like a
+        /// The revision these eighteen definitions carry. A PLACEHOLDER, deliberately not shaped like a
         /// dealt hero's revision - see the type's own remarks.
         /// </summary>
         public const string ContentRevision = "rowenna-8-57a-prep";
@@ -144,6 +147,12 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public static CardDefinitionId OpeningVolley { get; } = Id("opening-volley");
 
+        /// <summary>
+        /// Milestone 8.57e. Her Purple Tier IV - rulebook p.16's permanent ability, and the only face
+        /// in the corpus that changes what rulebook p.13 makes of every Attack its hero performs.
+        /// </summary>
+        public static CardDefinitionId FabledLance { get; } = Id("fabled-lance");
+
         // -----------------------------------------------------------------------------------------
         // Local action identities, local to a card exactly as every earlier set's are.
         // -----------------------------------------------------------------------------------------
@@ -189,7 +198,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 Array.AsReadOnly(Profiles().Select(Build).ToArray()));
 
         /// <summary>
-        /// The seventeen faces these four blocks compose, in her shard's printed-value table order.
+        /// The eighteen faces these five blocks compose, in her shard's printed-value table order.
         ///
         /// <para>Built lazily, which is the convention milestone 8.38d adopted after a
         /// static-initialization cycle cost milestone 8.37 1,423 failing cases on one
@@ -201,7 +210,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static CardDefinition Definition(CardDefinitionId id) =>
             AllDefinitions.FirstOrDefault(definition => definition.Id.Equals(id)) ??
             throw new ArgumentException(
-                $"Milestones 8.57a through 8.57d compose no Rowenna card '{id}'.", nameof(id));
+                $"Milestones 8.57a through 8.57e compose no Rowenna card '{id}'.", nameof(id));
 
         private static CardDefinitionId Id(string cardId) =>
             new CardDefinitionId($"{ContentSetId}-{cardId}");
@@ -383,7 +392,20 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Green, CardTier.III, PrintedValueChannel.Initiative),
                 "If both you and an enemy hero in radius have no cards in the discard, that hero " +
                 "discards a card, if able. May repeat once.",
-                RowennaPrimaryKind.Skill, radiusSkill: true)
+                RowennaPrimaryKind.Skill, radiusSkill: true),
+
+            // Milestone 8.57e. p.16's permanent ability. It prints a Range 2 icon and no Initiative, no
+            // secondary icons and no action at all, which is what makes the row's other zeros a
+            // statement rather than an omission - the same shape Tali's Reign of Winter and Ursafar's
+            // Unbound Fury take. The Range icon does NOT arrive through the Range column below, which
+            // feeds a printed ACTION's icon: this card has no action, so the icon is carried on the
+            // ability itself, where milestone 8.3 put p.9's one Ultimate icon.
+            new RowennaCardProfile(
+                FabledLance, "Fabled Lance", 0, 0, 0, 0, 0,
+                CardProgressionProfile.UltimateCard(),
+                "All your attack actions gain the \"Ranged\" subtype, target a unit in range, and " +
+                "count as having a printed Range value of 2.",
+                RowennaPrimaryKind.None)
         };
 
         private static CardDefinition Build(RowennaCardProfile profile) =>
@@ -391,14 +413,35 @@ namespace GuardsDigital.Core.Cards.Verified
                 profile.Id,
                 ContentRevision,
                 profile.DisplayName,
-                new InitiativeValue(profile.Initiative),
+                // Milestone 8.57e. p.16's card prints no Initiative at all, so the absence is the
+                // undefined value rather than a zero - the same statement Tali's and Ursafar's
+                // Ultimates make, and the reason this is a branch rather than a number.
+                profile.Primary == RowennaPrimaryKind.None
+                    ? default
+                    : new InitiativeValue(profile.Initiative),
                 CardContentAuthority.VerifiedOfficial,
                 profile.Progression,
                 BuildActions(profile),
+                // Milestone 8.57e. p.16's permanent ability as a typed rule rather than a standing
+                // declaration: Fabled Lance changes what rulebook p.13 makes of every Attack she
+                // performs and what p.9's Range icon on it reads, which is a modification family
+                // rather than a name some query matches on. See RowennaEffectContent.FabledLanceRule.
+                profile.Id.Equals(FabledLance)
+                    ? RowennaEffectContent.FabledLanceRule()
+                    : null,
                 CardSourceContent.Transcribed(profile.PrintedText));
 
         private static IEnumerable<ActionDefinition> BuildActions(RowennaCardProfile profile)
         {
+            // Milestone 8.57e. The Ultimate prints no action at all - not a primary, not a secondary
+            // Defense - so she cannot discard it to defend and it is never played. Expressed by
+            // yielding nothing rather than by a zero-valued action, which is the same rule RO-05
+            // applies to every missing icon in this set.
+            if (profile.Primary == RowennaPrimaryKind.None)
+            {
+                yield break;
+            }
+
             yield return BuildPrimary(profile);
 
             // Milestone 8.57b. A dash in the shard's Movement column means the face prints no such
@@ -546,7 +589,15 @@ namespace GuardsDigital.Core.Cards.Verified
             /// Milestone 8.57d. p.9's green band with a Movement primary - her three Green faces whose
             /// icon is a walk and whose text is applied around it.
             /// </summary>
-            Movement = 3
+            Movement = 3,
+
+            /// <summary>
+            /// Milestone 8.57e. No band and no action: p.16's Ultimate, whose whole printed content is
+            /// a permanent ability. It is a member here rather than an absence some other field
+            /// implies, because the two things that follow from it - no Initiative and no action
+            /// definitions at all - are read off exactly this.
+            /// </summary>
+            None = 4
         }
 
         private sealed class RowennaCardProfile

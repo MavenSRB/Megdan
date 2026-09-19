@@ -1074,7 +1074,11 @@ namespace GuardsDigital.Tests.EditMode
                     definitions,
                     definitions[0].Reference,
                     AttackActionId,
-                    withRegister ? Markers : null);
+                    withRegister ? Markers : null,
+                    // Milestone 8.57e. No attacker is named and no rule stands, so p.13's printed
+                    // classification is the whole of the answer - which is what this fixture asks.
+                    default,
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
             }
 
             /// <summary>The board condition asked about this board, against a non-Ranged attack.</summary>

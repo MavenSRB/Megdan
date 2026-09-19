@@ -412,10 +412,19 @@ namespace GuardsDigital.Core.Cards
                 PrintedTextComposition.None,
                 Array.Empty<PrintedValueDefinition>());
 
+        /// <param name="printedValues">
+        /// Milestone 8.57e. p.9's one Range or Radius icon, where the Ultimate prints one - Rowenna's
+        /// Fabled Lance prints a Range 2 beside the sentence that says her attacks count as having it.
+        /// The private constructor has taken these since milestone 8.3, and the two trigger factories
+        /// already require them; this is the way in for a standing ability, and it adds no field, no
+        /// schema and no lifetime. Empty for every Ultimate that prints no icon, which is every
+        /// standing ability composed before this milestone - so no earlier declaration's value moves.
+        /// </param>
         public static UltimateRuleDefinition PermanentAbility(
             string ruleId,
             string ruleKind,
-            IEnumerable<RuleModification> modifications)
+            IEnumerable<RuleModification> modifications,
+            IEnumerable<PrintedValueDefinition> printedValues = null)
         {
             var declared = (modifications ?? Enumerable.Empty<RuleModification>()).ToArray();
             if (declared.Length == 0)
@@ -431,7 +440,7 @@ namespace GuardsDigital.Core.Cards
                 ruleKind,
                 declared,
                 PrintedTextComposition.None,
-                Array.Empty<PrintedValueDefinition>());
+                printedValues ?? Array.Empty<PrintedValueDefinition>());
         }
 
         /// <summary>

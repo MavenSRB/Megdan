@@ -1080,7 +1080,10 @@ namespace GuardsDigital.Tests.EditMode
                     cardId.Value + " composes a body.");
             }
 
-            Assert.That(RowennaCardContent.AllDefinitions.Count, Is.EqualTo(17));
+            // Milestone 8.57e adds her Purple Ultimate, so the set these five faces sit in is eighteen
+            // of nineteen. The count is pinned rather than derived on purpose: it is what says the
+            // file is still deliberately partial, and it moves once per composing block.
+            Assert.That(RowennaCardContent.AllDefinitions.Count, Is.EqualTo(18));
         }
 
         /// <summary>

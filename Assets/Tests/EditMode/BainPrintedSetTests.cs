@@ -1783,7 +1783,12 @@ namespace GuardsDigital.Tests.EditMode
                     BainCardContent.AllDefinitions,
                     BainCardContent.Definition(BainCardContent.LightCrossbow).Reference,
                     BainCardContent.PrimaryRangedAttack,
-                    Markers);
+                    Markers,
+                    // Milestone 8.57e. Bain himself fires the Light Crossbow here and no standing
+                    // declaration is in play, so p.13's printed Ranged classification is the whole
+                    // answer - exactly what it was before the overlay existed.
+                    Bain,
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
 
             // ---- The pull
 

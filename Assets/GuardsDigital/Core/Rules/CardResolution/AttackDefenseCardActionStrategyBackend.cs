@@ -2062,7 +2062,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // you are defeated." Calculating a total for one would be inventing a number the card does
             // not print, which is the sentinel-Defense mistake `PrintedDefenseResolution` exists to
             // refuse.
-            var blockResult = EvaluateBlock(defenseOffer, materializedDefinitions);
+            var blockResult = EvaluateBlock(defenseOffer, materializedDefinitions, modifications);
             var defenseValue = blockResult == DefenseBlockResult.None
                 ? DefenseValueQuery.Calculate(
                     defenseOffer,
@@ -2741,15 +2741,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the same object the round authority hands the projection the preview is built from, which
         /// is what makes the two verdicts one fact rather than two derivations.</para>
         /// </summary>
+        /// <remarks>
+        /// Milestone 8.57e adds the third thing a condition may be answered from: the attacker, and the
+        /// live set that may have changed what rulebook p.13 makes of his Attack - Rowenna's Fabled
+        /// Lance. Both travel from this resolution and this call, which is the same object the round
+        /// authority hands the projection the preview is built from, so the two verdicts stay one fact.
+        /// </remarks>
         private DefenseBlockResult EvaluateBlock(
             ActionOffer defenseOffer,
-            IReadOnlyList<CardDefinition> definitions) =>
+            IReadOnlyList<CardDefinition> definitions,
+            RuleModificationSet modifications) =>
             DefenseBlockQuery.Evaluate(
                 defenseOffer,
                 definitions,
                 pendingAttackResolution.SourceDefinitionReference,
                 pendingAttackResolution.ActionDefinitionId,
-                markers);
+                markers,
+                pendingAttackResolution.ActorId,
+                modifications);
 
         /// <summary>
         /// Milestone 8.22, finding `F-ATK-01`: the pre-consequence target space is carried across
@@ -3190,7 +3199,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // +1 Range item reaches one space further - the page's own example of an item that matters
             // only to a card printing that icon. A non-Ranged Attack has no Range icon and is adjacency
             // by rule rather than by a Range of one, so nothing is composed onto it.
-            var rangeTotal = offer.AttackRange == AttackRangeKind.Ranged
+            //
+            // Milestone 8.57e. The classification the RULES read, which is the card's own unless a
+            // standing declaration says otherwise - Rowenna's Fabled Lance, "All your attack actions
+            // gain the "Ranged" subtype". It is asked here rather than off the offer because the offer
+            // is a card-and-action address whose equality every authorization path compares; what
+            // changed is what p.13 makes of that action right now, and this is where p.13's reach is
+            // decided. The same query answers the defence preview and the Block, so the three cannot
+            // disagree about one attack's subtype.
+            var attackRange = RangedAttackOverlayQuery.Classify(
+                offer.AttackRange, offer.ActorId, modifications);
+            var rangeTotal = attackRange == AttackRangeKind.Ranged
                 ? RangeValue(offer, definitions, participants, modifications).Total
                 : 1;
 
@@ -3205,7 +3224,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             {
                 var admitted = AttackTargetQuery.FindLegalEnemyTargets(
                     attackerId,
-                    sequenceBullet.TargetPolicy,
+                    RangedAttackOverlayQuery.Overlay(
+                        sequenceBullet.TargetPolicy, offer.AttackRange, offer.ActorId, modifications),
                     rangeTotal,
                     participants,
                     adjacentMoveAuthority,
@@ -3222,7 +3242,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
             return AttackTargetQuery.FindLegalEnemyTargets(
                 attackerId,
-                action.AttackTargetPolicy ?? PrintedAttackTargetPolicy.ForClassification(offer.AttackRange),
+                // Milestone 8.57e. The card's own sentence, then the standing declaration that
+                // replaces its adjacency clause with p.13's ceiling. Both halves arrive at the one
+                // query the offer, the target choice and the resolution all read, which is milestone
+                // 8.10's rule applied to a rule that is not printed on the attacking card.
+                RangedAttackOverlayQuery.Overlay(
+                    action.AttackTargetPolicy ??
+                        PrintedAttackTargetPolicy.ForClassification(offer.AttackRange),
+                    offer.AttackRange,
+                    offer.ActorId,
+                    modifications),
                 rangeTotal,
                 participants,
                 adjacentMoveAuthority,

@@ -132,6 +132,69 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private const int TripledAssistCoins = 3;
 
+        // -----------------------------------------------------------------------------------------
+        // Milestone 8.57e. Fabled Lance, her Purple Tier IV - rulebook p.16's permanent ability.
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>The ability's stable identity inside its card, and its derived source's suffix.</summary>
+        public const string FabledLanceRuleId = "rowenna-fabled-lance";
+
+        /// <summary>
+        /// The <c>ContinuousRuleSource.RuleKind</c> the unlocked card supplies for exactly as long as
+        /// rulebook p.16 says it does - while the card sits beside her dashboard and she is on the
+        /// board. Nothing stores it, and a restored match derives it again from the same card.
+        /// </summary>
+        public const string FabledLanceRuleKind = "RowennaFabledLance";
+
+        /// <summary>
+        /// The Range value Fabled Lance prints, and the number its own sentence names: "count as having
+        /// a printed Range value of 2". It is one constant read twice on purpose - the card's p.9 icon
+        /// and the rule's declared amount are the same printed number, and writing it twice is how the
+        /// icon and the ability come to disagree.
+        /// </summary>
+        public const int FabledLancePrintedRange = 2;
+
+        /// <summary>
+        /// Milestone 8.57e. "All your attack actions gain the &quot;Ranged&quot; subtype, target a unit
+        /// in range, and count as having a printed Range value of 2." - Fabled Lance, printed whole.
+        ///
+        /// <para><b>A standing ability rather than a declaration or a trigger, and the card decides
+        /// which.</b> <c>UltimateRuleDefinition.PermanentDeclaration</c> is for a sentence no
+        /// modification family can carry - Ursafar's "you are always enraged" - and is read by NAME.
+        /// This sentence changes three things p.13 and p.9 already decide about an Attack, so it is a
+        /// typed rule:
+        /// <see cref="RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange"/>, whose own
+        /// remarks record why the three printed clauses are one family and why the number is the
+        /// printed icon rather than a bonus on it.</para>
+        ///
+        /// <para><b>The Range icon is printed content and is carried as such.</b> Her shard's table
+        /// reads <c>Ultimate / R 2</c> and milestone 8.3 put p.9's one icon on this type for exactly
+        /// this reason. Ledger question 12's approved reading - a +1 Radius item raises Tali's printed
+        /// Ultimate Radius - has no second effect here: her Range item is composed ONCE, by
+        /// <c>ItemBonusQuery</c>, onto the Attack card whose printed Range this ability supplies, so
+        /// Paragon of Grace's item makes her reach three and never four.</para>
+        ///
+        /// <para><b>What it deliberately does not add.</b> Nothing about rulebook p.19's straight line,
+        /// because the face prints none - "target a unit in range" is p.13's plain ceiling, and
+        /// Silverarrow's and Swift's faces are what a straight-line clause looks like when a card means
+        /// one. Nothing about Radius either: her Attack faces' riders read their own printed Radius
+        /// disk through <c>RadiusValueQuery</c>, and p.9 keeps the two icons apart.</para>
+        /// </summary>
+        public static UltimateRuleDefinition FabledLanceRule() =>
+            UltimateRuleDefinition.PermanentAbility(
+                FabledLanceRuleId,
+                FabledLanceRuleKind,
+                new[]
+                {
+                    RuleModification.ForAttackActionsCountAsRangedAtPrintedRange(
+                        FabledLancePrintedRange)
+                },
+                new[]
+                {
+                    new PrintedValueDefinition(
+                        PrintedValueChannel.Range, FabledLancePrintedRange)
+                });
+
         /// <summary>
         /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
         /// own words, never the mechanism.

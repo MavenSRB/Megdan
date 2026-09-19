@@ -62,15 +62,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentNullException(nameof(modifications));
             }
 
+            var materializedDefinitions = (definitions ?? Enumerable.Empty<CardDefinition>())
+                .ToArray();
             var printed = PrintedValueQuery.CalculatePrintedValue(
                 sourceCardInstanceId,
                 sourceDefinitionReference,
                 actionDefinitionId,
-                definitions,
+                materializedDefinitions,
                 PrintedValueChannel.Range);
+
+            // Milestone 8.57e. Rowenna's Fabled Lance, "All your attack actions ... count as having a
+            // printed Range value of 2". It is applied HERE, before the item bonus and inside the one
+            // place p.9's Range Total is decided, because p.16 raises an ICON: her Attack faces print
+            // none, so an override composed anywhere later would leave her Range item with nothing to
+            // match and her reach frozen at two however many items she earns. A Skill of hers reaches
+            // this method too and is answered unchanged - the overlay asks whether the named action is
+            // an Attack, which is the only condition the printed sentence puts on it.
+            var overlaid = RangedAttackOverlayQuery.OverlayPrintedRange(
+                printed,
+                sourceCardInstanceId,
+                sourceDefinitionReference,
+                actionDefinitionId,
+                materializedDefinitions,
+                actorId,
+                modifications);
             var composed = heroItems == null
-                ? printed
-                : ItemBonusQuery.Apply(printed, heroItems, actorId);
+                ? overlaid
+                : ItemBonusQuery.Apply(overlaid, heroItems, actorId);
             var declared = modifications.ValueContributions(
                 RuleObject.ForHero(actorId), PrintedValueChannel.Range, performedAction);
             return declared.Count == 0

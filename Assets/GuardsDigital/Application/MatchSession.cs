@@ -1110,12 +1110,20 @@ namespace GuardsDigital.Application
                 // calculating a Defense value for every offer - so a Block previewed as a card worth
                 // zero, predicted the defender losing an attack it in fact stops, and gave the prompt
                 // no printed Defense icon to draw itself from.
+                // Milestone 8.57e. The attacker and the live set arrive beside the register, for the
+                // reason the register arrived beside the item state: the attacking card's printed
+                // classification is no longer the whole of p.13's answer - Rowenna's Fabled Lance
+                // makes every Attack of hers Ranged - and a preview reading the card alone while the
+                // resolution reads the declaration would predict the wrong verdict for the one card a
+                // defender is choosing from.
                 var blockResult = DefenseBlockQuery.Evaluate(
                     offer,
                     configuration.CardDefinitions,
                     attack.SourceDefinitionReference,
                     attack.ActionDefinitionId,
-                    markers);
+                    markers,
+                    attack.ActorId,
+                    modifications);
                 if (blockResult != DefenseBlockResult.None)
                 {
                     projectedChoices.Add(new DefenseChoicePreviewProjection(

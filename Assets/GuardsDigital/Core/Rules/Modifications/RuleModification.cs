@@ -197,7 +197,56 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// reach this type, which milestone 8.38d measured on a shared type at the cost of all twelve
         /// pins at once. An added enum member no earlier declaration names moves nothing.</para>
         /// </summary>
-        AdditionalDefeatLifeCostWhenDefeated = 12
+        AdditionalDefeatLifeCostWhenDefeated = 12,
+
+        /// <summary>
+        /// Milestone 8.57e. Every Attack action the affected hero performs is a RANGED Attack whose
+        /// printed Range value is <see cref="RuleModification.Amount"/> - Rowenna the Vanguard's
+        /// Fabled Lance, printed whole: "All your attack actions gain the &quot;Ranged&quot; subtype,
+        /// target a unit in range, and count as having a printed Range value of 2."
+        ///
+        /// <para><b>One family for one sentence, because the printed clause states one rule three
+        /// times.</b> Rulebook p.13 gives a Ranged Attack exactly two consequences - it is what a
+        /// "Block a ranged attack" answers, and it "can target units based on the Range value on the
+        /// card" - and p.9 says what that value is. So "gains the Ranged subtype", "targets a unit in
+        /// range" and "counts as having a printed Range value of 2" are the subtype, the reach the
+        /// subtype already implies, and the number the reach reads. Declaring them as three
+        /// modifications would let a later reader cancel one and leave a Ranged Attack with no Range
+        /// to be in, or an in-range reach on an Attack nothing classifies.</para>
+        ///
+        /// <para><b>Why not <see cref="ValueModifier"/> on the Range channel, which is the shape that
+        /// looks right.</b> p.16 is explicit that an item raises an ICON and not a total: "If an Action
+        /// card has no matching icon, the item has no effect on that particular Action card", and the
+        /// page's own example is a Melee card and a +1 Range item. Her Attack faces print no Range icon
+        /// at all, so a +2 Range contribution would compose to two and her Range item would still find
+        /// nothing to raise - the card would reach two spaces with one Range item and two with three.
+        /// The printed sentence says the attacks "count as HAVING a printed Range value", which is the
+        /// icon rather than a bonus on it, and it is exactly that word which makes her Range item
+        /// matter. <see cref="RangedAttackOverlayQuery"/> therefore supplies a printed-icon
+        /// contribution and p.16's item bonus composes onto it in the ordinary way.</para>
+        ///
+        /// <para><b>Why not <see cref="CountsAs"/>.</b> p.17's replacement is about an object's unit
+        /// TYPE - "all rules and qualities of that object are replaced by the rules and qualities of
+        /// the object type(s) it now counts as" - and <see cref="EffectiveUnitKind"/> holds heroes,
+        /// minions and terrain. An Attack's subtype is a fact about an ACTION, not about the hero
+        /// standing on the board, and nothing in that vocabulary can say it.</para>
+        ///
+        /// <para><b>The number is <see cref="RuleModification.Amount"/> and there is no new public
+        /// property</b>, for the reason milestones 8.35z28, 8.35z29 and 8.40a each recorded: a property
+        /// added to this type moves the content digest of every hero whose declarations reach it, and
+        /// an added enum member no earlier declaration names moves nothing.
+        /// <see cref="RuleModification.Channel"/> reads <see cref="PrintedValueChannel.Range"/> because
+        /// that is the icon the sentence names; it is not a value contribution and
+        /// <see cref="RuleModificationSet.ValueContributions"/> never sees it, which is what keeps the
+        /// override from also arriving as a bonus.</para>
+        ///
+        /// <para><b>It is declared about the hero and read about the ACTION.</b> "All your attack
+        /// actions" names the controller, which is the object p.16 already hands an Ultimate's rules to;
+        /// which of her actions it reaches is decided where the question is asked, and every consumer
+        /// asks it only of an action rulebook p.13 classifies. Her Movement and Skill faces are
+        /// therefore untouched by construction rather than by a second condition.</para>
+        /// </summary>
+        AttackActionsCountAsRangedAtPrintedRange = 13
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -816,6 +865,43 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RuleValueApplicability.Always,
                 SourceValueQueryKind.None);
 
+        /// <summary>
+        /// Milestone 8.57e. Every Attack action the affected hero performs counts as a Ranged Attack
+        /// printing a Range icon of <paramref name="printedRange"/> - Rowenna's Fabled Lance. See
+        /// <see cref="RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange"/> for why the
+        /// whole printed sentence is one family and why the number is the printed icon rather than a
+        /// contribution to it.
+        /// </summary>
+        /// <param name="printedRange">
+        /// The printed Range these Attacks count as having. p.9's icons are positive and p.13's
+        /// reach reads this number as a ceiling, so zero or less is refused: it would be an Attack
+        /// declared Ranged with no space to reach, which is neither the printed sentence nor p.13's
+        /// adjacency.
+        /// </param>
+        public static RuleModification ForAttackActionsCountAsRangedAtPrintedRange(int printedRange)
+        {
+            if (printedRange < 1)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(printedRange),
+                    printedRange,
+                    "A printed Range icon states a positive value (rulebook p.9), and rulebook p.13 " +
+                    "reads it as the ceiling a Ranged Attack reaches; an Attack declared Ranged at " +
+                    "zero could never target anything.");
+            }
+
+            return new RuleModification(
+                RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.Range,
+                printedRange,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
+        }
+
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
         {
             if (!cost.IsDeclared)
@@ -1022,6 +1108,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return $"Also counts as {EffectiveUnitKind}";
                 case RuleModificationKind.ActivityLimit:
                     return $"No more than {Amount} with a {named} action";
+                case RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange:
+                    return $"Attack actions are Ranged at printed {Channel} {Amount}";
                 default:
                     return "Undeclared modification";
             }

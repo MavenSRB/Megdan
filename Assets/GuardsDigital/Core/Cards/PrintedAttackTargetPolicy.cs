@@ -387,6 +387,21 @@ namespace GuardsDigital.Core.Cards
             new PrintedAttackTargetPolicy(
                 AttackTargetableUnits.IsolatedUnitsOrUnitsAdjacentToYou, Reach, Line, Binding);
 
+        /// <summary>
+        /// Milestone 8.57e. The same policy reading p.13's printed-Range ceiling - "target a unit in
+        /// range" - which is the clause Rowenna's Fabled Lance puts in place of her Attack faces' own
+        /// "Target a unit adjacent to you".
+        ///
+        /// <para>It is the widening twin of <see cref="AtExactlyThePrintedRange"/> and touches the same
+        /// single dimension: which units the Attack may take and whether p.19's straight line is
+        /// excluded are left exactly as the card prints them, and so is milestone 8.19a's binding. See
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.RangedAttackOverlayQuery.Overlay"/> for
+        /// why only the reach moves.</para>
+        /// </summary>
+        public PrintedAttackTargetPolicy AtThePrintedRange() =>
+            new PrintedAttackTargetPolicy(
+                TargetableUnits, AttackTargetReach.PrintedRange, Line, Binding);
+
         /// <summary>The same policy narrowed to p.13's heroes alone, which is Crackling Dagger's shape.</summary>
         public PrintedAttackTargetPolicy NarrowedToHeroes() =>
             new PrintedAttackTargetPolicy(AttackTargetableUnits.HeroesOnly, Reach, Line, Binding);
