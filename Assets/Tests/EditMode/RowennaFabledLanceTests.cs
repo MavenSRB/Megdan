@@ -491,6 +491,75 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// MILESTONE 8.57g'S REGRESSION SEED, and the defect it seeds against is the one milestone
+        /// 8.57e shipped: an Attack PRINTED Ranged whose own text had narrowed its reach to adjacency
+        /// had that narrowing silently undone, for every hero in the build and with nothing declared
+        /// at all.
+        ///
+        /// <para>The old gate asked "is the overlaid classification Ranged", which is true of a
+        /// printed-Ranged card before any Ultimate exists; the gate is now "did the classification
+        /// MOVE", which is what the printed sentence says. Whisper's Swift Justice is the face that
+        /// found it - her Gold basic prints Ranged with a Range icon of 3 and its second bullet prints
+        /// "a unit adjacent to you", so the chosen bullet offered five spaces out to three instead of
+        /// the innermost ring - and the four cases below are the offline form of that, asked of the
+        /// query rather than of a journey so that the next run after a change to this family is the
+        /// eleven-minute one rather than the six-minute Play Mode suite.</para>
+        /// </summary>
+        [Test]
+        public void ACardTextNarrowedReachOnAPrintedRangedAttack_IsNeverWidenedByTheOverlay()
+        {
+            var world = World.Create();
+            var locked = world.Modifications();
+            world.Unlock();
+            var unlocked = world.Modifications();
+
+            // The shape the defect was about: the policy a bullet of a printed-RANGED card publishes
+            // when its own sentence reads "a unit adjacent to you". The backend hands the overlay the
+            // BULLET's policy and the CARD's printed classification, which is the pairing that used to
+            // read as "this attack is Ranged, so widen it".
+            var narrowedRanged = new PrintedAttackTargetPolicy(
+                AttackTargetableUnits.HeroesAndMinions, AttackTargetReach.AdjacentOnly);
+            Assert.That(narrowedRanged.Reach, Is.EqualTo(AttackTargetReach.AdjacentOnly),
+                "The bullet's own sentence is what the overlay is handed, and it reads adjacency.");
+
+            foreach (var modifications in new[] { locked, unlocked })
+            {
+                Assert.That(
+                    RangedAttackOverlayQuery.Overlay(
+                            narrowedRanged, AttackRangeKind.Ranged, Enemy, modifications)
+                        .Reach,
+                    Is.EqualTo(AttackTargetReach.AdjacentOnly),
+                    "A hero with no declaration of any kind keeps every card-text narrowing on a " +
+                    "printed-Ranged Attack - which is every hero in this build but Rowenna.");
+                Assert.That(
+                    RangedAttackOverlayQuery.Overlay(
+                            narrowedRanged, AttackRangeKind.Ranged, Rowenna, modifications)
+                        .Reach,
+                    Is.EqualTo(AttackTargetReach.AdjacentOnly),
+                    "and so does ROWENNA, unlocked Ultimate and all: her sentence replaces the " +
+                    "adjacency clause of an attack that GAINS the Ranged subtype, and an attack " +
+                    "already printed Ranged gains nothing.");
+            }
+
+            // And the case the declaration is for still works, so this seed cannot pass by the
+            // overlay having stopped doing anything.
+            var printedAdjacent = PrintedAttackTargetPolicy
+                .ForClassification(AttackRangeKind.NonRanged);
+            Assert.That(
+                RangedAttackOverlayQuery.Overlay(
+                        printedAdjacent, AttackRangeKind.NonRanged, Rowenna, unlocked)
+                    .Reach,
+                Is.EqualTo(AttackTargetReach.PrintedRange),
+                "Her own Attack faces print NonRanged and are replaced, which is the whole clause.");
+            Assert.That(
+                RangedAttackOverlayQuery.Overlay(
+                        printedAdjacent, AttackRangeKind.NonRanged, Rowenna, locked)
+                    .Reach,
+                Is.EqualTo(AttackTargetReach.AdjacentOnly),
+                "and only once it is unlocked.");
+        }
+
+        /// <summary>
         /// Milestone 8.53's scoreboard counts complete rulebook p.14 orders and asks nothing about a
         /// subtype, so nothing this declaration changes can move a column. Asserted rather than
         /// assumed: a counter that started reading the classification would count her attacks

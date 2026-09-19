@@ -1271,7 +1271,14 @@ namespace GuardsDigital.Presentation.Match
                 card.DefinitionReference,
                 definition?.DisplayName ?? card.Id.Value,
                 definition?.Progression.Color ?? CardColor.None,
-                ReadFace(definition),
+                // Milestone 8.57g. A tray card drawn FROM A PROJECTION knows whose card it is and what
+                // that hero has unlocked, so it takes p.13's overlaid classification rather than the
+                // printed one - see ReadFace's own remarks.
+                ReadFace(
+                    definition,
+                    card.OwnerId,
+                    GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                        projection.Definitions, projection.Cards)),
                 group,
                 playedTurnIndex,
                 isSelectable,
@@ -1320,8 +1327,33 @@ namespace GuardsDigital.Presentation.Match
         /// only happens for an instance whose content was never registered - reads as a face that states
         /// nothing, rather than faulting a whole tray over one card.</para>
         /// </summary>
-        public static TrayCardFaceViewModel ReadFace(CardDefinition definition)
+        public static TrayCardFaceViewModel ReadFace(CardDefinition definition) =>
+            ReadFace(
+                definition,
+                default,
+                GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None);
+
+        /// <summary>
+        /// Milestone 8.57g. The same face read for a hero whose unlocked Ultimates are known.
+        ///
+        /// <para>One card of this build prints an ability that changes what another card's printed
+        /// primary IS: Rowenna's Fabled Lance makes every Attack action of hers a p.13 RANGED one while
+        /// it sits beside her dashboard. The tray face is where a player reads that word, so the label
+        /// asks <c>RangedAttackOverlayQuery</c> - the same query the attack backend and the defence
+        /// preview ask - instead of printing <c>ActionDefinition.AttackRange</c> raw.</para>
+        ///
+        /// <para>The parameterless overload above answers with
+        /// <see cref="GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None"/>, which is a
+        /// caller holding no card content saying so rather than a default substituted for an absent
+        /// argument: p.15's upgrade candidates are DECK cards, and a card in a deck has no unlocked
+        /// Ultimate of its own to read.</para>
+        /// </summary>
+        public static TrayCardFaceViewModel ReadFace(
+            CardDefinition definition,
+            HeroId ownerId,
+            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates)
         {
+            if (ultimates == null) throw new ArgumentNullException(nameof(ultimates));
             if (definition == null)
             {
                 return new TrayCardFaceViewModel(
@@ -1341,7 +1373,7 @@ namespace GuardsDigital.Presentation.Match
                     ? new PrintedValueChipViewModel(
                         PrintedValueChannel.Initiative, definition.Initiative.Value)
                     : null,
-                PrimaryActionLabel(definition, primary),
+                PrimaryActionLabel(definition, primary, ownerId, ultimates),
                 PrimaryValue(primary),
                 spatial,
                 SecondaryValues(definition),
@@ -1440,7 +1472,11 @@ namespace GuardsDigital.Presentation.Match
         /// <see cref="ActionDefinition.DefenseResolution"/>; anything else a face happens to say about
         /// itself is in its printed words, where the player can read it, and is never inferred here.
         /// </summary>
-        private static string PrimaryActionLabel(CardDefinition definition, ActionDefinition primary)
+        private static string PrimaryActionLabel(
+            CardDefinition definition,
+            ActionDefinition primary,
+            HeroId ownerId,
+            GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates)
         {
             if (primary == null)
             {
@@ -1451,7 +1487,12 @@ namespace GuardsDigital.Presentation.Match
             }
 
             var kind = primary.Kind.ToString().ToUpperInvariant();
-            if (primary.Kind == ActionKind.Attack && primary.AttackRange == AttackRangeKind.Ranged)
+            // Milestone 8.57g. p.13's classification with the Ultimate overlay applied, which is the
+            // one typed fact on this face that another card can change. Everything else here is still
+            // read straight off the definition, exactly as the paragraph above says.
+            if (primary.Kind == ActionKind.Attack &&
+                GuardsDigital.Core.Rules.CardResolution.RangedAttackOverlayQuery.ClassifyFromUnlockedUltimates(
+                    primary.AttackRange, ownerId, ultimates) == AttackRangeKind.Ranged)
             {
                 kind += " · RANGED";
             }

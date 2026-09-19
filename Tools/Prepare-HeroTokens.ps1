@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget')]
+        'bain', 'garrus', 'widget', 'rowenna')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -203,6 +203,17 @@ $declaredHeroes = @{
     bain = @{ ElementId = 8596242; ElementName = 'BountyHunter'; DisplayName = 'Bain' }
     garrus = @{ ElementId = 8597491; ElementName = 'Centurion'; DisplayName = 'Garrus' }
     widget = @{ ElementId = 8596255; ElementName = 'Widget2'; DisplayName = 'Widget' }
+
+    # Milestone 8.57g. THE EIGHTEENTH HERO, and the FIFTH standee to hide under something other than
+    # the hero's own name - but the first whose element name is neither the hero's name nor her
+    # printed epithet: the manifest names nothing "Rowenna" and nothing "Vanguard", and her element
+    # is `Knighttt` (id 8629867, publicElementId 4746008), read from
+    # Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/manifest-bundled__42.json
+    # with ConvertFrom-Json as `elementType: "VerticalTokens"`. Her id sits in the same far block as
+    # Misa's 8629811 rather than beside the 8596xxx heroes, which is the sixth time this table has
+    # earned being declared rather than derived. She takes the calibrated 2% field floor unless the
+    # tool's own measurement says otherwise; Swift's per-hero zero stays hers alone.
+    rowenna = @{ ElementId = 8629867; ElementName = 'Knighttt'; DisplayName = 'Rowenna' }
 }
 
 $declared = $declaredHeroes[$Hero]

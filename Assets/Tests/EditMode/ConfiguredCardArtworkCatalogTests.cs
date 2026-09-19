@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA306EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA324EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -133,15 +133,20 @@ namespace GuardsDigital.Tests.EditMode
             // which is the half of this file a green harness is otherwise structurally blind to.
             // Side Quest is p.20's Handicap card and is excluded exactly as the eight named above are.
             // 8.41e adds Garrus's eighteen playable fronts; Angry Swipe stays boxed.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(306));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(306));
+            // MILESTONE 8.57g TAKES IT 306 TO 324 with Rowenna the Vanguard's eighteen, and ran the
+            // same offline revision check the paragraph above names BEFORE launching an Editor: the
+            // catalog's eighteen `contentRevision` values equal the eighteen `ContentRevision`
+            // constants as sets. Earn the Spurs is p.20's Handicap card and is excluded exactly as the
+            // nine named above are.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(324));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(324));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(306),
+                Is.EqualTo(324),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -150,7 +155,8 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[]
                 {
                     ("arien", 18), ("bain", 18), ("brogan", 18), ("cutter", 18), ("dodger", 18),
-                    ("garrus", 18), ("misa", 18), ("sabina", 18), ("silverarrow", 18), ("swift", 18), ("tali", 18),
+                    ("garrus", 18), ("misa", 18), ("rowenna", 18), ("sabina", 18),
+                    ("silverarrow", 18), ("swift", 18), ("tali", 18),
                     ("tigerclaw", 18), ("ursafar", 18), ("wasp", 18), ("whisper", 18),
                     ("widget", 18), ("xargatha", 18)
                 }));
@@ -165,6 +171,45 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(catalog.TryGet(entry.Reference, out var found), Is.True);
                 Assert.That(found, Is.SameAs(entry));
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.57g's own read of the artwork half of a dealing: every dealt face of Rowenna's
+        /// has a catalog row, the rows point at her own extraction directory, and every one carries
+        /// her content revision. Milestone 8.35l's trap in one case - a revision bump owes the catalog
+        /// row - asserted for the hero this milestone deals rather than left to the aggregate counts
+        /// above, which would still pass if eighteen rows of hers carried somebody else's revision.
+        /// </summary>
+        [Test]
+        public void EveryDealtFaceOfRowennas_HasAnArtworkRowAtHerOwnRevision()
+        {
+            var entries = ConfiguredCardArtworkCatalog.Catalog.Entries
+                .Where(entry => entry.ContentSetId == RowennaCardContent.ContentSetId)
+                .ToArray();
+
+            Assert.That(entries, Has.Length.EqualTo(18));
+            Assert.That(
+                entries.Select(entry => entry.Reference),
+                Is.EquivalentTo(RowennaCardContent.DealtDefinitions
+                    .Select(definition => definition.Reference)),
+                "A bijection onto her dealt definitions, so an extracted face nobody deals and a " +
+                "dealt face nobody illustrated both fail here.");
+            Assert.That(
+                entries.Select(entry => entry.Reference.ContentRevision).Distinct(),
+                Is.EqualTo(new[] { RowennaCardContent.ContentRevision }),
+                "and every row carries the one revision her content does - milestone 8.35l's trap: " +
+                "a revision bump owes the catalog row, and a row on the old string simply stops " +
+                "addressing the definition.");
+            foreach (var entry in entries)
+            {
+                Assert.That(entry.SourcePath,
+                    Does.StartWith("active-hero-cards/Rowenna/rowenna")
+                        .And.EndWith("__front.png"));
+            }
+
+            Assert.That(
+                entries.Select(entry => entry.SourcePath).Distinct().Count(), Is.EqualTo(18),
+                "One private front cannot illustrate two of her definitions.");
         }
 
         [Test]

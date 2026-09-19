@@ -312,6 +312,24 @@
     { "definitionId": "widget-nibble", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget15__7540775__front.png" },
     { "definitionId": "widget-scorching-breath", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget16__7540654__front.png" },
     { "definitionId": "widget-gnaw", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget17__7540711__front.png" },
-    { "definitionId": "widget-dragon-knight", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget18__7621750__front.png" }
+    { "definitionId": "widget-dragon-knight", "contentRevision": "widget-8-43d-rev-1", "sourcePath": "active-hero-cards/Widget/widget18__7621750__front.png" },
+    { "definitionId": "rowenna-code-of-chivalry", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna__7438963__front.png" },
+    { "definitionId": "rowenna-throw-the-gauntlet", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna2__7645264__front.png" },
+    { "definitionId": "rowenna-token-of-gratitude", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna3__7550273__front.png" },
+    { "definitionId": "rowenna-fair-share", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna4__7550274__front.png" },
+    { "definitionId": "rowenna-feat-of-bravery", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna5__7550276__front.png" },
+    { "definitionId": "rowenna-paragon-of-grace", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna6__7550277__front.png" },
+    { "definitionId": "rowenna-paragon-of-valor", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna7__7550278__front.png" },
+    { "definitionId": "rowenna-stand-guard", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna8__7550331__front.png" },
+    { "definitionId": "rowenna-protect-the-weak", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna9__7550332__front.png" },
+    { "definitionId": "rowenna-accept-surrender", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna10__7605650__front.png" },
+    { "definitionId": "rowenna-defend-the-innocent", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna11__7550335__front.png" },
+    { "definitionId": "rowenna-glorious-triumph", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna12__7624923__front.png" },
+    { "definitionId": "rowenna-close-quarters", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna13__7727061__front.png" },
+    { "definitionId": "rowenna-melee", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna14__7727060__front.png" },
+    { "definitionId": "rowenna-opening-shots", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna15__7727059__front.png" },
+    { "definitionId": "rowenna-grand-melee", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna16__7727058__front.png" },
+    { "definitionId": "rowenna-opening-volley", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna17__7727057__front.png" },
+    { "definitionId": "rowenna-fabled-lance", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna18__7727056__front.png" }
   ]
 }

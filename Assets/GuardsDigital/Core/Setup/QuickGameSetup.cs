@@ -362,6 +362,12 @@ namespace GuardsDigital.Core.Setup
         public const string GarrusHeroIdValue = "hero-garrus";
         public const string WidgetHeroIdValue = "hero-widget";
 
+        /// <summary>
+        /// Milestone 8.57g. Rowenna's own hero id - the EIGHTEENTH hero, on the 2026-09-19 user
+        /// direction that named her by name ("After the build start implementing Rowenna").
+        /// </summary>
+        public const string RowennaHeroIdValue = "hero-rowenna";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
@@ -402,7 +408,11 @@ namespace GuardsDigital.Core.Setup
                 // "every hero this build can deal" - stays true only because this row is here too.
                 (BainHeroIdValue, "bain", "Bain the Bounty Hunter"),
                 (GarrusHeroIdValue, "garrus", "Garrus the Gladiator"),
-                (WidgetHeroIdValue, "widget", "Widget and Pyro")
+                (WidgetHeroIdValue, "widget", "Widget and Pyro"),
+                // Milestone 8.57g deals her and makes her pickable in the same commit, which is what
+                // the rule above asks for. She is the EIGHTEENTH, so the sentence Tali's row wrote -
+                // "every hero this build can deal" - stays true only because this row is here too.
+                (RowennaHeroIdValue, "rowenna", "Rowenna the Vanguard")
             };
 
         /// <summary>
@@ -592,6 +602,66 @@ namespace GuardsDigital.Core.Setup
 
         public static QuickGameSetupConfiguration CreateStagedWaspVersusWidgetOneVsOne() =>
             CreateOneVsOne(new HeroContentId("widget"), "Widget");
+
+        /// <summary>
+        /// Milestone 8.57g. The same board with Rowenna the Vanguard on the Blue seat, for the
+        /// fixtures whose subject is her printed set.
+        ///
+        /// <para>Written in the SAME change as her five <c>SceneCardContent</c> members and her three
+        /// <c>MatchConfiguration</c> stagings, which is the whole of what milestone 8.38f's repair
+        /// teaches: without this arm every staged scene of hers falls through
+        /// <c>SelectSetupConfiguration</c>'s default to Arien's setup, and the hand factory - which
+        /// takes an owner id rather than naming a hero - then deals HER cards to a seat whose content
+        /// identity is <c>arien</c>. No offline tier can see that; only a loaded scene composes.</para>
+        ///
+        /// <para><b>What this staging reaches and what it cannot, measured rather than assumed.</b>
+        /// Her Blue swap names a friendly UNIT in range, which p.8's waves answer with minions, and
+        /// her Greens, her surrenders and Throw the Gauntlet all name an ENEMY hero, which the Red
+        /// seat is. The one thing a one-Blue-hero board cannot offer her is a FRIENDLY HERO: her
+        /// three Red riders print "a friendly hero in radius" and milestone 8.57a composed that with
+        /// <c>includeSelf</c> false, so on this board the rider finds no candidate and stops at
+        /// p.10's impossible step - the Attack still performs and the Paragons' repeat is never
+        /// offered. <see cref="CreateStagedWaspVersusRowennaWithAllyOneVsTwo"/> is the configuration
+        /// that arm needs, exactly as Brogan's War Drummer needed one.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusRowennaOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("rowenna"), "Rowenna");
+
+        /// <summary>
+        /// Milestone 8.57g. Wasp on Red against Rowenna and Arien on Blue - the shape
+        /// <see cref="CreateStagedWaspVersusTaliWithAllyOneVsTwo"/> already proves, with Rowenna in
+        /// the seat under test and an ally beside her.
+        ///
+        /// <para>Three of her five Reds pay "a friendly hero in radius" a coin or a retrieve, and the
+        /// two Paragons gate their p.10 repeat on that rider having been performed. Her own seat is
+        /// excluded from the selection, so this is the smallest board on which any of those five
+        /// riders has a candidate at all - and therefore the only one on which the repeat can be
+        /// offered.</para>
+        ///
+        /// <para>Arien holds the ally seat at <c>blue-hero-02</c>, for the identical reason Brogan's
+        /// and Tali's ally configurations give it to him: he is a hero this build already deals, so a
+        /// fixture proves the selection against real content rather than inventing a printed set. The
+        /// spawn is two spaces from the first, which is inside every Radius her Reds print.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusRowennaWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("rowenna"), "Rowenna");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"),
+                        "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
 
         /// <summary>
         /// Milestone 8.22. The same board with Sabina on the Blue seat, for the fixtures whose subject

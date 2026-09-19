@@ -992,35 +992,34 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The one new declaration is held OUT of what this build registers, which is milestone 7.9's
-        /// gate: the registered capability list is serialized, so a registration no dealt card can
-        /// start moves the pinned list and every corpus digest while the content never moved. Both of
-        /// Rowenna's Places are deferred together, and 8.57g moves both.
+        /// The one new declaration this block minted is IN what the build registers, which is
+        /// milestone 7.9's gate satisfied: milestone 8.57g deals her, so her three Green Movement
+        /// faces are cards a configured match puts in a hand. Both of Rowenna's Places moved together,
+        /// which is how 8.57d asserted them and how this asserts them back.
         /// </summary>
         [Test]
-        public void ThePlaceBesideANamedHeroInRadius_IsDeferredUntilADealtCardCanStartIt()
+        public void ThePlaceBesideANamedHeroInRadius_IsRegisteredNowThatADealtCardStartsIt()
         {
             Assert.That(
                 MatchContentCatalogs.ForThisBuild().Capabilities.TryLoad(
                     SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1, out _),
-                Is.False,
-                "8.57g deals her; until then nothing printed can reach it.");
-
-            Assert.That(
-                SyntheticPlacementCapabilities.DeferredHandlers()
-                    .Select(handler => handler.Reference),
-                Is.EquivalentTo(new[]
-                {
-                    SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1,
-                    SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1
-                }),
-                "Exactly her two, and asserting WHICH keeps this about the gate rather than about " +
-                "how many heroes happen to be mid-series.");
+                Is.True,
+                "8.57g deals her, and Close Quarters, Melee and Grand Melee are what start it.");
 
             Assert.That(
                 SyntheticPlacementCapabilities.RegisteredHandlers()
                     .Select(handler => handler.Reference),
-                Has.No.Member(SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1));
+                Is.SupersetOf(new[]
+                {
+                    SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1,
+                    SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1
+                }),
+                "Exactly her two, moved together, which is the half a dealing could get wrong by " +
+                "registering one and forgetting the other.");
+
+            Assert.That(
+                SyntheticPlacementCapabilities.DeferredHandlers(), Is.Empty,
+                "and the deferred list is empty again.");
         }
 
         /// <summary>
@@ -1566,10 +1565,13 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             /// <summary>
-            /// This build's whole synthetic vocabulary plus the TWO declarations Rowenna defers - see
-            /// the fixture's own remarks. It is composed rather than taken from
-            /// <see cref="MatchContentCatalogs"/> because that catalog is by definition the registered
-            /// set, and the faces under test name a capability the registered set deliberately omits.
+            /// This build's whole synthetic vocabulary plus whatever this file still defers, which
+            /// since milestone 8.57g's dealing is nothing at all - see the fixture's own remarks. It
+            /// is written as that SUM rather than as <see cref="MatchContentCatalogs"/>' registered
+            /// set because the faces under test named a deferred capability while the series ran, and
+            /// the sum means the same thing on both sides of the dealing. Naming the DEFERRED list
+            /// rather than the whole one is milestone 8.40j's BA-18: a fixture that hands back
+            /// already-registered handlers is refused for a duplicate reference.
             /// </summary>
             private static EffectCapabilityCatalog Catalog() =>
                 SyntheticEffectCapabilities.CreateCatalog(

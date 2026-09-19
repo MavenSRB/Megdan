@@ -778,7 +778,62 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedTierTwoEngagedStagedWidget = 87,
         VerifiedTierTwoAlternateEngagedStagedWidget = 88,
         VerifiedTierThreeEngagedStagedWidget = 89,
-        VerifiedTierThreeAlternateEngagedStagedWidget = 90
+        VerifiedTierThreeAlternateEngagedStagedWidget = 90,
+
+        /// <summary>
+        /// Milestone 8.57g. The engaged staging with Rowenna the Vanguard on the Blue seat, holding
+        /// rulebook p.6's five starting cards. The EIGHTEENTH hero.
+        /// </summary>
+        VerifiedEngagedStagedRowenna = 91,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Rowenna holding the first
+        /// sibling of each colour: Fair Share, Protect the Weak and Melee.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedRowenna = 92,
+
+        /// <summary>
+        /// The Tier II staging with Rowenna holding the second sibling of each colour: Feat of
+        /// Bravery, Accept Surrender and Opening Shots - the only Tier II arm that reaches a Defeat
+        /// Blue and the both-parties empty-discard predicate.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedRowenna = 93,
+
+        /// <summary>
+        /// The Tier III staging with Rowenna holding the first sibling of each colour - Paragon of
+        /// Grace, Defend the Innocent and Grand Melee - and Fabled Lance unlocked beside her
+        /// dashboard. This is the only arm that reaches Grand Melee's "Choose up to two times" and
+        /// the Range item composing with the Ultimate's printed Range 2 to reach exactly 3.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedRowenna = 94,
+
+        /// <summary>
+        /// The Tier III staging with Rowenna holding the second sibling of each colour - Paragon of
+        /// Valor, Glorious Triumph and Opening Volley - and Fabled Lance unlocked. This is the only
+        /// arm that reaches the tripled assist coins and Opening Volley's repeat.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedRowenna = 95,
+
+        /// <summary>
+        /// Milestone 8.57g. The staged board that gives Rowenna an ALLY - the one configuration on
+        /// which "a friendly hero in radius" has a candidate, because milestone 8.57a composed that
+        /// selection with <c>includeSelf</c> false. Rowenna holds p.6's five and Arien stands beside
+        /// her; it is deliberately NOT restaged, exactly as Brogan's and Tali's ally arms are not.
+        /// </summary>
+        VerifiedStagedRowennaWithAlly = 96,
+
+        /// <summary>
+        /// The ally staging with Rowenna's own seat at rulebook p.15's Tier II stage on the second
+        /// sibling of each colour, which is where Feat of Bravery's rider lives.
+        /// </summary>
+        VerifiedStagedRowennaWithAllyAtTierTwo = 97,
+
+        /// <summary>
+        /// The ally staging with Rowenna's own seat at Tier III on the first sibling of each colour.
+        /// Paragon of Grace is the face this arm exists for: its p.10 repeat is offered only when the
+        /// rider was performed, and the rider needs the ally.
+        /// </summary>
+        VerifiedStagedRowennaWithAllyAtTierThree = 98
     }
 
     [ExecuteAlways]
@@ -1340,6 +1395,34 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedBainTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.BainUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedRowenna =>
+                    MatchConfiguration.CreateStagedRowennaForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedRowenna =>
+                    MatchConfiguration.CreateStagedRowennaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.RowennaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedRowenna =>
+                    MatchConfiguration.CreateStagedRowennaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.RowennaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedRowenna =>
+                    MatchConfiguration.CreateStagedRowennaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.RowennaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedRowenna =>
+                    MatchConfiguration.CreateStagedRowennaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.RowennaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedStagedRowennaWithAlly =>
+                    MatchConfiguration.CreateStagedRowennaWithAllyForInternalTest(
+                        TeamSide.Red, RowennaAllyStage.StartingHand),
+                SceneCardContent.VerifiedStagedRowennaWithAllyAtTierTwo =>
+                    MatchConfiguration.CreateStagedRowennaWithAllyForInternalTest(
+                        TeamSide.Red, RowennaAllyStage.TierTwo),
+                SceneCardContent.VerifiedStagedRowennaWithAllyAtTierThree =>
+                    MatchConfiguration.CreateStagedRowennaWithAllyForInternalTest(
+                        TeamSide.Red, RowennaAllyStage.TierThree),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1396,7 +1479,14 @@ namespace GuardsDigital.Presentation.Interaction
                 // terms: a staged arm missing from here composes its two heroes fifteen spaces apart,
                 // every approach helper throws `Sequence contains no elements`, and no offline tier
                 // can see it.
-                IsStagedBain(content) || IsStagedGarrus(content) || IsStagedWidget(content))
+                IsStagedBain(content) || IsStagedGarrus(content) || IsStagedWidget(content) ||
+                // Milestone 8.57g. Written in the SAME change as her five engaged members above, on
+                // the same terms: a staged arm missing from here composes its two heroes fifteen
+                // spaces apart, every approach helper throws `Sequence contains no elements`, and no
+                // offline tier can see it. Her three ALLY arms are deliberately NOT here, exactly as
+                // Brogan's and Tali's are not - a restaging moves two seats and those boards carry
+                // three.
+                IsStagedRowenna(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1873,6 +1963,20 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusWidgetOneVsOne();
                     }
 
+                    // Milestone 8.57g. The ALLY arms are asked first, because they are a different
+                    // BOARD rather than a different hand: a three-seat configuration composed onto
+                    // the one-versus-one setup would leave Arien's cards with no seat to stand on.
+                    if (IsRowennaWithAlly(content))
+                    {
+                        return QuickGameSetupConfiguration
+                            .CreateStagedWaspVersusRowennaWithAllyOneVsTwo();
+                    }
+
+                    if (IsStagedRowenna(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusRowennaOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -2054,6 +2158,30 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedWidget ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedWidget ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedWidget;
+
+        /// <summary>
+        /// Whether this content is one of milestone 8.57g's five staged Rowenna scenes. Written in the
+        /// same change as those five members, the setup configuration they name and the restaging list
+        /// above - the three arms milestone 8.38f had to add for Swift after the fact, and which every
+        /// dealing since has therefore shipped together.
+        /// </summary>
+        private static bool IsStagedRowenna(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedRowenna ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedRowenna ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedRowenna ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedRowenna ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedRowenna;
+
+        /// <summary>
+        /// Whether this content deals two heroes to the Blue team with Rowenna beside an ally.
+        /// Milestone 8.57g's three-hero arms, which take the two-Blue-hero setup and are deliberately
+        /// <em>not</em> restaged, exactly as milestone 8.21's Brogan arms are not: what her three Red
+        /// riders need is a friendly hero in RADIUS, and the two Blue spawns already are.
+        /// </summary>
+        private static bool IsRowennaWithAlly(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedStagedRowennaWithAlly ||
+            content == SceneCardContent.VerifiedStagedRowennaWithAllyAtTierTwo ||
+            content == SceneCardContent.VerifiedStagedRowennaWithAllyAtTierThree;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

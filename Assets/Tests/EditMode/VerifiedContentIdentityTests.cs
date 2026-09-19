@@ -181,7 +181,16 @@ namespace GuardsDigital.Tests.EditMode
             // in one change.
             new IdentityPin("bain", "bain-8-40i-rev-1", "4aa847253fd0406aef2c544ea0c5e57fb737e8801cbb3c61564e31e1609289e9"),
             new IdentityPin("garrus", "garrus-8-41d-rev-1", "8244a9e8ebadb20886be72acc9bc590dd090252d0b9bb943a12fe57cddb7b335"),
-            new IdentityPin("widget", "widget-8-43d-rev-1", "80a8f06d51ba41181a990e3cd62387fce7d476044a2e48eba56c21815afd6c05")
+            new IdentityPin("widget", "widget-8-43d-rev-1", "80a8f06d51ba41181a990e3cd62387fce7d476044a2e48eba56c21815afd6c05"),
+            // Milestone 8.57g. THE EIGHTEENTH PIN, on exactly the terms every pin from the seventh on
+            // arrived on: a pin is a claim about content a configured match loads, and milestone
+            // 8.57f composed Rowenna's nineteen faces without dealing her.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run, with the seventeen pins above
+            // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
+            // did not recur: her staged configuration went into EveryDealtDefinition below in this
+            // same change, so the walk sees her eighteen rather than measuring her as zero.
+            new IdentityPin("rowenna", "rowenna-8-57f-rev-1", "d3d66ab284dfb90aa842d9f75f07aab90646d95dd49722d1b7a6aa14cf209e22")
         };
 
         [Test]
@@ -321,6 +330,15 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(MatchConfiguration.CreateStagedGarrusForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .Concat(MatchConfiguration.CreateStagedWidgetForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.57g. Rowenna's staged configuration, on the same terms and added in the
+                // SAME change as her pin - which is what the two warnings above ask for and what they
+                // earned the hard way twice: a pin without its staged source names a hero this union
+                // cannot see, and the oracle then fails on the count rather than on a digest, which
+                // reads like a content fault and is not one. She is the eighteenth, so the union
+                // covering every hero this build deals is kept true by this row rather than by the
+                // one above it.
+                .Concat(MatchConfiguration.CreateStagedRowennaForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

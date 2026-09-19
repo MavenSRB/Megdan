@@ -562,12 +562,16 @@ namespace GuardsDigital.Tests.EditMode
         /// asked at the p.14 moment the face prints - the check that would otherwise fault
         /// mid-resolution with the card already spent.
         ///
-        /// <para><b>The catalog is the build's plus what this hero's blocks defer, and milestone
-        /// 8.57b is why.</b> Throw the Gauntlet names
-        /// <c>synthetic-place-in-range-beside-a-named-hero@1</c>, which milestone 7.9's gate keeps out
-        /// of the registered set until 8.57g deals her - so validating against the registered set
-        /// alone would be asserting the gate is broken rather than that the bodies are legal. The
-        /// test below asserts the gate itself; this one asserts the composition.</para>
+        /// <para><b>The catalog is the build's plus what this hero's blocks defer, and that sum is
+        /// stable across the dealing - which is the whole reason it is written this way.</b> Until
+        /// milestone 8.57g, <c>SyntheticPlacementCapabilities.DeferredHandlers</c> held Throw the
+        /// Gauntlet's <c>synthetic-place-in-range-beside-a-named-hero@1</c> out of the registered set,
+        /// so validating against the registered set alone would have asserted the gate was broken
+        /// rather than that the bodies were legal; since the dealing that list is empty and this same
+        /// expression is the build's own catalog. Milestone 8.40j's BA-18 is the trap it avoids: a
+        /// fixture that named the list HOLDING a contract rather than the list HAVING it threw
+        /// "not registered" the moment the hero was dealt. The test below asserts the gate itself;
+        /// this one asserts the composition.</para>
         /// </summary>
         [Test]
         public void EveryComposedBody_IsLegalAgainstTheCatalogHerDealingWillRegister()
@@ -596,26 +600,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// And the bodies that name a deferred declaration are refused by the REGISTERED catalog,
-        /// naming the reason. That refusal is milestone 7.9's gate observable rather than a defect:
-        /// the registered capability list is serialized, so a registration no dealt card can start
-        /// moves the pinned list and every corpus digest while the content never moved. Milestone
-        /// 8.57g's registration flip is what turns this assertion around, and Silverarrow's own
-        /// dealing records that the flip and the staged-configuration factories are ONE edit.
-        ///
-        /// <para>Milestone 8.57d adds three: her Green Movement faces name the printed-Radius twin of
-        /// the Gauntlet's declaration, which is deferred beside it and leaves with it.</para>
+        /// And NO body of hers is refused by the REGISTERED catalog any more, which is milestone
+        /// 7.9's gate discharged. Milestones 8.57a-8.57d wrote this case the other way round - the
+        /// four faces naming a deferred Place were refused, and that refusal was the gate observable
+        /// rather than a defect - and milestone 8.57g's registration flip turns it around, in the same
+        /// edit as the staged-configuration factories, which is Silverarrow's own 8.35z46 law.
         /// </summary>
         [Test]
-        public void OnlyTheBodiesNamingADeferredPlace_AreRefusedByWhatThisBuildActuallyRegisters()
+        public void NoBodyOfHers_IsRefusedByWhatThisBuildActuallyRegisters()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
             var refused = new List<string>();
+            var walked = 0;
 
             foreach (var definition in RowennaCardContent.AllDefinitions)
             {
                 foreach (var action in definition.ActionDefinitions.Where(a => a.EffectRoot != null))
                 {
+                    walked++;
                     if (EffectDefinitionValidator.ValidateCardText(
                             action.EffectRoot, registered, action.CardTextTiming).Count > 0)
                     {
@@ -624,27 +626,24 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(refused,
-                Is.EqualTo(new[]
-                {
-                    RowennaCardContent.ThrowTheGauntlet.Value,
-                    RowennaCardContent.CloseQuarters.Value,
-                    RowennaCardContent.Melee.Value,
-                    RowennaCardContent.GrandMelee.Value
-                }),
-                "Her thirteen other composed faces name only capabilities this build registers; " +
-                "these four name one of the two Places milestone 7.9's gate holds back.");
+            Assert.That(refused, Is.Empty,
+                "The four that used to be refused - Throw the Gauntlet, Close Quarters, Melee and " +
+                "Grand Melee - name the two Places her dealing registered, and her other composed " +
+                "faces never named anything the build was withholding.");
+            Assert.That(walked, Is.EqualTo(17),
+                "and the walk really covered her seventeen composed bodies, so this case is not " +
+                "passing because it found nothing to validate.");
 
             Assert.That(
                 EffectDefinitionValidator.ValidateCardText(
-                        RowennaCardContent.Definition(RowennaCardContent.ThrowTheGauntlet)
-                            .ActionDefinitions
-                            .Single(action => action.EffectRoot != null).EffectRoot,
-                        registered,
-                        CardTextTiming.None)
-                    .Select(rejection => rejection.Reason),
-                Is.EqualTo(new[] { EffectDefinitionRejectionReason.UnregisteredCapability }),
-                "and the reason is the deferral rather than anything about the body's shape.");
+                    RowennaCardContent.Definition(RowennaCardContent.ThrowTheGauntlet)
+                        .ActionDefinitions
+                        .Single(action => action.EffectRoot != null).EffectRoot,
+                    registered,
+                    CardTextTiming.None),
+                Is.Empty,
+                "and the one face this block's gate was written about starts cleanly against the " +
+                "registered set, read on its own.");
         }
 
         /// <summary>
@@ -745,29 +744,34 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// And none of it is registered, which is milestone 7.9's gate: the registered content list is
-        /// serialized, so a card registered before a match can deal it moves the pinned list, every
-        /// snapshot's bytes and every corpus digest while the content never moved.
+        /// And all of it is reachable now, which is milestone 8.57g's dealing read from the roster's
+        /// own side. Milestones 8.57a-8.57f wrote this case the other way round - nothing may offer
+        /// her, because a selector row makes her PICKABLE and composing her match would throw for want
+        /// of a registered printed set - and the dealing is exactly the edit that makes both halves
+        /// true at once, which is Silverarrow's 8.35z46 law: the registration flip and the
+        /// staged-configuration factories land together.
         /// </summary>
         [Test]
-        public void NoRowennaContent_IsReachableFromThisBuildsRoster()
+        public void EveryHalfOfHerDealing_IsReachableFromThisBuildsRoster()
         {
             Assert.That(
                 QuickGameSetupConfiguration.DealtHeroes.Any(hero =>
                     hero.ContentId.Value.Equals(
                         RowennaCardContent.ContentSetId, StringComparison.Ordinal)),
-                Is.False,
-                "Nothing may offer her before 8.57g, because a selector row makes her PICKABLE and " +
-                "composing her match would then throw for want of a registered printed set.");
+                Is.True,
+                "A selector row makes her pickable, and 8.57g is the milestone that adds one.");
 
+            var hand = MatchConfiguration.CreateVerifiedHandForInternalTest(
+                QuickGameSetupConfiguration.RowennaHeroIdValue, "rowenna-prefix");
+            Assert.That(hand, Is.Not.Null);
+            Assert.That(hand.Definitions, Has.Count.EqualTo(18),
+                "and the one switch that hands a seat a verified printed set names her arm, so the " +
+                "roster row and the hand factory are the two halves of one claim rather than one " +
+                "half of a pick that throws at composition.");
             Assert.That(
-                () => MatchConfiguration.CreateVerifiedHandForInternalTest(
-                    "hero-" + RowennaCardContent.ContentSetId, "rowenna-prefix"),
-                Throws.ArgumentException,
-                "and the one switch that hands a seat a verified printed set names no arm of hers, " +
-                "which is milestone 7.9's gate: the registered content list is serialized, so a " +
-                "registration no dealt card can start moves the pinned list and every corpus digest " +
-                "while the content never moved.");
+                hand.Definitions.Select(definition => definition.Id),
+                Is.EquivalentTo(RowennaCardContent.DealtDefinitions
+                    .Select(definition => definition.Id)));
         }
 
         /// <summary>

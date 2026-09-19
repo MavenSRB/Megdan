@@ -616,12 +616,24 @@ namespace GuardsDigital.Presentation.Match
                 var face = CardFace(projection, attack.SourceCardInstanceId);
                 if (face != null)
                 {
-                    var range = projection.Definitions
+                    // Milestone 8.57g. The PRINTED classification, then p.13's own overlay: Rowenna's
+                    // Fabled Lance makes every Attack action of hers Ranged while it is unlocked, and
+                    // her Attack faces print NonRanged - so the chip has to ask the same question the
+                    // defence preview beside it asks. The offer's classification deliberately stays
+                    // printed (ActionOffer equality guards authorization), which is why the overlay is
+                    // applied by the drawing rather than read off the offer.
+                    var printedRange = projection.Definitions
                         .Where(definition => definition.Reference.Equals(attack.SourceDefinitionReference))
                         .SelectMany(definition => definition.ActionDefinitions)
                         .Where(action => action.Id.Equals(attack.ActionDefinitionId))
                         .Select(action => action.AttackRange)
                         .FirstOrDefault();
+                    var range = GuardsDigital.Core.Rules.CardResolution.RangedAttackOverlayQuery
+                        .ClassifyFromUnlockedUltimates(
+                            printedRange,
+                            attack.ActorId,
+                            GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                                projection.Definitions, projection.Cards));
                     contextCards.Add(new DecisionWindowCardViewModel(
                         face,
                         "ATTACK " + choice.AttackTotal,

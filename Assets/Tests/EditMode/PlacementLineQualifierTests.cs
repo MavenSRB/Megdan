@@ -101,21 +101,29 @@ namespace GuardsDigital.Tests.EditMode
                 "and neither of them is still being held back, which is the other half of what the " +
                 "dealing moved.");
 
-            // Milestone 8.57b. The list milestone 8.38e emptied and kept is the list this milestone
-            // was kept for: Rowenna's Throw the Gauntlet mints a third qualifier and no configured
-            // match deals her until 8.57g, so the file holds exactly one declaration back. Asserting
-            // WHICH one rather than asserting emptiness is what keeps this case about the gate rather
-            // than about how many heroes happen to be mid-series.
-            // Milestone 8.57d adds the second, and it is the same hero's: her three Green Movement
-            // faces name the printed-Radius twin of 8.57b's declaration. Both leave this list together
-            // at 8.57g, which is what deals her.
-            Assert.That(deferred, Is.EquivalentTo(new[]
+            // Milestone 8.57b held one declaration back and milestone 8.57d added its printed-Radius
+            // twin, both for Rowenna, and MILESTONE 8.57g - the milestone that deals her - moves the
+            // pair across: Throw the Gauntlet, Close Quarters, Melee and Grand Melee are cards a
+            // configured match now puts in a hand. The claim is inverted rather than dropped, and it
+            // stays a claim about the PAIR for the reason 8.38b's own version of it was written that
+            // way: a dealing that moved one and forgot the other would be a half-green.
+            Assert.That(
+                registered.Intersect(new[]
                 {
                     SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1,
                     SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1
                 }),
-                "Two declarations deferred, and they are the two whose only printed consumers belong " +
-                "to a hero this build does not deal yet.");
+                Is.EquivalentTo(new[]
+                {
+                    SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1,
+                    SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1
+                }),
+                "Both of Rowenna's beside-a-named-hero Places are registered, together, now that " +
+                "Throw the Gauntlet and her three Green Movements are cards a configured match deals.");
+            Assert.That(deferred, Is.Empty,
+                "and the file's deferred list is empty again, which is the statement milestone 8.38b " +
+                "asked it to go on being able to make: nothing in this file is being held back for a " +
+                "hero this build does not deal.");
             Assert.That(registered.Intersect(deferred), Is.Empty,
                 "and nothing is in both lists, which is what the gate means either way round.");
         }

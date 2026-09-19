@@ -52,10 +52,14 @@ namespace GuardsDigital.Tests.EditMode
             yield return new DealtHero("bain", BainCardContent.ContentRevision, BainCardContent.DealtDefinitions);
             yield return new DealtHero("garrus", GarrusCardContent.ContentRevision, GarrusCardContent.DealtDefinitions);
             yield return new DealtHero("widget", WidgetCardContent.ContentRevision, WidgetCardContent.DealtDefinitions);
+            yield return new DealtHero("rowenna", RowennaCardContent.ContentRevision, RowennaCardContent.DealtDefinitions);
         }
 
-        /// <summary>The seventeen heroes milestone 8.44 packaged.</summary>
-        private const int MatchConfigurationRosterSize = 17;
+        /// <summary>
+        /// The seventeen heroes milestone 8.44 packaged, plus Rowenna the Vanguard - milestone 8.57g's
+        /// eighteenth dealing, which is what makes her one of the heroes a match configuration deals.
+        /// </summary>
+        private const int MatchConfigurationRosterSize = 18;
 
         /// <summary>
         /// The longest label in the content as milestone 8.46a shipped it is 58 characters. The bound

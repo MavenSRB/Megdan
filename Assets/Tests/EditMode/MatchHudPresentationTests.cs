@@ -4287,7 +4287,11 @@ namespace GuardsDigital.Tests.EditMode
                 // asserted against cover every hero the build can deal.
                 .Concat(BainCardContent.DealtDefinitions)
                 .Concat(GarrusCardContent.DealtDefinitions)
-                .Concat(WidgetCardContent.DealtDefinitions).ToArray();
+                .Concat(WidgetCardContent.DealtDefinitions)
+                // Milestone 8.57g. The eighteenth, on the terms the lines above state: the claim that
+                // has to keep being true is that this list and the artwork bijection it is asserted
+                // against cover every hero the build can deal.
+                .Concat(RowennaCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

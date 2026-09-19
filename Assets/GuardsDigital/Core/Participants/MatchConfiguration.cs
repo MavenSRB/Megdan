@@ -27,6 +27,26 @@ namespace GuardsDigital.Core.Participants
     }
 
     /// <summary>
+    /// Milestone 8.57g. Which of rulebook p.15's stages ROWENNA'S OWN seat is dealt at on the staged
+    /// board that gives her an ally - the mirror of <see cref="BroganAllyStage"/> with the roles
+    /// swapped, because there the ally is the hero under test and here the ally is the candidate.
+    ///
+    /// <para>It exists because the faces that seat is there to prove are spread over all three Tiers:
+    /// Token of Gratitude carries the rider in p.6's starting hand, Fair Share and Feat of Bravery
+    /// carry it at Tier II, and the two Paragons - the only faces whose p.10 repeat is GATED on the
+    /// rider having been performed - are Tier III. The Tier III arm takes the FirstSibling branch and
+    /// the Tier II arm the SecondSibling one, which is a choice about breadth rather than about the
+    /// rider: both Tier III siblings are Paragons and both carry the gate.</para>
+    /// </summary>
+    public enum RowennaAllyStage
+    {
+        /// <summary>p.6's own five, which is what a match deals before any Level Up.</summary>
+        StartingHand = 0,
+        TierTwo = 1,
+        TierThree = 2
+    }
+
+    /// <summary>
     /// A composed match: who is playing, what each seat holds, and the content that match runs on.
     ///
     /// <para><b>Milestone 8.25b named this type after what it composes.</b> It was
@@ -531,6 +551,11 @@ namespace GuardsDigital.Core.Participants
                     return Cards.Verified.GarrusCardContent.CreateHand(heroId, instancePrefix);
                 case Setup.QuickGameSetupConfiguration.WidgetHeroIdValue:
                     return Cards.Verified.WidgetCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.57g. The EIGHTEENTH hero this build deals, on exactly the terms the
+                // rows above are on. The agreement Tali's arm records - switch and offerable roster
+                // covering the same heroes - is what this arm keeps true rather than establishes.
+                case Setup.QuickGameSetupConfiguration.RowennaHeroIdValue:
+                    return Cards.Verified.RowennaCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1572,6 +1597,126 @@ namespace GuardsDigital.Core.Participants
             return configuration;
         }
 
+        /// <summary>
+        /// Milestone 8.57g. The staged Wasp-versus-Rowenna match, on the same `DEV-005` terms the
+        /// seventeen staged matches before it are on. This is the configuration that makes Rowenna
+        /// playable in a fixture, and the eighteenth of its shape.
+        ///
+        /// <para><b>She NEEDS an ally seat for one arm and it is worth saying which, rather than
+        /// leaving it to be noticed.</b> Her Blue swap names a friendly UNIT in range and p.8's waves
+        /// answer that with minions; Throw the Gauntlet, both surrenders, the three Greens and every
+        /// Attack of hers name an ENEMY hero or unit, which the Red seat and those same waves supply.
+        /// What this board cannot offer is a FRIENDLY HERO: milestone 8.57a composed "a friendly hero
+        /// in radius" with <c>includeSelf</c> false, so her three Red riders and therefore the two
+        /// Paragons' gated repeat have no candidate here at all. That is
+        /// <see cref="CreateStagedRowennaWithAllyForInternalTest"/>, which is Brogan's War Drummer
+        /// problem exactly.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedRowennaForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedRowennaHand(TeamSide.Blue));
+
+        /// <summary>
+        /// Milestone 8.57g. The staged Wasp-versus-Rowenna match at rulebook p.15's Tier II stage,
+        /// with Rowenna holding one Tier II card of each colour on the branch the caller names - see
+        /// <see cref="Cards.Verified.RowennaUpgradeBranch"/>'s own remarks for what each branch
+        /// reaches.
+        /// </summary>
+        public static MatchConfiguration CreateStagedRowennaTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.RowennaUpgradeBranch branch) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedRowennaHand(tierThree: false, branch));
+
+        /// <summary>
+        /// Milestone 8.57g. The staged Wasp-versus-Rowenna match at rulebook p.15's Tier III stage
+        /// with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Fabled Lance in Rowenna's.
+        ///
+        /// <para>Hers is the only Ultimate in this build that is a PERMANENT ABILITY changing a rule
+        /// rather than an effect that runs, so unlocking it here is what turns every Attack action of
+        /// hers Ranged at printed Range 2 - milestone 8.57e's
+        /// <c>RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange</c>. On the FirstSibling
+        /// branch Paragon of Grace's Range item composes with it to reach exactly 3.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedRowennaTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.RowennaUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedRowennaHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.RowennaCardContent.FabledLance)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
+        /// Milestone 8.57g. Wasp on Red against Rowenna <em>and</em> an ally on Blue - the
+        /// configuration her three Red riders and the two Paragons' gated repeat need, because
+        /// "a friendly hero in radius" excludes her own seat.
+        ///
+        /// <para>The same shape <see cref="CreateStagedTaliWithAllyForInternalTest"/> proves, with one
+        /// addition: the stage is a parameter, because the faces this configuration exists for are
+        /// spread over all three Tiers. Token of Gratitude is in p.6's starting hand, Fair Share and
+        /// Feat of Bravery are Tier II, and the two Paragons - the only faces whose repeat is gated on
+        /// the rider - are Tier III, so a single starting-hand staging would leave the gate
+        /// unreachable through the ordinary player pipeline rather than merely untested.</para>
+        ///
+        /// <para>Arien holds the ally seat, for the identical reason Brogan's and Tali's own
+        /// configurations give it to him: he is a hero this build already deals, so a fixture proves
+        /// the selection against real content rather than inventing a printed set.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedRowennaWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide,
+            RowennaAllyStage stage = RowennaAllyStage.StartingHand)
+        {
+            var allyId = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            return new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                CreateStagedRowennaSeatHand(stage)(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: GuardsDigital.Core.Cards.Verified.ArienCardContent.CreateHand(
+                    allyId, "blue-ally"));
+        }
+
+        private static Func<HeroId, ConfiguredHand> CreateStagedRowennaSeatHand(RowennaAllyStage stage)
+        {
+            switch (stage)
+            {
+                case RowennaAllyStage.TierTwo:
+                    return CreateProgressedRowennaHand(
+                        tierThree: false,
+                        GuardsDigital.Core.Cards.Verified.RowennaUpgradeBranch.SecondSibling);
+                case RowennaAllyStage.TierThree:
+                    return CreateProgressedRowennaHand(
+                        tierThree: true,
+                        GuardsDigital.Core.Cards.Verified.RowennaUpgradeBranch.FirstSibling);
+                default:
+                    return CreateVerifiedRowennaHand(TeamSide.Blue);
+            }
+        }
+
         public static MatchConfiguration CreateStagedGarrusForInternalTest(TeamSide initialTieBreakerSide) =>
             Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red), owner => Cards.Verified.GarrusCardContent.CreateHand(owner, "blue"));
@@ -2100,6 +2245,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.BainProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.BainProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.57g. One seat's verified Rowenna hand, prefixed by the seat's team side for
+        /// the reason the seventeen earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedRowennaHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.RowennaCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedRowennaHand(
+            bool tierThree, Cards.Verified.RowennaUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.RowennaProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.RowennaProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

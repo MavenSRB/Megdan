@@ -578,26 +578,31 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The one new declaration is held OUT of what this build registers, which is milestone 7.9's
-        /// gate: the registered capability list is serialized, so a registration no dealt card can
-        /// start moves the pinned list and every corpus digest while the content never moved.
+        /// The one new declaration this block minted is IN what the build registers, which is
+        /// milestone 7.9's gate satisfied: milestone 8.57g deals her, so Throw the Gauntlet is a card
+        /// a configured match puts in a hand and the registration it needs can be made.
+        ///
+        /// <para>Milestone 8.57b wrote this case the other way round - held out until a dealt card can
+        /// start it - and the dealing inverts it rather than deleting it, because the claim that has
+        /// to keep being true is the PAIRING of the declaration with a printed consumer, whichever
+        /// side of the gate it is on.</para>
         /// </summary>
         [Test]
-        public void ThePlaceBesideANamedHero_IsDeferredUntilADealtCardCanStartIt()
+        public void ThePlaceBesideANamedHero_IsRegisteredNowThatADealtCardStartsIt()
         {
             Assert.That(
                 MatchContentCatalogs.ForThisBuild().Capabilities.TryLoad(
                     SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1, out _),
-                Is.False,
-                "8.57g deals her; until then nothing printed can reach it.");
+                Is.True,
+                "8.57g deals her, and Throw the Gauntlet is what starts it.");
 
             Assert.That(
-                SyntheticPlacementCapabilities.DeferredHandlers()
+                SyntheticPlacementCapabilities.RegisteredHandlers()
                     .Select(handler => handler.Reference),
                 Has.Member(SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1));
 
             Assert.That(
-                SyntheticPlacementCapabilities.RegisteredHandlers()
+                SyntheticPlacementCapabilities.DeferredHandlers()
                     .Select(handler => handler.Reference),
                 Has.No.Member(SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1));
         }
@@ -1161,10 +1166,13 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             /// <summary>
-            /// This build's whole synthetic vocabulary plus the ONE declaration 8.57b defers - see the
-            /// fixture's own remarks. It is composed rather than taken from
-            /// <see cref="MatchContentCatalogs"/> because that catalog is by definition the registered
-            /// set, and the face under test names a capability the registered set deliberately omits.
+            /// This build's whole synthetic vocabulary plus whatever this file still defers, which
+            /// since milestone 8.57g's dealing is nothing at all - see the fixture's own remarks. It
+            /// is written as that SUM rather than as <see cref="MatchContentCatalogs"/>' registered
+            /// set because the face under test named a deferred capability while the series ran, and
+            /// the sum means the same thing on both sides of the dealing. Naming the DEFERRED list
+            /// rather than the whole one is milestone 8.40j's BA-18: a fixture that hands back
+            /// already-registered handlers is refused for a duplicate reference.
             /// </summary>
             private static EffectCapabilityCatalog Catalog() =>
                 SyntheticEffectCapabilities.CreateCatalog(

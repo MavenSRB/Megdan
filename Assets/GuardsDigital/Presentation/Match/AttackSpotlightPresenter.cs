@@ -411,16 +411,24 @@ namespace GuardsDigital.Presentation.Match
                     FindDefenseCard(log, entryIndex, entry),
                     resolving: false,
                     turnIndex: 0),
-                PrintsRangedAttack(projection, entry.SubjectCardInstanceId));
+                PrintsRangedAttack(
+                    projection, entry.SubjectCardInstanceId, entry.SubjectHeroId));
         }
 
         /// <summary>
         /// Whether the card the Attack row names prints a Ranged Attack. See
         /// <see cref="AttackSpotlightScene.IsRangedAttack"/> for why this is read from the definition
         /// rather than from the row, and why it does not decide how the smack is drawn.
+        ///
+        /// <para><b>Milestone 8.57g routes it through the overlay.</b> Rowenna's Fabled Lance makes
+        /// every Attack action of hers Ranged while it is unlocked, and her Attack faces print
+        /// <see cref="AttackRangeKind.NonRanged"/> - so a walk of the definition alone would draw the
+        /// melee cue over a page that is, by p.13, a ranged one. The classification is asked of
+        /// <c>RangedAttackOverlayQuery</c> with the Ultimates the projection publishes, which is the
+        /// same query the backend and the defence preview read from the live set.</para>
         /// </summary>
         private static bool PrintsRangedAttack(
-            IMatchReadModel projection, CardInstanceId cardInstanceId)
+            IMatchReadModel projection, CardInstanceId cardInstanceId, HeroId attackerId)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -463,10 +471,14 @@ namespace GuardsDigital.Presentation.Match
                     return false;
                 }
 
+                var unlocked = GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                    definitions, cards);
                 for (var action = 0; action < actions.Count; action++)
                 {
                     if (actions[action] != null &&
-                        actions[action].AttackRange == AttackRangeKind.Ranged)
+                        GuardsDigital.Core.Rules.CardResolution.RangedAttackOverlayQuery.ClassifyFromUnlockedUltimates(
+                            actions[action].AttackRange, attackerId, unlocked) ==
+                            AttackRangeKind.Ranged)
                     {
                         return true;
                     }

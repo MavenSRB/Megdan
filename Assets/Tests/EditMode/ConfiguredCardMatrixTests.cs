@@ -594,6 +594,13 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(BainCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(GarrusCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(WidgetCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.57g, the eighteenth dealing. Her two beside-a-named-hero Places are
+                // reachable from this concat and from nowhere else: Throw the Gauntlet names the
+                // printed-Range one and her three Green Movements the printed-Radius twin, which is
+                // the whole of what registering her at 8.57g bought. She owes no showcase consumer -
+                // both are further declarations over `PlaceHandler`, a type this build has registered
+                // since milestone 6.6, and the gate's second half is asked of a handler TYPE.
+                .Concat(RowennaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

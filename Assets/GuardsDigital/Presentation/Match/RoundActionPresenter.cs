@@ -2036,8 +2036,20 @@ namespace GuardsDigital.Presentation.Match
             var value = channel == PrintedValueChannel.None
                 ? string.Empty
                 : $" {PrintedValueQuery.CalculatePrintedValue(offer, projection.Definitions, channel).Total}";
-            var range = action.Kind == ActionKind.Attack && offer.AttackRange == AttackRangeKind.Ranged
-                ? $" RANGE {PrintedValueQuery.CalculatePrintedValue(offer, projection.Definitions, PrintedValueChannel.Range).Total}"
+            // Milestone 8.57g. `offer.AttackRange` is and stays the card's PRINTED classification -
+            // `ActionOffer` equality guards every authorization path, so an offer whose subtype moved
+            // with an Ultimate would stop matching the command that answers it. p.13's overlay is
+            // therefore applied where the label is drawn, through the same query the attack backend and
+            // the defence preview read, and the printed Range the Ultimate declares REPLACES the card's
+            // own icon exactly as `RangedAttackOverlayQuery.OverlayPrintedRange` replaces it.
+            var unlockedUltimates = GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
+                projection.Definitions, projection.Cards);
+            var declaredRange = GuardsDigital.Core.Rules.CardResolution.RangedAttackOverlayQuery
+                .DeclaredPrintedRangeFromUnlockedUltimates(offer.ActorId, unlockedUltimates);
+            var range = action.Kind == ActionKind.Attack &&
+                GuardsDigital.Core.Rules.CardResolution.RangedAttackOverlayQuery.ClassifyFromUnlockedUltimates(
+                    offer.AttackRange, offer.ActorId, unlockedUltimates) == AttackRangeKind.Ranged
+                ? $" RANGE {(declaredRange > 0 ? declaredRange : PrintedValueQuery.CalculatePrintedValue(offer, projection.Definitions, PrintedValueChannel.Range).Total)}"
                 : string.Empty;
             var policy = action.DefaultPolicy.CardTextApplication == CardTextApplicationPolicy.Applies
                 ? "text applies"

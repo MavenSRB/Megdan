@@ -298,6 +298,83 @@ namespace GuardsDigital.Tests.EditMode
             return choices;
         }
 
+        /// <summary>
+        /// Milestone 8.57g, the milestone that deals Rowenna the Vanguard. A LOBBY BOT actually
+        /// holding her printed set, playing it against three other bots until the host has accepted a
+        /// hundred commands, with nothing refused.
+        ///
+        /// <para><b>Why this tier and not another.</b> Milestone 8.38e's dealing found an
+        /// <c>AtomicityViolation</c> here that no other tier can see: a bot answered an effect choice,
+        /// that answer started a borrowed Attack with nobody in reach, and the command was refused as
+        /// <c>AttackActionRejected: TargetUnavailable</c> AFTER mutating state. A bot answers every
+        /// prompt a hero's content can raise, in orders a written journey never chooses, so a hero
+        /// whose offers disagree with the host's authorization fails here first. Rowenna raises more
+        /// prompts per turn than most - her Reds ask a second hero to retrieve or take a coin, Throw
+        /// the Gauntlet hands the DECISION to an opponent, and Grand Melee offers two performances in
+        /// any combination - so the question is worth asking of her by name.</para>
+        ///
+        /// <para><b>The seed is searched rather than written down, and the search is the assertion.</b>
+        /// A lobby bot drafts its own hero, so no caller can put her in a seat: what a fixture can do
+        /// is walk seeds until a draft seats her and then play THAT one. The walk is deterministic and
+        /// bounded, and a build in which no seed in the range seats her fails here - which would mean
+        /// she had fallen out of the offerable roster, the very thing milestone 8.35z41 exists to
+        /// catch.</para>
+        /// </summary>
+        [Test]
+        public void ALobbyBotDealtRowenna_PlaysHerWithoutTheHostRefusingAnything()
+        {
+            const string rowenna = QuickGameSetupConfiguration.RowennaHeroIdValue;
+
+            var seed = 0;
+            for (var candidate = 1; candidate <= 64 && seed == 0; candidate++)
+            {
+                if (Draft(candidate).Contains(rowenna))
+                {
+                    seed = candidate;
+                }
+            }
+
+            Assert.That(seed, Is.Not.Zero,
+                "No seed in 1..64 drafted Rowenna, which means she is not offerable in a lobby at " +
+                "all - the exact defect milestone 8.35z41 was written to catch.");
+            TestContext.WriteLine("Rowenna is drafted by lobby seed " + seed + ".");
+
+            var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
+            using var fleet = new PrivateSessionBotFleet(composer.Match, composer.Identity, "", new HumanWire(),
+                new CountingNonceSource(85), () => composer.Match.Projection,
+                composer.Configuration.ContentCatalogs, seed);
+            fleet.Host.Composition = composer;
+            fleet.FillOpenSeats(0, 0);
+            long tick = 0;
+            while (!fleet.Host.HasMatchStarted && tick < 200) fleet.Tick(++tick);
+            Assert.That(fleet.Host.HasMatchStarted, Is.True, fleet.LastFailure);
+
+            var hers = fleet.Host.Roster.Where(row => row.Hero.Value == rowenna).ToArray();
+            Assert.That(hers, Is.Not.Empty, "The measured seed must still seat her.");
+
+            var accepted = 0;
+            var cursor = composer.Match.ReadResults(0).NextSequence;
+            while (!fleet.Host.HasEnded && accepted < 100 && tick < 3000)
+            {
+                fleet.Tick(++tick);
+                var batch = composer.Match.ReadResults(cursor);
+                cursor = batch.NextSequence;
+                accepted += batch.Records.Count;
+            }
+
+            var refusals = fleet.Host.DrainEvents()
+                .Where(record => record.Kind == PrivateSessionEventKind.SubmissionRefused)
+                .Select(record => record.Seat + "@" + record.Version + ": " + record.SubmissionRejection)
+                .ToArray();
+            Assert.That(refusals, Is.Empty,
+                "A bot offered something the host refused: " + string.Join(" | ", refusals) +
+                " ;; lastRefusal=" + fleet.LastRefusal);
+            Assert.That(fleet.LastFailure, Is.Empty);
+            Assert.That(accepted, Is.GreaterThanOrEqualTo(100),
+                "The fleet must play well past the first commitments with her in a seat. " +
+                fleet.LastFailure);
+        }
+
         [Test]
         public void InvalidPacingIsRefusedBeforeAnySeatIsClaimed()
         {

@@ -65,23 +65,29 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly HexCoordinate Beside = new HexCoordinate(0, 1);
 
         /// <summary>
-        /// The two declarations milestone 7.9's gate keeps out of the registration list until 8.57g
-        /// deals her, spelled as the build spells them. 8.57b minted the printed-Range one for Throw
+        /// The two declarations milestone 7.9's gate kept out of the registration list until 8.57g
+        /// dealt her, spelled as the build spells them. 8.57b minted the printed-Range one for Throw
         /// the Gauntlet and 8.57d its printed-Radius twin for her three Green Movement faces; 8.57e's
         /// Ultimate added NOTHING to this list, because a permanent ability that changes what p.13
         /// makes of an Attack is a typed rule rather than a capability a node names.
+        ///
+        /// <para><b>Milestone 8.57g registers both and the two cases below are inverted rather than
+        /// deleted.</b> The list stays here because it is what those cases now assert the ABSENCE of:
+        /// the claim that has to keep being true is that these two are exactly together, whichever
+        /// list they are in, and that no THIRD deferral of hers appeared unnoticed.</para>
         /// </summary>
-        private static readonly string[] DeferredCapabilityReferences =
+        private static readonly string[] RegisteredAtTheDealing =
         {
             "synthetic-place-in-radius-beside-a-named-hero@1",
             "synthetic-place-in-range-beside-a-named-hero@1"
         };
 
         /// <summary>
-        /// The four faces whose bodies name one of those two, and therefore the exact four this build
-        /// refuses to start. Every other composed face of hers names only registered contracts.
+        /// The four faces whose bodies name one of those two - the exact four this build refused to
+        /// start until milestone 8.57g, and the four whose registration that dealing is. Every other
+        /// composed face of hers named only registered contracts throughout the series.
         /// </summary>
-        private static IEnumerable<CardDefinitionId> FacesNamingADeferredPlace() => new[]
+        private static IEnumerable<CardDefinitionId> FacesNamingTheRegisteredPlaces() => new[]
         {
             RowennaCardContent.ThrowTheGauntlet,
             RowennaCardContent.CloseQuarters,
@@ -592,16 +598,19 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The exact set of capability references her composed bodies name that this build does NOT
-        /// register - the observable form of milestone 7.9's gate, asserted as a SET so that a
-        /// registration arriving early and a third deferral arriving unnoticed both fail here.
+        /// EVERY capability reference her composed bodies name is one this build registers - the
+        /// observable form of milestone 7.9's gate SATISFIED, asserted as a SET so that a deferral
+        /// left behind and a third one arriving unnoticed both fail here.
         ///
-        /// <para>It is two, both of them Places, and 8.57e added neither: her Ultimate's sentence is a
-        /// <c>RuleModificationKind</c> rather than a capability a node names, so a permanent ability
-        /// costs the registration list nothing.</para>
+        /// <para>Milestones 8.57b and 8.57d wrote this case the other way round - "exactly two are
+        /// still held back" - and milestone 8.57g, the dealing, inverts it on the same terms and for
+        /// the same reason: the claim that has to keep being true is that her two Places are exactly
+        /// together, whichever list they are in. 8.57e added neither, because her Ultimate's sentence
+        /// is a <c>RuleModificationKind</c> rather than a capability a node names, so a permanent
+        /// ability costs the registration list nothing.</para>
         /// </summary>
         [Test]
-        public void ExactlyTwoPlaceDeclarations_AreStillHeldBackFromTheRegistrationList()
+        public void EveryContractHerBodiesName_IsRegisteredNowThatSheIsDealt()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
 
@@ -619,43 +628,49 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(capability => capability.ToString())
                     .Distinct()
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(DeferredCapabilityReferences),
-                "Exactly two, and they are the two her series minted: 8.57b's printed-Range Place " +
-                "beside a named hero and 8.57d's printed-Radius twin. Every other contract her set " +
-                "names is already in the build's registration list.");
+                Is.Empty,
+                "Nothing of hers is withheld any more: milestone 8.57g moved 8.57b's printed-Range " +
+                "Place beside a named hero and 8.57d's printed-Radius twin into the registration " +
+                "list, and every other contract her set names was already in it.");
 
             Assert.That(
-                SyntheticPlacementCapabilities.DeferredHandlers()
-                    .Select(handler => handler.Reference.ToString())
+                named.Select(capability => capability.ToString())
+                    .Intersect(RegisteredAtTheDealing)
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(DeferredCapabilityReferences),
-                "and the build's own deferred list is exactly those two, read from the other side: " +
-                "nothing else in this build is being withheld for her, and nothing of hers is being " +
-                "withheld anywhere else.");
+                Is.EqualTo(RegisteredAtTheDealing),
+                "and her bodies still NAME both of them, read from the other side - so this case " +
+                "cannot pass because a face stopped asking for one.");
+
+            Assert.That(
+                SyntheticPlacementCapabilities.DeferredHandlers(), Is.Empty,
+                "and the build's own deferred list is empty, which is what her dealing means: " +
+                "nothing in this build is being withheld for a hero it does not deal.");
 
             Assert.That(
                 named.Count(capability => registered.IsRegistered(capability)),
                 Is.GreaterThan(0),
-                "and the rest genuinely resolve, so the case above is not passing because the walk " +
+                "and the walk genuinely found contracts, so the case above is not passing because it " +
                 "found nothing.");
         }
 
         /// <summary>
-        /// And the four faces that name one of those two are the four this build refuses, each for the
-        /// deferral rather than for anything about its shape. Milestone 8.57g's registration flip is
-        /// what turns this assertion around.
+        /// And the four faces that name one of those two are startable, which is what registering them
+        /// bought: this build now refuses NO face of hers. Milestones 8.57b/8.57d asserted the exact
+        /// four refusals and milestone 8.57g's registration flip turns that assertion around.
         /// </summary>
         [Test]
-        public void OnlyTheFourFacesNamingADeferredPlace_AreRefusedByWhatThisBuildRegisters()
+        public void NoFaceOfHers_IsRefusedByWhatThisBuildRegisters()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
             var refused = new List<CardDefinitionId>();
+            var validated = 0;
 
             foreach (var definition in RowennaCardContent.AllDefinitions)
             {
                 foreach (var action in definition.ActionDefinitions
                     .Where(action => action.EffectRoot != null))
                 {
+                    validated++;
                     var rejections = EffectDefinitionValidator.ValidateCardText(
                         action.EffectRoot, registered, action.CardTextTiming);
                     if (rejections.Count == 0)
@@ -664,15 +679,28 @@ namespace GuardsDigital.Tests.EditMode
                     }
 
                     refused.Add(definition.Id);
-                    Assert.That(
-                        rejections.Select(rejection => rejection.Reason).Distinct(),
-                        Is.EqualTo(new[] { EffectDefinitionRejectionReason.UnregisteredCapability }),
-                        definition.Id.Value + " is refused for the deferral and for nothing else.");
+                    Assert.Fail(
+                        definition.Id.Value + " action '" + action.Id.Value + "' is refused by what " +
+                        "this build registers: " +
+                        string.Join("; ", rejections.Select(rejection => rejection.ToString())));
                 }
             }
 
-            Assert.That(refused, Is.EquivalentTo(FacesNamingADeferredPlace()),
-                "Her fifteen other bodies name only capabilities this build already registers.");
+            Assert.That(refused, Is.Empty,
+                "The four that used to be refused - Throw the Gauntlet, Close Quarters, Melee and " +
+                "Grand Melee - are startable, and her other bodies never named anything else.");
+
+            // Read from the other side, so this case cannot pass by the walk finding nothing: the
+            // four are still the faces whose bodies name a Place that only arrived at the dealing.
+            var naming = RowennaCardContent.AllDefinitions
+                .Where(definition => definition.ActionDefinitions
+                    .Where(action => action.EffectRoot != null)
+                    .SelectMany(action => action.EffectRoot.Nodes)
+                    .Any(node => node.Capability.IsDefined &&
+                        RegisteredAtTheDealing.Contains(node.Capability.ToString())))
+                .Select(definition => definition.Id);
+            Assert.That(naming, Is.EquivalentTo(FacesNamingTheRegisteredPlaces()));
+            Assert.That(validated, Is.GreaterThan(0));
         }
 
         /// <summary>
@@ -992,9 +1020,12 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The build's registration list plus the two declarations her series deliberately withholds -
-        /// the catalog milestone 8.57g's dealing will make the registered one, and the same catalog
-        /// <c>DealtCorpusCompositionValidationTests</c> validates the whole corpus against.
+        /// The build's registration list plus whatever this file still defers, which since milestone
+        /// 8.57g's dealing is nothing at all: the sum IS the registration list now, and it was written
+        /// as a sum so that it means the same thing on both sides of the dealing. It is the same
+        /// catalog <c>DealtCorpusCompositionValidationTests</c> validates the whole corpus against, and
+        /// it de-duplicates by reference so a declaration present on both sides cannot be handed in
+        /// twice - milestone 8.40j's BA-18, which is what the other reading costs.
         /// </summary>
         private static EffectCapabilityCatalog Catalog()
         {

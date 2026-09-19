@@ -41,6 +41,12 @@ $sources = [ordered]@{
     garrus = 'randomizers-tt13__7723690__front.png'
     # Byte-identical to active-hero-cards/_selection-cards/Widget__front.png.
     widget = 'randomizers-tt25__7723701__front.png'
+    # Milestone 8.57g. SHA-256 matched rather than eyeballed, on the measurement Cutter's and Bain's
+    # lines above record: this front is byte-identical to the corpus's own
+    # `active-hero-cards/_selection-cards/Rowenna__front.png`
+    # (2595D15D122227E1C50D2CB1BF618064DD74CED40E72F736CF62211D9002B2D9), so the face is hers by the
+    # extraction's own naming and not by a reading of the picture.
+    rowenna = 'randomizers-tt28__7723702__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

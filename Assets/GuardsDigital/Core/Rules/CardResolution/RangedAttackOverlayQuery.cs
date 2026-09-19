@@ -57,6 +57,89 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.57g. The same question asked of PUBLISHED STATE rather than of a live rule set,
+        /// for the four presentation readers that draw p.13's subtype on a card.
+        ///
+        /// <para><b>Why an adapter here rather than a fifth private reading.</b> The four sites this
+        /// exists for - the attack spotlight's ranged cue, the decision window's RANGED chip, the hero
+        /// overview's RANGE line and the round rail's chip - each read
+        /// <c>ActionDefinition.AttackRange</c> straight off the card, which is the PRINTED
+        /// classification and stays printed for a very good reason: <c>ActionOffer</c> equality guards
+        /// every authorization path, so an offer whose classification moved with an Ultimate would stop
+        /// matching the command that answers it. The overlay therefore has to be applied by the
+        /// DRAWING rather than baked into the offer, and a presenter that read the declaration itself
+        /// would be the fifth private reading the type comment above says produces disagreements. This
+        /// is the same query, given the source a presenter actually holds.</para>
+        ///
+        /// <para>A projection carries the definitions and the card instances, which is exactly what
+        /// <see cref="Progression.UltimateUnlockQuery.Derive"/> takes: an Ultimate is unlocked when its
+        /// card sits beside the dashboard, and the permanent ability it names is on the definition. The
+        /// one clause a presenter cannot answer this way is p.16's parenthesis - "as long as your hero
+        /// is on the board" - because that needs the board. It is not asked, and that is deliberate
+        /// rather than overlooked: a rail, an overview or a spotlight is drawn ABOUT a hero's cards,
+        /// and a defeated hero's card still prints what it prints. Nothing here decides legality; the
+        /// backend and <c>DefenseBlockQuery</c> keep doing that from the live set.</para>
+        /// </summary>
+        /// <remarks>
+        /// <b>A distinct NAME rather than an overload, and that is a measured decision.</b>
+        /// <c>ILConformanceScanner.Method</c> resolves a rule's named member by name and returns
+        /// <c>candidates[0]</c> when several match, so adding an overload to a method a conformance
+        /// rule names silently re-points that rule at the new one - which is precisely what happened
+        /// on this milestone's first offline run: <c>TheOfferTheResolverAndTheDefencePreview_EachRead-
+        /// TheOneOverlayQuery</c> went red because the backend was being asked whether it called the
+        /// projection-shaped reading. Two names, two questions, and both rules keep asking theirs.
+        /// </remarks>
+        public static int DeclaredPrintedRangeFromUnlockedUltimates(
+            HeroId attackerId, Progression.UnlockedUltimateSet ultimates)
+        {
+            if (ultimates == null) throw new ArgumentNullException(nameof(ultimates));
+            if (!attackerId.IsDefined)
+            {
+                return 0;
+            }
+
+            var declared = 0;
+            for (var index = 0; index < ultimates.Ultimates.Count; index++)
+            {
+                var ultimate = ultimates.Ultimates[index];
+                if (!ultimate.OwnerId.Equals(attackerId) || ultimate.Rule == null)
+                {
+                    continue;
+                }
+
+                for (var ruleIndex = 0; ruleIndex < ultimate.Rule.Modifications.Count; ruleIndex++)
+                {
+                    var modification = ultimate.Rule.Modifications[ruleIndex];
+                    if (modification.Kind ==
+                            RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange &&
+                        modification.Amount > declared)
+                    {
+                        // The LARGEST declared value, which is the reading
+                        // `RuleModificationSet.AttackActionsCountAsRangedAtPrintedRange` takes and the
+                        // only one under which a second source is not silently dropped.
+                        declared = modification.Amount;
+                    }
+                }
+            }
+
+            return declared;
+        }
+
+        /// <summary>
+        /// Milestone 8.57g. p.13's classification of one printed Attack for a presenter, read from the
+        /// unlocked Ultimates a projection publishes - see the overload above for why the four drawing
+        /// sites take this route rather than the live modification set.
+        /// </summary>
+        public static AttackRangeKind ClassifyFromUnlockedUltimates(
+            AttackRangeKind printedClassification,
+            HeroId attackerId,
+            Progression.UnlockedUltimateSet ultimates) =>
+            printedClassification == AttackRangeKind.NonRanged &&
+            DeclaredPrintedRangeFromUnlockedUltimates(attackerId, ultimates) > 0
+                ? AttackRangeKind.Ranged
+                : printedClassification;
+
+        /// <summary>
         /// Rulebook p.13's classification of one Attack, with the overlay applied.
         ///
         /// <para><paramref name="printedClassification"/> is the card's own, and an action carrying
@@ -95,6 +178,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// overlay that flattened them to the ceiling would silently widen a face whose whole drawback
         /// is a band. No such face is Rowenna's; the arm is stated because the alternative is this
         /// query deciding what it would have meant.</para>
+        ///
+        /// <para><b>MILESTONE 8.57g CORRECTED THE GATE, and this is the one defect milestone 8.57e
+        /// shipped.</b> The condition used to be "the overlaid classification is Ranged", and that is
+        /// true of a card PRINTED Ranged whether anything declared anything or not - so an already-
+        /// Ranged Attack whose CARD TEXT had narrowed its reach to adjacency had that narrowing
+        /// silently undone, for every hero in the build. Whisper's Swift Justice is the face that
+        /// found it: her Gold basic prints Ranged with a Range icon of 3, its second bullet prints
+        /// "a unit adjacent to you", and after 8.57e the chosen bullet offered five spaces out to
+        /// three instead of the innermost ring.
+        /// <c>WhisperEngagedUiJourneyPlayModeTests.SwiftJustice_OffersItsTwoBulletsAndTakesThe-
+        /// AdjacentUnitTheSecondOneNames</c> is where it surfaced, and it reproduces through the
+        /// headless command surface with no HUD at all.</para>
+        ///
+        /// <para>The gate is now <b>"the classification MOVED"</b>, which is what the printed sentence
+        /// actually says: Fabled Lance makes her attack actions "gain the Ranged subtype" and target
+        /// in range, so the reach is replaced exactly where the subtype was replaced, and a card that
+        /// was already Ranged keeps whatever reach its own text gave it. <see cref="Classify"/>
+        /// returns the printed classification unchanged in every case but the one the declaration
+        /// changes, so the two halves of this sentence are one question asked once.</para>
         /// </summary>
         public static PrintedAttackTargetPolicy Overlay(
             PrintedAttackTargetPolicy printedPolicy,
@@ -102,7 +204,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId attackerId,
             RuleModificationSet modifications) =>
             printedPolicy.Reach == AttackTargetReach.AdjacentOnly &&
-            Classify(printedClassification, attackerId, modifications) == AttackRangeKind.Ranged
+            Classify(printedClassification, attackerId, modifications) != printedClassification
                 ? printedPolicy.AtThePrintedRange()
                 : printedPolicy;
 

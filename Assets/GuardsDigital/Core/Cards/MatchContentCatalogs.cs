@@ -301,5 +301,29 @@ namespace GuardsDigital.Core.Cards
         // rather than from here, because they are vocabulary this build now owns rather than content
         // of his, and the two showcase marker instances register from `SyntheticComponentCapabilities`
         // beside the give they mirror.
+        //
+        // Milestone 8.57g, the milestone that deals Rowenna the Vanguard as the EIGHTEENTH hero, adds
+        // nothing to either list above and says so rather than leaving the absence to be read as an
+        // oversight. It is the emptiest contribution any dealing has made, and every half of it was
+        // measured rather than assumed:
+        //
+        //   * NO ACTIVE EFFECT. Not one of her nineteen faces prints "This turn:", "Next turn:" or
+        //     "End of turn:", so there is no `RowennaActiveEffectContent` to concat - the same
+        //     explicit empty contribution Cutter's milestone records.
+        //   * NO TRIGGERED DEFINITION. Fabled Lance is a p.16 PERMANENT ABILITY whose
+        //     `UltimateRuleDefinition.TriggeredEffect` is null: it names no effect to run, because
+        //     what it does is change a rule (`RuleModificationKind.AttackActionsCountAsRangedAt-
+        //     PrintedRange`, milestone 8.57e) for as long as it is unlocked. A rule modification is
+        //     carried by the card definition itself and resolved through `UltimateUnlockQuery`, so it
+        //     costs this catalog nothing - which is why registering her moves the registered-handler
+        //     COUNT and not the triggered-effect list.
+        //   * NO HERO-OWNED HANDLER. Every node her five composition blocks wrote binds a generic
+        //     capability this build already registered, which is milestone 8.57a-8.57e's whole record.
+        //
+        // What her dealing DOES move is `SyntheticPlacementCapabilities`: milestone 8.57b's
+        // `synthetic-place-in-range-beside-a-named-hero@1` and milestone 8.57d's
+        // `synthetic-place-in-radius-beside-a-named-hero@1` leave that file's `DeferredHandlers` for
+        // its `RegisteredHandlers` in this same change, because Throw the Gauntlet, Close Quarters,
+        // Melee and Grand Melee are cards a configured match now puts in a hand.
     }
 }

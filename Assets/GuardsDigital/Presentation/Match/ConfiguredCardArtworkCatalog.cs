@@ -102,7 +102,16 @@ namespace GuardsDigital.Presentation.Match
                 // offline tier can see, and this map is what turns them into a front on a card.
                 { "bain", "Bain" },
                 { "garrus", "Garrus" },
-                { "widget", "Widget" }
+                { "widget", "Widget" },
+                // Milestone 8.57g, the ELEVENTH consecutive dealing told by the comment above rather
+                // than by a check. Her extraction directory spells the name plainly - which is worth
+                // saying out loud for her, because her STANDEE does not: the bundled manifest carries
+                // her circular faces under `Knighttt` and nothing under "Rowenna" at all, so the card
+                // corpus and the token corpus disagree about her name and only one of them is this
+                // map's business. Written here at the same moment as the eighteen rows, for the
+                // reason those eight paragraphs give: the rows alone are what every offline tier can
+                // see, and this map is what turns them into a front on a card.
+                { "rowenna", "Rowenna" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -403,6 +412,12 @@ namespace GuardsDigital.Presentation.Match
                 .Concat(BainCardContent.DealtDefinitions)
                 .Concat(GarrusCardContent.DealtDefinitions)
                 .Concat(WidgetCardContent.DealtDefinitions)
+                // Milestone 8.57g. Rowenna's eighteen, on exactly the terms the rows above state.
+                // Earn the Spurs is p.20's Handicap card and is not among her DealtDefinitions,
+                // exactly as Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the
+                // Distance, Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard,
+                // Swift's Backup, Cutter's Few More Steps and Bain's Side Quest are not among theirs.
+                .Concat(RowennaCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

@@ -420,7 +420,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new PlaceHandler(
                     PlaceInRadiusOffEveryStraightLineV1, PrintedValueChannel.Radius,
                     PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.OffEveryStraightLineFromTheActor)
+                    PlaceDestinationQualifier.OffEveryStraightLineFromTheActor),
+
+                // Milestones 8.57b and 8.57d built this pair and MILESTONE 8.57g moves it across,
+                // which is the milestone that deals Rowenna the Vanguard: Throw the Gauntlet, Close
+                // Quarters, Melee and Grand Melee are now cards a configured match puts in a hand, so
+                // both halves of milestone 7.9's gate are answered at once. Like the four pairs above
+                // they owe the showcase half NOTHING and move the conformance count by nought - both
+                // are further declarations over PlaceHandler, the type the three arms at the head of
+                // this list have registered since milestone 6.6, and that half of the gate is asked of
+                // a handler TYPE. They move together because milestone 8.57d wrote them as a pair for
+                // exactly that reason: the channel is the whole of the difference between them, and a
+                // dealing that registered one and forgot the other would be a half-green.
+                new PlaceHandler(
+                    PlaceInRangeBesideANamedHeroV1, PrintedValueChannel.Range,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.AdjacentToTheNamedSpace),
+                new PlaceHandler(
+                    PlaceInRadiusBesideANamedHeroV1, PrintedValueChannel.Radius,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.AdjacentToTheNamedSpace)
             };
 
         /// <summary>
@@ -446,27 +465,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// is a further declaration over <see cref="PlaceHandler"/>, the type the three arms above have
         /// registered since milestone 6.6, and that half of the gate is asked of a handler TYPE.</para>
         ///
-        /// <para>MILESTONE 8.57d ADDS THE SECOND, and it is the same hero's: her three Green Movement
+        /// <para>MILESTONE 8.57d ADDED THE SECOND, and it was the same hero's: her three Green Movement
         /// faces name <see cref="PlaceInRadiusBesideANamedHeroV1"/>, which is the printed-Radius twin of
-        /// the declaration above. Both leave this list together at 8.57g, which is what deals her, and
-        /// both owe the gate's second half nothing for the reason just given.</para>
+        /// 8.57b's declaration. Both left this list together at MILESTONE 8.57g, which deals her, and
+        /// both owed the gate's second half nothing for the reason just given - see
+        /// <see cref="RegisteredHandlers"/> for where they are now.</para>
+        ///
+        /// <para>The list is empty again, and this file goes on being able to say so: the NEXT worker
+        /// that mints a Place no dealt card starts holds it here until its own dealing.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            new IEffectCapabilityHandler[]
-            {
-                new PlaceHandler(
-                    PlaceInRangeBesideANamedHeroV1, PrintedValueChannel.Range,
-                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.AdjacentToTheNamedSpace),
-
-                // Milestone 8.57d. The printed-Radius twin, declared over the SAME handler with the
-                // SAME qualifier - the channel is the whole of the difference, which is the
-                // Range/Radius rule stated once more rather than a second mechanism.
-                new PlaceHandler(
-                    PlaceInRadiusBesideANamedHeroV1, PrintedValueChannel.Radius,
-                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
-                    PlaceDestinationQualifier.AdjacentToTheNamedSpace)
-            };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being

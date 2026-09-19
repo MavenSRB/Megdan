@@ -1030,7 +1030,26 @@ namespace GuardsDigital.Tests.PlayMode
                 ["range-enemy-minion-beside-anchor"] = new[] { PlayerInteractionShape.BoardUnitSelection },
                 ["range-minion-beside-anchor"] = new[] { PlayerInteractionShape.BoardUnitSelection },
                 ["enemy-unit-beside-anchor"] = new[] { PlayerInteractionShape.BoardUnitSelection },
-                ["coupled-direct-move"] = new[] { PlayerInteractionShape.BoardSpaceSelection }
+                ["coupled-direct-move"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Milestone 8.57g. Rowenna the Vanguard's two entries - the EIGHTEENTH hero, and she
+                // introduces no new SHAPE at all, which is the same finding Swift's, Cutter's and
+                // Bain's dealings recorded before her. Both are Places, and a Place in this table has
+                // asked for one thing since milestone 6.6: a space clicked on the board. What her two
+                // qualifiers change is WHICH spaces the offer contains - the neighbours of a hero the
+                // player has already named - never how the player names one. They are two rows rather
+                // than one because this table is keyed by capability id and both ids are registered,
+                // and the printed channel is the whole of the difference between them.
+                //
+                // Everything else her five composition blocks named was already in this table, which
+                // is what 8.57f's offline reading predicted and what this dealing measures: her
+                // cross-seat prompts fall under milestone 8.40f's same-shape ruling, and Fabled Lance
+                // moves her Attacks from AdjacentAttackTarget to RangedAttackTarget - a shape this
+                // table already carries - rather than minting a nineteenth member.
+                ["synthetic-place-in-range-beside-a-named-hero"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["synthetic-place-in-radius-beside-a-named-hero"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

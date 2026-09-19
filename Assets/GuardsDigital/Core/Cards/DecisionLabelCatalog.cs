@@ -107,6 +107,11 @@ namespace GuardsDigital.Core.Cards
                 .Concat(CutterEffectContent.DecisionLabels())
                 .Concat(BainEffectContent.DecisionLabels())
                 .Concat(GarrusEffectContent.DecisionLabels())
-                .Concat(WidgetEffectContent.DecisionLabels());
+                .Concat(WidgetEffectContent.DecisionLabels())
+                // Milestone 8.57g, the milestone that deals Rowenna the Vanguard. Her fifteen
+                // declarations join here rather than at milestone 8.57f, which composed them, for the
+                // reason every contribution in this file joins at a dealing milestone: what a table
+                // is FOR is a window over a card a match deals.
+                .Concat(RowennaEffectContent.DecisionLabels());
     }
 }
