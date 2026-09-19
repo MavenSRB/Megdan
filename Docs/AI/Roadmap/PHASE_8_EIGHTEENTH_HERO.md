@@ -6,15 +6,19 @@ Return to [roadmap](../ROADMAP.md). Current authorization and next route live in
 
 On 2026-09-19 the user ordered the eighteenth hero after the victory-screen package: "After the build start implementing Rowenna." This authorizes **8.57 -> 8.57a -> 8.57b -> 8.57c -> 8.57d -> 8.57e -> 8.57f -> 8.57g -> 8.57h**, through a fully selectable, artworked hero with working printed cards and the permanent player-path gate. Execute sequentially with separate validation and local commits. Necessary corrections demonstrated by those checks belong to the block that found them.
 
-Rowenna's rules shard, `Docs/AI/Rules/HERO_ROWENNA.md`, is written at 8.57 and owns source facts and the capability map from then on. Eighteen faces are dealt; Earn the Spurs is the boxed p.20 Handicap. Inspect existing contracts before adding vocabulary. New contracts stay outside production registration until reachable from dealt content; reconcile each new or widened shared-foundation claim with the test-owned claim catalog. The printed colour conflict RO-03 is carried as an open user question and does not block the series.
+[Rowenna's rules shard](../Rules/HERO_ROWENNA.md) owns source facts and the capability map. Eighteen faces are dealt; Earn the Spurs is the boxed p.20 Handicap. Inspect existing contracts before adding vocabulary. New contracts stay outside production registration until reachable from dealt content; reconcile each new or widened shared-foundation claim with the test-owned claim catalog. The printed colour conflict RO-03 is carried as an open user question and does not block the series.
 
-### [ ] 8.57 Inventory Rowenna and map the implementation sequence
+### [x] 8.57 Inventory Rowenna and map the implementation sequence
 
 Outcome: source-backed identity, nineteen-face inventory, exact text/values/items/upgrades, capability map and outstanding dependencies are recorded.
 
 Acceptance: inspect all fronts, profile and dashboard; reconcile front/back counts and hashes; search the entire local rulebook for hero-specific authority and inspect relevant general-rule pages; distinguish printed facts, verified general rules, implementation predictions and unresolved interpretations; record RO-03 with both readings and the working assumption. Record the complete bounded sequence. T0 documentation validation only; no Unity.
 
 Non-goals: executable content or mechanics; adopting unverified community rulings.
+
+Completed 2026-09-19. All nineteen fronts, the selection card and the dashboard were read; the twelve item icons were montaged beside Wasp's six verified icons, the ribbons and corners were montaged, and the profile bars were read by scanline (Attack 8, Initiative 4, Defense 7, Movement 3 + 2). The nineteen backs share one hash. The rulebook names her nowhere; p.10, p.13, p.15, p.19 and p.20 govern. One printed conflict is held open for the user (RO-03: four faces whose corner letter contradicts their ribbon; the ribbon colour is assumed). The capability map predicts eight new pieces (empty-hand narrowing, a scoped assist-coin multiplier, the swap's two-qualifier narrowing, the gauntlet's self-place narrowing and opponent-owned one-space move, minion placement after Movement with "Choose up to two times", the both-parties empty-discard predicate, and the Ultimate's permanent Ranged-with-Range-2 rule) over the existing retrieve, coin, defeat, swap, place and repeat contracts.
+
+Historical evidence: [8.57 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857-rowenna-inventory-completion-evidence).
 
 ### [ ] 8.57a Support retrieve and reward for another hero, and the rider-gated repeat
 
