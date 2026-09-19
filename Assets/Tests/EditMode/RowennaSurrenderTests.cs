@@ -632,11 +632,11 @@ namespace GuardsDigital.Tests.EditMode
                 "PlacementLineQualifierTests asserts the exact list, so this case states what these " +
                 "two faces owe rather than counting somebody else's deferrals.");
 
-            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57a-prep"),
-                "Milestone 7.9's gate again, read from the content itself: the revision is still the " +
-                "placeholder a dealt hero's identity could not be mistaken for, and 8.57f/8.57g mint " +
-                "the real one when her whole set moves together. RowennaRewardTests owns the roster " +
-                "half of the gate.");
+            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57f-rev-1"),
+                "Milestone 8.57f minted the real revision when her whole set moved together, " +
+                "replacing the deliberately malformed placeholder these composition blocks carried. " +
+                "Milestone 7.9's gate is unaffected and is asserted where it lives: nothing of hers " +
+                "is registered or dealt until 8.57g, and RowennaRewardTests owns the roster half.");
         }
 
         /// <summary>

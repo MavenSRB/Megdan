@@ -1080,10 +1080,12 @@ namespace GuardsDigital.Tests.EditMode
                     cardId.Value + " composes a body.");
             }
 
-            // Milestone 8.57e adds her Purple Ultimate, so the set these five faces sit in is eighteen
-            // of nineteen. The count is pinned rather than derived on purpose: it is what says the
-            // file is still deliberately partial, and it moves once per composing block.
-            Assert.That(RowennaCardContent.AllDefinitions.Count, Is.EqualTo(18));
+            // Milestone 8.57f added p.20's boxed Earn the Spurs, which is the nineteenth and last face
+            // her shard records, so the set these five sit in is whole. The count is pinned rather than
+            // derived on purpose: it moved once per composing block and has nowhere left to move.
+            Assert.That(RowennaCardContent.AllDefinitions.Count, Is.EqualTo(19));
+            Assert.That(RowennaCardContent.DealtDefinitions.Count, Is.EqualTo(18),
+                "and the one face outside the dealt eighteen is the boxed Handicap, never a Green.");
         }
 
         /// <summary>

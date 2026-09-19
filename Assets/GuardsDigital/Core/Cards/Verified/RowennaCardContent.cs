@@ -2,43 +2,50 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// Rowenna the Vanguard's printed faces as definition content - milestones 8.57a through 8.57e,
-    /// and the eighteenth hero this project builds.
+    /// Rowenna the Vanguard's nineteen printed faces as definition content - milestones 8.57a through
+    /// 8.57f, and the eighteenth hero this project builds.
     ///
-    /// <para><b>This file is deliberately partial, and it says so rather than pretending otherwise.</b>
-    /// Her shard records nineteen printed faces. 8.57a composed the SIX whose clauses that block owned
-    /// - Code of Chivalry and the five Reds that reward a team-mate after the attack - 8.57b added
-    /// FOUR more - her Silver basic Throw the Gauntlet and the three Blue faces that swap with a
-    /// friendly unit - 8.57c added the TWO Blue faces that defeat a surrendering enemy, 8.57d added
-    /// the FIVE Green ones, and 8.57e adds her Purple Ultimate. <see cref="AllDefinitions"/> is
-    /// therefore eighteen cards and not nineteen, there is no starting hand, no deck, no boxed
-    /// Handicap and no dealt set: p.5's shape is a statement about a complete set, and stating it over
-    /// most of one would be false. Milestone 8.57f composes the remaining one and adds those members;
-    /// 8.57g deals her.</para>
+    /// <para><b>The set is whole at this milestone, and that is what changed.</b> Her shard records
+    /// nineteen printed faces. 8.57a composed the SIX whose clauses that block owned - Code of
+    /// Chivalry and the five Reds that reward a team-mate after the attack - 8.57b added FOUR more -
+    /// her Silver basic Throw the Gauntlet and the three Blue faces that swap with a friendly unit -
+    /// 8.57c added the TWO Blue faces that defeat a surrendering enemy, 8.57d added the FIVE Green
+    /// ones, and 8.57e her Purple Ultimate. 8.57f adds the nineteenth - p.20's boxed Handicap, Earn
+    /// the Spurs - and with it the members p.5's shape is a statement about: a
+    /// <see cref="StartingHand"/> of five, a <see cref="Deck"/> of thirteen, the one card
+    /// <see cref="ReturnedToBoxAtSetup"/>, and <see cref="DealtDefinitions"/> - the eighteen a match
+    /// actually deals. 8.57g deals her.</para>
     ///
-    /// <para><b>All three coloured ladders are composed, so every upgrade pair she prints is now
-    /// stated whole.</b> Stand Guard upgrades to Protect the Weak or Accept Surrender, and each of
-    /// those to Defend the Innocent or Glorious Triumph; Close Quarters upgrades to Melee or Opening
-    /// Shots, and each of those to Grand Melee or Opening Volley. What 8.57f still owes is the boxed
-    /// Handicap - one face, and it sits on no ladder: p.20 keeps Earn the Spurs in the box, and p.16
-    /// UNLOCKS Fabled Lance rather than upgrading into it, which is why the Ultimate this block adds
-    /// names no upgrade pair and is named by none.</para>
+    /// <para><b>All three coloured ladders are composed, so every upgrade pair she prints is stated
+    /// whole.</b> Stand Guard upgrades to Protect the Weak or Accept Surrender, and each of those to
+    /// Defend the Innocent or Glorious Triumph; Close Quarters upgrades to Melee or Opening Shots, and
+    /// each of those to Grand Melee or Opening Volley; Token of Gratitude upgrades to Fair Share or
+    /// Feat of Bravery, and each of those to Paragon of Grace or Paragon of Valor. Two faces sit on no
+    /// ladder and are named by none: p.20 keeps Earn the Spurs in the box, and p.16 UNLOCKS Fabled
+    /// Lance rather than upgrading into it.</para>
     ///
-    /// <para><b>The revision is a placeholder and is not a valid content identity.</b>
-    /// <see cref="ContentRevision"/> reads <c>rowenna-8-57a-prep</c>, which follows no dealt hero's
-    /// <c>&lt;hero&gt;-&lt;milestone&gt;-rev-&lt;n&gt;</c> spelling on purpose: the project's
-    /// placeholder rule is that a placeholder must not be a value that could be mistaken for a real
-    /// one, and the real revision is minted at 8.57f/8.57g where the whole set moves together.</para>
+    /// <para><b>The revision is real from this milestone on.</b> <see cref="ContentRevision"/> reads
+    /// <c>rowenna-8-57f-rev-1</c> - every dealt hero's
+    /// <c>&lt;hero&gt;-&lt;milestone&gt;-rev-&lt;n&gt;</c> spelling - and replaces the deliberately
+    /// malformed placeholder milestone 8.57a minted and the five composition blocks carried. The
+    /// project's placeholder rule is that a placeholder must not be a value that could be mistaken for
+    /// a real one, which is why that string is gone from the tree rather than left in a comment; the
+    /// real value is minted here, where the whole set moves together, so every one of the nineteen
+    /// definitions and every effect body they reach carries one string.</para>
     ///
     /// <para><b>Nothing here is registered.</b> <see cref="MatchContentCatalogs"/> names no Rowenna
     /// content, so no configured match can deal these eighteen cards and nothing reachable can start them.
     /// That is milestone 7.9's gate rather than an oversight - the registered content list is
     /// serialized, and registering a card before it can be dealt moves the pinned list, every
-    /// snapshot's bytes and every corpus digest while the content never moved.</para>
+    /// snapshot's bytes and every corpus digest while the content never moved. 8.57g is the block that
+    /// flips it, and until it does <c>RowennaPrintedSetTests</c> asserts the gate from this side: the
+    /// four faces naming a deferred Place are refused by what the build registers, and by nothing
+    /// else.</para>
     ///
     /// <para><b>Where the numbers come from.</b> Every value, word, colour, Tier, icon and upgrade pair
     /// below is transcribed from the extracted card faces at milestone 8.57's inventory pass and
@@ -57,10 +64,10 @@ namespace GuardsDigital.Core.Cards.Verified
     public static class RowennaCardContent
     {
         /// <summary>
-        /// The revision these eighteen definitions carry. A PLACEHOLDER, deliberately not shaped like a
-        /// dealt hero's revision - see the type's own remarks.
+        /// The revision all nineteen definitions carry, and the one string every effect body of hers is
+        /// composed under. Minted at 8.57f, where the set became whole - see the type's own remarks.
         /// </summary>
-        public const string ContentRevision = "rowenna-8-57a-prep";
+        public const string ContentRevision = "rowenna-8-57f-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat
@@ -153,6 +160,18 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public static CardDefinitionId FabledLance { get; } = Id("fabled-lance");
 
+        /// <summary>
+        /// Milestone 8.57f. Her Gold Handicap - rulebook p.20's card, and the nineteenth face that
+        /// makes the set whole.
+        ///
+        /// <para>It is inventory rather than deck content: p.6's setup returns it to the box and p.20
+        /// brings it back only for an odd player count, which is why it is in
+        /// <see cref="ReturnedToBoxAtSetup"/> and in neither <see cref="StartingHand"/> nor
+        /// <see cref="Deck"/>. Its printed values, words, colour and icons ship here all the same -
+        /// what the established deferral defers is the COMPOSITION of its text, not the card.</para>
+        /// </summary>
+        public static CardDefinitionId EarnTheSpurs { get; } = Id("earn-the-spurs");
+
         // -----------------------------------------------------------------------------------------
         // Local action identities, local to a card exactly as every earlier set's are.
         // -----------------------------------------------------------------------------------------
@@ -193,12 +212,55 @@ namespace GuardsDigital.Core.Cards.Verified
         public static ActionDefinitionId SecondaryDefense { get; } =
             new ActionDefinitionId("secondary-defense");
 
+        /// <summary>
+        /// Milestone 8.57f. p.6's five starting cards - one of each colour a hero holds at setup: her
+        /// Gold basic, her Silver basic, and the Tier I of each of Red, Blue and Green.
+        /// </summary>
+        public static IReadOnlyList<CardDefinitionId> StartingHand { get; } = Array.AsReadOnly(new[]
+        {
+            CodeOfChivalry, ThrowTheGauntlet, TokenOfGratitude, StandGuard, CloseQuarters
+        });
+
+        /// <summary>
+        /// Milestone 8.57f. The thirteen cards p.6 leaves in the deck, reachable only through p.15's
+        /// Level Up and p.16's unlock: the six Tier II faces, the six Tier III faces, and the Ultimate.
+        /// </summary>
+        public static IReadOnlyList<CardDefinitionId> Deck { get; } = Array.AsReadOnly(new[]
+        {
+            FairShare, FeatOfBravery, ParagonOfGrace, ParagonOfValor,
+            ProtectTheWeak, AcceptSurrender, DefendTheInnocent, GloriousTriumph,
+            Melee, OpeningShots, GrandMelee, OpeningVolley,
+            FabledLance
+        });
+
+        /// <summary>
+        /// Milestone 8.57f. p.6's setup returns the Handicap card to the box, and p.20 brings it back
+        /// only for an odd player count. It is inventory rather than deck content, which is exactly why
+        /// <see cref="DealtDefinitions"/> is eighteen where <see cref="AllDefinitions"/> is nineteen.
+        /// </summary>
+        public static IReadOnlyList<CardDefinitionId> ReturnedToBoxAtSetup { get; } =
+            Array.AsReadOnly(new[] { EarnTheSpurs });
+
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =
             new Lazy<IReadOnlyList<CardDefinition>>(() =>
                 Array.AsReadOnly(Profiles().Select(Build).ToArray()));
 
+        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyDealtDefinitions =
+            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(
+                LazyAllDefinitions.Value
+                    .Where(definition => !ReturnedToBoxAtSetup.Contains(definition.Id))
+                    .ToArray()));
+
         /// <summary>
-        /// The eighteen faces these five blocks compose, in her shard's printed-value table order.
+        /// All nineteen faces, in the order the five composition blocks added them - her Gold basic and
+        /// the five Reds, then her Silver basic and the three swapping Blues, the two Defeat Blues, the
+        /// five Greens, the Ultimate, and p.20's Handicap last.
+        ///
+        /// <para>That is deliberately NOT her shard's table order, and the difference is stated rather
+        /// than papered over: the shard lists both basics first, and these rows grew one block at a
+        /// time. <c>RowennaPrintedSetTests</c> asserts the two against each other as a BIJECTION over
+        /// nineteen named faces, which is the claim that matters - the order a list happens to carry is
+        /// not one.</para>
         ///
         /// <para>Built lazily, which is the convention milestone 8.38d adopted after a
         /// static-initialization cycle cost milestone 8.37 1,423 failing cases on one
@@ -207,18 +269,73 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAllDefinitions.Value;
 
+        /// <summary>
+        /// Milestone 8.57f. The eighteen definitions a match deals from - everything but the boxed
+        /// Handicap card.
+        ///
+        /// <para>Its absence was a RED on main from 8.57a: two Edit Mode cases reflect over every
+        /// <c>*CardContent</c> class in the assembly for a public static <c>DealtDefinitions</c> - the
+        /// artwork catalog's clean-checkout walk asserts the property is there at all, and
+        /// <c>DealtCorpusCompositionValidationTests</c> walks whatever it finds - and hers was the one
+        /// class without one while her composition blocks ran.</para>
+        /// </summary>
+        public static IReadOnlyList<CardDefinition> DealtDefinitions => LazyDealtDefinitions.Value;
+
         public static CardDefinition Definition(CardDefinitionId id) =>
             AllDefinitions.FirstOrDefault(definition => definition.Id.Equals(id)) ??
-            throw new ArgumentException(
-                $"Milestones 8.57a through 8.57e compose no Rowenna card '{id}'.", nameof(id));
+            throw new ArgumentException($"Rowenna prints no card '{id}'.", nameof(id));
+
+        /// <summary>
+        /// Milestone 8.57f. One hero's eighteen card instances at p.6's setup: the five starting-hand
+        /// cards in hand and the remaining thirteen in the deck, each unplayed, unresolved and face-up.
+        /// </summary>
+        public static IReadOnlyList<CardInstance> CreateDealtCards(HeroId ownerId, string instanceIdPrefix)
+        {
+            if (!ownerId.IsDefined)
+            {
+                throw new ArgumentException("Rowenna's cards require a defined owner.", nameof(ownerId));
+            }
+
+            if (string.IsNullOrWhiteSpace(instanceIdPrefix))
+            {
+                throw new ArgumentException(
+                    "Card instance identities are stable and per-seat, so the caller names the prefix " +
+                    "that distinguishes one seat's cards from another's.",
+                    nameof(instanceIdPrefix));
+            }
+
+            return Array.AsReadOnly(DealtDefinitions
+                .Select(definition =>
+                {
+                    var instanceId = new CardInstanceId($"{instanceIdPrefix}-{definition.Id.Value}");
+                    return StartingHand.Contains(definition.Id)
+                        ? CardInstance.CreateInHand(instanceId, definition.Reference, ownerId)
+                        : CardInstance.CreateInDeck(instanceId, definition.Reference, ownerId);
+                })
+                .ToArray());
+        }
+
+        /// <summary>
+        /// Milestone 8.57f. One seat's whole setup as a hand the configured match can be composed from:
+        /// p.6's five in hand, the thirteen its deck keeps, and the eighteen definitions both draw on.
+        /// </summary>
+        public static ConfiguredHand CreateHand(HeroId ownerId, string instanceIdPrefix)
+        {
+            var cards = CreateDealtCards(ownerId, instanceIdPrefix);
+            return new ConfiguredHand(
+                DealtDefinitions,
+                cards.Where(card => StartingHand.Contains(card.DefinitionReference.DefinitionId)),
+                cards.Where(card => !StartingHand.Contains(card.DefinitionReference.DefinitionId)));
+        }
 
         private static CardDefinitionId Id(string cardId) =>
             new CardDefinitionId($"{ContentSetId}-{cardId}");
 
         // -----------------------------------------------------------------------------------------
-        // The printed faces. One row per card, in the shard's table order, with the same columns:
-        // Initiative, the two secondary icons, the primary Attack value, the p.9 Radius icon (0 where
-        // the face prints none), the progression content and the transcribed text.
+        // The printed faces. One row per card, in the order the composition blocks added them, with
+        // the same columns as the shard's table: Initiative, the two secondary icons, the primary
+        // Attack value, the p.9 Radius icon (0 where the face prints none), the progression content
+        // and the transcribed text.
         // -----------------------------------------------------------------------------------------
 
         private static IEnumerable<RowennaCardProfile> Profiles() => new[]
@@ -405,7 +522,31 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile.UltimateCard(),
                 "All your attack actions gain the \"Ranged\" subtype, target a unit in range, and " +
                 "count as having a printed Range value of 2.",
-                RowennaPrimaryKind.None)
+                RowennaPrimaryKind.None),
+
+            // Milestone 8.57f. p.20's Handicap card, and the nineteenth face. Its printed values,
+            // words, colour and both secondary icons ship here as inventory exactly as every other
+            // face's do - what is deferred is the COMPOSITION of its text, not the card.
+            //
+            // The deferral is the established one and it is the ONLY one on her set: p.6 returns this
+            // card to the box, p.20 brings it back only for an odd player count, and the 2026-08-21
+            // user decision named that trigger for Wasp's Crackling Dagger. Arien's Ceremonial Blade,
+            // Widget's Follow Along, Swift's Backup and Bain's Side Quest each carry the same string.
+            //
+            // What the deferral covers is the WHOLE printed sentence, its "Target a HERO adjacent to
+            // you" included, which is why this row declares no hero-only target narrowing: every
+            // roster Handicap printing that same clause leaves it to the deferral rather than
+            // composing half a card, and composing one half here would make her the one hero whose
+            // boxed face is partly live.
+            //
+            // It sits on NO upgrade ladder and is named by none - p.15 upgrades a coloured card into
+            // its own colour's next Tier, and this is a Gold basic that never enters a deck.
+            new RowennaCardProfile(
+                EarnTheSpurs, "Earn the Spurs", 10, 1, 1, 4, 0,
+                CardProgressionProfile.BasicCard(CardColor.Gold),
+                "Target a hero adjacent to you. Before the attack: Both you and the target may " +
+                "retrieve a discarded card.",
+                boxed: true)
         };
 
         private static CardDefinition Build(RowennaCardProfile profile) =>
@@ -503,7 +644,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         AttackRangeKind.None,
                         default,
                         RowennaEffectContent.SkillEffectFor(profile.Id, ContentRevision),
-                        PrintedTextComposition.None);
+                        profile.TextComposition);
 
                 // Milestone 8.57d. p.11's Movement as Primary Action: "apply the card text in addition
                 // to moving up to the number of spaces on the icon". Which side of the walk that text
@@ -525,7 +666,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         AttackRangeKind.None,
                         default,
                         RowennaEffectContent.MovementTextFor(profile.Id, ContentRevision),
-                        PrintedTextComposition.None,
+                        profile.TextComposition,
                         PrintedDefenseResolution.None,
                         RowennaEffectContent.MovementTextTimingFor(profile.Id));
 
@@ -544,7 +685,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         AttackRangeKind.NonRanged,
                         default,
                         RowennaEffectContent.AttackTextFor(profile.Id, ContentRevision),
-                        PrintedTextComposition.None,
+                        profile.TextComposition,
                         PrintedDefenseResolution.None,
                         RowennaEffectContent.AttackTextTimingFor(profile.Id));
             }
@@ -615,10 +756,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 RowennaPrimaryKind primary = RowennaPrimaryKind.Attack,
                 int range = 0,
                 int movement = 0,
-                bool radiusSkill = false)
+                bool radiusSkill = false,
+                bool boxed = false)
             {
                 Movement = movement;
                 RadiusSkill = radiusSkill;
+                Boxed = boxed;
                 Id = id;
                 DisplayName = displayName;
                 Initiative = initiative;
@@ -654,6 +797,23 @@ namespace GuardsDigital.Core.Cards.Verified
             /// which p.16's two different items then raise separately.
             /// </summary>
             public bool RadiusSkill { get; }
+
+            /// <summary>
+            /// Milestone 8.57f. Whether p.6's setup returns this face to the box - true for Earn the
+            /// Spurs and for nothing else she prints. It decides two things at once and they are the
+            /// same statement: the card is outside <see cref="DealtDefinitions"/>, and its primary
+            /// declares the established odd-player deferral instead of a composed body.
+            /// </summary>
+            public bool Boxed { get; }
+
+            /// <summary>
+            /// What this face's primary says about its own card text: the established p.20 deferral on
+            /// the one boxed face, and nothing at all on the eighteen dealt ones.
+            /// </summary>
+            public PrintedTextComposition TextComposition =>
+                Boxed
+                    ? PrintedTextComposition.DeferredUntil("first odd-player-count configuration")
+                    : PrintedTextComposition.None;
         }
     }
 }

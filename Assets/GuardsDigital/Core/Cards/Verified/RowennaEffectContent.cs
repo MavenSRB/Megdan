@@ -13,18 +13,22 @@ namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
     /// The effect bodies Rowenna the Vanguard's printed card text composes to - milestones 8.57a
-    /// through 8.57d, the first four vocabulary blocks of the eighteenth hero.
+    /// through 8.57e, the five vocabulary blocks of the eighteenth hero.
     ///
-    /// <para><b>This file is deliberately partial.</b> 8.57a owns six of her nineteen faces - the one
-    /// that hands a retrieve to the hero she just targeted, and the five Reds that pay or heal a
-    /// team-mate after the attack and may then repeat. 8.57b adds four: the three Blue faces that swap
-    /// with a friendly unit, and her Silver basic Throw the Gauntlet. 8.57c adds the two Blue faces
-    /// that defeat a surrendering enemy. 8.57d adds the five Greens - three that place a minion after
-    /// her walk and two that empty an enemy's hand by one card. Her Ultimate belongs to 8.57e, and her
-    /// whole set is composed at 8.57f. Nothing here is registered:
-    /// <see cref="MatchContentCatalogs"/> names no Rowenna content until 8.57g deals her, which is
-    /// milestone 7.9's gate - a registration no dealt card can start moves the pinned registration
-    /// list, every snapshot's bytes and every corpus digest while the content never moved.</para>
+    /// <para><b>Every body her set names is here, and seventeen of her nineteen faces attach one.</b>
+    /// 8.57a owns six - the one that hands a retrieve to the hero she just targeted, and the five Reds
+    /// that pay or heal a team-mate after the attack and may then repeat. 8.57b adds four: the three
+    /// Blue faces that swap with a friendly unit, and her Silver basic Throw the Gauntlet. 8.57c adds
+    /// the two Blue faces that defeat a surrendering enemy. 8.57d adds the five Greens - three that
+    /// place a minion after her walk and two that empty an enemy's hand by one card. 8.57e adds her
+    /// Purple Ultimate, which is a typed rule rather than an action body. The two faces that attach
+    /// nothing are that Ultimate - p.16's permanent ability prints no action at all - and p.20's boxed
+    /// Earn the Spurs, whose whole sentence stands under the established odd-player deferral. 8.57f
+    /// composed the set around these bodies and minted the revision they are all built under.
+    /// Nothing here is registered: <see cref="MatchContentCatalogs"/> names no Rowenna content until
+    /// 8.57g deals her, which is milestone 7.9's gate - a registration no dealt card can start moves
+    /// the pinned registration list, every snapshot's bytes and every corpus digest while the content
+    /// never moved.</para>
     ///
     /// <para><b>What 8.57d costs the shared vocabulary is one DECLARATION and one PARAMETER.</b>
     /// <c>synthetic-place-in-radius-beside-a-named-hero@1</c> is the printed-Radius twin of 8.57b's

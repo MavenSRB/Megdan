@@ -720,17 +720,28 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The revision is a placeholder and must not look like a real one. The project's ID rule -
-        /// learned when a peer's draft minted an id that collided with a real one - is that a
-        /// placeholder must not be a value anything could mistake for content identity.
+        /// The revision is the real one from milestone 8.57f on, and the placeholder it replaced is
+        /// gone from the tree entirely.
+        ///
+        /// <para>8.57a through 8.57e carried a deliberately malformed placeholder, under the project's
+        /// ID rule learned when a peer's draft minted an id that collided with a real one: a
+        /// placeholder must not be a value anything could mistake for content identity. 8.57f made her
+        /// set whole, which is the milestone at which the whole set moves together, so the real value
+        /// is minted there, every one of the nineteen definitions carries it, and the placeholder
+        /// string itself is gone from the tree rather than left behind in a comment for a later grep
+        /// to find.</para>
         /// </summary>
         [Test]
-        public void TheContentRevision_IsAPlaceholderAndNotADealtHerosSpelling()
+        public void TheContentRevision_IsTheRealOneMintedWhenHerSetBecameWhole()
         {
-            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57a-prep"));
-            Assert.That(RowennaCardContent.ContentRevision, Does.Not.Contain("-rev-"),
-                "Every dealt hero's revision ends in '-rev-<n>'; hers deliberately cannot be read " +
-                "as one until 8.57f/8.57g mint it.");
+            Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57f-rev-1"));
+            Assert.That(RowennaCardContent.ContentRevision, Does.Contain("-rev-"),
+                "Every dealt hero's revision ends in '-rev-<n>', and hers now reads as one.");
+            Assert.That(
+                RowennaCardContent.AllDefinitions.Select(definition => definition.ContentRevision)
+                    .Distinct(),
+                Is.EqualTo(new[] { "rowenna-8-57f-rev-1" }),
+                "and one string covers the set, so no face can be left on the placeholder.");
         }
 
         /// <summary>
