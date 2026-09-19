@@ -778,7 +778,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances)
         {
-            if (!step.Accepted || !step.IsComplete || step.RequestedMinionDefeats.Count == 0)
+            if (!step.Accepted || !step.IsComplete)
+                return step;
+
+            CompleteTriggeredHeroDefeats(step, participants, modifications, definitions, instances);
+
+            if (step.RequestedMinionDefeats.Count == 0)
                 return step;
 
             var source = triggeredEffects.LastCompletedResolution ??
@@ -821,6 +826,65 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
 
             return step;
+        }
+
+        /// <summary>
+        /// Milestone 8.61f. Rulebook p.13's Defeat, asked for by a TRIGGERED effect's own text.
+        ///
+        /// <para><b>The gap this closes, in one sentence: a triggered frame could ask for a hero to be
+        /// defeated and nothing priced it.</b> <see cref="CompleteTriggeredConsequences"/> consumed the
+        /// MINION half from the moment milestone 8.19c1 wrote it, and the hero half had no consumer at
+        /// all on this path - <c>AppendRequestedHeroDefeats</c> is reachable only from the Attack's and
+        /// the Skill's own card text. The request was published, the frame completed, and the hero
+        /// stayed on the board with no coins, no Life counters and no scoreboard Kill.</para>
+        ///
+        /// <para><b>It is a live defect on shipped content, not only on the face that found it.</b>
+        /// Silverarrow's Treetop Sentinel prints "<b>End of turn:</b> An enemy hero in radius discards
+        /// a card, <b>or is defeated</b>" and is dealt; milestone 8.35z46's drive exercised its
+        /// <c>if able</c> twin, Warning Shot, and never an empty hand. Min's two Grenade faces print
+        /// the same escalation at the same moment, which is how it was measured.</para>
+        ///
+        /// <para>What it does is exactly what the two card-text paths do, through the same backend
+        /// call and with the same refusal when a composition cannot price a Defeat: the Skill flavour
+        /// of <see cref="EffectInvokedDefeatSource"/>, because the effect was scheduled by one, and the
+        /// multiplier the request carries, because 8.57c's clause travels with the request.</para>
+        /// </summary>
+        private void CompleteTriggeredHeroDefeats(
+            EffectResolutionStepResult step,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances)
+        {
+            if (step.RequestedHeroDefeats.Count == 0)
+                return;
+
+            var source = triggeredEffects.LastCompletedResolution ??
+                throw new InvalidOperationException("A completed triggered Defeat lost its source identity.");
+            foreach (var request in step.RequestedHeroDefeats)
+            {
+                var defeat = attackDefenseBackend.ResolveEffectInvokedHeroDefeat(
+                    EffectInvokedDefeatSource.FromSkill(
+                        new ActionResolutionId(source.ResolutionId.Value),
+                        source.SourceCardInstanceId,
+                        source.ActionDefinitionId,
+                        source.ActorId),
+                    request.HeroId,
+                    definitions,
+                    instances,
+                    participants,
+                    modifications,
+                    triggeredResolutionSteps,
+                    request.AssistCoinMultiplier);
+                if (defeat == null)
+                {
+                    throw new InvalidOperationException(
+                        $"A triggered effect asked for hero '{request.HeroId.Value}' to be defeated, " +
+                        "and this composition cannot price a Defeat. A card that can reach p.13's " +
+                        "list is dealt only into a match that binds the Levels and Life counters it " +
+                        "spends.");
+                }
+            }
         }
 
         /// <summary>

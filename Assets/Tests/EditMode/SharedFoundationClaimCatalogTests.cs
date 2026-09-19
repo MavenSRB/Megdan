@@ -730,6 +730,44 @@ namespace GuardsDigital.Tests.EditMode
                 "second AttackResolutionCompleted or ActionEnded is produced.",
                 "Reassess for a borrow read at p.14's step 1 or step 4, for a body with work after its " +
                 "borrow node, or for a borrowed body that would itself borrow.")
+            ,
+
+            // Milestone 8.61f (merged after 8.61a and 8.61g).
+            new SharedFoundationClaim(
+                "targeting.anchored-hero-exclusion",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticAnchoredTargetCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticAnchoredTargetCapabilities
+                        .ExcludedHeroParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinGrenadeTests),
+                            nameof(MinGrenadeTests
+                                .TheAnchoredSelectionsExclusionIsCarriedOnlyByAnInstanceThatDeclaresIt),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "optional named-hero exclusion declared per instance, absent from the four " +
+                        "registered anchored selections"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinGrenadeTests),
+                            nameof(MinGrenadeTests
+                                .HolysSecondPassOffersEverybodyButTheHeroTheFirstPassNamed),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a second pass over one anchor excluding the hero its first pass named")
+                },
+                new[] { "declaration", "parameter", "binding", "unit kind", "printed count" },
+                "One optional hero parameter on an anchor-only adjacent hero selection, declared by " +
+                "an instance constructed to read it and unbound on every other: it drops one named " +
+                "hero from the candidates and narrows nothing else. A minion-kind selection " +
+                "declaring it is refused, and an unbound binding - a declined first pass - excludes " +
+                "nobody.",
+                "Reassess for a third pass, for an exclusion of a minion or a space, for one read " +
+                "from something other than a previous pass's own published hero, or for a printed " +
+                "count above two.")
         };
     }
 

@@ -15,9 +15,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// <summary>Intersects an actor-origin printed Range with geometry from a separately bound space.</summary>
     public static class SyntheticAnchoredTargetCapabilities
     {
+        /// <summary>
+        /// Milestone 8.61f. The hero a second pass over one anchor must not name again, declared only
+        /// by an instance that says it reads one.
+        ///
+        /// <para><b>Why the exclusion is a parameter and not a second selection contract.</b> Holy
+        /// Death Grenade prints "Up to <b>2</b> enemy heroes adjacent to that token" - two performances
+        /// of one sentence over one anchor, which rulebook p.10 gives Min to choose one at a time - and
+        /// the only thing that distinguishes the second offer from the first is that the hero already
+        /// named is no longer among "2 enemy heroes". That is a narrowing of who may be NAMED, which is
+        /// the same kind of thing <c>excludeAdjacent</c> and <c>excludeStraightLine</c> already are on
+        /// the printed-icon selections, and it is bound to a node output rather than to a constant
+        /// because the card names the hero one node earlier rather than in its own words.</para>
+        ///
+        /// <para><b>It is declared per instance rather than on every one.</b> Widget's four
+        /// registered instances print no such clause, and a parameter they do not read would widen four
+        /// pinned schemas for a sentence only Min's Blue III prints - so the parameter appears in
+        /// <see cref="EffectCapabilityParameterSchema.Parameters"/> exactly when the instance was
+        /// constructed to honour it, and those four are byte-identical to what milestone 8.35z32
+        /// registered.</para>
+        /// </summary>
+        public const string ExcludedHeroParameterName = "excludeHero";
+
+        /// <param name="excludesNamedHero">
+        /// Milestone 8.61f. Whether this instance declares <see cref="ExcludedHeroParameterName"/> and
+        /// drops the hero it names from its candidates. Defaults to the reading every instance made
+        /// before it: no such clause, and no such parameter on the schema.
+        /// </param>
         public static IEffectCapabilityHandler Handler(EffectCapabilityReference reference, RosterUnitKind kind,
-            SourceTeamRelation relation, AnchorTargetShape shape, bool withinPrintedRange) =>
-            new AnchoredTargetHandler(reference, kind, relation, shape, withinPrintedRange);
+            SourceTeamRelation relation, AnchorTargetShape shape, bool withinPrintedRange,
+            bool excludesNamedHero = false) =>
+            new AnchoredTargetHandler(reference, kind, relation, shape, withinPrintedRange, excludesNamedHero);
 
         private sealed class AnchoredTargetHandler : IEffectCapabilityHandler,
             IEffectSelectionCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
@@ -26,26 +54,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly SourceTeamRelation relation;
             private readonly AnchorTargetShape shape;
             private readonly bool withinPrintedRange;
+            private readonly bool excludesNamedHero;
             public AnchoredTargetHandler(EffectCapabilityReference reference, RosterUnitKind kind,
-                SourceTeamRelation relation, AnchorTargetShape shape, bool withinPrintedRange)
+                SourceTeamRelation relation, AnchorTargetShape shape, bool withinPrintedRange,
+                bool excludesNamedHero)
             {
                 if (kind == RosterUnitKind.None || !Enum.IsDefined(typeof(RosterUnitKind), kind) ||
                     relation == SourceTeamRelation.None || !Enum.IsDefined(typeof(SourceTeamRelation), relation) ||
                     !Enum.IsDefined(typeof(AnchorTargetShape), shape)) throw new ArgumentException("Invalid anchored target declaration.");
+                if (excludesNamedHero && kind == RosterUnitKind.Minion)
+                    throw new ArgumentException("A minion selection has no hero to exclude.", nameof(excludesNamedHero));
                 Reference = reference; this.kind = kind; this.relation = relation;
                 this.shape = shape; this.withinPrintedRange = withinPrintedRange;
+                this.excludesNamedHero = excludesNamedHero;
+                var parameters = new List<EffectCapabilityParameter>
+                {
+                    new EffectCapabilityParameter("anchor", EffectValueKind.Coordinate),
+                    new EffectCapabilityParameter(EffectSelectionDeclaration.ConsumerParameterName, EffectValueKind.Node, isRequired: false)
+                };
+                // Optional, so a first pass that named nobody - a declined "up to" - leaves it unbound
+                // and excludes nobody, which is what "up to 2" means when the first is declined.
+                if (excludesNamedHero) parameters.Add(new EffectCapabilityParameter(
+                    ExcludedHeroParameterName, EffectValueKind.Hero, isRequired: false));
+                Schema = new EffectCapabilityParameterSchema(parameters, new[]
+                {
+                    new EffectOutputBinding("hero", EffectValueKind.Hero),
+                    new EffectOutputBinding("minion", EffectValueKind.Minion),
+                    new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                });
             }
             public EffectCapabilityReference Reference { get; }
-            public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(new[]
-            {
-                new EffectCapabilityParameter("anchor", EffectValueKind.Coordinate),
-                new EffectCapabilityParameter(EffectSelectionDeclaration.ConsumerParameterName, EffectValueKind.Node, isRequired: false)
-            }, new[]
-            {
-                new EffectOutputBinding("hero", EffectValueKind.Hero),
-                new EffectOutputBinding("minion", EffectValueKind.Minion),
-                new EffectOutputBinding("space", EffectValueKind.Coordinate)
-            });
+            public EffectCapabilityParameterSchema Schema { get; }
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } = Array.Empty<ActiveEffectDefinition>();
             public bool PublishesWithoutApplying => true;
             public int AnticipateMinimumSelections(EffectCapabilityContext context) => 1;
@@ -105,6 +144,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         ? t.Kind == BoardObjectKind.Hero : t.Kind == BoardObjectKind.Minion))
                     .Where(t => !TargetQuery.IsPrevented(t.AsRuleObject(), context.EnclosingActivity,
                         RuleObject.ForHero(context.ActorId), board, context.Participants, context.Modifications, context.ImmunityOverrides))
+                    // Milestone 8.61f. The hero a previous pass over this anchor already named, where
+                    // the instance declares that clause and the pass that would have named one ran.
+                    .Where(t => !excludesNamedHero || t.Kind != BoardObjectKind.Hero ||
+                        context.Input(ExcludedHeroParameterName).Kind != EffectValueKind.Hero ||
+                        !t.HeroId.Equals(context.Input(ExcludedHeroParameterName).HeroId))
                     .Where(t => board.TryGetObjectCoordinate(t, out var at) &&
                         (shape == AnchorTargetShape.Adjacent ? HexDistanceQuery.Calculate(anchor, at) == 1 :
                             StraightLineQuery.AreInStraightLine(anchor, at)))
