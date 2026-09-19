@@ -61,11 +61,29 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <para><b>What a later block of hers does with it.</b> A block composing more of her faces
         /// adds a <c>yield return</c> to <see cref="ComposedFaces"/> rather than a second
         /// <c>AllDefinitions</c>, which would not compile beside this one. 8.61i replaces both with
-        /// the whole nineteen under one real content revision, and mints
-        /// <c>DealtDefinitions</c> - deliberately absent here, because a class that declares it is
-        /// asserting a dealt set the artwork catalog is then entitled to ask about.</para>
+        /// the whole nineteen under one real content revision.</para>
         /// </summary>
         public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAllDefinitions.Value;
+
+        /// <summary>
+        /// <b>Empty, and that is the literal truth rather than a placeholder.</b> This member means the
+        /// faces a match actually deals from her set, and a match deals none of them: nothing of Min's
+        /// is registered, she is on no roster, and no seat can be given a card of hers until 8.61j.
+        ///
+        /// <para><b>Both halves of that sentence were measured, and each is a fixture this block would
+        /// otherwise red.</b> <c>ConfiguredCardArtworkCatalogTests</c> - Unity-only, so no offline run
+        /// can execute it - asserts that every <c>*CardContent</c> class <em>exposes</em>
+        /// <c>DealtDefinitions</c>, so omitting it reds a case that walks the artwork catalog's own
+        /// heroes. And <c>DealtCorpusCompositionValidationTests</c> validates every face this returns
+        /// against the capabilities the build <em>registers</em>, so returning her Smoke Bomb here
+        /// reds three nodes at once - <c>min-smoke-bomb-present@1</c>, <c>min-smoke-bomb-space@1</c>
+        /// and <c>min-place-smoke-bomb-in-radius@1</c>, "not registered in this build". Both fixtures
+        /// are right: the face is composed and it is not dealt, and only an empty list says both.</para>
+        ///
+        /// <para>8.61i fills it, once her nineteen are whole; 8.61j is what makes the word true.</para>
+        /// </summary>
+        public static IReadOnlyList<CardDefinition> DealtDefinitions { get; } =
+            Array.AsReadOnly(Array.Empty<CardDefinition>());
 
         /// <summary>The one face of hers this block composes; see <see cref="AllDefinitions"/>.</summary>
         private static IEnumerable<CardDefinition> ComposedFaces()
