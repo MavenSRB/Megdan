@@ -85,6 +85,31 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public const string MineInstanceIdentityLabel = "mine";
 
+        /// <summary>
+        /// The revision the trap's own effects are authored at, and the one the blast's declaration
+        /// names them by. Milestone 8.61e; block-scoped exactly as <c>MinEffectContent.MineRevision</c>
+        /// is, and milestone 8.61i mints the real one for her whole set at once. It is separate from
+        /// the placements' revision because the two are separate definitions: the cards place, and the
+        /// piece they placed carries the trap.
+        /// </summary>
+        public const string MineTrapEffectRevision = "min-8-61e-mine-trap";
+
+        /// <summary>The effect that prices a crossing which removed <paramref name="blasts"/> blasts.</summary>
+        public static EffectDefinitionId MineTrapEffectId(int blasts) =>
+            new EffectDefinitionId($"min-mine-trap-{blasts}");
+
+        /// <summary>
+        /// "for every blast removed, that hero discards a card, if able", as the blast declares it: one
+        /// entry per number of blasts one crossing can take off the board at once, which the pile
+        /// bounds at <see cref="MineSupplyCount"/>.
+        /// </summary>
+        public static IEnumerable<EffectDefinitionReference> MineTrapConsequences() =>
+            Enumerable
+                .Range(1, MineSupplyCount)
+                .Select(blasts =>
+                    new EffectDefinitionReference(MineTrapEffectId(blasts), MineTrapEffectRevision))
+                .ToArray();
+
         public static TokenDefinitionId MineBlast { get; } = new TokenDefinitionId("min-mine-blast");
 
         public static TokenDefinitionId MineDud { get; } = new TokenDefinitionId("min-mine-dud");
@@ -101,23 +126,31 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// The facedown face: "Mine", and not one word more. It shares the pile and the count so a seat
         /// counting what is left on a masked board gets the authority's own answer, and it carries the
-        /// same traversable property so a masked client walks exactly the routes the host walks.
+        /// same two properties so a masked client walks exactly the routes the host walks and knows, as
+        /// every seat may, that the piece goes off when an enemy hero walks over it.
+        ///
+        /// <para>What it does NOT carry is the price - <c>MoveThroughTrapConsequences</c> is empty here
+        /// and non-empty on the blast, and that single difference is the whole of what "facedown"
+        /// hides. Nothing reads it from this face: the trap is applied off the authority's own trusted
+        /// definition, which is never the mask.</para>
         /// </summary>
         public static TokenDefinition MineFacedownDefinition { get; } = new TokenDefinition(
             MineFacedown,
             1,
             "Mine",
             MineSupplyCount,
-            new[] { MayBeMovedThroughProperty() },
+            new[] { MayBeMovedThroughProperty(), RemovedByAnEnemyCrossingProperty() },
             TokenRemovalCondition.EndOfRoundCleanup,
             MineSupplyGroupId);
 
         /// <summary>
-        /// The blast. Its kind is what the trap milestone 8.61e composes reads on removal; while it
-        /// stands it is a traversable obstacle and nothing else, which is why its property list and the
-        /// dud's are the same list.
+        /// The blast. It declares the same two properties every mine face does and one thing besides:
+        /// what its removal costs the hero who walked over it. That is the only difference between the
+        /// two kinds, which is exactly what the printed sentence says - "for every BLAST removed, that
+        /// hero discards a card, if able" - and exactly what the facedown face takes away.
         /// </summary>
-        public static TokenDefinition MineBlastDefinition { get; } = Mine(MineBlast, "Mine (blast)");
+        public static TokenDefinition MineBlastDefinition { get; } =
+            Mine(MineBlast, "Mine (blast)", MineTrapConsequences());
 
         /// <summary>The dud: the same piece, and the removal that costs the mover nothing.</summary>
         public static TokenDefinition MineDudDefinition { get; } = Mine(MineDud, "Mine (dud)");
@@ -185,19 +218,23 @@ namespace GuardsDigital.Core.Cards.Verified
         /// One kind of mine: the pile, p.19's end-of-round removal, the one property both kinds print,
         /// and the facedown face that hides which kind this is from everyone but its controller.
         /// </summary>
-        private static TokenDefinition Mine(TokenDefinitionId id, string displayName) =>
+        private static TokenDefinition Mine(
+            TokenDefinitionId id,
+            string displayName,
+            IEnumerable<EffectDefinitionReference> trapConsequences = null) =>
             new TokenDefinition(
                 id,
                 1,
                 displayName,
                 MineSupplyCount,
-                new[] { MayBeMovedThroughProperty() },
+                new[] { MayBeMovedThroughProperty(), RemovedByAnEnemyCrossingProperty() },
                 // p.19's baseline, and no mine face says otherwise: "Unless the card text says
                 // otherwise, tokens are removed at the end of round." The trap removes one earlier;
-                // that is an effect removing a token, not a lifetime the definition declares.
+                // that is a rule this piece carries, not a lifetime the enum declares.
                 TokenRemovalCondition.EndOfRoundCleanup,
                 MineSupplyGroupId,
-                MineFacedownDefinition);
+                MineFacedownDefinition,
+                trapConsequences);
 
         /// <summary>
         /// "Units may move through them", as p.18's obstacle-side clause addressed to the piece that
@@ -212,6 +249,29 @@ namespace GuardsDigital.Core.Cards.Verified
                 "may-be-moved-through",
                 MineApplicabilityKind,
                 RuleModification.ForMayBeMovedThrough(),
+                TokenPropertyAffectedObject.TheTokenItself);
+
+        /// <summary>
+        /// "After an enemy hero moves through a mine, remove it", as the piece's own rule. Milestone
+        /// 8.61e.
+        ///
+        /// <para>It is declared by all three faces, the facedown one included, because it is public:
+        /// p.4 hides which KIND a facedown mine is, and nothing about a mine standing there going off
+        /// when an enemy walks over it. It says nothing about the price, because the price is the kind -
+        /// that is <c>TokenDefinition.MoveThroughTrapConsequences</c>, which only the blast carries.
+        /// </para>
+        ///
+        /// <para>It is a second property rather than a second clause of the first, because the two are
+        /// asked at opposite moments: <c>ObstacleQuery</c> asks "may this be walked over" before
+        /// anything moves, and the trap is asked only once a displacement has committed. p.18 prints
+        /// them as two sentences and this file declares them as two.</para>
+        /// </summary>
+        private static TokenPropertyDefinition RemovedByAnEnemyCrossingProperty() =>
+            new TokenPropertyDefinition(
+                "removed-when-an-enemy-hero-moves-through",
+                "removed-when-an-enemy-hero-moves-through",
+                MineApplicabilityKind,
+                RuleModification.ForRemovedWhenAnEnemyHeroMovesThrough(),
                 TokenPropertyAffectedObject.TheTokenItself);
     }
 }

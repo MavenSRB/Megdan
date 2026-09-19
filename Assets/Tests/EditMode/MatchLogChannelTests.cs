@@ -136,7 +136,12 @@ namespace GuardsDigital.Tests.EditMode
                 ("Round.HeroLevelUpLevelPurchased", MatchLogEntryKind.LevelPurchased),
                 ("Turn.HeroRespawned", MatchLogEntryKind.HeroRespawned),
                 // Milestone 8.51: rulebook p.12's Hold, one line per performed Hold.
-                ("Turn.HoldActionPerformed", MatchLogEntryKind.CardHeld)
+                ("Turn.HoldActionPerformed", MatchLogEntryKind.CardHeld),
+                // Milestone 8.61e: one line per piece a crossing set off, because each removal is its
+                // own reveal on its own space. The official walk below places none of them - no dealt
+                // hero owns one yet - so this pair measures zero against zero and joins the ledger so
+                // that it cannot drift once one is dealt.
+                ("Action.MoveThroughTrapSprung", MatchLogEntryKind.MoveThroughTrapSprung)
             };
 
             var covered = 0;

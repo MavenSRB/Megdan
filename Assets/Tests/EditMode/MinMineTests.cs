@@ -436,7 +436,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void EveryMineFacePrintsItsRowAndStillOwesTheTrap()
+        public void EveryMineFacePrintsItsRow_AndCarriesItsTrapOnThePieceRatherThanInItsSteps()
         {
             var expected = new Dictionary<string, int[]>
             {
@@ -460,12 +460,12 @@ namespace GuardsDigital.Tests.EditMode
                         .Any(value => value.Channel == PrintedValueChannel.Range),
                     Is.False, "A missing icon is absent, never zero.");
 
-                Assert.That(MinEffectContent.MineTrapOwed[card.Id],
-                    Is.EqualTo(MinEffectContent.MineTrapOwedTo),
-                    "The trap is owed rather than stubbed.");
+                Assert.That(MinEffectContent.MineTrapLivesOn[card.Id],
+                    Is.EqualTo(MinEffectContent.MineTrapCarriedBy),
+                    "The trap is carried by the placed piece rather than stubbed into the Skill.");
             }
 
-            Assert.That(MinEffectContent.MineTrapOwed.Keys,
+            Assert.That(MinEffectContent.MineTrapLivesOn.Keys,
                 Is.EquivalentTo(MinCardContent.MineFaces));
 
             // The other half of the debt: nothing this block composed removes a mine or asks anyone

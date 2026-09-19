@@ -1594,8 +1594,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 }
 
                 var components = context.Components;
+                // Milestone 8.61e. A charge is a straight line by construction - `IsStraightRoute` is
+                // what admits the destination at all - so the spaces it entered and left are p.18's
+                // realised line between where the charge started and where it stopped.
+                var actor = BoardObjectReference.ForHero(context.ActorId);
+                components.Board.TryGetObjectCoordinate(actor, out var chargeFrom);
                 var committed = components.Board.CommitValidatedDisplacement(
-                    BoardObjectReference.ForHero(context.ActorId), selected[0].Coordinate);
+                    actor,
+                    selected[0].Coordinate,
+                    GuardsDigital.Core.Rules.Displacement.MoveThroughTrapQuery.RealisedLine(
+                        chargeFrom, selected[0].Coordinate));
                 if (!committed.Accepted)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -5143,8 +5151,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                // Milestone 8.61e. The forced move runs one of p.19's six files at full distance, so
+                // what it entered and left is p.18's realised line to where it stopped.
+                var forcedMover = BoardObjectReference.ForHero(moverId);
+                context.Components.Board.TryGetObjectCoordinate(forcedMover, out var forcedFrom);
                 var committed = context.Components.Board.CommitValidatedDisplacement(
-                    BoardObjectReference.ForHero(moverId), selected[0].Coordinate);
+                    forcedMover,
+                    selected[0].Coordinate,
+                    GuardsDigital.Core.Rules.Displacement.MoveThroughTrapQuery.RealisedLine(
+                        forcedFrom, selected[0].Coordinate));
                 return committed.Accepted
                     ? EffectExecutionResult.Applied(new[]
                     {

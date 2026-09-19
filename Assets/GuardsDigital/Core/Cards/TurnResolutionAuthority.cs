@@ -1248,7 +1248,15 @@ namespace GuardsDigital.Core.Cards
                 return TurnResolutionResult.Reject(TurnResolutionRejectionReason.CardResolutionFailed);
             }
 
-            var result = cardActions.AnswerMovementChoice(command, CurrentModifications());
+            // Milestone 8.61e. The boundary travels with the answer because a completed Movement can
+            // have consequences of its own now: rulebook p.18's "any special effects of tokens are
+            // still applied" needs the participants to know whose mine went off and the card state to
+            // charge for it.
+            var result = cardActions.AnswerMovementChoice(
+                command,
+                CurrentModifications(),
+                new ActionBoundaryContext(definitions, instances, participants, timing,
+                    TieBreakerState, roundIndex, turnIndex));
             if (!result.Accepted)
             {
                 return TurnResolutionResult.Reject(

@@ -89,7 +89,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int remainingLifeCounters = 0,
             HeroId blockingHeroId = default,
             CardInstanceId blockingCardInstanceId = default,
-            CardInstanceId revealedCardInstanceId = default)
+            CardInstanceId revealedCardInstanceId = default,
+            int moveThroughTrapCardsOwed = 0)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -152,6 +153,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             BlockingHeroId = blockingHeroId;
             BlockingCardInstanceId = blockingCardInstanceId;
             RevealedCardInstanceId = revealedCardInstanceId;
+            MoveThroughTrapCardsOwed = moveThroughTrapCardsOwed;
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -167,6 +169,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// unresolved card.</para>
         /// </summary>
         public CardInstanceId RevealedCardInstanceId { get; }
+
+        /// <summary>
+        /// Milestone 8.61e. How many cards the token this event revealed costs the hero who walked over
+        /// it - one for Min the Dragonmonk's blast, none for her dud, and zero on every other kind of
+        /// event because the question is not asked of them. It is the whole of what the removal made
+        /// public, stated as the printed sentence states it: "for every blast removed, that hero
+        /// discards a card, if able".
+        /// </summary>
+        public int MoveThroughTrapCardsOwed { get; }
 
         public ActionResolutionId ResolutionId { get; }
 
@@ -1118,6 +1129,74 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 AttackResolutionOutcome.None,
                 default,
                 fastTravelEvent);
+        }
+
+        /// <summary>
+        /// Milestone 8.61e. One token a crossing set off, turned face up for the whole table.
+        ///
+        /// <para>The identities are deliberately the ones the moment has rather than the ones a Clear
+        /// would carry: the source card is the card that PLACED the mine, because that is the only card
+        /// involved - the crossing hero played nothing - and the acting hero is its controller, because
+        /// a standing rule is that hero's. Who walked over it is <paramref name="crossingHeroId"/>, and
+        /// it rides the target slot for the reason milestone 8.40f's reveal rides it: the subject of
+        /// the fact is not the hero whose card it is.</para>
+        /// </summary>
+        public static CardActionResolutionEvent MoveThroughTrapSprung(
+            ActionResolutionId resolutionId,
+            CardInstanceId sourceCardInstanceId,
+            ActionDefinitionId actionDefinitionId,
+            HeroId controllerHeroId,
+            HeroId crossingHeroId,
+            TokenInstanceId tokenInstanceId,
+            TokenDefinitionReference tokenDefinitionReference,
+            HexCoordinate coordinate,
+            int cardsOwed)
+        {
+            if (!crossingHeroId.IsDefined)
+            {
+                throw new ArgumentException(
+                    "A sprung trap names the hero who moved through it.", nameof(crossingHeroId));
+            }
+
+            if (cardsOwed < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(cardsOwed), cardsOwed, "A removal costs no negative number of cards.");
+            }
+
+            return new CardActionResolutionEvent(
+                CardActionResolutionEventKind.MoveThroughTrapSprung,
+                resolutionId,
+                sourceCardInstanceId,
+                actionDefinitionId,
+                default,
+                controllerHeroId,
+                crossingHeroId,
+                new ActionResolutionStepId($"move-through-trap-{tokenInstanceId.Value}"),
+                0,
+                0,
+                default,
+                0,
+                AttackResolutionOutcome.None,
+                default,
+                default,
+                MinionDefeatFactKind.None,
+                default,
+                default,
+                tokenInstanceId,
+                tokenDefinitionReference,
+                coordinate,
+                default,
+                default,
+                default,
+                HeroDefeatFactKind.None,
+                default,
+                0,
+                0,
+                default,
+                default,
+                default,
+                cardsOwed);
         }
 
         private static CardActionResolutionEvent FromClear(

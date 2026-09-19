@@ -1,27 +1,29 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
     /// The placements Min the Dragonmonk's three Blue mine faces perform. Milestone 8.61d.
     ///
-    /// <para><b>What is composed here, and what is deliberately not.</b> Each face's sentence has two
-    /// halves. The first - "Place [N] mine tokens, [k] blast and [m] dud, facedown in radius; units may
-    /// move through them" - is this file, and every word of it is either a node below or a declaration
-    /// on the token in <see cref="MinComponentContent"/>. The second - "After an enemy hero moves
-    /// through a mine, remove it; for every blast removed, that hero discards a card, if able" - is
-    /// milestone 8.61e's, and it is ABSENT rather than stubbed: a placeholder node that removed nothing
-    /// and asked nobody for a card would be a composition claiming to be the printed rule. The debt is
-    /// written down in <see cref="MineTrapOwed"/>, and <c>MinMineTests</c> asserts both halves of
-    /// it.</para>
+    /// <para><b>What is composed here, and what is deliberately elsewhere.</b> Each face's sentence has
+    /// two halves. The first - "Place [N] mine tokens, [k] blast and [m] dud, facedown in radius; units
+    /// may move through them" - is <see cref="MineSkillEffectFor"/> below, and every word of it is
+    /// either a node there or a declaration on the token in <see cref="MinComponentContent"/>. The
+    /// second - "After an enemy hero moves through a mine, remove it; for every blast removed, that
+    /// hero discards a card, if able" - is milestone 8.61e's, and it is still not a node of the Skill,
+    /// because it never could be: it fires on a route somebody else walks on a later turn. It is
+    /// declared on the placed piece instead and applied by <c>MoveThroughTrapOperation</c> off the
+    /// board's own displacements; <see cref="MineTrapEffects"/> is the only part of it that is an
+    /// effect at all, and it is what the removal COSTS rather than the removal itself.</para>
     ///
-    /// <para><b>The seam 8.61e attaches to is the displacement, not this effect.</b> The trap fires
-    /// "after an enemy hero MOVES THROUGH a mine", which is a fact about a route somebody else walks
-    /// on some later turn - not a step of the Skill that placed it. So nothing here reserves a node for
-    /// it; what it needs is the board authority's own commits, and the placed instances it will be
-    /// asked about are the ones <c>SyntheticTokenCapabilities.PlacedOutput</c> already publishes.</para>
+    /// <para><b>The seam is the displacement, not this effect.</b> Nothing in the placements reserves a
+    /// node for the trap, and <c>MinMineTests</c> still asserts that: the graph below removes no mine
+    /// and asks nobody for a card. The placed instances the trap is asked about are the ones
+    /// <c>SyntheticTokenCapabilities.PlacedOutput</c> already publishes.</para>
     /// </summary>
     public static partial class MinEffectContent
     {
@@ -33,31 +35,108 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string MineRevision = "min-8-61d-mines";
 
         /// <summary>
-        /// The trap each of the three faces still owes, and the milestone that owes it.
+        /// Where the trap each of the three faces prints actually lives, now that milestone 8.61e has
+        /// built it - and it is deliberately still not a node of the placements below.
         ///
-        /// <para><b>It is deliberately NOT a <c>PrintedTextComposition</c> debt.</b> That vocabulary
-        /// says "this action's printed text has no composition", and <c>ActionDefinition</c> refuses it
-        /// beside an effect root because the two together would be two answers to one question. The
-        /// trap is not one of this Skill's steps at all: it fires when some other hero walks a route on
-        /// a later turn, so it is a standing rule the PLACED PIECE carries, which milestone 8.61e hangs
-        /// off the board authority's own displacement commits. The debt is therefore recorded here, as
-        /// what it is, and <c>MinMineTests</c> asserts both halves - that all three faces are named,
-        /// and that nothing in the placements below removes a mine or asks anyone for a card.</para>
+        /// <para><b>It is not one of this Skill's steps and could never have been.</b> "After an enemy
+        /// hero moves through a mine, remove it; for every blast removed, that hero discards a card, if
+        /// able" fires when SOMEBODY ELSE walks a route, possibly several turns later and possibly
+        /// never. So it is a standing rule the PLACED PIECE carries -
+        /// <c>RuleModificationKind.RemovedWhenAnEnemyHeroMovesThrough</c> on all three mine faces, and
+        /// <c>TokenDefinition.MoveThroughTrapConsequences</c> on the blast alone - and the rule is
+        /// applied by <c>MoveThroughTrapOperation</c> off the board's own displacements. This
+        /// dictionary is what each face's sentence resolved to, kept so a reader of the composition
+        /// below is told where the other half went rather than left to conclude it is missing.</para>
         /// </summary>
-        public static IReadOnlyDictionary<CardDefinitionId, string> MineTrapOwed =>
-            LazyMineTrapOwed.Value;
+        public static IReadOnlyDictionary<CardDefinitionId, string> MineTrapLivesOn =>
+            LazyMineTrapLivesOn.Value;
 
         private static readonly Lazy<IReadOnlyDictionary<CardDefinitionId, string>>
-            LazyMineTrapOwed = new Lazy<IReadOnlyDictionary<CardDefinitionId, string>>(() =>
+            LazyMineTrapLivesOn = new Lazy<IReadOnlyDictionary<CardDefinitionId, string>>(() =>
                 new Dictionary<CardDefinitionId, string>
                 {
-                    [MinCardContent.TripMine] = MineTrapOwedTo,
-                    [MinCardContent.ClusterMine] = MineTrapOwedTo,
-                    [MinCardContent.MineField] = MineTrapOwedTo
+                    [MinCardContent.TripMine] = MineTrapCarriedBy,
+                    [MinCardContent.ClusterMine] = MineTrapCarriedBy,
+                    [MinCardContent.MineField] = MineTrapCarriedBy
                 });
 
-        /// <summary>The one milestone all three debts name.</summary>
-        public const string MineTrapOwedTo = "milestone 8.61e, the mine trap";
+        /// <summary>The one piece all three sentences hang their trap on.</summary>
+        public const string MineTrapCarriedBy = "the placed mine token, milestone 8.61e";
+
+        /// <summary>
+        /// "for every blast removed, that hero discards a card, if able", as one effect per number of
+        /// blasts one crossing can remove at once.
+        ///
+        /// <para><b>Why a count picks a whole effect rather than parameterising one.</b> Each discard
+        /// is p.10's own decision taken by the crossing hero on their own seat, so two blasts are two
+        /// questions - and the engine runs ONE trigger frame, whose nodes are content. A frame that
+        /// assembled its own nodes when it fired would also be a frame no snapshot could restore: a
+        /// restore looks its effect up in the trusted catalog by reference, and an effect that existed
+        /// only for the moment it ran is in no catalog. So the list is declared, indexed by count, and
+        /// bounded by the pile - <see cref="MinComponentContent.MineSupplyCount"/> copies exist, so no
+        /// route can spring more than that many at once.</para>
+        ///
+        /// <para><b>The hero is a role, not a selection</b> - Bain's A Complicated Profession exactly:
+        /// the crossing already named them, so a one-candidate prompt here would invent a decision the
+        /// card does not print. <b>"if able" is the skipping kind</b>, revision 1 of the discard, so an
+        /// empty-handed hero gives up nothing and is NOT defeated - the contrast the two Grenades print
+        /// in as many words ("discards a card, <b>or is defeated</b>") and these three do not.</para>
+        /// </summary>
+        public static IEnumerable<EffectDefinition> MineTrapEffects() =>
+            Enumerable
+                .Range(1, MinComponentContent.MineSupplyCount)
+                .Select(MineTrapEffect)
+                .ToArray();
+
+        /// <summary>
+        /// The effect that prices a crossing which removed exactly <paramref name="blasts"/>. It is
+        /// authored at <see cref="MinComponentContent.MineTrapEffectRevision"/> rather than at a
+        /// caller's revision, because the blast's own declaration names these by reference and a
+        /// reference whose revision a caller could choose would be a link that stopped resolving.
+        /// </summary>
+        public static EffectDefinition MineTrapEffect(int blasts)
+        {
+            if (blasts < 1 || blasts > MinComponentContent.MineSupplyCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(blasts), blasts,
+                    "One crossing removes at least one blast and never more than the pile holds.");
+            }
+
+            var root = new EffectNodeId("mine-trap-root");
+            var nodes = new List<EffectNodeDefinition>();
+            var children = new List<EffectNodeId>();
+            for (var index = 0; index < blasts; index++)
+            {
+                var discard = new EffectNodeId($"mine-trap-discard-{index}");
+                children.Add(discard);
+                nodes.Add(new EffectNodeDefinition(
+                    discard, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                    SyntheticCardStateCapabilities.DiscardChosenCardV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromRole(
+                            SyntheticCardStateCapabilities.HeroParameter,
+                            EffectRoleKind.OpposingHero,
+                            EffectValueKind.Hero)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            SyntheticCardStateCapabilities.DiscardedOutput,
+                            EffectValueKind.CardInstance)
+                    }));
+            }
+
+            nodes.Insert(0, new EffectNodeDefinition(
+                root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                childNodeIds: children));
+            return new EffectDefinition(
+                MinComponentContent.MineTrapEffectId(blasts),
+                MinComponentContent.MineTrapEffectRevision,
+                root,
+                nodes);
+        }
 
         /// <summary>
         /// The placement body for one mine face, or <c>null</c> for a card this file does not own.

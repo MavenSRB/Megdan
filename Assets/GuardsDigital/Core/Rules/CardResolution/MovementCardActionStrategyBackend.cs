@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Rules.Movement;
 using GuardsDigital.Core.Timing;
@@ -38,7 +40,49 @@ namespace GuardsDigital.Core.Rules.CardResolution
             heroItems = items;
         }
 
+        /// <summary>
+        /// The whole walk the Movement action that just finished took, and the hero who took it, or a
+        /// default pair when nothing has finished since it was last taken. Milestone 8.61e.
+        ///
+        /// <para><b>Why the route and not the board's own record of it.</b> Rulebook p.18's token
+        /// effects apply after the WHOLE move, and a Movement action can be several route commits with
+        /// a decision - and therefore a snapshot - between them. The session's route is persisted state
+        /// that a restore rebuilds; an in-memory note of what was walked between two commands is not.
+        /// So the action's consequences are computed from the one thing that survives a restore, which
+        /// is the same reasoning milestone 6.8c used to make the route the unit of commitment.</para>
+        /// </summary>
+        private IReadOnlyList<HexCoordinate> completedWalkRoute;
+        private HeroId completedWalkHeroId;
+
         internal PendingCardActionResolution PendingResolution => pendingResolution;
+
+        /// <summary>
+        /// Hands over the finished walk and clears it, so one Movement action's consequences are run
+        /// exactly once. Milestone 8.61e.
+        /// </summary>
+        internal IReadOnlyList<HexCoordinate> TakeCompletedWalk(out HeroId mover)
+        {
+            var route = completedWalkRoute;
+            mover = completedWalkHeroId;
+            completedWalkRoute = null;
+            completedWalkHeroId = default;
+            return route;
+        }
+
+        private void RecordCompletedWalk(MovementSession movementSession)
+        {
+            var route = movementSession.Route;
+            if (route.Count <= 2)
+            {
+                // A walk of one space, or none at all, entered and left nothing: both ends of a route
+                // are spaces the hero stood on. So there is nothing for p.18's token effects to be
+                // about, and this records nothing rather than a walk with no middle.
+                return;
+            }
+
+            completedWalkRoute = route;
+            completedWalkHeroId = movementSession.CurrentOccupancy.HeroId;
+        }
 
         internal PendingMovementChoice PendingChoice => pendingChoice;
 
@@ -441,6 +485,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (movementSession.IsComplete)
             {
                 movementSession.Complete();
+                RecordCompletedWalk(movementSession);
                 var completedResolution = CreatePendingResolution(stepResolution, movementSession.CaptureState());
                 resolutionEvents.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.MovementActionCompleted(completedResolution)));
@@ -464,6 +509,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (nextChoice.LegalDestinations.Count == 0)
             {
                 movementSession.Complete();
+                RecordCompletedWalk(movementSession);
                 var completedResolution = CreatePendingResolution(nextResolution, movementSession.CaptureState());
                 resolutionEvents.Add(ResolutionStep.FromFact(
                     CardActionResolutionEvent.MovementActionCompleted(completedResolution)));
@@ -497,6 +543,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private CardActionResolutionResult CompleteResolution(MovementSession movementSession)
         {
             movementSession.Complete();
+            RecordCompletedWalk(movementSession);
             var completedResolution = CreatePendingResolution(pendingResolution, movementSession.CaptureState());
             var completedEvent = CardActionResolutionEvent.MovementActionCompleted(completedResolution);
             pendingResolution = null;

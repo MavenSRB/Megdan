@@ -1157,6 +1157,21 @@ namespace GuardsDigital.Tests.EditMode
                         1,
                         subjectHeroId: hero),
                     "HELD", false),
+                // Milestone 8.61e minted the THIRTY-THIRD kind - a hero walked over a facedown piece
+                // that goes off, and the removal turned it face up for the whole table - and sweeps
+                // this walk in the same change, as 8.51 did and as the two notes above record NOT
+                // happening twice before that. The rendered word says which kind it turned out to be,
+                // which is the whole content of the reveal.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.MoveThroughTrapSprung,
+                        1,
+                        1,
+                        subjectHeroId: hero,
+                        origin: origin,
+                        hasOrigin: true,
+                        amount: 1),
+                    "A BLAST", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),

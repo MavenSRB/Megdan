@@ -391,6 +391,15 @@ namespace GuardsDigital.Presentation.Match
                     lines.Add(Line(entry, $"{HeroName(projection, entry.SubjectHeroId)} CLEARED A TOKEN"));
                     return;
 
+                // Milestone 8.61e. The tray says what the table watched happen: a hero walked onto a
+                // facedown piece and it turned out to be a blast or a dud.
+                case MatchLogEntryKind.MoveThroughTrapSprung:
+                    lines.Add(Line(
+                        entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)} MOVED THROUGH " +
+                            (entry.Amount > 0 ? "A BLAST" : "A DUD")));
+                    return;
+
                 case MatchLogEntryKind.BlockedAction:
                     // The contract's own limitation: the blocker is not named on this channel today.
                     lines.Add(Line(entry, $"{HeroName(projection, entry.SubjectHeroId)}'S ACTION WAS BLOCKED"));

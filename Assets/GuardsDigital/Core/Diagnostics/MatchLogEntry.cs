@@ -151,7 +151,28 @@ namespace GuardsDigital.Core.Diagnostics
         /// silent - <c>Turn.TurnReleased</c> is a checkpoint naming no hero, and the next actor's
         /// own rows already state that the turn was handed on.</para>
         /// </summary>
-        CardHeld = 32
+        CardHeld = 32,
+
+        /// <summary>
+        /// Milestone 8.61e. A hero moved through a token whose own text says it goes off, and the
+        /// removal turned it face up for the whole table - Min the Dragonmonk's mines, "After an enemy
+        /// hero moves through a mine, remove it; for every blast removed, that hero discards a card, if
+        /// able".
+        ///
+        /// <para><b>It is table-public, and it is the one surface that makes it so.</b> Until the
+        /// removal the piece is facedown and every seat but its controller's is handed a face that
+        /// names no kind; the moment it goes off, which kind it was is something the whole table saw
+        /// happen. The board shows the space emptying and nothing else, so without this row the reveal
+        /// would happen and be unrecorded - which is exactly the gap milestone 8.40f's own reveal row
+        /// was minted to close.</para>
+        ///
+        /// <para>The row names the hero who walked over it through <c>SubjectHeroId</c> - never the
+        /// acting hero, who on a push is the one doing the pushing - the space through <c>Origin</c>,
+        /// and which kind it was through <c>Amount</c>: the number of cards the removal costs that
+        /// hero, which is one for a blast and none for a dud. It carries no card, because the hero it
+        /// is about played none.</para>
+        /// </summary>
+        MoveThroughTrapSprung = 33
     }
 
     /// <summary>

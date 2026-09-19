@@ -411,10 +411,20 @@ namespace GuardsDigital.Core.Diagnostics
                 detailParts.Add($"minionFact={ruleEvent.MinionDefeatFactKind}");
             }
 
-            if (ruleEvent.Kind == CardActionResolutionEventKind.TokenCleared)
+            if (ruleEvent.Kind == CardActionResolutionEventKind.TokenCleared ||
+                ruleEvent.Kind == CardActionResolutionEventKind.MoveThroughTrapSprung)
             {
                 detailParts.Add($"tokenDefinition={ruleEvent.TargetTokenDefinitionReference}");
                 detailParts.Add($"space={ruleEvent.TargetTokenCoordinate}");
+            }
+
+            // Milestone 8.61e. What the piece turned out to be, in the only form the printed sentence
+            // gives it a number: "for every blast removed, that hero discards a card". It is detail
+            // rather than a reference because it names no object - the seat-public row reads it as the
+            // amount that says whether this was a blast or a dud.
+            if (ruleEvent.Kind == CardActionResolutionEventKind.MoveThroughTrapSprung)
+            {
+                detailParts.Add($"cards={ruleEvent.MoveThroughTrapCardsOwed}");
             }
 
             if (ruleEvent.Kind == CardActionResolutionEventKind.DisplacedMinionCorrectionMoved ||

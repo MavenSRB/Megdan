@@ -280,7 +280,31 @@ namespace GuardsDigital.Application
         // mixed-version session was impossible before this line was written. The ratchet is kept
         // regardless, on the standing rule that a version which only moves when a hole opens is a
         // version nobody trusts.
-        public const int Version = 17;
+        // Version 18 (milestone 8.61e) carries the SPRUNG-TRAP ROW. `MatchLogEntryKind` gains
+        // `MoveThroughTrapSprung`, which is Min the Dragonmonk's mines going off: "After an enemy hero
+        // moves through a mine, remove it; for every blast removed, that hero discards a card, if
+        // able." NO BYTE OF THE FRAME MOVES - the log row's layout is the same fourteen fields it has
+        // been since version 8, and what is new is a value in the `Kind` int it already carries, spent
+        // on `SubjectHeroId`, `Origin` and `Amount`, which are three fields that row already has.
+        //
+        // THE BUMP IS NOT ABOUT LAYOUT, AND THAT IS THE WHOLE REASON IT IS HERE. `NetworkMatchLogCodec
+        // .TryRead` refuses any kind its own build does not declare, so a version 17 peer meeting this
+        // number does not lose a line - it refuses the frame and the seat goes dark. Versions 15
+        // (8.40f's card-text reveal) and 16 (8.51's held card) were bumped for exactly this, and the
+        // rule they set is the one followed here: a new member of a closed wire vocabulary is a
+        // breaking change even when nothing about the bytes is.
+        //
+        // WHY THE ROW HAS TO EXIST AT ALL. Until the moment it goes off, a mine is facedown, and every
+        // seat but its controller's is handed a face that names no kind (milestone 8.61d). The removal
+        // is where p.4's hidden component becomes public, and the board shows only a space emptying -
+        // so without this line the reveal would happen at the table and be nowhere in the record.
+        // That is the same hole 8.40f's reveal row was minted to close, and the log is again the only
+        // surface that can close it.
+        //
+        // SCHEMA IS UNMOVED at v43: the row is re-derived from the retained rule-event log, and what a
+        // pause the trap opens carries across a snapshot is an ordinary effect interrupt, whose kind
+        // the card-action payload already writes as an int. No corpus digest or pinned constant moves.
+        public const int Version = 18;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

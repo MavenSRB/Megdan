@@ -36,7 +36,31 @@ namespace GuardsDigital.Core.Rules.EffectResolution
 
         // Subject is the discarding owner. The exact card is the completed discard outcome
         // on InterruptedResolutionId, not a second independently persisted card identity.
-        AfterResolvedCardDiscardTrigger = 3
+        AfterResolvedCardDiscardTrigger = 3,
+
+        /// <summary>
+        /// Milestone 8.61e. A hero moved through a token whose own text says it goes off, the token has
+        /// been removed and revealed, and what its removal costs that hero is running before whatever
+        /// displaced them carries on - Min the Dragonmonk's mines, "After an enemy hero moves through a
+        /// mine, remove it; for every blast removed, that hero discards a card, if able".
+        ///
+        /// <para>A fourth kind on the one shape, for the reason the second was: everything this type
+        /// holds is already what this moment needs - the trigger's frame, the hero the moment named,
+        /// and the identity of the resolution it interrupted. Its
+        /// <see cref="PendingEffectInterrupt.RemainingSubjects"/> is always empty, and cannot be
+        /// anything else: several blasts under ONE hero are several questions for the same hero, which
+        /// is a count the content declares as one effect with that many nodes rather than a queue of
+        /// subjects this type would refuse - it will not carry its own subject as still owed a
+        /// run.</para>
+        ///
+        /// <para><b>What it interrupts may be nothing at all.</b> A push inside an Attack's card text
+        /// carries the hero over a mine while that text is standing, and this holds that frame's place
+        /// exactly as an after-push trigger does. A Movement ACTION is not an effect, so the trap opened
+        /// on the way out of one interrupts a resolution that has already finished - and the answer path
+        /// already says what to do with that: nothing is invented in its place, the trigger's own work
+        /// is reported, and the action is left as the rest of the engine finds it.</para>
+        /// </summary>
+        AfterMoveThroughTrapTrigger = 4
     }
 
     /// <summary>

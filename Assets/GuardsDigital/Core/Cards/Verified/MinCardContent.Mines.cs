@@ -11,11 +11,15 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Field (Blue III) 11 / 5 / 2, Radius 3, Attack item. A missing icon is absent, never zero - none
     /// of the three prints a Range, and only Trip Mine prints no Item.</para>
     ///
-    /// <para><b>Each face's primary carries its placements and nothing else.</b> The trap half of the
-    /// printed sentence is milestone 8.61e's, so all three declare
-    /// <c>PrintedTextComposition.DeferredUntil</c> from <see cref="MinEffectContent.MineCompositionOwed"/>
-    /// - the one list, read here and written there, so a face cannot be marked composed on the
-    /// definition while the effect content returns half of the text.</para>
+    /// <para><b>Each face's primary carries its placements and nothing else, and that is the whole
+    /// text.</b> The trap half of the printed sentence - "After an enemy hero moves through a mine,
+    /// remove it; for every blast removed, that hero discards a card, if able" - can never be a STEP of
+    /// this Skill, because it fires on a route another hero walks on a later turn. Milestone 8.61e
+    /// built it where it belongs, on the placed piece: the two token properties and the blast's
+    /// consequence list in <see cref="MinComponentContent"/>, applied by
+    /// <c>MoveThroughTrapOperation</c> off the board's own displacements.
+    /// <see cref="MinEffectContent.MineTrapLivesOn"/> is that statement, per face, so a reader of these
+    /// definitions is told where the rest of the sentence went.</para>
     ///
     /// <para><b>The upgrade pairs are deliberately empty.</b> p.15 upgrades Trip Mine to Cluster Mine
     /// or Death Grenade and Cluster Mine to Mine Field or Holy Death Grenade, and both Grenades are
@@ -106,14 +110,14 @@ namespace GuardsDigital.Core.Cards.Verified
                 AttackRangeKind.None,
                 default,
                 // PrintedTextComposition.None, and the reason is a fact about the printed sentence
-                // rather than a claim that nothing is owed. The trap - "After an enemy hero moves
+                // rather than a claim that something is owed. The trap - "After an enemy hero moves
                 // through a mine, remove it; ..." - can never be a STEP of this Skill: it fires on a
                 // route somebody else walks on a later turn, so it is a standing rule the placed piece
-                // carries and milestone 8.61e hangs it off the board authority's own displacement
+                // carries and milestone 8.61e hung it off the board authority's own displacement
                 // commits. This action's own steps ARE fully composed, and the engine refuses an
                 // action that carries both an effect root and an outstanding composition precisely
-                // because that pair would be two answers to one question. The debt is written down as
-                // what it is - a token-anchored rule - in MinEffectContent.MineTrapOwed.
+                // because that pair would be two answers to one question. Where the other half went is
+                // written down, per face, in MinEffectContent.MineTrapLivesOn.
                 MinEffectContent.MineSkillEffectFor(profile.Id, MinEffectContent.MineRevision)),
 
             new ActionDefinition(

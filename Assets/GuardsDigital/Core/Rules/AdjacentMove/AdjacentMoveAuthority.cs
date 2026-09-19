@@ -39,6 +39,29 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         private readonly List<MinionOccupancy> reserveMinions;
 
         private readonly List<PlacedToken> tokens;
+
+        /// <summary>
+        /// The displacements of heroes that entered and left a space a trap was standing on, since the
+        /// rules layer last took them. Milestone 8.61e, and it is board-adjacent within-command state
+        /// exactly as <see cref="reserveMinions"/> is board-adjacent runtime state.
+        ///
+        /// <para><b>Why the board records the fact and prices none of it.</b> "After an enemy hero moves
+        /// through a mine, remove it" needs two things this type has and one it does not: it has the
+        /// route and the pieces standing on it, and it has no idea whose team anybody is on. So the
+        /// crossing is recorded here, where every displacement already passes, and
+        /// <c>MoveThroughTrapOperation</c> answers p.19's sides and takes the pieces off at the one
+        /// altitude that holds the participants. A board with no trap standing on the route records
+        /// nothing at all, so every match that has never seen one of Min's mines allocates nothing and
+        /// behaves byte for byte as it did.</para>
+        ///
+        /// <para><b>It is never persisted, and does not need to be.</b> A crossing is recorded and taken
+        /// inside one command - between the displacement and the consequence the rules run for it - and
+        /// what a pause carries across a snapshot is the trigger frame that consequence opened, which
+        /// the card-action payload already writes. A validation fork starts with none, because a fork
+        /// exists to answer a question without doing anything.</para>
+        /// </summary>
+        private readonly List<MoveThroughCrossing> moveThroughCrossings = new List<MoveThroughCrossing>();
+
         private readonly BoardOccupancyIndex occupancyIndex;
         private readonly IReadOnlyList<HeroOccupancy> occupanciesView;
         private readonly IReadOnlyList<ObstacleOccupancy> obstacleOccupanciesView;
@@ -589,6 +612,13 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 
             occupancyIndex.Move(origin, destination);
             occupancies[heroIndex] = new HeroOccupancy(heroId, destination);
+
+            // Milestone 8.61e. Every space of the route but its last was entered AND left, which is
+            // exactly p.18's "moves through" - the page's own reason this commit is whole rather than
+            // per space. The last one is where the hero is standing, and p.18 lets nobody stand on an
+            // obstacle, so it can never have carried a trap anyway.
+            RecordMoveThroughCrossing(
+                heroId, Array.AsReadOnly(route.Take(route.Count - 1).ToArray()));
             return AdjacentMoveRouteResult.Accept(events);
         }
 
@@ -814,16 +844,21 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             TryGetObjectCoordinate(second, out var secondAt);
             var firstEnd = StraightLineQuery.Step(firstAt, direction, distance);
             var secondEnd = StraightLineQuery.Step(secondAt, direction, distance);
+            // Milestone 8.61e. A coupled move walks a straight line exactly as p.18's Push does, so the
+            // spaces it entered and left are the realised line between where each object started and
+            // where it stopped.
+            var firstLine = MoveThroughTrapQuery.RealisedLine(firstAt, firstEnd);
+            var secondLine = MoveThroughTrapQuery.RealisedLine(secondAt, secondEnd);
             // Only a following endpoint can need the other's old occupancy. Vacate the front first;
             // this is one synchronous commit after both paths passed, not two independent effects.
             if (firstEnd.Equals(secondAt))
             {
-                if (!CommitValidatedDisplacement(second, secondEnd).Accepted ||
-                    !CommitValidatedDisplacement(first, firstEnd).Accepted)
+                if (!CommitValidatedDisplacement(second, secondEnd, secondLine).Accepted ||
+                    !CommitValidatedDisplacement(first, firstEnd, firstLine).Accepted)
                     throw new InvalidOperationException("A validated coupled displacement could not commit.");
             }
-            else if (!CommitValidatedDisplacement(first, firstEnd).Accepted ||
-                !CommitValidatedDisplacement(second, secondEnd).Accepted)
+            else if (!CommitValidatedDisplacement(first, firstEnd, firstLine).Accepted ||
+                !CommitValidatedDisplacement(second, secondEnd, secondLine).Accepted)
                 throw new InvalidOperationException("A validated coupled displacement could not commit.");
             return true;
         }
@@ -964,6 +999,73 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public bool HasTokenAt(HexCoordinate coordinate) =>
             tokens.Any(token => token.Coordinate.Equals(coordinate));
 
+        /// <summary>
+        /// Whether a hero has entered and left a space something declaring p.18's move-through trap was
+        /// standing on, and the rules have not yet priced it. Milestone 8.61e.
+        /// </summary>
+        public bool HasRecordedMoveThroughCrossings => moveThroughCrossings.Count > 0;
+
+        /// <summary>
+        /// Hands over every recorded crossing and clears them, so one displacement is priced exactly
+        /// once however many altitudes look. The order is the order the displacements committed.
+        /// </summary>
+        public IReadOnlyList<MoveThroughCrossing> TakeRecordedMoveThroughCrossings()
+        {
+            if (moveThroughCrossings.Count == 0)
+            {
+                return Array.Empty<MoveThroughCrossing>();
+            }
+
+            var taken = moveThroughCrossings.ToArray();
+            moveThroughCrossings.Clear();
+            return Array.AsReadOnly(taken);
+        }
+
+        /// <summary>
+        /// Records that <paramref name="mover"/> entered and left <paramref name="spacesMovedThrough"/>,
+        /// if anything standing on them declares a trap. Milestone 8.61e.
+        ///
+        /// <para>Only heroes are recorded, because only a hero can spring one: p.19 separates heroes
+        /// from minions and the printed sentence names heroes. Whether the hero is an ENEMY of any of
+        /// those pieces is deliberately not asked here - this type does not know the teams, and
+        /// answering it in two places is how two readers start disagreeing.</para>
+        /// </summary>
+        private void RecordMoveThroughCrossing(
+            BoardObjectReference subject, IReadOnlyList<HexCoordinate> spacesMovedThrough) =>
+            RecordMoveThroughCrossing(
+                subject.Kind == BoardObjectKind.Hero ? subject.HeroId : default, spacesMovedThrough);
+
+        private void RecordMoveThroughCrossing(
+            HeroId mover, IReadOnlyList<HexCoordinate> spacesMovedThrough)
+        {
+            if (!mover.IsDefined || spacesMovedThrough == null || spacesMovedThrough.Count == 0)
+            {
+                return;
+            }
+
+            List<HexCoordinate> crossed = null;
+            foreach (var space in spacesMovedThrough)
+            {
+                for (var index = 0; index < tokens.Count; index++)
+                {
+                    if (!tokens[index].Coordinate.Equals(space) ||
+                        !MoveThroughTrapQuery.Declares(tokens[index].Definition))
+                    {
+                        continue;
+                    }
+
+                    crossed = crossed ?? new List<HexCoordinate>();
+                    crossed.Add(space);
+                    break;
+                }
+            }
+
+            if (crossed != null)
+            {
+                moveThroughCrossings.Add(new MoveThroughCrossing(mover, crossed.AsReadOnly()));
+            }
+        }
+
         private bool TryGetZoneForCoordinate(HexCoordinate coordinate, out ZoneId zoneId)
         {
             zoneId = default;
@@ -974,9 +1076,18 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
             return true;
         }
 
+        /// <param name="spacesMovedThrough">
+        /// Milestone 8.61e. The spaces this displacement entered and left, or <c>null</c> for one that
+        /// crossed none. It is supplied by the caller rather than derived here because only the caller
+        /// knows which kind of displacement this is: p.18's Push walks a straight line, p.11's card-text
+        /// Move walks a route that may bend around an obstacle, and a Place - which reaches this same
+        /// commit - crosses nothing at all, because p.18 puts a piece INTO a space rather than moving it
+        /// along one. Deriving a line from the two coordinates would have made every Place a move.
+        /// </param>
         public DisplacementCommitResult CommitValidatedDisplacement(
             BoardObjectReference subject,
-            HexCoordinate destination)
+            HexCoordinate destination,
+            IReadOnlyList<HexCoordinate> spacesMovedThrough = null)
         {
             if (!TryGetObjectCoordinate(subject, out var origin))
             {
@@ -1040,6 +1151,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
                     return DisplacementCommitResult.Reject(DisplacementRejectionReason.UnknownObject);
             }
 
+            RecordMoveThroughCrossing(subject, spacesMovedThrough);
             return DisplacementCommitResult.Accept(subject, origin, destination);
         }
 

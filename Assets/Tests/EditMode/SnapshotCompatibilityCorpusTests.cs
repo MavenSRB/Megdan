@@ -1408,6 +1408,15 @@ namespace GuardsDigital.Tests.EditMode
         // reader, no `MatchLogEntryKind` and no behaviour moves. SCHEMA STAYS v43 AND THE WIRE STAYS
         // `/17`.
         //
+        // MILESTONE 8.61e: NEITHER. The wire moved to `guards-private-online/18` for a thirty-third
+        // `MatchLogEntryKind` - a hero moved through a token that goes off, and the removal revealed
+        // it - and the schema did NOT move with it, nor did these digests. The row is re-derived from
+        // the retained rule-event log like every other one; the pause the trap opens is an ordinary
+        // `PendingEffectInterrupt`, whose kind the card-action payload has written as an int since
+        // milestone 8.19c1, so a fourth reason a frame can be standing costs no version; and nothing
+        // Min the Dragonmonk owns is registered until her dealing, so no capture's registration list
+        // grew a character.
+        //
         // THE CAUSE WAS ISOLATED BEFORE A PIN WAS TOUCHED - milestone 8.38d's rule, and a dealing
         // changes far too much for "the registration did it" to be assumed. With
         // `SyntheticPlacementCapabilities` reverted to its pre-registration blob (`49c758a4`) and

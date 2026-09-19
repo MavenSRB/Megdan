@@ -224,10 +224,18 @@ namespace GuardsDigital.Core.Components
         /// its own; the calling capability publishes the typed facts its own rule owns. Rejections are
         /// returned rather than thrown because a stale validated destination is a real race the effect
         /// frame must report, not an engine defect.
+        ///
+        /// Milestone 8.61e adds the spaces the displacement entered and left, for p.18's "any special
+        /// effects of tokens are still applied". It is stated by the caller and never derived here,
+        /// because only the caller knows which operation this is: a Push walks a straight line, a
+        /// card-text Move walks a route that may bend, and a Place - which reaches this same commit -
+        /// crosses nothing at all. Omitting it is the honest answer for an operation that walks no
+        /// spaces, which is what every caller written before this milestone was.
         /// </summary>
         DisplacementCommitResult CommitValidatedDisplacement(
             BoardObjectReference subject,
-            HexCoordinate destination);
+            HexCoordinate destination,
+            IReadOnlyList<HexCoordinate> spacesMovedThrough = null);
 
         bool CanMoveCoupled(BoardObjectReference first, BoardObjectReference second, HexDirection direction,
             int distance, RuleModificationSet modifications, bool ignoresObstacles);

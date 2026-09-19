@@ -616,7 +616,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var committed = context.Components.Board.CommitValidatedDisplacement(mover, destination);
+                var committed = context.Components.Board.CommitValidatedDisplacement(
+                    mover, destination, WalkedThrough(context, mover, destination));
                 if (!committed.Accepted)
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
@@ -758,6 +759,43 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// and p.11 here as well let this capability and Object Push disagree about whether `up to
             /// X spaces` admits no spaces at all, and they did.
             /// </summary>
+            /// <summary>
+            /// The spaces this Move entered and left on its way to <paramref name="destination"/>, for
+            /// rulebook p.18's "any special effects of tokens are still applied". Milestone 8.61e.
+            ///
+            /// <para>It re-asks the one reachability the Move already offered from rather than keeping
+            /// a route the choice was opened with, for the same reason the destination itself is
+            /// re-derived here: the board may have moved between the question and the answer, and a
+            /// remembered route could name spaces this Move no longer walks. p.11 says a card-text move
+            /// "follows the same rules and restrictions as a Movement action", so the walk that decides
+            /// which spaces were crossed is the walk that decided the move was legal.</para>
+            /// </summary>
+            private static IReadOnlyList<HexCoordinate> WalkedThrough(
+                EffectCapabilityContext context,
+                BoardObjectReference mover,
+                HexCoordinate destination)
+            {
+                var board = context.Components?.Board;
+                if (board == null)
+                {
+                    return null;
+                }
+
+                var crossing = context.Input(MovesThroughObstaclesParameterName);
+                var route = board.FindDirectMoveDestinations(
+                        mover,
+                        context.Input("distance").IntegerValue,
+                        context.Modifications,
+                        crossing.Kind == EffectValueKind.Boolean && crossing.BooleanValue)
+                    .Where(candidate => candidate.Destination.Equals(destination))
+                    .Select(candidate => candidate.Route)
+                    .FirstOrDefault();
+                return route == null
+                    ? null
+                    : GuardsDigital.Core.Rules.Displacement.MoveThroughTrapQuery.SpacesMovedThrough(
+                        route);
+            }
+
             private IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
             {
                 var components = context.Components;
@@ -1595,7 +1633,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .ThenBy(entry => entry.Value.Origin.Q)
                 .ThenBy(entry => entry.Value.Origin.R))
             {
-                var committed = board.CommitValidatedDisplacement(entry.Key, entry.Value.Endpoint);
+                // Milestone 8.61e. p.18's realised line, which is what the pushed object actually
+                // entered and left: a push stopped short never reached the spaces beyond where it
+                // stopped, so nothing standing on them was moved through.
+                var committed = board.CommitValidatedDisplacement(
+                    entry.Key,
+                    entry.Value.Endpoint,
+                    GuardsDigital.Core.Rules.Displacement.MoveThroughTrapQuery.RealisedLine(
+                        entry.Value.Origin, entry.Value.Endpoint));
                 if (committed.Accepted)
                 {
                     moved++;

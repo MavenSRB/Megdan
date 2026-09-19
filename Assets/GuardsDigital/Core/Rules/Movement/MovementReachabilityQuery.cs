@@ -257,9 +257,24 @@ namespace GuardsDigital.Core.Rules.Movement
             {
                 [origin] = 0
             };
+
+            // Milestone 8.61e, MI-Q3. How many spaces the best route to each coordinate only PASSES
+            // THROUGH - a space the mover may enter but may not stop on, which is p.18's obstacle
+            // crossed under a permission, under a card's own "through", or because the piece standing
+            // there says units may move through it. Min the Dragonmonk's mines are the third, and the
+            // reason this number exists: several routes of one length can reach one space, and where
+            // one of them walks over a mine and another does not, a one-click destination should take
+            // the one that does not. Nothing about the rules forces that choice - p.10 leaves it to
+            // the mover - so this is the default a mover who said nothing is taken to have meant, and
+            // it costs nothing anywhere else because a board with no such space gives every route a
+            // zero and leaves the first-found parent exactly where it was.
+            var crossings = new Dictionary<HexCoordinate, int>
+            {
+                [origin] = 0
+            };
             var parents = new Dictionary<HexCoordinate, HexCoordinate>();
             var queue = new Queue<HexCoordinate>();
-            var destinations = new List<ReachableMovementDestination>();
+            var offered = new List<KeyValuePair<HexCoordinate, int>>();
 
             queue.Enqueue(origin);
             while (queue.Count > 0)
@@ -273,33 +288,55 @@ namespace GuardsDigital.Core.Rules.Movement
 
                 foreach (var neighbor in current.GetNeighbors())
                 {
-                    if (!board.Contains(neighbor) ||
-                        blocksTransit(neighbor) ||
-                        costs.ContainsKey(neighbor))
+                    if (!board.Contains(neighbor) || blocksTransit(neighbor))
                     {
                         continue;
                     }
-
-                    // Entering a space costs the same whether or not something occupies it, so a
-                    // permitted pass-through changes which routes exist rather than what they cost.
-                    var cost = currentCost + 1;
-                    costs[neighbor] = cost;
-                    parents[neighbor] = current;
-                    queue.Enqueue(neighbor);
 
                     // Traversable and legal-to-stop-on are different questions. A space the mover may
                     // only pass through is walked but never offered, which is p.18's rule that no unit
                     // may end its movement on an obstacle.
-                    if (blocksEndpoint(neighbor))
+                    var onlyPassedThrough = blocksEndpoint(neighbor);
+                    var crossed = crossings[current] + (onlyPassedThrough ? 1 : 0);
+
+                    // Entering a space costs the same whether or not something occupies it, so a
+                    // permitted pass-through changes which routes exist rather than what they cost.
+                    var cost = currentCost + 1;
+                    if (costs.TryGetValue(neighbor, out var known))
                     {
+                        // A second way in. It is only ever taken when it is the same length and walks
+                        // over strictly fewer pieces, so the offered set, its costs and its order are
+                        // all untouched - what changes is which of two equal routes is handed over.
+                        // The queue is in cost order, so every way in at this length has been seen by
+                        // the time this space is itself dequeued, and its count is final before
+                        // anything is built from it.
+                        if (known == cost && crossed < crossings[neighbor])
+                        {
+                            crossings[neighbor] = crossed;
+                            parents[neighbor] = current;
+                        }
+
                         continue;
                     }
 
-                    destinations.Add(new ReachableMovementDestination(
-                        neighbor,
-                        BuildRoute(origin, neighbor, parents),
-                        cost));
+                    costs[neighbor] = cost;
+                    crossings[neighbor] = crossed;
+                    parents[neighbor] = current;
+                    queue.Enqueue(neighbor);
+                    if (!onlyPassedThrough)
+                    {
+                        offered.Add(new KeyValuePair<HexCoordinate, int>(neighbor, cost));
+                    }
                 }
+            }
+
+            // Routes are built once the walk is over, because a parent may still be re-pointed while it
+            // is running. The offered spaces, their order and their costs are the ones the walk found.
+            var destinations = new List<ReachableMovementDestination>(offered.Count);
+            foreach (var entry in offered)
+            {
+                destinations.Add(new ReachableMovementDestination(
+                    entry.Key, BuildRoute(origin, entry.Key, parents), entry.Value));
             }
 
             return destinations.AsReadOnly();

@@ -782,8 +782,10 @@ namespace GuardsDigital.Tests.EditMode
         //
         // THE BYTE DELTA IS ATTRIBUTED RATHER THAN ASSERTED and the sibling corpus carries the
         // arithmetic: +99 on every capture, which is the two ids' 89 characters plus their two
-        // one-byte length prefixes and their two four-byte revisions. Schema stays v43 and the wire
-        // `/17`: no field, no `MatchLogEntryKind` and no persisted shape moved. All three invariants
+        // one-byte length prefixes and their two four-byte revisions. Schema stayed v43 and the wire
+        // `/17` at the time this was written; milestone 8.61e has since taken the wire to `/18` for a
+        // thirty-third `MatchLogEntryKind` while leaving the schema and every digest below exactly
+        // where they are, because a derived log row is persisted nowhere. All three invariants
         // survive intact once more - the five refusal-and-round-trip scenarios still share one pair,
         // the three defense-discard scenarios still share another, and undo-truncated is still its
         // own. Every value below was MEASURED off one failing run with all nine reported at once.

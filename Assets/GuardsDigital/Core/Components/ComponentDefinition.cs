@@ -253,7 +253,8 @@ namespace GuardsDigital.Core.Components
             IEnumerable<TokenPropertyDefinition> properties,
             TokenRemovalCondition removalCondition,
             string supplyGroupId = null,
-            TokenDefinition facedownFace = null)
+            TokenDefinition facedownFace = null,
+            IEnumerable<GuardsDigital.Core.Effects.EffectDefinitionReference> moveThroughTrapConsequences = null)
         {
             Reference = new TokenDefinitionReference(definitionId, revision);
 
@@ -314,12 +315,47 @@ namespace GuardsDigital.Core.Components
                     nameof(removalCondition));
             }
 
+            var materializedConsequences =
+                (moveThroughTrapConsequences ??
+                    Array.Empty<GuardsDigital.Core.Effects.EffectDefinitionReference>()).ToArray();
+            if (materializedConsequences.Any(reference => !reference.IsDefined) ||
+                materializedConsequences.Distinct().Count() != materializedConsequences.Length)
+            {
+                throw new ArgumentException(
+                    "Every declared move-through consequence is a defined effect, and one count has " +
+                    "one answer.",
+                    nameof(moveThroughTrapConsequences));
+            }
+
+            if (materializedConsequences.Length > 0 &&
+                !materializedProperties.Any(property =>
+                    property.Modification != null &&
+                    property.Modification.Kind ==
+                        RuleModificationKind.RemovedWhenAnEnemyHeroMovesThrough))
+            {
+                throw new ArgumentException(
+                    "A consequence of being moved through is declared only by a token that is " +
+                    "removed for it; without the removal the effect would never run.",
+                    nameof(moveThroughTrapConsequences));
+            }
+
+            if (materializedConsequences.Length > supplyCount)
+            {
+                throw new ArgumentException(
+                    "One crossing can spring no more of these than the supply holds, so a longer " +
+                    "list declares an answer to a question the board cannot ask.",
+                    nameof(moveThroughTrapConsequences));
+            }
+
             DisplayName = displayName;
             SupplyCount = supplyCount;
             Properties = new ReadOnlyCollection<TokenPropertyDefinition>(materializedProperties);
             RemovalCondition = removalCondition;
             SupplyGroupId = supplyGroupId;
             FacedownFace = facedownFace;
+            MoveThroughTrapConsequences =
+                new ReadOnlyCollection<GuardsDigital.Core.Effects.EffectDefinitionReference>(
+                    materializedConsequences);
         }
 
         public TokenDefinitionReference Reference { get; }
@@ -397,6 +433,33 @@ namespace GuardsDigital.Core.Components
         /// facedown component, and the question the seat projection asks.
         /// </summary>
         public bool HidesItsKind => FacedownFace != null;
+
+        /// <summary>
+        /// What removing these costs the hero who walked over them, indexed by how many of them one
+        /// crossing removed: entry <c>n - 1</c> is the effect that runs when <c>n</c> of them went off
+        /// at once. Empty for every token whose removal costs nothing, which is every definition
+        /// written before milestone 8.61e. Milestone 8.61e.
+        ///
+        /// <para><b>Why it is a list and not one effect with a number.</b> Min the Dragonmonk's mines
+        /// print "for every blast removed, that hero discards a card, if able", and a hero can cross
+        /// several in one move. Rulebook p.10 makes each of those discards that hero's own decision, so
+        /// several of them are several questions on one seat - and the engine's trigger frame runs one
+        /// effect definition, whose nodes are content. So the content declares what each count costs,
+        /// the list is bounded by <see cref="SupplyCount"/> because no route can spring more copies
+        /// than the pile holds, and the rules pick the entry rather than building a graph of their own.
+        /// A trigger that composed its own nodes would also be a frame no snapshot could rebind: a
+        /// restore looks its effect up in the trusted catalog by reference, and an effect assembled at
+        /// the moment it fired is in no catalog at all.</para>
+        ///
+        /// <para><b>It is the half of the printed sentence a facedown mine hides.</b> The removal
+        /// itself is <see cref="RuleModificationKind.RemovedWhenAnEnemyHeroMovesThrough"/>, declared by
+        /// every face including <see cref="FacedownFace"/>, because every seat may know that a mine
+        /// goes off when an enemy walks over it. Which mine costs a card is the kind, and the kind is
+        /// what p.4 hides - so this list is what the mask takes away, and nothing but the authority's
+        /// own trusted definition is ever read from.</para>
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Effects.EffectDefinitionReference>
+            MoveThroughTrapConsequences { get; }
 
         public override string ToString() =>
             SharesASupply

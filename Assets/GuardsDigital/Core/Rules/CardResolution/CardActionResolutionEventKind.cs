@@ -113,6 +113,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <c>RevealedCardInstanceId</c>, because <c>SourceCardInstanceId</c> is already spoken for
         /// by the card the text is printed on.</para>
         /// </summary>
-        CardTextRevealedCard = 52
+        CardTextRevealedCard = 52,
+
+        /// <summary>
+        /// Milestone 8.61e: a hero moved through a token whose own text says it goes off, and the
+        /// removal turned it face up for the whole table - Min the Dragonmonk's mines, "After an enemy
+        /// hero moves through a mine, remove it".
+        ///
+        /// <para>It is a kind of its own rather than <see cref="TokenCleared"/>, which is the other
+        /// event that names a removed token, because the two are different facts with different
+        /// subjects. p.13's Clear is an ACTION a hero performs in place of an Attack, so its row says
+        /// which hero cleared and off which card; this is something that happened TO the hero who
+        /// walked, off no card of theirs at all, and its whole point is the kind it revealed. Sharing
+        /// the kind would have made every mine going off look like somebody spending their Attack.</para>
+        ///
+        /// <para>The fact names the crossing hero through <c>TargetHeroId</c> - the hero the mine went
+        /// off under, never the acting hero, who on a push is the one who did the pushing - the space
+        /// through the token coordinate, and what it cost through
+        /// <c>MoveThroughTrapCardsOwed</c>, which is the blast-or-dud the removal made public.</para>
+        /// </summary>
+        MoveThroughTrapSprung = 53
     }
 }

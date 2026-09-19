@@ -1937,9 +1937,56 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     IsAuthorizedBorrowedOffer(offer, prepared.Definitions));
         }
 
+        /// <param name="boundary">
+        /// Milestone 8.61e. What a Movement action's own consequences need. Rulebook p.18's "any
+        /// special effects of tokens are still applied" is the only one there is, and it needs the
+        /// participants - "an ENEMY hero" - and the card state the discard it charges comes out of.
+        ///
+        /// <para>It is optional so that every caller asking nothing of the board but a walk keeps its
+        /// two arguments, and it is never silently skipped: a walk that actually crossed one of these
+        /// and reached here without a boundary is refused out loud rather than quietly costing
+        /// nothing.</para>
+        /// </param>
         public CardActionResolutionResult AnswerMovementChoice(
-            MovementChoiceCommand command, RuleModificationSet modifications) =>
-            movementBackend.AnswerMovement(command, modifications);
+            MovementChoiceCommand command,
+            RuleModificationSet modifications,
+            ActionBoundaryContext boundary = default)
+        {
+            var result = movementBackend.AnswerMovement(command, modifications);
+            if (board == null)
+            {
+                return result;
+            }
+
+            // p.18 applies the effect after the WHOLE move, which is why this waits for the action to
+            // finish rather than firing at each leg: a hero who has committed one route and still holds
+            // allowance has not finished moving, and a mine that went off between two legs would leave
+            // the same action free to stop on a space p.18 forbids stopping on for as long as the piece
+            // is standing.
+            //
+            // And it reads the SESSION'S OWN ROUTE rather than the board's note of what was walked,
+            // because a Movement action is several commands with a decision between them and a
+            // snapshot can be taken at any of those pauses. The route is persisted state a restore
+            // rebuilds; a note held between two commands is not. The board's note for the same walk is
+            // dropped rather than left standing, so nothing can price it a second time later.
+            var walked = movementBackend.TakeCompletedWalk(out var mover);
+            board.TakeRecordedMoveThroughCrossings();
+            if (!result.Accepted || !result.IsComplete || walked == null)
+            {
+                return result;
+            }
+
+            var crossed = MoveThroughTrapQuery.SpacesMovedThrough(walked);
+            if (crossed.Count == 0)
+            {
+                return result;
+            }
+
+            var steps = new List<ResolutionStep>(result.Steps);
+            var standing = SpringMoveThroughTrap(
+                mover, crossed, HostlessTrapResolutionId(boundary), boundary, steps);
+            return CardActionResolutionResult.Accept(!standing, null, null, steps);
+        }
 
         public CardActionResolutionResult PerformTurnFastTravel(
             ActionResolutionId resolutionId,
@@ -4038,12 +4085,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ((appliedPushes == null || appliedPushes.Count == 0) &&
                     skillBackend.StagedMinionDefeats.Count == 0 &&
                     !skillBackend.StagedMarkerGive.IsDefined && !skillBackend.StagedResolvedDiscard.IsDefined &&
-                    !skillBackend.StagedHeroDefeat))
+                    !skillBackend.StagedHeroDefeat &&
+                    // Milestone 8.61e. A displacement this effect made may have walked a hero over
+                    // something that goes off even when nothing else about it is staged - a card-text
+                    // Move crossing a mine stages no push at all.
+                    !board.HasRecordedMoveThroughCrossings))
             {
                 return result;
             }
 
             var steps = new List<ResolutionStep>(result.Steps);
+
+            // Milestone 8.61e, and it is settled BEFORE any card's trigger reads the board. p.18's
+            // token effect is a rule about the piece that was walked over; an after-push trigger is a
+            // card's own text about the push. Running the rule first means the card's text sees the
+            // board the rule left, which is the same order the page states them in.
+            if (SpringMoveThroughTraps(
+                    skillBackend.PendingResolution?.ResolutionId ?? HostlessTrapResolutionId(boundary),
+                    boundary,
+                    steps))
+            {
+                return CardActionResolutionResult.Accept(false, null, null, steps);
+            }
+
             var pushes = appliedPushes ?? Array.Empty<RuleObject>();
             var complete = result.IsComplete;
             while (pushes.Count > 0 || skillBackend.StagedMinionDefeats.Count > 0 ||
@@ -4254,6 +4318,276 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 opposingHeroId: IntrinsicKindQuery.Of(source.PushedObject) == RuleObjectKind.Hero
                     ? source.PushedObject.HeroId
                     : default,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                rosterState: rosterState);
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.61e. Rulebook p.18's "any special effects of tokens are still applied", read for
+        // Min the Dragonmonk's mines: "After an enemy hero moves through a mine, remove it; for every
+        // blast removed, that hero discards a card, if able."
+        //
+        // The board records which of its own displacements walked over such a piece - it is the one
+        // place every route, push, charge and coupled move already passes - and this is where those
+        // records are priced, because this is the altitude that holds the participants, the card state
+        // and the frame a decision can stand in. A board carrying no such piece records nothing, so
+        // every one of these calls is a field read that answers no on a match without her mines.
+        //
+        // THREE ALTITUDES ASK, AND THAT IS A STATED BOUND RATHER THAN AN ACCIDENT. A Movement action
+        // asks from its own answer, off the session's persisted route; a Skill's effect frame asks
+        // from `RunSkillConsequences`; and rulebook p.14's card text asks from
+        // `RunCardTextPushTriggers`, which is where Min the Dragonmonk's own combination lands - her
+        // Red faces push an enemy after the attack. Those are every altitude a verified face in this
+        // build can displace a hero from. A displacement made from somewhere else would leave its
+        // crossing recorded until one of these three next looked, which would name the moment late
+        // rather than answer it wrongly; a fourth altitude that could displace a hero owes a fourth
+        // ask here, in the change that adds it.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Prices every crossing the board has recorded: removes what was sprung, reveals each piece to
+        /// the whole table, and starts the effect that charges for them. Returns whether that effect is
+        /// standing on a question when this returns.
+        /// </summary>
+        private bool SpringMoveThroughTraps(
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (board == null || !board.HasRecordedMoveThroughCrossings)
+            {
+                return false;
+            }
+
+            var crossings = board.TakeRecordedMoveThroughCrossings();
+            if (boundary.Participants == null || boundary.Definitions == null)
+            {
+                // A crossing that cannot be priced is never silently dropped: "enemy" is a question
+                // about the participants and the discard is a question about a hand, so a caller
+                // holding neither is a caller this rule cannot run through.
+                throw new InvalidOperationException(
+                    "A hero moved through a token that goes off, and this command supplied no " +
+                    "participants or card definitions to price it with.");
+            }
+
+            var owedMover = default(HeroId);
+            var owedOutcome = (MoveThroughTrapOutcome)null;
+            foreach (var crossing in crossings)
+            {
+                var outcome = SpringOne(
+                    crossing.Mover, crossing.SpacesMovedThrough, boundary, steps);
+                if (outcome == null)
+                {
+                    continue;
+                }
+
+                if (owedOutcome != null)
+                {
+                    // One command displaced two heroes and both walked onto something that charges.
+                    // Each would be its own question on its own seat, and one trigger frame can stand
+                    // at a time; no printed face in this build composes it, so it is refused out loud
+                    // rather than answered by dropping one of them.
+                    throw new InvalidOperationException(
+                        "Two heroes were charged by traps in one command, and one frame can carry " +
+                        "one of those questions.");
+                }
+
+                owedMover = crossing.Mover;
+                owedOutcome = outcome;
+            }
+
+            return owedOutcome != null &&
+                RunMoveThroughTrapConsequence(
+                    owedMover, owedOutcome, interruptedResolutionId, boundary, steps);
+        }
+
+        /// <summary>
+        /// The same, for one walk the caller already holds - a Movement action's own route, which is
+        /// persisted state rather than a note the board kept between two commands.
+        /// </summary>
+        private bool SpringMoveThroughTrap(
+            HeroId mover,
+            IReadOnlyList<HexCoordinate> spacesMovedThrough,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (boundary.Participants == null || boundary.Definitions == null)
+            {
+                // Asked WITHOUT the participants, because whether any of these is an enemy's is exactly
+                // what a caller holding none cannot answer - and a walk over one of them that quietly
+                // cost nothing is the silent wrong answer this refusal exists to prevent.
+                if (spacesMovedThrough.Any(space => board.PlacedTokens.Any(token =>
+                        token.Coordinate.Equals(space) &&
+                        MoveThroughTrapQuery.Declares(token.Definition))))
+                {
+                    throw new InvalidOperationException(
+                        "A hero moved through a token that goes off, and this command supplied no " +
+                        "participants or card definitions to price it with.");
+                }
+
+                return false;
+            }
+
+            var outcome = SpringOne(mover, spacesMovedThrough, boundary, steps);
+            return outcome != null &&
+                RunMoveThroughTrapConsequence(
+                    mover, outcome, interruptedResolutionId, boundary, steps);
+        }
+
+        /// <summary>
+        /// Removes what one walk sprang and reveals each piece, and reports the charge it owes - or
+        /// <c>null</c> when it sprang nothing, or nothing that charges.
+        /// </summary>
+        private MoveThroughTrapOutcome SpringOne(
+            HeroId mover,
+            IReadOnlyList<HexCoordinate> spacesMovedThrough,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            var outcome = MoveThroughTrapOperation.Spring(
+                board, boundary.Participants, mover, spacesMovedThrough);
+            if (outcome.IsEmpty)
+            {
+                return null;
+            }
+
+            foreach (var sprung in outcome.Removed)
+            {
+                steps.Add(ResolutionStep.FromFact(MoveThroughTrapFact(mover, sprung)));
+            }
+
+            return outcome.HasConsequence ? outcome : null;
+        }
+
+        /// <summary>
+        /// The identity a sprung trap interrupts when nothing is standing to interrupt - a Movement
+        /// ACTION, which is not an effect and has no frame. It is deterministic so a replay of the same
+        /// command builds the same one, and it is never equal to the trigger's own resolution id, which
+        /// names the hero and the piece.
+        /// </summary>
+        private static GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId
+            HostlessTrapResolutionId(ActionBoundaryContext boundary) =>
+            new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                $"move-through-trap-host-{boundary.RoundIndex}-{boundary.TurnIndex}");
+
+        /// <summary>
+        /// The public reveal. p.4 makes a facedown piece hidden until it is turned over, and this is the
+        /// turning over: the table is told which hero walked over what, where, and what it cost.
+        /// </summary>
+        private CardActionResolutionEvent MoveThroughTrapFact(HeroId mover, SprungMoveThroughTrap sprung) =>
+            CardActionResolutionEvent.MoveThroughTrapSprung(
+                new ActionResolutionId(
+                    $"move-through-trap-{mover.Value}-{sprung.TokenInstanceId.Value}"),
+                sprung.SourceCardInstanceId,
+                MoveThroughTrapAction,
+                sprung.ControllerHeroId,
+                mover,
+                sprung.TokenInstanceId,
+                sprung.Definition.Reference,
+                sprung.Coordinate,
+                sprung.CostsTheMover ? 1 : 0);
+
+        /// <summary>
+        /// What a sprung trap names where an action would be named. Milestone 8.61e.
+        ///
+        /// <para>It is deliberately NOT the printed primary of the card that placed the piece, though
+        /// that card is named beside it. A standing rule a token carries is not a step of the action
+        /// that put it there - milestone 8.61d settled that for exactly these mines, and it is why the
+        /// trap could never be composed into the Skill - so naming that Skill here would say the hero
+        /// performed it again, several turns later, on somebody else's turn. This is a rule of the
+        /// board, and it says so.</para>
+        /// </summary>
+        private static readonly ActionDefinitionId MoveThroughTrapAction =
+            new ActionDefinitionId("move-through-trap");
+
+        /// <summary>
+        /// "for every blast removed, that hero discards a card, if able", run as the trigger frame it
+        /// is. Returns whether it paused; one that resolved in a single pass has published its facts
+        /// and left nothing standing - which is what "if able" does to an empty hand.
+        /// </summary>
+        private bool RunMoveThroughTrapConsequence(
+            HeroId mover,
+            MoveThroughTrapOutcome outcome,
+            GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId interruptedResolutionId,
+            ActionBoundaryContext boundary,
+            List<ResolutionStep> steps)
+        {
+            if (!ContentCatalogs.TriggeredEffects.TryGet(outcome.Consequence, out var effect))
+            {
+                throw new InvalidOperationException(
+                    $"Move-through trap effect '{outcome.Consequence}' is not configured.");
+            }
+
+            var charging = outcome.Removed.First(removed => removed.CostsTheMover);
+            var controllerId = charging.ControllerHeroId;
+            var sourceCardInstanceId = charging.SourceCardInstanceId;
+            var actionDefinitionId = MoveThroughTrapAction;
+            // The card the piece came off, where the frame names one. A restore rebinds the effect
+            // itself from the triggered-effect catalog rather than from this card's actions, exactly as
+            // every other trigger's frame does, so a card whose instance this command does not carry
+            // costs the frame nothing.
+            var sourceDefinitionReference = boundary.Instances
+                .Where(card => card.Id.Equals(sourceCardInstanceId))
+                .Select(card => card.DefinitionReference)
+                .FirstOrDefault();
+            var resolutionId = new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                $"move-through-trap:{mover.Value}:{charging.TokenInstanceId.Value}");
+            var step = EffectResolutionSession.Start(
+                resolutionId,
+                sourceCardInstanceId,
+                sourceDefinitionReference,
+                actionDefinitionId,
+                controllerId,
+                controllerId,
+                ActionInvocationContext.PrintedPrimary,
+                MoveThroughTrapContext(effect, controllerId, mover, boundary));
+            if (!step.Accepted)
+            {
+                throw new InvalidOperationException(
+                    "A configured move-through trap was refused by its own effect frame.");
+            }
+
+            steps.AddRange(PreActionFacts(
+                step, sourceCardInstanceId, actionDefinitionId, controllerId, CardTextTiming.None));
+            if (step.Frame?.PendingChoice == null)
+            {
+                return false;
+            }
+
+            pendingEffectInterrupt =
+                new GuardsDigital.Core.Rules.EffectResolution.PendingEffectInterrupt(
+                    step.Frame,
+                    GuardsDigital.Core.Rules.EffectResolution.EffectInterruptKind
+                        .AfterMoveThroughTrapTrigger,
+                    RuleObject.ForHero(mover),
+                    interruptedResolutionId);
+            return true;
+        }
+
+        /// <summary>
+        /// The frame context a sprung trap runs under. Its opposing hero is the hero who walked over the
+        /// piece, because "that hero" is the whole subject of the printed clause and the frame's own
+        /// vocabulary for the other side of a moment is this slot - the same slot milestone 8.19c1 hands
+        /// the pushed hero and milestone 8.40h the marker's recipient. Here, unlike there, the name is
+        /// literal: the mine only goes off under an ENEMY of its controller.
+        /// </summary>
+        private EffectResolutionContext MoveThroughTrapContext(
+            EffectDefinition effect,
+            HeroId controllerId,
+            HeroId mover,
+            ActionBoundaryContext boundary) =>
+            new EffectResolutionContext(
+                effect,
+                ContentCatalogs.Capabilities,
+                boundary.Participants,
+                boundary.Timing,
+                boundary.RoundIndex,
+                boundary.TurnIndex,
+                CurrentModificationsFor(boundary, controllerId),
+                EffectCardState.Of(boundary.Definitions, boundary.Instances),
+                ActionKind.Skill,
+                opposingHeroId: mover,
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 rosterState: rosterState);
@@ -4676,21 +5010,40 @@ namespace GuardsDigital.Core.Rules.CardResolution
             List<ResolutionStep> steps)
         {
             if (pendingCardText != null || board == null ||
-                result.AppliedPushes == null || result.AppliedPushes.Count == 0)
+                ((result.AppliedPushes == null || result.AppliedPushes.Count == 0) &&
+                    // Milestone 8.61e. This is the altitude Min the Dragonmonk's own combination
+                    // reaches: her Red faces push an enemy after the attack, and a push that carried
+                    // that hero over one of her mines has to be priced here, where p.14's page is
+                    // standing and can be parked exactly as an after-push trigger parks it.
+                    !board.HasRecordedMoveThroughCrossings))
             {
                 return false;
             }
 
             var boundary = new ActionBoundaryContext(
                 definitions, instances, participants, timing, tieBreaker, roundIndex, turnIndex);
+            var cardTextResolutionId =
+                new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
+                    $"card-text-{sourceCardInstanceId.Value}-{actionDefinitionId.Value}-{moment}");
+
+            // The board's own rule settles before the card's trigger reads the board, exactly as it
+            // does at the Skill altitude and for the same reason: p.18 states the token's effect about
+            // the piece that was walked over, and the rider is the card's text about the push.
+            if (SpringMoveThroughTraps(cardTextResolutionId, boundary, steps))
+            {
+                pendingCardTextAwaitingInterrupt = remainderAttack == null
+                    ? null
+                    : new PendingAttackCardTextRemainder(moment, remainderAttack, remainderOutcome);
+                return pendingCardTextAwaitingInterrupt != null;
+            }
+
+            if (result.AppliedPushes == null || result.AppliedPushes.Count == 0)
+            {
+                return false;
+            }
+
             if (!TryStartAfterPushTrigger(
-                    actorId,
-                    new GuardsDigital.Core.Rules.EffectResolution.EffectResolutionId(
-                        $"card-text-{sourceCardInstanceId.Value}-" +
-                        $"{actionDefinitionId.Value}-{moment}"),
-                    result.AppliedPushes,
-                    boundary,
-                    steps))
+                    actorId, cardTextResolutionId, result.AppliedPushes, boundary, steps))
             {
                 return false;
             }

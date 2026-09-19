@@ -179,6 +179,13 @@ namespace GuardsDigital.Application
                 case MatchLogEntryKind.Clear:
                     return hero + " cleared a token" + At(entry);
 
+                // Milestone 8.61e. The reveal, in words: which hero walked over it, where, and which
+                // kind it turned out to be. `Amount` is the number of cards the removal costs, which is
+                // exactly the blast-or-dud the printed sentence distinguishes.
+                case MatchLogEntryKind.MoveThroughTrapSprung:
+                    return hero + " moved through " +
+                        (entry.Amount > 0 ? "a blast" : "a dud") + At(entry);
+
                 // The blocked action and the silent auto-resolve are the two rows that say why
                 // nothing happened. They are the reason a reader can answer "did it resolve, and if
                 // not why" - the question the 2026-09-06 playtest could not answer from any file.

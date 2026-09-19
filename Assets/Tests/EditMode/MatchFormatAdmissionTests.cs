@@ -149,7 +149,20 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(17),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(18),
+                "8.61e carries the SPRUNG-TRAP ROW: the seat-public match log gained " +
+                "MoveThroughTrapSprung, which is Min the Dragonmonk's mines going off - an enemy " +
+                "hero moves through a mine, it is removed, and for every blast removed that hero " +
+                "discards a card if able. NO BYTES GREW: the row spends the subject hero, the " +
+                "origin and the amount the layout has carried since 8.35r, and the bump is here for " +
+                "the reason 8.40f's and 8.51's were - NetworkMatchLogCodec.TryRead refuses any kind " +
+                "its own build does not declare, so a version 17 peer meeting this number refuses the " +
+                "whole FRAME and that seat goes dark. The row has to exist because the reveal has no " +
+                "other surface: until it goes off a mine is facedown and every seat but its " +
+                "controller's is handed a face naming no kind, and the board shows only a space " +
+                "emptying. SCHEMA IS UNMOVED at v43 - the row is re-derived from the retained " +
+                "rule-event log, and the pause the trap opens is an ordinary effect interrupt whose " +
+                "kind the card-action payload already writes as an int. " +
                 "8.53 carries the MATCH SCOREBOARD: NetworkSeatProjectionRecord gained a repeated " +
                 "row - hero id plus six counters, kills, deaths, attacks at heroes, times defended, " +
                 "minions killed and coins earned - written between the per-hero progression rows and " +

@@ -72,6 +72,9 @@ namespace GuardsDigital.Core.Diagnostics
             ActionPrefix + nameof(CardActionResolutionEventKind.SkillActionCompleted);
         private static readonly string TokenCleared =
             ActionPrefix + nameof(CardActionResolutionEventKind.TokenCleared);
+        // Milestone 8.61e. The one fact a sprung trap produces, and the only surface a reveal has.
+        private static readonly string MoveThroughTrapSprung =
+            ActionPrefix + nameof(CardActionResolutionEventKind.MoveThroughTrapSprung);
         private static readonly string SkillEffectNodeStopped =
             ActionPrefix + nameof(CardActionResolutionEventKind.SkillEffectNodeStopped);
         private static readonly string CardTextApplied =
@@ -417,6 +420,19 @@ namespace GuardsDigital.Core.Diagnostics
                         origin: ReadCoordinate(detail, "space", out var hasSpace),
                         hasOrigin: hasSpace);
 
+                // Milestone 8.61e. THE SUBJECT IS THE TARGET AND THERE IS NO CARD, for the reason
+                // milestone 8.40f's reveal reads neither: on a card-action fact `hero` is the acting
+                // hero and `card` is the card the rule is printed on, and both of those belong to the
+                // player whose mine it was. This row is about the hero who walked over it, who played
+                // nothing. `cards` is the reveal itself - one for a blast, none for a dud.
+                case MatchLogEntryKind.MoveThroughTrapSprung:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(references, "target", value => new HeroId(value)),
+                        origin: ReadCoordinate(detail, "space", out var hasTrapSpace),
+                        hasOrigin: hasTrapSpace,
+                        amount: Number(detail, "cards"));
+
                 case MatchLogEntryKind.MinionDefeated:
                 case MatchLogEntryKind.MinionRemoved:
                 case MatchLogEntryKind.MinionRemovalPrevented:
@@ -531,6 +547,10 @@ namespace GuardsDigital.Core.Diagnostics
             // removal is the half that names the token and its space. A clear that removed nothing
             // therefore writes no line, which is correct - nothing happened.
             if (type == TokenCleared) return MatchLogEntryKind.Clear;
+
+            // Milestone 8.61e. One row per piece that went off, because each is its own reveal: two
+            // mines under one hero were two things the table watched happen, on two different spaces.
+            if (type == MoveThroughTrapSprung) return MatchLogEntryKind.MoveThroughTrapSprung;
             if (type == MinionDefeatRecorded) return MatchLogEntryKind.MinionDefeated;
             if (type == MinionRemovalCompleted) return MatchLogEntryKind.MinionRemoved;
             if (type == MinionRemovalPrevented) return MatchLogEntryKind.MinionRemovalPrevented;

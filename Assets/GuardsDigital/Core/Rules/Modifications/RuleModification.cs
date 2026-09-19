@@ -289,6 +289,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// </summary>
         EnemyHeroesCannotTargetThroughThisTokensSpace = 14,
 
+        /// <summary>
         /// Milestone 8.61d. The affected object is an obstacle any unit may pass through while moving -
         /// Min the Dragonmonk's three Blue faces, "Place [N] mine tokens ... facedown in radius;
         /// <b>units may move through them</b>."
@@ -363,7 +364,39 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// <see cref="ActivityLimit"/> takes the smallest for the same reason from the other
         /// side.</para>
         /// </summary>
-        ItemBonusMultiplier = 16
+        ItemBonusMultiplier = 16,
+
+        /// <summary>
+        /// Milestone 8.61e. The affected TOKEN is removed as soon as a hero on the team opposing its
+        /// controller has moved through its space - Min the Dragonmonk's three Blue faces, "After an
+        /// enemy hero moves through a mine, remove it".
+        ///
+        /// <para><b>It is the second half of a sentence whose first half is
+        /// <see cref="MayBeMovedThrough"/>, and the two are separate families because they answer
+        /// separate questions.</b> The first is rulebook p.18's classification - may this piece be
+        /// walked over - and <c>ObstacleQuery</c> asks it of every route, push and coupled walk before
+        /// anything moves. This one is asked of nothing at all until a displacement has already
+        /// committed, and it never changes where a unit may go: a mine is walked over exactly as far
+        /// as the first clause says, and only then does the second clause take it off the board. Folded
+        /// into one member, a reader that wanted the transit answer would have had to know that the
+        /// piece also vanishes, and the page's own next sentence - "any special effects of tokens are
+        /// still applied" - is precisely the statement that the two are independent.</para>
+        ///
+        /// <para><b>What it does not carry is the price.</b> "for every blast removed, that hero
+        /// discards a card, if able" distinguishes two kinds of mine that are otherwise the same piece,
+        /// and it is exactly the fact a facedown mine hides. So the removal is declared here, by every
+        /// face including the one that names no kind - because every seat may know that a mine standing
+        /// there goes off when an enemy walks over it - and the consequence is declared beside it, on
+        /// <see cref="Components.TokenDefinition.MoveThroughTrapConsequences"/>, which the facedown face
+        /// leaves empty and which nothing but the authority's own trusted definition is ever read
+        /// from.</para>
+        ///
+        /// <para><b>It carries no amount, no channel and no activity</b>, for the reason milestones
+        /// 8.35z28, 8.40a, 8.57e and 8.61d each recorded: a property added to this type moves the
+        /// content digest of every hero whose declarations reach it, while an added member no earlier
+        /// declaration names moves nothing.</para>
+        /// </summary>
+        RemovedWhenAnEnemyHeroMovesThrough = 17
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -1095,6 +1128,23 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RuleValueApplicability.Always,
                 SourceValueQueryKind.None);
         }
+
+        /// <summary>
+        /// p.18's other token sentence, the one that happens after the walk: "After an enemy hero moves
+        /// through a mine, remove it." Milestone 8.61e. It carries nothing, because the sentence has no
+        /// number in it and the price of the removal is the token's own hidden kind.
+        /// </summary>
+        public static RuleModification ForRemovedWhenAnEnemyHeroMovesThrough() =>
+            new RuleModification(
+                RuleModificationKind.RemovedWhenAnEnemyHeroMovesThrough,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+                RuleValueApplicability.Always,
+                SourceValueQueryKind.None);
 
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
         {
