@@ -32,13 +32,17 @@ Completed 2026-09-19 (`686af16e`). No new capability and no new handler type: `r
 
 Historical evidence: [8.57a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857a-rowenna-reward-completion-evidence).
 
-### [ ] 8.57b Support the vanguard's swap and the gauntlet
+### [x] 8.57b Support the vanguard's swap and the gauntlet
 
 Outcome: Rowenna swaps with a friendly unit in range that is adjacent to an enemy hero or has a card in the discard; Throw the Gauntlet places her adjacent to an enemy hero in range, hands that hero an optional one-space move, and pays her 2 coins only when they took it.
 
 Acceptance: candidate narrowing on both qualifiers with minions qualifying by adjacency only; Defend the Innocent's own retrieve; self-place destinations in range and adjacent to an enemy hero in range with no destination inventing range; the enemy hero as the mover's decision owner across seats and the wire; the conditional coins; immunity, occupied destinations and stale answers. T2 minimum.
 
 Non-goals: defeats, minion placement, dealing.
+
+Completed 2026-09-19 (`71307821`). The three Blues compose on the printed-icon UNIT selection `synthetic-range-unit-target@1` (AlliedWithSource; the unit arm already excludes the actor, so 8.57a's `includeSelf` note is answered by measurement) with ONE new optional parameter `adjacentToAnEnemyHeroOrHoldingADiscard` (one parameter because the printed "or" joins two qualifiers inside one reach - Whisper's `choose-swap-subject@1` joins two REACHES and was the wrong contract, RO-Q8a), `synthetic-swap-actor@1` as the selection's consumer, and `retrieve-card@1` for Defend the Innocent. Throw the Gauntlet asks the hero first, then the space (RO-Q8): `synthetic-range-hero-target@1` with the Place as its consumer, a NEW deferred declaration `synthetic-place-in-range-beside-a-named-hero@1` over the existing `PlaceHandler` (`PlaceDestinationQualifier.AdjacentToTheNamedSpace`, required `besideSpace`), then `synthetic-direct-move@3` as a `May` Capability node with a new optional `chooser` (the enemy hero rides to the pause as `EffectChoiceRequest.ChooserHeroId`, the field 8.35r already routes; the actor is refused as the wrong chooser - RO-Q8c; a hemmed-in hero is never asked - RO-Q8d) and a new optional `didMove` output gating `gain-resource@1`'s 2 coins. No handler type; no digest moved; `SyntheticPlacementCapabilities.DeferredHandlers` holds exactly the one id until 8.57g. Two neighbouring fixtures corrected (the reward fixture's registered-catalog assertion split; `PlacementLineQualifierTests`' empty-deferred assertion narrowed). `RowennaSwapAndGauntletTests` 28 cases; harness 3479/3479; focused Edit Mode 138/138 over thirteen fixtures. The `Optional`/`BoundHero` gap stays open and unneeded.
+
+Historical evidence: [8.57b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857b-rowenna-swap-and-gauntlet-completion-evidence).
 
 ### [ ] 8.57c Support surrender
 
