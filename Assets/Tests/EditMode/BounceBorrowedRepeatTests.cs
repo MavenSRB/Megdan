@@ -5,6 +5,7 @@ using System.Reflection;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -39,6 +40,14 @@ namespace GuardsDigital.Tests.EditMode
     /// <para><b>What stays as it was:</b> on Bounce's own turn the card is mid-resolution - played,
     /// revealed, not yet resolved - so the wide reading is still false and the repeat is still not
     /// offered, which is the printed reading the Play Mode journey already pins.</para>
+    ///
+    /// <para><b>Milestone 8.59 added the offer's own shape to this fixture</b>, because the second
+    /// table report about this card is about the question rather than the repeat: "why are unavailable
+    /// spaces offered for this silver? It should just offer legal spaces 2 away, not this space 1 away
+    /// which is illegal." The cases below drive the same turn and read what <c>bounce-line</c> actually
+    /// put in front of the player, first performance and repeat both. The parameter that carries the
+    /// fix, and what it does to every other body of the shared declaration, is
+    /// <see cref="BounceOfferTests"/>.</para>
     /// </summary>
     [TestFixture]
     public sealed class BounceBorrowedRepeatTests
@@ -74,10 +83,97 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(fixture.PerformedMoves, Is.EqualTo(1), fixture.Trace());
         }
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.59. What the question actually offers
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The report, answered on her own turn: every space the question lights is two spaces away in
+        /// a straight line, and no space one away is among them.
+        ///
+        /// <para>Asserted as a SET EQUALITY against the six spaces the board admits at that distance,
+        /// rather than as "no candidate is one away". A rule stated only as an absence passes on an
+        /// offer that lost half its legal answers as well as its illegal ones, and the card has to keep
+        /// offering every direction she can actually take.</para>
+        /// </summary>
+        [Test]
+        public void BouncesQuestion_OffersEveryStraightLineSpaceTwoAwayAndNothingNearer()
+        {
+            var fixture = new SwiftTurn(borrowThroughReload: false);
+
+            fixture.Drive();
+
+            Assert.That(fixture.LineOffers, Has.Count.EqualTo(1),
+                fixture.Trace() + " | One performance, one question.");
+            var offer = fixture.LineOffers[0];
+            Assert.That(offer.Offered, Is.EquivalentTo(offer.StraightLineSpacesTwoAway),
+                fixture.Trace() + " | \"Move 2 spaces in a straight line\" is a count: the offer is " +
+                "exactly the spaces at that count which the board leaves free.");
+            Assert.That(offer.Offered, Is.Not.Empty, fixture.Trace() +
+                " | The fixture's own premise - a bare board around her - so an empty offer here " +
+                "would mean the narrowing took everything rather than the illegal half.");
+            Assert.That(
+                offer.Offered.Any(space =>
+                    HexDistanceQuery.Calculate(space, offer.StoodAt) != 2),
+                Is.False,
+                fixture.Trace() + " | Not one space one away, which is the whole report.");
+        }
+
+        /// <summary>
+        /// The repeat asks the same question again from wherever the first walk left her, which is the
+        /// half a fix applied to one node could have missed: a repeated action re-derives its offer
+        /// rather than replaying the first one.
+        /// </summary>
+        [Test]
+        public void TheBorrowedRepeat_AsksTheSameExactQuestionFromTheSpaceTheFirstWalkLeftHerOn()
+        {
+            var fixture = new SwiftTurn(borrowThroughReload: true);
+
+            fixture.Drive();
+
+            Assert.That(fixture.LineOffers, Has.Count.EqualTo(2),
+                fixture.Trace() + " | The borrowed performance and its one repeat.");
+            Assert.That(
+                fixture.LineOffers[1].StoodAt, Is.Not.EqualTo(fixture.LineOffers[0].StoodAt),
+                fixture.Trace() + " | She moved, so the second question is asked from somewhere else.");
+
+            foreach (var offer in fixture.LineOffers)
+            {
+                Assert.That(offer.Offered, Is.EquivalentTo(offer.StraightLineSpacesTwoAway),
+                    fixture.Trace() + " | Both offers are the same shape, derived where she stands.");
+            }
+        }
+
+        /// <summary>
+        /// Rulebook p.11 on an exact distance that cannot be walked: the action stops. A board whose
+        /// every straight-line space two away is missing offers nothing at all - and, crucially, does
+        /// NOT fall back to the six spaces one away that the same walk still reaches, which is exactly
+        /// what it used to offer.
+        /// </summary>
+        [Test]
+        public void ABoardWithNoStraightLineSpaceTwoAway_OffersNothingRatherThanASpaceNearer()
+        {
+            var fixture = new SwiftTurn(borrowThroughReload: false, boxedIn: true);
+
+            fixture.Drive();
+
+            Assert.That(fixture.OneSpaceAwayIsReachable, Is.True,
+                fixture.Trace() + " | The fixture's premise: the walk still reaches six spaces one " +
+                "away, so an empty offer below is the printed distance refusing them rather than the " +
+                "board refusing everything.");
+            Assert.That(fixture.LineOffers, Is.Empty,
+                fixture.Trace() + " | No question is opened at all, because it would have no answer.");
+            Assert.That(fixture.PerformedMoves, Is.EqualTo(0), fixture.Trace());
+            Assert.That(fixture.SkillWasAvailable, Is.False,
+                fixture.Trace() + " | And the action is not offered as available either, so the stop " +
+                "is a control the player never presses rather than a turn spent on nothing.");
+        }
+
         /// <summary>
         /// One of Swift's turns on a bare board. With <c>borrowThroughReload</c> the round's first slot
         /// holds Bounce, already resolved, and the turn being played is Reload!'s; without it the
-        /// turn being played is Bounce's own.
+        /// turn being played is Bounce's own. With <c>boxedIn</c> the board is the same disk minus
+        /// every straight-line space two away from where she stands.
         /// </summary>
         private sealed class SwiftTurn
         {
@@ -87,13 +183,20 @@ namespace GuardsDigital.Tests.EditMode
             private readonly CardInstance reload;
             private readonly CardInstance acting;
             private readonly bool borrowThroughReload;
+            private readonly bool boxedIn;
             private readonly List<string> trace = new List<string>();
             private readonly List<CardInstanceId> borrowCandidates = new List<CardInstanceId>();
+            private readonly List<LineOffer> lineOffers = new List<LineOffer>();
             private readonly TurnResolutionAuthority turn;
+            private readonly AdjacentMoveAuthority board;
+            private readonly IReadOnlyList<HexCoordinate> playable;
+            private readonly IReadOnlyList<HeroId> everyHero;
+            private readonly HeroId actorId;
 
-            public SwiftTurn(bool borrowThroughReload)
+            public SwiftTurn(bool borrowThroughReload, bool boxedIn = false)
             {
                 this.borrowThroughReload = borrowThroughReload;
+                this.boxedIn = boxedIn;
                 var configuration =
                     MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(TeamSide.Red);
                 var actor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
@@ -114,6 +217,7 @@ namespace GuardsDigital.Tests.EditMode
                     .GroupBy(value => value.Reference).Select(group => group.First()).ToArray();
                 instances = configuration.CardInstances.Concat(new[] { bounce, reload }).ToArray();
 
+                var startsAt = new HexCoordinate(0, 0);
                 var coordinates = new List<HexCoordinate>();
                 for (var q = -5; q <= 5; q++)
                 for (var r = -5; r <= 5; r++)
@@ -121,10 +225,25 @@ namespace GuardsDigital.Tests.EditMode
                     if (Math.Abs(q + r) <= 5) coordinates.Add(new HexCoordinate(q, r));
                 }
 
+                // Milestone 8.59. The p.11 board: the same disk with every straight-line space TWO
+                // away from her removed, and every space one away left where it is. The walk still
+                // reaches six spaces; the printed distance admits none of them.
+                if (boxedIn)
+                {
+                    var unreachable = EveryDirection()
+                        .Select(direction => StraightLineQuery.Step(startsAt, direction, 2))
+                        .ToArray();
+                    coordinates.RemoveAll(value => unreachable.Contains(value));
+                }
+
+                playable = coordinates.ToArray();
+                actorId = actor;
+                everyHero = new[] { actor }.Concat(others).ToArray();
+
                 var stands = new[] { new HexCoordinate(4, 0), new HexCoordinate(0, 4), new HexCoordinate(-4, 4) };
-                var board = new AdjacentMoveAuthority(
+                board = new AdjacentMoveAuthority(
                     coordinates,
-                    new[] { new HeroOccupancy(actor, new HexCoordinate(0, 0)) }
+                    new[] { new HeroOccupancy(actor, startsAt) }
                         .Concat(others.Select((id, index) => new HeroOccupancy(id, stands[index]))),
                     Enumerable.Empty<ObstacleOccupancy>(),
                     Enumerable.Empty<QuickGameMinionSetupState>());
@@ -216,6 +335,20 @@ namespace GuardsDigital.Tests.EditMode
 
             public IReadOnlyList<CardInstanceId> BorrowCandidates => borrowCandidates;
 
+            /// <summary>Milestone 8.59. Every <c>bounce-line</c> question, in the order it was asked.</summary>
+            public IReadOnlyList<LineOffer> LineOffers => lineOffers;
+
+            /// <summary>Whether the primary action was offered as one the player may press at all.</summary>
+            public bool SkillWasAvailable { get; private set; }
+
+            /// <summary>
+            /// The premise the boxed-in board needs stated rather than assumed: the walk still reaches
+            /// spaces ONE away from her. An empty offer is then the printed distance refusing them,
+            /// not a board that had nothing to give.
+            /// </summary>
+            public bool OneSpaceAwayIsReachable =>
+                SpacesAtExactly(ActorStandsAt(), 1).Count > 0;
+
             public string Trace() => string.Join(",", trace);
 
             public void Drive()
@@ -265,6 +398,18 @@ namespace GuardsDigital.Tests.EditMode
                             effect.SelectedCandidates.Count == 0)
                         {
                             PerformedMoves++;
+
+                            // Milestone 8.59. What the player is actually looking at, read where she
+                            // is standing when the question opens rather than where she started.
+                            var stoodAt = ActorStandsAt();
+                            lineOffers.Add(new LineOffer(
+                                stoodAt,
+                                effect.Candidates
+                                    .Where(candidate =>
+                                        candidate.Value.Kind == EffectValueKind.Coordinate)
+                                    .Select(candidate => candidate.Value.Coordinate)
+                                    .ToArray(),
+                                SpacesAtExactly(stoodAt, 2)));
                         }
 
                         // Reload!'s modal is answered on its borrow arm, never its defeat arm; every
@@ -298,8 +443,19 @@ namespace GuardsDigital.Tests.EditMode
                                 definitions, instances, acting.OwnerId, acting.Id)
                             .Single(value => value.ActionDefinitionId.Equals(
                                 SwiftCardContent.PrimaryBasicSkill));
-                        Assert.That(turn.TryStartSkill(
-                            new ActionResolutionId("swift-own"), offer).Accepted, Is.True);
+                        var startedSkill = turn.TryStartSkill(
+                            new ActionResolutionId("swift-own"), offer);
+                        SkillWasAvailable = startedSkill.Accepted;
+                        trace.Add("start:accepted=" + startedSkill.Accepted);
+                        if (!startedSkill.Accepted)
+                        {
+                            // Milestone 8.59's boxed-in board reaches here: an exact distance the
+                            // board cannot supply is a control the player never presses.
+                            Assert.That(boxedIn, Is.True,
+                                Trace() + " | Only the boxed-in board may refuse this action.");
+                            break;
+                        }
+
                         started = true;
                         continue;
                     }
@@ -308,6 +464,82 @@ namespace GuardsDigital.Tests.EditMode
                     break;
                 }
             }
+
+            /// <summary>Where the acting hero is standing right now, read off the live board.</summary>
+            private HexCoordinate ActorStandsAt()
+            {
+                Assert.That(
+                    board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(actorId), out var at),
+                    Is.True, "The acting hero is on the board.");
+                return at;
+            }
+
+            /// <summary>
+            /// The spaces exactly <paramref name="steps"/> away from <paramref name="from"/> along one
+            /// of p.19's six files that this board can actually end a walk on: the file's spaces all
+            /// exist and nobody is standing on the last one. Derived from the board rather than from a
+            /// remembered list, because the second offer is asked from wherever the first walk left
+            /// her.
+            /// </summary>
+            private IReadOnlyList<HexCoordinate> SpacesAtExactly(HexCoordinate from, int steps)
+            {
+                var found = new List<HexCoordinate>();
+                var taken = everyHero
+                    .Where(id => !id.Equals(actorId))
+                    .Where(id => board.TryGetObjectCoordinate(
+                        BoardObjectReference.ForHero(id), out _))
+                    .Select(id =>
+                    {
+                        board.TryGetObjectCoordinate(BoardObjectReference.ForHero(id), out var at);
+                        return at;
+                    })
+                    .ToArray();
+
+                foreach (var direction in EveryDirection())
+                {
+                    var file = Enumerable.Range(1, steps)
+                        .Select(step => StraightLineQuery.Step(from, direction, step))
+                        .ToArray();
+                    if (file.All(space => playable.Contains(space)) &&
+                        !taken.Contains(file[file.Length - 1]))
+                    {
+                        found.Add(file[file.Length - 1]);
+                    }
+                }
+
+                return found;
+            }
+
+            private static IEnumerable<HexDirection> EveryDirection() =>
+                new[]
+                {
+                    HexDirection.East, HexDirection.NorthEast, HexDirection.NorthWest,
+                    HexDirection.West, HexDirection.SouthWest, HexDirection.SouthEast
+                };
+        }
+
+        /// <summary>
+        /// Milestone 8.59. One opening of <c>bounce-line</c>: where she stood, what she was offered,
+        /// and what the board admits at the printed distance from there.
+        /// </summary>
+        internal sealed class LineOffer
+        {
+            public LineOffer(
+                HexCoordinate stoodAt,
+                IReadOnlyList<HexCoordinate> offered,
+                IReadOnlyList<HexCoordinate> straightLineSpacesTwoAway)
+            {
+                StoodAt = stoodAt;
+                Offered = offered;
+                StraightLineSpacesTwoAway = straightLineSpacesTwoAway;
+            }
+
+            public HexCoordinate StoodAt { get; }
+
+            public IReadOnlyList<HexCoordinate> Offered { get; }
+
+            public IReadOnlyList<HexCoordinate> StraightLineSpacesTwoAway { get; }
         }
     }
 }

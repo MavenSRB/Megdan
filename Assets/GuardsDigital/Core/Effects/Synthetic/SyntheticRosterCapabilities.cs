@@ -1361,6 +1361,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     new[]
                     {
                         new EffectCapabilityParameter("maximumDistance", EffectValueKind.Integer),
+
+                        // Milestone 8.59. Reported at the table on Swift's Bounce: "why are
+                        // unavailable spaces offered for this silver? It should just offer legal
+                        // spaces 2 away, not this space 1 away which is illegal." The offer had only
+                        // a ceiling, so "Move 2 spaces in a straight line" lit every space one away
+                        // as well - and answering with one of them named a move the card cannot
+                        // perform, which p.11 stops the action over.
+                        //
+                        // The floor belongs HERE rather than in the consuming Move, because the Move
+                        // sees a space that was already named: only the offer can decline to name it.
+                        // It is the third optional narrowing this declaration carries, on the same
+                        // discipline `ignoresObstacles` and `continuedLineFrom` record - unbound (or
+                        // bound to nought) reads as ONE, which is the floor every body written before
+                        // this milestone already walked, so none of their candidate sets moves. It is
+                        // named the way its sibling `choose-charge-line@1` has named the same bound
+                        // since Brogan, where it is required rather than optional because all three
+                        // of that declaration's consumers print an exact or enumerated distance.
+                        new EffectCapabilityParameter(
+                            "minimumDistance", EffectValueKind.Integer, isRequired: false),
                         new EffectCapabilityParameter(
                             IgnoresObstaclesParameter, EffectValueKind.Boolean, isRequired: false),
 
@@ -1420,11 +1439,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// produces when the enemy did not move: "up to that number" is up to nothing, and the
             /// declaring node's own <c>up to</c> policy turns an empty offer into a step simply not
             /// taken.</para>
+            ///
+            /// <para><b>Milestone 8.59: the floor is a declaration, and its default is one.</b> An
+            /// unbound optional Integer reads as nought here as everywhere, and nought is exactly the
+            /// floor this walk already had - standing still is not a straight-line move - so it is
+            /// raised to one rather than treated as a narrower question. A body that binds the
+            /// parameter says the distance its printed sentence states, and a floor above the ceiling
+            /// is a legal question with no answer, on the same reading as a ceiling of nought.</para>
             /// </summary>
             public static IReadOnlyList<HexCoordinate> Destinations(EffectCapabilityContext context)
             {
                 var board = context.Components?.Board;
                 var maximum = context.Input("maximumDistance").IntegerValue;
+                var minimum = Math.Max(1, context.Input("minimumDistance").IntegerValue);
                 var crosses = context.Inputs.ContainsKey(IgnoresObstaclesParameter) &&
                     context.Input(IgnoresObstaclesParameter).BooleanValue;
 
@@ -1433,7 +1460,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var continuesFrom = context.Inputs.ContainsKey(ContinuedLineFromParameter)
                     ? context.Input(ContinuedLineFromParameter).Coordinate
                     : (HexCoordinate?)null;
-                if (board == null || maximum < 1 || !board.TryGetObjectCoordinate(
+                if (board == null || maximum < 1 || minimum > maximum ||
+                    !board.TryGetObjectCoordinate(
                         BoardObjectReference.ForHero(context.ActorId), out var actorAt))
                 {
                     return Array.Empty<HexCoordinate>();
@@ -1444,7 +1472,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 foreach (var route in board.FindDirectMoveDestinations(
                     actor, maximum, context.Modifications, moveIgnoresObstacles: crosses))
                 {
-                    if (route.Cost < 1 || route.Cost > maximum ||
+                    if (route.Cost < minimum || route.Cost > maximum ||
                         !StraightLineQuery.TryGetDirection(
                             actorAt, route.Destination, out var direction, out var distance) ||
                         distance != route.Cost || !IsStraightRoute(actorAt, direction, route.Route))

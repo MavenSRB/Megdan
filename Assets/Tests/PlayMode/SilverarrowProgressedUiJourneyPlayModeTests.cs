@@ -584,13 +584,17 @@ namespace GuardsDigital.Tests.PlayMode
 
             var line = LitDestinations(runtime);
             Assert.That(line, Is.Not.Empty,
-                "The free move offers the spaces a straight line of up to two admits.");
+                "The free move offers the spaces a straight line of exactly two admits.");
+
+            // Milestone 8.59. EXACTLY two, not at most two. This read `<= 2` until the Bounce sweep
+            // measured the same defect here: "you may move 2 spaces" leaves whether to move to the
+            // hero - which is the node's own `May` policy - and leaves the distance to nobody.
             Assert.That(
-                line.All(space => HexDistanceQuery.Calculate(space, startedAt) <= 2),
+                line.All(space => HexDistanceQuery.Calculate(space, startedAt) == 2),
                 Is.True,
-                "Two spaces is the printed bound, and nothing on this card raises it - hers is the " +
-                "first Ultimate in the roster that prints neither Range nor Radius, so p.16's item " +
-                "has nothing here to reach.");
+                "Two spaces is the printed count, and nothing on this card raises or lowers it - hers " +
+                "is the first Ultimate in the roster that prints neither Range nor Radius, so p.16's " +
+                "item has nothing here to reach.");
         }
 
         // ---------------------------------------------------------------------------------------

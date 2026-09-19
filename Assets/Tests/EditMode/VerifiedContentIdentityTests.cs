@@ -103,7 +103,13 @@ namespace GuardsDigital.Tests.EditMode
             //
             // MEASURED, not predicted, on a COMPLETE unfiltered run - the pin was added with a
             // deliberately wrong value and the digest read off this oracle's own failure output.
-            new IdentityPin("silverarrow", "silverarrow-8-35z46-rev-1", "be30860309c483b71964a591a71f09eae25b829519f111264e84e120b74e2d24"),
+            //
+            // MOVED at milestone 8.59, on the same complete unfiltered run that moved Swift's below
+            // and no other pin by a byte. Wild Hunt's "you may move 2 spaces in a straight line" bound
+            // its offer a ceiling and no floor, so the free move lit the spaces ONE away too; the
+            // floor is now bound on `wild-hunt-line`, which is a literal added to one node of one
+            // face and is the whole of this digest's move.
+            new IdentityPin("silverarrow", "silverarrow-8-59-rev-1", "7550446c7b1bb49fcc70afad5d44183b9c227366194c2ee17fa7ac516aaa464b"),
             // Milestone 8.35z50. THE TENTH PIN, arriving on exactly the terms the seventh through
             // ninth did: a pin is a claim about content a configured match loads, and milestone
             // 8.35z31 composed Ursafar without dealing him.
@@ -145,7 +151,14 @@ namespace GuardsDigital.Tests.EditMode
             // of this list. Milestone 8.35z50's trap was watched for and did not recur: her staged
             // configuration went into EveryDealtDefinition in this same change, so the digest below is
             // over her whole dealt set rather than over zero cards.
-            new IdentityPin("swift", "swift-8-48-rev-1", "83e0cc9eb88eaa59f2c1db6fc2806a1458de572d52a24007b71697b8974e64a6"),
+            //
+            // MOVED at milestone 8.48, when Bounce's repeat gate took the wide reading, and again at
+            // milestone 8.59, when Bounce's OFFER took the floor its Move already declared - the
+            // table's second report about the same card: "it should just offer legal spaces 2 away,
+            // not this space 1 away which is illegal." Both moves are one literal on one node of one
+            // face, and on 8.59's complete unfiltered run every pin but Silverarrow's - whose own
+            // Ultimate the same sweep corrected - measured byte-identical.
+            new IdentityPin("swift", "swift-8-59-rev-1", "147f9266b9364a85911e8b3e3a4e58b16a42a7bcb7e7fa6c85557925fab36c6c"),
             // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
             // composed Cutter's eighteen faces without dealing her.

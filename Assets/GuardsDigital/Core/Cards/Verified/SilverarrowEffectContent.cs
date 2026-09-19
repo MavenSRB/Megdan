@@ -645,9 +645,15 @@ namespace GuardsDigital.Core.Cards.Verified
         ///
         /// <para>The declaration is on the card - <see cref="BeforeActionTriggerFrequency.EveryAction"/>
         /// paired with no action kind, because the sentence names none - and what runs is this: a
-        /// straight-line walk of up to two spaces that the actor may decline. The line is chosen and
+        /// straight-line walk of exactly two spaces that the actor may decline. The line is chosen and
         /// then moved to, which is Brogan's charge's shape without his adjacency clause, and it crosses
         /// no obstacles because the card says nothing about crossing any.</para>
+        ///
+        /// <para><b>Milestone 8.59 corrected the distance, which this summary had called "up to
+        /// two".</b> The "may" governs whether she moves, not how far: the offer now binds both bounds
+        /// at two, so a board with no free straight-line space two away offers nothing and the
+        /// <c>May</c> policy leaves the step simply not taken - which is what declining looks like
+        /// anyway, and is the only shape that never walks a distance the card does not print.</para>
         /// </summary>
         public static EffectDefinition WildHuntTriggeredEffect(string contentRevision)
         {
@@ -673,7 +679,15 @@ namespace GuardsDigital.Core.Cards.Verified
                         inputs: new[]
                         {
                             EffectInputBinding.FromLiteral(
-                                "maximumDistance", EffectValue.Integer(2))
+                                "maximumDistance", EffectValue.Integer(2)),
+
+                            // Milestone 8.59, the second face the Bounce sweep found. "You MAY move 2
+                            // spaces" leaves whether to move at all to the hero - which is this node's
+                            // `May` policy - and leaves the distance to nobody: two is a count. The
+                            // offer had only a ceiling, so it lit the spaces one away as well, and
+                            // taking one of them was a shorter walk than the sentence permits.
+                            EffectInputBinding.FromLiteral(
+                                "minimumDistance", EffectValue.Integer(2))
                         },
                         outputs: new[]
                         {

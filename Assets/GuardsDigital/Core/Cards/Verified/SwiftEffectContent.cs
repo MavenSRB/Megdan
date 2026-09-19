@@ -447,9 +447,13 @@ namespace GuardsDigital.Core.Cards.Verified
         /// "Move 2 spaces in a straight line, ignoring obstacles; if this card is already resolved as
         /// you perform this action, may repeat once." - Bounce.
         ///
-        /// <para><b>Exactly two spaces, not up to two.</b> <c>choose-line-destination@1</c> bounds the
-        /// file at a maximum and carries the obstacle clause; the floor is the Move's own
-        /// <c>leastDistance</c>, so standing still cannot satisfy the printed instruction.</para>
+        /// <para><b>Exactly two spaces, not up to two - and the OFFER says so, since milestone
+        /// 8.59.</b> <c>choose-line-destination@1</c> carries the obstacle clause and both bounds of
+        /// the file, equal here because "Move 2 spaces" is a count rather than a ceiling; the Move's
+        /// own <c>leastDistance</c> states the same floor a second time, where it stops a shortened
+        /// walk to a space already named. Until 8.59 only the Move held the floor, so the question lit
+        /// every space one away as well and a player at the table answered with one - a move the card
+        /// cannot perform, which p.11 stops the action over rather than shortening.</para>
         ///
         /// <para><b>The repeat's gate is the clause this project has met twice before.</b> "If this
         /// card is already resolved as you perform this action" can only hold when the action is a
@@ -487,6 +491,15 @@ namespace GuardsDigital.Core.Cards.Verified
                         {
                             EffectInputBinding.FromLiteral(
                                 "maximumDistance", EffectValue.Integer(2)),
+
+                            // Milestone 8.59. The floor the sentence states, said to the OFFER.
+                            // Without it the question lit every space one away too, and answering
+                            // with one of them named a move `bounce-move` cannot perform - p.11 stops
+                            // the action rather than shortening it - so the card offered spaces it
+                            // could not take. The two bounds are equal because "Move 2 spaces" is a
+                            // count, not a ceiling.
+                            EffectInputBinding.FromLiteral(
+                                "minimumDistance", EffectValue.Integer(2)),
                             EffectInputBinding.FromLiteral(
                                 SyntheticRosterCapabilities.IgnoresObstaclesParameter,
                                 EffectValue.Boolean(true))

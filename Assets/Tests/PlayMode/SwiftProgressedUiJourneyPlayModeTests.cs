@@ -183,9 +183,13 @@ namespace GuardsDigital.Tests.PlayMode
                 value + "/d" + HexDistanceQuery.Calculate(from, value)));
             foreach (var destination in destinations)
             {
+                // Milestone 8.59. EXACTLY two, not within two. This read `Is.InRange(1, 2)` until a
+                // player at the table asked why the spaces one away were lit when the card cannot
+                // move to them: "Move 2 spaces" is a count, and `bounce-move` refuses a shorter walk,
+                // so every landing one away was an answer that could only throw the action away.
                 Assert.That(HexDistanceQuery.Calculate(from, destination),
-                    Is.InRange(1, 2),
-                    "Every offered landing is within the printed two spaces. Offer was: " + shape);
+                    Is.EqualTo(2),
+                    "Every offered landing is the printed two spaces away. Offer was: " + shape);
                 Assert.That(
                     destination.Q == from.Q || destination.R == from.R ||
                     (destination.Q + destination.R) == (from.Q + from.R),
