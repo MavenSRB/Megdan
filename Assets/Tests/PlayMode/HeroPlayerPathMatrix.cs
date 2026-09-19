@@ -1108,6 +1108,39 @@ namespace GuardsDigital.Tests.PlayMode
                 // p.16 puts the unlocked Ultimate faceup in the hero's area, which is a thing a player
                 // must be able to see before it is a thing they can use.
                 shapes.Add(PlayerInteractionShape.UltimateRailVisibility);
+
+                // Milestone 8.57h. An Ultimate whose permanent ability REPLACES p.13's reach for every
+                // Attack its controller performs introduces the ranged targeting shape itself, and
+                // this is the one place the derivation can say so.
+                //
+                // <para><b>Why it has to be read here and not off the Attack faces.</b> The shape a
+                // face introduces is derived from that face's own definition, and
+                // <see cref="ActionDefinition.AttackRange"/> on Rowenna's six Attack faces is and stays
+                // <c>NonRanged</c> - milestone 8.57g records why in as many words: <i>"the offer's
+                // classification deliberately stays PRINTED, because ActionOffer equality guards every
+                // authorization path, so the overlay is applied by the DRAWING"</i>. So no reading of
+                // an Attack face can know that a card beside the dashboard has moved its reach, and
+                // milestone 8.57f's offline prediction - that Fabled Lance would move her Attacks from
+                // AdjacentAttackTarget to RangedAttackTarget - is measurably not what this derivation
+                // does. Left alone, her whole set would declare only the adjacent shape and NOTHING in
+                // the gate would require a journey in which a player clicks a unit two spaces away.
+                //
+                // <para><b>It is content-derived rather than declared</b>, on the same terms every
+                // other line here is: the claim is read off
+                // <see cref="RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange"/>, the
+                // family milestone 8.57e minted for exactly this sentence, so a later Ultimate printing
+                // the same clause inherits the obligation and one printing anything else does not. It
+                // leaves every hero before her byte-identical, measured by deriving all eighteen
+                // composed corpora before and after: no other content in this build carries that
+                // modification kind at all.</para>
+                if (definition.UltimateRule != null &&
+                    definition.UltimateRule.Modifications.Any(modification =>
+                        modification.Kind ==
+                            RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange))
+                {
+                    shapes.Add(PlayerInteractionShape.RangedAttackTarget);
+                }
+
                 if (definition.UltimateRule != null &&
                     definition.UltimateRule.TriggeredEffect.HasValue)
                 {
