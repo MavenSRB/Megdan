@@ -78,6 +78,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Sixteenth-hero dealing: Garrus the Gladiator](Roadmap/PHASE_8_SIXTEENTH_HERO.md)
 - [Phase 8 - Seventeenth-hero dealing: Widget and Pyro](Roadmap/PHASE_8_SEVENTEENTH_HERO.md)
 - [Phase 8 - Eighteenth-hero dealing: Rowenna](Roadmap/PHASE_8_EIGHTEENTH_HERO.md)
+- [Phase 8 - Nineteenth-hero dealing: Min the Dragonmonk](Roadmap/PHASE_8_NINETEENTH_HERO.md)
 - [Phase 8 - Playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)
 - [Phase 8 - The decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)
 - [Phase 8 - Six-hero roster re-baseline and shared foundations](Roadmap/PHASE_8_ROSTER_REBASE.md)
