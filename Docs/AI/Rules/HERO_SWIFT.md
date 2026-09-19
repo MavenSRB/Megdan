@@ -258,7 +258,7 @@ cards' grants in one turn - a turn resolves one card, so there are never several
 
 **SW-Q3 IS SETTLED, AND THE ANSWER IS YES - through Bullet Time, measured at milestone 8.38e.** A driven
 turn shows the grant handing Bounce's own primary back after Bounce resolved, which is exactly the second
-performance the clause describes. The original note follows.
+performance the clause describes. **And since milestone 8.54 the REPEAT holds there too** - the user's ruling of 2026-09-19: "Bounce through Bullet Time counts as already resolved. Bounce moves 2, the card resolves, the Ultimate grants the primary on the resolved card, and that performance offers the repeat. Three moves of 2." Until 8.54 it did not: 8.25e commits a card's resolution status below the `ActionEnded` checkpoint where Bullet Time grants, so the state still read Bounce as unresolved at the granted performance's gate. The gate now also asks which performance is running (`BasicActionQuery.IsPerformedOffACardAlreadyResolved` - true for a text-granted performance, false for p.10's repeat and for a reaction), inside the `countResolvedPlayed` opt-in only; Blizzard's binding, the only other one, cannot move. The original note follows.
 
 **AND IT WAS STILL DEAD TEXT THROUGH RELOAD!, UNTIL MILESTONE 8.48.** The 2026-09-18 playtest reported it in
 one sentence - "Swift's gold didn't let me play her silver twice" - and the cause was the gate's reading, not
@@ -315,4 +315,4 @@ the inventory was not.
 | SW-12 | Twenty-seven capability BINDINGS across ten faces named parameters and outputs their capabilities do not declare | Settled at 8.38e; no printed reading moved |
 | SW-Q1 | "Rightmost resolved card" reading | Open, non-blocking |
 | SW-Q2 | Bullet Time's target exclusion scope | Open, non-blocking |
-| SW-Q3 | Whether Bounce's self-referential gate ever holds | Settled at 8.38e: YES, through Bullet Time's grant |
+| SW-Q3 | Whether Bounce's self-referential gate ever holds | Settled at 8.38e: YES, through Bullet Time's grant; the repeat off that grant holds since 8.54 |
