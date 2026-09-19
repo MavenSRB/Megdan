@@ -518,3 +518,23 @@ Non-goals: new gameplay; the 8.54 and 8.55 fixes, which wait behind the package.
 Completed 2026-09-19. `Builds/Playtest-8.53-victory-screen` and `Builds/Playtest-8.53-victory-screen.zip` (186 entries, no logs, no debug folder, 67 MB), built from main at `11e8cf3d` (tag `milestone/8.53`) with bundleVersion `1.0-8.53-victory-screen`, stamp `1.0-8.53-victory-screen+20260919024107-789e12b0`; protocol `guards-private-online/17`, schema 43, configured content digest `ff41228b...` re-measured and unchanged. The gate: complete Edit Mode 4396 / 4360 passed / 0 failed / 36 established skips, complete Play Mode 629/629 with zero skips, harness 3425/3425, the build-and-launch smoke, and the packaged exe launched once from its own folder to `LOBBY_BEGIN`. Manifest, READ ME FIRST (what is new: the decision window, the victory screen, defeat costs, the banner, Bounce, END TURN; known problems updated) and BUILD IDENTITY written by hand per the 8.44 recipe.
 
 Historical evidence: [8.56 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-856-victory-screen-package-completion-evidence).
+
+### [ ] 8.58 The decision window shows the card and names its choices
+
+Asked by the user 2026-09-19 morning, on three screenshots of the packaged build: "This sucks. We said we will show the card, and have nice labels on the buttons? This box is a waste of space like this." and "Old buttons here instead of new ones." The 2026-09-18 review settled exactly that - "the card(s) in question, one button per choice", "card + one button per printed bullet", "two buttons whose labels name the consequence, never ACCEPT/DECLINE" - and 8.46 shipped the mechanics without it: a modal read `MODE #1 RELOAD-BORROW-ARM`, an optional step read "DO IT?" over pewter ACCEPT / DECLINE banners, no card face, and the expanded window an inset of the whole playfield.
+
+Outcome: every expanded card-text question shows the asking card's face beside a content-sized centred panel; every choice arm and optional step of every dealt hero carries a label from its printed text, proven by a corpus test that names each missing pair, so a seat never sees a node id; the optional-step arm uses the window's own controls.
+
+Acceptance: presenter tests for the face, the title and the labels on each family; the corpus label test green over all dealt heroes; geometry inside the 8.46 bound at 1280x720 and 2560x1440; Play Mode journeys through Swift's Reload! modal and Bounce's repeat showing the face and the printed labels; the complete Play Mode suite green.
+
+Non-goals: docked geometry; direction on the board; the level-up window's content.
+
+### [ ] 8.59 Bounce offers only the spaces it can reach
+
+Asked by the user 2026-09-19 morning on a screenshot of Swift's Silver: "why are unavailable spaces offered for this silver? It should just offer legal spaces 2 away, not this space 1 away which is illegal." Bounce's line picker is bound "up to 2" while its move is "exactly 2", so the picker offers 1-away spaces the move can never take.
+
+Outcome: `choose-line-destination@1` takes an optional minimum distance, Bounce binds 2, and every other binding of that picker is swept against its printed text ("up to" bindings unchanged).
+
+Acceptance: an offer test proving Bounce's candidates are exactly the reachable distance-2 line spaces and nothing 1 away, the p.11 stop when none exists, the repeat's second offer; the sweep table recorded; Swift's revision, identity pin and artwork row moved together; harness, focused Edit Mode and the Bounce journeys green.
+
+Non-goals: any card printing "up to".
