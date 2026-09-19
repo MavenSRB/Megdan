@@ -68,13 +68,17 @@ Completed 2026-09-19 (`b9a92e19`). No new capability, handler type or handler co
 
 Historical evidence: [8.57d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857d-rowenna-close-quarters-completion-evidence).
 
-### [ ] 8.57e Support Fabled Lance
+### [x] 8.57e Support Fabled Lance
 
 Outcome: Rowenna's Attack actions are Ranged, target a unit in range and read a printed Range of 2 once her Ultimate is unlocked.
 
 Acceptance: every Attack face targeting at Range Total 2 plus Range items; Ranged Block conditions answering her and non-Ranged ones no longer; the attack rail and defense preview reading the same range; the composed Range Total on the wire; no change before unlock or for any other hero. T2 minimum.
 
 Non-goals: dealing.
+
+Completed 2026-09-19 (`20f5576f`, rebased from `262e1089` onto the morning's docs commits). One family for one sentence: `RuleModificationKind.AttackActionsCountAsRangedAtPrintedRange` (13) with `RuleModification.ForAttackActionsCountAsRangedAtPrintedRange(int)` carrying the printed Range in `Amount` (no new property, no digest moved). Not a `ValueModifier` (p.16 raises an icon, never a total, and her Attack faces print no Range icon - a +2 contribution would leave her Range item matching nothing) and not `CountsAs` (p.17 replaces a unit type): the override is a `PrintedIcon` contribution injected in `RangeValueQuery.Calculate` before `ItemBonusQuery`, so Paragon of Grace's Range item makes her reach 3 exactly once. One query, `RangedAttackOverlayQuery`, read at three seams: the backend's `FindLegalAttackTargets` (ordinary and modal-bullet paths, and `CanFindLegalTarget`'s feasibility through the same method), `RangeValueQuery`, and `DefenseBlockQuery.Evaluate` (now taking `attackerId` + `modifications`, so the resolver and `MatchSession.CreateDefensePreview` reach one verdict by construction). Readings: the Ultimate replaces the REACH only (`AdjacentOnly` -> in range; unit kinds, p.19's line and 8.19a's binding stay printed); Ledger Q12's item reading composes once (2 + one item = 3, never 4); two printed-icon declarations take the larger. `RowennaEffectContent.FabledLanceRule()` on `UltimateRuleDefinition.PermanentAbility` (new optional `printedValues`); `RowennaCardContent` gains Fabled Lance (Tier IV, Range 2, no action definitions - `RowennaPrimaryKind.None`). Eighteen of nineteen faces composed; nothing registered; deferral list unchanged; schema and wire unmoved. `RowennaFabledLanceTests` 18 cases; harness 3569/3569; focused Edit Mode 376/376 over 24 fixtures. OWED TO 8.57g: Presentation reads `ActionDefinition.AttackRange` off the card at four sites (`AttackSpotlightPresenter` ~469, `DecisionWindowPresenter` ~623, `HeroOverviewPresentation` ~1454, `RoundActionPresenter` ~2039 via `offer.AttackRange`, which deliberately keeps the printed classification because offer equality guards every authorization path) - the projection route is `UltimateUnlockQuery.Derive(projection.Definitions, projection.Cards)` -> `RangedAttackOverlayQuery`, proven reachable from published state.
+
+Historical evidence: [8.57e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857e-rowenna-fabled-lance-completion-evidence).
 
 ### [ ] 8.57f Compose Rowenna's eighteen playable faces
 

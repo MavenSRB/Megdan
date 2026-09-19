@@ -231,7 +231,7 @@ Outcome: every expanded card-text question shows the asking card's face beside a
 
 Acceptance: presenter tests for the face, the title and the labels on each family; the corpus label test green over all dealt heroes; geometry inside the 8.46 bound at 1280x720 and 2560x1440; Play Mode journeys through Swift's Reload! modal and Bounce's repeat showing the face and the printed labels; the complete Play Mode suite green.
 
-Also in scope, from the same review ("Hard to see this number one here"): the rail's worth badge grows and its digit gets a legible treatment, on the rail and on the victory screen alike.
+Also in scope, from the same review: the worth badge grows and its digit gets a legible treatment ("Hard to see this number one here"); the Minion Battle window loses its pewter verb, its repeated line and the old banner peeking out behind the docked bar ("Buttons again, when maximised it makes no sense for the window to be this big and this empty"); the tray stays drawn while the window is docked ("hand should not disappear on these choices, it makes this bar float strangely in the air"); and the defense window shows the attacker's card with its attack total and each candidate's defense and whether it holds ("This is not showing the attack card, nor our defense breakdown popup"); the victory screen's columns become a fixed grid whose last column fits the panel ("Text needs to be aligned better to columns, and coins earned is going out of the table"); and every new window is captured at three resolutions and checked before the block closes ("Just check all new windows, that seems to be where all the issues are"). The 2026-09-18 mockup is the spec.
 
 Non-goals: docked geometry; direction on the board; the level-up window's content.
 

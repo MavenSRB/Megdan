@@ -459,9 +459,12 @@ namespace GuardsDigital.Tests.EditMode
             var blockEvaluate = ILConformanceScanner.Method(
                 typeof(DefenseBlockQuery), nameof(DefenseBlockQuery.Evaluate));
 
-            var backend = typeof(RuleModificationSet).Assembly
-                .GetType("GuardsDigital.Core.Rules.CardResolution." +
-                    "AttackDefenseCardActionStrategyBackend", throwOnError: true);
+            // One literal, not a concatenation: the living-document validator's reflected-member
+            // check reads the string a test hands `GetType`, and a split literal reads as a type
+            // named "GuardsDigital.Core.Rules.CardResolution." that no source declares.
+            var backend = typeof(RuleModificationSet).Assembly.GetType(
+                "GuardsDigital.Core.Rules.CardResolution.AttackDefenseCardActionStrategyBackend",
+                throwOnError: true);
 
             Assert.That(ILConformanceScanner.References(new[] { backend }, classify), Is.True,
                 "The Attack's own reach is chosen from the overlaid classification, or an offer " +
