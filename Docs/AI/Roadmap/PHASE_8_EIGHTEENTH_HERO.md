@@ -80,13 +80,17 @@ Completed 2026-09-19 (`20f5576f`, rebased from `262e1089` onto the morning's doc
 
 Historical evidence: [8.57e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857e-rowenna-fabled-lance-completion-evidence).
 
-### [ ] 8.57f Compose Rowenna's eighteen playable faces
+### [x] 8.57f Compose Rowenna's eighteen playable faces
 
 Outcome: nineteen exact printed definitions, eighteen fully executable faces, starting hand and upgrade/item paths.
 
 Acceptance: literal source-linked rows for all values/text/items, absent icons remain absent; composition validation including deferred contracts; every distinct legal behavior and negative; all rider orders; exact source-card state and target exclusions; source corpus sweep; no engine deferral on dealt faces and only the established odd-player Handicap deferral. Focused and directly affected T2 checks.
 
 Non-goals: dealing, artwork registration or player-gate completion claims.
+
+Completed 2026-09-19 (`dd95017e`). Nineteen printed definitions; starting hand Code of Chivalry, Throw the Gauntlet, Token of Gratitude, Stand Guard, Close Quarters; deck thirteen (six Tier II, six Tier III, Fabled Lance); Earn the Spurs alone `ReturnedToBoxAtSetup` under the established p.20 deferral with no hero-only narrowing declared (Arien's Ceremonial Blade, Wasp's Crackling Dagger, Widget's Follow Along, Swift's Backup and Bain's Side Quest precedent); `DealtDefinitions` eighteen; ladders under RO-03's ribbon assumption; twelve items (Initiative x3, Defense x3, Attack x3, Range, Radius, Movement); revision `rowenna-8-57f-rev-1` on every definition and body, the placeholder gone. The build refuses exactly four faces (Throw the Gauntlet, Close Quarters, Melee, Grand Melee) for exactly the two deferred Place declarations, asserted from both sides; 8.57e deferred nothing. `DealtCorpusCompositionValidationTests` had been silently skipping her (it `continue`s on a class without `DealtDefinitions`) and now walks her seventeen composed bodies with zero mismatches; the red on main - `ConfiguredCardArtworkCatalogTests.WithoutThePrivateCorpus_EveryConfiguredHeroStillDrawsAGeneratedFace` - is green. `RowennaPrintedSetTests` 22 cases (the stem-to-file half passes by hand against the main checkout, since the corpus is git-ignored in a worktree); harness 3603/3603; focused Edit Mode 285/285 over seventeen fixtures; no pin moved. For 8.57g: register the two Places and invert the four deferral assertions; `DecisionLabelCatalog` concatenates her fifteen declarations; nothing joins the triggered-effect list (her Ultimate's `TriggeredEffect` is null); `RowennaProgressedHands` does not exist yet; her content names no new `PlayerInteractionShape` on the offline reading (cross-seat prompts fall under 8.40f's same-shape ruling; Fabled Lance moves her Attacks from `AdjacentAttackTarget` to `RangedAttackTarget`).
+
+Historical evidence: [8.57f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-857f-rowenna-printed-set-completion-evidence).
 
 ### [ ] 8.57g Deal, register and artwork Rowenna
 

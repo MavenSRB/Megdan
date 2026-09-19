@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.59**.
+- Current completed milestone: **8.57f**.
 - Active authorized milestone: **None**.
 - Next proposed milestone: **8.58**.
 
@@ -36,7 +36,7 @@ From the same night's "Silverarrow" report, once 8.51 had named the press: **[8.
 
 **[8.53](Roadmap/PHASE_8.md) is complete** (`87dacf6c`): when a match ends the whole HUD gives way to the victory screen - winner, cause, the winners' block above the defeated with every hero's token, level, worth and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned, a solo winner split above her crew; the numbers are the authority's `MatchScoreboard` (snapshot **v43**, wire `guards-private-online/17`). **[8.56](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.53-victory-screen` (+ zip) carries 8.46-8.53; 8.54 and 8.55 remain queued.
 
-The user's next order is the EIGHTEENTH hero, **Rowenna the Vanguard** ("After the build start implementing Rowenna"): **[8.57](Roadmap/PHASE_8_EIGHTEENTH_HERO.md)** (inventory; [her shard](Rules/HERO_ROWENNA.md); the printed colour-letter conflict RO-03 settled by the user as the ribbon colour) and **8.57a-8.57e** (`686af16e`, `71307821`, `d792482d`, `b9a92e19`, `20f5576f`) **are complete**: all vocabulary built, eighteen faces composed, nothing registered. The user's morning review of the packaged build opened **[8.58](Roadmap/PHASE_8.md)** (the decision window per the 2026-09-18 mockup: card face, printed labels, one control style, docked keeps the hand, the defense breakdown, the victory grid, the worth badge, a capture audit of every new window) and **[8.59](Roadmap/PHASE_8.md) is complete** (`f6f651d5`: an optional floor on the line picker, Bounce and Wild Hunt bind 2, Swift and Silverarrow re-pinned); 8.58 runs before **8.57f -> 8.57h**.
+The user's next order is the EIGHTEENTH hero, **Rowenna the Vanguard** ("After the build start implementing Rowenna"): **[8.57](Roadmap/PHASE_8_EIGHTEENTH_HERO.md)** (inventory; [her shard](Rules/HERO_ROWENNA.md); the printed colour-letter conflict RO-03 settled by the user as the ribbon colour) **8.57a-8.57e** (`686af16e`, `71307821`, `d792482d`, `b9a92e19`, `20f5576f`) and **8.57f** (`dd95017e`, the whole set under `rowenna-8-57f-rev-1`) **are complete**: nothing registered until 8.57g. The user's morning review of the packaged build opened **[8.58](Roadmap/PHASE_8.md)** (the decision window per the 2026-09-18 mockup: card face, printed labels, one control style, docked keeps the hand, the defense breakdown, the victory grid, the worth badge, a capture audit of every new window) and **[8.59](Roadmap/PHASE_8.md) is complete** (`f6f651d5`: an optional floor on the line picker, Bounce and Wild Hunt bind 2, Swift and Silverarrow re-pinned); 8.58 runs before **8.57f -> 8.57h**.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 
