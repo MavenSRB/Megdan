@@ -571,7 +571,46 @@ namespace GuardsDigital.Tests.EditMode
                 "schedule, which is what both entrances of the spend site read today.",
                 "Reassess for a clause that multiplies the Defeat coins or the Life counters, for one " +
                 "that reduces a column rather than multiplying it, or for a standing rule about every " +
-                "Defeat rather than about one - which is a RuleModificationKind and not this.")
+                "Defeat rather than about one - which is a RuleModificationKind and not this."),
+
+            // Milestone 8.57d. One PARAMETER on the printed-Radius hero selection, widening a
+            // foundation this build already registers. The milestone's other delta is a further
+            // DECLARATION over a registered handler type, which this catalog does not track: nothing
+            // shared changes shape for it.
+            new SharedFoundationClaim(
+                "targeting.both-discard-piles-empty",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .BothDiscardPilesEmptyParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaCloseQuartersTests),
+                            nameof(RowennaCloseQuartersTests
+                                .OpeningShots_OffersExactlyTheEnemyHeroesWhoseDiscardIsEmpty),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "one printed clause reads two heroes' piles and admits only the empty pair"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaCloseQuartersTests),
+                            nameof(RowennaCloseQuartersTests
+                                .OpeningShots_HasNoLegalTargetAtAllWhileHerOwnDiscardHoldsACard),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a card in the ACTOR's own pile empties the whole candidate list")
+                },
+                new[] { "selection arm", "discard pile", "subject count", "offer feasibility" },
+                "One optional flag on the printed-Radius hero selection: the acting hero's own discard " +
+                "pile AND the candidate's own are both empty, read through HeroDiscardPileQuery as " +
+                "hasCardInDiscard reads the positive form. It narrows who may be picked and nothing " +
+                "else, it is unbound on every other arm, and the actor's half is asked once for the " +
+                "whole offer rather than per candidate.",
+                "Reassess for a face pairing the clause with a Range icon, for a clause about a third " +
+                "party's pile, or for one that reads how MANY cards a pile holds rather than whether " +
+                "it holds any.")
         };
     }
 

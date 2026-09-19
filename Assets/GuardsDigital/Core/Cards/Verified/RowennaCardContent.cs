@@ -6,24 +6,24 @@ using GuardsDigital.Core.Rules.CardResolution;
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// Rowenna the Vanguard's printed faces as definition content - milestones 8.57a, 8.57b and
-    /// 8.57c, and the eighteenth hero this project builds.
+    /// Rowenna the Vanguard's printed faces as definition content - milestones 8.57a through 8.57d,
+    /// and the eighteenth hero this project builds.
     ///
     /// <para><b>This file is deliberately partial, and it says so rather than pretending otherwise.</b>
     /// Her shard records nineteen printed faces. 8.57a composed the SIX whose clauses that block owned
     /// - Code of Chivalry and the five Reds that reward a team-mate after the attack - 8.57b added
     /// FOUR more - her Silver basic Throw the Gauntlet and the three Blue faces that swap with a
-    /// friendly unit - and 8.57c adds the TWO Blue faces that defeat a surrendering enemy.
-    /// <see cref="AllDefinitions"/> is therefore twelve cards and not nineteen, there is no starting
-    /// hand, no deck, no boxed Handicap and no dealt set: p.5's shape is a statement about a complete
-    /// set, and stating it over two thirds of one would be false. Milestone 8.57f composes the
-    /// remaining seven and adds those members; 8.57g deals her.</para>
+    /// friendly unit - 8.57c added the TWO Blue faces that defeat a surrendering enemy, and 8.57d adds
+    /// the FIVE Green ones. <see cref="AllDefinitions"/> is therefore seventeen cards and not
+    /// nineteen, there is no starting hand, no deck, no boxed Handicap and no dealt set: p.5's shape is
+    /// a statement about a complete set, and stating it over most of one would be false. Milestone
+    /// 8.57f composes the remaining two and adds those members; 8.57g deals her.</para>
     ///
-    /// <para><b>Her whole Blue ladder is composed, so both of its upgrade pairs are now stated
-    /// whole.</b> Stand Guard upgrades to Protect the Weak or Accept Surrender, and each of those to
-    /// Defend the Innocent or Glorious Triumph. 8.57b could name only the sibling that existed at the
-    /// time; nothing on the ladder is deferred any more. Her Red ladder is whole too; what 8.57f still
-    /// owes is the Green one, the Ultimate and the boxed Handicap.</para>
+    /// <para><b>All three coloured ladders are composed, so every upgrade pair she prints is now
+    /// stated whole.</b> Stand Guard upgrades to Protect the Weak or Accept Surrender, and each of
+    /// those to Defend the Innocent or Glorious Triumph; Close Quarters upgrades to Melee or Opening
+    /// Shots, and each of those to Grand Melee or Opening Volley. What 8.57f still owes is the Ultimate
+    /// and the boxed Handicap - two faces, and neither of them sits on a ladder.</para>
     ///
     /// <para><b>The revision is a placeholder and is not a valid content identity.</b>
     /// <see cref="ContentRevision"/> reads <c>rowenna-8-57a-prep</c>, which follows no dealt hero's
@@ -32,7 +32,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// one, and the real revision is minted at 8.57f/8.57g where the whole set moves together.</para>
     ///
     /// <para><b>Nothing here is registered.</b> <see cref="MatchContentCatalogs"/> names no Rowenna
-    /// content, so no configured match can deal these ten cards and nothing reachable can start them.
+    /// content, so no configured match can deal these seventeen cards and nothing reachable can start them.
     /// That is milestone 7.9's gate rather than an oversight - the registered content list is
     /// serialized, and registering a card before it can be dealt moves the pinned list, every
     /// snapshot's bytes and every corpus digest while the content never moved.</para>
@@ -42,11 +42,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// recorded in the <c>Docs/AI/Rules/HERO_ROWENNA.md</c> shard. The table there and the rows here
     /// are meant to be read side by side. Nothing is derived.</para>
     ///
-    /// <para><b>RO-03 is open and TWO of these twelve faces are touched by it.</b> The printed colour
+    /// <para><b>RO-03 is open and FOUR of these seventeen faces are touched by it.</b> The printed colour
     /// conflict her shard holds for the user is on Accept Surrender, Glorious Triumph, Melee and Grand
     /// Melee - each carries a ribbon, band and frame of one colour and a corner letter of another. The
-    /// shard's working assumption is the RIBBON, which makes both of this block's faces Blue, and the
-    /// rows below state that. What the open question can move is which colour's p.15 ladder they sit
+    /// shard's working assumption is the RIBBON, which makes the first two Blue and the second two
+    /// Green, and the rows below state that. What the open question can move is which colour's p.15 ladder they sit
     /// on and nothing else: their text, values, Initiative, item and Tier are printed and read, and
     /// the two Defeat bodies do not consult a colour at all. Milestone 8.57f states the whole set and
     /// is where a user answer would land.</para>
@@ -54,7 +54,7 @@ namespace GuardsDigital.Core.Cards.Verified
     public static class RowennaCardContent
     {
         /// <summary>
-        /// The revision these ten definitions carry. A PLACEHOLDER, deliberately not shaped like a
+        /// The revision these seventeen definitions carry. A PLACEHOLDER, deliberately not shaped like a
         /// dealt hero's revision - see the type's own remarks.
         /// </summary>
         public const string ContentRevision = "rowenna-8-57a-prep";
@@ -66,7 +66,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string ContentSetId = "rowenna";
 
         // -----------------------------------------------------------------------------------------
-        // Stable definition identities for the faces these two blocks compose. Named rather than
+        // Stable definition identities for the faces these four blocks compose. Named rather than
         // generated, because the upgrade pairs below reference them.
         // -----------------------------------------------------------------------------------------
 
@@ -117,6 +117,33 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public static CardDefinitionId GloriousTriumph { get; } = Id("glorious-triumph");
 
+        /// <summary>
+        /// Milestone 8.57d. Her printed Green Tier I, and the first face in the corpus whose text
+        /// places somebody ELSE beside a hero the same sentence names.
+        /// </summary>
+        public static CardDefinitionId CloseQuarters { get; } = Id("close-quarters");
+
+        /// <summary>
+        /// Milestone 8.57d. The first Green Tier II sibling: Close Quarters' sentence at Radius 3.
+        /// </summary>
+        public static CardDefinitionId Melee { get; } = Id("melee");
+
+        /// <summary>
+        /// Milestone 8.57d. The second Green Tier II sibling, and the only face in the corpus whose
+        /// condition is about two heroes' discard piles being EMPTY.
+        /// </summary>
+        public static CardDefinitionId OpeningShots { get; } = Id("opening-shots");
+
+        /// <summary>
+        /// Milestone 8.57d. The Green Tier III that takes the modal up to twice.
+        /// </summary>
+        public static CardDefinitionId GrandMelee { get; } = Id("grand-melee");
+
+        /// <summary>
+        /// Milestone 8.57d. The Green Tier III that adds p.10's repeat to the forced discard.
+        /// </summary>
+        public static CardDefinitionId OpeningVolley { get; } = Id("opening-volley");
+
         // -----------------------------------------------------------------------------------------
         // Local action identities, local to a card exactly as every earlier set's are.
         // -----------------------------------------------------------------------------------------
@@ -138,6 +165,19 @@ namespace GuardsDigital.Core.Cards.Verified
         public static ActionDefinitionId PrimarySkill { get; } =
             new ActionDefinitionId("primary-skill");
 
+        /// <summary>
+        /// Milestone 8.57d. The Movement primary her three composed Green Movement faces print - p.9's
+        /// green band, whose value is the walk and whose Radius icon her card text reads.
+        ///
+        /// <para>It is a separate local identity from <see cref="SecondaryMovement"/> for the reason
+        /// every earlier set keeps the two apart: p.11 applies a Movement card's text when the PRIMARY
+        /// is performed, and a secondary Movement ribbon on some other card performs none - which is
+        /// exactly what <see cref="CardTextApplicationPolicy.Suppressed"/> says on the secondary
+        /// below.</para>
+        /// </summary>
+        public static ActionDefinitionId PrimaryMovement { get; } =
+            new ActionDefinitionId("primary-movement");
+
         public static ActionDefinitionId SecondaryMovement { get; } =
             new ActionDefinitionId("secondary-movement");
 
@@ -149,7 +189,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 Array.AsReadOnly(Profiles().Select(Build).ToArray()));
 
         /// <summary>
-        /// The twelve faces these three blocks compose, in her shard's printed-value table order.
+        /// The seventeen faces these four blocks compose, in her shard's printed-value table order.
         ///
         /// <para>Built lazily, which is the convention milestone 8.38d adopted after a
         /// static-initialization cycle cost milestone 8.37 1,423 failing cases on one
@@ -161,7 +201,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static CardDefinition Definition(CardDefinitionId id) =>
             AllDefinitions.FirstOrDefault(definition => definition.Id.Equals(id)) ??
             throw new ArgumentException(
-                $"Milestones 8.57a, 8.57b and 8.57c compose no Rowenna card '{id}'.", nameof(id));
+                $"Milestones 8.57a through 8.57d compose no Rowenna card '{id}'.", nameof(id));
 
         private static CardDefinitionId Id(string cardId) =>
             new CardDefinitionId($"{ContentSetId}-{cardId}");
@@ -281,7 +321,69 @@ namespace GuardsDigital.Core.Cards.Verified
                     CardColor.Blue, CardTier.III, PrintedValueChannel.Movement),
                 "Defeat an enemy hero adjacent to you with no cards in hand; your friendly heroes " +
                 "gain triple assist coins.",
-                RowennaPrimaryKind.Skill)
+                RowennaPrimaryKind.Skill),
+
+            // Milestone 8.57d. Her whole Green ladder, which is the last coloured one she owes: a Tier
+            // I that upgrades to Melee or Opening Shots, and each of those to Grand Melee or Opening
+            // Volley. Three of the five print a MOVEMENT primary and two print a Skill, which is why
+            // the ladder's two rungs are not the two halves of one shape - p.15 upgrades by colour and
+            // says nothing about the band.
+            //
+            // RO-05 is why the Movement COLUMN below is 0 on three of them: Close Quarters, Melee and
+            // Grand Melee print no Movement ribbon icon at all - only Defense - and their Movement
+            // value is the PRIMARY's, which the builder reads from its own field. A missing icon is
+            // absent, never zero, and the builder expresses that by not defining the secondary action.
+            //
+            // RO-03 is OPEN on Melee and Grand Melee and neither reading changes what is composed here:
+            // both carry a green ribbon, a green Movement band and a corner B, the shard's working
+            // assumption is the RIBBON, and what the open question can move is which colour's p.15
+            // ladder they sit on - which is why the pairs below name them - and nothing about their
+            // text, values, Initiative, item or Tier.
+            new RowennaCardProfile(
+                CloseQuarters, "Close Quarters", 4, 3, 0, 0, 2,
+                CardProgressionProfile.NonBasicCard(
+                    CardColor.Green, CardTier.I, PrintedValueChannel.None,
+                    Melee, OpeningShots),
+                "After movement, if you are adjacent to an enemy hero, you may Choose one - (1) " +
+                "Place a friendly minion in radius into a space adjacent to that enemy hero. (2) " +
+                "Place an enemy minion in radius into a space adjacent to you.",
+                RowennaPrimaryKind.Movement, movement: 2),
+
+            new RowennaCardProfile(
+                Melee, "Melee", 4, 4, 0, 0, 3,
+                CardProgressionProfile.NonBasicCard(
+                    CardColor.Green, CardTier.II, PrintedValueChannel.Attack,
+                    GrandMelee, OpeningVolley),
+                "After movement, if you are adjacent to an enemy hero, you may Choose one - (1) " +
+                "Place a friendly minion in radius into a space adjacent to that enemy hero. (2) " +
+                "Place an enemy minion in radius into a space adjacent to you.",
+                RowennaPrimaryKind.Movement, movement: 2),
+
+            new RowennaCardProfile(
+                OpeningShots, "Opening Shots", 4, 4, 2, 0, 3,
+                CardProgressionProfile.NonBasicCard(
+                    CardColor.Green, CardTier.II, PrintedValueChannel.Initiative,
+                    GrandMelee, OpeningVolley),
+                "If both you and an enemy hero in radius have no cards in the discard, that hero " +
+                "discards a card, if able.",
+                RowennaPrimaryKind.Skill, radiusSkill: true),
+
+            new RowennaCardProfile(
+                GrandMelee, "Grand Melee", 3, 4, 0, 0, 3,
+                CardProgressionProfile.NonBasicCard(
+                    CardColor.Green, CardTier.III, PrintedValueChannel.Attack),
+                "After movement, if you are adjacent to an enemy hero, Choose up to two times - (1) " +
+                "Place a friendly minion in radius into a space adjacent to that enemy hero. (2) " +
+                "Place an enemy minion in radius into a space adjacent to you.",
+                RowennaPrimaryKind.Movement, movement: 2),
+
+            new RowennaCardProfile(
+                OpeningVolley, "Opening Volley", 3, 4, 2, 0, 3,
+                CardProgressionProfile.NonBasicCard(
+                    CardColor.Green, CardTier.III, PrintedValueChannel.Initiative),
+                "If both you and an enemy hero in radius have no cards in the discard, that hero " +
+                "discards a card, if able. May repeat once.",
+                RowennaPrimaryKind.Skill, radiusSkill: true)
         };
 
         private static CardDefinition Build(RowennaCardProfile profile) =>
@@ -353,12 +455,36 @@ namespace GuardsDigital.Core.Cards.Verified
                             : PrimarySkill,
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
-                        PrintedRange(profile),
+                        profile.RadiusSkill ? PrintedRadius(profile) : PrintedRange(profile),
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
                         default,
                         RowennaEffectContent.SkillEffectFor(profile.Id, ContentRevision),
                         PrintedTextComposition.None);
+
+                // Milestone 8.57d. p.11's Movement as Primary Action: "apply the card text in addition
+                // to moving up to the number of spaces on the icon". Which side of the walk that text
+                // lands on is the card's own word rather than the page's default - all three of her
+                // Green Movement faces print "After movement" in so many words, which is the one thing
+                // p.11's "unless it says otherwise" is about - so the timing arrives beside the root.
+                case RowennaPrimaryKind.Movement:
+                    return new ActionDefinition(
+                        PrimaryMovement,
+                        ActionKind.Movement,
+                        ActionDefinitionOrigin.PrintedPrimary,
+                        new[]
+                            {
+                                new PrintedValueDefinition(
+                                    PrintedValueChannel.Movement, profile.Movement)
+                            }
+                            .Concat(PrintedRadius(profile)),
+                        new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
+                        AttackRangeKind.None,
+                        default,
+                        RowennaEffectContent.MovementTextFor(profile.Id, ContentRevision),
+                        PrintedTextComposition.None,
+                        PrintedDefenseResolution.None,
+                        RowennaEffectContent.MovementTextTimingFor(profile.Id));
 
                 default:
                     return new ActionDefinition(
@@ -402,8 +528,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 : Enumerable.Empty<PrintedValueDefinition>();
 
         /// <summary>
-        /// Milestone 8.57b. Which band a composed face prints its primary action in. Her Green
-        /// Movement primaries and her Purple Ultimate join at 8.57d and 8.57e.
+        /// Milestone 8.57b. Which band a composed face prints its primary action in. Her Purple
+        /// Ultimate joins at 8.57e.
         /// </summary>
         private enum RowennaPrimaryKind
         {
@@ -413,8 +539,14 @@ namespace GuardsDigital.Core.Cards.Verified
             /// <summary>p.9's Silver band with a Skill primary - "BASIC SKILL - RANGED".</summary>
             BasicSkill = 1,
 
-            /// <summary>A coloured Skill primary - her three composed Blues.</summary>
-            Skill = 2
+            /// <summary>A coloured Skill primary - her five composed Blues and two of her Greens.</summary>
+            Skill = 2,
+
+            /// <summary>
+            /// Milestone 8.57d. p.9's green band with a Movement primary - her three Green faces whose
+            /// icon is a walk and whose text is applied around it.
+            /// </summary>
+            Movement = 3
         }
 
         private sealed class RowennaCardProfile
@@ -430,8 +562,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 CardProgressionProfile progression,
                 string printedText,
                 RowennaPrimaryKind primary = RowennaPrimaryKind.Attack,
-                int range = 0)
+                int range = 0,
+                int movement = 0,
+                bool radiusSkill = false)
             {
+                Movement = movement;
+                RadiusSkill = radiusSkill;
                 Id = id;
                 DisplayName = displayName;
                 Initiative = initiative;
@@ -456,6 +592,17 @@ namespace GuardsDigital.Core.Cards.Verified
             public string PrintedText { get; }
             public RowennaPrimaryKind Primary { get; }
             public int Range { get; }
+
+            /// <summary>Milestone 8.57d. The PRIMARY Movement icon's value, where the face prints one.</summary>
+            public int Movement { get; }
+
+            /// <summary>
+            /// Milestone 8.57d. Whether this face's Skill primary prints a RADIUS icon rather than a
+            /// Range one. Opening Shots and Opening Volley are the first Skills in her set that do, and
+            /// the distinction is p.9's own: a Range reaches out to a target and a Radius draws a disk,
+            /// which p.16's two different items then raise separately.
+            /// </summary>
+            public bool RadiusSkill { get; }
         }
     }
 }

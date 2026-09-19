@@ -589,22 +589,25 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(composed, Is.EqualTo(12),
-                "Twelve faces: 8.57a's six - Token of Gratitude and Fair Share are two cards printing " +
-                "one sentence at two Radii and each carries its own body - 8.57b's four, and 8.57c's " +
-                "two Blue Defeats.");
+            Assert.That(composed, Is.EqualTo(17),
+                "Seventeen faces: 8.57a's six - Token of Gratitude and Fair Share are two cards " +
+                "printing one sentence at two Radii and each carries its own body - 8.57b's four, " +
+                "8.57c's two Blue Defeats, and 8.57d's five Greens.");
         }
 
         /// <summary>
-        /// And the one body that names a deferred declaration is refused by the REGISTERED catalog,
+        /// And the bodies that name a deferred declaration are refused by the REGISTERED catalog,
         /// naming the reason. That refusal is milestone 7.9's gate observable rather than a defect:
         /// the registered capability list is serialized, so a registration no dealt card can start
         /// moves the pinned list and every corpus digest while the content never moved. Milestone
         /// 8.57g's registration flip is what turns this assertion around, and Silverarrow's own
         /// dealing records that the flip and the staged-configuration factories are ONE edit.
+        ///
+        /// <para>Milestone 8.57d adds three: her Green Movement faces name the printed-Radius twin of
+        /// the Gauntlet's declaration, which is deferred beside it and leaves with it.</para>
         /// </summary>
         [Test]
-        public void OnlyTheGauntletsBody_IsRefusedByWhatThisBuildActuallyRegisters()
+        public void OnlyTheBodiesNamingADeferredPlace_AreRefusedByWhatThisBuildActuallyRegisters()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
             var refused = new List<string>();
@@ -622,8 +625,15 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(refused,
-                Is.EqualTo(new[] { RowennaCardContent.ThrowTheGauntlet.Value }),
-                "Her nine other composed faces name only capabilities this build registers.");
+                Is.EqualTo(new[]
+                {
+                    RowennaCardContent.ThrowTheGauntlet.Value,
+                    RowennaCardContent.CloseQuarters.Value,
+                    RowennaCardContent.Melee.Value,
+                    RowennaCardContent.GrandMelee.Value
+                }),
+                "Her thirteen other composed faces name only capabilities this build registers; " +
+                "these four name one of the two Places milestone 7.9's gate holds back.");
 
             Assert.That(
                 EffectDefinitionValidator.ValidateCardText(

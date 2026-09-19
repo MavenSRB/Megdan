@@ -356,10 +356,12 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(59),
-                "RE-MEASURED at 8.57c: 8.43f's 57 plus Rowenna's two victim selections, one each on " +
-                "Accept Surrender and Glorious Triumph. A different count means a face was added or " +
-                "removed - read which, then re-measure rather than editing this number to match.");
+            Assert.That(nodes.Length, Is.EqualTo(63),
+                "RE-MEASURED at 8.57d: 8.57c's 59 plus Rowenna's four 'that enemy hero' selections - " +
+                "one each on Close Quarters and Melee, and TWO on Grand Melee, whose printed 'up to " +
+                "two times' is two sibling performances and therefore two namings. A different count " +
+                "means a face was added or removed - read which, then re-measure rather than editing " +
+                "this number to match.");
             Assert.That(
                 nodes.SelectMany(node => node.Inputs).Select(input => input.ParameterName).Distinct()
                     .OrderBy(name => name, StringComparer.Ordinal).ToArray(),

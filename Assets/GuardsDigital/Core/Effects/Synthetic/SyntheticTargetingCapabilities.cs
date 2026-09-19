@@ -444,6 +444,52 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string HasCardInDiscardParameterName = "hasCardInDiscard";
 
         /// <summary>
+        /// Milestone 8.57d. Whether a printed-Radius hero selection admits only candidates for whom
+        /// BOTH discard piles - the acting hero's and the candidate's own - hold nothing at all:
+        /// Rowenna's Opening Shots and Opening Volley, "If <b>both you and an enemy hero in radius have
+        /// no cards in the discard</b>, that hero discards a card, if able".
+        ///
+        /// <para><b>It is the negative complement of
+        /// <see cref="HasCardInDiscardParameterName"/> and of
+        /// <c>enemy-hero-with-discard-present@1</c>, and it is ONE parameter because it is ONE printed
+        /// clause.</b> "Both you and an enemy hero in radius" is a single condition with two subjects;
+        /// splitting it would put the actor's half somewhere the candidate list cannot see, and the
+        /// two halves have to be answered together or the selection cannot say what the card says.
+        /// The compound is carried in one name for the reason
+        /// <see cref="AdjacentToAnEnemyHeroOrHoldingADiscardParameterName"/> carries a disjunction in
+        /// one: the parameter is the clause, spelled the way the card spells it.</para>
+        ///
+        /// <para><b>A condition on the candidate SET rather than a gate on what happens next, and
+        /// that is what the printed "if" earns here.</b> Whichever party's pile holds a card, the
+        /// sentence names nobody - so an "if" written as a Conditional would leave the card starting
+        /// and stopping, while a narrowing makes an unsatisfiable clause an empty candidate set, which
+        /// a mandatory selection reports as impossible and milestone 8.35l's offer machinery greys.
+        /// Rowenna's OWN pile is therefore load-bearing in a way no earlier narrowing's is: a card in
+        /// it empties the whole candidate list at once, and the face has no legal target at all.</para>
+        ///
+        /// <para><b>"In the discard" means the discard pile and nothing adjacent to it.</b> p.10 puts a
+        /// card in exactly one place, so a facedown card, a played card and a resolved card are not in
+        /// the discard - and the reading is
+        /// <see cref="GuardsDigital.Core.Cards.HeroDiscardPileQuery"/>'s, which is the same one
+        /// <see cref="HasCardInDiscardParameterName"/> and <c>owned-card-present@1</c> ask, so a card
+        /// that selects by the absence and a card that conditions on the presence cannot come to
+        /// disagree about one phrase.</para>
+        ///
+        /// <para><b>It is read live, every time.</b> p.10 returns every card to its owner's hand at the
+        /// end of a round, so both piles empty at the boundary without anything here knowing; and
+        /// Opening Volley's repeat re-derives the whole list, which is what makes the hero who just
+        /// discarded drop out of it and the actor - who discarded nothing - stay in.</para>
+        ///
+        /// <para><b>Declared on the Radius arm alone</b>, by the rule this file already follows: her
+        /// two faces print a Radius 3 icon and no face in the corpus pairs the clause with a Range one.
+        /// Optional and defaulting to false, so every hero selection composed before her keeps its
+        /// exact candidate set without naming it - and a parameter added to a registered capability
+        /// moves no pinned byte, because the identity walker digests a capability's reference and its
+        /// Active-effect definitions and never its parameter schema.</para>
+        /// </summary>
+        public const string BothDiscardPilesEmptyParameterName = "bothDiscardPilesEmpty";
+
+        /// <summary>
         /// Milestone 8.40f. The fewest cards a printed-Radius hero selection's candidate must be
         /// holding - Bain's three guessing Skills, "An enemy hero in radius <b>with two or more cards
         /// in hand</b> chooses one of those cards".
@@ -1151,6 +1197,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             MinimumCardsInHandParameterName,
                             EffectValueKind.Integer,
                             isRequired: false));
+
+                        // Milestone 8.57d. Rowenna's "if both you and an enemy hero in radius have no
+                        // cards in the discard", on the Radius arm alone because that is the icon her
+                        // two faces print. Optional and unbound everywhere else, so every earlier hero
+                        // selection is untouched.
+                        parameters.Add(new EffectCapabilityParameter(
+                            BothDiscardPilesEmptyParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false));
                     }
                 }
                 else
@@ -1616,6 +1671,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? context.Input(MinimumCardsInHandParameterName).IntegerValue
                     : 0;
 
+                // Milestone 8.57d. Rowenna's both-parties clause, read only on the arm that declares
+                // it. Her own pile is asked ONCE for the whole offer rather than per candidate - it is
+                // a fact about her and not about them - and a card in it empties the candidate list
+                // entirely, which is the printed "if" answered as a candidate set. An unbound optional
+                // parameter is the absence of the clause, so every earlier hero selection is untouched.
+                var requiresBothDiscardsEmpty = channel == PrintedValueChannel.Radius &&
+                    context.Input(BothDiscardPilesEmptyParameterName).BooleanValue;
+                if (requiresBothDiscardsEmpty &&
+                    (!context.CardState.IsAvailable ||
+                        HeroDiscardPileQuery.HasAnyCard(
+                            context.CardState.Instances, context.ActorId)))
+                {
+                    return Array.Empty<HeroId>();
+                }
+
                 // Derived once for the whole offer rather than per candidate: the qualifying points are
                 // a property of the board and the map, and asking six times would answer identically
                 // six times.
@@ -1672,6 +1742,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         (!context.CardState.IsAvailable ||
                             !HeroDiscardPileQuery.HasAnyCard(
                                 context.CardState.Instances, target.HeroId)))
+                    {
+                        continue;
+                    }
+
+                    // "and an enemy hero in radius have no cards in the discard" - the candidate's own
+                    // half of the clause, asked through the same query the positive readings ask.
+                    // Rowenna's half is answered above, once, because it decides the whole list rather
+                    // than this candidate. Milestone 8.57d.
+                    if (requiresBothDiscardsEmpty &&
+                        HeroDiscardPileQuery.HasAnyCard(
+                            context.CardState.Instances, target.HeroId))
                     {
                         continue;
                     }

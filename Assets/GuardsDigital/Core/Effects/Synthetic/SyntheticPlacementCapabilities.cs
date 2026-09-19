@@ -232,15 +232,60 @@ namespace GuardsDigital.Core.Effects.Synthetic
             new EffectCapabilityReference(PlaceInRangeBesideANamedHero, 1);
 
         /// <summary>
+        /// Milestone 8.57d. The printed-Radius twin of <see cref="PlaceInRangeBesideANamedHero"/>, and
+        /// the first declaration in this file whose subject is somebody OTHER than the acting hero -
+        /// Rowenna's Close Quarters, Melee and Grand Melee, "Place a friendly minion <b>in radius</b>
+        /// into a space <b>adjacent to that enemy hero</b>", on faces printing a Radius 2 or 3 icon.
+        ///
+        /// <para><b>A separate capability ID rather than a parameter on
+        /// <see cref="PlaceInRangeBesideANamedHero"/>, by the rule <see cref="PlaceInRange"/> states
+        /// and milestone 8.35z28 generalised:</b> p.9 gives Range and Radius two meanings and p.16 two
+        /// items, so one declaration spanning both would let a Radius card be widened by a Range item.
+        /// It is the same <see cref="PlaceHandler"/> and the same qualifier underneath - 8.57b's
+        /// <c>AdjacentToTheNamedSpace</c>, unchanged - so this milestone writes no handler code at all
+        /// and adds no handler TYPE.</para>
+        ///
+        /// <para><b>The reach bound is the card's own printed Radius read a SECOND time, and it can
+        /// never exclude a space the sentence admits.</b> The printed "in radius" bounds the MINION
+        /// this Place takes, which is the selection's business; what this arm carries is p.18's own
+        /// requirement that a Place measure its destinations from somewhere. The named enemy hero is
+        /// adjacent to Rowenna - the rider's own predicate says so before the modal is ever offered,
+        /// and neither bullet moves her or him - so every neighbour of his stands at most two spaces
+        /// from her, while every face printing this clause prints a Radius of 2 or 3 and p.16's item
+        /// only ever raises it. The intersection is therefore exactly the six neighbours, which
+        /// <c>RowennaCloseQuartersTests</c> measures rather than assumes.</para>
+        ///
+        /// <para><b>The subject is a minion and the destination is measured from a hero, which is what
+        /// makes this different from every arm above.</b> Arien's leaps, Misa's ring, Swift's files and
+        /// Rowenna's own gauntlet all place the ACTOR; here the acting hero chooses a piece that is not
+        /// herself, so <see cref="PlaceHandler"/>'s immunity question and milestone 8.7's
+        /// place-restriction question are asked about that minion - an immune enemy minion is not a
+        /// subject this sentence can take, and the selection that names it declares this node as its
+        /// consumer so the refusal greys the minion rather than being discovered after it is picked.
+        /// </para>
+        ///
+        /// <para><b>Like every qualified arm it can legally be empty</b>, and here that is ordinary
+        /// rather than cornered: an enemy hero hemmed in by units and terrain qualifies no space, and
+        /// the bullet is then simply not offered - which is what <c>Choose</c> does with an option it
+        /// can prove unperformable.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceInRadiusBesideANamedHero { get; } =
+            new EffectCapabilityId("synthetic-place-in-radius-beside-a-named-hero");
+
+        public static EffectCapabilityReference PlaceInRadiusBesideANamedHeroV1 =>
+            new EffectCapabilityReference(PlaceInRadiusBesideANamedHero, 1);
+
+        /// <summary>
         /// Milestone 8.57b. The space the destinations of
-        /// <see cref="PlaceInRangeBesideANamedHero"/> must stand beside - where the hero an earlier
-        /// node named is standing.
+        /// <see cref="PlaceInRangeBesideANamedHero"/> - and, since milestone 8.57d, of
+        /// <see cref="PlaceInRadiusBesideANamedHero"/> - must stand beside, which is where the hero an
+        /// earlier node named is standing.
         ///
         /// <para>A coordinate rather than a hero, which is the subject identity milestone 6.4 chose
         /// for every repositioning operation in this build and which p.19's one-obstacle-per-space rule
-        /// makes unambiguous. It is carried by that declaration alone, for the reason
-        /// <see cref="SpawnPointExclusionParameterName"/> is carried by the printed arms alone: a
-        /// parameter nothing sets is the ambiguity the Range/Radius split exists to refuse.</para>
+        /// makes unambiguous. It is carried by the two declarations whose clause names a piece, for the
+        /// reason <see cref="SpawnPointExclusionParameterName"/> is carried by the printed arms alone:
+        /// a parameter nothing sets is the ambiguity the Range/Radius split exists to refuse.</para>
         /// </summary>
         public const string BesideSpaceParameterName = "besideSpace";
 
@@ -400,12 +445,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// than by a showcase consumer. Its second half has nothing to ask of this one in any case: it
         /// is a further declaration over <see cref="PlaceHandler"/>, the type the three arms above have
         /// registered since milestone 6.6, and that half of the gate is asked of a handler TYPE.</para>
+        ///
+        /// <para>MILESTONE 8.57d ADDS THE SECOND, and it is the same hero's: her three Green Movement
+        /// faces name <see cref="PlaceInRadiusBesideANamedHeroV1"/>, which is the printed-Radius twin of
+        /// the declaration above. Both leave this list together at 8.57g, which is what deals her, and
+        /// both owe the gate's second half nothing for the reason just given.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new PlaceHandler(
                     PlaceInRangeBesideANamedHeroV1, PrintedValueChannel.Range,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.AdjacentToTheNamedSpace),
+
+                // Milestone 8.57d. The printed-Radius twin, declared over the SAME handler with the
+                // SAME qualifier - the channel is the whole of the difference, which is the
+                // Range/Radius rule stated once more rather than a second mechanism.
+                new PlaceHandler(
+                    PlaceInRadiusBesideANamedHeroV1, PrintedValueChannel.Radius,
                     PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
                     PlaceDestinationQualifier.AdjacentToTheNamedSpace)
             };
@@ -458,6 +516,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// than from the actor or from the board at large - see
             /// <see cref="PlaceInRangeBesideANamedHero"/> for why the hero is named before the space
             /// and not after it.</para>
+            ///
+            /// <para>Milestone 8.57d reads it a second time, unchanged, for her three Green faces'
+            /// "into a space adjacent to that enemy hero" - see
+            /// <see cref="PlaceInRadiusBesideANamedHero"/>. Two declarations, one qualifier: the clause
+            /// the two cards print is word for word the same, and the icon they print it beside is the
+            /// only thing that differs.</para>
             /// </summary>
             AdjacentToTheNamedSpace = 4
         }

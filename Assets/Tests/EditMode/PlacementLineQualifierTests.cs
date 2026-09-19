@@ -106,12 +106,16 @@ namespace GuardsDigital.Tests.EditMode
             // match deals her until 8.57g, so the file holds exactly one declaration back. Asserting
             // WHICH one rather than asserting emptiness is what keeps this case about the gate rather
             // than about how many heroes happen to be mid-series.
+            // Milestone 8.57d adds the second, and it is the same hero's: her three Green Movement
+            // faces name the printed-Radius twin of 8.57b's declaration. Both leave this list together
+            // at 8.57g, which is what deals her.
             Assert.That(deferred, Is.EquivalentTo(new[]
                 {
-                    SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1
+                    SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1,
+                    SyntheticPlacementCapabilities.PlaceInRadiusBesideANamedHeroV1
                 }),
-                "One declaration deferred, and it is the one whose only printed consumer belongs to " +
-                "a hero this build does not deal yet.");
+                "Two declarations deferred, and they are the two whose only printed consumers belong " +
+                "to a hero this build does not deal yet.");
             Assert.That(registered.Intersect(deferred), Is.Empty,
                 "and nothing is in both lists, which is what the gate means either way round.");
         }

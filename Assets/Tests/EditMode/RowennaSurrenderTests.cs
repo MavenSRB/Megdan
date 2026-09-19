@@ -624,11 +624,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(capabilities.IsRegistered(SyntheticConsequenceCapabilities.DefeatHeroV1), Is.True);
             Assert.That(
                 SyntheticPlacementCapabilities.DeferredHandlers().Select(handler => handler.Reference),
-                Is.EqualTo(new[]
-                {
-                    SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1
-                }),
-                "8.57b's one deferred declaration, unchanged: this block defers nothing new.");
+                Has.No.Member(SyntheticPlacementCapabilities.PlaceV2)
+                    .And.No.Member(SyntheticRosterCapabilities.ChooseTargetV2),
+                "This block's two faces defer NOTHING: both capabilities they name are registered, " +
+                "which is why they can be driven through the dispatcher at all while 8.57b's " +
+                "gauntlet cannot. Which declarations ARE deferred is 8.57b's and 8.57d's claim and " +
+                "PlacementLineQualifierTests asserts the exact list, so this case states what these " +
+                "two faces owe rather than counting somebody else's deferrals.");
 
             Assert.That(RowennaCardContent.ContentRevision, Is.EqualTo("rowenna-8-57a-prep"),
                 "Milestone 7.9's gate again, read from the content itself: the revision is still the " +
