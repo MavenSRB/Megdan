@@ -20,13 +20,17 @@ Completed 2026-09-19. All nineteen fronts, the selection card and the dashboard 
 
 Historical evidence: [8.61 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-861-min-inventory-completion-evidence).
 
-### [ ] 8.61a Support the Smoke bomb
+### [x] 8.61a Support the Smoke bomb
 
 Outcome: Min's Smoke bomb exists as content - placed from the supply or relocated into a space in radius or range, swapped with by Min, re-placed after a swap, removed at the end of the round - and while it stands no enemy hero can target a unit when the token lies on a straight line between them.
 
 Acceptance: token definition with MI-Q1's supply and p.19's end-of-round removal; supply Place and identity-preserving relocation in radius (Smoke Bomb, Cobra Stance) and in range (Ruse); Min's swap with the token in radius and in range; the screen read at the one targeting seam for attack targets, card-text selections, pushes and swaps by enemy heroes only, never for presence checks, Min's own team, the token itself, spaces or the Minion Battle; adjacent pairs never screened; all six axes measured with the token strictly between; Clear removing it; a screened offer through snapshot, replay and Undo; the Presentation reading the same legal set as the authority; narrow foundation claims. Compose Smoke Bomb. T2 minimum.
 
 Non-goals: the vanishing Block, the Stances, mines, the grenade, dealing.
+
+Completed 2026-09-19 (`ad185a39`). No new handler type: the token composes on `TokenDefinition` / `TokenPropertyDefinition` with `TokenPropertyAffectedObject.TheTokenItself` (Tali's shape), `SyntheticOwnedTokenCapabilities.PresenceHandler` / `SpaceHandler` and `SyntheticTokenCapabilities.PlaceHandler` (Widget's Pyro), `SyntheticPlacementCapabilities.PlaceInRadiusV1` / `PlaceInRangeV1` and `SyntheticExchangeCapabilities.SwapWithActorV1` for the sub-graphs, and `RuleModificationQuery.FromPlacedTokens` derives the screen unchanged. Deltas: `RuleModificationKind.EnemyHeroesCannotTargetThroughThisTokensSpace` (14) with `RuleModification.ForEnemyHeroTargetingScreen()` (no amount, channel, activity or new property); `StraightLineQuery.LiesStrictlyBetween` (p.19's file as strict betweenness, so adjacent pairs and endpoints fall out of the direction arm); `RuleModificationSet.TargetingScreens` beside `ObstacleOverlays`, consulted by `TargetQuery.IsPrevented` before immunity and only once a screen stands, so every existing call answers as before. Content, all deferred: token `min-smoke-bomb-token` (supply 1 under MI-Q1, `EndOfRoundCleanup`, one screen property), capabilities `min-smoke-bomb-present` / `-space` / `-in-range` / `-in-radius`, `min-place-smoke-bomb-in-radius` / `-in-range` (`MinComponentContent.SmokeBombDeferredHandlers()`, the registered list empty and asserted from both sides); `MinEffectContent.SmokeBomb()` (a presence-conditional relocate-or-supply Place) and the reusable sub-graphs `SwapWithSmokeBombInRadius` / `InRange` and `PlaceSmokeBombInRadius` / `InRange` for 8.61b and 8.61c; `MinCardContent`'s Smoke Bomb face under the placeholder `min-8-61a-prep`. Readings measured: Min's defeat leaves token and screen standing; a presence predicate, the token itself, an acting minion, the controller's own side and an actorless resolution are untouched; the screen holds on all six axes at distances 2 and 3 and never for adjacent pairs. `MinSmokeBombTests` 45 cases; claim `targeting.token-screened-straight-line` registered narrow; harness 3676/3676; focused Edit Mode 120/120; schema v43 and wire /17 unmoved; no pin moved.
+
+Historical evidence: [8.61a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-861a-min-smoke-bomb-completion-evidence).
 
 ### [ ] 8.61b Support the vanishing Block
 

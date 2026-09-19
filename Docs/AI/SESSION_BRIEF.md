@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.61**.
+- Current completed milestone: **8.61a**.
 - Active authorized milestone: **None**.
-- Next proposed milestone: **8.61a**.
+- Next proposed milestone: **8.61b**.
 
 On 2026-09-18 the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** ("Ok, get on it then"); **8.46 is complete** (8.46a-8.46g): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press.
 
@@ -38,7 +38,7 @@ From the same night's "Silverarrow" report, once 8.51 had named the press: **[8.
 
 The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57h](Roadmap/PHASE_8_EIGHTEENTH_HERO.md) and [her shard](Rules/HERO_ROWENNA.md) own the detail (RO-03 settled by the user as the ribbon colour). The same day's **8.58** (the decision window per the mockup), **8.59** (the line picker's floor), **8.54** (Bounce through Bullet Time), **8.55** (the "6+1" badge) and **[8.60](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.55-rowenna`, cut at the 8.55 tag, digest `36da22a7...`) are complete.
 
-On 2026-09-19 the user opened the NINETEENTH hero ("Time for new hero") and chose **Min the Dragonmonk**: **[8.61](Roadmap/PHASE_8_NINETEENTH_HERO.md)** (inventory; [her shard](Rules/HERO_MIN.md)) **is complete**; **8.61a-8.61k** are authorized in that shard's order (the five independent vocabulary blocks may run as a parallel wave) through a fully selectable, artworked hero with working printed cards and the permanent player-path gate. Her set names three token kinds (a Smoke bomb that screens enemy targeting along a straight line, facedown blast and dud Mines, an end-of-turn Grenade); MI-Q1, MI-Q5 and MI-Q6 wait on the user. No other hero or package is authorized.
+On 2026-09-19 the user opened the NINETEENTH hero ("Time for new hero") and chose **Min the Dragonmonk**: **[8.61](Roadmap/PHASE_8_NINETEENTH_HERO.md)** (inventory; [her shard](Rules/HERO_MIN.md)) and **8.61a** (`ad185a39`, the Smoke bomb and its targeting screen) **are complete**; **8.61b-8.61k** are authorized in that shard's order (the five independent vocabulary blocks may run as a parallel wave) through a fully selectable, artworked hero with working printed cards and the permanent player-path gate. Her set names three token kinds (a Smoke bomb that screens enemy targeting along a straight line, facedown blast and dud Mines, an end-of-turn Grenade); MI-Q1, MI-Q5 and MI-Q6 wait on the user. No other hero or package is authorized.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 
