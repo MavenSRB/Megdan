@@ -910,6 +910,50 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess for a clause bounding a move by a RING wider than adjacency, for one " +
                 "measured from a piece rather than from a space, for a second bound space in one " +
                 "declaration, or for a face pairing it with obstacle crossing.")
+            ,
+
+            // Milestone 8.61b (merged after wave 1 and 8.61c).
+            new SharedFoundationClaim(
+                "defense.block-by-the-defense-texts-own-token-reach",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Rules.CardResolution.OwnedTokenReachQuery),
+                    nameof(GuardsDigital.Core.Rules.CardResolution.OwnedTokenReachQuery
+                        .TryFindOwnedToken),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinVanishingBlockTests),
+                            nameof(MinVanishingBlockTests
+                                .TheConditionAndTheSwapItGates_AgreeOnEverySpaceOfTheDisc),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the condition's verdict and the swap's own feasibility compared on every " +
+                        "space of a radius-5 disc, for three faces, with and without a Range item"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinVanishingBlockTests),
+                            nameof(MinVanishingBlockTests
+                                .AnotherTokenOfHersInRange_IsNotThePieceTheSentenceNames),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a second token of the same hero's, standing in range, fulfils nothing"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinVanishingBlockTests),
+                            nameof(MinVanishingBlockTests.AnEnemysCopyOfTheSamePiece_IsNotHers),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "an enemy's copy of the same definition in the same space fulfils nothing")
+                },
+                new[] { "token identity", "ownership", "reach channel", "items", "supply" },
+                "One single-piece token definition, owned by the defending hero, inside the performing " +
+                "card's printed Range with p.16's items composed onto it - named by the bounded " +
+                "owned-token fact the card's own Defense text consumes and by nothing declared beside " +
+                "it. A board carrying two copies answers nothing, a second definition of the same " +
+                "hero's answers nothing, and the attack's classification is never read.",
+                "Reassess for a Block whose condition reads a Radius rather than a Range, for a token " +
+                "supply above one, for a condition about a piece another hero placed, or for a card " +
+                "text naming two bounded owned-token facts.")
         };
     }
 

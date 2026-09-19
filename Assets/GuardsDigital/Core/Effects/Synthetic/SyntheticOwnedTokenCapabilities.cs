@@ -35,8 +35,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
             PrintedValueChannel? reachChannel = null) =>
             new OwnedTokenFactHandler(reference, definition, false, reachChannel);
 
+        /// <summary>
+        /// Milestone 8.61b. The handler declares the piece it is bound to and the icon it bounds its
+        /// position by, so rulebook p.14's Block condition can read the token off the very node its
+        /// mandatory swap consumes rather than off a second declaration that could disagree with it -
+        /// see <see cref="IOwnedTokenFactDeclaration"/> for why that second declaration has no home.
+        /// </summary>
         private sealed class OwnedTokenFactHandler : IEffectCapabilityHandler,
-            IEffectAnticipatedOutcomeCapabilityHandler
+            IEffectAnticipatedOutcomeCapabilityHandler, IOwnedTokenFactDeclaration
         {
             private readonly TokenDefinition definition;
             private readonly bool presence;
@@ -63,6 +69,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectCapabilityReference Reference { get; }
             public EffectCapabilityParameterSchema Schema { get; }
+            public TokenDefinition TokenDefinition => definition;
+            public PrintedValueChannel? ReachChannel => reachChannel;
+            public bool PublishesPresenceOnly => presence;
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
             public bool PublishesWithoutApplying => true;
@@ -86,40 +95,47 @@ namespace GuardsDigital.Core.Effects.Synthetic
             public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(EffectCapabilityContext context,
                 IReadOnlyList<EffectValue> chosen) => Observe(context);
 
+            /// <summary>
+            /// Milestone 8.61b moved the reading itself into
+            /// <see cref="OwnedTokenReachQuery"/> and left the frame's own guards here. Nothing about
+            /// what this publishes changed: what changed is that p.14's Block condition now asks the
+            /// identical question through the identical code, which is the only way a defence preview
+            /// and the swap it predicts can be one verdict rather than two derivations.
+            /// </summary>
             private IReadOnlyList<EffectOutcomeFact> Observe(EffectCapabilityContext context)
             {
                 var components = context.Components;
                 if (components == null || !components.IsLive)
                     return Array.Empty<EffectOutcomeFact>();
-                var tokens = components.Tokens.PlacedTokens.Where(token =>
-                    token.Definition.Reference.Equals(definition.Reference) &&
-                    token.OwnerHeroId.Equals(context.ActorId)).Take(2).ToArray();
-                // A malformed board must not choose an arbitrary copy of a singular piece.
-                if (tokens.Length > 1) return Array.Empty<EffectOutcomeFact>();
                 if (presence)
-                    return new[] { new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(tokens.Length == 1)) };
-                if (tokens.Length == 0) return Array.Empty<EffectOutcomeFact>();
-                var tokenAt = tokens[0].Coordinate;
-                if (reachChannel.HasValue)
                 {
-                    if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var actorAt) ||
-                        !context.CardState.IsAvailable)
-                        return Array.Empty<EffectOutcomeFact>();
-                    var reach = reachChannel == PrintedValueChannel.Radius
-                        ? RadiusValueQuery.Calculate(context.SourceCardInstanceId,
-                            context.SourceDefinitionReference, context.ActionDefinitionId,
-                            context.CardState.Definitions, context.ActorId, context.HeroItems,
-                            context.Modifications).Total
-                        : RangeValueQuery.Calculate(context.SourceCardInstanceId,
-                            context.SourceDefinitionReference, context.ActionDefinitionId,
-                            context.CardState.Definitions, context.ActorId, context.HeroItems,
-                            context.Modifications, ActionValueApplicabilityQuery.For(
-                                context.SourceDefinitionReference, context.ActionDefinitionId,
-                                context.CardState.Definitions)).Total;
-                    if (HexDistanceQuery.Calculate(actorAt, tokenAt) > reach)
-                        return Array.Empty<EffectOutcomeFact>();
+                    var owned = OwnedTokenReachQuery.OwnedTokens(
+                        definition, context.ActorId, components.Tokens);
+                    // A malformed board must not answer about an arbitrary copy of a singular piece.
+                    return owned.Count > 1
+                        ? Array.Empty<EffectOutcomeFact>()
+                        : new[]
+                        {
+                            new EffectOutcomeFact(PresentOutput, EffectValue.Boolean(owned.Count == 1))
+                        };
                 }
-                return new[] { new EffectOutcomeFact(SpaceOutput, EffectValue.Space(tokenAt)) };
+
+                if (reachChannel.HasValue && !context.CardState.IsAvailable)
+                    return Array.Empty<EffectOutcomeFact>();
+                return OwnedTokenReachQuery.TryFindOwnedToken(
+                    definition,
+                    reachChannel,
+                    context.ActorId,
+                    components.Tokens,
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.CardState.IsAvailable ? context.CardState.Definitions : null,
+                    context.HeroItems,
+                    context.Modifications,
+                    out var tokenAt)
+                    ? new[] { new EffectOutcomeFact(SpaceOutput, EffectValue.Space(tokenAt)) }
+                    : Array.Empty<EffectOutcomeFact>();
             }
         }
     }

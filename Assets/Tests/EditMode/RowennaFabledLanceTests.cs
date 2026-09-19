@@ -907,7 +907,13 @@ namespace GuardsDigital.Tests.EditMode
                     RowennaCardContent.PrimaryAttack,
                     new GuardsDigital.Core.Components.MarkerAttachmentRegister(),
                     attackerId,
-                    Modifications());
+                    Modifications(),
+                    // Milestone 8.61b. Tigerclaw's five Blocks resolve by p.13's classification of the
+                    // attack, which is this fixture's whole subject; the board, the items and the
+                    // catalog Min's condition reads are named absent.
+                    tokens: null,
+                    heroItems: null,
+                    capabilities: null);
 
             /// <summary>
             /// The backend's own composition: the card's printed policy, then the overlay that

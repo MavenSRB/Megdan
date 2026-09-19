@@ -128,11 +128,11 @@ namespace GuardsDigital.Tests.EditMode
         {
             var blocks = DealtBlocks().ToArray();
 
-            Assert.That(blocks.Length, Is.EqualTo(11),
-                "Wasp's three Green Blocks, Tigerclaw's five Blue ones and Bain's three Green ones " +
-                "are the whole of p.14's Block content in this build.");
+            Assert.That(blocks.Length, Is.EqualTo(14),
+                "Wasp's three Green Blocks, Tigerclaw's five Blue ones, Bain's three Green ones and " +
+                "Min's three Green ones are the whole of p.14's Block content in this build.");
             foreach (var (cardId, action) in blocks.Where(block =>
-                block.Action.BlockCondition != PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker))
+                !BoardConditions.Contains(block.Action.BlockCondition)))
             {
                 Assert.That(
                     new[]
@@ -149,8 +149,15 @@ namespace GuardsDigital.Tests.EditMode
                     block.Action.BlockCondition ==
                     PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker),
                 Is.EqualTo(3),
-                "and the three that print no classification clause at all are Bain's - Close Call, " +
-                "Narrow Escape and Perfect Getaway, which is the face count BA-08 records.");
+                "and the three that print no classification clause and ask about a marker are Bain's - " +
+                "Close Call, Narrow Escape and Perfect Getaway, which is the face count BA-08 records.");
+            Assert.That(
+                blocks.Count(block =>
+                    block.Action.BlockCondition ==
+                    PrintedBlockCondition.TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange),
+                Is.EqualTo(3),
+                "and the three that ask about a piece of their own hero's on the board are Min's - " +
+                "Poof!, Vanish and Ruse (MI-05, MI-Q8).");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -302,8 +309,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void WaspsThreeBlocksAndTigerclawsFive_AreByteIdenticalOnEveryBoardThisMilestoneBuilds()
         {
+            // Milestone 8.61b. Min's three Green Blocks are excluded on the same terms and for the same
+            // reason Bain's are: her condition asks about a piece of hers standing on the board, so
+            // reading it through this case's classification arithmetic would assert that a
+            // board-conditioned Block answers a question about the attacking card.
             foreach (var (cardId, action) in DealtBlocks().Where(block =>
-                block.Action.BlockCondition != PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker))
+                !BoardConditions.Contains(block.Action.BlockCondition)))
             {
                 foreach (var attackRange in new[] { AttackRangeKind.Ranged, AttackRangeKind.NonRanged })
                 {
@@ -662,6 +673,20 @@ namespace GuardsDigital.Tests.EditMode
         /// assembly the way the corpus guards do rather than by naming two heroes - so a ninth Block
         /// arriving with a later hero is swept by this milestone's cases without being added to a list.
         /// </summary>
+        /// <summary>
+        /// The members that answer about the BOARD rather than about the attacking card. Milestone
+        /// 8.40g minted the first and milestone 8.61b the second - Min the Dragonmonk's Poof!, Vanish
+        /// and Ruse, whose condition is the precondition of the swap their own Defense text performs.
+        /// The two cases in this fixture that are about p.13's classification arms exclude them by
+        /// their own declaration rather than by hero name, so a later face printing either member is
+        /// swept without being added to a list.
+        /// </summary>
+        private static readonly PrintedBlockCondition[] BoardConditions =
+        {
+            PrintedBlockCondition.AHeroInPlayHoldsTheActorsMarker,
+            PrintedBlockCondition.TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange
+        };
+
         private static IEnumerable<(CardDefinitionId CardId, ActionDefinition Action)> DealtBlocks()
         {
             // Milestone 8.61g. The reflection is shared rather than copied, and it now admits a hero
@@ -1065,7 +1090,13 @@ namespace GuardsDigital.Tests.EditMode
                     // Milestone 8.57e. No attacker is named and no rule stands, so p.13's printed
                     // classification is the whole of the answer - which is what this fixture asks.
                     default,
-                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                    // Milestone 8.61b. This fixture's subject is the marker clause, which reads no
+                    // board piece and no printed reach, so the three collaborators its own board
+                    // condition needs are stated absent the way the register is above.
+                    tokens: null,
+                    heroItems: null,
+                    capabilities: null);
             }
 
             /// <summary>The board condition asked about this board, against a non-Ranged attack.</summary>

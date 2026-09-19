@@ -107,7 +107,8 @@ namespace GuardsDigital.Core.Cards.Verified
                     ComposedFaces().Concat(BorrowedRiderDefinitions)
                         .Concat(GrenadeCards().Select(GrenadeDefinition))
                         .Concat(MineDefinitions())
-                        .Concat(DisciplineDefinitions).ToArray()));
+                        .Concat(DisciplineDefinitions)
+                        .Concat(VanishingDefinitions).ToArray()));
 
         private static readonly Lazy<CardDefinition> LazySmokeBomb =
             new Lazy<CardDefinition>(BuildSmokeBomb);

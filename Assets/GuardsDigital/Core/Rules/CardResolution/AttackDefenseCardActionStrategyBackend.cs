@@ -79,6 +79,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
         private ActiveEffectLifecycle activeEffects;
 
         /// <summary>
+        /// Milestone 8.61b. The same capability catalog the dispatcher composed every backend against,
+        /// bound after construction by <see cref="BindCapabilities"/> because this backend is built
+        /// inside the dispatcher's own constructor argument list.
+        ///
+        /// <para>It is read at exactly one place - p.14's Block condition, for Min the Dragonmonk's
+        /// three faces whose condition is the precondition of the swap their Defense text performs. The
+        /// token that swap names is declared by the capability the text consumes, so the catalog is what
+        /// says which piece "her Smoke bomb" is; nothing else here asks it anything. Absent outside a
+        /// live match, where no card text can run either.</para>
+        /// </summary>
+        private GuardsDigital.Core.Effects.EffectCapabilityCatalog capabilities;
+
+        /// <summary>
         /// Milestone 7.4: the same per-hero Levels the round authority holds. p.13 prices a hero Defeat
         /// at "coins equal to that hero's level", so the reward cannot be derived without them, and a
         /// second copy would price a Defeat against a Level the match does not record.
@@ -206,6 +219,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
         internal void BindActiveEffects(ActiveEffectLifecycle effects)
         {
             activeEffects = effects;
+        }
+
+        /// <summary>
+        /// Hands this backend the dispatcher's own capability catalog, on the same terms
+        /// <see cref="BindActiveEffects"/> is handed the lifecycle. Milestone 8.61b.
+        ///
+        /// <para>It is the dispatcher's own object rather than a second lookup, which is what keeps
+        /// p.14's Block condition and the swap it is the precondition of reading one declaration: the
+        /// preview is built from the configuration's catalog and the dispatcher is composed from it, so
+        /// the two cannot name different pieces.</para>
+        /// </summary>
+        internal void BindCapabilities(GuardsDigital.Core.Effects.EffectCapabilityCatalog catalog)
+        {
+            capabilities = catalog;
         }
 
         /// <summary>
@@ -2758,7 +2785,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 pendingAttackResolution.ActionDefinitionId,
                 markers,
                 pendingAttackResolution.ActorId,
-                modifications);
+                modifications,
+                adjacentMoveAuthority,
+                heroItems,
+                capabilities);
 
         /// <summary>
         /// Milestone 8.22, finding `F-ATK-01`: the pre-consequence target space is carried across

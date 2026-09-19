@@ -1788,7 +1788,13 @@ namespace GuardsDigital.Tests.EditMode
                     // declaration is in play, so p.13's printed Ranged classification is the whole
                     // answer - exactly what it was before the overlay existed.
                     Bain,
-                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
+                    GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                    // Milestone 8.61b. His Blocks resolve by the marker register above; the board, the
+                    // items and the catalog Min's condition reads are named absent because no face of
+                    // his asks about a piece on the board.
+                    tokens: null,
+                    heroItems: null,
+                    capabilities: null);
 
             // ---- The pull
 

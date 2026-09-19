@@ -1116,6 +1116,15 @@ namespace GuardsDigital.Application
                 // makes every Attack of hers Ranged - and a preview reading the card alone while the
                 // resolution reads the declaration would predict the wrong verdict for the one card a
                 // defender is choosing from.
+                // Milestone 8.61b. The board, the items and the capability catalog arrive beside the
+                // register for the reason the register arrived beside the item state: Min the
+                // Dragonmonk's three Block faces resolve by whether her own Smoke bomb stands inside
+                // the card's printed Range, and the piece that condition asks about is named by the
+                // very capability her Defense text's mandatory swap consumes. All three are the
+                // configured match's own objects - the same board the dispatcher mutates, the same item
+                // state the round holds, the same catalog every backend was composed against - so the
+                // preview and the resolution cannot read a different board, a different item or a
+                // different piece.
                 var blockResult = DefenseBlockQuery.Evaluate(
                     offer,
                     configuration.CardDefinitions,
@@ -1123,7 +1132,10 @@ namespace GuardsDigital.Application
                     attack.ActionDefinitionId,
                     markers,
                     attack.ActorId,
-                    modifications);
+                    modifications,
+                    board,
+                    heroItems,
+                    configuration.ContentCatalogs.Capabilities);
                 if (blockResult != DefenseBlockResult.None)
                 {
                     projectedChoices.Add(new DefenseChoicePreviewProjection(

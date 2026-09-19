@@ -89,6 +89,40 @@ namespace GuardsDigital.Core.Cards
         /// member asks about "the actor's marker" exactly as those two do rather than about a fourth
         /// thing that could come to disagree with them.</para>
         /// </summary>
-        AHeroInPlayHoldsTheActorsMarker = 3
+        AHeroInPlayHoldsTheActorsMarker = 3,
+
+        /// <summary>
+        /// Milestone 8.61b. `Swap with a [Smoke bomb] Smoke bomb token in range; if you do, block the
+        /// attack` - Min the Dragonmonk's Poof!, Vanish and Ruse, and the first Block condition in this
+        /// build that is the card's own <em>Defense text</em> restated as a question the board can
+        /// answer.
+        ///
+        /// <para><b>What the condition is, and why it is equivalent to the sentence.</b> The swap is
+        /// not optional - "Swap with ..." is a mandatory step, and neither of the two words that would
+        /// make it a choice ("you may") is printed on any of the three faces. So at p.14's step 4, where
+        /// the defender applies their Defense action text, the swap happens exactly when an owned Smoke
+        /// bomb lies within the card's printed Range of her, and "if you do" is fulfilled exactly then
+        /// too. The condition therefore IS the swap's own precondition, and a board with her bomb in
+        /// range is a board on which both are true. MI-Q8.</para>
+        ///
+        /// <para><b>Which token, and why the card text names it rather than a declaration beside it.</b>
+        /// "An owned token" would be wrong for her: she also places blast mines, dud mines and a
+        /// Grenade, and a mine standing in range would fulfil a condition her text does not state. So
+        /// the piece has to be named - and the only place on a card definition a component reference
+        /// could live is a new public property on <see cref="ActionDefinition"/>, which milestone 8.38d
+        /// measured as the change that moves every dealt hero's content-identity digest at once while no
+        /// hero's printed content moved. The token is therefore read off the node her Defense text
+        /// already names it in: the bounded owned-token fact the mandatory swap consumes
+        /// (<c>IOwnedTokenFactDeclaration</c>). One statement, and it is the clause's own - a token
+        /// declared a second time beside the text could come to name a different piece from the swap
+        /// that actually runs, which is the disagreement "if you do" forbids.</para>
+        ///
+        /// <para><b>It asks nothing about the attack</b>, exactly as
+        /// <see cref="AHeroInPlayHoldsTheActorsMarker"/> asks nothing: her three faces print no ranged
+        /// or non-ranged clause, so a Ranged and a non-Ranged attack are blocked alike. And because
+        /// these three print no Defense value at all (MI-05, Tigerclaw's Dodge precedent), an
+        /// unfulfilled condition is p.14's other half in full - "If not, you are defeated."</para>
+        /// </summary>
+        TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange = 4
     }
 }

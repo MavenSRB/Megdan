@@ -196,6 +196,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             this.skillBackend = skillBackend ?? throw new ArgumentNullException(nameof(skillBackend));
             this.components = components ?? throw new ArgumentNullException(nameof(components));
             this.board = board ?? throw new ArgumentNullException(nameof(board));
+            // Milestone 8.61b. Every construction path funnels through this constructor, so binding the
+            // catalog here is what gives p.14's Block condition the same declaration the Defense text it
+            // is the precondition of was composed against - on a fresh match and on a restored one
+            // alike.
+            this.attackDefenseBackend.BindCapabilities(catalogs.Capabilities);
             triggeredEffects = new TriggeredEffectResolutionAuthority(
                 catalogs.TriggeredEffects, catalogs.Capabilities, components);
         }

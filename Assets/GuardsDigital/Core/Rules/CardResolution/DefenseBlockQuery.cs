@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -56,6 +57,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// live set would predict a Block the Attack then refuses, which is the disagreement this
         /// query exists to prevent. <see cref="RuleModificationSet.Empty"/> is the named none.
         /// </param>
+        /// <param name="tokens">
+        /// Milestone 8.61b. The board's token port, for a Block whose printed condition is about a piece
+        /// the defender has placed - Min the Dragonmonk's Poof!, Vanish and Ruse. It is the board both
+        /// call sites already hold, exactly as the marker register was, so neither needed a new
+        /// collaborator to find one; <c>null</c> is a composition with no board at all and is refused
+        /// rather than answered, on milestone 8.40c's terms.
+        /// </param>
+        /// <param name="heroItems">
+        /// Milestone 8.61b. p.16's items, because her condition measures the card's printed Range and a
+        /// Range item raises it. Optional in the same sense every other reach reading takes it: no item
+        /// state is a match in which nobody has one.
+        /// </param>
+        /// <param name="capabilities">
+        /// Milestone 8.61b. The capability catalog the Defense text was composed against, which is where
+        /// "her Smoke bomb" is named - the bounded owned-token fact her mandatory swap consumes. Required
+        /// for that condition and unread by every other; see
+        /// <see cref="PrintedBlockCondition.TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange"/>
+        /// for why the token is read off the card's own text rather than declared beside it.
+        /// </param>
         public static DefenseBlockResult Evaluate(
             ActionOffer defenseOffer,
             IReadOnlyList<CardDefinition> definitions,
@@ -63,7 +83,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionDefinitionId attackActionDefinitionId,
             MarkerAttachmentRegister markers,
             HeroId attackerId,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            ITokenPlacementAuthority tokens,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            EffectCapabilityCatalog capabilities)
         {
             if (modifications == null) throw new ArgumentNullException(nameof(modifications));
 
@@ -76,6 +99,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (action.DefenseResolution != PrintedDefenseResolution.Block)
             {
                 return DefenseBlockResult.None;
+            }
+
+            // Milestone 8.61b. Answered before the attack is named for the reason the board arm below
+            // is: "a Smoke bomb of yours in range" is true or false of the board whether the attack that
+            // opened p.14's window was Ranged or not, and her three faces print no classification clause
+            // for it to fall through to.
+            if (action.BlockCondition ==
+                PrintedBlockCondition.TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange)
+            {
+                return FulfilsTheSwapsOwnPrecondition(
+                        defenseOffer, action, definitions, tokens, heroItems, modifications, capabilities)
+                    ? DefenseBlockResult.Blocked
+                    : DefenseBlockResult.ConditionUnfulfilled;
             }
 
             // Milestone 8.40g. The board arm is answered before the attack is named, because it reads
@@ -147,6 +183,94 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.61b. Whether the mandatory swap this Block's own Defense text opens with could be
+        /// performed - which is what "Swap with a [Smoke bomb] Smoke bomb token in range; if you do,
+        /// block the attack" makes the Block condition.
+        ///
+        /// <para><b>The piece is read off the card's text and nowhere else.</b> The swap consumes one
+        /// bounded owned-token fact, and that capability declares which token it is bound to and which
+        /// printed icon it bounds the position by (<see cref="IOwnedTokenFactDeclaration"/>). Asking it
+        /// here is what makes the preview, the resolution and the swap one answer: they are not three
+        /// derivations that agree, they are one reading - <see cref="OwnedTokenReachQuery"/> - reached
+        /// from three places.</para>
+        ///
+        /// <para><b>Every way of failing to find it is refused loudly rather than answered.</b> A
+        /// composition that prints this condition and no Defense text, or a text naming no bounded fact,
+        /// or two of them, is a card nobody can resolve - and a silent "not in range" would grey a
+        /// defence that in fact holds, which is milestone 8.40c's rule and the reason the marker arm
+        /// below throws for an absent register.</para>
+        /// </summary>
+        private static bool FulfilsTheSwapsOwnPrecondition(
+            ActionOffer defenseOffer,
+            ActionDefinition action,
+            IReadOnlyList<CardDefinition> definitions,
+            ITokenPlacementAuthority tokens,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications,
+            EffectCapabilityCatalog capabilities)
+        {
+            if (tokens == null)
+            {
+                throw new InvalidOperationException(Refusal(
+                    "this evaluation was given no board to read the piece from"));
+            }
+
+            if (capabilities == null)
+            {
+                throw new InvalidOperationException(Refusal(
+                    "this evaluation was given no capability catalog, so nothing could say which token " +
+                    "that card text swaps with"));
+            }
+
+            var defenseText = action.CardTextAt(CardTextTiming.DefenseAction);
+            if (defenseText == null)
+            {
+                throw new InvalidOperationException(Refusal(
+                    "the action prints no Defense-action card text at all, so there is no swap for the " +
+                    "condition to be the precondition of"));
+            }
+
+            var declarations = defenseText.Nodes
+                .Where(node => node.Capability.IsDefined)
+                .Select(node =>
+                    capabilities.TryLoad(node.Capability, out var handler)
+                        ? handler as IOwnedTokenFactDeclaration
+                        : null)
+                .Where(declaration => declaration != null &&
+                    !declaration.PublishesPresenceOnly &&
+                    declaration.ReachChannel == PrintedValueChannel.Range)
+                .ToArray();
+            if (declarations.Length != 1)
+            {
+                throw new InvalidOperationException(Refusal(
+                    $"its Defense text names {declarations.Length} capabilities publishing an owned " +
+                    "token's position bounded by the card's printed Range, and this condition is that " +
+                    "one fact restated - one names the piece, none or several name nothing"));
+            }
+
+            return OwnedTokenReachQuery.TryFindOwnedToken(
+                declarations[0].TokenDefinition,
+                PrintedValueChannel.Range,
+                defenseOffer.ActorId,
+                tokens,
+                defenseOffer.SourceCardInstanceId,
+                defenseOffer.SourceDefinitionReference,
+                defenseOffer.ActionDefinitionId,
+                definitions,
+                heroItems,
+                modifications,
+                out _);
+        }
+
+        private static string Refusal(string cause) =>
+            "This Defense offer prints " +
+            $"'{PrintedBlockCondition.TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange}', " +
+            "which is rulebook p.14's Block condition stated as the precondition of the swap the card's " +
+            $"own Defense text performs, and {cause}. Answering it anyway would grey a defence that in " +
+            "fact holds, or promise one the swap cannot perform: the defence preview and the Attack " +
+            "resolution both ask this, and milestone 8.11a exists to keep them one verdict.";
+
+        /// <summary>
         /// Whether one printed Block condition is fulfilled by one attack's printed classification.
         ///
         /// <para>Both arms are stated rather than one tested and the other left to fall through, for
@@ -164,9 +288,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case PrintedBlockCondition.AttackIsNotRanged:
                     return attackRange == AttackRangeKind.NonRanged;
                 default:
-                    // Milestone 8.40g's board condition never arrives here - it is answered above,
-                    // from the board, before the attack is even named - so what is left is a Block
-                    // carrying no condition at all, which the definition layer refuses to construct.
+                    // Neither board condition arrives here - milestone 8.40g's marker clause and
+                    // milestone 8.61b's swap precondition are both answered above, from the board,
+                    // before the attack is even named - so what is left is a Block carrying no
+                    // condition at all, which the definition layer refuses to construct.
                     return false;
             }
         }

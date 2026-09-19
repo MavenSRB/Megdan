@@ -184,7 +184,14 @@ namespace GuardsDigital.Tests.EditMode
                 // alone, which is what the undefined attacker and the empty set state: no hero is
                 // named, so no standing declaration can be about one.
                 attackerId: default,
-                modifications: GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
+                modifications: GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                // Milestone 8.61b. Both arms under test here are read off the attacking card alone, so
+                // the board, the items and the catalog its own board conditions need are stated absent:
+                // a named `null` is this fixture saying which question it is asking, and neither
+                // classification arm looks at one.
+                tokens: null,
+                heroItems: null,
+                capabilities: null);
         }
 
         private static ActionOffer BlockOffer(CardDefinition blockCard) =>
@@ -223,7 +230,10 @@ namespace GuardsDigital.Tests.EditMode
                 BlockOffer(definitions[1]), definitions, definitions[0].Reference, movementAction,
                 markers: null,
                 attackerId: default,
-                modifications: GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty);
+                modifications: GuardsDigital.Core.Rules.Modifications.RuleModificationSet.Empty,
+                tokens: null,
+                heroItems: null,
+                capabilities: null);
         }
 
         private static IEnumerable<(CardDefinitionId CardId, ActionDefinition Action)> VerifiedBlocks()
