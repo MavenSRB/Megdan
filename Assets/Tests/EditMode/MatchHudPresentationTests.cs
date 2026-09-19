@@ -1150,17 +1150,157 @@ namespace GuardsDigital.Tests.EditMode
                     .ItemBonuses.Where(value => value.Key == PrintedValueChannel.Initiative)
                     .Sum(value => value.Value);
                 Assert.That(hero.CurrentCard, Is.Not.Null);
+                var printed = hero.CurrentCard.Card.Face.Initiative.Amount;
+
+                // Milestone 8.55, the user mid-playtest on Swift's plaque while Reload! resolved with
+                // one Initiative item: "this should be noted as 6+1." 8.42a wrote the sum, and the two
+                // facts a player wants - the number they committed, and what their item added - were
+                // not recoverable from it.
+                Assert.That(hero.CurrentCard.CardInitiative, Is.EqualTo(printed),
+                    "The printed number is carried as a number, so this check is arithmetic rather " +
+                    "than a re-reading of a string presentation composed.");
+                Assert.That(hero.CurrentCard.ItemInitiativeBonus, Is.EqualTo(bonus),
+                    "and beside it only this hero's own Initiative items.");
                 Assert.That(hero.CurrentCard.InitiativeLabel,
-                    Is.EqualTo((hero.CurrentCard.Card.Face.Initiative.Amount + bonus).ToString()),
+                    Is.EqualTo(bonus == 0 ? printed.ToString() : printed + "+" + bonus),
                     "The badge includes only this hero's Initiative items, without changing the printed card face.");
+                Assert.That(hero.CurrentCard.AssistiveLabel, Does.Contain(bonus == 0
+                        ? "Card " + printed
+                        : "Card " + printed + " + item " + bonus),
+                    "and the assistive reading says the same two numbers in words.");
+                Assert.That(hero.CurrentCard.Card.Face.Initiative.AmountLabel,
+                    Is.EqualTo(printed.ToString()),
+                    "The printed card face is untouched by the item, exactly as 8.42a left it.");
                 foreach (var seat in MatchSeatBinding.ForParticipants(session.Projection.Participants).Seats)
                 {
                     var scoped = SeatProjectionFactory.ForSeat(session.Projection, seat);
-                    Assert.That(CurrentRoundCards.CurrentCard(scoped, hero.HeroId).InitiativeLabel,
-                        Is.EqualTo(hero.CurrentCard.InitiativeLabel),
+                    var seen = CurrentRoundCards.CurrentCard(scoped, hero.HeroId);
+                    Assert.That(seen.InitiativeLabel, Is.EqualTo(hero.CurrentCard.InitiativeLabel),
                         "Public revealed card-plus-item values agree for every seat and the Director.");
+                    Assert.That(seen.CardInitiative, Is.EqualTo(hero.CurrentCard.CardInitiative),
+                        "and they agree on the split, not merely on what it adds up to.");
+                    Assert.That(seen.ItemInitiativeBonus,
+                        Is.EqualTo(hero.CurrentCard.ItemInitiativeBonus));
                 }
             }
+
+            // The one hero who earned the item reads `n+1` and everyone else reads a plain number, so
+            // the split form is really the item's doing rather than a new format for every badge.
+            var owning = view.Model.Heroes.Single(hero => hero.HeroId.Equals(owner));
+            Assert.That(owning.CurrentCard.ItemInitiativeBonus, Is.GreaterThan(0),
+                "The hero who took p.15's Initiative upgrade really holds the item.");
+            Assert.That(owning.CurrentCard.InitiativeLabel,
+                Is.EqualTo(owning.CurrentCard.CardInitiative + "+" +
+                    owning.CurrentCard.ItemInitiativeBonus));
+            foreach (var other in view.Model.Heroes.Where(hero => !hero.HeroId.Equals(owner)))
+            {
+                Assert.That(other.CurrentCard.ItemInitiativeBonus, Is.Zero);
+                Assert.That(other.CurrentCard.InitiativeLabel, Does.Not.Contain("+"),
+                    "A card with no matching item reads exactly the printed number it always did.");
+            }
+
+            // The marker draws the reading it is given, at the type size 8.55's one rule chooses.
+            var badges = Descendants(view.Root)
+                .Where(element => element.name == "gd-current-card")
+                .Select(marker => Descendants(marker).OfType<Label>().Single())
+                .ToArray();
+            Assert.That(badges.Select(label => label.text),
+                Is.EquivalentTo(view.Model.Heroes.Select(hero => hero.CurrentCard.InitiativeLabel)));
+            foreach (var label in badges)
+            {
+                Assert.That(label.style.fontSize.value.value,
+                    Is.EqualTo(HeroOverviewsUnityView.InitiativeBadgeFontSizeFor(label.text)),
+                    "The badge's type size is the one rule's answer for what it is reading: " +
+                    label.text);
+                Assert.That(label.style.whiteSpace.value, Is.EqualTo(WhiteSpace.NoWrap),
+                    "and `6+1` never breaks across two lines.");
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.55. The four readings the badge can take, from one real revealed card: no item,
+        /// one item, two items, and a facedown commitment that carries no Initiative at all.
+        ///
+        /// <para>The card is the authority's own - taken from the same fixture above rather than
+        /// invented - and only the item count varies, which is the one thing p.16 lets vary here. A
+        /// second earned item is out of reach of any short fixture, so the two-item reading is the
+        /// composition's answer to the count rather than a match that produced it; what a real earned
+        /// item does to a real badge is the case above, and the live rail's is Play Mode's.</para>
+        /// </summary>
+        [Test]
+        public void TheInitiativeBadge_ReadsThePrintedNumberAndTheItemBonusApart()
+        {
+            var session = ConfiguredMatchFixtures.CreateSessionWithARevealedUnresolvedTurn();
+            var view = new HeroOverviewsUnityView();
+            new HeroOverviewsPresenter(session, view).Refresh();
+            var revealed = view.Model.Heroes.First(hero => hero.CurrentCard?.Card != null);
+            var card = revealed.CurrentCard.Card;
+            var printed = card.Face.Initiative.Amount;
+            Assert.That(revealed.CurrentCard.ItemInitiativeBonus, Is.Zero,
+                "Nobody in this fixture has earned an item, which is what makes it the base case.");
+
+            var none = new HeroCurrentCardViewModel(TurnCardCommitmentStatus.Revealed, card, printed);
+            Assert.That(none.InitiativeLabel, Is.EqualTo(printed.ToString()),
+                "No item, and the badge is exactly the printed number it has always been.");
+            Assert.That(none.CardInitiativeLabel, Is.EqualTo(printed.ToString()));
+            Assert.That(none.AssistiveLabel, Does.EndWith("Initiative: Card " + printed));
+            Assert.That(none.AssistiveLabel, Does.Not.Contain("+ item"),
+                "and the reading names no item where there is none.");
+
+            var one = new HeroCurrentCardViewModel(TurnCardCommitmentStatus.Revealed, card, printed, 1);
+            Assert.That(one.InitiativeLabel, Is.EqualTo(printed + "+1"),
+                "One Initiative item, and the user's own sentence: \"this should be noted as 6+1.\"");
+            Assert.That(one.CardInitiative, Is.EqualTo(printed));
+            Assert.That(one.ItemInitiativeBonus, Is.EqualTo(1));
+            Assert.That(one.AssistiveLabel,
+                Does.EndWith("Initiative: Card " + printed + " + item 1"));
+            Assert.That(one.InitiativeLabel, Is.Not.EqualTo((printed + 1).ToString()),
+                "and never the sum on its own, which is the reading the user rejected.");
+
+            var two = new HeroCurrentCardViewModel(TurnCardCommitmentStatus.Revealed, card, printed, 2);
+            Assert.That(two.InitiativeLabel, Is.EqualTo(printed + "+2"),
+                "Two items add two, in one addend rather than as `6+1+1`.");
+            Assert.That(two.AssistiveLabel,
+                Does.EndWith("Initiative: Card " + printed + " + item 2"));
+
+            var facedown = new HeroCurrentCardViewModel(TurnCardCommitmentStatus.CardCommittedFacedown);
+            Assert.That(facedown.InitiativeLabel, Is.Empty);
+            Assert.That(facedown.CardInitiativeLabel, Is.Empty);
+            Assert.That(facedown.CardInitiative, Is.Null);
+            Assert.That(facedown.ItemInitiativeBonus, Is.Zero);
+            Assert.That(facedown.AssistiveLabel, Does.Not.Contain("Card " + printed),
+                "A commitment nobody may read yet says nothing about Initiative either.");
+            Assert.Throws<ArgumentException>(() => new HeroCurrentCardViewModel(
+                TurnCardCommitmentStatus.CardCommittedFacedown, null, printed),
+                "and the split cannot be handed to a facedown marker at all - the boundary is the " +
+                "type's, not a caller's discipline.");
+            Assert.Throws<ArgumentException>(() => new HeroCurrentCardViewModel(
+                TurnCardCommitmentStatus.CardCommittedFacedown, null, null, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new HeroCurrentCardViewModel(
+                TurnCardCommitmentStatus.Revealed, card, printed, -1),
+                "p.16's item raises a printed icon; a badge can never read `6+-1`.");
+
+            // The type steps down as the reading widens, and never for the reading that shipped: the
+            // marker's own footprint is 8.42a's to keep, so the label is what gives.
+            Assert.That(HeroOverviewsUnityView.InitiativeBadgeFontSizeFor("6"),
+                Is.EqualTo(HeroOverviewsUnityView.InitiativeBadgeFontSize));
+            Assert.That(HeroOverviewsUnityView.InitiativeBadgeFontSizeFor("13"),
+                Is.EqualTo(HeroOverviewsUnityView.InitiativeBadgeFontSize),
+                "A two-digit printed Initiative draws exactly as it did before 8.55.");
+            Assert.That(HeroOverviewsUnityView.InitiativeBadgeFontSizeFor("6+1"),
+                Is.EqualTo(HeroOverviewsUnityView.SplitInitiativeBadgeFontSize),
+                "The split steps the type down rather than the marker up - the footprint is 8.42a's " +
+                "to keep, and the live rail measures what each reading needs inside it.");
+            Assert.That(HeroOverviewsUnityView.InitiativeBadgeFontSizeFor("11+1"),
+                Is.EqualTo(HeroOverviewsUnityView.WideSplitInitiativeBadgeFontSize),
+                "and a two-digit printed Initiative with an item - the reading the live rail draws - " +
+                "steps down once more.");
+            Assert.That(HeroOverviewsUnityView.InitiativeBadgeFontSizeFor("13+2"),
+                Is.EqualTo(HeroOverviewsUnityView.WideSplitInitiativeBadgeFontSize));
+            Assert.That(HeroOverviewsUnityView.SplitInitiativeBadgeFontSize,
+                Is.LessThan(HeroOverviewsUnityView.InitiativeBadgeFontSize));
+            Assert.That(HeroOverviewsUnityView.WideSplitInitiativeBadgeFontSize,
+                Is.LessThan(HeroOverviewsUnityView.SplitInitiativeBadgeFontSize));
         }
 
         [Test]

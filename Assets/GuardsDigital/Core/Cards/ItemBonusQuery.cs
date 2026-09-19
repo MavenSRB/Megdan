@@ -47,9 +47,25 @@ namespace GuardsDigital.Core.Cards
         public static int TotalWithProjectedItems(ValueResult printedValue, int matchingItemCount)
         {
             if (printedValue == null) throw new ArgumentNullException(nameof(printedValue));
+            return checked(printedValue.Total + ProjectedItemBonus(printedValue, matchingItemCount));
+        }
+
+        /// <summary>
+        /// What those projected items actually add to this printed value - zero whenever p.16's
+        /// matching-icon condition fails, so a card with no icon of the channel gains nothing.
+        ///
+        /// <para>Milestone 8.55. The badge in the hero rail shows the printed number and the item
+        /// bonus as two readings ("6+1") rather than their sum, so presentation needs the addend
+        /// itself. It asks for it here rather than subtracting the printed total out of
+        /// <see cref="TotalWithProjectedItems"/>: p.16's condition is decided in exactly one place,
+        /// and the sum above is now that condition plus the printed total rather than a second
+        /// derivation of the same rule.</para>
+        /// </summary>
+        public static int ProjectedItemBonus(ValueResult printedValue, int matchingItemCount)
+        {
+            if (printedValue == null) throw new ArgumentNullException(nameof(printedValue));
             if (matchingItemCount < 0) throw new ArgumentOutOfRangeException(nameof(matchingItemCount));
-            return checked(printedValue.Total +
-                (PrintsMatchingIcon(printedValue) ? matchingItemCount * BonusPerItem : 0));
+            return checked(PrintsMatchingIcon(printedValue) ? matchingItemCount * BonusPerItem : 0);
         }
 
         private static bool PrintsMatchingIcon(ValueResult value) =>

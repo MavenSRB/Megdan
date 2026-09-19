@@ -408,7 +408,7 @@ namespace GuardsDigital.Presentation.Match
     public sealed class HeroCurrentCardViewModel
     {
         public HeroCurrentCardViewModel(TurnCardCommitmentStatus status, TrayCardViewModel card = null,
-            int? initiativeWithItems = null)
+            int? cardInitiative = null, int itemInitiativeBonus = 0)
         {
             if (status != TurnCardCommitmentStatus.CardCommittedFacedown &&
                 status != TurnCardCommitmentStatus.Revealed)
@@ -424,18 +424,53 @@ namespace GuardsDigital.Presentation.Match
                     nameof(card));
             }
 
+            if (itemInitiativeBonus < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(itemInitiativeBonus),
+                    "p.16's item bonus raises a printed icon; it never lowers one.");
+            }
+
+            if (status == TurnCardCommitmentStatus.CardCommittedFacedown &&
+                (cardInitiative.HasValue || itemInitiativeBonus != 0))
+            {
+                // The same boundary the null card above draws, on the numbers: a facedown marker is
+                // built from a commitment's status alone, so there is nothing here to leak even by
+                // arithmetic - a hero's item count is public, and a printed Initiative beside it names
+                // the card.
+                throw new ArgumentException(
+                    "A facedown commitment carries no Initiative at all, printed or item.",
+                    nameof(cardInitiative));
+            }
+
             Status = status;
             Card = card;
             IsFacedown = status == TurnCardCommitmentStatus.CardCommittedFacedown;
             StateLabel = IsFacedown ? "FACEDOWN" : "RESOLVING";
             Color = card?.Color ?? CardColor.None;
-            InitiativeLabel = IsFacedown ? string.Empty :
-                initiativeWithItems?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
+            CardInitiative = cardInitiative;
+            ItemInitiativeBonus = itemInitiativeBonus;
+            CardInitiativeLabel = IsFacedown ? string.Empty :
+                cardInitiative?.ToString(System.Globalization.CultureInfo.InvariantCulture) ??
                 card?.Face?.Initiative?.AmountLabel ?? string.Empty;
+            // Milestone 8.55, the user on their own capture of Swift resolving Reload! with one
+            // Initiative item: "this should be noted as 6+1." 8.42a had summed the two into `7`, and a
+            // player reading `7` cannot see either the number they committed or what their item added;
+            // the two readings are kept apart here, and a card with no item still reads exactly `6`.
+            InitiativeLabel = CardInitiativeLabel.Length == 0 || itemInitiativeBonus == 0
+                ? CardInitiativeLabel
+                : CardInitiativeLabel + "+" +
+                    itemInitiativeBonus.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // "Card 6 + item 1", and plainly "Card 6" with no item: the reading a player cannot see
+            // the badge's own `6+1` decomposition in says the same two numbers in words, where 8.42a
+            // read out the sum it had already made ("Card + item Initiative: 7").
+            var reading = itemInitiativeBonus == 0
+                ? "Card " + CardInitiativeLabel
+                : "Card " + CardInitiativeLabel + " + item " +
+                    itemInitiativeBonus.ToString(System.Globalization.CultureInfo.InvariantCulture);
             AssistiveLabel = IsFacedown
                 ? "Current card: committed facedown, not revealed"
                 : $"Current card: {card.DisplayName} - {card.ColorName} - {card.ValueLine} - " +
-                    StateLabel + $" - Card + item Initiative: {InitiativeLabel}";
+                    StateLabel + " - Initiative: " + reading;
         }
 
         /// <summary>The projected commitment this marker is a reading of.</summary>
@@ -453,7 +488,32 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>The revealed card's printed colour, or <c>None</c> while it is facedown.</summary>
         public CardColor Color { get; }
 
-        /// <summary>Printed Initiative plus p.16 item bonuses; empty while facedown.</summary>
+        /// <summary>
+        /// The revealed card's printed Initiative, as a number rather than as text, or null while the
+        /// commitment is facedown. Milestone 8.55: the badge reads the two numbers apart, so the view
+        /// model carries them apart, and a check can assert the reading against the arithmetic instead
+        /// of against a string this type composed.
+        /// </summary>
+        public int? CardInitiative { get; }
+
+        /// <summary>
+        /// What p.16's Initiative items add to that printed number for this owner - zero when the hero
+        /// holds none, and zero for a facedown commitment. Decided by the shared
+        /// <see cref="ItemBonusQuery"/>, never by subtracting a printed total out of a sum.
+        /// </summary>
+        public int ItemInitiativeBonus { get; }
+
+        /// <summary>The printed Initiative alone, as the badge's left-hand reading; empty facedown.</summary>
+        public string CardInitiativeLabel { get; }
+
+        /// <summary>
+        /// Printed Initiative and p.16's item bonus as the rail draws them - `6+1` with one item, `6`
+        /// with none, empty while facedown.
+        ///
+        /// <para>Milestone 8.55. 8.42a put the SUM here, and the user, mid-playtest, on Swift's plaque
+        /// while Reload! resolved: "this should be noted as 6+1." A committed number the player chose
+        /// and a bonus the game supplies are two facts, and `7` is neither of them.</para>
+        /// </summary>
         public string InitiativeLabel { get; }
 
         /// <summary>`FACEDOWN` or `RESOLVING` - the word the marker carries beside its colour.</summary>
@@ -1226,6 +1286,18 @@ namespace GuardsDigital.Presentation.Match
             // card this round's history does not name: the group only decides which lifecycle line the
             // face would otherwise carry, and a card in play carries `RESOLVING` in place of all of them.
             var playedTurnIndex = PlayedTurnIndex(projection, heroId, card.Id);
+
+            // Milestone 8.42a read both of these and handed presentation their sum; 8.55 hands over the
+            // pair, because the badge now says `6+1` and the sum cannot be taken apart again without
+            // presentation re-deriving p.16 for itself. Both readings still come from the authoritative
+            // public counts and the one shared item query - the printed number from the definition the
+            // instance names, the addend from `ItemBonusQuery`, which owns the matching-icon condition.
+            var printedInitiative = PrintedValueQuery.CalculatePrintedInitiative(
+                card, projection.Definitions);
+            var initiativeItems = projection.HeroProgression
+                .FirstOrDefault(value => value.HeroId.Equals(heroId))?
+                .ItemBonuses.Where(value => value.Key == PrintedValueChannel.Initiative)
+                .Sum(value => value.Value) ?? 0;
             return new HeroCurrentCardViewModel(
                 commitment.Status,
                 TrayCard(
@@ -1236,11 +1308,8 @@ namespace GuardsDigital.Presentation.Match
                     false,
                     false,
                     true),
-                ItemBonusQuery.TotalWithProjectedItems(
-                    PrintedValueQuery.CalculatePrintedInitiative(card, projection.Definitions),
-                    projection.HeroProgression.FirstOrDefault(value => value.HeroId.Equals(heroId))?
-                        .ItemBonuses.Where(value => value.Key == PrintedValueChannel.Initiative)
-                        .Sum(value => value.Value) ?? 0));
+                printedInitiative.Total,
+                ItemBonusQuery.ProjectedItemBonus(printedInitiative, initiativeItems));
         }
 
         /// <summary>

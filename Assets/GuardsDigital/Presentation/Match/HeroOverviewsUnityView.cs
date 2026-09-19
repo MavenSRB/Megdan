@@ -1211,10 +1211,47 @@ namespace GuardsDigital.Presentation.Match
             return element;
         }
 
-        /// <summary>The marker's fixed footprint in the rail header's upper right.</summary>
-        private const float CurrentCardWidth = 46f;
+        /// <summary>
+        /// The marker's fixed footprint in the rail header's upper right. Public since milestone 8.55
+        /// so a live check can assert the badge is still DRAWN at the footprint it reserves: what 8.55
+        /// changes is the reading inside the marker, and the one thing it may not change is this.
+        /// </summary>
+        public const float CurrentCardWidth = 46f;
 
-        private const float CurrentCardHeight = 52f;
+        public const float CurrentCardHeight = 52f;
+
+        /// <summary>
+        /// The badge's type size for a one- or two-character reading - `6`, `13` - unchanged since
+        /// milestone 8.7a, and still what every card with no Initiative item draws.
+        /// </summary>
+        public const float InitiativeBadgeFontSize = 20f;
+
+        /// <summary>
+        /// Milestone 8.55: the size the three-character split `6+1` draws at.
+        ///
+        /// <para>The marker may not grow for it - 8.42a's acceptance keeps the badge's geometry, and a
+        /// wider marker would move the hero's name and the item strip beside it - so the one thing
+        /// that gives is the type. The step is measured on the live rail rather than guessed: at 20 a
+        /// three-character reading draws 40 of the 42 units inside the marker's border, and as little
+        /// as 40 of 40 at a squat viewport, which is a badge with no margin at all rather than one
+        /// that fits. At 18 it draws 36.</para>
+        /// </summary>
+        public const float SplitInitiativeBadgeFontSize = 18f;
+
+        /// <summary>
+        /// The same for a FOUR-character reading - `11+1`, `13+2`: a two-digit printed Initiative with
+        /// items, which p.7's Initiatives make an ordinary face rather than a defensive case (the live
+        /// rail check reads exactly `11+1`). Measured: 50 units at 20, 42 at 16, 36.75 at 14.
+        /// </summary>
+        public const float WideSplitInitiativeBadgeFontSize = 14f;
+
+        /// <summary>
+        /// The type size the badge draws <paramref name="label"/> at, by how long a reading it is. One
+        /// place decides it so a check can read the rule rather than a laid-out label's pixels.
+        /// </summary>
+        public static float InitiativeBadgeFontSizeFor(string label) =>
+            string.IsNullOrEmpty(label) || label.Length <= 2 ? InitiativeBadgeFontSize :
+            label.Length == 3 ? SplitInitiativeBadgeFontSize : WideSplitInitiativeBadgeFontSize;
 
         /// <summary>
         /// The marker in the hero header's inner top corner: the card this hero has in play and has not
@@ -1293,14 +1330,17 @@ namespace GuardsDigital.Presentation.Match
             }
             else
             {
+                var reading = current.InitiativeLabel.Length == 0 ? "-" : current.InitiativeLabel;
                 var initiative = HudElements.Text(
-                    current.InitiativeLabel.Length == 0 ? "-" : current.InitiativeLabel,
-                    20f,
+                    reading,
+                    InitiativeBadgeFontSizeFor(reading),
                     ink,
                     FontStyle.Bold);
+                initiative.name = "gd-current-card-initiative";
                 // Never wrapped, for the reason the card's own flag is not: p.7 prints two-digit
                 // Initiatives, and a marker breaking "13" across two lines would show a value the card
-                // does not have.
+                // does not have. Milestone 8.55's `6+1` is the same sentence one character longer: it
+                // is one reading of one card's Initiative and breaks nowhere.
                 initiative.style.whiteSpace = WhiteSpace.NoWrap;
                 initiative.style.unityTextAlign = TextAnchor.MiddleCenter;
                 initiative.style.position = Position.Absolute;
