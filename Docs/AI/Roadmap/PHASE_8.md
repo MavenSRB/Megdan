@@ -483,15 +483,19 @@ Non-goals: any other control's keyboard behaviour; the tray's Confirm and Pass b
 
 Historical evidence: [8.52 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-852-end-turn-keyboard-completion-evidence).
 
-### [~] 8.53 The victory screen
+### [x] 8.53 The victory screen
 
 Authorized 2026-09-19 by the user from a mockup drawn over the 18 September playtest's own numbers: "I like this, implement it before the build. Everything else should disappear and this pops up." With two amendments in the same breath: no "Cards played" column, "Minions Killed" as the wording, and a "Times defended" column.
 
 Outcome: when the match ends, the whole HUD gives way to one screen: the winner in big letters ("BLUE WINS", or "CUTTER WINS" for her solo victory), the win condition under it in words (the last Wave pushed, the Throne captured, the last Life counter spent, A Fistful of Coins), then a scoreboard - the winning team's block above the losing team's, each hero as its own token with name, level and worth, and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned. A Cutter solo win splits her out above her own crew, who show the same numbers with no share of the win. The numbers are the authority's: a per-hero match scoreboard accumulated where the log rows are emitted, carried in the snapshot and on the wire, so every seat sees the same board and a restored match keeps it.
 
-Acceptance: the accumulator proven on the defeat, attack, defense, minion-defeat and coin facts and across snapshot restore and replay; the screen proven to show on every ending cause with the strip, rails, tray and window hidden beneath it; a Play Mode journey to each ending; every control on the shared button treatment.
+Acceptance: the accumulator proven on the defeat, attack, defense, minion-defeat and coin facts and across snapshot restore and replay; the screen proven to show on every ending cause with the strip, rails, tray and window hidden beneath it; a Play Mode journey to each ending; no controls of its own, leaving staying the lobby surface's.
 
 Non-goals: per-round breakdowns; a replay viewer; changing what ends the game.
+
+Completed 2026-09-19 in two halves on one branch. The authority: `MatchScoreboard` / `HeroScoreboardEntry` (Kills, Deaths, Attacks at heroes, Times defended = attacks on the hero that were successfully defended, Minions Killed by attack or card text, Coins earned = collected over the match, not held; Level stays the progression's) owned by `RoundResolutionAuthority`, folded at `MatchAggregate`'s commit boundary and by `HeroCoinLedger.BindScoreboard`; snapshot v42 -> **v43** (+82 bytes on all sixteen corpus captures, v42 rejected rather than migrated); wire `/16` -> **`/17`** (`NetworkScoreboardRow`, four pins moved); `IMatchReadModel.Scoreboard`; `MatchScoreboardTests` (9). The screen: `VictoryScreenPresenter.Derive` over `Outcome.HasEnded`, `VictoryScreenUnityView` (`gd-victory-screen`) composed last by the HUD renderer, which hides every other root child while the screen stands and writes their display back if it ever comes down; `VictoryCauseLabels` shared with the status line; the 8.49 worth badge shared through `HudElements.WorthBadge`; the best value per column marked, Deaths never. No controls: the lobby's LEAVE stays reachable. `VictoryScreenPresenterTests` (15 cases), `VictoryScreenUiJourneyPlayModeTests` (the last Life counter through `UrsafarAuditStaging`), the Cutter solo journey extended. Suites at `87dacf6c`: complete Edit Mode 4396 / 4360 passed / 0 failed / 36 established skips, complete Play Mode 629/629 with zero skips, harness 3425/3425 with zero skips.
+
+Historical evidence: [8.53 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-853-victory-screen-completion-evidence).
 
 ### [ ] 8.54 Bounce's repeat through Bullet Time
 
@@ -501,3 +505,12 @@ Ruled by the user 2026-09-19: "Bounce through Bullet Time counts as already reso
 
 Asked by the user 2026-09-18 with a screenshot: the hero rail's revealed-card initiative badge must read "6+1" - the printed Initiative and what the item adds - rather than the summed 7 that 8.42a draws.
 
+### [~] 8.56 Package the victory-screen playtest build
+
+Authorized 2026-09-19 by the user: "Cut out the build after that end" (said of 8.46's landing) and, once the victory screen was ordered, "implement it before the build." The build carries 8.46 through 8.53: the decision window with the level-up screen inside it, Bounce's repeat through Reload!, defeat costs and assist coins by Tier with the worth badge on the rail, the banner only when you are up, the END TURN keyboard fix and the victory screen.
+
+Outcome: `Builds/Playtest-8.53-victory-screen` and its zip, built from main at the 8.53 tag by the 8.44 recipe (bundleVersion `1.0-8.53-victory-screen`, `Invoke-PlayerBuildSmoke.ps1`, the launcher batch, READ ME FIRST, PACKAGE MANIFEST, BUILD IDENTITY), launched once from its own folder.
+
+Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged commit before the build is cut; the packaged exe launches and reaches the lobby; the identity stamp names the commit.
+
+Non-goals: new gameplay; the 8.54 and 8.55 fixes, which wait behind the package.
