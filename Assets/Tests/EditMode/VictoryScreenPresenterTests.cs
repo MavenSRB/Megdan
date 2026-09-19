@@ -312,13 +312,16 @@ namespace GuardsDigital.Tests.EditMode
             var heroes = session.Projection.Setup.Heroes.Select(hero => hero.HeroId).ToArray();
             Assert.That(heroes.Length, Is.EqualTo(6), "Arrange: rulebook p.6's three a side.");
 
-            // Kills: a single leader. Deaths: a two-way tie at the top. Minions: nothing happened to
-            // anybody. Coins: every hero the same, which is a six-way tie rather than an empty column.
+            // Kills: a single leader. Attacks at heroes: a two-way tie at the top. Deaths: a two-way
+            // tie at the top that must mark NOBODY, because being defeated most often leads nothing.
+            // Minions: nothing happened to anybody. Coins: every hero the same, which is a six-way tie
+            // rather than an empty column.
             var kills = new[] { 0, 4, 1, 2, 0, 3 };
             var deaths = new[] { 2, 2, 1, 0, 0, 0 };
+            var attacks = new[] { 3, 3, 1, 0, 2, 0 };
             var board = heroes
                 .Select((heroId, index) => new HeroScoreboardEntry(
-                    heroId, kills[index], deaths[index], 0, 0, 0, 7))
+                    heroId, kills[index], deaths[index], attacks[index], 0, 0, 7))
                 .ToArray();
             var model = VictoryScreenPresenter.Derive(EndedProjection.TeamWin(
                 session.Projection, MatchVictoryCause.FinalWaveFlipped, TeamSide.Red, board,
@@ -330,9 +333,14 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[] { heroes[1] }),
                 "One hero led the column, so one cell is marked.");
             Assert.That(
-                heroes.Where(heroId => rows[heroId].Cell(VictoryScreenColumn.Deaths).IsBest),
+                heroes.Where(heroId => rows[heroId].Cell(VictoryScreenColumn.AttacksAtHeroes).IsBest),
                 Is.EqualTo(new[] { heroes[0], heroes[1] }),
                 "A tie marks every hero that tied - there is no first-listed tie-break here.");
+            Assert.That(
+                heroes.Any(heroId => rows[heroId].Cell(VictoryScreenColumn.Deaths).IsBest),
+                Is.False,
+                "Deaths marks nobody, tie or not: the mark says \"led the column\", and the hero " +
+                "defeated most often led nothing. The approved mockup marks no Deaths cell.");
             Assert.That(
                 heroes.Any(heroId => rows[heroId].Cell(VictoryScreenColumn.MinionsKilled).IsBest),
                 Is.False,

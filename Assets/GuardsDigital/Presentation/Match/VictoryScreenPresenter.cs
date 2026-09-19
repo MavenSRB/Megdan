@@ -102,6 +102,13 @@ namespace GuardsDigital.Presentation.Match
                 column => column,
                 column =>
                 {
+                    // Deaths is never marked: the mark says "led the column", and the hero defeated
+                    // most often led nothing. The mockup the user approved marks no Deaths cell.
+                    if (column == VictoryScreenColumn.Deaths)
+                    {
+                        return int.MinValue;
+                    }
+
                     var highest = lines.Max(line => line.Value(column));
                     // A column nothing happened in has no leader: "joint best at nothing" is a fact
                     // about the match rather than about a player.

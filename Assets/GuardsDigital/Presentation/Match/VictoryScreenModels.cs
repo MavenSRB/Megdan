@@ -213,7 +213,8 @@ namespace GuardsDigital.Presentation.Match
     /// <para><see cref="IsBest"/> is the mockup's `best` class: the HIGHEST value in this column
     /// across EVERY hero on the screen, winners and defeated alike, with ties all marked. A column in
     /// which nothing happened to anybody - every value zero - marks nobody, because "joint best at
-    /// nothing" is a statement about the match rather than about a player.</para>
+    /// nothing" is a statement about the match rather than about a player. Deaths is never marked:
+    /// the hero defeated most often led nothing, and the approved mockup marks no Deaths cell.</para>
     /// </summary>
     public sealed class VictoryScreenCellViewModel
     {
