@@ -1889,6 +1889,12 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 | --- | --- | --- |
 | 8.49 | Reported at the table during the 2026-09-18 playtest - "Lives are not being counted correctly. It just takes -1 from pool" - and fixed the same night: rulebook p.13's "that hero's lowest card Tier" is read over the cards the hero is playing with (hand, turn area, discard pile) through `HeroDefeatCostQuery`, which the combat backend and the hero rail share. The whole-pool reading of milestone 7.4 also counted the Tier I cards p.15's upgrades return to the deck face up, so every hero read as Tier I at every Level and every Defeat cost one Life counter and paid one assist coin; p.13's table (Level 1-3 -> 1, 4-6 -> 2, 7-8 -> 3) now holds on the staged Tier II and Tier III boards (`DefeatCostByTierTests`), with the defect measured beside the fix (`HeroDefeatCostQueryTests`). Beside each rail's level a half-coin, half-heart badge (`gd-hero-worth`) carries the number, with a hover naming what a Defeat pays and costs. The six-seat "wave" walk re-seeded 2 -> 40 and Hunter-Seeker's journey dealt five Life counters, because the changed cost reroutes every walk with a levelled Defeat. Complete offline harness 3392 / 3392 / 0; complete Edit Mode 4309 discovered / 4273 passed / 0 failed / 36 established skips (4272 + the one repaired rail sweep, rerun 125 / 125); complete Play Mode 623 / 623 / 0 / 0 (621 + the two repaired journeys, rerun green). Landed after 8.50 and 8.51. [Definition](../../Roadmap/PHASE_8.md#x-849-a-defeat-costs-what-the-hero-is-worth). | `milestone/8.49` |
 
+## Milestone 8.60 Eighteen-hero package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.60 | `Builds/Playtest-8.55-rowenna` (+ zip: 185 entries, 69 MB, no logs) cut from main at the 8.55 tag (`cdbf4d71`) after 8.54 and 8.55 landed, bundleVersion `1.0-8.55-rowenna`, stamp `...3202-9d3386dd`; protocol /17 and schema 43 unchanged; configured content digest `36da22a7...` (moved by Rowenna's registration). Gate on the packaged tree: Edit Mode 4608 / 4572 / 0 / 36 established skips, Play Mode 661/661 zero skips, harness 3631/3631, build-and-launch smoke passed, packaged exe launched from its own folder to `LOBBY_BEGIN`. Manifest, README and BUILD IDENTITY by hand per the 8.44 recipe. | `milestone/8.60` |
+
 ## Milestone 8.55 Initiative badge completion evidence
 
 | Milestone | Outcome and definition | Commit |

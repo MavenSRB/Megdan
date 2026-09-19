@@ -261,7 +261,7 @@ Completed 2026-09-19 (`f6f651d5`). `choose-line-destination@1` gains an optional
 
 Historical evidence: [8.59 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-859-bounce-offer-completion-evidence).
 
-### [ ] 8.60 Package the eighteen-hero playtest build
+### [x] 8.60 Package the eighteen-hero playtest build
 
 Authorized 2026-09-19 by the user ("Previews look ok, merge 8.58 and proceed"), then ordered AFTER the two open fixes when a package was cut early at 8.57h: "No need. Just finish everything and then do the build." (that package was withdrawn, its commit and tag removed). The build carries 8.57-8.57h (Rowenna the Vanguard, the eighteenth hero, dealt with her real artwork and gated), 8.58 (the decision window per the mockup, the worth badge, the strip's hearts, the victory grid), 8.59 (Bounce and Wild Hunt offer only the spaces they can reach), 8.54 (Bounce's repeat through Bullet Time) and 8.55 (the initiative badge reads card plus item).
 
@@ -270,3 +270,7 @@ Outcome: `Builds/Playtest-8.55-rowenna` and its zip, built from main at the late
 Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged commit before the build is cut; the packaged exe launches and reaches the lobby; the identity stamp names the commit; Rowenna pickable in the packaged lobby with her pick card and both tokens.
 
 Non-goals: new gameplay beyond the blocks named; a build before 8.54 and 8.55 have landed.
+
+Completed 2026-09-19, after 8.54 and 8.55 landed - the user's order ("Just finish everything and then do the build"). `Builds/Playtest-8.55-rowenna` and `Builds/Playtest-8.55-rowenna.zip` (185 entries, no logs, no debug folder, 69 MB), built from main at `cdbf4d71` (tag `milestone/8.55`) with bundleVersion `1.0-8.55-rowenna`, stamp `1.0-8.55-rowenna+20260919163202-9d3386dd`; protocol `guards-private-online/17` and schema 43 unchanged; the configured content digest re-measured at this commit is `36da22a7...`, moved from `ff41228b...` by Rowenna's registration (her eighteen definitions and two placement capabilities), so this build refuses every older copy at the join. The gate on the packaged tree: complete Edit Mode 4608 / 4572 / 0 / 36 established skips; complete Play Mode 661/661 with zero skips; harness 3631/3631; the build-and-launch smoke (GATE PASSED); the packaged exe launched once from its own folder to `LOBBY_BEGIN`. Manifest, READ ME FIRST (what is new: Rowenna and her three cross-seat questions, the rebuilt window, the hearts, the badge, the victory grid, the Bounce and Wild Hunt offers, Bounce through Bullet Time, the "6+1" badge; known problems: Rowenna unplayed by people so far, the window checked on screenshots, the two same-day fixes) and BUILD IDENTITY written by hand per the 8.44 recipe.
+
+Historical evidence: [8.60 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-860-eighteen-hero-package-completion-evidence).
