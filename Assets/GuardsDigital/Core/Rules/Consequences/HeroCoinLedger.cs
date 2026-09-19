@@ -555,6 +555,12 @@ namespace GuardsDigital.Core.Rules.Consequences
         private readonly Dictionary<HeroId, int> coinBalances;
         private readonly HashSet<DefeatOutcomeId> awardedOutcomeIds;
 
+        /// <summary>
+        /// Milestone 8.53. The match scoreboard's "Coins earned" column, or <c>null</c> outside a
+        /// composed match. See <see cref="BindScoreboard"/>.
+        /// </summary>
+        private GuardsDigital.Core.Rules.Victory.MatchScoreboard scoreboard;
+
         public HeroCoinLedger(MatchParticipants participants)
             : this(participants, null, null)
         {
@@ -600,6 +606,32 @@ namespace GuardsDigital.Core.Rules.Consequences
 
         public HeroCoinLedgerRestoreState CaptureRestoreState() =>
             new HeroCoinLedgerRestoreState(CoinBalances, AwardedOutcomeIds);
+
+        /// <summary>
+        /// Milestone 8.53. Hands this ledger the match scoreboard whose "Coins earned" column counts
+        /// what it credits, on exactly the terms the round authority hands the dispatcher its items
+        /// and its Active-effect lifecycle: the round owns the state and this collaborator is built
+        /// before it.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Why the count lives here rather than on the event stream.</b> Every coin a hero
+        /// collects in this build passes through <see cref="Award"/> or <see cref="TryGrant"/> -
+        /// p.13's Defeat and assist coins, a minion's bounty, p.8's Pity Coin and card text's own
+        /// grants - and this is the only place in the build where a balance goes up at all. The
+        /// alternative was to count from the rule events, which cannot be done: p.13's reward fact
+        /// names the Defeat and not the payout, and a card-text grant reaches the stream only as an
+        /// applied node. Counting here also means a coin source added later is counted without
+        /// anything being told about it.</para>
+        /// <para><b>A transfer is not a collection</b> and deliberately does not call this: the
+        /// coins it moves were counted once when the hero who holds them earned them, and counting
+        /// them again on arrival would make the table's total grow by handing coins around. A spend
+        /// does not call it either, because the column is what a hero collected over the match
+        /// rather than what they still hold.</para>
+        /// </remarks>
+        public void BindScoreboard(GuardsDigital.Core.Rules.Victory.MatchScoreboard matchScoreboard)
+        {
+            scoreboard = matchScoreboard;
+        }
 
         public static HeroCoinLedger Restore(
             MatchParticipants participants,
@@ -713,6 +745,7 @@ namespace GuardsDigital.Core.Rules.Consequences
                 balanceBefore,
                 (int)candidateBalance);
             coinBalances[heroId] = operation.BalanceAfter;
+            scoreboard?.RecordCoinsEarned(heroId, amount);
             return true;
         }
 
@@ -839,6 +872,12 @@ namespace GuardsDigital.Core.Rules.Consequences
             foreach (var operation in operations)
             {
                 coinBalances[operation.RecipientHeroId] = operation.BalanceAfter;
+                // A zero-coin line is a real planned operation - p.13's schedule can owe a Defeat
+                // no coins at all - and it is not a collection, so it is not counted.
+                if (operation.Amount > 0)
+                {
+                    scoreboard?.RecordCoinsEarned(operation.RecipientHeroId, operation.Amount);
+                }
             }
 
             awardedOutcomeIds.Add(outcome.Id);

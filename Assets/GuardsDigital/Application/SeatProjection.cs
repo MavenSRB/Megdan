@@ -530,6 +530,13 @@ namespace GuardsDigital.Application
             // away - and taking the source's own derived value is what makes that identity a fact of
             // the composition rather than a claim a filter would have to keep proving.
             MatchLog = source.MatchLog;
+
+            // Milestone 8.53. The SAME board the Director reads, taken whole rather than filtered,
+            // for the reason the log above it is: every column counts an event the whole table
+            // watched happen, so there is nothing here to scope away - and taking the source's own
+            // value makes that identity a fact of the composition rather than a claim a filter
+            // would have to keep proving.
+            Scoreboard = source.Scoreboard;
             pending = pendingSurface;
             visibleCards = Array.AsReadOnly(ownCards.Concat(publicCards).ToArray());
             ActiveEffectSourceCardInstanceIds = source.ActiveEffectSourceCardInstanceIds;
@@ -620,6 +627,12 @@ namespace GuardsDigital.Application
         /// </summary>
         public int RemainingWaveCounters { get; }
         public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
+
+        /// <summary>
+        /// Milestone 8.53. The match scoreboard - identical to every other seat's and to the
+        /// Director's, because every column counts something the whole table watched happen.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> Scoreboard { get; }
         public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome { get; }
 
         /// <summary>

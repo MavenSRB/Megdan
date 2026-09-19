@@ -467,9 +467,11 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(42),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
-                "own. The version has since moved twenty-six times, none of them for it: milestone 6.7 for " +
+                "own. The version has since moved twenty-seven times, none of them for it: " +
+                "milestone 8.53 for the victory screen's accumulated per-hero scoreboard, and before " +
+                "that milestone 6.7 for " +
                 "a repeated action instance owed across a paused correction, milestone 6.9 for the " +
                 "mid-turn Lane-Push request a completed action can leave behind, milestone 6.10 for " +
                 "p.8's Battle Zone itself, milestone 6.10a for a paused system transition, " +

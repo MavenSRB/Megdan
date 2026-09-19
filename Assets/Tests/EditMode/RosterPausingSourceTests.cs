@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(42),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -569,7 +569,13 @@ namespace GuardsDigital.Tests.EditMode
                 "bound. No v37 payload records it, because no v37 build could run a second complete " +
                 "p.14 order inside one action at all - and the board cannot be asked instead, because " +
                 "a target that successfully DEFENDED is still standing and looks exactly like a unit " +
-                "nobody has taken. This " +
+                "nobody has taken. And once more at milestone 8.53, which is the first move for " +
+                "state that is not a decision of any kind: the match scoreboard's accumulated " +
+                "per-hero totals. Every earlier move here carried something the engine was in the " +
+                "middle of; this one carries what the match has already DONE, and it has to be " +
+                "written for the same reason every one of them did - no v42 payload records it, and " +
+                "the only reading available for its absence is that nothing has happened to anybody, " +
+                "which is right for every v42 payload and wrong for the first v43 one. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
                 "accounted for here rather than passing unread.");
         }

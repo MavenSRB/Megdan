@@ -510,6 +510,21 @@ namespace GuardsDigital.Application
                 }
 
                 roundEvents.Add(ruleEvent);
+
+                // Milestone 8.53. The victory screen's per-hero board is counted here, in the same
+                // pass that files the event and immediately before the append that writes the
+                // rule-event log the seat-public rows are derived from. That is what makes the
+                // scoreboard and the log two readings of ONE set of facts rather than two readings
+                // of the match: a fact this counts is a fact that log carries, by construction.
+                //
+                // It is inside the accepted branch and nowhere else, which is the whole of what
+                // makes it safe. A refused or faulted command never reaches this line, and the
+                // rollback above restores the graphs - the scoreboard among them - from the
+                // pre-image, so a command that moved a counter and then failed cannot leave the
+                // counter moved. And because it counts only committed events, a retained-prefix
+                // Undo that replays its prefix into a fresh aggregate re-counts exactly the same
+                // facts in exactly the same order.
+                round?.Scoreboard.Observe(ruleEvent);
             }
 
             eventLog.Append(planned.Events);

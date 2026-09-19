@@ -183,6 +183,15 @@ namespace GuardsDigital.Core.Cards
             // p.13 outcomes have one round-owned record of their own.
             HeroDefeatHistory = new RoundHeroDefeatHistory(participants);
 
+            // Milestone 8.53. The victory screen's per-hero board. Held here for the reason the
+            // Levels, the items and the Life counters are: it is MATCH-scoped authoritative state
+            // whose only writers are rules this round's own graph reaches, and the round's snapshot
+            // section is where it is persisted. It is emphatically not the round-scoped Defeat
+            // history above it - that record is reset at every round boundary because p.8's question
+            // is about this round, and a scoreboard that reset would print zeroes at the moment the
+            // match ended.
+            Scoreboard = new GuardsDigital.Core.Rules.Victory.MatchScoreboard(participants);
+
             // One state, shared with the dispatcher whose Defense total reads it - the same arrangement
             // the marker register has, and for the same reason.
             this.cardActions?.BindHeroItems(HeroItems);
@@ -215,6 +224,11 @@ namespace GuardsDigital.Core.Cards
                     ? GuardsDigital.Core.Rules.Consequences.HeroCoinLedger.Restore(
                         participants, compositionStartingCoins)
                     : new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants));
+
+            // Milestone 8.53. The one ledger is handed the one scoreboard, so that every coin it
+            // credits - p.13's Defeat and assist coins, a minion's bounty, p.8's Pity Coin and card
+            // text's own grants - is counted once, at the single place a balance goes up.
+            roundCoinLedger.BindScoreboard(Scoreboard);
             levelUp?.Bind(
                 HeroProgression,
                 HeroItems,
@@ -351,6 +365,13 @@ namespace GuardsDigital.Core.Cards
         /// Ultimate from the card's own position.
         /// </summary>
         public TeamLifeState TeamLives { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.53's per-hero match scoreboard - the numbers the victory screen prints.
+        /// Match-scoped, held here for the reason the Levels, the items and the Life counters above
+        /// it are, and persisted in this authority's own snapshot section.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Victory.MatchScoreboard Scoreboard { get; private set; }
 
         /// <summary>
         /// Milestone 7.6's record of which heroes bought a level this round, held beside the Levels it
@@ -832,7 +853,8 @@ namespace GuardsDigital.Core.Cards
                 HeroProgression.CaptureRestoreState(),
                 HeroItems.CaptureRestoreState(),
                 TeamLives.CaptureRestoreState(),
-                RoundLeveling.CaptureRestoreState());
+                RoundLeveling.CaptureRestoreState(),
+                Scoreboard.CaptureRestoreState());
         }
 
         internal static RoundResolutionAuthority Restore(
@@ -893,6 +915,14 @@ namespace GuardsDigital.Core.Cards
                 participants, state.RoundLeveling);
             authority.HeroDefeatHistory = RoundHeroDefeatHistory.Restore(
                 participants, state.History.HeroDefeats);
+
+            // Milestone 8.53. The totals the payload recorded, replacing the empty board the
+            // constructor above created rather than mutating it, on the terms the three restores
+            // above state: a restored match must never pass through a zeroed scoreboard on its way
+            // to the numbers it saved. The ledger is re-bound to the replacement below, once the
+            // one ledger this authority owns has been asked for.
+            authority.Scoreboard = GuardsDigital.Core.Rules.Victory.MatchScoreboard.Restore(
+                participants, state.Scoreboard);
             if (authority.HeroDefeatHistory.Entries.Count > 0 &&
                 (cardActions?.CoinLedger == null ||
                     authority.HeroDefeatHistory.Entries.Any(entry =>
@@ -918,6 +948,11 @@ namespace GuardsDigital.Core.Cards
                 authority.HeroItems,
                 cardActions?.EnsureCoinLedger(participants) ??
                     new GuardsDigital.Core.Rules.Consequences.HeroCoinLedger(participants));
+
+            // Milestone 8.53. The same single ledger the level purchase above spends from is what
+            // counts the "Coins earned" column, so it is handed the restored board here - after the
+            // ensure above, which is the one creation point a restore can reach.
+            cardActions?.EnsureCoinLedger(participants).BindScoreboard(authority.Scoreboard);
             authority.RoundIndex = roundIndex;
             authority.TurnIndex = turnIndex;
             authority.Phase = phase;

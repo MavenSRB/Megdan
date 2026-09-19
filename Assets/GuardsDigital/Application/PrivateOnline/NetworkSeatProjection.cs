@@ -59,6 +59,7 @@ namespace GuardsDigital.Application
             IReadOnlyList<NetworkCardRow> ownCards,
             IReadOnlyList<NetworkCardRow> publicCards,
             IReadOnlyList<NetworkProgressionRow> heroProgression,
+            IReadOnlyList<NetworkScoreboardRow> scoreboard,
             IReadOnlyList<string> activeEffectSourceCardInstanceIds,
             NetworkDecisionOwnerRecord decisionOwner,
             string decisionContractFamilyId,
@@ -93,6 +94,7 @@ namespace GuardsDigital.Application
             OwnCards = ownCards;
             PublicCards = publicCards;
             HeroProgression = heroProgression;
+            Scoreboard = scoreboard;
             ActiveEffectSourceCardInstanceIds = activeEffectSourceCardInstanceIds;
             DecisionOwner = decisionOwner;
             DecisionContractFamilyId = decisionContractFamilyId;
@@ -153,6 +155,24 @@ namespace GuardsDigital.Application
         public IReadOnlyList<NetworkCardRow> PublicCards { get; }
 
         public IReadOnlyList<NetworkProgressionRow> HeroProgression { get; }
+
+        /// <summary>
+        /// Milestone 8.53, protocol version 17. The match scoreboard the victory screen prints, one
+        /// row per participating hero.
+        ///
+        /// <para><b>Carried rather than derived, and derivation is not merely refused here - it is
+        /// unavailable.</b> Every fact these six columns count is seat-public and already crosses the
+        /// wire as a match-log row, but that log is a BOUNDED WINDOW of recent lines: a seat counting
+        /// its own totals out of it would report fewer kills the longer the match ran, and a seat
+        /// that reconnected would start its board from the moment it came back. The host keeps the
+        /// totals; the frame carries them.</para>
+        ///
+        /// <para><b>The same rows for every seat.</b> There is no per-seat narrowing here, for the
+        /// reason the match log has none: a Defeat, a declared attack, an answered defense, a removed
+        /// minion and a paid-out coin are all things the whole table watched happen.</para>
+        /// </summary>
+        public IReadOnlyList<NetworkScoreboardRow> Scoreboard { get; }
+
         public IReadOnlyList<string> ActiveEffectSourceCardInstanceIds { get; }
         public NetworkDecisionOwnerRecord DecisionOwner { get; }
 
@@ -489,6 +509,40 @@ namespace GuardsDigital.Application
     }
 
     /// <summary>
+    /// Milestone 8.53, protocol version 17. One hero's line of the match scoreboard on the wire.
+    /// The Level is deliberately not repeated here - it is already on
+    /// <see cref="NetworkProgressionRow"/>, and the victory screen reads it there.
+    /// </summary>
+    public sealed class NetworkScoreboardRow
+    {
+        public NetworkScoreboardRow(
+            string heroId,
+            int kills,
+            int deaths,
+            int attacksAtHeroes,
+            int timesDefended,
+            int minionsKilled,
+            int coinsEarned)
+        {
+            HeroId = heroId;
+            Kills = kills;
+            Deaths = deaths;
+            AttacksAtHeroes = attacksAtHeroes;
+            TimesDefended = timesDefended;
+            MinionsKilled = minionsKilled;
+            CoinsEarned = coinsEarned;
+        }
+
+        public string HeroId { get; }
+        public int Kills { get; }
+        public int Deaths { get; }
+        public int AttacksAtHeroes { get; }
+        public int TimesDefended { get; }
+        public int MinionsKilled { get; }
+        public int CoinsEarned { get; }
+    }
+
+    /// <summary>
     /// Milestone 8.32. Writes one <see cref="SeatProjection"/> as its bounded wire record, and
     /// reads one back field by field, refusing anything out of bounds.
     /// </summary>
@@ -667,6 +721,21 @@ namespace GuardsDigital.Application
                         writer.Write((int)bonus.Key);
                         writer.Write(bonus.Value);
                     }
+                }
+
+                // Milestone 8.53, protocol 17: the match scoreboard, written between the progression
+                // rows and the Active-effect sources. A version 16 peer reads this count as the
+                // source count and mis-decodes everything after it, which is why the version moved.
+                writer.Write(projection.Scoreboard.Count);
+                foreach (var line in projection.Scoreboard)
+                {
+                    writer.Write(line.HeroId.Value);
+                    writer.Write(line.Kills);
+                    writer.Write(line.Deaths);
+                    writer.Write(line.AttacksAtHeroes);
+                    writer.Write(line.TimesDefended);
+                    writer.Write(line.MinionsKilled);
+                    writer.Write(line.CoinsEarned);
                 }
 
                 writer.Write(projection.ActiveEffectSourceCardInstanceIds.Count);
@@ -1034,6 +1103,33 @@ namespace GuardsDigital.Application
                             id, level, coins, leveled, Array.AsReadOnly(bonuses.ToArray())));
                     }
 
+                    if (!TryReadCount(reader, out var scoreboardCount))
+                    {
+                        return false;
+                    }
+
+                    var scoreboard = new List<NetworkScoreboardRow>(scoreboardCount);
+                    for (var index = 0; index < scoreboardCount; index++)
+                    {
+                        var id = reader.ReadString();
+                        var kills = reader.ReadInt32();
+                        var deaths = reader.ReadInt32();
+                        var attacksAtHeroes = reader.ReadInt32();
+                        var timesDefended = reader.ReadInt32();
+                        var minionsKilled = reader.ReadInt32();
+                        var coinsEarned = reader.ReadInt32();
+                        if (string.IsNullOrWhiteSpace(id) || kills < 0 || deaths < 0 ||
+                            attacksAtHeroes < 0 || timesDefended < 0 || minionsKilled < 0 ||
+                            coinsEarned < 0)
+                        {
+                            return false;
+                        }
+
+                        scoreboard.Add(new NetworkScoreboardRow(
+                            id, kills, deaths, attacksAtHeroes, timesDefended, minionsKilled,
+                            coinsEarned));
+                    }
+
                     if (!TryReadCount(reader, out var activeCount))
                     {
                         return false;
@@ -1129,6 +1225,7 @@ namespace GuardsDigital.Application
                         ownCards,
                         publicCards,
                         Array.AsReadOnly(progression.ToArray()),
+                        Array.AsReadOnly(scoreboard.ToArray()),
                         Array.AsReadOnly(activeSources.ToArray()),
                         owner_,
                         contractFamily,

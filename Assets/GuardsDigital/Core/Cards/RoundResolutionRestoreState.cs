@@ -202,7 +202,8 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
             GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems,
             GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives,
-            GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState roundLeveling)
+            GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState roundLeveling,
+            GuardsDigital.Core.Rules.Victory.MatchScoreboardRestoreState scoreboard)
         {
             Cursor = cursor ?? throw new ArgumentNullException(nameof(cursor));
             History = history ?? throw new ArgumentNullException(nameof(history));
@@ -213,6 +214,7 @@ namespace GuardsDigital.Core.Cards
             HeroItems = heroItems ?? throw new ArgumentNullException(nameof(heroItems));
             TeamLives = teamLives ?? throw new ArgumentNullException(nameof(teamLives));
             RoundLeveling = roundLeveling ?? throw new ArgumentNullException(nameof(roundLeveling));
+            Scoreboard = scoreboard ?? throw new ArgumentNullException(nameof(scoreboard));
         }
 
         public RoundCursorRestoreState Cursor { get; }
@@ -256,6 +258,17 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState RoundLeveling { get; }
 
+        /// <summary>
+        /// Milestone 8.53's per-hero match scoreboard. Required and with no absent form, for the
+        /// reason the Level and the Life counters above it are: every match has heroes and every
+        /// hero has a line from the first command, so a payload carrying no scoreboard section would
+        /// be a round whose totals nobody wrote rather than a round whose heroes have none. It is
+        /// the only member here that is match-scoped AND accumulated - the round-scoped leveling
+        /// record beside it answers a question about one round, and this one answers a question
+        /// about the whole match, which is why the round boundary resets that one and not this.
+        /// </summary>
+        public GuardsDigital.Core.Rules.Victory.MatchScoreboardRestoreState Scoreboard { get; }
+
         public void Deconstruct(
             out RoundCursorRestoreState cursor,
             out RoundHistoryRestoreState history,
@@ -265,7 +278,8 @@ namespace GuardsDigital.Core.Cards
             out GuardsDigital.Core.Rules.Progression.HeroProgressionRestoreState heroProgression,
             out GuardsDigital.Core.Rules.Progression.HeroItemRestoreState heroItems,
             out GuardsDigital.Core.Rules.Consequences.TeamLifeRestoreState teamLives,
-            out GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState roundLeveling)
+            out GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState roundLeveling,
+            out GuardsDigital.Core.Rules.Victory.MatchScoreboardRestoreState scoreboard)
         {
             cursor = Cursor;
             history = History;
@@ -276,6 +290,7 @@ namespace GuardsDigital.Core.Cards
             heroItems = HeroItems;
             teamLives = TeamLives;
             roundLeveling = RoundLeveling;
+            scoreboard = Scoreboard;
         }
     }
 }

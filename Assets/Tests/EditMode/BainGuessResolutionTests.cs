@@ -353,7 +353,10 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSnapshotSchema_DoesNotMoveForAHiddenAnswer()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(42),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+                "The version has since moved once, at milestone 8.53, for the match scoreboard - " +
+                "accumulated per-hero totals that have no source to be re-derived from, which is the " +
+                "opposite of this case rather than a change to it. " +
                 "The hidden answer is already private state inside an already-private payload: a " +
                 "frame's CompletedOutcomes and AcceptedChoices have persisted typed CardInstance " +
                 "values since the effect frame existed, and the candidate SET is deliberately not " +

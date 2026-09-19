@@ -4663,6 +4663,9 @@ namespace GuardsDigital.Tests.EditMode
 
             public virtual IReadOnlyList<HeroProgressionProjection> HeroProgression =>
                 inner.HeroProgression;
+
+            public virtual IReadOnlyList<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry>
+                Scoreboard => inner.Scoreboard;
             public virtual GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome => inner.Outcome;
             public virtual IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds =>
                 inner.ActiveEffectSourceCardInstanceIds;

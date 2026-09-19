@@ -255,7 +255,32 @@ namespace GuardsDigital.Application
         // SCHEMA IS UNMOVED at v42: the row is re-derived from the retained rule-event log, whose
         // `Turn.HoldActionPerformed` event the engine has recorded for as long as the Hold existed;
         // no corpus digest or pinned constant moves with it.
-        public const int Version = 16;
+        // Version 17 (milestone 8.53) carries the MATCH SCOREBOARD. `NetworkSeatProjectionRecord`
+        // gains a repeated row - hero id plus six counters: kills, deaths, attacks at heroes, times
+        // defended, minions killed and coins earned - written between the per-hero progression rows
+        // and the Active-effect source list. A version 16 peer's reader takes that row count as the
+        // Active-effect source count and mis-decodes the entire remainder of the frame - a silent
+        // structural drift rather than a dropped tail - which is exactly what the bounded header
+        // exists to refuse: version 16 is rejected before either side interprets a payload.
+        //
+        // CARRIED RATHER THAN DERIVED, and here the exclusion floor's rule does not even have to be
+        // invoked, because derivation is not available at all. Every fact the board counts is
+        // seat-public and does cross the wire - as a `MatchLogEntry` row - but that log is a BOUNDED
+        // WINDOW of the most recent `MatchLogProjection.RetainedEntries` lines, by construction,
+        // because a bounded window is what lets one frame carry the whole thing to a seat that just
+        // arrived. A client counting its own totals out of that window would show a player FEWER
+        // kills the longer they played, and would show a seat that reconnected a board that started
+        // at the moment it returned. The host accumulates the totals once; the wire carries them.
+        //
+        // SCHEMA MOVES WITH IT, to v43, which is the unusual half and is stated rather than glossed:
+        // almost every wire bump in this series has left the snapshot alone, because what moved was
+        // what a remote read model is TOLD. This one moves both because the scoreboard is genuinely
+        // new authoritative state - it is accumulated, not derived, so it has to be persisted - and
+        // `PrivateSessionIdentity` refuses admission on a `SnapshotSchemaMismatch` anyway, so a
+        // mixed-version session was impossible before this line was written. The ratchet is kept
+        // regardless, on the standing rule that a version which only moves when a hole opens is a
+        // version nobody trusts.
+        public const int Version = 17;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

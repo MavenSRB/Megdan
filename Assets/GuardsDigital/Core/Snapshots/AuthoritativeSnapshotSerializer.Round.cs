@@ -67,7 +67,7 @@ namespace GuardsDigital.Core.Snapshots
             RoundResolutionRestoreState state)
         {
             var (_, _, endOfRound, roundCardActions, systemTransitions, heroProgression,
-                heroItems, teamLives, roundLeveling) = state;
+                heroItems, teamLives, roundLeveling, scoreboard) = state;
             var (currentStage, outcomes, pendingMinionBattleChoice, pendingLanePushRequest) = endOfRound;
             writer.Write(currentStage.HasValue);
             if (currentStage.HasValue) writer.Write((int)currentStage.Value);
@@ -88,6 +88,7 @@ namespace GuardsDigital.Core.Snapshots
             WriteHeroItems(writer, heroItems);
             WriteTeamLives(writer, teamLives);
             WriteRoundLeveling(writer, roundLeveling);
+            WriteScoreboard(writer, scoreboard);
 
             var (hasCardActions, roundCoinLedger) = roundCardActions;
             writer.Write(hasCardActions);
@@ -171,6 +172,7 @@ namespace GuardsDigital.Core.Snapshots
             var heroItems = ReadHeroItems(reader);
             var teamLives = ReadTeamLives(reader);
             var roundLeveling = ReadRoundLeveling(reader);
+            var scoreboard = ReadScoreboard(reader);
 
             // Milestone 7.2. The paused Attack continuation below verifies a recorded Defense total by
             // re-deriving it, and p.16's item bonus is part of that total, so the items have to exist
@@ -286,7 +288,8 @@ namespace GuardsDigital.Core.Snapshots
                     heroProgression,
                     heroItems,
                     teamLives,
-                    roundLeveling),
+                    roundLeveling,
+                    scoreboard),
                 commitment,
                 turn,
                 cardActions,
@@ -481,6 +484,69 @@ namespace GuardsDigital.Core.Snapshots
             BinaryReader reader) =>
             new GuardsDigital.Core.Rules.Progression.RoundLevelingRestoreState(
                 ReadMany(reader, "heroes that levelled this round", () => new HeroId(reader.ReadString())));
+
+        /// <summary>
+        /// Milestone 8.53, and the reason the schema moved to v43. The victory screen's per-hero
+        /// board: one line per participating hero, in hero-id order, each carrying the six counters
+        /// the screen prints.
+        ///
+        /// <para>A dense per-hero section rather than the sparse list the leveling record above it
+        /// uses, and for the opposite reason: a leveling record is empty for most of a match, while a
+        /// scoreboard has a line for every hero from the first command - "nobody has a line" is not a
+        /// state this can be in. It is written beside the round's other per-hero states because it is
+        /// the same kind of fact, and it is written AFTER them rather than at the section's end so
+        /// that the three conditional blocks that close the round section - the card actions, the
+        /// commitment and the turn - keep the positions every earlier version gave them.</para>
+        ///
+        /// <para><c>MatchScoreboard.Restore</c> owns the two rules this reader does not: that every
+        /// line names a participant, and that no hero appears twice. A negative counter is refused by
+        /// <c>HeroScoreboardEntry</c> itself, which is where the meaning of the number lives.</para>
+        /// </summary>
+        private static void WriteScoreboard(
+            BinaryWriter writer,
+            GuardsDigital.Core.Rules.Victory.MatchScoreboardRestoreState state)
+        {
+            state.Deconstruct(out var entries);
+            writer.Write(entries.Count);
+            foreach (var entry in entries)
+            {
+                writer.Write(entry.HeroId.Value);
+                writer.Write(entry.Kills);
+                writer.Write(entry.Deaths);
+                writer.Write(entry.AttacksAtHeroes);
+                writer.Write(entry.TimesDefended);
+                writer.Write(entry.MinionsKilled);
+                writer.Write(entry.CoinsEarned);
+            }
+        }
+
+        private static GuardsDigital.Core.Rules.Victory.MatchScoreboardRestoreState ReadScoreboard(
+            BinaryReader reader) =>
+            new GuardsDigital.Core.Rules.Victory.MatchScoreboardRestoreState(
+                ReadMany(reader, "match scoreboard lines", () =>
+                {
+                    var heroIdValue = reader.ReadString();
+                    if (string.IsNullOrWhiteSpace(heroIdValue))
+                    {
+                        throw Malformed("Snapshot records a scoreboard line with no hero.");
+                    }
+
+                    var kills = reader.ReadInt32();
+                    var deaths = reader.ReadInt32();
+                    var attacksAtHeroes = reader.ReadInt32();
+                    var timesDefended = reader.ReadInt32();
+                    var minionsKilled = reader.ReadInt32();
+                    var coinsEarned = reader.ReadInt32();
+                    if (kills < 0 || deaths < 0 || attacksAtHeroes < 0 || timesDefended < 0 ||
+                        minionsKilled < 0 || coinsEarned < 0)
+                    {
+                        throw Malformed("Snapshot records a negative scoreboard counter.");
+                    }
+
+                    return new GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry(
+                        new HeroId(heroIdValue), kills, deaths, attacksAtHeroes,
+                        timesDefended, minionsKilled, coinsEarned);
+                }));
 
         /// <summary>
         /// Milestone 8.19a1. The p.13 hero-Defeat outcomes that have completed in the current round.

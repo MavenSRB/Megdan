@@ -918,6 +918,9 @@ namespace GuardsDigital.Tests.EditMode
             public IReadOnlyList<HeroProgressionProjection> HeroProgression =>
                 Array.Empty<HeroProgressionProjection>();
 
+            public IReadOnlyList<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> Scoreboard =>
+                Array.Empty<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry>();
+
             public GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome => default;
 
             public IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds =>

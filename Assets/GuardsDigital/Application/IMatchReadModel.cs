@@ -110,6 +110,29 @@ namespace GuardsDigital.Application
         int RemainingWaveCounters { get; }
 
         IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
+
+        /// <summary>
+        /// Milestone 8.53. The match scoreboard the victory screen prints: one line per participating
+        /// hero, ordered by hero id, carrying kills, deaths, attacks at heroes, times defended,
+        /// minions killed and coins earned.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Public information, and not per-seat.</b> Every column counts an event the whole
+        /// table watched happen - a Defeat, a declared attack, an answered defense, a minion removed,
+        /// a coin paid out - so a seat's board is the same board as the Director's and as every other
+        /// seat's, exactly as <see cref="MatchLog"/> is. There is no redaction here because there is
+        /// nothing to redact.</para>
+        /// <para><b>Level is not on it</b>, deliberately: a hero's Level is already
+        /// <c>HeroProgressionProjection.Level</c> and the screen reads it there, so this carries the
+        /// six columns and only those.</para>
+        /// <para><b>Carried, never re-derived by a reader.</b> The totals are accumulated by the
+        /// authority and ride the authoritative snapshot, so a resync, a restore and a rejoining seat
+        /// all read the same numbers. A client cannot derive them: the seat-public log it holds is a
+        /// bounded window of recent lines, and a total counted from a window shrinks as the match
+        /// gets longer.</para>
+        /// </remarks>
+        IReadOnlyList<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> Scoreboard { get; }
+
         GuardsDigital.Core.Rules.Victory.MatchOutcome Outcome { get; }
         IReadOnlyList<CardInstanceId> ActiveEffectSourceCardInstanceIds { get; }
         bool IsActiveEffectSource(CardInstanceId cardInstanceId);

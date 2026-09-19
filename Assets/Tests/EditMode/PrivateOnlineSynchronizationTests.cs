@@ -516,6 +516,14 @@ namespace GuardsDigital.Tests.EditMode
                 { "RemainingWaveCounters",
                     nameof(NetworkSeatProjectionRecord.RemainingWaveCounters) },
                 { "HeroProgression", nameof(NetworkSeatProjectionRecord.HeroProgression) },
+                // Milestone 8.53, CARRIED at protocol version 17. An exclusion was never available
+                // and neither was a derivation, which is the stronger statement: every fact the six
+                // columns count DOES reach a seat, as a seat-public match-log row - but that log is
+                // a bounded window of recent lines by construction, so a seat counting its own
+                // totals out of it would report fewer kills the longer the match ran, and a seat
+                // that reconnected would start its board from the moment it came back. The host
+                // accumulates the totals in the authoritative snapshot and the frame carries them.
+                { "Scoreboard", nameof(NetworkSeatProjectionRecord.Scoreboard) },
                 { "Outcome", nameof(NetworkSeatProjectionRecord.Outcome) },
                 { "ActiveEffectSourceCardInstanceIds",
                     nameof(NetworkSeatProjectionRecord.ActiveEffectSourceCardInstanceIds) },

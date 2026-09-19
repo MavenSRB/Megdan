@@ -977,7 +977,11 @@ namespace GuardsDigital.Application
                 // Milestone 8.35z60. p.8's live Wave-counter pool, read off the same
                 // Lane-Push authority that flips it - the top status strip's WAVES indicator binds
                 // this rather than the setup's starting total, which never moves.
-                round.LanePush?.LanePush.RemainingWaveCounters);
+                round.LanePush?.LanePush.RemainingWaveCounters,
+                // Milestone 8.53. The victory screen's board, read off the authority that
+                // accumulates it at the commit boundary - beside the Levels above, because the
+                // screen prints the two together.
+                round.Scoreboard.Entries);
             if (nextProjectionFaultForTest != null)
             {
                 var fault = nextProjectionFaultForTest;

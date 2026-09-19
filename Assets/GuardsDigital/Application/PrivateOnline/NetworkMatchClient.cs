@@ -571,6 +571,18 @@ namespace GuardsDigital.Application
                     (PrintedValueChannel)value.Key, value.Value)))).ToArray());
 
         /// <summary>
+        /// Milestone 8.53, protocol 17. The host's own match scoreboard, decoded row for row. Before
+        /// the first frame arrives this reads the locally composed match's board, which is every
+        /// hero at zero - the same fall-back every other carried member takes, and the honest one
+        /// here: a client that has been told nothing has watched nothing happen.
+        /// </summary>
+        public IReadOnlyList<HeroScoreboardEntry> Scoreboard => wire == null
+            ? trusted.Scoreboard
+            : Array.AsReadOnly(wire.Scoreboard.Select(row => new HeroScoreboardEntry(
+                new HeroId(row.HeroId), row.Kills, row.Deaths, row.AttacksAtHeroes,
+                row.TimesDefended, row.MinionsKilled, row.CoinsEarned)).ToArray());
+
+        /// <summary>
         /// Milestone 8.39g. A seat reads the ending it was sent, in whichever of the two shapes it
         /// was sent in: an ending that names a hero is a solo ending, and one that names teams is one
         /// of the rulebook's three team sentences. A losing seat reads the same row the winner does.

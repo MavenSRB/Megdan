@@ -347,6 +347,16 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(projection.Seat.Id, Is.EqualTo(seat.Id));
                 Assert.That(projection.Version, Is.EqualTo(host.Version));
 
+                // Milestone 8.53. The match scoreboard is public information for every seat, so the
+                // claim is equality with the host's own board rather than a subset of it: every
+                // column counts something the whole table watched happen - a Defeat, a declared
+                // attack, an answered defense, a removed minion, a paid-out coin - and there is
+                // nothing here to scope away. The victory screen every player sees at the end shows
+                // the same six numbers per hero, and that has to be true at every version on the way
+                // there, not only at the last one.
+                Assert.That(projection.Scoreboard, Is.EqualTo(global.Scoreboard),
+                    "Every seat reads the same match scoreboard as the host, line for line.");
+
                 var visible = projection.OwnCards.Select(card => card.Id)
                     .Concat(projection.PublicCards.Select(card => card.Id))
                     .ToArray();

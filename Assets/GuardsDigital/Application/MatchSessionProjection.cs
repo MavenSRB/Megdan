@@ -923,7 +923,8 @@ namespace GuardsDigital.Application
             IEnumerable<AttackTargetDefensePreviewProjection>
                 pendingAttackTargetDefensePreviews = null,
             GuardsDigital.Core.Cards.PendingTurnRelease pendingTurnRelease = null,
-            int? remainingWaveCounters = null)
+            int? remainingWaveCounters = null,
+            IEnumerable<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> scoreboard = null)
         {
             Version = version;
             Setup = setup ?? throw new ArgumentNullException(nameof(setup));
@@ -1052,6 +1053,19 @@ namespace GuardsDigital.Application
             {
                 throw new ArgumentException(
                     "One hero carries at most one projected progression.", nameof(heroProgression));
+            }
+
+            // Milestone 8.53. The victory screen's board, on the terms the progression beside it is
+            // published: taken from the authority that accumulates it rather than counted here, and
+            // empty for a composition with no round authority behind it, which is the same honest
+            // absence TeamLifeCounters reports.
+            Scoreboard = Array.AsReadOnly((scoreboard ??
+                Enumerable.Empty<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry>()).ToArray());
+            if (Scoreboard.Any(entry => entry == null) ||
+                Scoreboard.Select(entry => entry.HeroId).Distinct().Count() != Scoreboard.Count)
+            {
+                throw new ArgumentException(
+                    "One hero carries at most one scoreboard line.", nameof(scoreboard));
             }
 
             ActiveEffectSourceCardInstanceIds = Array.AsReadOnly((activeEffectSourceCardInstanceIds ??
@@ -1421,6 +1435,14 @@ namespace GuardsDigital.Application
         /// <see cref="TeamLifeCounters"/> reports.
         /// </summary>
         public IReadOnlyList<HeroProgressionProjection> HeroProgression { get; }
+
+        /// <summary>
+        /// Milestone 8.53: the match scoreboard the victory screen prints, ordered by hero id and
+        /// taken whole from <c>RoundResolutionAuthority.Scoreboard</c>. Empty for a composition with
+        /// no round authority behind it, the same honest absence
+        /// <see cref="HeroProgression"/> reports.
+        /// </summary>
+        public IReadOnlyList<GuardsDigital.Core.Rules.Victory.HeroScoreboardEntry> Scoreboard { get; }
 
         /// <summary>
         /// Milestone 8.5b: every card instance that is the source of at least one Active-effect

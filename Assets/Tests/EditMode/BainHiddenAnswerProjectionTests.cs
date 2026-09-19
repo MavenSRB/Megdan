@@ -364,7 +364,19 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(16),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(17),
+                "8.53 carries the MATCH SCOREBOARD: NetworkSeatProjectionRecord gained a repeated " +
+                "row - hero id plus six counters, kills, deaths, attacks at heroes, times defended, " +
+                "minions killed and coins earned - written between the per-hero progression rows and " +
+                "the Active-effect source list, so a version 16 peer reads that row count as the " +
+                "source count and mis-decodes the entire remainder of the frame. It is CARRIED " +
+                "because it cannot be derived: every fact these columns count does cross the wire, " +
+                "as a seat-public match-log row, but that log is a BOUNDED WINDOW of recent lines, " +
+                "so a client counting its own totals would report fewer kills the longer a match ran " +
+                "and would start a reconnected seat's board from the moment it came back. SCHEMA " +
+                "MOVED WITH IT to v43 - only the second time these two have moved together - because " +
+                "the board is accumulated state rather than a derived reading, so it has to be " +
+                "persisted. " +
                 "8.51 then took it to 16 for the seat-public Hold row (CardHeld, rulebook p.12's Hold by the seat's own command), on the same terms: a version 15 peer meeting kind 32 refuses the whole frame, no bytes grew, schema v42 unmoved. At 8.40f: " +
                 "THE ROW GREW NO BYTES - it spends the subject hero and subject card the log has " +
                 "carried since 8.35r - so what moved is the VOCABULARY, and that is exactly what " +

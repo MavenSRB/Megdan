@@ -342,7 +342,29 @@ namespace GuardsDigital.Core.Snapshots
         // the next free number rather than the next number leaves the claim intact and costs nothing:
         // the guard is an equality test, so 39 being unused is not a hole a reader can fall into - a
         // payload claiming it is refused exactly as one claiming 38 is.
-        public const int CurrentSchemaVersion = 42;
+        // v43: milestone 8.53 puts the match scoreboard in the round section, immediately after the
+        // round's leveling record - one count-prefixed hero id and six counters per participating
+        // hero: kills, deaths, attacks at heroes, times defended, minions killed, coins earned.
+        //
+        // v42 IS REJECTED RATHER THAN MIGRATED, and the reason is the one this series keeps making
+        // rather than a new one. A v42 payload records no scoreboard, and the only reading available
+        // for its absence is "nothing has happened to anybody yet" - all six columns zero for every
+        // hero. That reading is right for every payload a v42 BUILD could produce, because no v42
+        // rule counts any of it; and that is precisely why it must not be written into the reader,
+        // because the first payload it would be wrong about is the first one this milestone writes.
+        // A match restored mid-play from a migrated v42 payload would come back with every hero at
+        // zero kills and zero coins earned and then keep counting from there, and the victory screen
+        // - the whole point of the number - would print a board that is quietly wrong in a way
+        // nothing in the match could detect. It is the same argument v20 made for the Life counters
+        // and v17 made for the Level, and it is stronger here than for either, because those two are
+        // resources a later rule moves while this is a HISTORY that cannot be recovered from any
+        // live state: the board says what happened, and nothing else in the payload remembers.
+        //
+        // The coins column is not derivable from the coin balances already in the payload either,
+        // which is worth saying because the balances are right there: a balance is what a hero HOLDS
+        // after every p.15 purchase has spent it back down, and the column is what they COLLECTED.
+        // No persisted state exists outside the version-controlled corpus to strand.
+        public const int CurrentSchemaVersion = 43;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full
