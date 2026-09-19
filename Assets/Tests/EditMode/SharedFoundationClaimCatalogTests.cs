@@ -865,6 +865,51 @@ namespace GuardsDigital.Tests.EditMode
                 "p.15's set-aside state. It moves no Level, spends no coin and asks nobody else.",
                 "Reassess for a source zone other than the deck, for a chooser other than the card's " +
                 "owner, or for a face that names the icon rather than reading the card's own.")
+            ,
+
+            // Milestone 8.61c (merged after wave 1).
+            new SharedFoundationClaim(
+                "displacement.move-beside-a-named-space",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Rules.Displacement.DirectMoveDestinations),
+                    nameof(GuardsDigital.Core.Rules.Displacement.DirectMoveDestinations.Admit),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinStanceTests),
+                            nameof(MinStanceTests
+                                .TheNewMovePolicyAdmitsTheRingAroundABoundSpaceAndNothingWithoutOne),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the ring at a distance of exactly one from a bound space, filtered out of a " +
+                        "reachable set rather than produced from the map"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinStanceTests),
+                            nameof(MinStanceTests
+                                .TigersMoveOffersOnlyTheSpacesBesideTheTargetSheCanWalkToInOneStep),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a space beside the named unit that no legal walk reaches is refused, which " +
+                        "is what keeps this a p.11 Move rather than a p.18 Place"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(MinStanceTests),
+                            nameof(MinStanceTests
+                                .WithTheTargetRemovedTigersMoveIsNotOfferedAtAllAndThePushStillFollows),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a referent p.14 step 6 removed admits nothing rather than everything")
+                },
+                new[] { "geometry", "binding", "reachability", "distance", "refusal" },
+                "One card-text direct Move whose destination must stand at a distance of exactly one " +
+                "from a coordinate an earlier node published, intersected with the Movement action's " +
+                "own reachability at the declared distance and refusing everything when the " +
+                "coordinate is unbound; it measures from no actor, crosses no obstacle and names no " +
+                "destination of its own.",
+                "Reassess for a clause bounding a move by a RING wider than adjacency, for one " +
+                "measured from a piece rather than from a space, for a second bound space in one " +
+                "declaration, or for a face pairing it with obstacle crossing.")
         };
     }
 

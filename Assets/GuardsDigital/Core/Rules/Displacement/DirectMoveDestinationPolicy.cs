@@ -123,7 +123,46 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// negative answer: a unit pinned against the map's edge or ringed by obstacles has nowhere
         /// farther to go, and both cards print "you may", so the step is simply not taken.</para>
         /// </summary>
-        AwayFromActor = 7
+        AwayFromActor = 7,
+
+        /// <summary>
+        /// Milestone 8.61c. `to a space adjacent to the target`: only spaces one step from the space
+        /// <see cref="DirectMoveDestinations.Admit"/> is handed as the named one - Min the
+        /// Dragonmonk's Tiger Stance, "After the attack: You may move 1 space <b>to a space adjacent
+        /// to the target</b>", and Dragon Stance's "1 or 2 spaces" printing of the same clause.
+        ///
+        /// <para><b>It is an eighth member because none of the seven says it, and the near miss is
+        /// <see cref="NamedSpace"/>.</b> That one replaces the destination set with one space the
+        /// text picked out - Brogan's "Move into the space it occupied" - and this one narrows the set
+        /// to a RING around a space the text picked out. A card that moved into the target's own
+        /// space would be a different card, and one that moved anywhere at the printed distance would
+        /// be Tigerclaw's Combat Reflexes rather than a Stance. The three actor-relative comparisons
+        /// measure from the acting hero and this measures from somebody else entirely, which is the
+        /// whole of what makes it a new member rather than a reuse.</para>
+        ///
+        /// <para><b>The ring is p.19's adjacency and nothing more.</b> A distance of exactly one from
+        /// the named space, measured by <see cref="HexDistanceQuery"/> like every other comparison
+        /// here - so the named space itself is excluded (a distance of nought is not adjacency, and
+        /// the reachability walk beneath has already refused an occupied space anyway) and a
+        /// destination two steps away is out however it was reached.</para>
+        ///
+        /// <para><b>It narrows and never widens.</b> The declared distance is still the budget the
+        /// Movement-action walk may spend and p.18's obstacles still stop it, so a space beside the
+        /// target that cannot be legally walked to is not admitted - which is what keeps this a p.11
+        /// move rather than the Place its <c>PlaceDestinationQualifier.AdjacentToTheNamedSpace</c>
+        /// twin performs. The two are deliberately the same words: milestone 8.57b's Place qualifier
+        /// answers "put it beside that space" and this answers "walk to beside that space", and a
+        /// card that says "move" is never allowed to teleport.</para>
+        ///
+        /// <para><b>An unbound name admits nothing rather than everything</b>, exactly as
+        /// <see cref="NamedSpace"/> and <see cref="WithinActorRadius"/> do: a declaration that names a
+        /// piece and is handed none has a referent that has not happened, and reading it as "anywhere"
+        /// would silently remove the only bound this policy exists to impose. Min's own text is why
+        /// that case is reachable at all - rulebook p.14 step 6 can take her target off the board
+        /// before step 7's rider runs, and a removed target is a referent the sentence no longer has.
+        /// </para>
+        /// </summary>
+        AdjacentToTheNamedSpace = 8
     }
 
     /// <summary>
@@ -164,13 +203,22 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// bound is not an absent bound, and reading it as "anywhere" would silently widen the only
         /// thing this policy exists to narrow.
         /// </param>
+        /// <param name="besideSpace">
+        /// Milestone 8.61c. The space
+        /// <see cref="DirectMoveDestinationPolicy.AdjacentToTheNamedSpace"/> keeps the destination
+        /// next to, and nothing to any other policy. It is a fourth argument rather than a reuse of
+        /// <paramref name="namedDestination"/> because the two name different things - one IS the
+        /// destination and this one is merely beside it - and a card binding the wrong one would be
+        /// silently legal. Absent, it admits nothing, for the reason the two above do.
+        /// </param>
         public static IReadOnlyList<HexCoordinate> Admit(
             DirectMoveDestinationPolicy policy,
             HexCoordinate actorAt,
             HexCoordinate moverAt,
             IEnumerable<HexCoordinate> reachable,
             HexCoordinate? namedDestination = null,
-            int? actorRadius = null)
+            int? actorRadius = null,
+            HexCoordinate? besideSpace = null)
         {
             if (reachable == null)
             {
@@ -203,6 +251,15 @@ namespace GuardsDigital.Core.Rules.Displacement
 
                 case DirectMoveDestinationPolicy.NotAdjacentToActor:
                     return OutsideAdjacency(reachable, actorAt);
+
+                // Milestone 8.61c. p.19's ring around a space another node named, and the mirror of
+                // the ring `NotAdjacentToActor` excludes - one comparison, read from the bound space
+                // rather than from the actor. An unbound name admits nothing, which is the reading
+                // every bound narrowing in this file takes of a referent that has not happened.
+                case DirectMoveDestinationPolicy.AdjacentToTheNamedSpace:
+                    return besideSpace.HasValue
+                        ? WithinAdjacency(reachable, besideSpace.Value)
+                        : Array.Empty<HexCoordinate>();
 
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -244,6 +301,27 @@ namespace GuardsDigital.Core.Rules.Displacement
             foreach (var coordinate in reachable)
             {
                 if (HexDistanceQuery.Calculate(actorAt, coordinate) != 1)
+                {
+                    list.Add(coordinate);
+                }
+            }
+
+            return list;
+        }
+
+        /// <summary>
+        /// The reachable spaces on the innermost ring around a space the text named. p.19 measures
+        /// adjacency as a distance of one, so this is that one comparison and nothing else - the exact
+        /// mirror of <see cref="OutsideAdjacency"/>, measured from the bound space instead of from the
+        /// acting hero. Milestone 8.61c.
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> WithinAdjacency(
+            IEnumerable<HexCoordinate> reachable, HexCoordinate besideSpace)
+        {
+            var list = new List<HexCoordinate>();
+            foreach (var coordinate in reachable)
+            {
+                if (HexDistanceQuery.Calculate(besideSpace, coordinate) == 1)
                 {
                     list.Add(coordinate);
                 }

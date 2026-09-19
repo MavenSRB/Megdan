@@ -113,6 +113,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string ActorRadiusParameterName = "actorRadius";
 
         /// <summary>
+        /// Milestone 8.61c. The space
+        /// <see cref="DirectMoveDestinationPolicy.AdjacentToTheNamedSpace"/> keeps this Move's
+        /// destination next to - Min the Dragonmonk's Tiger and Dragon Stance, "You may move 1 space
+        /// [1 or 2 spaces] <b>to a space adjacent to the target</b>", where the target is the enclosing
+        /// Attack's own and arrives from the node that published its space.
+        ///
+        /// <para><b>The same spelling p.18's Place uses for the same clause</b> -
+        /// <see cref="SyntheticPlacementCapabilities.BesideSpaceParameterName"/>, milestone 8.57b's -
+        /// because Rowenna's "into a space adjacent to that enemy hero" and Min's "to a space adjacent
+        /// to the target" are one printed shape read by two rules, and a card author who declared the
+        /// bound for a Place must not be able to get it wrong for a Move. What differs is which rule
+        /// answers it: that one places and this one walks, which is p.18 against p.11.</para>
+        ///
+        /// <para><b>A coordinate rather than a unit</b>, which is the subject identity milestone 6.4
+        /// chose for every repositioning operation in this build and which p.19's one-obstacle-per-space
+        /// rule makes unambiguous.</para>
+        ///
+        /// <para>Optional and unbound everywhere else, so every Move composed before this milestone
+        /// keeps its exact candidate set - the shape <see cref="NamedDestinationParameterName"/> and
+        /// <see cref="ActorRadiusParameterName"/> both take - and a parameter added to a registered
+        /// capability moves no pinned byte, because the identity walker digests a capability's
+        /// reference and its Active-effect definitions and never its parameter schema. That is the
+        /// same reading milestone 8.57b recorded when it added <see cref="ChooserParameterName"/> to
+        /// this very declaration without minting a revision 4.</para>
+        /// </summary>
+        public const string BesideSpaceParameterName =
+            SyntheticPlacementCapabilities.BesideSpaceParameterName;
+
+        /// <summary>
         /// Milestone 8.23. Whether this Move crosses obstacles on its way - Blink Strike's "Move 2
         /// spaces in a straight line <em>through</em> an enemy unit", and Nimble Strike's same
         /// sentence about a hero.
@@ -481,6 +510,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         NamedDestinationParameterName, EffectValueKind.Coordinate, isRequired: false),
                     new EffectCapabilityParameter(
                         ActorRadiusParameterName, EffectValueKind.Integer, isRequired: false),
+
+                    // Milestone 8.61c. Min's Tiger and Dragon Stance, "to a space adjacent to the
+                    // target" - the ring the destination has to stand on, named by an earlier node.
+                    // Optional and unbound everywhere else, so every Move composed before it keeps
+                    // its exact candidate set.
+                    new EffectCapabilityParameter(
+                        BesideSpaceParameterName, EffectValueKind.Coordinate, isRequired: false),
                     new EffectCapabilityParameter(
                         MovesThroughObstaclesParameterName,
                         EffectValueKind.Boolean,
@@ -779,6 +815,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var namedDestination = context.Input(NamedDestinationParameterName);
                 var actorRadius = context.Input(ActorRadiusParameterName);
 
+                // Milestone 8.61c. The space a destination has to stand beside, read exactly as the
+                // two bounds above are: an unresolved binding arrives as no value at all, and the
+                // policy that reads it admits nothing rather than everything.
+                var besideSpace = context.Input(BesideSpaceParameterName);
+
                 // Milestone 8.23. An unbound declaration is the absence of the sentence, and the
                 // absence of "through" is p.18's ordinary movement - so a card that never mentions
                 // crossing reaches the same walk it always did.
@@ -799,7 +840,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         : (HexCoordinate?)null,
                     actorRadius.Kind == EffectValueKind.Integer
                         ? actorRadius.IntegerValue
-                        : (int?)null);
+                        : (int?)null,
+                    besideSpace.Kind == EffectValueKind.Coordinate
+                        ? besideSpace.Coordinate
+                        : (HexCoordinate?)null);
 
                 // Standing still is p.10's decision not to move, and a sentence that names where to
                 // move offers no such decision: the named space is the only thing that satisfies it.

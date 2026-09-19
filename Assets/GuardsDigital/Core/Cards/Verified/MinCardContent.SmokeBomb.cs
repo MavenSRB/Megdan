@@ -85,10 +85,18 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> DealtDefinitions { get; } =
             Array.AsReadOnly(Array.Empty<CardDefinition>());
 
-        /// <summary>The one face of hers this block composes; see <see cref="AllDefinitions"/>.</summary>
+        /// <summary>The faces of hers the blocks composed so far; see <see cref="AllDefinitions"/>.</summary>
         private static IEnumerable<CardDefinition> ComposedFaces()
         {
             yield return SmokeBombDefinition();
+
+            // Milestone 8.61c. Her five Reds, added to this aggregate rather than to a second
+            // AllDefinitions - which would not compile beside it - exactly as this member's own
+            // remarks say a later block of hers does.
+            foreach (var stance in StanceDefinitions)
+            {
+                yield return stance;
+            }
         }
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =

@@ -356,12 +356,14 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(63),
-                "RE-MEASURED at 8.57d: 8.57c's 59 plus Rowenna's four 'that enemy hero' selections - " +
-                "one each on Close Quarters and Melee, and TWO on Grand Melee, whose printed 'up to " +
-                "two times' is two sibling performances and therefore two namings. A different count " +
-                "means a face was added or removed - read which, then re-measure rather than editing " +
-                "this number to match.");
+            Assert.That(nodes.Length, Is.EqualTo(66),
+                "RE-MEASURED at 8.61c: 8.57d's 63 plus Min's three 'Push an enemy unit adjacent to " +
+                "you' subject selections - one each on Crane, Tiger and Dragon Stance, and none on " +
+                "Viper or Cobra, whose riders name no unit at all. (8.57d's own count was 8.57c's 59 " +
+                "plus Rowenna's four 'that enemy hero' selections: one each on Close Quarters and " +
+                "Melee, and TWO on Grand Melee, whose printed 'up to two times' is two sibling " +
+                "performances and therefore two namings.) A different count means a face was added " +
+                "or removed - read which, then re-measure rather than editing this number to match.");
             Assert.That(
                 nodes.SelectMany(node => node.Inputs).Select(input => input.ParameterName).Distinct()
                     .OrderBy(name => name, StringComparer.Ordinal).ToArray(),
