@@ -505,7 +505,7 @@ Ruled by the user 2026-09-19: "Bounce through Bullet Time counts as already reso
 
 Asked by the user 2026-09-18 with a screenshot: the hero rail's revealed-card initiative badge must read "6+1" - the printed Initiative and what the item adds - rather than the summed 7 that 8.42a draws.
 
-### [~] 8.56 Package the victory-screen playtest build
+### [x] 8.56 Package the victory-screen playtest build
 
 Authorized 2026-09-19 by the user: "Cut out the build after that end" (said of 8.46's landing) and, once the victory screen was ordered, "implement it before the build." The build carries 8.46 through 8.53: the decision window with the level-up screen inside it, Bounce's repeat through Reload!, defeat costs and assist coins by Tier with the worth badge on the rail, the banner only when you are up, the END TURN keyboard fix and the victory screen.
 
@@ -514,3 +514,7 @@ Outcome: `Builds/Playtest-8.53-victory-screen` and its zip, built from main at t
 Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged commit before the build is cut; the packaged exe launches and reaches the lobby; the identity stamp names the commit.
 
 Non-goals: new gameplay; the 8.54 and 8.55 fixes, which wait behind the package.
+
+Completed 2026-09-19. `Builds/Playtest-8.53-victory-screen` and `Builds/Playtest-8.53-victory-screen.zip` (186 entries, no logs, no debug folder, 67 MB), built from main at `11e8cf3d` (tag `milestone/8.53`) with bundleVersion `1.0-8.53-victory-screen`, stamp `1.0-8.53-victory-screen+20260919024107-789e12b0`; protocol `guards-private-online/17`, schema 43, configured content digest `ff41228b...` re-measured and unchanged. The gate: complete Edit Mode 4396 / 4360 passed / 0 failed / 36 established skips, complete Play Mode 629/629 with zero skips, harness 3425/3425, the build-and-launch smoke, and the packaged exe launched once from its own folder to `LOBBY_BEGIN`. Manifest, READ ME FIRST (what is new: the decision window, the victory screen, defeat costs, the banner, Bounce, END TURN; known problems updated) and BUILD IDENTITY written by hand per the 8.44 recipe.
+
+Historical evidence: [8.56 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-856-victory-screen-package-completion-evidence).

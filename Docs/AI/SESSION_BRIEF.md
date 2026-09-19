@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.53**.
-- Active authorized milestone: **8.56**.
-- Next proposed milestone: **8.56**.
+- Current completed milestone: **8.56**.
+- Active authorized milestone: **None**.
+- Next proposed milestone: **8.57**.
 
 On 2026-09-18, after a row-by-row design review and a mockup drawn over live captures, the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** - "Ok, get on it then." **8.46 is complete** (blocks 8.46a-8.46g, landed after 8.47-8.52): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press. Next, at the user's word after the same playtest: **8.53**, a victory screen that replaces the HUD when the game ends (winner, win condition, both teams' scoreboards, Cutter's solo win split out), then a package.
 
@@ -34,13 +34,13 @@ The playtest's third report - "Lives are not being counted correctly. It just ta
 
 From the same night's "Silverarrow" report, once 8.51 had named the press: **[8.52](Roadmap/PHASE_8.md) is complete** - the drawn END TURN control no longer answers Enter or Space, only the pointer.
 
-**[8.53](Roadmap/PHASE_8.md) is complete** (`87dacf6c`): when a match ends the whole HUD gives way to the victory screen - the winner in team colour (or `CUTTER WINS`), the cause sentence, the winners' block above the defeated with every hero's token, level, worth and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned, a solo winner split above her crew. The numbers are the authority's `MatchScoreboard` (snapshot **v43**, wire `guards-private-online/17`). **[8.56](Roadmap/PHASE_8.md)** packages this head; 8.54 and 8.55 wait behind it.
+**[8.53](Roadmap/PHASE_8.md) is complete** (`87dacf6c`): when a match ends the whole HUD gives way to the victory screen - the winner in team colour (or `CUTTER WINS`), the cause sentence, the winners' block above the defeated with every hero's token, level, worth and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned, a solo winner split above her crew. The numbers are the authority's `MatchScoreboard` (snapshot **v43**, wire `guards-private-online/17`). **[8.56](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.53-victory-screen` (+ zip) carries 8.46-8.53; 8.54 and 8.55 remain queued. The user's next order is the EIGHTEENTH hero, **Rowenna the Vanguard** ("After the build start implementing Rowenna"), proposed as **8.57** (inventory) and its series in a new eighteenth-hero shard; her faces, stat bars and one printed colour-letter conflict (RO-03) are already read.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 
 On 2026-09-17 the user selected **Garrus the Gladiator** as the SIXTEENTH hero. [Sixteenth-hero dealing](Roadmap/PHASE_8_SIXTEENTH_HERO.md) owns that COMPLETE sequence (**8.41**-**8.41f**) and [his rules shard](Rules/HERO_GARRUS.md) the nineteen-face inventory; both preserve the user's 2026-09-17 GA-Q1 answer ("I think yes, he can move 0") as a recorded user-approved interpretation, not a claimed official ruling. That authorization is exhausted.
 
-On 2026-09-13 the user named the FIFTEENTH hero, Bain the Bounty Hunter, on the terms the two series before him were given. [Fifteenth-hero dealing](Roadmap/PHASE_8_FIFTEENTH_HERO.md) owns that COMPLETE series (**8.40**-**8.40k**) and all of its detail: the gate found no shipped defect but raised two player-facing gaps, both recorded there rather than papered over, and **8.40f** took the wire to `/15` for the first hidden choice and public reveal this build has needed. Naming him re-opened the ROSTER for Bain alone; the 2026-09-07 brakes direction still governs the parked presentation program, the card-authoring workbench, tier-3 bots and every other parked item.
+On 2026-09-13 the user named the FIFTEENTH hero, Bain the Bounty Hunter; [fifteenth-hero dealing](Roadmap/PHASE_8_FIFTEENTH_HERO.md) owns that COMPLETE series (**8.40**-**8.40k**): the gate found no shipped defect but raised two player-facing gaps recorded there, and **8.40f** took the wire to `/15`. The 2026-09-07 brakes direction still governs the parked presentation program, the card-authoring workbench, tier-3 bots and every other parked item.
 
 On 2026-09-11 the user re-opened the throttle that brakes direction had closed and named **Swift** as the next hero; [thirteenth-hero dealing](Roadmap/PHASE_8_THIRTEENTH_HERO.md) owns that COMPLETE series and all of its detail, and the prior next-proposed entry, [8.35z74](Roadmap/PHASE_8_CLEANUP.md#x-835z74-repair-explicitly-parked-player-path-coverage), closed the same day as discharged by 8.36f3 and 8.37a rather than executed.
 
@@ -50,7 +50,7 @@ The cleanup and 8.35z83-8.35z85 fixes are complete, and the user-accepted 8.36 g
 
 Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Lobby bots use the measured owner-scoped tactical policy while hidden hands/decks remain absent. `Builds/Playtest-8.44-seventeen-hero.zip` is the current completed local package; the user confirmed the outstanding ordinary-window package check worked on 2026-09-10. Additional heroes remain on hold.
 
-On 2026-09-11 the user also named **Cutter the Sky Pirate** next, on the same terms; [fourteenth-hero dealing](Roadmap/PHASE_8_FOURTEENTH_HERO.md) owns that COMPLETE thirteen-block series and [her shard](Rules/HERO_CUTTER.md) its inventory. Nearly every block predicted the wrong contract and was corrected by the probe it ordered, and her seventeen-journey gate found four shipped defects nothing offline could see. One decision is why it ran that long: her printed "you alone win the game" was implemented FAITHFULLY on the user's 2026-09-11 answer, moving the snapshot schema to **v42** and the wire to **/14**.
+On 2026-09-11 the user also named **Cutter the Sky Pirate**; [fourteenth-hero dealing](Roadmap/PHASE_8_FOURTEENTH_HERO.md) owns that COMPLETE thirteen-block series and [her shard](Rules/HERO_CUTTER.md) its inventory. Her printed "you alone win the game" was implemented FAITHFULLY on the user's 2026-09-11 answer, moving the snapshot schema to **v42** and the wire to **/14**.
 
 ## Durable boundaries
 

@@ -1,0 +1,81 @@
+# Phase 8 - Eighteenth-hero dealing: Rowenna
+
+Return to [roadmap](../ROADMAP.md). Current authorization and next route live in [the brief](../SESSION_BRIEF.md).
+
+## Authorization and scope
+
+On 2026-09-19 the user ordered the eighteenth hero after the victory-screen package: "After the build start implementing Rowenna." This authorizes **8.57 -> 8.57a -> 8.57b -> 8.57c -> 8.57d -> 8.57e -> 8.57f -> 8.57g -> 8.57h**, through a fully selectable, artworked hero with working printed cards and the permanent player-path gate. Execute sequentially with separate validation and local commits. Necessary corrections demonstrated by those checks belong to the block that found them.
+
+Rowenna's rules shard, `Docs/AI/Rules/HERO_ROWENNA.md`, is written at 8.57 and owns source facts and the capability map from then on. Eighteen faces are dealt; Earn the Spurs is the boxed p.20 Handicap. Inspect existing contracts before adding vocabulary. New contracts stay outside production registration until reachable from dealt content; reconcile each new or widened shared-foundation claim with the test-owned claim catalog. The printed colour conflict RO-03 is carried as an open user question and does not block the series.
+
+### [ ] 8.57 Inventory Rowenna and map the implementation sequence
+
+Outcome: source-backed identity, nineteen-face inventory, exact text/values/items/upgrades, capability map and outstanding dependencies are recorded.
+
+Acceptance: inspect all fronts, profile and dashboard; reconcile front/back counts and hashes; search the entire local rulebook for hero-specific authority and inspect relevant general-rule pages; distinguish printed facts, verified general rules, implementation predictions and unresolved interpretations; record RO-03 with both readings and the working assumption. Record the complete bounded sequence. T0 documentation validation only; no Unity.
+
+Non-goals: executable content or mechanics; adopting unverified community rulings.
+
+### [ ] 8.57a Support retrieve and reward for another hero, and the rider-gated repeat
+
+Outcome: a card can let a named other hero retrieve their own discarded card or collect coins, chosen by whom the text says; "if they do" reads that rider's performed output; an after-attack repeat can be gated on it and exclude the first target.
+
+Acceptance: both parties retrieving on Code of Chivalry and Earn the Spurs with each hero choosing their own card and able to decline; a friendly hero in radius chosen by Rowenna gaining 1 coin or retrieving on the Reds; the Paragons' repeat offered only when the rider was performed, on a different target, never a third time; no hero retrieving another's card; declined riders and empty discards; snapshot/replay continuations and narrow foundation claims. T2 minimum.
+
+Non-goals: swaps, defeats, the Ultimate, dealing.
+
+### [ ] 8.57b Support the vanguard's swap and the gauntlet
+
+Outcome: Rowenna swaps with a friendly unit in range that is adjacent to an enemy hero or has a card in the discard; Throw the Gauntlet places her adjacent to an enemy hero in range, hands that hero an optional one-space move, and pays her 2 coins only when they took it.
+
+Acceptance: candidate narrowing on both qualifiers with minions qualifying by adjacency only; Defend the Innocent's own retrieve; self-place destinations in range and adjacent to an enemy hero in range with no destination inventing range; the enemy hero as the mover's decision owner across seats and the wire; the conditional coins; immunity, occupied destinations and stale answers. T2 minimum.
+
+Non-goals: defeats, minion placement, dealing.
+
+### [ ] 8.57c Support surrender
+
+Outcome: an effect-invoked Defeat narrowed to an adjacent enemy hero with no cards in hand, and a Defeat whose assist coins are tripled for Rowenna's team-mates.
+
+Acceptance: hand means hand (played, resolved and discarded cards do not count); the ordinary p.13 Defeat consequences (Life counters by lowest Tier, Defeat coins by level to Rowenna, assist coins by Tier to her team-mates) and Glorious Triumph's tripled assist coins at the one spend site through both entrances; 8.53's scoreboard credits the Kill to Rowenna; immunity and a hero who draws a card before resolution. T2 minimum.
+
+Non-goals: minion placement, the Ultimate, dealing.
+
+### [ ] 8.57d Support close quarters and the opening shots
+
+Outcome: after a Movement action ending adjacent to an enemy hero, Rowenna may place a friendly minion in radius adjacent to that hero or an enemy minion in radius adjacent to herself, once or up to twice; and an enemy hero in radius with an empty discard, while hers is empty too, discards a card, once or with one repeat.
+
+Acceptance: the adjacency predicate read after the Movement action (not after a card-text move); one named enemy hero when several are adjacent; both bullets' destination sets, occupied and out-of-radius spaces, minion identity preserved; Grand Melee's two choices in any combination; both-parties empty-discard predicate on each party's discard alone; the discard chosen by that hero, "if able" on an empty hand; Opening Volley's repeat against another eligible hero. T2 minimum.
+
+Non-goals: the Ultimate, dealing.
+
+### [ ] 8.57e Support Fabled Lance
+
+Outcome: Rowenna's Attack actions are Ranged, target a unit in range and read a printed Range of 2 once her Ultimate is unlocked.
+
+Acceptance: every Attack face targeting at Range Total 2 plus Range items; Ranged Block conditions answering her and non-Ranged ones no longer; the attack rail and defense preview reading the same range; the composed Range Total on the wire; no change before unlock or for any other hero. T2 minimum.
+
+Non-goals: dealing.
+
+### [ ] 8.57f Compose Rowenna's eighteen playable faces
+
+Outcome: nineteen exact printed definitions, eighteen fully executable faces, starting hand and upgrade/item paths.
+
+Acceptance: literal source-linked rows for all values/text/items, absent icons remain absent; composition validation including deferred contracts; every distinct legal behavior and negative; all rider orders; exact source-card state and target exclusions; source corpus sweep; no engine deferral on dealt faces and only the established odd-player Handicap deferral. Focused and directly affected T2 checks.
+
+Non-goals: dealing, artwork registration or player-gate completion claims.
+
+### [ ] 8.57g Deal, register and artwork Rowenna
+
+Outcome: Rowenna is the eighteenth legal pick, with profile, real card fronts, board visuals, hand/deck/upgrades and reachable catalog registrations.
+
+Acceptance: all configured/staged/engaged/progressed adapters, selection/definition/artwork bijections, correct source visual identities, private-resource boundaries, content identity and snapshot compatibility decision preserving existing hero identities; scene/picker/artwork/footprint checks. Apply the highest tier triggered by catalog/configuration changes and the affected local build-and-launch smoke gate.
+
+Non-goals: package creation/upload or final player-gate claims.
+
+### [ ] 8.57h Complete Rowenna's permanent player-path gate
+
+Outcome: mechanically complete coverage of every playable face and distinct interaction through configured real-input journeys.
+
+Acceptance: pick/spawn/identity, actual pointer/board input, commit/reveal, all primaries/secondaries, both-party retrieves, other-hero coins and retrieves, the swap's two qualifiers, the gauntlet's opponent move across seats, both surrenders, both placement bullets, the opening shots, progression/earned items/Ultimate at Range 2, round persistence, defeat/respawn, stale input, no EngineFault, projection agreement, snapshot/restore/retained-prefix Undo on Rowenna-specific pauses, whole-face footprint. Complete Play Mode with zero skips.
+
+Non-goals: new scope beyond Rowenna's faces.
