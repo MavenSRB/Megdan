@@ -188,6 +188,62 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static EffectCapabilityReference PlaceInRadiusOffEveryStraightLineV1 =>
             new EffectCapabilityReference(PlaceInRadiusOffEveryStraightLine, 1);
 
+        /// <summary>
+        /// Milestone 8.57b. The printed-Range arm whose destinations stand beside a hero an earlier
+        /// node has already named - Rowenna's Silver basic Throw the Gauntlet, "Place yourself into a
+        /// space <b>in range adjacent to an enemy hero in range</b>", on a face printing a Range 4
+        /// icon.
+        ///
+        /// <para><b>A separate capability ID rather than a parameter on
+        /// <see cref="PlaceInRange"/>, by the rule <see cref="PlaceInRange"/> states and milestone
+        /// 8.35z28 generalised:</b> a printed clause that qualifies a declaration belongs in the
+        /// identity of the thing declared, because a shared declaration gaining a field moves every
+        /// hero who already referenced it - and Arien's three leaps do. It is the same
+        /// <see cref="PlaceHandler"/> underneath, so p.18's Place, its immunity question and its
+        /// destination query stay written once, and it is therefore no new handler TYPE at all.</para>
+        ///
+        /// <para><b>Why the hero is BOUND rather than derived.</b> Misa's Swoop In qualifies its
+        /// destinations by a count of enemies and never needs to know which ones; this sentence
+        /// continues "<b>that hero</b> may move 1 space", so the qualifier and the next clause have to
+        /// agree about one identity. A destination adjacent to two enemy heroes would leave "that
+        /// hero" ambiguous if the space were chosen first, so the hero is chosen first - by an
+        /// ordinary <c>synthetic-range-hero-target@1</c> selection that reads the same printed Range
+        /// this Place reads, and whose published space arrives here as
+        /// <see cref="BesideSpaceParameterName"/>. Reading the clause the other way round would need a
+        /// second decision the card does not print.</para>
+        ///
+        /// <para><b>Both "in range" bounds are the same printed icon read twice, and deliberately so.</b>
+        /// p.9 makes a card's Range one number with p.16's items composed onto it; the hero selection
+        /// asks <see cref="GuardsDigital.Core.Rules.CardResolution.RangeValueQuery"/> for it and so
+        /// does this Place, so an item that widens her Range widens both halves of the sentence
+        /// together and neither half can invent reach the other does not have.</para>
+        ///
+        /// <para><b>Like the ring and the two line arms, it can legally be empty.</b> An enemy hero
+        /// hemmed in by units and terrain qualifies no space at all, and a mandatory node carrying
+        /// this reports itself impossible as an ordinary outcome - which milestone 8.35l's offer
+        /// machinery greys rather than accepting and then refusing. That is also what the naming
+        /// selection's own consumer declaration is for: a hero with no qualifying space beside him is
+        /// not offered in the first place.</para>
+        /// </summary>
+        public static EffectCapabilityId PlaceInRangeBesideANamedHero { get; } =
+            new EffectCapabilityId("synthetic-place-in-range-beside-a-named-hero");
+
+        public static EffectCapabilityReference PlaceInRangeBesideANamedHeroV1 =>
+            new EffectCapabilityReference(PlaceInRangeBesideANamedHero, 1);
+
+        /// <summary>
+        /// Milestone 8.57b. The space the destinations of
+        /// <see cref="PlaceInRangeBesideANamedHero"/> must stand beside - where the hero an earlier
+        /// node named is standing.
+        ///
+        /// <para>A coordinate rather than a hero, which is the subject identity milestone 6.4 chose
+        /// for every repositioning operation in this build and which p.19's one-obstacle-per-space rule
+        /// makes unambiguous. It is carried by that declaration alone, for the reason
+        /// <see cref="SpawnPointExclusionParameterName"/> is carried by the printed arms alone: a
+        /// parameter nothing sets is the ambiguity the Range/Radius split exists to refuse.</para>
+        /// </summary>
+        public const string BesideSpaceParameterName = "besideSpace";
+
         /// <summary>The eligible-piece parameter's name, spelled once for the reason the Push's is.</summary>
         public const string EligiblePieceParameterName = "eligiblePiece";
 
@@ -336,16 +392,23 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// All three pairs are now cards a match puts in a hand, and the gate that held them here is
         /// satisfied on both halves at once - see <see cref="RegisteredHandlers"/>.</para>
         ///
-        /// <para><b>THE LIST IS EMPTY, AND IT IS KEPT RATHER THAN DELETED.</b> An empty deferral list is
-        /// a statement this file should go on being able to make: the next hero worker who mints a
-        /// placement declaration for a hero nobody deals yet needs somewhere to put it that is not the
-        /// registered set, and finding the name already here - beside the reason - is the difference
-        /// between that worker following milestone 7.9's gate and rediscovering it through two
-        /// pinned-byte failures that look like a serialization defect. Every caller of this method still
-        /// composes it, so the empty case is exercised rather than assumed.</para>
+        /// <para>Milestone 8.38b's note that the list was empty said this file should go on being able
+        /// to make that statement, and MILESTONE 8.57b IS THE NEXT WORKER IT WAS WRITTEN FOR. Rowenna's
+        /// Throw the Gauntlet names <see cref="PlaceInRangeBesideANamedHeroV1"/> and no configured match
+        /// deals her yet - 8.57g is the milestone that does - so the declaration is held here rather
+        /// than in the registered set, and milestone 7.9's gate is satisfied by that deferral rather
+        /// than by a showcase consumer. Its second half has nothing to ask of this one in any case: it
+        /// is a further declaration over <see cref="PlaceHandler"/>, the type the three arms above have
+        /// registered since milestone 6.6, and that half of the gate is asked of a handler TYPE.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[]
+            {
+                new PlaceHandler(
+                    PlaceInRangeBesideANamedHeroV1, PrintedValueChannel.Range,
+                    PlaceDestinationScope.EmptySpacesWithinRadiusAndInScope,
+                    PlaceDestinationQualifier.AdjacentToTheNamedSpace)
+            };
 
         /// <summary>
         /// Milestone 8.35z29. What a Place's destinations must themselves satisfy, beyond being
@@ -384,7 +447,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// saying so - p.19 counts an adjacent space as a file, so every neighbour of the actor is
             /// out, exactly as it is for the Attack clause of the same name.
             /// </summary>
-            OffEveryStraightLineFromTheActor = 3
+            OffEveryStraightLineFromTheActor = 3,
+
+            /// <summary>
+            /// Milestone 8.57b. Rowenna's Throw the Gauntlet: the destination stands next to the space
+            /// <see cref="BesideSpaceParameterName"/> names, which is where the enemy hero an earlier
+            /// node chose is standing.
+            ///
+            /// <para>It is the first qualifier in this handler measured from a BOUND space rather
+            /// than from the actor or from the board at large - see
+            /// <see cref="PlaceInRangeBesideANamedHero"/> for why the hero is named before the space
+            /// and not after it.</para>
+            /// </summary>
+            AdjacentToTheNamedSpace = 4
         }
 
         /// <summary>
@@ -557,6 +632,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         integerDomain: EffectIntegerDomain.All<PlaceSpawnPointExclusion>()));
                 }
 
+                // Milestone 8.57b. Carried by the one declaration whose clause names a piece, for the
+                // reason the exclusion above is carried by the printed arms alone.
+                if (qualifier == PlaceDestinationQualifier.AdjacentToTheNamedSpace)
+                {
+                    parameters.Add(new EffectCapabilityParameter(
+                        BesideSpaceParameterName, EffectValueKind.Coordinate));
+                }
+
                 Schema = new EffectCapabilityParameterSchema(
                     parameters,
                     new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) });
@@ -695,6 +778,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
 
                     return lineSpaces;
+                }
+
+                // Milestone 8.57b. Throw the Gauntlet's clause, answered from the map and the bound
+                // space alone: the six neighbours of where the named hero stands. Emptiness, the
+                // printed reach and p.18's own refusals are the Place's to apply, and the scope is
+                // intersected with them rather than duplicating any of them here - which is why a
+                // neighbour off the map or under somebody costs nothing to name at this step.
+                if (qualifier == PlaceDestinationQualifier.AdjacentToTheNamedSpace)
+                {
+                    var beside = context.Input(BesideSpaceParameterName);
+                    if (beside.Kind != EffectValueKind.Coordinate)
+                    {
+                        // An unbound clause is not a wider Place: a declaration that names a piece and
+                        // is handed none qualifies nothing, which is the reading every bound narrowing
+                        // in this vocabulary takes of an unresolved binding.
+                        return Array.Empty<HexCoordinate>();
+                    }
+
+                    return beside.Coordinate.GetNeighbors();
                 }
 
                 if (qualifier != PlaceDestinationQualifier.AdjacentToTwoOrMoreEnemyUnits)

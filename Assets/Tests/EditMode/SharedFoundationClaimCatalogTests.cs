@@ -407,7 +407,102 @@ namespace GuardsDigital.Tests.EditMode
                 "Whether a positive coin grant was committed, published only on success and only " +
                 "for a node declaring the output; transfers and p.13's reward schedule are unchanged.",
                 "Reassess for a spend, a transfer, or a condition that needs the amount rather than " +
-                "the fact.")
+                "the fact."),
+
+            // Milestone 8.57b. One PARAMETER on a printed-icon selection arm and one parameter plus
+            // one OUTPUT on the direct Move, each widening a foundation this build already registers.
+            new SharedFoundationClaim(
+                "targeting.unit-swap-qualifier",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .AdjacentToAnEnemyHeroOrHoldingADiscardParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSwapAndGauntletTests),
+                            nameof(RowennaSwapAndGauntletTests
+                                .StandGuard_OffersExactlyTheQualifyingFriendlyUnitsInsideItsPrintedRange),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "one printed clause admits a hero by its pile and a minion by its neighbour"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSwapAndGauntletTests),
+                            nameof(RowennaSwapAndGauntletTests
+                                .StandGuard_LeavesOutAFriendlyHeroWhoseDiscardIsEmptyAndWhoStandsBesideNobody),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a candidate satisfying neither half of the disjunction is not offered")
+                },
+                new[] { "selection arm", "disjunction", "candidate kind", "reach" },
+                "One optional clause on the printed-icon UNIT arm: a candidate adjacent to an enemy " +
+                "hero of the actor's, OR a hero holding a card in their own discard. It narrows who " +
+                "may be picked and nothing else, and it is unbound on every other arm.",
+                "Reassess for a face pairing the clause with a Radius icon, for a qualifier measured " +
+                "from anywhere but the candidate's own space, or for a sentence that joins two " +
+                "qualifiers with 'and'."),
+            new SharedFoundationClaim(
+                "displacement.move-chooser",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities
+                        .ChooserParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSwapAndGauntletTests),
+                            nameof(RowennaSwapAndGauntletTests
+                                .ThrowTheGauntlet_PutsTheMoveToTheNamedHeroAndRefusesTheActorAnsweringIt),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a named hero owns the pause and the acting seat is the wrong chooser"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSwapAndGauntletTests),
+                            nameof(RowennaSwapAndGauntletTests
+                                .ThrowTheGauntlet_AsksNobodyAndPaysNothingWhenTheNamedHeroCannotMove),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a mover with no destination opens no prompt for anybody to own")
+                },
+                new[] { "decision owner", "mover", "declaration", "failure policy" },
+                "Which hero answers a card-text Move, where a definition names one; unbound, the " +
+                "decision is the actor's exactly as it has been since milestone 6.4. It changes who " +
+                "is asked and never what the Move may do.",
+                "Reassess for a mover-chooser who is not the mover, for a Movement ACTION rather " +
+                "than a card-text Move, or for a Push whose distance a second hero would choose."),
+            new SharedFoundationClaim(
+                "displacement.move-performed-flag",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities
+                        .DidMoveOutputName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSwapAndGauntletTests),
+                            nameof(RowennaSwapAndGauntletTests
+                                .ThrowTheGauntlet_PaysHerTwoCoinsWhenTheNamedHeroMoves),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a committed move gates a grant that binds nothing from the mover"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(RowennaSwapAndGauntletTests),
+                            nameof(RowennaSwapAndGauntletTests
+                                .ThrowTheGauntlet_PaysNothingWhenTheNamedHeroDeclines),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a declined move leaves the flag unbound and the gated step unoffered")
+                },
+                new[] { "move", "condition", "publication", "continuation" },
+                "Whether a card-text Move was committed, published only on success and only for a " +
+                "node declaring the output - 8.40i's didRetrieve and 8.57a's didGrant for a Move.",
+                "Reassess for a Push, a Place, or a condition that needs how far rather than whether.")
         };
     }
 

@@ -561,11 +561,19 @@ namespace GuardsDigital.Tests.EditMode
         /// Every composed body passes the same validation a configured match applies at composition,
         /// asked at the p.14 moment the face prints - the check that would otherwise fault
         /// mid-resolution with the card already spent.
+        ///
+        /// <para><b>The catalog is the build's plus what this hero's blocks defer, and milestone
+        /// 8.57b is why.</b> Throw the Gauntlet names
+        /// <c>synthetic-place-in-range-beside-a-named-hero@1</c>, which milestone 7.9's gate keeps out
+        /// of the registered set until 8.57g deals her - so validating against the registered set
+        /// alone would be asserting the gate is broken rather than that the bodies are legal. The
+        /// test below asserts the gate itself; this one asserts the composition.</para>
         /// </summary>
         [Test]
-        public void EveryComposedBody_IsLegalAgainstTheRegisteredCatalogAtItsPrintedMoment()
+        public void EveryComposedBody_IsLegalAgainstTheCatalogHerDealingWillRegister()
         {
-            var catalog = MatchContentCatalogs.ForThisBuild().Capabilities;
+            var catalog = SyntheticEffectCapabilities.CreateCatalog(
+                SyntheticPlacementCapabilities.DeferredHandlers());
             var composed = 0;
 
             foreach (var definition in RowennaCardContent.AllDefinitions)
@@ -581,9 +589,51 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(composed, Is.EqualTo(6),
-                "Six faces, because Token of Gratitude and Fair Share are two cards printing one " +
-                "sentence at two Radii and each carries its own body.");
+            Assert.That(composed, Is.EqualTo(10),
+                "Ten faces: 8.57a's six - Token of Gratitude and Fair Share are two cards printing " +
+                "one sentence at two Radii and each carries its own body - and 8.57b's four.");
+        }
+
+        /// <summary>
+        /// And the one body that names a deferred declaration is refused by the REGISTERED catalog,
+        /// naming the reason. That refusal is milestone 7.9's gate observable rather than a defect:
+        /// the registered capability list is serialized, so a registration no dealt card can start
+        /// moves the pinned list and every corpus digest while the content never moved. Milestone
+        /// 8.57g's registration flip is what turns this assertion around, and Silverarrow's own
+        /// dealing records that the flip and the staged-configuration factories are ONE edit.
+        /// </summary>
+        [Test]
+        public void OnlyTheGauntletsBody_IsRefusedByWhatThisBuildActuallyRegisters()
+        {
+            var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
+            var refused = new List<string>();
+
+            foreach (var definition in RowennaCardContent.AllDefinitions)
+            {
+                foreach (var action in definition.ActionDefinitions.Where(a => a.EffectRoot != null))
+                {
+                    if (EffectDefinitionValidator.ValidateCardText(
+                            action.EffectRoot, registered, action.CardTextTiming).Count > 0)
+                    {
+                        refused.Add(definition.Id.Value);
+                    }
+                }
+            }
+
+            Assert.That(refused,
+                Is.EqualTo(new[] { RowennaCardContent.ThrowTheGauntlet.Value }),
+                "Her nine other composed faces name only capabilities this build registers.");
+
+            Assert.That(
+                EffectDefinitionValidator.ValidateCardText(
+                        RowennaCardContent.Definition(RowennaCardContent.ThrowTheGauntlet)
+                            .ActionDefinitions
+                            .Single(action => action.EffectRoot != null).EffectRoot,
+                        registered,
+                        CardTextTiming.None)
+                    .Select(rejection => rejection.Reason),
+                Is.EqualTo(new[] { EffectDefinitionRejectionReason.UnregisteredCapability }),
+                "and the reason is the deferral rather than anything about the body's shape.");
         }
 
         /// <summary>

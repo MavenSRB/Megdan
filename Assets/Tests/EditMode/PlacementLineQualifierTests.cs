@@ -66,6 +66,11 @@ namespace GuardsDigital.Tests.EditMode
         /// moving one and forgetting the other would be a failure rather than a half-green. Milestone
         /// 8.38e inverts it on the same terms and for the same reason: the claim that has to keep being
         /// true is that these two are exactly together, whichever list they are in.</para>
+        ///
+        /// <para>Milestone 8.57b refills the deferral list this case used to assert empty, and the
+        /// assertion is narrowed rather than dropped: what it now says is which declaration is held
+        /// back and why, so a pair that drifted apart still fails and a hero mid-series does not have
+        /// to delete the check to land.</para>
         /// </summary>
         [Test]
         public void BothLineQualifiedPlaces_AreRegisteredNowThatADealtCardNamesThem()
@@ -90,10 +95,23 @@ namespace GuardsDigital.Tests.EditMode
                 }),
                 "Both of Swift's straight-line Places are registered, together, now that Steam Jump " +
                 "and Delayed Jump are cards a configured match deals.");
-            Assert.That(deferred, Is.Empty,
-                "and this file holds nothing back any more, which is the other half of what the " +
-                "dealing moved. The empty list is kept rather than deleted so the next hero who " +
-                "mints a placement declaration finds the name already here.");
+            Assert.That(deferred, Has.No.Member(
+                    SyntheticPlacementCapabilities.PlaceInRadiusInStraightLineV1)
+                .And.No.Member(SyntheticPlacementCapabilities.PlaceInRadiusOffEveryStraightLineV1),
+                "and neither of them is still being held back, which is the other half of what the " +
+                "dealing moved.");
+
+            // Milestone 8.57b. The list milestone 8.38e emptied and kept is the list this milestone
+            // was kept for: Rowenna's Throw the Gauntlet mints a third qualifier and no configured
+            // match deals her until 8.57g, so the file holds exactly one declaration back. Asserting
+            // WHICH one rather than asserting emptiness is what keeps this case about the gate rather
+            // than about how many heroes happen to be mid-series.
+            Assert.That(deferred, Is.EquivalentTo(new[]
+                {
+                    SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1
+                }),
+                "One declaration deferred, and it is the one whose only printed consumer belongs to " +
+                "a hero this build does not deal yet.");
             Assert.That(registered.Intersect(deferred), Is.Empty,
                 "and nothing is in both lists, which is what the gate means either way round.");
         }

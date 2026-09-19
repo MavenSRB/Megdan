@@ -496,6 +496,47 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string AdjacentToEmptyMinionSpawnPointParameterName =
             "adjacentToEmptyMinionSpawnPoint";
 
+        /// <summary>
+        /// Milestone 8.57b. Whether a printed-icon UNIT selection admits only candidates that satisfy
+        /// Rowenna's printed qualifier - Stand Guard, Protect the Weak and Defend the Innocent, "Swap
+        /// with a friendly unit in range <b>which is adjacent to an enemy hero, or has a card in the
+        /// discard</b>".
+        ///
+        /// <para><b>One parameter because it is ONE printed clause, and a disjunction is not two
+        /// narrowings.</b> Every other narrowing in this family filters the set the one before it left,
+        /// which is what a card printing two clauses means; this face prints "or", so two booleans
+        /// would read it as "and" and admit only the friendly hero who is both beside an enemy AND
+        /// holding a discard. The compound is carried in one name for the reason
+        /// <see cref="AdjacentToEmptyMinionSpawnPointParameterName"/> carries three conditions in one:
+        /// the parameter is the clause, spelled the way the card spells it.</para>
+        ///
+        /// <para><b>The two halves qualify different kinds of candidate, and that falls out of the
+        /// rulebook rather than being arranged.</b> p.19's units are heroes and minions; only a hero
+        /// owns cards, so a minion can satisfy this clause only by standing beside an enemy hero,
+        /// which is what the printed sentence already says without saying it. Neither half is a
+        /// property of the ACTOR: "an enemy hero" is measured from each candidate's own space - a
+        /// second bound, exactly the shape milestone 8.22's <c>adjacentToFriendlyMinion</c> and
+        /// milestone 8.35z28's spawn-point clause record - and "has a card in the discard" is the
+        /// candidate's own pile, read through the same
+        /// <see cref="GuardsDigital.Core.Cards.HeroDiscardPileQuery"/> every other reading of that
+        /// phrase asks, so a card that selects by the fact and a card that conditions on it cannot come
+        /// to disagree about what "in the discard" means.</para>
+        ///
+        /// <para><b>"Enemy" is read from the ACTOR, as every relation in this catalog is.</b> The
+        /// candidate is on Rowenna's own side - the selection declares
+        /// <see cref="SourceTeamRelation.AlliedWithSource"/> - so "an enemy hero" means the same thing
+        /// measured from either of them, and asking it of the actor keeps one reading rather than
+        /// inventing a relation measured from the subject. It also means the candidate can never be
+        /// found in its own neighbourhood, so nothing needs excluding there.</para>
+        ///
+        /// <para>Optional and defaulting to false, so every unit selection composed before Rowenna
+        /// keeps its exact candidate set without naming it - and a parameter added to a registered
+        /// capability moves no pinned byte, because the identity walker digests a capability's
+        /// reference and its Active-effect definitions and never its parameter schema.</para>
+        /// </summary>
+        public const string AdjacentToAnEnemyHeroOrHoldingADiscardParameterName =
+            "adjacentToAnEnemyHeroOrHoldingADiscard";
+
         private static IReadOnlyList<RuleActivity> AllActivities { get; } =
             Array.AsReadOnly(Enum.GetValues(typeof(RuleActivity)).Cast<RuleActivity>()
                 .Where(value => value != RuleActivity.None).ToArray());
@@ -1117,6 +1158,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             OccupiesSpawnPointParameterName,
                             EffectValueKind.Boolean,
                             isRequired: false));
+
+                        // Milestone 8.57b. Rowenna's three Blue swaps, "a friendly unit in range
+                        // WHICH IS ADJACENT TO AN ENEMY HERO, OR HAS A CARD IN THE DISCARD". It is
+                        // declared here by the rule the two above follow - declare the narrowing a
+                        // verified face pairs with this selection - and it is optional, so Brogan's,
+                        // Xargatha's and Whisper's unit selections keep their exact candidate sets.
+                        parameters.Add(new EffectCapabilityParameter(
+                            AdjacentToAnEnemyHeroOrHoldingADiscardParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false));
                     }
                 }
 
@@ -1418,7 +1469,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         !(excludeAdjacent &&
                             board.TryGetObjectCoordinate(target, out var at) &&
                             HexDistanceQuery.Calculate(origin, at) == 1) &&
-                        (!onSpawnPoint || StandsOnASpawnPoint(board, target)))
+                        (!onSpawnPoint || StandsOnASpawnPoint(board, target)) &&
+
+                        // Milestone 8.57b. A minion owns no cards, so the discard half of Rowenna's
+                        // clause can never be true of one; the shared reading below says that once
+                        // rather than this arm assuming it.
+                        (!RequiresTheSwapQualifier(context) ||
+                            SatisfiesTheSwapQualifier(context, board, target)))
                     .Select(target => target.MinionId)
                     .ToArray();
             }
@@ -1612,6 +1669,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         continue;
                     }
 
+                    // Milestone 8.57b. Rowenna's swap qualifier, read on the unit arm alone and as one
+                    // clause rather than as two - see the parameter's own remarks for why "or" cannot
+                    // be two narrowings in the chain above.
+                    if (RequiresTheSwapQualifier(context) &&
+                        !SatisfiesTheSwapQualifier(context, board, target))
+                    {
+                        continue;
+                    }
+
                     heroes.Add(target.HeroId);
                 }
 
@@ -1625,6 +1691,58 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private bool RequiresSpawnPoint(EffectCapabilityContext context) =>
                 subject == PrintedIconSelectionSubject.Unit &&
                 context.Input(OccupiesSpawnPointParameterName).BooleanValue;
+
+            /// <summary>
+            /// Milestone 8.57b. Whether this selection's own sentence prints Rowenna's swap qualifier.
+            /// Only the unit arm declares the parameter, so every other arm reads it as absent and
+            /// narrows nothing.
+            /// </summary>
+            private bool RequiresTheSwapQualifier(EffectCapabilityContext context) =>
+                subject == PrintedIconSelectionSubject.Unit &&
+                context.Input(AdjacentToAnEnemyHeroOrHoldingADiscardParameterName).BooleanValue;
+
+            /// <summary>
+            /// Milestone 8.57b. "which is adjacent to an enemy hero, or has a card in the discard" -
+            /// one candidate measured against one printed clause, in the printed order.
+            ///
+            /// <para>The pile is asked first because it is the cheaper half and because it is the half
+            /// that decides nothing about the board. The adjacency is a disk of one drawn on the
+            /// CANDIDATE, which is exactly "adjacent to it" with no second bound smuggled in: the
+            /// enemy hero qualifying a friendly unit need not be inside Rowenna's own Range, and the
+            /// sentence bounds only the unit.</para>
+            ///
+            /// <para>Derived on every ask - the offer, the answer and a restored pause - because both
+            /// halves are live state: a hero discards to defend, and units walk.</para>
+            /// </summary>
+            private static bool SatisfiesTheSwapQualifier(
+                EffectCapabilityContext context,
+                IBoardDisplacementAuthority board,
+                BoardObjectReference target)
+            {
+                if (target.Kind == BoardObjectKind.Hero && context.CardState.IsAvailable &&
+                    HeroDiscardPileQuery.HasAnyCard(context.CardState.Instances, target.HeroId))
+                {
+                    return true;
+                }
+
+                if (board == null || context.Participants == null ||
+                    !board.TryGetObjectCoordinate(target, out var at))
+                {
+                    return false;
+                }
+
+                // "Enemy" from the actor, which is the same side the friendly candidate opposes - so a
+                // candidate is never found in its own neighbourhood and nothing needs excluding.
+                return RosterPresenceQuery.FindUnitsWithin(
+                    at,
+                    1,
+                    RosterUnitKind.Hero,
+                    SourceTeamRelation.OpposingSource,
+                    context.ActorId,
+                    board,
+                    context.Participants,
+                    context.Modifications).Count > 0;
+            }
 
             /// <summary>
             /// Whether the space one unit is standing on carries a Spawn point.

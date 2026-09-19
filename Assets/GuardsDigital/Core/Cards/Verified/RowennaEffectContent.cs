@@ -1,24 +1,40 @@
 using System.Collections.Generic;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Rules.BoardObjects;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.Displacement;
 using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Placement;
 using static GuardsDigital.Core.Cards.DecisionLabelDeclaration;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
-    /// The effect bodies Rowenna the Vanguard's printed card text composes to - milestone 8.57a, the
-    /// first vocabulary block of the eighteenth hero.
+    /// The effect bodies Rowenna the Vanguard's printed card text composes to - milestones 8.57a and
+    /// 8.57b, the first two vocabulary blocks of the eighteenth hero.
     ///
-    /// <para><b>This file is deliberately partial.</b> 8.57a owns five of her nineteen faces - the one
-    /// that hands a retrieve to the hero she just targeted, and the four Reds that pay or heal a
-    /// team-mate after the attack and may then repeat. Her swaps, her surrenders, her minion placement,
-    /// her opening shots and her Ultimate belong to 8.57b through 8.57e, and her whole set is composed
-    /// at 8.57f. Nothing here is registered: <see cref="MatchContentCatalogs"/> names no Rowenna
-    /// content until 8.57g deals her, which is milestone 7.9's gate - a registration no dealt card can
-    /// start moves the pinned registration list, every snapshot's bytes and every corpus digest while
-    /// the content never moved.</para>
+    /// <para><b>This file is deliberately partial.</b> 8.57a owns six of her nineteen faces - the one
+    /// that hands a retrieve to the hero she just targeted, and the five Reds that pay or heal a
+    /// team-mate after the attack and may then repeat. 8.57b adds four: the three Blue faces that swap
+    /// with a friendly unit, and her Silver basic Throw the Gauntlet. Her surrenders, her minion
+    /// placement, her opening shots and her Ultimate belong to 8.57c through 8.57e, and her whole set
+    /// is composed at 8.57f. Nothing here is registered: <see cref="MatchContentCatalogs"/> names no
+    /// Rowenna content until 8.57g deals her, which is milestone 7.9's gate - a registration no dealt
+    /// card can start moves the pinned registration list, every snapshot's bytes and every corpus
+    /// digest while the content never moved.</para>
+    ///
+    /// <para><b>What 8.57b costs the shared vocabulary is one DECLARATION, one PARAMETER on each of two
+    /// registered capabilities, and one OUTPUT.</b> <c>synthetic-place-in-range-beside-a-named-hero@1</c>
+    /// is a further declaration over the <c>PlaceHandler</c> type three arms have registered since
+    /// milestone 6.6, held out of the registered set until she is dealt;
+    /// <c>synthetic-range-unit-target@1</c> gains the one clause her Blue faces print about their
+    /// candidates; and <c>synthetic-direct-move@3</c> gains a mover-chooser and the Boolean form of the
+    /// success it already reports, which is
+    /// <see cref="SyntheticRosterCapabilities.DidRetrieveOutputName"/>'s and
+    /// <see cref="SyntheticRosterCapabilities.DidGrantOutputName"/>'s third twin. Every one of them is
+    /// optional, so each body composed before this milestone offers and publishes exactly what it
+    /// did.</para>
     ///
     /// <para><b>What these five faces cost the shared vocabulary is two OUTPUTS and no new
     /// capability.</b> <c>synthetic-attack-took-a-hero@1</c> gains
@@ -60,6 +76,8 @@ namespace GuardsDigital.Core.Cards.Verified
 
         private const string ChivalryPrefix = "chivalry";
         private const string RewardPrefix = "reward";
+        private const string GuardPrefix = "guard";
+        private const string GauntletPrefix = "gauntlet";
 
         /// <summary>
         /// Milestone 8.46a. What her own decision controls say - the consequence in the printed text's
@@ -516,6 +534,380 @@ namespace GuardsDigital.Core.Cards.Verified
                 chooser: EffectChooserRole.Actor,
                 maximumRepeats: 1,
                 repeatTargetBinding: RepeatTargetBinding.DifferentTarget);
+
+        // -----------------------------------------------------------------------------------------
+        // p.12's Skill primaries - milestone 8.57b
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The body one of her printed Skills performs, or <c>null</c> for a face no block owns yet.
+        /// </summary>
+        public static EffectDefinition SkillEffectFor(CardDefinitionId cardId, string contentRevision)
+        {
+            if (cardId.Equals(RowennaCardContent.StandGuard) ||
+                cardId.Equals(RowennaCardContent.ProtectTheWeak))
+            {
+                return CreateProtectiveSwap(cardId, contentRevision, retrieves: false);
+            }
+
+            if (cardId.Equals(RowennaCardContent.DefendTheInnocent))
+            {
+                return CreateProtectiveSwap(cardId, contentRevision, retrieves: true);
+            }
+
+            if (cardId.Equals(RowennaCardContent.ThrowTheGauntlet))
+            {
+                return CreateThrownGauntlet(cardId, contentRevision);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// "Swap with a friendly unit in range which is adjacent to an enemy hero, or has a card in
+        /// the discard[; you may retrieve a discarded card]." - Stand Guard and Protect the Weak
+        /// without the second clause, Defend the Innocent with it.
+        ///
+        /// <para><b>One factory for three faces, and the Range is NOT a number any of them carries.</b>
+        /// Stand Guard prints Range 3 and both upgrades print 4;
+        /// <c>synthetic-range-unit-target@1</c> reads the acting card's own printed Range with p.16's
+        /// items composed onto it, which is what a distance written into the definition could not do.
+        /// What separates the three is the second clause and nothing else.</para>
+        ///
+        /// <para><b>It is the printed-icon UNIT selection and not Whisper's
+        /// <c>choose-swap-subject@1</c>, and the difference is the whole grammar of the sentence.</b>
+        /// Hers is one selection over a UNION of two differently reached sets - "a unit adjacent to
+        /// you, OR an enemy hero in range with a card in the discard" - where the "or" joins two
+        /// reaches. Rowenna's "or" joins two QUALIFIERS inside one reach: every candidate is a friendly
+        /// unit inside her printed Range, and the disjunction says which of them the sentence admits.
+        /// Composing this on the union contract would attach a doctrine her text does not carry, so it
+        /// composes on the selection whose statement it actually is - the same one Arien's "Swap with
+        /// an enemy minion in range" has used since milestone 8.20, with p.19's Swap performed by
+        /// <c>synthetic-swap-actor@1</c> after it.</para>
+        ///
+        /// <para><b>Rowenna is never among her own candidates.</b> A disk drawn on a hero contains
+        /// that hero, and the unit arm asks for it without self - so the actor is out before any
+        /// qualifier is asked, which is what "swap WITH a friendly unit" means: an exchange with
+        /// yourself is nothing. The side is <see cref="SourceTeamRelation.AlliedWithSource"/>, which
+        /// is her own, and p.19's units are heroes and minions both.</para>
+        ///
+        /// <para><b>The qualifier is one clause and the selection carries it as one.</b> See
+        /// <see cref="SyntheticTargetingCapabilities
+        /// .AdjacentToAnEnemyHeroOrHoldingADiscardParameterName"/>: two booleans would read the
+        /// printed "or" as "and", and a minion - which owns no cards at all - can satisfy it only by
+        /// standing beside an enemy hero.</para>
+        ///
+        /// <para><b>The Swap is declared as the selection's consumer, which narrows who is offered.</b>
+        /// A unit p.18's immunity or a standing restriction will not let her exchange places with is
+        /// not one to offer and then refuse - milestone 8.35l's rule, and Arien's own Swap is where it
+        /// was learned. The selection's own immunity question is the enclosing action's, which p.12
+        /// makes the Skill: "card text has no activity of its own".</para>
+        ///
+        /// <para><b>Defend the Innocent's retrieval is HERS, optional, and after the swap.</b> The
+        /// semicolon puts it second and p.10 forbids retrieving another hero's cards, so the node
+        /// names the actor as both owner and chooser. It is a later sibling of a mandatory step: a
+        /// swap with no legal subject stops the card at the selection, and the retrieve is never
+        /// reached and never offered - which is p.10's own mandatory-step order rather than anything
+        /// this definition arranges.</para>
+        /// </summary>
+        private static EffectDefinition CreateProtectiveSwap(
+            CardDefinitionId cardId, string contentRevision, bool retrieves)
+        {
+            var root = new EffectNodeId(GuardPrefix + "-root");
+            var subject = new EffectNodeId(GuardPrefix + "-subject");
+            var swap = new EffectNodeId(GuardPrefix + "-swap");
+            var retrieve = new EffectNodeId(GuardPrefix + "-retrieve");
+
+            var nodes = new List<EffectNodeDefinition>
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: retrieves
+                        ? new[] { subject, swap, retrieve }
+                        : new[] { subject, swap }),
+                new EffectNodeDefinition(
+                    subject, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticTargetingCapabilities.RangeUnitTargetV1,
+                    inputs: new[]
+                    {
+                        // A Skill's effect is the action (p.12), so the immunity question this
+                        // selection asks is the Skill's own.
+                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+
+                        // "a friendly unit" - her own side, and p.19's two unit kinds both.
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticTargetingCapabilities.TargetRelationParameterName,
+                            SourceTeamRelation.AlliedWithSource),
+
+                        // "which is adjacent to an enemy hero, or has a card in the discard" - one
+                        // printed clause, carried as one.
+                        EffectInputBinding.FromLiteral(
+                            SyntheticTargetingCapabilities
+                                .AdjacentToAnEnemyHeroOrHoldingADiscardParameterName,
+                            EffectValue.Boolean(true)),
+
+                        // The Swap decides whether a unit in range is one this card can actually
+                        // take, and the narrowing puts it the SPACE the selection publishes, which is
+                        // the value the Swap reads - milestone 8.35l's correction, learned on Arien's
+                        // own Swap.
+                        EffectInputBinding.FromLiteral(
+                            EffectSelectionDeclaration.ConsumerParameterName,
+                            EffectValue.Node(swap))
+                    },
+                    outputs: new[]
+                    {
+                        // All three, because a unit selection publishes whichever kind was named and
+                        // an undeclared recorded outcome is a snapshot this build refuses to read
+                        // back - the reason Arien's minion selection declares both of its own.
+                        new EffectOutputBinding(
+                            SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                            EffectValueKind.Hero),
+                        new EffectOutputBinding(
+                            SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                            EffectValueKind.Minion),
+                        new EffectOutputBinding(
+                            SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
+                            EffectValueKind.Coordinate)
+                    }),
+                new EffectNodeDefinition(
+                    swap, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticExchangeCapabilities.SwapWithActorV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "subject", subject,
+                            SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
+                            EffectValueKind.Coordinate),
+
+                        // "a friendly unit", which p.19 makes a unit.
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticExchangeCapabilities.EligiblePieceParameterName,
+                            SwapEligiblePieceKind.Unit)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("actorAt", EffectValueKind.Coordinate),
+                        new EffectOutputBinding("subjectAt", EffectValueKind.Coordinate)
+                    })
+            };
+
+            if (retrieves)
+            {
+                nodes.Add(Retrieve(retrieve));
+            }
+
+            return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);
+        }
+
+        /// <summary>
+        /// "Place yourself into a space in range adjacent to an enemy hero in range; that hero may
+        /// move 1 space; if they do, gain 2 coins." - Throw the Gauntlet, her Silver basic, and the
+        /// only sentence in the corpus that hands an OPPONENT a decision about their own position.
+        ///
+        /// <para><b>The hero is named before the space, and the semicolon is why.</b> "that hero"
+        /// points back at the enemy whose adjacency qualified the destination, and a space next to two
+        /// enemy heroes would leave the pronoun ambiguous if the space were chosen first. So an
+        /// ordinary <c>synthetic-range-hero-target@1</c> selection names him - the same printed Range
+        /// the Place reads, so neither half of "in range" can invent reach the other does not have -
+        /// and the Place then offers the spaces beside him. A hero with no empty qualifying space is
+        /// not offered at all, because the Place is declared as that selection's consumer.</para>
+        ///
+        /// <para><b>The Place is p.18's and not a move.</b> "Place yourself" names the piece, so the
+        /// subject reaches the Place through the actor-space bridge rather than through a selection -
+        /// milestone 6.5a's reason exactly. It is mandatory: the face prints no "may", so an enemy
+        /// hero named with nowhere beside him left stops the Skill there, which is p.10's own answer
+        /// for an impossible mandatory step.</para>
+        ///
+        /// <para><b>"That hero may move 1 space" is the OPPONENT's decision, and RO-Q2 is the
+        /// reading.</b> "May" makes it theirs to decline, p.19 makes it a card-text move rather than a
+        /// Movement action - so movement-action restrictions do not block it, movement-action buffs do
+        /// not widen it and there is no Fast Travel to substitute - and the distance is exact: p.11's
+        /// "up to" is not printed, so the hero moves one space or not at all. The decision is issued
+        /// to him by name through <c>synthetic-direct-move@3</c>'s own chooser rather than by an
+        /// enclosing <see cref="EffectNodeKind.Optional"/>: <see cref="EffectChooserRole.BoundHero"/>
+        /// reaches only a <see cref="EffectNodeKind.Choose"/> today, and a <c>May</c> Capability node
+        /// whose handler names its chooser is the route Code of Chivalry's own second retrieve already
+        /// takes - the hero being offered the step is the hero who may decline it.</para>
+        ///
+        /// <para><b>A hero with nowhere to go is not asked.</b> The move reports itself impossible and
+        /// <c>May</c> turns that into a step not taken, so no prompt is opened and no coins follow -
+        /// which is the same thing a decline produces and the correct thing for both.</para>
+        ///
+        /// <para><b>"If they do, gain 2 coins" gates on the MOVE and pays ROWENNA.</b> The coins are
+        /// hers - the sentence's subject never changed from "yourself" - so nothing about them can be
+        /// bound from the opponent's answer, and the condition reads
+        /// <see cref="SyntheticDisplacementCapabilities.DidMoveOutputName"/>, published only when the
+        /// move was actually committed. A decline publishes nothing and an unbound flag reads as
+        /// false, which is exactly what the printed "if" asks for.</para>
+        /// </summary>
+        private static EffectDefinition CreateThrownGauntlet(
+            CardDefinitionId cardId, string contentRevision)
+        {
+            var root = new EffectNodeId(GauntletPrefix + "-root");
+            var actorSpace = new EffectNodeId(GauntletPrefix + "-actor-space");
+            var hero = new EffectNodeId(GauntletPrefix + "-hero");
+            var place = new EffectNodeId(GauntletPrefix + "-place");
+            var move = new EffectNodeId(GauntletPrefix + "-move");
+            var gate = new EffectNodeId(GauntletPrefix + "-gate");
+            var coins = new EffectNodeId(GauntletPrefix + "-coins");
+
+            return new EffectDefinition(
+                SkillEffectId(cardId),
+                contentRevision,
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { actorSpace, hero, place, move, gate }),
+
+                    // Her own space, published before the hero is named so that the Place the
+                    // selection is narrowed against can already be asked about its subject. Reading a
+                    // hero's own coordinate decides nothing and mutates nothing.
+                    new EffectNodeDefinition(
+                        actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(ActorSpaceOutput, EffectValueKind.Coordinate)
+                        }),
+
+                    new EffectNodeDefinition(
+                        hero, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticTargetingCapabilities.RangeHeroTargetV1,
+                        inputs: new[]
+                        {
+                            // p.12 again: the Skill's own activity, so an enemy immune to her Skill
+                            // cannot be named at all - which is p.18's "you cannot target that unit".
+                            EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                SourceTeamRelation.OpposingSource),
+
+                            // "other than the attacker" is a Block rider's clause and this is a
+                            // Skill with no attacker to exclude.
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.ExcludeTheAttackerParameterName,
+                                EffectValue.Boolean(false)),
+
+                            // The Place is what decides whether an enemy hero in range is one this
+                            // card can actually reach: a hero with no empty space beside him inside
+                            // her Range is greyed rather than offered and then refused.
+                            EffectInputBinding.FromLiteral(
+                                EffectSelectionDeclaration.ConsumerParameterName,
+                                EffectValue.Node(place))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenHeroSpaceOutputName,
+                                EffectValueKind.Coordinate)
+                        }),
+
+                    new EffectNodeDefinition(
+                        place, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.PlaceInRangeBesideANamedHeroV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "subject", actorSpace, ActorSpaceOutput,
+                                EffectValueKind.Coordinate),
+
+                            // The subject is already fixed to the acting hero, so this declaration
+                            // narrows nothing - p.18's own unrestricted breadth.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticPlacementCapabilities.EligiblePieceParameterName,
+                                PlaceEligiblePieceKind.GamePiece),
+
+                            // "in range" is measured from the hero whose card it is, which p.9 makes
+                            // the anchor of every printed icon.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticPlacementCapabilities.DestinationAnchorParameterName,
+                                PlaceDestinationAnchor.ActingHero),
+
+                            // The face prints no Spawn-point clause, so no space is refused for
+                            // carrying one.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticPlacementCapabilities.SpawnPointExclusionParameterName,
+                                PlaceSpawnPointExclusion.None),
+
+                            // "adjacent to an enemy hero in range" - the hero the node above named,
+                            // by the space he is standing in.
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticPlacementCapabilities.BesideSpaceParameterName, hero,
+                                SyntheticTargetingCapabilities.ChosenHeroSpaceOutputName,
+                                EffectValueKind.Coordinate)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("placed", EffectValueKind.Coordinate)
+                        }),
+
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
+                        inputs: new[]
+                        {
+                            // The hero has not moved - a Place moves HER - so the space the selection
+                            // published is still where he is standing.
+                            EffectInputBinding.FromNodeOutput(
+                                "mover", hero,
+                                SyntheticTargetingCapabilities.ChosenHeroSpaceOutputName,
+                                EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+
+                            // The card says how far and nothing about where, so nothing is filtered
+                            // by where anybody stands - p.11's own breadth.
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                DirectMoveDestinationPolicy.Unrestricted),
+
+                            // "that hero may move" - his decision, on his own seat's prompt.
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticDisplacementCapabilities.ChooserParameterName, hero,
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("moved", EffectValueKind.Coordinate),
+                            new EffectOutputBinding(
+                                SyntheticDisplacementCapabilities.DidMoveOutputName,
+                                EffectValueKind.Boolean)
+                        }),
+
+                    Gate(gate, move, SyntheticDisplacementCapabilities.DidMoveOutputName, coins),
+
+                    new EffectNodeDefinition(
+                        coins, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticRosterCapabilities.GainResourceV1,
+                        inputs: new[]
+                        {
+                            // "gain" with no other subject is the acting hero's own gain, which is
+                            // who "yourself" was at the start of the sentence.
+                            EffectInputBinding.FromRole(
+                                "recipient", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromLiteral("amount", EffectValue.Integer(2))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("recipient", EffectValueKind.Hero),
+                            new EffectOutputBinding("amount", EffectValueKind.Integer)
+                        })
+                });
+        }
+
+        /// <summary>
+        /// The acting hero's own space, published so the Place can name the piece "yourself" refers
+        /// to. Milestone 6.4a's bridge, and the same one Arien's three leaps use.
+        /// </summary>
+        private const string ActorSpaceOutput = "space";
+
+        private static EffectDefinitionId SkillEffectId(CardDefinitionId cardId) =>
+            new EffectDefinitionId(cardId.Value + "-skill");
 
         private static EffectDefinitionId AttackTextEffectId(CardDefinitionId cardId) =>
             new EffectDefinitionId(cardId.Value + "-attack-text");

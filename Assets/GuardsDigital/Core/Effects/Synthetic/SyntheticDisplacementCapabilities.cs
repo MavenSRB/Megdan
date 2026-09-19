@@ -139,6 +139,68 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string MovesThroughObstaclesParameterName = "movesThroughObstacles";
 
         /// <summary>
+        /// Milestone 8.57b. WHO decides where this Move goes, where that is not the acting hero -
+        /// Rowenna's Throw the Gauntlet, "Place yourself into a space in range adjacent to an enemy
+        /// hero in range; <b>that hero</b> may move 1 space".
+        ///
+        /// <para><b>It states rulebook p.10's own rule where this capability had been assuming the
+        /// ordinary case.</b> A step's decisions belong to whoever performs it, and this contract has
+        /// moved units that are not the actor since milestone 6.8k - Arien's Noble Blade moves another
+        /// unit, Sabina's Path to Victory moves a minion - but every one of those movers is a MINION or
+        /// a token, which holds no seat, so handing the choice to the actor was the page's answer
+        /// rather than a shortcut. A hero has a seat, and this is the first printed sentence that moves
+        /// one at somebody else's instruction: the 2026-08-19 designer answer settles it - "There's no
+        /// functional distinction between 'Player' and 'Hero' in Guards of Atlantis II as far as the
+        /// rules text is concerned" - so the decision is the mover's.</para>
+        ///
+        /// <para><b>A bound chooser rather than a role, for the reason
+        /// <c>defended-card-forced-move@1</c> names one.</b> With several opponents there is no single
+        /// "the" opposing hero, and this one was picked out by an earlier node of the same sentence.
+        /// The named hero travels to the pause as <see cref="EffectChoiceRequest.ChooserHeroId"/>,
+        /// which milestone 7.1a built so that "another hero discards a card" could put the card choice
+        /// to that hero and which milestone 8.35r's decision-owner projection already routes to the
+        /// right seat - so nothing about the wire or the seat filter is new here, and the acting seat
+        /// is refused as the wrong chooser exactly as it is on every other hero-owned prompt.</para>
+        ///
+        /// <para><b>A hero this match does not field is a refusal rather than a fallback to the
+        /// actor.</b> A declaration that names a mover-chooser and resolves to nobody is a definition
+        /// making a claim this vocabulary cannot answer; quietly handing the decision back to the actor
+        /// would turn a fault into a different card. That is <c>retrieve-card@1</c>'s own reading of an
+        /// unknown chooser, stated here for the same reason.</para>
+        ///
+        /// <para>Optional and unbound everywhere else, so every Move composed before this milestone
+        /// keeps its exact prompt and its exact chooser - and a parameter added to a registered
+        /// capability moves no pinned byte, because the identity walker digests a capability's
+        /// reference and its Active-effect definitions and never its parameter schema.</para>
+        /// </summary>
+        public const string ChooserParameterName = "chooser";
+
+        /// <summary>
+        /// Milestone 8.57b. Whether this Move actually happened, published only on success - the "if
+        /// they do" of Rowenna's Throw the Gauntlet, "that hero may move 1 space; <b>if they do</b>,
+        /// gain 2 coins".
+        ///
+        /// <para><b>It is the third of one family and exists for the identical recorded reason as the
+        /// first two.</b> <c>retrieve-card@1</c>'s <c>didRetrieve</c> (milestone 8.40i) and
+        /// <c>gain-resource@1</c>'s <c>didGrant</c> (milestone 8.57a) both record why a binding cannot
+        /// carry the condition where the dependent step is about somebody else: the coins here are
+        /// ROWENNA's, and nothing about them can be bound from a move the opponent made. So the fact
+        /// is published as a Boolean an <see cref="EffectNodeKind.Conditional"/> over
+        /// <c>synthetic-is-flagged@1</c> reads, and a step declined or impossible publishes nothing -
+        /// an unbound flag reads as false, which is exactly what the printed "if" asks for.</para>
+        ///
+        /// <para><b>Why the destination could not carry it.</b> <c>moved</c> is a coordinate, and no
+        /// predicate in this vocabulary asks whether a coordinate was published; the distance output
+        /// beside it is an integer with the same problem. Both are also published only on the same
+        /// success this is, so nothing is being answered twice - this is that one success in the shape
+        /// a Conditional can read.</para>
+        ///
+        /// <para>Published only for a node that declared it, so every Move composed before this
+        /// milestone is byte-identical without naming it.</para>
+        /// </summary>
+        public const string DidMoveOutputName = "didMove";
+
+        /// <summary>
         /// Revision 3, minted at milestone 8.8: revision 2's declaration plus the two things Wasp's
         /// kinetic Skills print that a node's failure policy could not say - the fewest spaces the card
         /// names, and how many units it may push.
@@ -424,7 +486,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         EffectValueKind.Boolean,
                         isRequired: false),
                     new EffectCapabilityParameter(
-                        LeastDistanceParameterName, EffectValueKind.Integer, isRequired: false)
+                        LeastDistanceParameterName, EffectValueKind.Integer, isRequired: false),
+
+                    // Milestone 8.57b. Rowenna's Throw the Gauntlet, "that hero may move 1 space" -
+                    // the mover's own decision. Optional and unbound everywhere else, so every Move
+                    // composed before it keeps the actor as its chooser.
+                    new EffectCapabilityParameter(
+                        ChooserParameterName, EffectValueKind.Hero, isRequired: false)
                 },
                 new[]
                 {
@@ -432,7 +500,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     // Milestone 8.35z30. Declared beside the destination and published only
                     // when a definition binds it, which is the shape Object Push already has: a node
                     // that says nothing about the distance produces exactly the facts it did before.
-                    new EffectOutputBinding(RealisedDistanceOutputName, EffectValueKind.Integer)
+                    new EffectOutputBinding(RealisedDistanceOutputName, EffectValueKind.Integer),
+
+                    // Milestone 8.57b. The same success as a Boolean, for a card whose "if they do"
+                    // gates a step about somebody else - see DidMoveOutputName.
+                    new EffectOutputBinding(DidMoveOutputName, EffectValueKind.Boolean)
                 });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
@@ -440,6 +512,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {
+                // Milestone 8.57b. A declaration naming a mover-chooser this match does not field is
+                // asked before anything else, because what follows would otherwise open a prompt
+                // addressed to nobody. See ChooserParameterName for why this is a refusal rather than
+                // a fall back to the actor.
+                if (!TryResolveChooser(context, out var chooser))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
                 var candidates = Candidates(context);
                 if (candidates.Count == 0)
                 {
@@ -460,11 +541,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return Resume(context, new[] { EffectValue.Space(candidates[0]) });
                 }
 
-                return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
-                    EffectChooserRole.Actor,
-                    candidates.Select(candidate => EffectValue.Space(candidate)).ToArray(),
-                    1,
-                    1));
+                // Milestone 8.57b. `EffectChooserRole.None` with a named hero is the shape milestone
+                // 7.1a built and `defended-card-forced-move@1` uses: a decision issued to one hero
+                // rather than resolved through the frame's roles. A declaration that names nobody is
+                // unchanged and still asks the actor.
+                return EffectExecutionResult.NeedsChoice(chooser.IsDefined
+                    ? new EffectChoiceRequest(
+                        EffectChooserRole.None,
+                        candidates.Select(candidate => EffectValue.Space(candidate)).ToArray(),
+                        1,
+                        1,
+                        chooser)
+                    : new EffectChoiceRequest(
+                        EffectChooserRole.Actor,
+                        candidates.Select(candidate => EffectValue.Space(candidate)).ToArray(),
+                        1,
+                        1));
             }
 
             public EffectExecutionResult Resume(
@@ -514,6 +606,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             HexDistanceQuery.Calculate(moverAt, committed.Destination))));
                 }
 
+                // Milestone 8.57b. The same success as a flag, for the "if they do" of a card whose
+                // next clause is about the ACTOR rather than about the mover.
+                if (context.Publishes(DidMoveOutputName))
+                {
+                    facts.Add(new EffectOutcomeFact(
+                        DidMoveOutputName, EffectValue.Boolean(true)));
+                }
+
                 return EffectExecutionResult.Applied(facts);
             }
 
@@ -523,12 +623,44 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// the enclosing walk reads as "not decidable here" when the space comes from a later node.
             /// </summary>
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                Candidates(context).Count == 0
+                !TryResolveChooser(context, out _) || Candidates(context).Count == 0
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : (DirectMoveDestinationPolicy)context.Input(DestinationPolicyParameterName)
                         .IntegerValue == DirectMoveDestinationPolicy.NamedSpace
                         ? EffectExecutionResultKind.Applied
                         : EffectExecutionResultKind.NeedsChoice;
+
+            /// <summary>
+            /// Milestone 8.57b. The hero this Move's declaration hands the decision to, or the
+            /// undefined hero where it hands it to nobody in particular - which is every Move composed
+            /// before this milestone and is read as the actor's own decision.
+            ///
+            /// <para>False means the declaration named a mover-chooser and the match does not field
+            /// them, which is a refusal rather than a fallback: see
+            /// <see cref="ChooserParameterName"/>. A binding an earlier node has not published yet
+            /// arrives as no value at all rather than as a wrong one, so the offer-time walk reads it
+            /// the way it reads every other unresolved input - and the mover coordinate it needs is
+            /// unresolved at that same moment, which is what already decides the node there.</para>
+            /// </summary>
+            private static bool TryResolveChooser(
+                EffectCapabilityContext context, out HeroId chooser)
+            {
+                chooser = default;
+                var declared = context.Input(ChooserParameterName);
+                if (declared.Kind != EffectValueKind.Hero)
+                {
+                    return true;
+                }
+
+                if (!declared.HeroId.IsDefined || context.Participants == null ||
+                    !context.Participants.Heroes.Any(hero => hero.Id.Equals(declared.HeroId)))
+                {
+                    return false;
+                }
+
+                chooser = declared.HeroId;
+                return true;
+            }
 
             /// <summary>
             /// Milestone 8.35z42. Where this node could leave the ACTING HERO, for a walk
