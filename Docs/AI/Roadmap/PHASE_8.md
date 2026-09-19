@@ -255,10 +255,10 @@ Historical evidence: [8.59 completion index](../Archive/Phase-Handoffs/PHASE_8.m
 
 ### [ ] 8.60 Package the eighteen-hero playtest build
 
-Authorized 2026-09-19 by the user ("Previews look ok, merge 8.58 and proceed" - the pipeline agreed in the morning review: land 8.58, gate Rowenna, then the build). The build carries 8.57-8.57h (Rowenna the Vanguard, the eighteenth hero, dealt with her real artwork and gated), 8.58 (the decision window per the mockup, the worth badge, the strip's hearts, the victory grid) and 8.59 (Bounce and Wild Hunt offer only the spaces they can reach).
+Authorized 2026-09-19 by the user ("Previews look ok, merge 8.58 and proceed"), then ordered AFTER the two open fixes when a package was cut early at 8.57h: "No need. Just finish everything and then do the build." (that package was withdrawn, its commit and tag removed). The build carries 8.57-8.57h (Rowenna the Vanguard, the eighteenth hero, dealt with her real artwork and gated), 8.58 (the decision window per the mockup, the worth badge, the strip's hearts, the victory grid), 8.59 (Bounce and Wild Hunt offer only the spaces they can reach), 8.54 (Bounce's repeat through Bullet Time) and 8.55 (the initiative badge reads card plus item).
 
-Outcome: `Builds/Playtest-8.57h-rowenna` and its zip, built from main at the 8.57h tag by the 8.44 recipe (bundleVersion `1.0-8.57h-rowenna`, `Invoke-PlayerBuildSmoke.ps1`, the launcher batch, READ ME FIRST, PACKAGE MANIFEST, BUILD IDENTITY), launched once from its own folder.
+Outcome: `Builds/Playtest-8.55-rowenna` and its zip, built from main at the later of the 8.54 and 8.55 tags by the 8.44 recipe (bundleVersion `1.0-8.55-rowenna`, `Invoke-PlayerBuildSmoke.ps1`, the launcher batch, READ ME FIRST, PACKAGE MANIFEST, BUILD IDENTITY), launched once from its own folder.
 
 Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged commit before the build is cut; the packaged exe launches and reaches the lobby; the identity stamp names the commit; Rowenna pickable in the packaged lobby with her pick card and both tokens.
 
-Non-goals: new gameplay; 8.54 and 8.55, which go into the next package unless they are on main when the build is cut.
+Non-goals: new gameplay beyond the blocks named; a build before 8.54 and 8.55 have landed.
