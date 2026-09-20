@@ -290,6 +290,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void TheSelectionProjectionCarriesEachRegisteredHerosProfileMetadata()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+            foreach (var ordinal in harness.Ordinals)
+            {
+                Assert.That(harness.Client(ordinal).TrySetReadiness(true), Is.True);
+                harness.Pump();
+            }
+
+            var model = PrivateLobbyModel.ForClient(harness.Client(harness.Ordinals[0]));
+            Assert.That(model.Selection.IsRunning, Is.True);
+            Assert.That(model.Selection.Heroes.Count, Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count));
+            foreach (var option in model.Selection.Heroes)
+            {
+                var registered = RegisteredHeroRoster.ForThisBuild.Single(
+                    hero => hero.HeroIdValue == option.HeroIdValue);
+                Assert.That(option.Complexity, Is.EqualTo(registered.Complexity), option.HeroIdValue);
+                Assert.That(option.Roles, Is.EqualTo(registered.Roles), option.HeroIdValue);
+            }
+        }
+
+        [Test]
         public void TheAnnouncement_ReachesEverySeatedConnectionExactlyOnce()
         {
             var driver = SeatEveryone(out var seats);

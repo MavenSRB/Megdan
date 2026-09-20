@@ -190,6 +190,31 @@ run was selected because no scene, lifecycle, input, or asset path changed.
 
 Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z73-coin-award-narration-completion-evidence).
 
+### [x] 8.35z86 Filter the hero-pick roster by profile stars and roles
+
+Authorized 2026-09-20 in the user's words: "Implement it. Make sure clear is also a button ilke all the others." This follows the approved mockup decisions: the first unlabeled row permits zero or exactly one star value; the second unlabeled row permits any number of roles and requires every selected role; the two predicates combine; no matching-count label is drawn; and CLEAR uses the same button treatment as the other filters.
+
+Outcome: every registered hero carries the complexity and role facts printed on its verified profile card, and each lobby client can locally narrow the visible hero buttons without changing availability, pick order, host validation, bot assignment, snapshots, replay, or the wire. Clicking the active star clears it; role buttons toggle independently; CLEAR resets both filter families. A filtered-out highlighted hero is cleared, and zero matches leaves an explicit empty result rather than a stale choice.
+
+Closing checks: focused metadata coverage proves all registered heroes have one legal complexity and only the ten printed roles; lobby-model tests prove the option projection carries those facts; focused Edit Mode and Play Mode tests exercise exclusive/toggleable stars, AND-role matching, combined star-and-role matching, CLEAR parity, empty results, taken-hero behavior, highlight clearing, rebuild/session replacement, and supported viewport wrapping. T2 plus targeted visual inspection of the changed lobby surface. No profile stat bars, role inference from gameplay, alternate OR mode, sorting, search, persistence, network message, package, or broader lobby redesign.
+
+Completed 2026-09-20. All nineteen registered heroes now carry their verified profile-card
+complexity and printed role set through the existing lobby option projection. The retained picker
+draws two unlabeled rows above the roster: one mutually exclusive star value followed by the ten
+independently toggleable roles, with selected roles matched as AND and both families combined.
+CLEAR uses the identical shared button chrome, resets both families, and a selected filter uses the
+existing gold edge. Filtering remains client-local; it clears a hidden highlight and names an empty
+result without changing the legal options or submitted pick.
+
+Focused cross-platform metadata/model coverage passed 80/80; focused Unity Edit Mode passed
+80/80; the complete affected `PrivateLobbyPlayModeTests` fixture passed 22/22 with zero skips or
+inconclusive cases, including ordinary and short supported viewports. The rendered 1920x1080
+capture `tmp/8-35z86-hero-filters-1920x1080.png` was inspected with 2-star + Durable + Healer
+selected and showed only Bain and Rowenna, with no category or matching-count labels. Snapshot
+schema v43 and private wire `/19` are unchanged; no package was requested.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z86-hero-pick-filter-completion-evidence).
+
 ### [x] 8.35z74 Repair explicitly parked player-path coverage
 
 Outcome: each skipped fixture has a reason, replacement coverage, and owning repair; prioritize Ursafar and restore real UI journeys. Dependency: inventory current `[Explicit]` cases and latest XML rather than trusting older counts. Closing check: each repaired named case fails for its recorded cause before repair and passes when explicitly executed; maintain full-suite counts without calling parked cases passes. Distinguish fixture faults, unresolved rule questions, and product defects.

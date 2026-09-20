@@ -6,6 +6,34 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Setup
 {
+    /// <summary>Rulebook p.21's four printed hero-profile complexity bands.</summary>
+    public enum HeroComplexity
+    {
+        Challenging = 1,
+        Complex = 2,
+        VeryComplex = 3,
+        Wizard = 4
+    }
+
+    /// <summary>Rulebook pp.21-22's complete hero-role vocabulary.</summary>
+    [Flags]
+    public enum HeroRole
+    {
+        None = 0,
+        Damager = 1 << 0,
+        Disabler = 1 << 1,
+        Durable = 1 << 2,
+        Farming = 1 << 3,
+        Healer = 1 << 4,
+        Melee = 1 << 5,
+        Pusher = 1 << 6,
+        Sniper = 1 << 7,
+        Tactician = 1 << 8,
+        Tokens = 1 << 9,
+        All = Damager | Disabler | Durable | Farming | Healer |
+              Melee | Pusher | Sniper | Tactician | Tokens
+    }
+
     /// <summary>
     /// Milestone 8.35z36. One hero this build can actually deal: the identity a rule reads,
     /// the printed set it deals, and the epithet setup step 7 names it by.
@@ -18,15 +46,18 @@ namespace GuardsDigital.Core.Setup
     /// that adds a hero to that table adds it to every selector in the build at the same moment and
     /// without touching this file. That is the standing requirement: nothing here counts the
     /// roster.</para>
-    /// <para>What is deliberately NOT here: the hero profile card's Complexity rating. Rulebook
-    /// p.22's selection methods filter by it ("of appropriate complexity", and "remove the higher
-    /// difficulty heroes, based on the experience level of the least experienced player"), but the
-    /// rating is printed on the Profile cards, which this build has never modelled. Recorded as an
-    /// absence per the cards-are-the-definition discipline rather than guessed at.</para>
+    /// <para>Milestone 8.35z86 adds the profile card's printed complexity and roles. They are
+    /// selection metadata only: no rule branches on them, and every row is transcribed from its
+    /// verified profile front rather than inferred from card behavior or an epithet.</para>
     /// </remarks>
     public readonly struct RegisteredHero : IEquatable<RegisteredHero>
     {
-        public RegisteredHero(string heroIdValue, HeroContentId contentId, string displayName)
+        public RegisteredHero(
+            string heroIdValue,
+            HeroContentId contentId,
+            string displayName,
+            HeroComplexity complexity,
+            HeroRole roles)
         {
             if (string.IsNullOrWhiteSpace(heroIdValue))
             {
@@ -46,9 +77,25 @@ namespace GuardsDigital.Core.Setup
                     "A registered hero requires a display name.", nameof(displayName));
             }
 
+            if (!Enum.IsDefined(typeof(HeroComplexity), complexity))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(complexity), complexity,
+                    "A registered hero requires one printed complexity rating.");
+            }
+
+            if (roles == HeroRole.None || (roles & ~HeroRole.All) != HeroRole.None)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(roles), roles,
+                    "A registered hero requires one or more roles from the printed vocabulary.");
+            }
+
             HeroIdValue = heroIdValue;
             ContentId = contentId;
             DisplayName = displayName;
+            Complexity = complexity;
+            Roles = roles;
         }
 
         /// <summary>The stable hero identity every rule, projection and snapshot addresses.</summary>
@@ -60,17 +107,23 @@ namespace GuardsDigital.Core.Setup
         /// <summary>Setup step 7's own epithet, which is what a player reads on a pick screen.</summary>
         public string DisplayName { get; }
 
+        /// <summary>The profile card's one-to-four-star complexity band.</summary>
+        public HeroComplexity Complexity { get; }
+
+        /// <summary>Every role icon printed on the profile card.</summary>
+        public HeroRole Roles { get; }
+
         public HeroId HeroId => new HeroId(HeroIdValue);
 
         /// <remarks>
-        /// <b>Identity is the hero id and the printed set, never the epithet.</b> Comparing
+        /// <b>Identity is the hero id and the printed set, never presentation metadata.</b> Comparing
         /// <see cref="DisplayName"/> here violated the Phase 4 boundary that rules and application code
         /// never branch on a display name or printed text, and the Edit Mode conformance scan caught it -
-        /// the cross-platform harness structurally cannot, because that scan is Unity-only. It is also
-        /// the right semantics rather than merely the legal ones: two rows naming the same hero and the
-        /// same dealt set ARE the same registered hero, and an epithet is what a pick screen reads, not
-        /// what a rule decides on. Dropping it also makes this agree with <see cref="GetHashCode"/>,
-        /// which has only ever hashed the id.
+        /// the cross-platform harness structurally cannot, because that scan is Unity-only. Complexity
+        /// and roles share that non-identity status: they narrow a pick-screen view but do not make a new
+        /// hero. Two rows naming the same hero and the same dealt set ARE the same registered hero.
+        /// Keeping every profile field out also agrees with <see cref="GetHashCode"/>, which has only ever
+        /// hashed the id.
         /// </remarks>
         public bool Equals(RegisteredHero other) =>
             string.Equals(HeroIdValue, other.HeroIdValue, StringComparison.Ordinal) &&

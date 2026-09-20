@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.35z86 hero-pick filter completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z86 | Every registered hero carries verified profile-card complexity and roles into the existing lobby projection. The retained picker presents one unlabeled, mutually exclusive star row and one unlabeled multi-select role row; selected roles match as AND, the two families combine, and CLEAR uses the same shared button chrome. Filtering is client-local, clears a hidden highlight, preserves its state across an ordinary redraw, and states an empty result without changing availability or pick authority. Focused cross-platform and Unity Edit Mode checks passed 80/80 each; the complete affected Play Mode fixture passed 22/22 with zero skips/inconclusive, including supported viewport coverage; a 1920x1080 2-star + Durable + Healer capture was inspected with only Bain and Rowenna visible. Schema v43 and wire `/19` are unchanged; no package was requested. | `milestone/8.35z86` |
+
 ## Milestone 8.35z73 coin-award narration completion evidence
 
 | ID | Outcome | Commit |

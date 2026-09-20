@@ -1149,6 +1149,104 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator HeroProfileFilters_UseOneStarAndEverySelectedRole_AndClearWithTheSameButton()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var starButtons = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roleButtons = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            var clear = (Button)Element(driver, PrivateLobbyUnityView.HeroFilterClearName);
+            Assert.That(starButtons, Has.Length.EqualTo(4));
+            Assert.That(roleButtons, Has.Length.EqualTo(10));
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count));
+            Assert.That(clear.resolvedStyle.backgroundColor,
+                Is.EqualTo(starButtons[0].resolvedStyle.backgroundColor),
+                "CLEAR is a filter button, not a text link or separate treatment.");
+            Assert.That(clear.resolvedStyle.borderTopLeftRadius,
+                Is.EqualTo(starButtons[0].resolvedStyle.borderTopLeftRadius));
+
+            Button Star(HeroComplexity value) => starButtons.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roleButtons.Single(button =>
+                button.userData is HeroRole role && role == value);
+
+            UiPlayer.Click(Star(HeroComplexity.Complex));
+            yield return null;
+            Assert.That(driver.View.SelectedComplexityFilter, Is.EqualTo(HeroComplexity.Complex));
+            Assert.That(HeroOptions(driver).Select(button =>
+                    ((PrivateLobbyHeroOption)button.userData).Complexity),
+                Is.All.EqualTo(HeroComplexity.Complex));
+
+            UiPlayer.Click(Star(HeroComplexity.VeryComplex));
+            yield return null;
+            Assert.That(driver.View.SelectedComplexityFilter, Is.EqualTo(HeroComplexity.VeryComplex),
+                "Choosing another star replaces the first; star filters never accumulate.");
+            UiPlayer.Click(Star(HeroComplexity.VeryComplex));
+            yield return null;
+            Assert.That(driver.View.SelectedComplexityFilter, Is.Null,
+                "Clicking the active star clears it.");
+
+            UiPlayer.Click(Role(HeroRole.Durable));
+            UiPlayer.Click(Role(HeroRole.Healer));
+            yield return null;
+            Assert.That(HeroOptions(driver).Select(button =>
+                    ((PrivateLobbyHeroOption)button.userData).Roles),
+                Is.All.Matches<HeroRole>(roles =>
+                    (roles & (HeroRole.Durable | HeroRole.Healer)) ==
+                    (HeroRole.Durable | HeroRole.Healer)),
+                "Role filters combine with AND, not OR.");
+
+            UiPlayer.Click(Star(HeroComplexity.Complex));
+            yield return null;
+            CollectionAssert.AreEquivalent(
+                new[] { "hero-bain", "hero-rowenna" },
+                HeroOptions(driver).Select(button =>
+                    ((PrivateLobbyHeroOption)button.userData).HeroIdValue));
+            yield return UiPlayer.CaptureScreen(
+                "tmp/8-35z86-hero-filters-1920x1080.png");
+
+            var rowenna = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-rowenna");
+            UiPlayer.Click(rowenna);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-rowenna"));
+            UiPlayer.Click(Role(HeroRole.Sniper));
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.Empty,
+                "Filtering out the local candidate must not leave PICK HERO pointing at it.");
+            CollectionAssert.AreEqual(
+                new[] { "hero-bain" },
+                HeroOptions(driver).Select(button =>
+                    ((PrivateLobbyHeroOption)button.userData).HeroIdValue));
+
+            driver.Presenter.Refresh();
+            yield return null;
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(1),
+                "An ordinary model redraw preserves this client's local filter state.");
+
+            UiPlayer.Click(clear);
+            yield return null;
+            Assert.That(driver.View.SelectedComplexityFilter, Is.Null);
+            Assert.That(driver.View.SelectedRoleFilters, Is.Empty);
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count));
+
+            UiPlayer.Click(Star(HeroComplexity.Challenging));
+            UiPlayer.Click(Role(HeroRole.Tokens));
+            yield return null;
+            Assert.That(HeroOptions(driver), Is.Empty);
+            Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroFilterEmptyName)), Is.True,
+                "Zero matches is explicit rather than a stale highlighted hero or a blank unexplained row.");
+        }
+
+        [UnityTest]
         public IEnumerator PickerRemainsReadableAtNormalAndShortViewports()
         {
             yield return LoadTheLobby();

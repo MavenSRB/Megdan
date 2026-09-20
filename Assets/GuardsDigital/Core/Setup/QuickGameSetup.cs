@@ -217,17 +217,21 @@ namespace GuardsDigital.Core.Setup
 
         /// <summary>
         /// One row of p.6 setup step 7's line-up: the hero, the printed set it deals, the epithet
-        /// step 7 names it by, and the hero spawn point it stands on.
+        /// step 7 names it by, its profile-card complexity and roles, and the hero spawn point it
+        /// stands on.
         /// </summary>
         private readonly struct OfficialHeroRow
         {
             public OfficialHeroRow(
                 string heroIdValue, string contentId, string displayName,
+                HeroComplexity complexity, HeroRole roles,
                 string spawn, string space, TeamSide side)
             {
                 HeroIdValue = heroIdValue;
                 ContentId = contentId;
                 DisplayName = displayName;
+                Complexity = complexity;
+                Roles = roles;
                 Spawn = spawn;
                 Space = space;
                 Side = side;
@@ -236,6 +240,8 @@ namespace GuardsDigital.Core.Setup
             public string HeroIdValue { get; }
             public string ContentId { get; }
             public string DisplayName { get; }
+            public HeroComplexity Complexity { get; }
+            public HeroRole Roles { get; }
             public string Spawn { get; }
             public string Space { get; }
             public TeamSide Side { get; }
@@ -256,22 +262,35 @@ namespace GuardsDigital.Core.Setup
         {
             new OfficialHeroRow(
                 Participants.OfficialSixPlayerParticipants.WaspHeroIdValue,
-                "wasp", "Wasp the Warmaiden", "red-hero-01", "q-2_r-5", TeamSide.Red),
+                "wasp", "Wasp the Warmaiden", HeroComplexity.Challenging,
+                HeroRole.Disabler | HeroRole.Tactician | HeroRole.Sniper,
+                "red-hero-01", "q-2_r-5", TeamSide.Red),
             new OfficialHeroRow(
                 Participants.OfficialSixPlayerParticipants.XargathaHeroIdValue,
-                "xargatha", "Xargatha the Changed", "red-hero-02", "q-6_r-4", TeamSide.Red),
+                "xargatha", "Xargatha the Changed", HeroComplexity.Challenging,
+                HeroRole.Tactician | HeroRole.Pusher | HeroRole.Disabler |
+                HeroRole.Durable | HeroRole.Sniper,
+                "red-hero-02", "q-6_r-4", TeamSide.Red),
             new OfficialHeroRow(
                 Participants.OfficialSixPlayerParticipants.TigerclawHeroIdValue,
-                "tigerclaw", "Tigerclaw the Cutpurse", "red-hero-03", "q-4_r-4", TeamSide.Red),
+                "tigerclaw", "Tigerclaw the Cutpurse", HeroComplexity.Challenging,
+                HeroRole.Melee | HeroRole.Disabler | HeroRole.Farming,
+                "red-hero-03", "q-4_r-4", TeamSide.Red),
             new OfficialHeroRow(
                 Participants.OfficialSixPlayerParticipants.ArienHeroIdValue,
-                "arien", "Arien the Tidemaster", "blue-hero-01", "q-3_r10", TeamSide.Blue),
+                "arien", "Arien the Tidemaster", HeroComplexity.Challenging,
+                HeroRole.Tactician | HeroRole.Disabler | HeroRole.Durable | HeroRole.Pusher,
+                "blue-hero-01", "q-3_r10", TeamSide.Blue),
             new OfficialHeroRow(
                 Participants.OfficialSixPlayerParticipants.BroganHeroIdValue,
-                "brogan", "Brogan the Destroyer", "blue-hero-02", "q-1_r10", TeamSide.Blue),
+                "brogan", "Brogan the Destroyer", HeroComplexity.Challenging,
+                HeroRole.Durable | HeroRole.Disabler | HeroRole.Pusher | HeroRole.Farming,
+                "blue-hero-02", "q-1_r10", TeamSide.Blue),
             new OfficialHeroRow(
                 Participants.OfficialSixPlayerParticipants.SabinaHeroIdValue,
-                "sabina", "Sabina the Gunslinger", "blue-hero-03", "q-5_r11", TeamSide.Blue)
+                "sabina", "Sabina the Gunslinger", HeroComplexity.Challenging,
+                HeroRole.Tactician | HeroRole.Pusher,
+                "blue-hero-03", "q-5_r11", TeamSide.Blue)
         };
 
         /// <summary>
@@ -282,7 +301,8 @@ namespace GuardsDigital.Core.Setup
         /// dealing milestone has given it a row, and the printed formats are seated from this table.
         /// Publishing it means a hero-selection screen offers what a printed match can deal without
         /// counting or restating anything, and a hero given a row tomorrow appears in every selector the
-        /// same commit it appears here.</para>
+        /// same commit it appears here. The profile-card complexity and roles travel with that same
+        /// registered identity so a selector can filter without restating the roster.</para>
         /// <para>It is NOT the set of heroes the build can put on a board, and the difference arrived
         /// with milestone 8.35z34: Dodger the Warlock is dealt, registered and gated, but through a
         /// STAGED one-versus-one configuration rather than through this table, because that milestone
@@ -295,7 +315,8 @@ namespace GuardsDigital.Core.Setup
         /// </remarks>
         public static IReadOnlyList<RegisteredHero> RegisteredHeroes { get; } = OfficialHeroRows
             .Select(row => new RegisteredHero(
-                row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName))
+                row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName,
+                row.Complexity, row.Roles))
             .ToArray();
 
         /// <summary>
@@ -374,55 +395,78 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string MinHeroIdValue = "hero-min";
 
-        private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
+        private static readonly (
+            string HeroIdValue,
+            string ContentId,
+            string DisplayName,
+            HeroComplexity Complexity,
+            HeroRole Roles)[]
             StagedDealtHeroRows =
             {
                 // Milestone 8.35z34 dealt her; 8.35z41 makes her pickable.
-                (DodgerHeroIdValue, "dodger", "Dodger the Warlock"),
+                (DodgerHeroIdValue, "dodger", "Dodger the Warlock", HeroComplexity.Challenging,
+                    HeroRole.Damager | HeroRole.Sniper | HeroRole.Pusher |
+                    HeroRole.Farming | HeroRole.Disabler),
                 // Milestone 8.35z38 dealt her; 8.35z41 makes her pickable.
-                (MisaHeroIdValue, "misa", "Misa the Samurai"),
+                (MisaHeroIdValue, "misa", "Misa the Samurai", HeroComplexity.Complex,
+                    HeroRole.Tactician | HeroRole.Durable | HeroRole.Damager),
                 // Milestone 8.35z46 dealt her and MISSED THIS ROW; 8.35z50 corrects it. The omission is
                 // recorded rather than quietly fixed because it is the second instance of one class:
                 // the rule that a dealing adds its row here lives in this file's own doc comment and in
                 // no check, so a dealing that simply does not read it leaves its hero invisible to the
                 // selector while every other tier passes. She was fully dealt, registered, gated and
                 // journeyed at 8.35z46 - only unpickable.
-                (SilverarrowHeroIdValue, "silverarrow", "Silverarrow the Pathfinder"),
+                (SilverarrowHeroIdValue, "silverarrow", "Silverarrow the Pathfinder", HeroComplexity.Complex,
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Disabler |
+                    HeroRole.Healer | HeroRole.Farming),
                 // Milestone 8.35z50 deals him and makes him pickable in the same commit, which is what
                 // the rule above asks for.
-                (UrsafarHeroIdValue, "ursafar", "Ursafar the Savage"),
+                (UrsafarHeroIdValue, "ursafar", "Ursafar the Savage", HeroComplexity.Complex,
+                    HeroRole.Durable | HeroRole.Pusher | HeroRole.Farming | HeroRole.Melee),
                 // Milestone 8.35z53 deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. Her prep deliberately withheld this row until the
                 // registration flip landed: it makes her PICKABLE, and composing her match throws
                 // until her capabilities are registered.
-                (WhisperHeroIdValue, "whisper", "Whisper the Outcast"),
+                (WhisperHeroIdValue, "whisper", "Whisper the Outcast", HeroComplexity.Complex,
+                    HeroRole.Damager | HeroRole.Durable | HeroRole.Tactician | HeroRole.Pusher),
                 // Milestone 8.37 deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. She is the twelfth and last hero of the package arc, so
                 // with this row the selector offers every hero this build can deal.
-                (TaliHeroIdValue, "tali", "Tali the Spiritcaller"),
+                (TaliHeroIdValue, "tali", "Tali the Spiritcaller", HeroComplexity.VeryComplex,
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer |
+                    HeroRole.Durable | HeroRole.Tokens),
                 // Milestone 8.38e deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for - and which the 8.35z46 omission recorded there is the whole
                 // reason to restate. She is the THIRTEENTH, so the sentence Tali's row above wrote -
                 // "every hero this build can deal" - stays true only because this row is here.
-                (SwiftHeroIdValue, "swift", "Swift the Sharpshooter"),
+                (SwiftHeroIdValue, "swift", "Swift the Sharpshooter", HeroComplexity.VeryComplex,
+                    HeroRole.Sniper | HeroRole.Farming | HeroRole.Tactician),
                 // Milestone 8.39i deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. She is the FOURTEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
-                (CutterHeroIdValue, "cutter", "Cutter the Sky Pirate"),
+                (CutterHeroIdValue, "cutter", "Cutter the Sky Pirate", HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Farming),
                 // Milestone 8.40j deals him and makes him pickable in the same commit, which is what
                 // the rule above asks for. He is the FIFTEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
-                (BainHeroIdValue, "bain", "Bain the Bounty Hunter"),
-                (GarrusHeroIdValue, "garrus", "Garrus the Gladiator"),
-                (WidgetHeroIdValue, "widget", "Widget and Pyro"),
+                (BainHeroIdValue, "bain", "Bain the Bounty Hunter", HeroComplexity.Complex,
+                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Healer |
+                    HeroRole.Farming | HeroRole.Durable),
+                (GarrusHeroIdValue, "garrus", "Garrus the Gladiator", HeroComplexity.Complex,
+                    HeroRole.Disabler | HeroRole.Durable | HeroRole.Tactician),
+                (WidgetHeroIdValue, "widget", "Widget and Pyro", HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Pusher | HeroRole.Damager),
                 // Milestone 8.57g deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. She is the EIGHTEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
-                (RowennaHeroIdValue, "rowenna", "Rowenna the Vanguard"),
+                (RowennaHeroIdValue, "rowenna", "Rowenna the Vanguard", HeroComplexity.Complex,
+                    HeroRole.Melee | HeroRole.Durable | HeroRole.Healer |
+                    HeroRole.Farming | HeroRole.Pusher | HeroRole.Tactician),
                 // Milestone 8.61j deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. She is the NINETEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
-                (MinHeroIdValue, "min", "Min the Dragonmonk")
+                (MinHeroIdValue, "min", "Min the Dragonmonk", HeroComplexity.Complex,
+                    HeroRole.Tokens | HeroRole.Disabler | HeroRole.Damager | HeroRole.Melee)
             };
 
         /// <summary>
@@ -442,7 +486,8 @@ namespace GuardsDigital.Core.Setup
         /// </remarks>
         public static IReadOnlyList<RegisteredHero> DealtHeroes { get; } = RegisteredHeroes
             .Concat(StagedDealtHeroRows.Select(row => new RegisteredHero(
-                row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName)))
+                row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName,
+                row.Complexity, row.Roles)))
             .ToArray();
 
         /// <summary>
@@ -453,7 +498,8 @@ namespace GuardsDigital.Core.Setup
             OfficialHeroRows
                 .Select(row => (
                     new RegisteredHero(
-                        row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName),
+                        row.HeroIdValue, new HeroContentId(row.ContentId), row.DisplayName,
+                        row.Complexity, row.Roles),
                     row.Side))
                 .ToArray();
 

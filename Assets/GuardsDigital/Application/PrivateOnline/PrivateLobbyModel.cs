@@ -135,16 +135,25 @@ namespace GuardsDigital.Application
     public sealed class PrivateLobbyHeroOption
     {
         public PrivateLobbyHeroOption(
-            string heroIdValue, string displayName, bool isAvailable, string unavailableReason)
+            string heroIdValue,
+            string displayName,
+            HeroComplexity complexity,
+            HeroRole roles,
+            bool isAvailable,
+            string unavailableReason)
         {
             HeroIdValue = heroIdValue ?? string.Empty;
             DisplayName = displayName ?? string.Empty;
+            Complexity = complexity;
+            Roles = roles;
             IsAvailable = isAvailable;
             UnavailableReason = unavailableReason ?? string.Empty;
         }
 
         public string HeroIdValue { get; }
         public string DisplayName { get; }
+        public HeroComplexity Complexity { get; }
+        public HeroRole Roles { get; }
 
         /// <summary>Whether this hero may still be picked - false once anybody has taken it.</summary>
         public bool IsAvailable { get; }
@@ -890,6 +899,8 @@ namespace GuardsDigital.Application
                 heroes.Add(new PrivateLobbyHeroOption(
                     hero.HeroIdValue,
                     hero.DisplayName,
+                    hero.Complexity,
+                    hero.Roles,
                     available,
                     available
                         ? string.Empty

@@ -235,8 +235,9 @@ re-derived live rather than persisted, on `EffectRosterState`'s own standing pri
 | Field | Printed |
 | --- | --- |
 | Hero name | Tali on the profile card; **Tali the Spiritcaller** on the dashboard |
-| Complexity rating | **three stars, "Very Complex"** - the first hero above one star in the verified roster (per `TaliCardContent`'s own remarks; not independently re-read from the dashboard scan by this worker) |
-| Roles, stat profile | Not independently verified by this worker - inherited as an open item alongside the bibliographic gap above; fill from the dashboard scan when the shard is finalised |
+| Complexity rating | **three stars, "Very Complex"** - verified directly on the stored profile front |
+| Roles | **Damager, Pusher, Healer, Durable, Tokens** - verified directly on the stored profile front |
+| Stat profile | Not independently verified by this worker - inherited as an open item alongside the bibliographic gap above; fill from the dashboard scan when the shard is finalised |
 | Level track | generic 1-8 track, not hero-scoped data |
 
 ## Tali source observations
@@ -267,8 +268,8 @@ them; see the ledger rows below).
 
 - **Bibliographic provenance table** - see the caveat above. Needs a pass over the raw Tabletopia
   extraction this prep did not open.
-- **Dashboard roles and stat-bar totals** - not independently re-read by this worker; see the
-  hero-profile table above.
+- **Dashboard stat-bar totals** - not independently re-read by this worker; see the hero-profile
+  table above.
 - **RULING 21's Purple naming, presentation only.** The engine treats Purple as a fully legal,
   inert nameable colour (RULING 21). No UI affordance for drawing a Purple swatch in the naming
   control was built or verified by any worker - the six candidates are offered as

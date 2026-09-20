@@ -81,6 +81,79 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        [Test]
+        public void EveryRegisteredHeroCarriesItsVerifiedProfileStarsAndRoles()
+        {
+            var expected = new Dictionary<string, (HeroComplexity Complexity, HeroRole Roles)>
+            {
+                ["hero-wasp"] = (HeroComplexity.Challenging,
+                    HeroRole.Disabler | HeroRole.Tactician | HeroRole.Sniper),
+                ["hero-xargatha"] = (HeroComplexity.Challenging,
+                    HeroRole.Tactician | HeroRole.Pusher | HeroRole.Disabler | HeroRole.Durable | HeroRole.Sniper),
+                ["hero-tigerclaw"] = (HeroComplexity.Challenging,
+                    HeroRole.Melee | HeroRole.Disabler | HeroRole.Farming),
+                ["hero-arien"] = (HeroComplexity.Challenging,
+                    HeroRole.Tactician | HeroRole.Disabler | HeroRole.Durable | HeroRole.Pusher),
+                ["hero-brogan"] = (HeroComplexity.Challenging,
+                    HeroRole.Durable | HeroRole.Disabler | HeroRole.Pusher | HeroRole.Farming),
+                ["hero-sabina"] = (HeroComplexity.Challenging,
+                    HeroRole.Tactician | HeroRole.Pusher),
+                ["hero-dodger"] = (HeroComplexity.Challenging,
+                    HeroRole.Damager | HeroRole.Sniper | HeroRole.Pusher | HeroRole.Farming | HeroRole.Disabler),
+                ["hero-misa"] = (HeroComplexity.Complex,
+                    HeroRole.Tactician | HeroRole.Durable | HeroRole.Damager),
+                ["hero-silverarrow"] = (HeroComplexity.Complex,
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Disabler | HeroRole.Healer | HeroRole.Farming),
+                ["hero-ursafar"] = (HeroComplexity.Complex,
+                    HeroRole.Durable | HeroRole.Pusher | HeroRole.Farming | HeroRole.Melee),
+                ["hero-whisper"] = (HeroComplexity.Complex,
+                    HeroRole.Damager | HeroRole.Durable | HeroRole.Tactician | HeroRole.Pusher),
+                ["hero-tali"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Damager | HeroRole.Pusher | HeroRole.Healer | HeroRole.Durable | HeroRole.Tokens),
+                ["hero-swift"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Sniper | HeroRole.Farming | HeroRole.Tactician),
+                ["hero-cutter"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Farming),
+                ["hero-bain"] = (HeroComplexity.Complex,
+                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Healer | HeroRole.Farming | HeroRole.Durable),
+                ["hero-garrus"] = (HeroComplexity.Complex,
+                    HeroRole.Disabler | HeroRole.Durable | HeroRole.Tactician),
+                ["hero-widget"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Pusher | HeroRole.Damager),
+                ["hero-rowenna"] = (HeroComplexity.Complex,
+                    HeroRole.Melee | HeroRole.Durable | HeroRole.Healer | HeroRole.Farming | HeroRole.Pusher | HeroRole.Tactician),
+                ["hero-min"] = (HeroComplexity.Complex,
+                    HeroRole.Tokens | HeroRole.Disabler | HeroRole.Damager | HeroRole.Melee)
+            };
+
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));
+            foreach (var hero in RegisteredHeroRoster.ForThisBuild)
+            {
+                Assert.That(expected.ContainsKey(hero.HeroIdValue), Is.True, hero.HeroIdValue);
+                Assert.That(hero.Complexity, Is.EqualTo(expected[hero.HeroIdValue].Complexity), hero.HeroIdValue);
+                Assert.That(hero.Roles, Is.EqualTo(expected[hero.HeroIdValue].Roles), hero.HeroIdValue);
+                Assert.That((hero.Roles & ~HeroRole.All), Is.EqualTo(HeroRole.None), hero.HeroIdValue);
+            }
+
+            Assert.That(Enum.GetValues(typeof(HeroComplexity)).Length, Is.EqualTo(4));
+            Assert.That(Enum.GetValues(typeof(HeroRole)).Cast<HeroRole>()
+                .Count(role => role != HeroRole.None && role != HeroRole.All), Is.EqualTo(10));
+        }
+
+        [Test]
+        public void RegisteredHeroRefusesMissingOrUnknownProfileMetadata()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new RegisteredHero(
+                "hero-test", new HeroContentId("test"), "Test",
+                (HeroComplexity)0, HeroRole.Damager));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new RegisteredHero(
+                "hero-test", new HeroContentId("test"), "Test",
+                HeroComplexity.Challenging, HeroRole.None));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new RegisteredHero(
+                "hero-test", new HeroContentId("test"), "Test",
+                HeroComplexity.Challenging, HeroRole.All | (HeroRole)(1 << 15)));
+        }
+
         /// <summary>
         /// A hero the registration gains is offered by the selector with no edit to the selector -
         /// which is the actual requirement, stated as a test rather than as a comment.
@@ -116,7 +189,8 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     new RegisteredHero(
                         "hero-not-in-any-build", new HeroContentId("not-in-any-build"),
-                        "TEST - The Hero Tomorrow Deals")
+                        "TEST - The Hero Tomorrow Deals", HeroComplexity.Challenging,
+                        HeroRole.Damager)
                 })
                 .ToArray();
 

@@ -53,6 +53,11 @@ namespace GuardsDigital.Presentation.Interaction
         public const string SelectionStatusName = "gd-lobby-selection-status";
         public const string HeroesName = "gd-lobby-heroes";
         public const string HeroOptionName = "gd-lobby-hero-option";
+        public const string HeroFiltersName = "gd-lobby-hero-filters";
+        public const string HeroStarFilterName = "gd-lobby-hero-star-filter";
+        public const string HeroRoleFilterName = "gd-lobby-hero-role-filter";
+        public const string HeroFilterClearName = "gd-lobby-hero-filter-clear";
+        public const string HeroFilterEmptyName = "gd-lobby-hero-filter-empty";
         public const string HeroOverviewName = "gd-lobby-hero-overview";
         public const string WordmarkName = "gd-lobby-wordmark";
 
@@ -82,7 +87,11 @@ namespace GuardsDigital.Presentation.Interaction
         private readonly TextField port;
         private readonly TextField key;
         private readonly Label selectionStatus;
+        private readonly VisualElement heroFilters;
+        private readonly VisualElement starFilters;
+        private readonly VisualElement roleFilters;
         private readonly VisualElement heroes;
+        private readonly Label emptyHeroFilters;
         private readonly Image heroOverview;
         private readonly Label wordmark;
         private SeatId picked;
@@ -93,6 +102,23 @@ namespace GuardsDigital.Presentation.Interaction
         /// the seat then HOLDS that hero is the roster's answer.
         /// </summary>
         private string highlightedHero = string.Empty;
+        private HeroComplexity? selectedComplexity;
+        private readonly HashSet<HeroRole> selectedRoles = new HashSet<HeroRole>();
+        private PrivateLobbySelection renderedSelection = PrivateLobbySelection.NotRunning;
+
+        private static readonly HeroRole[] PrintedRoles =
+        {
+            HeroRole.Damager,
+            HeroRole.Disabler,
+            HeroRole.Durable,
+            HeroRole.Farming,
+            HeroRole.Healer,
+            HeroRole.Melee,
+            HeroRole.Pusher,
+            HeroRole.Sniper,
+            HeroRole.Tactician,
+            HeroRole.Tokens
+        };
 
         public PrivateLobbyUnityView()
         {
@@ -171,10 +197,67 @@ namespace GuardsDigital.Presentation.Interaction
             selectionStatus.style.marginTop = 10f;
             frame.Add(selectionStatus);
 
+            // Milestone 8.35z86. Two deliberately unlabeled rows: the four star readings are
+            // self-describing, and the ten printed role names need no second heading above them.
+            // Filter state belongs to this one player's view and never enters a command or projection.
+            heroFilters = new VisualElement { name = HeroFiltersName };
+            heroFilters.style.flexDirection = FlexDirection.Column;
+            frame.Add(heroFilters);
+
+            starFilters = new VisualElement();
+            starFilters.style.flexDirection = FlexDirection.Row;
+            starFilters.style.flexWrap = Wrap.Wrap;
+            foreach (HeroComplexity complexity in Enum.GetValues(typeof(HeroComplexity)))
+            {
+                var captured = complexity;
+                starFilters.Add(BuildHeroFilterButton(
+                    new string('★', (int)complexity), HeroStarFilterName,
+                    () =>
+                    {
+                        selectedComplexity = selectedComplexity == captured
+                            ? (HeroComplexity?)null
+                            : captured;
+                        RenderSelection(renderedSelection);
+                    },
+                    complexity));
+            }
+            starFilters.Add(BuildHeroFilterButton(
+                "CLEAR", HeroFilterClearName,
+                () =>
+                {
+                    selectedComplexity = null;
+                    selectedRoles.Clear();
+                    RenderSelection(renderedSelection);
+                },
+                null));
+            heroFilters.Add(starFilters);
+
+            roleFilters = new VisualElement();
+            roleFilters.style.flexDirection = FlexDirection.Row;
+            roleFilters.style.flexWrap = Wrap.Wrap;
+            foreach (var role in PrintedRoles)
+            {
+                var captured = role;
+                roleFilters.Add(BuildHeroFilterButton(
+                    role.ToString().ToUpperInvariant(), HeroRoleFilterName,
+                    () =>
+                    {
+                        if (!selectedRoles.Add(captured)) selectedRoles.Remove(captured);
+                        RenderSelection(renderedSelection);
+                    },
+                    role));
+            }
+            heroFilters.Add(roleFilters);
+
             heroes = new VisualElement { name = HeroesName };
             heroes.style.flexDirection = FlexDirection.Row;
             heroes.style.flexWrap = Wrap.Wrap;
             frame.Add(heroes);
+
+            emptyHeroFilters = Caption(
+                "NO HEROES MATCH THESE FILTERS", 16, HeroFilterEmptyName);
+            emptyHeroFilters.style.display = DisplayStyle.None;
+            frame.Add(emptyHeroFilters);
 
             controls = new VisualElement { name = ControlsName };
             controls.style.flexDirection = FlexDirection.Row;
@@ -215,6 +298,9 @@ namespace GuardsDigital.Presentation.Interaction
 
         /// <summary>The hero the next PICK HERO press would send, for a journey that reads it.</summary>
         public string HighlightedHero => highlightedHero;
+
+        public HeroComplexity? SelectedComplexityFilter => selectedComplexity;
+        public IReadOnlyCollection<HeroRole> SelectedRoleFilters => selectedRoles;
 
         /// <summary>The invitation currently typed into the entry form, plus the picked seat.</summary>
         public PrivateLobbyEntry CurrentEntry() =>
@@ -284,10 +370,13 @@ namespace GuardsDigital.Presentation.Interaction
         /// </remarks>
         private void RenderSelection(PrivateLobbySelection selection)
         {
+            renderedSelection = selection ?? PrivateLobbySelection.NotRunning;
             HideHeroOverview();
             var running = selection != null && selection.IsRunning;
             selectionStatus.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
+            heroFilters.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
             heroes.style.display = running ? DisplayStyle.Flex : DisplayStyle.None;
+            emptyHeroFilters.style.display = DisplayStyle.None;
             heroes.Clear();
             if (!running)
             {
@@ -297,17 +386,79 @@ namespace GuardsDigital.Presentation.Interaction
                 return;
             }
 
-            if (!selection.IsOwnPick || !selection.Heroes.Any(option => option.IsAvailable && option.HeroIdValue == highlightedHero))
+            var displayed = selection.Heroes.Where(MatchesHeroFilters).ToArray();
+            if (!selection.IsOwnPick || !displayed.Any(option =>
+                    option.IsAvailable && option.HeroIdValue == highlightedHero))
             {
                 highlightedHero = string.Empty;
                 HeroHighlighted?.Invoke(string.Empty);
             }
             selectionStatus.text = selection.StatusLabel;
-            foreach (var option in selection.Heroes)
+            foreach (var option in displayed)
             {
                 heroes.Add(BuildHeroOption(option, selection.IsOwnPick));
             }
+            emptyHeroFilters.style.display = displayed.Length == 0
+                ? DisplayStyle.Flex
+                : DisplayStyle.None;
+            RefreshHeroFilterHighlights();
             RefreshHeroHighlights();
+        }
+
+        private bool MatchesHeroFilters(PrivateLobbyHeroOption option)
+        {
+            if (selectedComplexity.HasValue && option.Complexity != selectedComplexity.Value)
+            {
+                return false;
+            }
+
+            var required = HeroRole.None;
+            foreach (var role in selectedRoles) required |= role;
+            return (option.Roles & required) == required;
+        }
+
+        private Button BuildHeroFilterButton(
+            string text, string name, Action pressed, object value)
+        {
+            var button = new Button(pressed)
+            {
+                name = name,
+                text = text,
+                userData = value
+            };
+            button.style.marginRight = 6f;
+            button.style.marginTop = 6f;
+            button.style.paddingLeft = 10f;
+            button.style.paddingRight = 10f;
+            button.style.minHeight = 34f;
+            ApplyButtonChrome(button);
+            return button;
+        }
+
+        private void RefreshHeroFilterHighlights()
+        {
+            foreach (var button in starFilters.Query<Button>(HeroStarFilterName).ToList())
+            {
+                SetFilterHighlight(
+                    button,
+                    selectedComplexity.HasValue &&
+                    button.userData is HeroComplexity complexity &&
+                    complexity == selectedComplexity.Value);
+            }
+
+            foreach (var button in roleFilters.Query<Button>(HeroRoleFilterName).ToList())
+            {
+                SetFilterHighlight(
+                    button,
+                    button.userData is HeroRole role && selectedRoles.Contains(role));
+            }
+        }
+
+        private static void SetFilterHighlight(VisualElement button, bool selected)
+        {
+            var edge = selected ? MatchHudTheme.CoinFace : PanelEdge;
+            var width = selected ? 2f : 1f;
+            HudElements.Border(button, edge, width, MatchHudTheme.ButtonCornerRadius);
         }
 
         private VisualElement BuildHeroOption(PrivateLobbyHeroOption option, bool isOwnPick)
