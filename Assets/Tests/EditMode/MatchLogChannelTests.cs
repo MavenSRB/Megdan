@@ -101,6 +101,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.35z73. A reward operation is already public: the recipient and their coin
+        /// total are visible on every rail. The log must carry the operation's authoritative amount
+        /// instead of asking presentation to infer it from a later balance.
+        /// </summary>
+        [Test]
+        public void ACoinAward_CarriesItsRecipientAndAuthoritativeAmount()
+        {
+            var log = MatchLogProjection.Derive(new[]
+            {
+                Entry(
+                    17,
+                    "Action.CoinAwarded",
+                    "round=2;turn=3;recipient=hero-brogan;team=red-team;defeat=defeat-7",
+                    "award=Assist;coins=2;balance=5")
+            });
+
+            Assert.That(log, Has.Count.EqualTo(1));
+            Assert.That(log[0].Kind, Is.EqualTo(MatchLogEntryKind.CoinAwarded));
+            Assert.That(log[0].SubjectHeroId, Is.EqualTo(new HeroId("hero-brogan")));
+            Assert.That(log[0].Amount, Is.EqualTo(2));
+        }
+
+        /// <summary>
         /// One line per move action, never one per hex - the contract's own first exclusion, and
         /// the reason the Move line is a fold over the steps rather than a translation of one event.
         /// </summary>
@@ -121,6 +144,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var oneForOne = new (string source, MatchLogEntryKind kind)[]
             {
+                ("Action.CoinAwarded", MatchLogEntryKind.CoinAwarded),
                 ("Action.MovementActionCompleted", MatchLogEntryKind.Move),
                 ("Action.FastTravelActionCompleted", MatchLogEntryKind.FastTravel),
                 ("Action.AttackResolutionCompleted", MatchLogEntryKind.Attack),

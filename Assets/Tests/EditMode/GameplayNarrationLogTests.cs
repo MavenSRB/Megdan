@@ -75,6 +75,24 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(line, Does.Contain("v730").And.Contain("r6").And.Contain("t2"));
         }
 
+        [Test]
+        public void TheLog_NamesTheAuthoritativeCoinAwardAmount()
+        {
+            var line = GameplayNarrationLog.Row(
+                Noon,
+                731,
+                new MatchLogEntry(
+                    2474,
+                    MatchLogEntryKind.CoinAwarded,
+                    6,
+                    2,
+                    subjectHeroId: new HeroId("hero-brogan"),
+                    amount: 2));
+
+            Assert.That(line, Does.Contain("hero-brogan"));
+            Assert.That(line, Does.Contain("2 coins"));
+        }
+
         /// <summary>
         /// Milestone 8.51. A row keeps the rule-event sequence it was derived from, and most rule
         /// events derive no row, so consecutive rows are rarely consecutive numbers: the

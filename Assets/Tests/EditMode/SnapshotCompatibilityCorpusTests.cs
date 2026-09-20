@@ -1417,6 +1417,18 @@ namespace GuardsDigital.Tests.EditMode
         // Min the Dragonmonk owns is registered until her dealing, so no capture's registration list
         // grew a character.
         //
+        // MILESTONE 8.35z73: MIGRATE, and it is an envelope-only re-pin rather than a schema move.
+        // The wire moves to `guards-private-online/19` for `CoinAwarded`, a table-public row derived
+        // one-for-one from the Defeat, assist, and minion-bounty operations the authoritative ledger
+        // already committed. Four fixtures contain one of those rewards in their retained rule-event
+        // log - `paused-level-up`, `ended-match`, `paused-card-text`, and `paused-repeated-attack` - so
+        // only their outer snapshot-envelope digests move. The measured authoritative byte lengths
+        // remain 13,902, 13,342, 12,933, and 12,807 respectively, and all twelve fixtures without a
+        // qualifying retained event remain byte-identical. Schema stays v43 because no authoritative
+        // field or meaning changed. Migrate rather than reject: an older v43 payload remains complete
+        // authoritative state and its retained log remains valid history; a newly captured envelope
+        // simply includes the public narration row when the source operation is present.
+        //
         // THE CAUSE WAS ISOLATED BEFORE A PIN WAS TOUCHED - milestone 8.38d's rule, and a dealing
         // changes far too much for "the registration did it" to be assumed. With
         // `SyntheticPlacementCapabilities` reverted to its pre-registration blob (`49c758a4`) and
@@ -1488,13 +1500,13 @@ namespace GuardsDigital.Tests.EditMode
             new CompatibilityFixture("placed-token-v43", "f46be4ad321763e5aa25dbaff404e9d0fb6427683067b0cfec2a4ff281206aa1"),
             new CompatibilityFixture("attached-marker-v43", "bf40d6c329834e9429ef2c408bd9069d66682c6a327a277878e7deb600bd7376"),
             new CompatibilityFixture("pending-correction-v43", "44c2d4967d5288b51703051ba0050c5a6ebd14eee73dd594eb232557e3c5aadd"),
-            new CompatibilityFixture("paused-level-up-v43", "95a15886c6cdc00a56767b1be8b06b8506e008cb95a4d1b8ce21dfcbdcad3fea"),
-            new CompatibilityFixture("ended-match-v43", "f19e830660a3d9390939720d1668dd361235b9e22bf75252e80a75771ac16d16"),
+            new CompatibilityFixture("paused-level-up-v43", "1d258bcf65dd00bf8948c38ad8a5cfef8318415314bcc20c5b9725aec0bed88c"),
+            new CompatibilityFixture("ended-match-v43", "26ba021803cdaf1b9f6c17e802779e3838ff5af5d16d47941f852f9be842f0bb"),
             new CompatibilityFixture("verified-hand-setup-v43", "400081ad633a6a42464a13214d17356de51d5b39d93190b0761a228e62d0b70d"),
             new CompatibilityFixture("paused-orbit-repeat-v43", "00cc75f954a013849779122ae5cb7f8fab8ac81abf7846417535659a111ecde1"),
-            new CompatibilityFixture("paused-card-text-v43", "931ed341bda916d30eabe12ade95806f866a5a22d062ba99975c6831ea5b4677"),
+            new CompatibilityFixture("paused-card-text-v43", "9516035e01d4798f80a50d4d457afa918e1a83aac6d7e183b8a84c5730c909b8"),
             new CompatibilityFixture("paused-block-rider-v43", "a6fef292c29dd77bb99345b2f4c6fd4e372d03f2648c4d3ce71a6a02329dce49"),
-            new CompatibilityFixture("paused-repeated-attack-v43", "4dc40650814f2a93891fde99a2ac80096559fa9182c56571236cbe5db8e1dacc"),
+            new CompatibilityFixture("paused-repeated-attack-v43", "6d979c130860c927ee0001a03b7fe2addb23f83c8f5488c58a82482bd5727665"),
             new CompatibilityFixture("parked-pre-action-v43", "14a942ca659c54114f201bb906f5021a4a95d7ef97d1168a0ce2550ebba691e6")
         };
 

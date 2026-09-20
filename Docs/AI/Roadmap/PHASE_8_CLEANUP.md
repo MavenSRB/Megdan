@@ -171,9 +171,24 @@ Outcome: a reported infeasible-offer loop is reproduced and corrected or documen
 
 Outcome: distinguish a rules mutation from presentation timing or an old-build report. Dependency: source-identified logs from a recurrence/final build. Closing check: reproduce through the actual commitment flow and assert no unauthorized action/state advancement; do not invent a cause for an unreproduced report.
 
-### [ ] 8.35z73 Include coin-award amounts in gameplay narration
+### [x] 8.35z73 Include coin-award amounts in gameplay narration
 
 Outcome: gameplay logs name the existing authoritative award amount. Closing check: a known award produces the correct amount in host and permitted client narration without private-state leakage. Dependency: verify the current logging path after 8.35z61; no coin-rule change.
+
+Authorized 2026-09-20 in the user's words: "8.35z73 Do this." This approval is limited to
+8.35z73; the pick-screen star and role filters mentioned beside it remain discussion only.
+
+Completed 2026-09-20. Each committed Defeat, assist, and minion-bounty `CoinResourceOperation`
+derives exactly one table-public `CoinAwarded` row naming its recipient and authoritative amount;
+host narration and the in-match tray render that row without balance inference. The closed wire
+vocabulary moves from `/18` to `/19`; snapshot schema remains v43. The four compatibility-corpus
+fixtures whose retained event logs contain a qualifying reward were explicitly migrated and
+re-pinned, while their authoritative byte lengths and the other twelve fixtures stayed unchanged.
+Failing-before compilation proved the absent vocabulary member; the corrected focused Unity Edit
+Mode run passed 189/189 and the complete cross-platform harness passed 3,947/3,947. No Play Mode
+run was selected because no scene, lifecycle, input, or asset path changed.
+
+Historical evidence: [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-835z73-coin-award-narration-completion-evidence).
 
 ### [x] 8.35z74 Repair explicitly parked player-path coverage
 

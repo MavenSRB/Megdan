@@ -596,7 +596,10 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(18),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(19),
+                "8.35z73 carries COIN-AWARD ROWS: the seat-public match log now names each " +
+                "authoritative reward recipient and amount. No bytes grew, but the closed enum " +
+                "vocabulary widened, so an /18 peer refuses rather than going dark. " +
                 "8.61e carries the SPRUNG-TRAP ROW: the seat-public match log gained " +
                 "MoveThroughTrapSprung, which is Min the Dragonmonk's mines going off - an enemy " +
                 "hero moves through a mine, it is removed, and for every blast removed that hero " +

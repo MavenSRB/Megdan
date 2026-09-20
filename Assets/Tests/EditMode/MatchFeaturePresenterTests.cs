@@ -1172,6 +1172,17 @@ namespace GuardsDigital.Tests.EditMode
                         hasOrigin: true,
                         amount: 1),
                     "A BLAST", false),
+                // Milestone 8.35z73 minted the THIRTY-FOURTH kind from the ledger operation itself,
+                // so the amount rendered here is authoritative rather than a balance delta inferred
+                // by presentation.
+                (new MatchLogEntry(
+                        sequence++,
+                        MatchLogEntryKind.CoinAwarded,
+                        1,
+                        1,
+                        subjectHeroId: hero,
+                        amount: 2),
+                    "GAINED 2 COINS", false),
             };
 
             Assert.That(cases.Select(entry => entry.Entry.Kind).Distinct().Count(),

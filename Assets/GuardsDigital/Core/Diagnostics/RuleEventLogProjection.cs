@@ -437,6 +437,21 @@ namespace GuardsDigital.Core.Diagnostics
             }
 
             Add($"Action.{ruleEvent.Kind}", references, string.Join(";", detailParts));
+
+            // Milestone 8.35z73. The reward fact is one rules checkpoint but its ledger result is
+            // one public operation per recipient. Keep the old fact row for diagnostics, then add
+            // one typed, amount-bearing row for each operation in the ledger's stable order.
+            foreach (var award in ruleEvent.CoinAwards)
+            {
+                Add(
+                    "Action.CoinAwarded",
+                    JoinReferences(
+                        roundReference,
+                        $"recipient={award.RecipientHeroId.Value}",
+                        $"team={award.RecipientTeamId.Value}",
+                        $"defeat={award.SourceOutcomeId.Value}"),
+                    $"award={award.AwardKind};coins={award.Amount};balance={award.BalanceAfter}");
+            }
         }
 
         private void Add(string eventType, string stableReferences, string detail)

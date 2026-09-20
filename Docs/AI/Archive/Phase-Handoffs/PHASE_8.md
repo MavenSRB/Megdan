@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.35z73 coin-award narration completion evidence
+
+| ID | Outcome | Commit |
+| --- | --- | --- |
+| 8.35z73 | Every authoritative Defeat, assist, and minion-bounty coin-ledger operation now derives one table-public `CoinAwarded` match-log row with its recipient and exact amount. Host narration and the in-match tray render the same typed row; no balance delta is inferred and card grants/Pity Coin keep their existing distinct narration. The closed match-log vocabulary moves private wire `/18` to `/19`; schema stays v43. Four generated snapshot envelopes with retained reward events were explicitly migrated and re-pinned while authoritative bytes and twelve unaffected fixtures remained identical. Failing-before: both new narration/channel tests could not compile because `CoinAwarded` did not exist. Green: focused Unity Edit Mode 189/189; complete cross-platform harness 3,947/3,947; living-document validation and whitespace check green. Play Mode omitted because no scene, lifecycle, input, or asset path changed. Pick-screen star/role filters remain discussion-only. | `milestone/8.35z73` |
+
 ## Milestone 8.30l Move unavailable cards from the playable hand into a right-side HUD group completion evidence
 
 | ID | Outcome | Commit |

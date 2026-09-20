@@ -510,6 +510,12 @@ namespace GuardsDigital.Presentation.Match
                         (entry.Amount == 1 ? string.Empty : "S")));
                     return;
 
+                case MatchLogEntryKind.CoinAwarded:
+                    lines.Add(Line(entry,
+                        $"{HeroName(projection, entry.SubjectHeroId)} GAINED {entry.Amount} " +
+                        (entry.Amount == 1 ? "COIN" : "COINS")));
+                    return;
+
                 case MatchLogEntryKind.GameEnded:
                 {
                     var team = TeamNameOrNull(projection, entry.SubjectTeamId);

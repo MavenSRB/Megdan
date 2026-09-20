@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -57,6 +58,24 @@ namespace GuardsDigital.Tests.EditMode
             }));
             Assert.That(result.Events, Has.None.Matches<CardActionResolutionEvent>(value =>
                 value.Kind == CardActionResolutionEventKind.DefenseResponseChoiceRequested));
+
+            var rewardEvent = result.Events.Single(value =>
+                value.Kind == CardActionResolutionEventKind.MinionRewardAwarded);
+            Assert.That(rewardEvent.CoinAwards, Has.Count.EqualTo(1));
+            Assert.That(rewardEvent.CoinAwards[0].Amount, Is.EqualTo(expectedCoins));
+
+            var diagnosticLog = new RuleEventLogProjection();
+            diagnosticLog.Append(new[]
+            {
+                RoundResolutionEvent.FromTurn(
+                    1,
+                    1,
+                    TurnResolutionEvent.FromAttackAction(rewardEvent))
+            });
+            var publicAward = MatchLogProjection.Derive(diagnosticLog.Entries).Single();
+            Assert.That(publicAward.Kind, Is.EqualTo(MatchLogEntryKind.CoinAwarded));
+            Assert.That(publicAward.SubjectHeroId, Is.EqualTo(fixture.AttackerId));
+            Assert.That(publicAward.Amount, Is.EqualTo(expectedCoins));
         }
 
         /// <summary>

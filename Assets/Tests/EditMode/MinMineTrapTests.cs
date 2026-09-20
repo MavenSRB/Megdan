@@ -596,7 +596,8 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(18),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(19),
+                "8.35z73 added CoinAwarded after this fixture added MoveThroughTrapSprung. " +
                 "A new member of a closed wire vocabulary is a breaking change even when no byte " +
                 "of the frame moves: an older peer's Enum.IsDefined refuses the whole frame.");
         }

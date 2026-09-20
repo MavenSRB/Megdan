@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-09-18
+Last updated: 2026-09-20
 
 ## Purpose and authority
 
@@ -8,15 +8,22 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; eighteen playable heroes, including Widget and Pyro; every composed hero dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v43 persists the current state; wire protocol is `guards-private-online/18`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the seventeen p.20 Handicap cards p.6 returns to the box at setup. All eighteen heroes are dealt, registered and pass the permanent player-path gate; the [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; eighteen playable heroes, including Widget and Pyro; every composed hero dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v43 persists the current state; wire protocol is `guards-private-online/19`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the seventeen p.20 Handicap cards p.6 returns to the box at setup. All eighteen heroes are dealt, registered and pass the permanent player-path gate; the [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. The user accepted a clean completed internet 2v2 on the previous build as closing [8.36](Roadmap/PHASE_8.md); its amendment preserves unverified cases and the separate review. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.68**.
-- Active authorized milestone: **None**.
+- Current completed milestone: **8.35z73**.
+- Active authorized milestone: **none**.
 - Next proposed milestone: **8.35z71**.
+
+On 2026-09-20 the user explicitly authorized and completed
+**[8.35z73](Roadmap/PHASE_8_CLEANUP.md)**: each authoritative Defeat, assist, and minion-bounty
+award now produces one table-public narration row naming its recipient and amount. Coin rules and
+snapshot schema v43 are unchanged; the closed match-log vocabulary moves the wire to
+`guards-private-online/19`. Pick-screen star and role filters remain discussion only and are not
+authorized for implementation or roadmap amendment.
 
 On 2026-09-18 the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** ("Ok, get on it then"); **8.46 is complete** (8.46a-8.46g): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press.
 

@@ -172,7 +172,14 @@ namespace GuardsDigital.Core.Diagnostics
         /// hero, which is one for a blast and none for a dud. It carries no card, because the hero it
         /// is about played none.</para>
         /// </summary>
-        MoveThroughTrapSprung = 33
+        MoveThroughTrapSprung = 33,
+
+        /// <summary>
+        /// Milestone 8.35z73. One authoritative Defeat, assist, or minion-bounty operation naming
+        /// its public recipient and amount. Card-effect and Pity Coin grants retain their existing
+        /// rows because they are different rules sources.
+        /// </summary>
+        CoinAwarded = 34
     }
 
     /// <summary>
@@ -310,7 +317,7 @@ namespace GuardsDigital.Core.Diagnostics
 
         /// <summary>
         /// The one number the line carries, in that line's own units: the Level bought, the coins
-        /// collected, or the Life counters spent. Zero where the kind names no quantity.
+        /// collected or awarded, or the Life counters spent. Zero where the kind names no quantity.
         /// </summary>
         public int Amount { get; }
 

@@ -244,6 +244,9 @@ namespace GuardsDigital.Application
                     return hero + " gained an item";
                 case MatchLogEntryKind.PityCoinCollected:
                     return hero + " collected " + Int(entry.Amount) + " coin(s)";
+                case MatchLogEntryKind.CoinAwarded:
+                    return hero + " gained " + Int(entry.Amount) +
+                        (entry.Amount == 1 ? " coin" : " coins");
 
                 case MatchLogEntryKind.GameEnded:
                     return "the match ended; " + team + " won";

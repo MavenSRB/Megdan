@@ -86,6 +86,12 @@ namespace GuardsDigital.Tests.EditMode
             var lifeSpent = fixture.IndexOfCardActionEvent(CardActionResolutionEventKind.TeamLifeSpent);
             Assert.That(afterAttack, Is.GreaterThan(lifeSpent));
             Assert.That(actionEnded, Is.GreaterThan(afterAttack));
+
+            var rewardEvent = fixture.LastCardActionEvents.Single(value =>
+                value.Kind == CardActionResolutionEventKind.HeroDefeatRewardAwarded);
+            Assert.That(rewardEvent.CoinAwards, Is.EqualTo(defeat.Reward.Operations),
+                "The public event carries each authoritative Defeat and assist operation in the " +
+                "ledger's stable recipient order.");
         }
 
         [Test]
@@ -1015,9 +1021,12 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             public IReadOnlyList<CardActionResolutionEventKind> LastCardActionEventKinds =>
+                LastCardActionEvents.Select(step => step.Kind).ToArray();
+
+            public IReadOnlyList<CardActionResolutionEvent> LastCardActionEvents =>
                 lastSteps
                     .Where(step => step.Kind == ResolutionStepKind.Fact)
-                    .Select(step => step.Fact.Kind)
+                    .Select(step => step.Fact)
                     .ToArray();
 
             public int IndexOfCheckpoint(TimingCheckpoint checkpoint)

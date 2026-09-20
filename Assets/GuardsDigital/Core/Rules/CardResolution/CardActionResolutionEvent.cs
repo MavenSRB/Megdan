@@ -90,7 +90,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId blockingHeroId = default,
             CardInstanceId blockingCardInstanceId = default,
             CardInstanceId revealedCardInstanceId = default,
-            int moveThroughTrapCardsOwed = 0)
+            int moveThroughTrapCardsOwed = 0,
+            IEnumerable<CoinResourceOperation> coinAwards = null)
         {
             if (kind == CardActionResolutionEventKind.None)
             {
@@ -154,6 +155,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             BlockingCardInstanceId = blockingCardInstanceId;
             RevealedCardInstanceId = revealedCardInstanceId;
             MoveThroughTrapCardsOwed = moveThroughTrapCardsOwed;
+            CoinAwards = Array.AsReadOnly((coinAwards ?? Enumerable.Empty<CoinResourceOperation>()).ToArray());
         }
 
         public CardActionResolutionEventKind Kind { get; }
@@ -178,6 +180,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// discards a card, if able".
         /// </summary>
         public int MoveThroughTrapCardsOwed { get; }
+
+        /// <summary>
+        /// Milestone 8.35z73. The authoritative ledger operations performed by a reward fact, in
+        /// recipient order. Empty on every other event. Carrying the operations here lets the
+        /// public log state the actual award rather than infer a delta from a later balance.
+        /// </summary>
+        public IReadOnlyList<CoinResourceOperation> CoinAwards { get; }
 
         public ActionResolutionId ResolutionId { get; }
 
@@ -619,7 +628,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 resolution.ActionDefinitionId, default, resolution.ActorId, default,
                 resolution.CurrentStepId, 0, resolution.AttackTotal, default, 0,
                 AttackResolutionOutcome.AttackSuccessful, default, default,
-                factKind, resolution.TargetMinionId, defeat.Defeat.Id);
+                factKind, resolution.TargetMinionId, defeat.Defeat.Id,
+                coinAwards: factKind == MinionDefeatFactKind.RewardAwarded
+                    ? defeat.Reward.Operations
+                    : null);
         }
 
         /// <summary>
@@ -708,7 +720,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     ? defeat.ResolvedUnresolvedCardId
                     : default,
                 spent,
-                remaining);
+                remaining,
+                coinAwards: factKind == HeroDefeatFactKind.RewardAwarded
+                    ? defeat.Reward.Operations
+                    : null);
         }
 
         private static string FactStepSuffix(HeroDefeatFactKind factKind)
@@ -756,7 +771,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 RemainingLifeCounters == other.RemainingLifeCounters &&
                 BlockingHeroId.Equals(other.BlockingHeroId) &&
                 BlockingCardInstanceId.Equals(other.BlockingCardInstanceId) &&
-                RevealedCardInstanceId.Equals(other.RevealedCardInstanceId);
+                RevealedCardInstanceId.Equals(other.RevealedCardInstanceId) &&
+                (CoinAwards ?? Array.Empty<CoinResourceOperation>()).SequenceEqual(
+                    other.CoinAwards ?? Array.Empty<CoinResourceOperation>());
         }
 
         public override bool Equals(object obj)

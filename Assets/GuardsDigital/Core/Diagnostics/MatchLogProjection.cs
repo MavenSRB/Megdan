@@ -79,6 +79,7 @@ namespace GuardsDigital.Core.Diagnostics
             ActionPrefix + nameof(CardActionResolutionEventKind.SkillEffectNodeStopped);
         private static readonly string CardTextApplied =
             ActionPrefix + nameof(CardActionResolutionEventKind.CardTextApplied);
+        private const string CoinAwarded = ActionPrefix + "CoinAwarded";
 
         // Milestone 8.40f. The one card-text fact this channel carries, because it is the only one
         // whose whole purpose is to be seen by every seat: a reveal that nothing published would be a
@@ -473,6 +474,15 @@ namespace GuardsDigital.Core.Diagnostics
                         subjectHeroId: Hero(references, entry),
                         amount: Number(detail, "coins"));
 
+                case MatchLogEntryKind.CoinAwarded:
+                    return new MatchLogEntry(
+                        entry.Sequence, kind, round, turn,
+                        subjectHeroId: Optional(
+                            references, "recipient", value => new HeroId(value)),
+                        subjectTeamId: Optional(
+                            references, "team", value => new TeamId(value)),
+                        amount: Number(detail, "coins"));
+
                 case MatchLogEntryKind.GameEnded:
                     return new MatchLogEntry(
                         entry.Sequence, kind, round, turn,
@@ -582,6 +592,7 @@ namespace GuardsDigital.Core.Diagnostics
             if (type == HeroLevelUpCardUpgraded) return MatchLogEntryKind.CardUpgraded;
             if (type == HeroLevelUpItemGained) return MatchLogEntryKind.ItemGained;
             if (type == PityCoinCollected) return MatchLogEntryKind.PityCoinCollected;
+            if (type == CoinAwarded) return MatchLogEntryKind.CoinAwarded;
             if (type == NextRoundStarted) return MatchLogEntryKind.RoundStarted;
             if (type == RoundCompleted) return MatchLogEntryKind.RoundCompleted;
             if (type == TurnSlotRecorded) return MatchLogEntryKind.TurnStarted;

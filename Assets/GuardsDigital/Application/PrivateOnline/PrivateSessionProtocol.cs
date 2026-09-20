@@ -304,7 +304,13 @@ namespace GuardsDigital.Application
         // SCHEMA IS UNMOVED at v43: the row is re-derived from the retained rule-event log, and what a
         // pause the trap opens carries across a snapshot is an ordinary effect interrupt, whose kind
         // the card-action payload already writes as an int. No corpus digest or pinned constant moves.
-        public const int Version = 18;
+        // Version 19 (milestone 8.35z73) carries the COIN-AWARD ROW. `MatchLogEntryKind` gains
+        // `CoinAwarded`, one row for each authoritative Defeat, assist, or minion-bounty ledger
+        // operation. The existing subject and amount fields name the recipient and exact award; no
+        // frame field or authoritative snapshot state is added. As with version 18, the closed enum
+        // vocabulary makes the otherwise layout-neutral addition breaking, so version 18 peers are
+        // refused before they can encounter a kind they do not declare. Schema therefore remains v43.
+        public const int Version = 19;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.
