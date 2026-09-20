@@ -853,8 +853,16 @@ namespace GuardsDigital.Tests.EditMode
                 "and he deals nothing, which is what keeps the dealt-corpus validator - which " +
                 "validates every dealt face against the capabilities this build REGISTERS - green " +
                 "while his set is being composed.");
-            Assert.That(BrynnCardContent.AllDefinitions, Has.Count.EqualTo(4),
-                "while the four faces this block composes are visible to every content sweep.");
+            Assert.That(BrynnCardContent.ObstacleDefinitions, Has.Count.EqualTo(4),
+                "while the four faces this block composes are still exactly four.");
+            Assert.That(
+                BrynnCardContent.AllDefinitions.Select(definition => definition.Id.Value).ToArray(),
+                Is.SupersetOf(
+                    BrynnCardContent.ObstacleDefinitions
+                        .Select(definition => definition.Id.Value).ToArray()),
+                "and every one of them is visible to the content sweeps that read the aggregate - " +
+                "which is the claim rather than the aggregate's SIZE, because each wave block of his " +
+                "series appends its own faces to it.");
         }
 
         // -------------------------------------------------------------------------------------------
