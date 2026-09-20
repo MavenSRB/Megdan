@@ -316,3 +316,13 @@ Non-goals: the columns, their numbers or their headers.
 Completed 2026-09-20 (`de886e51`, squash-merged from `bc270186` on `8.62-hud-cues`; the user approved the photograph). `VictoryScreenModels.Legend` and its rows retired from the view and the models; the 8.53 fixtures that asserted the legend assert its absence; the column headers sit over their numbers in both variants (the user's "spacing" remark was first read against these columns and their alignment was checked in the same pass); `VictoryScreenPhotographPlayModeTests` writes team-win and solo-win photographs under `tmp/864-captures/` at 1920x1080. Schema and wire unmoved; suites as 8.62's.
 
 Historical evidence: [8.64 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-864-victory-legend-dropped-completion-evidence).
+
+### [ ] 8.65 Package the nineteen-hero playtest build
+
+Authorized 2026-09-20 by the user ("just cut the build after everything lands"), after 8.61k and the three HUD corrections 8.62-8.64 landed. The build carries 8.61-8.61k (Min the Dragonmonk, the nineteenth hero, dealt with her real artwork, her three token kinds and gated), 8.62 (the target cue as the user settled it), 8.63 (the decision window topmost, the defence breakdown content-sized) and 8.64 (the victory legend dropped).
+
+Outcome: `Builds/Playtest-8.61-min` and its zip, built from main at the tag of the last landed milestone by the 8.44 recipe (bundleVersion `1.0-8.61-min`, `Invoke-PlayerBuildSmoke.ps1`, the launcher batch, READ ME FIRST, PACKAGE MANIFEST, BUILD IDENTITY), launched once from its own folder.
+
+Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged commit (the MERGED main, since Min's gate and the HUD block were each proved on their own branch); the packaged exe launches and reaches the lobby; the identity stamp names the commit; Min pickable in the packaged lobby with her pick card, her standee and her five token faces.
+
+Non-goals: new gameplay; MI-Q13k's ruling (the build ships the measured reading; the ruling is content work after it).
