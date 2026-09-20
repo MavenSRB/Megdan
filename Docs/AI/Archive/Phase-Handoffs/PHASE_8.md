@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69d Brynn tracking swaps completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69d | Tread Lightly, Cover Tracks and Hide Traces as deferred content: one new selection handler type `brynn-tracking-swap-subject@1` over the union of the adjacent ring and the narrowed enemy heroes in the printed Radius (Whisper's `choose-swap-subject@1` refused because its hero arm reads Range - BR-Q17d), `synthetic-swap-actor@1` and the trailing `synthetic-direct-move@3` (May 1 / UpTo 2) from the exchange's published space; the impossible swap stopping the whole action. No registration, no enum ordinal, no pin moved, schema v43 and wire /19 unmoved. `BrynnTrackingSwapTests` 53; harness 4001/4001; focused Edit Mode 53/53. Landed as `2b246051` (squash of `80e22ef7` on `8.69d-tracking-swaps`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869d-support-the-tracking-swaps). | `milestone/8.69d` |
+
 ## Milestone 8.69a Brynn obstacle adjacency completion evidence
 
 | Milestone | Outcome and definition | Commit |

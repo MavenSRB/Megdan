@@ -48,13 +48,17 @@ Acceptance: two performances each choosing either bullet, the second excluding t
 
 Non-goals: the split attacks, the swaps, the traps, dealing.
 
-### [ ] 8.69d Support the tracking swaps
+### [x] 8.69d Support the tracking swaps
 
 Outcome: Tread Lightly, Cover Tracks and Hide Traces swap Brynn with a unit adjacent to him or with an enemy hero in radius adjacent to 3 or more obstacles; Cover Tracks may then move him 1 space and Hide Traces moves him up to 2.
 
 Acceptance: one choice over the union of the two reaches; friendly and enemy, hero and minion in the adjacent arm; immunity honoured for the swap subject (p.19: a swap targets); the swap neither movement nor placement; the trailing moves as Brynn's own card-text moves, optional for Cover Tracks and "up to" for Hide Traces; the Ultimate widening the radius arm to every enemy hero in radius; Undo and restore across the pauses. Compose Tread Lightly, Cover Tracks and Hide Traces. T2 minimum.
 
 Non-goals: the split attacks, Decoy, the guides, the traps, dealing.
+
+Completed 2026-09-21 (`2b246051`, squash-merged from `80e22ef7` on `8.69d-tracking-swaps`). Reused unchanged: `synthetic-swap-actor@1` (`SwapEligiblePieceKind.Unit`), `synthetic-direct-move@3` (`DirectMoveDestinationPolicy.Unrestricted`, the mover bound to the exchange's published space - BR-Q20d), `EffectFailurePolicy.May` / `UpTo`, 8.69a's `ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles`, `RadiusValueQuery`, `RosterPresenceQuery.FindUnitsWithin`, `TargetQuery.IsPrevented`, `RestrictionQuery.TryGetRestriction`. Delta: ONE new handler type, the deferred selection `brynn-tracking-swap-subject@1` (no parameters; outputs `chosenSpace`, `chosenHero`, `chosenMinion`) over the union of p.19's ring (either side, hero or minion, the actor excluded) and the enemy heroes in the card's printed Radius with items who satisfy the predicate, de-duplicated (BR-Q19d: a hero satisfying both arms is one candidate), immunity asked in both the enclosing activity and `RuleActivity.Swap` plus the Swap restriction (BR-Q18d: exactly what the consuming exchange asks); `BrynnComponentContent.SwapDeferredHandlers()` / `SwapRegisteredHandlers()` (empty), `BrynnEffectContent.TrackingSwap(cardId, revision, moveDistance, moveIsUpTo)`, `BrynnCardContent.PrimarySkill`; Tread Lightly, Cover Tracks and Hide Traces under `brynn-8-69d-prep`, `ComposedFaces()` concatenating `SwapDefinitions`. BR-Q17d: Whisper's `choose-swap-subject@1` is the WRONG contract despite matching the grammar - its hero arm reads Range, and Hide Traces prints Radius 3 with a Range item, so it would measure the swap with an icon the card does not print and widen it with the wrong item (a fixture measures this and pins Whisper's parameter list untouched). BR-Q10's impossible-swap half built as the shard states: the stop is of the action, so Cover Tracks' "You may move" is never reached either. Noted, not built: the shipped `ChooseSwapSubjectHandler` asks only `RuleActivity.Swap`, so a unit immune to the Skill but not to Swap is offered there and then refused - a latent gap in Whisper's contract. Unverified until registration: the enclosing action pipeline and a seat-level Undo (proved instead: a restore across the pending trailing move and byte-identical replay of two independent walks). `BrynnTrackingSwapTests` 53 cases (with `BrynnObstacleAdjacencyTests`' aggregate-count assertion restated as a superset); no new enum ordinal, no claim moved; harness 4001/4001; focused Edit Mode 53/53; schema v43 and wire /19 unmoved; no pin moved.
+
+Historical evidence: [8.69d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-869d-brynn-tracking-swaps-completion-evidence).
 
 ### [ ] 8.69e Support the traps and the grit
 
