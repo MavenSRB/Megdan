@@ -19,8 +19,9 @@ namespace GuardsDigital.Presentation.Match
     /// <c>gd-victory-block-tag</c> in its header and <c>gd-victory-head-&lt;column&gt;</c> over its
     /// columns, then one <c>gd-victory-row</c> per hero carrying <c>gd-victory-portrait</c>,
     /// <c>gd-victory-name</c>, the rail's own <c>gd-hero-worth</c> badge and one
-    /// <c>gd-victory-cell-&lt;column&gt;</c> per number; and <c>gd-victory-legend</c> under them
-    /// all.</para>
+    /// <c>gd-victory-cell-&lt;column&gt;</c> per number. Milestone 8.64 took the column glossary that
+    /// used to stand under them all off the screen at the user's direction: "Remove this from victory
+    /// screen."</para>
     ///
     /// <para><b>There are no controls on it.</b> The user asked for a scoreboard, not a menu: there is
     /// no rematch flow in this build and leaving a match belongs to the lobby surface outside the match
@@ -71,9 +72,6 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The win-condition sentence under the banner.</summary>
         public const float CauseHeight = 34f;
-
-        /// <summary>The legend band under the tables.</summary>
-        public const float LegendHeight = 56f;
 
         /// <summary>The scrim's opacity over the board behind it.</summary>
         public const float ScrimAlpha = 0.92f;
@@ -130,7 +128,6 @@ namespace GuardsDigital.Presentation.Match
         private readonly Label cause;
         private readonly VisualElement panel;
         private readonly VisualElement blocks;
-        private readonly VisualElement legend;
 
         public VictoryScreenUnityView()
         {
@@ -182,12 +179,6 @@ namespace GuardsDigital.Presentation.Match
             blocks.style.flexDirection = FlexDirection.Column;
             blocks.style.marginTop = 10f;
             panel.Add(blocks);
-
-            legend = new VisualElement { name = "gd-victory-legend" };
-            legend.style.flexDirection = FlexDirection.Row;
-            legend.style.flexWrap = Wrap.Wrap;
-            legend.style.marginTop = 12f;
-            panel.Add(legend);
         }
 
         /// <summary>The scrim, which the renderer sizes to the whole viewport.</summary>
@@ -212,7 +203,9 @@ namespace GuardsDigital.Presentation.Match
         /// </summary>
         public static float PanelHeightAt(VictoryScreenViewModel model)
         {
-            var height = (PanelPadding * 2f) + BannerHeight + CauseHeight + 10f + LegendHeight + 12f;
+            // Milestone 8.64 took the 56-unit column glossary and its 12 units of breath off the
+            // bottom of this sum, at the user's direction: "Remove this from victory screen."
+            var height = (PanelPadding * 2f) + BannerHeight + CauseHeight + 10f;
             if (model == null)
             {
                 return height;
@@ -245,7 +238,6 @@ namespace GuardsDigital.Presentation.Match
         private void Rebuild()
         {
             blocks.Clear();
-            legend.Clear();
             if (Model == null)
             {
                 Root.style.display = DisplayStyle.None;
@@ -261,25 +253,6 @@ namespace GuardsDigital.Presentation.Match
             {
                 blocks.Add(BuildBlock(block));
             }
-
-            foreach (var entry in Model.Legend)
-            {
-                legend.Add(BuildLegendEntry(entry));
-            }
-        }
-
-        private static VisualElement BuildLegendEntry(VictoryScreenLegendEntry entry)
-        {
-            var row = new VisualElement { name = "gd-victory-legend-entry" };
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.alignItems = Align.Center;
-            row.style.marginRight = 22f;
-            row.style.marginTop = 2f;
-            var term = HudElements.Text(entry.Term, 11f, MatchHudTheme.PrimaryText, FontStyle.Bold);
-            term.style.marginRight = 5f;
-            row.Add(term);
-            row.Add(HudElements.Text(entry.Description, 11f, MatchHudTheme.MutedText));
-            return row;
         }
 
         private static VisualElement BuildBlock(VictoryScreenBlockViewModel model)
@@ -345,6 +318,23 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
+        /// Milestone 8.64, at the user's direction on the shipped capture: "I think spacing is a bit
+        /// off here."
+        ///
+        /// <para><b>What they were looking at.</b> The column's box was already shared - 8.58 made the
+        /// header cell and every value cell one width - but both were anchored MIDDLE RIGHT, so a long
+        /// header ("Attacks at heroes") filled its box while the one-digit number under it sat at the
+        /// box's right edge. Their edges matched and their INK did not: the number read as drifting
+        /// right of its own heading, and further with every wider column across the row.</para>
+        ///
+        /// <para>One anchor for both rows fixes it without moving a single box: the heading and the
+        /// number are centred in the same column, so the number stands under the middle of the words
+        /// that name it. The hero column is not a number column and keeps its own left-to-right
+        /// identity row.</para>
+        /// </summary>
+        private const TextAnchor NumberColumnAlignment = TextAnchor.MiddleCenter;
+
+        /// <summary>
         /// Milestone 8.58. One column's geometry, applied identically to the header cell and to every
         /// hero row's cell in that column - which is the whole of what makes the table a grid.
         ///
@@ -385,7 +375,7 @@ namespace GuardsDigital.Presentation.Match
                 ApplyColumnGeometry(cell, ColumnWidths[column], isHeroColumn: false);
                 cell.style.letterSpacing = 1.4f;
                 cell.style.whiteSpace = WhiteSpace.NoWrap;
-                cell.style.unityTextAlign = TextAnchor.MiddleRight;
+                cell.style.unityTextAlign = NumberColumnAlignment;
                 cell.style.overflow = Overflow.Hidden;
                 row.Add(cell);
             }
@@ -438,7 +428,7 @@ namespace GuardsDigital.Presentation.Match
                 label.name = cell.ElementName;
                 ApplyColumnGeometry(label, ColumnWidths[cell.Column], isHeroColumn: false);
                 label.style.whiteSpace = WhiteSpace.NoWrap;
-                label.style.unityTextAlign = TextAnchor.MiddleRight;
+                label.style.unityTextAlign = NumberColumnAlignment;
                 label.style.overflow = Overflow.Hidden;
                 label.tooltip = cell.Header + ": " + cell.Text;
                 row.Add(label);

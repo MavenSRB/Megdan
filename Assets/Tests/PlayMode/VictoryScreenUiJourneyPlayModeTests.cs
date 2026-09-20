@@ -221,10 +221,15 @@ namespace GuardsDigital.Tests.PlayMode
                     "and no column is cut off the right-hand edge at " + label + ".");
             }
 
-            var legend = UiPlayer.Descendants(panel)
-                .Single(element => element.name == "gd-victory-legend");
-            Assert.That(legend.worldBound.yMax, Is.LessThanOrEqualTo(panel.worldBound.yMax + snap),
-                "and the legend under the tables is inside it too at " + label + ".");
+            // Milestone 8.64, at the user's direction: "Remove this from victory screen." The band of
+            // phrases that used to explain every column ("Level p.15's Hero Level as the match
+            // ended", and seven more) is gone, and this fixture - which used to measure that it fitted
+            // inside the panel - now states that nothing of it is drawn at all.
+            Assert.That(
+                UiPlayer.Descendants(panel).Where(element =>
+                    element.name != null && element.name.StartsWith("gd-victory-legend")),
+                Is.Empty,
+                "Nothing under the tables explains their columns at " + label + ".");
 
             AssertTheTableIsAGrid(panel, label, snap);
         }
@@ -267,10 +272,23 @@ namespace GuardsDigital.Tests.PlayMode
                         "The " + VictoryScreenLabels.Header(column) + " header is inside the panel " +
                         "at " + label + ": " + header.worldBound + " against " + panel.worldBound);
 
+                    // Milestone 8.64, at the user's direction on the shipped capture ("I think
+                    // spacing is a bit off here"): one column means one BOX and one ANCHOR. The boxes
+                    // already matched; both rows were anchored middle-right, so a one-digit number
+                    // sat at the right edge of a box its long heading filled, and read as drifting.
+                    Assert.That(header.resolvedStyle.unityTextAlign,
+                        Is.EqualTo(TextAnchor.MiddleCenter),
+                        "The " + VictoryScreenLabels.Header(column) + " heading is centred in its " +
+                        "column at " + label + ".");
+
                     foreach (var row in rows)
                     {
                         var cell = UiPlayer.Descendants(row)
                             .Single(element => element.name == VictoryScreenLabels.CellName(column));
+                        Assert.That(cell.resolvedStyle.unityTextAlign,
+                            Is.EqualTo(header.resolvedStyle.unityTextAlign),
+                            "and every number under it is anchored the same way, which is what puts " +
+                            "it under its own heading at " + label + ".");
                         Assert.That(cell.worldBound.xMin,
                             Is.EqualTo(header.worldBound.xMin).Within(snap),
                             "The " + VictoryScreenLabels.Header(column) + " cell sits under its own " +

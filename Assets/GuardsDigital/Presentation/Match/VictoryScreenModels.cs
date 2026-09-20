@@ -163,48 +163,11 @@ namespace GuardsDigital.Presentation.Match
         public static string HeaderCellName(VictoryScreenColumn column) =>
             "gd-victory-head-" + ElementSuffix(column);
 
-        /// <summary>
-        /// One short phrase per column, plus the worth badge beside the name.
-        ///
-        /// <para><b>Two of the mockup's phrases are corrected against the authority that counts
-        /// them.</b> "Minions Killed" is not "minions defeated by this hero's attacks" - milestone
-        /// 8.53's accumulator counts a minion Defeat asked for by card text too. And "Times defended"
-        /// is not narrowed to enemy HERO attacks: what is counted is every
-        /// <c>AttackSuccessfullyDefended</c> whose target is this hero. The screen says what the
-        /// number is, not what a mockup guessed it was.</para>
-        /// </summary>
-        public static IReadOnlyList<VictoryScreenLegendEntry> Legend { get; } = Array.AsReadOnly(new[]
-        {
-            new VictoryScreenLegendEntry("Level", "p.15's Hero Level as the match ended"),
-            new VictoryScreenLegendEntry("Kills", "enemy heroes this hero defeated"),
-            new VictoryScreenLegendEntry("Deaths", "times this hero was defeated"),
-            new VictoryScreenLegendEntry(
-                "Attacks at heroes", "attack actions that targeted an enemy hero, defended or not"),
-            new VictoryScreenLegendEntry(
-                "Times defended", "attacks on this hero that were successfully defended"),
-            new VictoryScreenLegendEntry(
-                "Minions Killed", "minions this hero defeated, by attack or by card text"),
-            new VictoryScreenLegendEntry(
-                "Coins earned", "every coin collected over the match, not what is held now"),
-            new VictoryScreenLegendEntry("Worth", "what defeating this hero pays and costs")
-        });
-    }
-
-    /// <summary>One term of the legend under the tables, and the phrase that explains it.</summary>
-    public sealed class VictoryScreenLegendEntry
-    {
-        public VictoryScreenLegendEntry(string term, string description)
-        {
-            Term = string.IsNullOrWhiteSpace(term)
-                ? throw new ArgumentException("A legend entry names a column.", nameof(term))
-                : term;
-            Description = string.IsNullOrWhiteSpace(description)
-                ? throw new ArgumentException("A legend entry says what the column is.", nameof(description))
-                : description;
-        }
-
-        public string Term { get; }
-        public string Description { get; }
+        // Milestone 8.64. THE COLUMN GLOSSARY IS GONE, at the user's direction: "Remove this from
+        // victory screen." A band under the tables used to spell every header out - "Level p.15's Hero
+        // Level as the match ended", "Kills enemy heroes this hero defeated", and six more - and the
+        // headers now stand on their own. Nothing replaced it: the screen says who won, what won it,
+        // and the numbers under their own headings.
     }
 
     /// <summary>
@@ -394,8 +357,6 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentException(
                     "An ended match has at least the block that won it.", nameof(blocks));
             }
-
-            Legend = VictoryScreenLabels.Legend;
         }
 
         public long Version { get; }
@@ -415,8 +376,6 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The winners' block first, then everybody else.</summary>
         public IReadOnlyList<VictoryScreenBlockViewModel> Blocks { get; }
-
-        public IReadOnlyList<VictoryScreenLegendEntry> Legend { get; }
 
         /// <summary>Every row on the screen, in the order the blocks print them.</summary>
         public IEnumerable<VictoryScreenRowViewModel> Rows => Blocks.SelectMany(block => block.Rows);
