@@ -100,6 +100,16 @@ namespace GuardsDigital.Core.Rules.Modifications
                 case RuleValueApplicability.ControllerBasicAction:
                     return actionClassification == CardClassification.Basic;
 
+                // Milestone 8.69a. "While you are performing actions", with no class of action named.
+                // The two conditions above have already established that the hero this declaration
+                // affects is both the controller of the card being resolved and the chooser, which is
+                // the whole of what this scope asks - so every modal of that hero's is reached. No
+                // declaration in the build carries it on this family today; the arm is stated rather
+                // than left to the default below, because "any action" and "says nothing here" are
+                // different answers and a reader must not have to guess which one silence meant.
+                case RuleValueApplicability.ControllerAction:
+                    return true;
+
                 default:
                     // ControllerBasicAttackAction is a value declaration's scope and names an Attack's
                     // printed number; a modal's cardinality is not a value on a channel, so a

@@ -396,7 +396,51 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// content digest of every hero whose declarations reach it, while an added member no earlier
         /// declaration names moves nothing.</para>
         /// </summary>
-        RemovedWhenAnEnemyHeroMovesThrough = 17
+        RemovedWhenAnEnemyHeroMovesThrough = 17,
+
+        /// <summary>
+        /// Milestone 8.69a. While the affected hero is performing an action, every enemy hero in play
+        /// satisfies rulebook p.18's "adjacent to 3 or more obstacles" - Brynn the Seeker's Purple
+        /// Ultimate, Over the Top, printed whole: "While you are performing actions all enemy heroes in
+        /// play count as adjacent to 3 or more obstacles."
+        ///
+        /// <para><b>It is an eighteenth family and not <see cref="CountsAs"/>, though the card prints
+        /// those two words.</b> p.17's Counts As replaces "all rules and qualities of that object ...
+        /// by the rules and qualities of the object type(s) it now counts as", and
+        /// <see cref="EffectiveUnitKind"/> holds the only things a card may name there: heroes, minions
+        /// and terrain. This sentence names no type at all. What it asserts is a PREDICATE about where
+        /// a hero is standing - a fact the board would otherwise answer - so a declaration in either
+        /// counts-as family would have had to invent a unit type meaning "surrounded", and an enemy
+        /// hero replaced by it would have stopped being a hero on its own team.</para>
+        ///
+        /// <para><b>It is not <see cref="EffectiveTypeOverlay"/> either, for the same reason at one
+        /// remove.</b> Milestone 8.19c's overlay ADDS a type beside the intrinsic one, which is what
+        /// Xargatha's petrified heroes need; the type it adds is still one of the three. The overlay
+        /// this card declares is over a question, not over an object's type, and
+        /// <see cref="ObstacleAdjacencyQuery"/> is its one reader - which is what makes the Ultimate
+        /// reach the attack-target bullet, the +2 on the Attack total, the radius-hero narrowing, the
+        /// presence predicate, the swaps, the traps and the repeats without any of them knowing the
+        /// Ultimate exists.</para>
+        ///
+        /// <para><b>It carries no amount and no channel</b>, for the reason milestones 8.35z28, 8.40a,
+        /// 8.57e, 8.61d and 8.61e each recorded in turn: a public property added to this type moves the
+        /// content digest of every hero whose declarations reach it - which milestone 8.38d measured at
+        /// the cost of all twelve pins at once - while an added enum member no earlier declaration
+        /// names moves nothing. The printed sentence has no number in it that is not already in
+        /// <see cref="ObstacleAdjacencyQuery.PrintedObstacleThreshold"/>'s name.</para>
+        ///
+        /// <para><b>The one thing it does carry is WHEN</b>, on
+        /// <see cref="RuleValueApplicability.ControllerAction"/>: "while you are performing actions" is
+        /// a condition on the controller's own action and nothing else, and
+        /// <see cref="RuleValueApplicability.ControllerBasicAction"/> - the nearest existing member -
+        /// is p.9's Basic supertype and would have switched the Ultimate off on every coloured face he
+        /// owns. Whether that condition holds is decided in <see cref="RuleModificationQuery"/>, where
+        /// the acting object already arrives, and so is "enemy": the declaration is expanded there into
+        /// one applied modification per enemy hero standing on the board, exactly as an Active effect's
+        /// team-scoped declaration is expanded. What any consumer sees is therefore a declaration
+        /// addressed to one hero that is either in the live set or is not.</para>
+        /// </summary>
+        CountsAsAdjacentToThreeOrMoreObstacles = 18
     }
 
     /// <summary>What a source charges for stopping one removal, as definition content.</summary>
@@ -501,7 +545,39 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// Attack condition would have been the wrong shape. Both members exist because two cards
         /// print two different sentences.</para>
         /// </summary>
-        ControllerBasicAction = 2
+        ControllerBasicAction = 2,
+
+        /// <summary>
+        /// Milestone 8.69a. ANY action the affected hero performs, whatever card it comes off and
+        /// whatever kind it is - Brynn the Seeker's Over the Top, "<em>While you are performing
+        /// actions</em> all enemy heroes in play count as adjacent to 3 or more obstacles."
+        ///
+        /// <para><b>A third member rather than a widening of <see cref="ControllerBasicAction"/>,
+        /// because that member is p.9's Basic supertype and one printed card already depends on it.</b>
+        /// Whisper's Grim Reaper reads it - "when performing basic <em>actions</em>" - and p.9 makes
+        /// that a fact about the CARD: "All actions on a basic card are basic actions." Dropping the
+        /// condition would widen her Ultimate onto every coloured face she owns. Brynn's face prints
+        /// no adjective at all, and fourteen of the fifteen faces his Ultimate is about are coloured,
+        /// so the two sentences need two members for the reason the two above already needed two.</para>
+        ///
+        /// <para><b>It is not <see cref="Always"/>, and the difference is the whole of the printed
+        /// clause.</b> An unqualified declaration holds while nobody is acting, while an opponent is
+        /// acting, and at a round boundary. This one holds only while its own hero is performing an
+        /// action - primary, secondary or the Defense p.14 calls "perform a Defense action" - which is
+        /// the same reading the user's 2026-09-06 ruling gave Dodger's "while you are performing an
+        /// action" and which <c>RuleModificationKind.AllSpacesCountAsFriendlyMinionSpawnPointsInBattle
+        /// Zone</c> gets from where its query is consulted rather than from a condition.</para>
+        ///
+        /// <para><b>Where the condition is evaluated.</b> Unlike the two members above - which are
+        /// resolved by the consumer holding the action, because whether a card is Basic is a fact the
+        /// consumer has - this one is resolved by <see cref="RuleModificationQuery"/>, which already
+        /// takes the acting object for milestone 8.7's obstacle overlays. A declaration carrying it
+        /// enters the live set only while its hero acts. That is deliberate rather than inconsistent:
+        /// its one consumer, <see cref="ObstacleAdjacencyQuery"/>, is asked from a dozen seams that
+        /// hold no action at all, and a condition each of them had to remember to pass is a condition
+        /// one of them would silently drop.</para>
+        /// </summary>
+        ControllerAction = 3
     }
 
     /// <summary>
@@ -1146,6 +1222,28 @@ namespace GuardsDigital.Core.Rules.Modifications
                 RuleValueApplicability.Always,
                 SourceValueQueryKind.None);
 
+        /// <summary>
+        /// Milestone 8.69a. Brynn the Seeker's Over the Top, whole: while the hero this is declared
+        /// about performs an action, the hero it is APPLIED to counts as adjacent to three or more
+        /// obstacles. See <see cref="RuleModificationKind.CountsAsAdjacentToThreeOrMoreObstacles"/> for
+        /// why it is neither counts-as family, why it carries nothing, and why "enemy" and "while you
+        /// are performing actions" are both resolved by the derivation rather than written here.
+        /// </summary>
+        public static RuleModification ForEnemyHeroesCountAsAdjacentToThreeOrMoreObstacles() =>
+            new RuleModification(
+                RuleModificationKind.CountsAsAdjacentToThreeOrMoreObstacles,
+                Array.Empty<RuleActivity>(),
+                RulePermissionKind.None,
+                PrintedValueChannel.None,
+                0,
+                EffectiveUnitKind.None,
+                RestrictedActorScope.AnyActor,
+
+                // "While you are performing actions" - the printed condition, and the only thing this
+                // declaration carries beyond its own name.
+                RuleValueApplicability.ControllerAction,
+                SourceValueQueryKind.None);
+
         public static RuleModification ForRemovalPrevention(RemovalPreventionCost cost)
         {
             if (!cost.IsDeclared)
@@ -1358,6 +1456,8 @@ namespace GuardsDigital.Core.Rules.Modifications
                     return "Enemy heroes cannot target through this token's space";
                 case RuleModificationKind.ItemBonusMultiplier:
                     return $"Item bonuses multiplied by {Amount}";
+                case RuleModificationKind.CountsAsAdjacentToThreeOrMoreObstacles:
+                    return "Counts as adjacent to 3 or more obstacles";
                 default:
                     return "Undeclared modification";
             }

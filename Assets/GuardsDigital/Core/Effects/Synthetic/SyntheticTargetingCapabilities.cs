@@ -490,6 +490,37 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string BothDiscardPilesEmptyParameterName = "bothDiscardPilesEmpty";
 
         /// <summary>
+        /// Milestone 8.69a. Whether a printed-Radius hero selection's candidate stands beside three or
+        /// more of rulebook p.18's obstacles - Brynn the Seeker's Decoy, his three tracking swaps and
+        /// his three traps, all of which print "an enemy hero in radius <b>who is adjacent to 3 or more
+        /// obstacles</b>".
+        ///
+        /// <para><b>A Boolean and never an Integer, which is the shape this file settled at 8.57c.</b>
+        /// An unbound optional Integer reads as ZERO, and a threshold of zero is satisfied by every
+        /// hero on the board - so a selection that forgot to bind it would silently admit everybody.
+        /// The number the sentence names is not a call-site parameter at all: it is in
+        /// <see cref="GuardsDigital.Core.Rules.Modifications.ObstacleAdjacencyQuery"/>'s method name,
+        /// because all fifteen of his faces print the same three and a face printing a different one
+        /// would be a different rule rather than a different argument.</para>
+        ///
+        /// <para><b>It narrows who may be picked and nothing else</b>, which is the grammar the two
+        /// flags above record: "who is adjacent to" qualifies the hero being chosen, so a hero standing
+        /// in the open is not offered rather than offered and then refused. The predicate is asked
+        /// through the one owner of the printed phrase, so this selection, the modal-Attack bullet, the
+        /// +2 on the Attack total and the presence predicate cannot come to disagree about it - and his
+        /// Ultimate's counts-as overlay reaches all four at once.</para>
+        ///
+        /// <para><b>Declared on the Radius arm alone</b>, by this file's standing rule: every face of
+        /// his that prints the clause beside a reach prints a Radius icon, and his one Range face
+        /// (Familiar Ground) states it as a modal-Attack bullet instead. Optional and defaulting to
+        /// false, so every hero selection composed before him keeps its exact candidate set, and a
+        /// parameter added to a registered capability moves no pinned byte - see
+        /// <see cref="BothDiscardPilesEmptyParameterName"/>'s own note for why.</para>
+        /// </summary>
+        public const string AdjacentToThreeOrMoreObstaclesParameterName =
+            "adjacentToThreeOrMoreObstacles";
+
+        /// <summary>
         /// Milestone 8.40f. The fewest cards a printed-Radius hero selection's candidate must be
         /// holding - Bain's three guessing Skills, "An enemy hero in radius <b>with two or more cards
         /// in hand</b> chooses one of those cards".
@@ -1207,6 +1238,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             BothDiscardPilesEmptyParameterName,
                             EffectValueKind.Boolean,
                             isRequired: false));
+
+                        // Milestone 8.69a. Brynn's "an enemy hero in radius who is adjacent to 3 or
+                        // more obstacles", on the Radius arm alone because that is the icon all seven
+                        // of his faces printing it carry. Optional and unbound everywhere else, so
+                        // every earlier hero selection is untouched.
+                        parameters.Add(new EffectCapabilityParameter(
+                            AdjacentToThreeOrMoreObstaclesParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false));
                     }
                 }
                 else
@@ -1677,6 +1717,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // a fact about her and not about them - and a card in it empties the candidate list
                 // entirely, which is the printed "if" answered as a candidate set. An unbound optional
                 // parameter is the absence of the clause, so every earlier hero selection is untouched.
+                // Milestone 8.69a. Brynn's one printed predicate, read only on the arm that declares
+                // it. An unbound optional Boolean is the absence of the clause - which is why it is a
+                // Boolean and not the threshold Integer it looks like, since an unbound Integer reads
+                // as zero and zero obstacles is every hero on the board.
+                var requiresThreeObstaclesBeside = channel == PrintedValueChannel.Radius &&
+                    context.Input(AdjacentToThreeOrMoreObstaclesParameterName).BooleanValue;
+
                 var requiresBothDiscardsEmpty = channel == PrintedValueChannel.Radius &&
                     context.Input(BothDiscardPilesEmptyParameterName).BooleanValue;
                 if (requiresBothDiscardsEmpty &&
@@ -1765,6 +1812,20 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         (!context.CardState.IsAvailable ||
                             !GuardsDigital.Core.Cards.HeroHandQuery.HasAtLeast(
                                 context.CardState.Instances, target.HeroId, minimumCardsInHand)))
+                    {
+                        continue;
+                    }
+
+                    // "who is adjacent to 3 or more obstacles" - measured from each candidate's own
+                    // space through the one owner of that phrase, which is what makes p.19's water
+                    // ring, a token, a minion, terrain, a milestone 8.7 overlay and Brynn's own
+                    // Ultimate all reach this selection without it naming any of them. The
+                    // classification port is the placement one, because that is the board this
+                    // capability's components expose. Milestone 8.69a.
+                    if (requiresThreeObstaclesBeside &&
+                        (context.Components?.Tokens == null ||
+                            !ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
+                                context.Components.Tokens, target.HeroId, context.Modifications)))
                     {
                         continue;
                     }

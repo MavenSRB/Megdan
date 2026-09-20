@@ -160,7 +160,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
         ActorMovedThisAction = 7,
 
         /// <summary>Every card currently in the acting hero's discard, regardless of face or played state.</summary>
-        OwnedDiscardCount = 8
+        OwnedDiscardCount = 8,
+
+        /// <summary>
+        /// Milestone 8.69a. Whether the unit this Attack bound is a HERO standing adjacent to three or
+        /// more of rulebook p.18's obstacles - Brynn the Seeker's High Ground, Elevated Ambush and Peak
+        /// Precision, "Target a unit adjacent to you. <b>If you target a hero adjacent to 3 or more
+        /// obstacles, +2 [Attack] attack.</b>"
+        ///
+        /// <para><b>Answers one or nothing, which is what a threshold sentence answers</b>, and the
+        /// number is in <see cref="GuardsDigital.Core.Rules.Modifications.ObstacleAdjacencyQuery"/>'s
+        /// name rather than beside the declaration - the shape
+        /// <see cref="TwoOrMoreEmptyMinionSpawnPointsInBattleZoneInPrintedRadius"/> records at length.
+        /// The +2 beside it is the whole bonus whether three neighbouring spaces qualify or six.</para>
+        ///
+        /// <para><b>A minion target answers nothing, by the sentence rather than by convenience.</b>
+        /// The clause prints "a hero", and all three faces reach p.13's own "Target a unit adjacent to
+        /// you" - so a minion IS a legal target of the Attack and simply never raises it. That is the
+        /// same division <c>AttackSequenceSubjectNarrowing</c> draws for a bullet that narrows by a
+        /// hero fact.</para>
+        ///
+        /// <para><b>It is read at the Attack total, which is what makes it Tigerclaw's Backstab
+        /// shape</b>: p.14 composes step 5 after step 4's Defense window, so a Defense text that pushes
+        /// or swaps the defender between the two changes the answer. The predicate itself is asked of
+        /// the one owner of the printed phrase, so it reaches p.17's counts-as overlay and his Ultimate
+        /// widens this +2 without either card naming the other.</para>
+        /// </summary>
+        AttackTargetHeroAdjacentToThreeOrMoreObstacles = 9
     }
 
     /// <summary>
@@ -374,7 +400,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // Optional, so the Range call site and every caller written before that milestone keep
             // their exact contributions - and absent it, that query answers nothing rather than
             // guessing from a current position with nothing to compare against.
-            HexCoordinate? actorSpaceAtActionStart = null)
+            HexCoordinate? actorSpaceAtActionStart = null,
+
+            // Milestone 8.69a. p.18's obstacle classification port, which
+            // `AttackTargetHeroAdjacentToThreeOrMoreObstacles` needs and which
+            // `IBoardDisplacementAuthority` deliberately does not expose - see ObstacleQuery's own
+            // overload for why the question goes to the port rather than the port's answer being
+            // re-derived here. Optional, so every caller written before this milestone composes its
+            // exact contributions; a declaration that NAMES the query and is handed none is refused
+            // loudly rather than answered with a silent zero.
+            ITokenPlacementAuthority spaces = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
@@ -390,7 +425,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 var matches = MatchCount(
                     declaration.Query, offer.ActorId, offer.SourceCardInstanceId, target, definitions,
                     instances, participants, board, modifications, rosterState, roundIndex, turnIndex,
-                    actorSpaceAtActionStart);
+                    actorSpaceAtActionStart, spaces);
                 if (matches == 0) continue;
                 result.Add(new ValueContribution(
                     ValueContributionKind.CardTextModifier,
@@ -535,7 +570,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             EffectRosterState rosterState,
             int roundIndex,
             int turnIndex,
-            HexCoordinate? actorSpaceAtActionStart)
+            HexCoordinate? actorSpaceAtActionStart,
+            ITokenPlacementAuthority spaces)
         {
             if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out var actorAt))
                 return 0;
@@ -600,6 +636,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 case RosterValueQueryKind.ActorMovedThisAction:
                     return actorSpaceAtActionStart.HasValue &&
                         !actorAt.Equals(actorSpaceAtActionStart.Value)
+                        ? 1
+                        : 0;
+
+                // Milestone 8.69a. "If you target a hero adjacent to 3 or more obstacles, +2 Attack" -
+                // asked of the one owner of that printed phrase, so this and the attack-target bullet
+                // that narrows by it cannot disagree, and so his Ultimate's counts-as overlay reaches
+                // the Attack total. A minion target answers nothing: the clause prints "a hero".
+                case RosterValueQueryKind.AttackTargetHeroAdjacentToThreeOrMoreObstacles:
+                    if (spaces == null)
+                    {
+                        throw new InvalidOperationException(
+                            "A card-text contribution declaring " +
+                            nameof(RosterValueQueryKind
+                                .AttackTargetHeroAdjacentToThreeOrMoreObstacles) +
+                            " reads rulebook p.18's obstacle classification around the bound target, " +
+                            "and this composition was handed no board port to ask it with. Supply " +
+                            "the match's board at the call site rather than letting the clause " +
+                            "silently contribute nothing.");
+                    }
+
+                    return target.Kind == AttackTargetKind.Hero &&
+                        ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
+                            spaces, target.HeroId, modifications)
                         ? 1
                         : 0;
 

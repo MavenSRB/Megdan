@@ -445,6 +445,39 @@ namespace GuardsDigital.Core.Rules.Modifications
                         RuleModificationKind.AdditionalDefeatLifeCostWhenDefeated &&
                     modification.AffectedObject.Equals(defeatedHero)));
 
+        /// <summary>
+        /// Milestone 8.69a. Whether a standing source makes <paramref name="affectedObject"/> satisfy
+        /// rulebook p.18's "adjacent to 3 or more obstacles" without anything being counted - Brynn the
+        /// Seeker's Over the Top, and nothing else in the roster today.
+        ///
+        /// <para>Both halves of the printed condition have already been decided by
+        /// <see cref="RuleModificationQuery"/>: whether its hero is the one performing an action, and
+        /// which heroes are his enemies. So what is left here is the question this value answers about
+        /// every other family - is such a declaration addressed to this object right now - and
+        /// <see cref="ObstacleAdjacencyQuery"/> is the only thing that asks it, for the reason
+        /// <see cref="AnyOverlayMakesAnObstacleOf"/> has exactly one asker: the rulebook gives the
+        /// predicate one owner.</para>
+        /// </summary>
+        public bool CountsAsAdjacentToThreeOrMoreObstacles(RuleObject affectedObject)
+        {
+            if (!affectedObject.IsDefined)
+            {
+                return false;
+            }
+
+            for (var index = 0; index < Modifications.Count; index++)
+            {
+                if (Modifications[index].AffectedObject.Equals(affectedObject) &&
+                    Modifications[index].Modification.Kind ==
+                        RuleModificationKind.CountsAsAdjacentToThreeOrMoreObstacles)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public bool CountsAs(RuleObject affectedObject, EffectiveUnitKind effectiveUnitKind)
         {
             if (effectiveUnitKind == EffectiveUnitKind.None)

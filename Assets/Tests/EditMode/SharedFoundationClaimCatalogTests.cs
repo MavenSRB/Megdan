@@ -954,6 +954,95 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess for a Block whose condition reads a Radius rather than a Range, for a token " +
                 "supply above one, for a condition about a piece another hero placed, or for a card " +
                 "text naming two bounded owned-token facts.")
+            ,
+
+            // Milestone 8.69a. One NEW production owner beside p.18's obstacle classification, and
+            // one PARAMETER on the printed-Radius hero selection that reads it. The milestone's other
+            // deltas - an attack-target narrowing member, a value-query member, a rule-modification
+            // family and an applicability member - are closed-vocabulary ENUM members, which this
+            // catalog does not track for the reason milestone 8.35z45 recorded when it minted the
+            // first of them: an added member no earlier declaration names changes no shared shape.
+            new SharedFoundationClaim(
+                "predicates.obstacle-adjacency-threshold",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Rules.Modifications.ObstacleAdjacencyQuery),
+                    nameof(GuardsDigital.Core.Rules.Modifications.ObstacleAdjacencyQuery
+                        .HeroIsAdjacentToThreeOrMoreObstacles),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnObstacleAdjacencyTests),
+                            nameof(BrynnObstacleAdjacencyTests
+                                .EveryObstacleKindCounts_IncludingBrynnHimselfAndAnOverlaidSpace),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "every one of p.18's obstacle sources counted on its own - units including " +
+                        "the asking hero, printed terrain, a placed token and a milestone 8.7 " +
+                        "overlay"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnObstacleAdjacencyTests),
+                            nameof(BrynnObstacleAdjacencyTests
+                                .ThePredicate_IsAThresholdOfThreeOfTheSixNeighbours_AndTwoIsNotThree),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "two obstacles beside a hero is the clause unmet rather than a smaller " +
+                        "version of it"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnObstacleAdjacencyTests),
+                            nameof(BrynnObstacleAdjacencyTests
+                                .TheSubjectsOwnSpaceIsNotCounted_AndAnAbsentHeroAnswersFalse),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "the subject's own space is not one of its neighbours, and a hero standing " +
+                        "nowhere is adjacent to nothing")
+                },
+                new[] { "threshold", "obstacle source", "subject", "counts-as overlay", "timing" },
+                "Whether at least THREE of the six spaces neighbouring one hero's own space hold a " +
+                "p.18 obstacle right now, asked through ObstacleQuery so that occupancy, printed " +
+                "terrain, the unplayable ring, tokens and milestone 8.7's overlay reach one answer; " +
+                "plus the one standing declaration that makes a hero satisfy it without anything " +
+                "being counted. It targets nothing, so immunity never enters it, and it is evaluated " +
+                "when the asking clause is asked rather than recorded.",
+                "Reassess for a printed face naming a threshold other than three, for one that asks " +
+                "the question about a MINION or a space rather than a hero, for a clause that needs " +
+                "HOW MANY rather than whether, or for a second source of the counts-as overlay."),
+            new SharedFoundationClaim(
+                "targeting.adjacent-to-three-obstacles",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .AdjacentToThreeOrMoreObstaclesParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnObstacleAdjacencyTests),
+                            nameof(BrynnObstacleAdjacencyTests
+                                .TheRadiusSelection_OffersOnlyTheBoxedInEnemyHero),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "two enemy heroes in one printed disk, and the flag is the only thing that " +
+                        "separates the offered one from the dropped one"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnObstacleAdjacencyTests),
+                            nameof(BrynnObstacleAdjacencyTests
+                                .TheRadiusNarrowing_IsAnOptionalBooleanAndIsAbsentFromTheRangeArm),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a Boolean rather than the threshold Integer it looks like, and declared on " +
+                        "no other arm")
+                },
+                new[] { "selection arm", "board", "candidate kind", "offer feasibility" },
+                "One optional flag on the printed-Radius hero selection: a candidate standing beside " +
+                "three or more of p.18's obstacles, read through ObstacleAdjacencyQuery as the " +
+                "modal-Attack bullet and the Attack total read it. It narrows who may be picked and " +
+                "nothing else, and it is unbound on every other arm.",
+                "Reassess for a face pairing the clause with a Range icon, for a clause about a " +
+                "number of obstacles other than three, or for one measured from the ACTOR's space " +
+                "rather than from each candidate's.")
         };
     }
 

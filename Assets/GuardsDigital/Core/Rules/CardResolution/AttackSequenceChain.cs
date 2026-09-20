@@ -100,7 +100,37 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <para>Its value is 3 and the three members above keep theirs, so no payload written before
         /// this milestone decodes as a different predicate.</para>
         /// </summary>
-        HoldsTheActorsMarker = 3
+        HoldsTheActorsMarker = 3,
+
+        /// <summary>
+        /// "Target a hero in range <b>who is adjacent to 3 or more obstacles</b>" - the second bullet
+        /// of Brynn the Seeker's Gold basic, Familiar Ground, milestone 8.69a. His boxed Handicap,
+        /// Home Turf, prints the identical bullet.
+        ///
+        /// <para><b>The first member of this vocabulary about the BOARD rather than about the candidate
+        /// itself.</b> The three above read a pile or a component the candidate owns; this one reads
+        /// the six spaces around wherever the candidate happens to be standing, which is a fact that
+        /// changes when anybody moves. That makes the member's own remark about timing load-bearing
+        /// rather than decorative: it is evaluated per candidate at the bullet's own sequence start,
+        /// and a modal Attack whose first bullet pushed somebody has changed the answer for its
+        /// second.</para>
+        ///
+        /// <para><b>The number is in the name for this type's own stated reason</b> - the rule lives in
+        /// the member - and because the predicate is a threshold rather than a count:
+        /// <see cref="GuardsDigital.Core.Rules.Modifications.ObstacleAdjacencyQuery"/> is the one owner
+        /// of it, so this narrowing, the +2 on the Attack total, the radius-hero selection and the
+        /// presence predicate cannot come to disagree about one printed phrase - the discipline the two
+        /// discard members keep with <c>HeroDiscardPileQuery</c> and the marker member keeps with
+        /// <c>HeldMarkerQuery</c>. Asking it reaches p.17's counts-as overlay as well, which is how his
+        /// Ultimate widens this bullet without the bullet naming an Ultimate.</para>
+        ///
+        /// <para>Heroes only, because "a hero" is the noun the bullet prints; a minion in range is
+        /// dropped rather than admitted, on the same terms the discard members drop one.</para>
+        ///
+        /// <para>Its value is 4 and the four members above keep theirs, so no payload written before
+        /// this milestone decodes as a different predicate.</para>
+        /// </summary>
+        IsAdjacentToThreeOrMoreObstacles = 4
     }
 
     /// <summary>

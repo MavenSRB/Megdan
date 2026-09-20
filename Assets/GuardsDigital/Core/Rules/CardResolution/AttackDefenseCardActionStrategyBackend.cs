@@ -3020,7 +3020,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 rosterState,
                 current?.RoundIndex ?? 0,
                 current?.TurnIndex ?? 0,
-                actorSpaceAtActionStart);
+                actorSpaceAtActionStart,
+                // Milestone 8.69a. The same authority, handed on as p.18's classification port, so a
+                // declaration reading the obstacles around the bound target asks the one owner of that
+                // question rather than re-deriving it from occupancy.
+                adjacentMoveAuthority);
             // Milestone 8.19c moved the printed/item/source composition into AttackValueQuery, so what
             // is left here is p.14's card-text contribution alone - the half that needs the bound
             // target and this turn's own history. The composition still happens once, at every one of
@@ -3273,7 +3277,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     modifications);
 
                 return NarrowedToTheBulletsSubject(
-                    admitted, sequenceBullet, cardInstances, attackerId, markers);
+                    admitted, sequenceBullet, cardInstances, attackerId, markers,
+                    adjacentMoveAuthority, modifications);
             }
 
             // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what
@@ -3336,11 +3341,41 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackSequenceBullet bullet,
             IEnumerable<CardInstance> cardInstances,
             HeroId attackerId,
-            MarkerAttachmentRegister markers)
+            MarkerAttachmentRegister markers,
+            GuardsDigital.Core.Components.ITokenPlacementAuthority spaces,
+            RuleModificationSet modifications)
         {
             if (!bullet.NarrowsItsSubject)
             {
                 return admitted;
+            }
+
+            // Milestone 8.69a. Brynn's Familiar Ground, bullet 2: "Target a hero in range who is
+            // adjacent to 3 or more obstacles." It is asked of the one owner of that phrase, so the
+            // offer, the target choice and the resolution all see the same candidate set - and so does
+            // his Ultimate, whose counts-as overlay that owner consults before it counts anything.
+            //
+            // The board is the same authority this whole derivation already ran against, handed on as
+            // p.18's classification port; a null one is the loud absence the two predicates below also
+            // refuse, on the same terms.
+            if (bullet.SubjectNarrowing ==
+                AttackSequenceSubjectNarrowing.IsAdjacentToThreeOrMoreObstacles)
+            {
+                if (spaces == null || modifications == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The modal Attack bullet '{bullet.BulletId}' prints " +
+                        $"'{bullet.SubjectNarrowing}', which is a predicate about the board around the " +
+                        "candidate, and this target derivation was given no board or no live rules to " +
+                        "read. Supply both at the call site rather than letting the narrowing " +
+                        "silently admit or silently exclude every candidate.");
+                }
+
+                return admitted
+                    .Where(target => target.Kind == AttackTargetKind.Hero &&
+                        ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
+                            spaces, target.HeroId, modifications))
+                    .ToArray();
             }
 
             if (bullet.SubjectNarrowing == AttackSequenceSubjectNarrowing.HoldsTheActorsMarker)

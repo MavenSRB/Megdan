@@ -63,6 +63,42 @@ namespace GuardsDigital.Core.Rules.Modifications
         }
 
         /// <summary>
+        /// The same classification for a caller holding the narrow placement port rather than the
+        /// movement authority. Milestone 8.69a names it, and names nothing new: p.18's three sources
+        /// are "off the map", "occupied" and "overlaid", and
+        /// <see cref="ITokenPlacementAuthority.IsEmptyPlayableSpace"/> is the first two asked as one
+        /// question - which is why <see cref="BlocksPlacement"/> has computed exactly this expression
+        /// since milestone 6.4 and now delegates here rather than restating it.
+        ///
+        /// <para>It exists because Brynn the Seeker's one printed predicate - "adjacent to 3 or more
+        /// obstacles" - is asked from three places that hold no <see cref="AdjacentMoveAuthority"/> at
+        /// all: a printed-icon hero selection reaches <c>MatchComponents.Tokens</c>, the value pipeline
+        /// reaches an <see cref="Components.IBoardDisplacementAuthority"/>, and only the Attack backend
+        /// holds the movement authority. A second expression of the classification at any one of them
+        /// is exactly what this type exists to prevent, so the port gets the question instead.</para>
+        ///
+        /// <para>No permission and no transit flag is offered, for the reason
+        /// <see cref="BlocksEndOfMovement"/> is offered none: this answers what a space IS, and p.18's
+        /// grant is about moving through obstacles rather than about them being obstacles.</para>
+        /// </summary>
+        public static bool IsObstacle(
+            ITokenPlacementAuthority spaces, HexCoordinate coordinate, RuleModificationSet modifications)
+        {
+            if (spaces == null)
+            {
+                throw new ArgumentNullException(nameof(spaces));
+            }
+
+            if (modifications == null)
+            {
+                throw new ArgumentNullException(nameof(modifications));
+            }
+
+            return !spaces.IsEmptyPlayableSpace(coordinate) ||
+                modifications.AnyOverlayMakesAnObstacleOf(coordinate);
+        }
+
+        /// <summary>
         /// Whether <paramref name="mover"/> may pass through <paramref name="coordinate"/> while moving.
         /// A granted <see cref="RulePermissionKind.MoveThroughObstacles"/> lets it pass through an
         /// occupied space, a declared terrain space, or a space an overlay has made an obstacle;
@@ -260,20 +296,7 @@ namespace GuardsDigital.Core.Rules.Modifications
         public static bool BlocksPlacement(
             ITokenPlacementAuthority spaces,
             HexCoordinate coordinate,
-            RuleModificationSet modifications)
-        {
-            if (spaces == null)
-            {
-                throw new ArgumentNullException(nameof(spaces));
-            }
-
-            if (modifications == null)
-            {
-                throw new ArgumentNullException(nameof(modifications));
-            }
-
-            return !spaces.IsEmptyPlayableSpace(coordinate) ||
-                modifications.AnyOverlayMakesAnObstacleOf(coordinate);
-        }
+            RuleModificationSet modifications) =>
+            IsObstacle(spaces, coordinate, modifications);
     }
 }

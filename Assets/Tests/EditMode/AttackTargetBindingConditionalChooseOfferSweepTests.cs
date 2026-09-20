@@ -199,6 +199,13 @@ namespace GuardsDigital.Tests.EditMode
             // Stance riders push, move and swap off the attack's own facts - so she adds no at-risk
             // gate.
             foreach (var card in MinCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("min", d);
+            // Milestone 8.69a. The twentieth hero's first composed faces - four of nineteen at this
+            // block, which is again the point of the case below reading the content CLASSES rather
+            // than a list: his line is owed the moment a `BrynnCardContent` exists, dealt or not. His
+            // one body is Familiar Ground's modal, whose two `attack-sequence@1` bullets ARE the
+            // binding and are the `Choose`'s own children - the shape this sweep's own remarks name as
+            // correctly read and deliberately not flagged - so he adds no at-risk gate.
+            foreach (var card in BrynnCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("brynn", d);
         }
 
         /// <summary>

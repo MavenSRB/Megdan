@@ -185,9 +185,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 Enum.GetValues(typeof(RosterValueQueryKind)).Cast<RosterValueQueryKind>()
                     .Count(value => value != RosterValueQueryKind.None),
-                Is.EqualTo(8),
-                "The eight queries preserve the original seven identities.");
+                Is.EqualTo(9),
+                "The nine queries preserve the original seven identities.");
             Assert.That((int)RosterValueQueryKind.OwnedDiscardCount, Is.EqualTo(8));
+
+            // Milestone 8.69a. Brynn the Seeker's "+2 attack if you target a hero adjacent to 3 or
+            // more obstacles" is the ninth, appended without renumbering any of the eight above -
+            // which is the whole of what this case guards.
+            Assert.That(
+                (int)RosterValueQueryKind.AttackTargetHeroAdjacentToThreeOrMoreObstacles,
+                Is.EqualTo(9));
         }
 
         // -------------------------------------------------------------------------------------------

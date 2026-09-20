@@ -92,7 +92,8 @@ namespace GuardsDigital.Core.Rules.Modifications
             if (board != null)
             {
                 applied.AddRange(FromPlacedTokens(board, participants));
-                applied.AddRange(FromUnlockedUltimates(ultimates, board, participants));
+                applied.AddRange(
+                    FromUnlockedUltimates(ultimates, board, participants, actingObject));
             }
 
             if (markers != null && participants != null)
@@ -757,11 +758,20 @@ namespace GuardsDigital.Core.Rules.Modifications
         ///
         /// The affected object is the controller. p.16 says "It provides <em>you</em> with" the ability,
         /// which is the same object a token property affects and for the same reason.
+        ///
+        /// <para>Milestone 8.69a adds the one exception, and adds the acting object to pay for it.
+        /// Brynn the Seeker's Over the Top says something about OTHER heroes while its own hero acts -
+        /// "While you are performing actions all enemy heroes in play count as adjacent to 3 or more
+        /// obstacles" - so the declaration is expanded here into one applied modification per enemy
+        /// hero, exactly as an Active effect's team-scoped declaration is expanded by
+        /// <c>AffectedObjects</c> and for the identical reason: this derivation holds the board and the
+        /// participants, and a query that resolved "enemy" afterwards would have to hold them too.</para>
         /// </summary>
         private static IEnumerable<AppliedRuleModification> FromUnlockedUltimates(
             GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet ultimates,
             AdjacentMoveAuthority board,
-            MatchParticipants participants)
+            MatchParticipants participants,
+            RuleObject actingObject)
         {
             for (var index = 0; index < ultimates.Ultimates.Count; index++)
             {
@@ -794,6 +804,24 @@ namespace GuardsDigital.Core.Rules.Modifications
                     // rather than overlooked: they were printed at the same moment by the same card, so
                     // there is no order between them to record, and `RuleModificationSet` sorts stably,
                     // which keeps the declared order for anything that inspects the list.
+                    if (resolved.Kind ==
+                        RuleModificationKind.CountsAsAdjacentToThreeOrMoreObstacles)
+                    {
+                        foreach (var perEnemyHero in ForEveryEnemyHeroWhileTheControllerActs(
+                            resolved,
+                            ultimate.OwnerId,
+                            ultimate.Source,
+                            board,
+                            participants,
+                            actingObject,
+                            index))
+                        {
+                            yield return perEnemyHero;
+                        }
+
+                        continue;
+                    }
+
                     yield return AppliedRuleModification.FromContinuousSource(
                         resolved,
                         affected,
@@ -801,6 +829,58 @@ namespace GuardsDigital.Core.Rules.Modifications
                         participants.GetTeamForHero(ultimate.OwnerId).Side,
                         index);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.69a. One declaration of Over the Top's family, expanded to the heroes its
+        /// printed sentence is about: "all enemy heroes in play", and only "while you are performing
+        /// actions".
+        ///
+        /// <para><b>Both conditions are answered here rather than by the consumer</b>, which is the
+        /// same division milestone 8.7 drew for <see cref="AppliedObstacleOverlay"/>: the acting object
+        /// and the participants are here, and the predicate's one reader -
+        /// <see cref="ObstacleAdjacencyQuery"/> - is asked from seams that hold neither. A set derived
+        /// while nobody is acting, or while somebody else is, carries none of these at all, which is
+        /// the printed condition failing rather than an omission.</para>
+        ///
+        /// <para>"In play" is the board, which is the same question p.16 asks of the Ultimate's own
+        /// hero two lines above. The controller is never among them - he is not his own enemy - and
+        /// minions are not heroes, so neither needs a second sentence.</para>
+        /// </summary>
+        private static IEnumerable<AppliedRuleModification> ForEveryEnemyHeroWhileTheControllerActs(
+            RuleModification declaration,
+            HeroId controllerHeroId,
+            ContinuousRuleSource source,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            RuleObject actingObject,
+            long orderingSequence)
+        {
+            if (declaration.ValueApplicability != RuleValueApplicability.ControllerAction ||
+                actingObject.Kind != RuleObjectKind.Hero ||
+                !actingObject.HeroId.Equals(controllerHeroId))
+            {
+                yield break;
+            }
+
+            var controllerSide = participants.GetTeamForHero(controllerHeroId).Side;
+            var occupancies = board.Occupancies;
+            for (var index = 0; index < occupancies.Count; index++)
+            {
+                var heroId = occupancies[index].HeroId;
+                if (!heroId.IsDefined || heroId.Equals(controllerHeroId) ||
+                    participants.GetTeamForHero(heroId).Side == controllerSide)
+                {
+                    continue;
+                }
+
+                yield return AppliedRuleModification.FromContinuousSource(
+                    declaration,
+                    RuleObject.ForHero(heroId),
+                    source,
+                    controllerSide,
+                    orderingSequence);
             }
         }
     }
