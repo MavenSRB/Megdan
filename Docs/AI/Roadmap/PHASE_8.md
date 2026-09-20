@@ -275,7 +275,7 @@ Completed 2026-09-19, after 8.54 and 8.55 landed - the user's order ("Just finis
 
 Historical evidence: [8.60 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-860-eighteen-hero-package-completion-evidence).
 
-### [ ] 8.62 Targeting cues read as blood-red light
+### [x] 8.62 Targeting cues read as blood-red light
 
 Authorized 2026-09-19 by the user, from a screenshot of an attack's targets: "can you make targeting highlights more visible, they are almost impossible to see like this.. Blood red light instead of this pink i think."
 
@@ -285,7 +285,11 @@ Acceptance: `BoardTargetRing`'s eligible, selected and hovered washes and ring w
 
 Non-goals: the board's team rings, hex corner geometry for movement or respawn, the attack spotlight.
 
-### [ ] 8.63 The decision window is drawn above every other panel
+Completed 2026-09-20 (`c9c615ec`, squash-merged from `2058ddd8` on `8.62-hud-cues`; the user approved the final photographs at 13:10: "That's it. This is the one."). THE USER REDIRECTED THE DESIGN ACROSS SIX PHOTOGRAPH ROUNDS, and the outcome above is superseded by their calls: the thick ring plus 40-60% wash was "coloring on the inside is a bit too much"; the original ring in solid red was "not the ring"; an always-on full hex outline was liked as a shape but pale in colour; a 2x hovered edge was "too thick"; the settled cue is the ORIGINAL six corner marks on the target's TILE, painted solid by SIDE - blood red (194,10,24) on an enemy unit, `AffectColor` green on a friendly one, full opacity over a rim of the same hue 0.55 towards black - with NOTHING on the token (no ring, no wash), and the marks closing into the whole hex edge (`OutlineCoreHalfWidth` 0.055) when the pointer is on the target, on the piece or on the sand. Colour by side rather than by intent differs from the shipped palette in exactly one reachable cue: a card-text effect naming an enemy unit (Shock's rider) was green and is now blood red. `BoardTargetCuePresentation.Treatment` is the one line that chooses; `RingOnThePiece` (pre-8.62 ring shapes, wash alphas 0, wash mesh not built) and `OutlineTheWholeHex` stay whole behind it, off; `GUARDS_CAPTURE_PHASE=ring` photographs the ring. Pins: `HexCornerHighlightTests` gains the outline case; `PrimitiveHeroViewTests` states the three zero wash alphas, the empty wash submesh, a keyline-only inner boundary and retires the overlay-cap pin on the user's direction; the template's bounded native set 20 -> 26 in `HexCornerHighlightPlayModeTests` and `MinimalHexGridPlayModeTests`; every fixture that pinned a piece cue (Arien x2, Brogan x2, Sabina engaged, Wasp engaged, minion correction, placed token, minimal grid, `StandardMinionViewTests`, `PlacedTokenViewTests`) states it through `BoardTargetCuePresentation.AsDrawn(...)` so it follows the switch; no pinned colour moved. The permanent photograph fixture `TargetingCuePhotographPlayModeTests` writes hero / minion / enemy-effect / friendly-swap targets, resting and hovered, at 1920x1080 and 2560x1440 under `tmp/862-captures/` (the Director sandbox stands the heroes adjacent; the Wasp engaged mirror gives the minion, the rider and the friendly swap). Two fixture defects the photographs exposed and fixed: the phase banner was still fading across early frames (dismissed through its own `Hide()`), and hovered captures were pixel-identical to resting ones because pointer input clears the hovered space on its own `Update` (the board's `SetHoveredCoordinate` is now set with no frame between it and the shutter). Schema and wire unmoved; complete Play Mode 666/666 with zero skips (`tmp/862-play-ship-results.xml` in the branch worktree); complete Edit Mode 4877 / 4841 / 0 / 36 established skips (`tmp/862-edit-ship2-results.xml`); harness 3898/3898 on the branch's base.
+
+Historical evidence: [8.62 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-862-targeting-cues-completion-evidence).
+
+### [x] 8.63 The decision window is drawn above every other panel
 
 Authorized 2026-09-19 by the user, from a screenshot of a defense window partly covered by the defense-preview panel: "popup should be on top, not behind stuff :D".
 
@@ -295,7 +299,11 @@ Acceptance: the window's host is the topmost element of the HUD's overlay layer 
 
 Non-goals: the preview panel's own layout, the window's content or controls.
 
-### [ ] 8.64 The victory screen drops its column legend
+Completed 2026-09-20 (`4feec1c4`, squash-merged from `ef19c060` on `8.62-hud-cues`; the user approved the photograph: "Victory screen and defense breakdown are good"). The window is topmost whenever shown, proved by `DecisionWindowTopMostPlayModeTests` over the live hierarchy for every family the 8.58 capture fixture stages plus the defence window with its preview open; the 8.46 banner-yields rule kept. THE USER'S SECOND CALL ON THE SAME SCREENSHOT ("I think spacing is a bit off here" - "I am talking about defense breakdown") found the breakdown's rows drawn on top of one another: the cause was `LayoutPreview`'s flat 240-unit `maxHeight` with every `gd-defense-contribution-row` keeping UI Toolkit's default `flex-shrink: 1` while `HudElements.Text` labels are `flex-shrink: 0`, so a breakdown taller than the cap squeezed its rows to nothing and the labels painted over the line below. The panel is content-sized now (`CalculateDefensePreviewHeight` is the same arithmetic the drawing performs, line for line), every line is `Rigid` (declared height, no shrink, no grow), the name clips at the panel's edge rather than pushing its value off the row, and `SetPreviewOrigin` lets the breakdown drawn INSIDE the window cover the same panel-space rectangle it did outside it; `AssertTheBreakdownReadsAsLines` pins the order, non-overlap and heights. Photographs under `tmp/863-captures/` (1280x720, 1920x1080, 2560x1440). Schema and wire unmoved; suites as 8.62's (one branch, three commits).
+
+Historical evidence: [8.63 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-863-decision-window-topmost-completion-evidence).
+
+### [x] 8.64 The victory screen drops its column legend
 
 Authorized 2026-09-19 by the user, from a screenshot of the legend strip under the victory tables ("Level p.15's Hero Level as the match ended - Kills ... - Worth what defeating this hero pays and costs"): "Remove this from victory screen."
 
@@ -304,3 +312,7 @@ Outcome: the victory screen shows the winners' and the defeated blocks with thei
 Acceptance: `VictoryScreenModels.Legend` and its `VictoryScreenLegendEntry` rows retired from the view (and from the models if nothing else reads them), the 8.53 fixtures that asserted the legend re-stated to assert its absence, the 8.58 capture fixture's victory photographs re-taken under `tmp/864-captures/` at 1920x1080 in both variants (team win, solo win), the complete Play Mode suite with zero skips. The user approves the photograph before the block completes.
 
 Non-goals: the columns, their numbers or their headers.
+
+Completed 2026-09-20 (`de886e51`, squash-merged from `bc270186` on `8.62-hud-cues`; the user approved the photograph). `VictoryScreenModels.Legend` and its rows retired from the view and the models; the 8.53 fixtures that asserted the legend assert its absence; the column headers sit over their numbers in both variants (the user's "spacing" remark was first read against these columns and their alignment was checked in the same pass); `VictoryScreenPhotographPlayModeTests` writes team-win and solo-win photographs under `tmp/864-captures/` at 1920x1080. Schema and wire unmoved; suites as 8.62's.
+
+Historical evidence: [8.64 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-864-victory-legend-dropped-completion-evidence).
