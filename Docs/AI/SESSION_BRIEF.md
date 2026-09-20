@@ -16,7 +16,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 - Current completed milestone: **8.66**.
 - Active authorized milestone: **None**.
-- Next proposed milestone: **8.35z71**.
+- Next proposed milestone: **8.68**.
 
 On 2026-09-18 the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** ("Ok, get on it then"); **8.46 is complete** (8.46a-8.46g): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press.
 
