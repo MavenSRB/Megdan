@@ -675,6 +675,31 @@ namespace GuardsDigital.Core.Cards.Verified
                 ? new[] { discard, escalation }
                 : new[] { discard };
 
+            // Milestone 8.66, the second face the Silverarrow sweep found and the same one-line
+            // defect. "if able" narrows on its consumer and "or is defeated" must not: an empty-handed
+            // hero is what Killing Ground's second half is written for, and declaring the discard as
+            // this selection's consumer narrowed them out of it, so the face could never defeat
+            // anybody. See SilverarrowEffectContent.CreateEndOfTurnDiscard for the whole reading.
+            var subjectInputs = new List<EffectInputBinding>
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.TargetRelationParameterName,
+                    SourceTeamRelation.OpposingSource),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
+                    EffectValue.Boolean(false)),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.IncludeSelfParameterName,
+                    EffectValue.Boolean(false))
+            };
+            if (!escalates)
+            {
+                subjectInputs.Add(EffectInputBinding.FromLiteral(
+                    EffectSelectionDeclaration.ConsumerParameterName,
+                    EffectValue.Node(discard)));
+            }
+
             var nodes = new List<EffectNodeDefinition>
             {
                 new EffectNodeDefinition(
@@ -683,22 +708,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 new EffectNodeDefinition(
                     subject, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
                     SyntheticTargetingCapabilities.RadiusHeroTargetV1,
-                    inputs: new[]
-                    {
-                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
-                        EffectInputBinding.FromClosedVocabulary(
-                            SyntheticTargetingCapabilities.TargetRelationParameterName,
-                            SourceTeamRelation.OpposingSource),
-                        EffectInputBinding.FromLiteral(
-                            SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
-                            EffectValue.Boolean(false)),
-                        EffectInputBinding.FromLiteral(
-                            SyntheticTargetingCapabilities.IncludeSelfParameterName,
-                            EffectValue.Boolean(false)),
-                        EffectInputBinding.FromLiteral(
-                            EffectSelectionDeclaration.ConsumerParameterName,
-                            EffectValue.Node(discard))
-                    },
+                    inputs: subjectInputs,
                     outputs: new[]
                     {
                         new EffectOutputBinding(

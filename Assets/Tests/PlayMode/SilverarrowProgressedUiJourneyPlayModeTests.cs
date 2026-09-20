@@ -597,6 +597,132 @@ namespace GuardsDigital.Tests.PlayMode
                 "item has nothing here to reach.");
         }
 
+        /// <summary>
+        /// Milestone 8.66. Treetop Sentinel's second half, on the surface a player uses: "<b>End of
+        /// turn:</b> An enemy hero in radius discards a card, <b>or is defeated</b>."
+        ///
+        /// <para><b>The defect this journey would have failed on: the face could never defeat
+        /// anybody.</b> Its selection declared the discard as its consumer, and a consumer declaration
+        /// narrows the offer to candidates the consumer can act on - so the empty-handed hero the
+        /// second half of the sentence exists for was narrowed out of the first half, the mandatory
+        /// step had no legal subject, and the turn closed in silence. Warning Shot, whose step ends
+        /// "if able", keeps that narrowing and is driven one journey above.</para>
+        ///
+        /// <para>The enemy's hand is staged to exactly one card, which p.7's commitment then spends -
+        /// which is how Min's Death Grenade journey empties a hand, and the only way to reach the
+        /// escalation from a seat rather than from a fixture. Two loads rather than one because a
+        /// staging description names heroes by id and the ids only exist once a configuration has been
+        /// composed.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TreetopSentinel_DefeatsTheEnemyInRadiusWhoseHandTheCommitmentEmptied()
+        {
+            yield return LoadEmptyHandedEnemyStaging();
+            var root = Root();
+            var runtime = root.Runtime;
+            var silverarrowId = SilverarrowSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, silverarrowId);
+            var coinsBefore = CoinsOf(runtime, silverarrowId);
+
+            CommitSoTheNamedSeatActs(
+                runtime, silverarrowId, SilverarrowCardContent.TreetopSentinel);
+            yield return null;
+            yield return YieldUntilTheNamedSeatActs(runtime, silverarrowId);
+
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand),
+                Is.Zero,
+                "The commitment spent their only card, which is what puts the escalation in reach. " +
+                Remaining(runtime));
+
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+
+            // This staging unlocks Wild Hunt, so "each time before you perform an action" opens its
+            // own decision in front of the Skill. It is declined: the free line is not what this
+            // journey is about, and moving her would change the disk the trigger reads.
+            var wildHunt = DeclineControl(runtime);
+            if (wildHunt != null)
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, wildHunt.Label));
+                yield return null;
+            }
+
+            yield return YieldUntilNobodyIsActing(runtime);
+
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "THE assertion of this milestone: an empty-handed hero is the candidate the second " +
+                "half of the sentence exists for, so the turn's close must still ask which enemy " +
+                "hero. A silent close here is the shipped defect. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(silverarrowId),
+                "p.10 gives the unassigned decision to the card's controller.");
+            Assert.That(
+                runtime.PendingEffectChoice.Candidates.Select(
+                    candidate => candidate.Value.HeroId),
+                Does.Contain(enemyId),
+                "and the empty-handed hero is IN the offer. " + Remaining(runtime));
+
+            // The node is read BEFORE the click, because naming the only candidate is what closes an
+            // exactly-one question: this one answer finishes the selection, the effect and the turn,
+            // and reading a standing node afterwards would be reading one that is no longer there.
+            var selection = StandingNode(runtime);
+            var killsBefore = KillsOf(runtime, silverarrowId);
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            Assert.That(
+                UiPlayer.ClickBoard(
+                    pointerInput, root.Hud, HeroView(enemyId).transform.position), Is.True);
+            yield return null;
+            yield return ConfirmIfStillStanding(root, selection);
+            yield return null;
+
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "An empty hand has nothing to offer, so their seat is asked no discard question at " +
+                "all. " + Remaining(runtime));
+            Assert.That(KillsOf(runtime, silverarrowId), Is.EqualTo(killsBefore + 1),
+                "\"or is defeated\" - p.13's Defeat, recorded as her Kill on the 8.53 scoreboard. " +
+                "The scoreboard rather than the board, because the close carries straight on into " +
+                "the next round, where p.13's respawn has already put the miniature back. " +
+                Remaining(runtime));
+            Assert.That(CoinsOf(runtime, silverarrowId), Is.GreaterThan(coinsBefore),
+                "and the Defeat is priced: p.13's coins go to the hero whose card did it.");
+        }
+
+        private static int KillsOf(ConfiguredMatchSceneRuntime runtime, HeroId heroId) =>
+            runtime.Projection.Scoreboard
+                .Where(entry => entry.HeroId.Equals(heroId))
+                .Select(entry => entry.Kills)
+                .DefaultIfEmpty(0)
+                .Single();
+
+        /// <summary>
+        /// Her Tier III alternate branch with the enemy holding exactly one card, so p.7's commitment
+        /// leaves their hand empty before her turn closes.
+        /// </summary>
+        private static IEnumerator LoadEmptyHandedEnemyStaging()
+        {
+            const SceneCardContent content =
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSilverarrow;
+            yield return LoadStagedScene(content);
+            var runtime = Root().Runtime;
+            var own = SilverarrowSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                heroes: new[]
+                {
+                    new SandboxHeroStaging(enemy, hand: runtime.Cards
+                        .Where(card => card.OwnerId.Equals(enemy) &&
+                            card.State.Location == CardLocation.Hand)
+                        .Select(card => card.DefinitionReference.DefinitionId)
+                        .Take(1))
+                });
+            yield return LoadStagedScene(content);
+        }
+
+        private static int CoinsOf(ConfiguredMatchSceneRuntime runtime, HeroId heroId) =>
+            runtime.Projection.HeroProgression
+                .Single(progression => progression.HeroId.Equals(heroId))
+                .Coins;
+
         // ---------------------------------------------------------------------------------------
         // Steps
         // ---------------------------------------------------------------------------------------

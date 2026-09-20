@@ -109,7 +109,7 @@ namespace GuardsDigital.Tests.EditMode
             // its offer a ceiling and no floor, so the free move lit the spaces ONE away too; the
             // floor is now bound on `wild-hunt-line`, which is a literal added to one node of one
             // face and is the whole of this digest's move.
-            new IdentityPin("silverarrow", "silverarrow-8-59-rev-1", "7550446c7b1bb49fcc70afad5d44183b9c227366194c2ee17fa7ac516aaa464b"),
+            new IdentityPin("silverarrow", "silverarrow-8-66-rev-1", "ec9b93b558d3315ae31eefd88acdd4853a5cf0cd060ca3ac07bd5cffde8916aa"),
             // Milestone 8.35z50. THE TENTH PIN, arriving on exactly the terms the seventh through
             // ninth did: a pin is a claim about content a configured match loads, and milestone
             // 8.35z31 composed Ursafar without dealing him.
@@ -158,7 +158,7 @@ namespace GuardsDigital.Tests.EditMode
             // not this space 1 away which is illegal." Both moves are one literal on one node of one
             // face, and on 8.59's complete unfiltered run every pin but Silverarrow's - whose own
             // Ultimate the same sweep corrected - measured byte-identical.
-            new IdentityPin("swift", "swift-8-59-rev-1", "147f9266b9364a85911e8b3e3a4e58b16a42a7bcb7e7fa6c85557925fab36c6c"),
+            new IdentityPin("swift", "swift-8-66-rev-1", "0df66b449cfb56f314a3dad62c95d7166d51e97d01fb189d960b0bae49b5ca42"),
             // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
             // composed Cutter's eighteen faces without dealing her.

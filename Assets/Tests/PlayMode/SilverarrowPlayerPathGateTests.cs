@@ -112,6 +112,15 @@ namespace GuardsDigital.Tests.PlayMode
             "WarningShot_FiresAtTheCloseOfHerOwnTurnAndTakesACardFromTheEnemyInRadius";
 
         /// <summary>
+        /// Milestone 8.66. Treetop Sentinel's own journey, rather than its Tier II sibling's: the two
+        /// faces differ by the printed escalation alone, and until this milestone the escalating half
+        /// could not be reached at all - its selection narrowed the empty-handed hero out of the offer
+        /// the second half of its sentence exists for.
+        /// </summary>
+        private const string EndOfTurnDefeat =
+            "TreetopSentinel_DefeatsTheEnemyInRadiusWhoseHandTheCommitmentEmptied";
+
+        /// <summary>
         /// RULING 38 as a staged scene can reach it. The three-instance chain is proved at the
         /// authority instead, on a board that fixture builds — every staged scene here is one hero per
         /// team, so once the printed instance has taken the one enemy hero "a different hero" has
@@ -330,8 +339,8 @@ namespace GuardsDigital.Tests.PlayMode
                 // able" - the same relationship Wasp's Shock and Electroblast have.
                 Face(SilverarrowCardContent.TreetopSentinel, "Treetop Sentinel", new[]
                     {
-                        Prove(CommitAndReveal, TrayCommitAndWalk),
-                        Prove(PrimarySkillControl, EndOfTurnDiscard),
+                        Prove(CommitAndReveal, EndOfTurnDefeat),
+                        Prove(PrimarySkillControl, EndOfTurnDefeat),
                         Prove(ActiveEffectReading, EndOfTurnDiscard),
                         Prove(RoundLongActiveEffectReading, EndOfTurnDiscard),
                         Prove(SecondaryDefenseOffer, NumericDefense),
@@ -340,7 +349,12 @@ namespace GuardsDigital.Tests.PlayMode
                     new[]
                     {
                         "SilverarrowPrintedSetTests" +
-                            ".EveryFaceThatPrintsAStep_ComposesOne"
+                            ".EveryFaceThatPrintsAStep_ComposesOne",
+                        "SilverarrowTreetopSentinelTests" +
+                            ".AnEmptyHandedHeroInRadiusIsOfferedAndDefeated_" +
+                            "WithP13sCoinsAndTheScoreboardsKill",
+                        "SilverarrowTreetopSentinelTests" +
+                            ".OnlyTheIfAbleFaceDeclaresItsDiscardAsTheSelectionsConsumer"
                     }),
 
                 // Its two printed differences from its Tier II and III siblings, both of which a

@@ -319,6 +319,38 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// Milestone 8.66, the correction Silverarrow's sweep found on this set. A selection names the
+        /// node it feeds so a candidate the consumer could do nothing with is never offered - which is
+        /// right for Suppress and Pin Down, whose step ends "if able", and exactly wrong for Killing
+        /// Ground, whose step ends "or is defeated".
+        ///
+        /// <para>Declared on the escalating face, the discard narrowed every empty-handed hero out of
+        /// the selection, so the one hero the second half of the sentence exists for was the one hero
+        /// the first half refused to offer, and the face could never defeat anybody. Min's Grenade,
+        /// Widget's Scorching Breath and Silverarrow's Treetop Sentinel all declare none for this
+        /// shape; this is the fourth.</para>
+        /// </summary>
+        [Test]
+        public void OnlyTheTwoIfAbleTerrainFaces_DeclareTheirDiscardAsTheSubjectsConsumer()
+        {
+            Assert.That(SubjectConsumerOf(SwiftCardContent.Suppress), Is.EqualTo("suppress-discard"));
+            Assert.That(SubjectConsumerOf(SwiftCardContent.PinDown), Is.EqualTo("pin-discard"));
+            Assert.That(SubjectConsumerOf(SwiftCardContent.KillingGround), Is.Null,
+                "\"or is defeated\" makes an empty-handed hero a legal subject rather than an " +
+                "unusable candidate.");
+        }
+
+        private static string SubjectConsumerOf(CardDefinitionId cardId)
+        {
+            var root = Primary(cardId).EffectRoot;
+            var subject = root.Nodes.Single(node => node.Id.Value.EndsWith("-subject"));
+            return GuardsDigital.Core.Effects.EffectSelectionDeclaration.TryReadConsumer(
+                subject, out var consumer)
+                ? consumer.Value
+                : null;
+        }
+
+        /// <summary>
         /// The printed count is instance multiplicity: Mark for Death stands one promise and Hunting
         /// Season two. This is the case that would fail if the two Hunting Season declarations were
         /// collapsed into one.

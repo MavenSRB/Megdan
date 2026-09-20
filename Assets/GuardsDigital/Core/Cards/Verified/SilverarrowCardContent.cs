@@ -39,7 +39,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The revision all nineteen definitions carry. It moves when Silverarrow's content changes,
         /// which is the same coupling <see cref="WaspCardContent.ContentRevision"/> has.
         /// </summary>
-        public const string ContentRevision = "silverarrow-8-59-rev-1";
+        public const string ContentRevision = "silverarrow-8-66-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity.

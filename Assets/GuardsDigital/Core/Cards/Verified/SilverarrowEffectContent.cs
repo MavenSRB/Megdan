@@ -785,6 +785,43 @@ namespace GuardsDigital.Core.Cards.Verified
             var escalation = new EffectNodeId($"{nodePrefix}-escalation");
             var defeat = new EffectNodeId($"{nodePrefix}-defeat");
 
+            // Milestone 8.66. THE CONSUMER IS DECLARED BY THE "IF ABLE" FACE AND BY IT ALONE, and the
+            // split is the whole of this correction.
+            //
+            // A selection names the node it feeds so a candidate the consumer could do nothing with is
+            // never offered. For Warning Shot that reading is exactly right: "discards a card, IF
+            // ABLE" gives an empty-handed hero nothing to do, so offering them would be an offer that
+            // admits more than the answer can perform - Bain's 8.40k rule. For Treetop Sentinel it is
+            // exactly wrong: "discards a card, OR IS DEFEATED" is one step with two ways to complete,
+            // so a hero with an empty hand is not an unusable candidate, they are THE candidate the
+            // second half of the sentence was written for. Declared, the discard narrowed every
+            // empty-handed hero out of the selection and the face could never defeat anybody - which
+            // milestone 8.61f measured on Min's Grenade, whose text prints the same escalation.
+            //
+            // The escalation is not declared in its place. `synthetic-is-flagged@1` reads a flag the
+            // discard has not produced yet, so nothing about a candidate can be put to it before the
+            // step runs; an escalating step's offer is the whole radius, which is what the printed
+            // sentence says it is. Min's Grenade and Widget's Scorching Breath both declare no
+            // consumer for this shape, and this is now the third.
+            var selection = new List<EffectInputBinding>
+            {
+                // The Skill that scheduled this is the action the effect belongs to, so its
+                // activity is what p.18 asks immunity about.
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.TargetRelationParameterName,
+                    SourceTeamRelation.OpposingSource),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
+                    EffectValue.Boolean(false))
+            };
+            if (!escalatesToDefeat)
+            {
+                selection.Add(EffectInputBinding.FromLiteral(
+                    EffectSelectionDeclaration.ConsumerParameterName,
+                    EffectValue.Node(discard)));
+            }
+
             var nodes = new List<EffectNodeDefinition>
             {
                 new EffectNodeDefinition(
@@ -795,21 +832,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 new EffectNodeDefinition(
                     select, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                     SyntheticTargetingCapabilities.RadiusHeroTargetV1,
-                    inputs: new[]
-                    {
-                        // The Skill that scheduled this is the action the effect belongs to, so its
-                        // activity is what p.18 asks immunity about.
-                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
-                        EffectInputBinding.FromClosedVocabulary(
-                            SyntheticTargetingCapabilities.TargetRelationParameterName,
-                            SourceTeamRelation.OpposingSource),
-                        EffectInputBinding.FromLiteral(
-                            SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
-                            EffectValue.Boolean(false)),
-                        EffectInputBinding.FromLiteral(
-                            EffectSelectionDeclaration.ConsumerParameterName,
-                            EffectValue.Node(discard))
-                    },
+                    inputs: selection,
                     outputs: new[]
                     {
                         new EffectOutputBinding(
