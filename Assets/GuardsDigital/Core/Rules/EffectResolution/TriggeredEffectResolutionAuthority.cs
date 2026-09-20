@@ -25,6 +25,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         private readonly MatchComponents components;
         private EffectRosterState rosterState = EffectRosterState.Absent;
 
+        /// <summary>
+        /// Milestone 8.67. What this checkpoint still owes, held from the moment one candidate pauses
+        /// until the list is exhausted. Null whenever a checkpoint is finished, which is every moment
+        /// before this milestone and every checkpoint whose candidates all complete in one pass.
+        /// </summary>
+        private CheckpointContinuation continuation;
+
+        /// <summary>
+        /// The identity of a pause that arrived from a snapshot rather than from a live checkpoint, or
+        /// <c>null</c>. It is the one input the regeneration needs: the id carries the source that
+        /// paused, the checkpoint it paused at, and that checkpoint's round and turn.
+        /// </summary>
+        private EffectResolutionId? restoredPauseId;
+
         public TriggeredEffectResolutionAuthority(
             TriggeredEffectCatalog effects,
             EffectCapabilityCatalog capabilities,
@@ -115,7 +129,25 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         {
             if (PendingResolution != null) throw new InvalidOperationException("A triggered continuation is already present.");
             PendingResolution = pending ?? throw new ArgumentNullException(nameof(pending));
+
+            // Milestone 8.67. A restored pause has lost the in-memory remainder of its checkpoint, so
+            // it is marked as owing one and the remainder is REGENERATED from the lifecycle when the
+            // answer arrives - milestone 8.10's discipline for a restored card-text page, applied to a
+            // checkpoint: what is left to do is produced from the continuation's own identity rather
+            // than carried in the payload, which is what keeps snapshot schema v43 where it is.
+            restoredPauseId = pending.ResolutionId;
         }
+
+        /// <summary>
+        /// Milestone 8.67. Whether this checkpoint has candidates left to run once the frame standing
+        /// on it finishes.
+        ///
+        /// <para>True while a remainder is held, and true for a RESTORED pause until the remainder has
+        /// been regenerated once - because a restored authority cannot know whether there is one
+        /// without asking the lifecycle, and it is handed the lifecycle only at resume time.</para>
+        /// </summary>
+        public bool HasCheckpointContinuation =>
+            continuation != null || restoredPauseId.HasValue;
 
         public IReadOnlyList<ActiveEffectLifecycleEvent> ApplyCheckpoint(
             ActiveEffectLifecycle timing,
@@ -131,6 +163,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         {
             if (PendingResolution != null)
                 throw new InvalidOperationException("A paused triggered effect must be answered before another checkpoint is visited.");
+
+            // Milestone 8.67. The same sentence one step further out: a checkpoint that still owes
+            // candidates is not finished either, and visiting the next one would drop them silently.
+            // Every path that can finish a paused trigger resumes the remainder inside the command
+            // that finished it, so reaching here with one owed is a wiring fault rather than a state a
+            // match can be in.
+            if (continuation != null || restoredPauseId.HasValue)
+                throw new InvalidOperationException(
+                    "A triggered checkpoint still owes candidates and must be resumed before another checkpoint is visited.");
 
             LastRepeatRequested = null;
             LastBorrowRequested = null;
@@ -164,8 +205,48 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 .ThenBy(source => source.SourceId, StringComparer.Ordinal)
                 .ToArray();
 
-            foreach (var candidate in candidates)
+            RunCandidates(
+                candidates, 0, checkpoint, tieBreaker, timing, definitions, instances, participants,
+                modifications ?? throw new ArgumentNullException(nameof(modifications)), heroItems,
+                repeatCanBePerformed);
+
+            return events;
+        }
+
+        /// <summary>
+        /// Milestone 8.67. Runs the checkpoint's ordered candidates from <paramref name="startIndex"/>
+        /// on, and holds whatever is left when one of them pauses.
+        ///
+        /// <para><b>The defect this closes, in one sentence: a checkpoint stopped at its first pause
+        /// and never started again.</b> The loop below is the loop that was always here; what is new is
+        /// that the break records its position instead of discarding it, and that
+        /// <see cref="ResumeCheckpoint"/> re-enters at exactly that position with the same ordered
+        /// list, the same checkpoint context and the same per-candidate context. Milestone 8.61f
+        /// measured the gap on shipped content: Min's Death Grenade and Silverarrow's Warning Shot at
+        /// one end-of-turn checkpoint, where only the trigger the pipeline reached first ever ran.</para>
+        ///
+        /// <para>What a candidate that finishes here publishes is unchanged - a repeat request stands
+        /// for the whole checkpoint and a borrow is published the moment it is made - because one
+        /// checkpoint visiting several abilities was always this loop's business.</para>
+        /// </summary>
+        private void RunCandidates(
+            IReadOnlyList<TriggerCandidate> candidates,
+            int startIndex,
+            ActiveEffectCheckpointContext checkpoint,
+            TieBreakerState tieBreaker,
+            ActiveEffectLifecycle timing,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed)
+        {
+            var materializedDefinitions = definitions as CardDefinition[] ?? definitions.ToArray();
+            var materializedInstances = instances as CardInstance[] ?? instances.ToArray();
+            for (var index = startIndex; index < candidates.Count; index++)
             {
+                var candidate = candidates[index];
                 if (!effects.TryGet(candidate.TriggeredEffect, out var effect))
                     throw new InvalidOperationException(
                         $"Triggered effect '{candidate.TriggeredEffect}' is not configured.");
@@ -178,7 +259,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     checkpoint.RoundIndex,
                     checkpoint.TurnIndex,
                     modifications ?? throw new ArgumentNullException(nameof(modifications)),
-                    EffectCardState.Of(definitions, instances),
+                    EffectCardState.Of(materializedDefinitions, materializedInstances),
                     candidate.EnclosingActionKind,
                     components: components,
                     heroItems: heroItems,
@@ -211,14 +292,214 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 }
                 if (step.IsComplete && step.BorrowRequested.IsRequested)
                 {
-                    PublishBorrow(step.BorrowRequested, candidate.ControllerHeroId, definitions,
-                        instances);
+                    PublishBorrow(step.BorrowRequested, candidate.ControllerHeroId,
+                        materializedDefinitions, materializedInstances);
                 }
                 if (PendingResolution != null)
-                    break;
+                {
+                    // Milestone 8.67. The break that dropped the rest of the checkpoint now writes
+                    // down where it stopped. The remainder is the SAME ordered list, so nothing is
+                    // re-sorted and no candidate is re-derived when it starts again.
+                    continuation = new CheckpointContinuation(
+                        checkpoint,
+                        tieBreaker,
+                        Skip(candidates, index + 1));
+                    return;
+                }
             }
 
-            return events;
+            continuation = null;
+        }
+
+        private static IReadOnlyList<TriggerCandidate> Skip(
+            IReadOnlyList<TriggerCandidate> candidates, int from)
+        {
+            var remaining = new TriggerCandidate[Math.Max(0, candidates.Count - from)];
+            for (var index = 0; index < remaining.Length; index++)
+            {
+                remaining[index] = candidates[from + index];
+            }
+
+            return remaining;
+        }
+
+        /// <summary>
+        /// Milestone 8.67. Carries the checkpoint on from the candidate after the one that paused, and
+        /// reports whether anything of it is still standing when this returns.
+        ///
+        /// <para><b>It is called by every path that can finish a paused triggered frame</b> - the
+        /// effect-choice answer and milestone 8.21's removal-prevention answer - and is a no-op when a
+        /// frame is still standing or when nothing is owed, which is what makes it safe to call at any
+        /// such boundary. The lifecycle is NOT visited again: the checkpoint's own events were raised
+        /// by the first call and belong to it, and re-raising them would trigger every effect a second
+        /// time.</para>
+        ///
+        /// <para><b>A restored pause regenerates its remainder from the lifecycle</b> rather than from
+        /// the payload, because carrying it would have moved snapshot schema v43. The regeneration is
+        /// exact for every Active-effect trigger, and states its two limits in
+        /// <see cref="RegenerateRemainder"/>.</para>
+        /// </summary>
+        public bool ResumeCheckpoint(
+            ActiveEffectLifecycle timing,
+            TieBreakerState tieBreaker,
+            IEnumerable<CardDefinition> cardDefinitions,
+            IEnumerable<CardInstance> cardInstances,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null)
+        {
+            if (PendingResolution != null) return true;
+
+            var definitions = (cardDefinitions ?? throw new ArgumentNullException(nameof(cardDefinitions))).ToArray();
+            var instances = (cardInstances ?? throw new ArgumentNullException(nameof(cardInstances))).ToArray();
+
+            var owed = continuation;
+            if (owed == null && restoredPauseId.HasValue)
+            {
+                owed = RegenerateRemainder(
+                    restoredPauseId.Value, timing, tieBreaker, definitions, instances);
+            }
+
+            restoredPauseId = null;
+            continuation = null;
+            if (owed == null || owed.Remaining.Count == 0) return false;
+
+            RunCandidates(
+                owed.Remaining, 0, owed.Checkpoint, owed.TieBreaker, timing, definitions, instances,
+                participants, modifications ?? throw new ArgumentNullException(nameof(modifications)),
+                heroItems, repeatCanBePerformed);
+            return PendingResolution != null;
+        }
+
+        /// <summary>
+        /// Milestone 8.67. The candidates a RESTORED pause still owes, derived from the lifecycle and
+        /// the paused frame's own identity.
+        ///
+        /// <para>The identity is the whole input: <c>trigger-{source}-{checkpoint}-{round}-{turn}</c> is
+        /// minted by <see cref="RunCandidates"/> and persisted with the frame, so a restored authority
+        /// knows which checkpoint it is standing on and which candidate it stopped at without a byte
+        /// being added to the payload. The remainder is every Active effect that declares that
+        /// checkpoint as a trigger and either still stands or ended AT that checkpoint - the
+        /// trigger-and-expire shape every "End of turn:" face has - ordered by the same three keys and
+        /// cut after the paused source.</para>
+        ///
+        /// <para><b>Two limits, stated rather than left to be found.</b> A CONTINUOUS candidate - an
+        /// Ultimate's permanent trigger, derived per checkpoint from the action that had just been
+        /// performed - is not in the lifecycle and cannot be regenerated, so a restore taken while one
+        /// of those is paused resumes only the Active-effect candidates behind it. And the checkpoint's
+        /// affected hero is not part of the identity, so the hero narrowing
+        /// <c>ActiveEffectLifecycle.IsRelevantHero</c> applies is not re-applied here. Both are limits
+        /// of a RESTORED remainder only: a live one is the exact list the checkpoint built.</para>
+        /// </summary>
+        private CheckpointContinuation RegenerateRemainder(
+            EffectResolutionId pausedId,
+            ActiveEffectLifecycle timing,
+            TieBreakerState tieBreaker,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances)
+        {
+            if (timing == null || !tieBreaker.IsDefined) return null;
+            if (!TryReadCheckpointIdentity(
+                    pausedId, out var pausedSourceId, out var checkpoint, out var roundIndex,
+                    out var turnIndex))
+            {
+                return null;
+            }
+
+            var context = new ActiveEffectCheckpointContext(checkpoint, roundIndex, turnIndex);
+            var ordered = timing.Effects
+                .Where(effect => effect.Definition.TriggeredEffect.HasValue &&
+                    effect.Definition.TriggerCheckpoints.Contains(checkpoint) &&
+                    (effect.Phase == ActiveEffectPhase.Ended
+                        ? effect.EndedAt == checkpoint
+                        : effect.Phase == ActiveEffectPhase.Active))
+                .OrderBy(effect => effect.ControllerTeamSide == tieBreaker.RevealedSide ? 0 : 1)
+                .ThenBy(effect => effect.CreationSequence)
+                .ThenBy(effect => effect.Id.Value, StringComparer.Ordinal)
+                .ToArray();
+
+            var paused = Array.FindIndex(
+                ordered, effect => string.Equals(effect.Id.Value, pausedSourceId, StringComparison.Ordinal));
+            if (paused < 0) return null;
+
+            var remaining = new List<TriggerCandidate>();
+            for (var index = paused + 1; index < ordered.Length; index++)
+            {
+                var source = ordered[index];
+                var sourceCard = instances.FirstOrDefault(card => card.Id.Equals(source.SourceCardInstanceId));
+                if (sourceCard == null) continue;
+                var sourceDefinition = definitions.FirstOrDefault(definition =>
+                    definition.Reference.Equals(sourceCard.DefinitionReference));
+                var sourceAction = sourceDefinition?.ActionDefinitions.FirstOrDefault(action =>
+                    action.Id.Equals(source.SourceActionDefinitionId));
+                if (sourceAction == null) continue;
+                remaining.Add(TriggerCandidate.FromActive(
+                    source, sourceDefinition.Reference, sourceAction.Kind));
+            }
+
+            return remaining.Count == 0
+                ? null
+                : new CheckpointContinuation(context, tieBreaker, remaining);
+        }
+
+        /// <summary>
+        /// Reads back the four facts <see cref="RunCandidates"/> mints a triggered frame's identity
+        /// from. It is read from the END, because a source id may itself contain the separator while
+        /// the three trailing fields never can.
+        /// </summary>
+        private static bool TryReadCheckpointIdentity(
+            EffectResolutionId id,
+            out string sourceId,
+            out TimingCheckpoint checkpoint,
+            out int roundIndex,
+            out int turnIndex)
+        {
+            sourceId = null;
+            checkpoint = TimingCheckpoint.None;
+            roundIndex = 0;
+            turnIndex = 0;
+            var value = id.Value;
+            if (string.IsNullOrEmpty(value) || !value.StartsWith("trigger-", StringComparison.Ordinal))
+                return false;
+
+            var parts = value.Split('-');
+            if (parts.Length < 5) return false;
+            if (!int.TryParse(parts[parts.Length - 1], out turnIndex)) return false;
+            if (!int.TryParse(parts[parts.Length - 2], out roundIndex)) return false;
+            if (!Enum.TryParse(parts[parts.Length - 3], false, out checkpoint) ||
+                checkpoint == TimingCheckpoint.None)
+            {
+                return false;
+            }
+
+            var prefix = "trigger-".Length;
+            var suffix = parts[parts.Length - 1].Length + parts[parts.Length - 2].Length +
+                parts[parts.Length - 3].Length + 3;
+            if (value.Length - suffix <= prefix) return false;
+            sourceId = value.Substring(prefix, value.Length - suffix - prefix);
+            return roundIndex >= 1 && turnIndex >= 1;
+        }
+
+        /// <summary>
+        /// Milestone 8.67. One checkpoint's unfinished business: where it was standing and what it has
+        /// left to run, in the order it built.
+        /// </summary>
+        private sealed class CheckpointContinuation
+        {
+            internal CheckpointContinuation(
+                ActiveEffectCheckpointContext checkpoint,
+                TieBreakerState tieBreaker,
+                IReadOnlyList<TriggerCandidate> remaining)
+            {
+                Checkpoint = checkpoint;
+                TieBreaker = tieBreaker;
+                Remaining = remaining;
+            }
+
+            internal ActiveEffectCheckpointContext Checkpoint { get; }
+            internal TieBreakerState TieBreaker { get; }
+            internal IReadOnlyList<TriggerCandidate> Remaining { get; }
         }
 
         private sealed class TriggerCandidate

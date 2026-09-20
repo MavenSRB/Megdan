@@ -773,7 +773,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            TieBreakerState tieBreaker = default)
         {
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
@@ -788,11 +789,64 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 materializedDefinitions,
                 materializedInstances);
 
+            // Milestone 8.67. The answer that finished one candidate is where the checkpoint carries
+            // on, BEFORE the repeat and the borrow are settled: a held subject belongs to the whole
+            // checkpoint rather than to the first ability that stood on it, and settling it here would
+            // take it away from the second.
+            ResumeTriggeredCheckpoint(
+                new ActionBoundaryContext(
+                    materializedDefinitions, materializedInstances, participants, timing, tieBreaker,
+                    roundIndex, turnIndex),
+                modifications);
+
             // Milestone 8.23. The answer is where a `may` repeat is decided, so it is where the held
             // subject becomes an owed instance or is dropped.
             SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
             SettleTriggeredBorrow();
             return answered;
+        }
+
+        /// <summary>
+        /// Milestone 8.67. Whether the checkpoint a finished trigger belonged to still owes candidates.
+        /// </summary>
+        public bool HasTriggeredCheckpointContinuation =>
+            triggeredEffects.HasCheckpointContinuation;
+
+        /// <summary>
+        /// Milestone 8.67. Carries a checkpoint on past the candidate that paused it, and reports
+        /// whether anything is still standing when this returns.
+        ///
+        /// <para>It is a no-op while a frame is standing, while nothing is owed, and while a removal
+        /// prevention or an effect interrupt is holding the board - the miniature is still there and
+        /// the page is not finished with it, so the next candidate must not start underneath one. Each
+        /// of those is answered by a command that reaches this method again.</para>
+        /// </summary>
+        internal bool ResumeTriggeredCheckpoint(
+            ActionBoundaryContext boundary,
+            RuleModificationSet modifications)
+        {
+            if (triggeredEffects.PendingResolution != null) return true;
+            if (!triggeredEffects.HasCheckpointContinuation) return false;
+            if (attackDefenseBackend.PendingRemovalPrevention != null ||
+                pendingEffectInterrupt != null)
+            {
+                return true;
+            }
+
+            return triggeredEffects.ResumeCheckpoint(
+                boundary.Timing,
+                boundary.TieBreaker,
+                boundary.Definitions,
+                boundary.Instances,
+                boundary.Participants,
+                modifications,
+                skillBackend.HeroItems,
+                // The same live feasibility probe the checkpoint's first pass travelled with, asked
+                // against the board as it now stands - which is the board the second instance would
+                // start from, exactly as milestone 8.25e requires.
+                binding => OwedRepeatCanBePerformed(
+                    binding, boundary.Definitions, boundary.Instances, boundary.Participants,
+                    modifications, boundary.RoundIndex, boundary.TurnIndex, boundary.Timing));
         }
 
         internal IReadOnlyList<ResolutionStep> ConsumeTriggeredResolutionSteps()

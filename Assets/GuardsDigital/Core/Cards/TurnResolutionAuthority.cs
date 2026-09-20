@@ -2190,7 +2190,7 @@ namespace GuardsDigital.Core.Cards
                 var heldAction = cardActions.AfterActionRepeatSubject;
                 var answeredTrigger = cardActions.AnswerTriggeredEffectChoice(
                     command, definitions, instances, participants, timing, CurrentModifications(),
-                    roundIndex, turnIndex);
+                    roundIndex, turnIndex, TieBreakerState);
                 if (!answeredTrigger.Accepted)
                     return TurnResolutionResult.Reject(TurnResolutionRejectionReason.SkillCommandRejected);
                 var triggerEvents = MaterializeSteps(
@@ -2436,6 +2436,16 @@ namespace GuardsDigital.Core.Cards
                 var triggerEvents = MaterializeSteps(
                     cardActions.ConsumeTriggeredResolutionSteps(),
                     TurnResolutionEvent.FromTriggeredEffect);
+
+                // Milestone 8.67. The prevention answer is also the other command that can release a
+                // checkpoint's remaining candidates: the trigger that asked for the Defeat was holding
+                // them, and the page is finished with the miniature only now. It is a no-op while
+                // anything is still standing, exactly as the settle below is.
+                cardActions.ResumeTriggeredCheckpoint(
+                    new GuardsDigital.Core.Rules.CardResolution.ActionBoundaryContext(
+                        definitions, instances, participants, timing, TieBreakerState,
+                        roundIndex, turnIndex),
+                    CurrentModifications());
 
                 // Milestone 8.25a. The prevention answer is the other command that can finish an
                 // after-action trigger, and the only one that never settled the repeat it may have

@@ -1453,7 +1453,8 @@ namespace GuardsDigital.Core.Cards
                     timing, participants, TieBreakerState, CurrentUltimates(),
                     GuardsDigital.Core.Rules.Modifications.RuleObject.None),
                 RoundIndex,
-                TurnsPerRound);
+                TurnsPerRound,
+                TieBreakerState);
             if (!answered.Accepted)
             {
                 return RoundResolutionResult.Reject(

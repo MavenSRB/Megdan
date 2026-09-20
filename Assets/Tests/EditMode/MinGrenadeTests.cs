@@ -497,14 +497,14 @@ namespace GuardsDigital.Tests.EditMode
         /// Silverarrow effect standing beside it, so it is the one the close reaches first and it runs
         /// to completion exactly as it does alone.
         ///
-        /// <para><b>The second half is a measured limitation of the pipeline, not of this card, and it
-        /// is pinned here rather than left to be rediscovered.</b>
-        /// <c>TriggeredEffectResolutionAuthority.ApplyCheckpoint</c> breaks out of its candidate loop
-        /// the moment one trigger pauses, and nothing resumes the rest when that pause is answered - so
-        /// the SECOND "End of turn:" face at one checkpoint never runs at all. Silverarrow's Warning
-        /// Shot is standing here and takes nothing. It is reported rather than corrected: the fix is a
-        /// continuation for every trigger family at every checkpoint, which is wider than this block's
-        /// two faces, and no face of Min's introduces it.</para>
+        /// <para><b>The second half was a measured limitation of the pipeline, reported by 8.61f and
+        /// CORRECTED at milestone 8.67.</b>
+        /// <c>TriggeredEffectResolutionAuthority.ApplyCheckpoint</c> used to break out of its candidate
+        /// loop the moment one trigger paused, with nothing resuming the rest when that pause was
+        /// answered - so the SECOND "End of turn:" face at one checkpoint never ran at all, and
+        /// Silverarrow's Warning Shot standing here took nothing. The checkpoint now carries on from
+        /// the candidate after the one that paused, so both faces ask their own question and both take
+        /// a card, in the pipeline's own order.</para>
         /// </summary>
         [Test]
         public void ItRunsBesideAnotherEndOfTurnFaceInThePipelinesOwnOrder()
@@ -523,13 +523,15 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(beside.EffectPhases, Is.All.EqualTo(ActiveEffectPhase.Ended),
                 "Both expire at the checkpoint they fire at, so neither can fire twice.");
 
-            // The pinned pipeline gap - see this case's own remarks.
-            Assert.That(beside.Pauses.Count(pause => pause.NodeId.Value.StartsWith("warning-")),
-                Is.Zero,
-                "MEASURED 8.61f: the second end-of-turn trigger at one checkpoint is dropped once " +
-                "the first has paused. Reported, not this block's to correct.");
-            Assert.That(beside.EnemyHandBefore - beside.EnemyHandAfter, Is.EqualTo(1),
-                "so only the trigger the pipeline reached first took a card.");
+            // Milestone 8.67's continuation - see this case's own remarks. 8.61f measured this count
+            // as ZERO and reported it; the checkpoint now reaches the second trigger.
+            Assert.That(beside.Pauses.Select(pause => pause.NodeId.Value)
+                    .Where(node => node.StartsWith("warning-")),
+                Is.EqualTo(new[] { "warning-select", "warning-discard" }),
+                "The second end-of-turn trigger at one checkpoint runs once the first has finished, " +
+                "and Warning Shot asks both of its own questions - which enemy hero, then which card.");
+            Assert.That(beside.EnemyHandBefore - beside.EnemyHandAfter, Is.EqualTo(2),
+                "so both triggers took a card, in the order the pipeline reached them.");
         }
 
         /// <summary>
