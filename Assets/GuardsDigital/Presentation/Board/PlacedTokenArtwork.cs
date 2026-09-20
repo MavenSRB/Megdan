@@ -35,7 +35,24 @@ namespace GuardsDigital.Presentation.Board
         private static readonly IReadOnlyDictionary<TokenDefinitionId, string> PreparedCaptions =
             new Dictionary<TokenDefinitionId, string>
             {
-                [new TokenDefinitionId("widget-pyro")] = string.Empty
+                [new TokenDefinitionId("widget-pyro")] = string.Empty,
+
+                // Milestone 8.61j. Min the Dragonmonk's five faces, on Pyro's terms: each prepared
+                // face says what the piece is without a word over it - a blue smoke cloud, a fiery
+                // skull-bomb, a skull-and-crossbones danger sign, a green landmine and a bare patch
+                // of grass.
+                //
+                // THE FACEDOWN ONE MATTERS MOST AND IS THE LEAST INTERESTING TO LOOK AT. Every seat
+                // but hers is handed `min-mine-facedown` by `FacedownTokenMask` in place of the real
+                // definition, so the caption drawn over a mine on another player's screen is read
+                // off the MASK and can never be the kind. The caption this entry removes would have
+                // been "MINE", which leaks nothing either - the empty string is about the board
+                // being readable rather than about the secret.
+                [new TokenDefinitionId("min-smoke-bomb-token")] = string.Empty,
+                [new TokenDefinitionId("min-grenade")] = string.Empty,
+                [new TokenDefinitionId("min-mine-facedown")] = string.Empty,
+                [new TokenDefinitionId("min-mine-blast")] = string.Empty,
+                [new TokenDefinitionId("min-mine-dud")] = string.Empty
             };
 
         /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>

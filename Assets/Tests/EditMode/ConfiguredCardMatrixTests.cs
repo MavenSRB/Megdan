@@ -457,6 +457,17 @@ namespace GuardsDigital.Tests.EditMode
                     // the hidden pick and the reveal.
                     SyntheticShowcaseHand.CreateRedWithMarkerBoardSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithHiddenGuessSkill(owner),
+                    // Milestone 8.61j's TWO handler types on TWO cards, and the grouping rule is
+                    // why there are two rather than one: a card carries two contracts only when one
+                    // printed SENTENCE carries both, and Min's rider borrow is her Gold basic while
+                    // her deck-card item is the second bullet of her Green Tier III. The Understudy
+                    // names the card whose "After the attack" text a borrow would apply - the
+                    // SPLICE that applies it is the resolution authority's rather than a node's, so
+                    // nothing here consumes the output - and the Archivist asks for a Tier no
+                    // fixture deck holds, so proving the contract cannot take a card out of a
+                    // fixture's own deck as a side effect.
+                    SyntheticShowcaseHand.CreateRedWithBorrowedCardTextSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithDeckItemSkill(owner),
                     SyntheticResolvedRepriseHand.Create(owner),
                     SyntheticCoupledEscortHand.Create(owner)
                 }
@@ -601,6 +612,21 @@ namespace GuardsDigital.Tests.EditMode
                 // both are further declarations over `PlaceHandler`, a type this build has registered
                 // since milestone 6.6, and the gate's second half is asked of a handler TYPE.
                 .Concat(RowennaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.61j, the nineteenth dealing and the widest a dealing has been: her
+                // SEVENTEEN own contracts plus two shared ones are reachable from this concat and
+                // from nowhere else. Two of the nineteen are new handler TYPES -
+                // `borrow-after-attack-text@1` and `take-deck-card-as-item@1` - each proved on its
+                // own showcase card above before this concat admits the faces that name them. The
+                // other seventeen owe no showcase consumer: her token operations run on
+                // `SyntheticTokenCapabilities` and `SyntheticOwnedTokenCapabilities`, types
+                // registered and showcased since milestone 8.37; her two anchored hero selections
+                // run on Widget's `SyntheticAnchoredTargetCapabilities`; and her four Active-effect
+                // creations run on `ActiveEffectCreationHandler`, the type Arien's five persistent
+                // texts proved at milestone 6.8. Her seven triggered bodies - four mine-trap
+                // consequences, two end-of-turn grenades and Flurry's repeat - reach their
+                // capabilities through the triggered-effect concat below rather than through a card
+                // node, which is what that concat is there for.
+                .Concat(MinCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

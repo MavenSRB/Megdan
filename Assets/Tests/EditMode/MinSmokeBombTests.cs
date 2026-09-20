@@ -655,25 +655,47 @@ namespace GuardsDigital.Tests.EditMode
                 "when it was written.");
         }
 
+        /// <summary>
+        /// Milestone 8.61j FLIPPED this case, which until then asserted the opposite from the same
+        /// two sides: the block composed her Silver basic and this build refused every contract it
+        /// named. The dealing registers the five her faces reach, so the gate is read the other way
+        /// round now - and a registration silently dropping back out fails here rather than in a
+        /// digest.
+        /// </summary>
         [Test]
-        public void NothingOfTheSmokeBombIsRegisteredInThisBuild()
+        public void EveryContractOfTheSmokeBombIsRegisteredInThisBuild()
         {
             var build = MatchContentCatalogs.ForThisBuild();
 
-            Assert.That(MinComponentContent.SmokeBombRegisteredHandlers(), Is.Empty,
-                "This side of the gate: the content file claims no registration.");
-            foreach (var handler in MinComponentContent.SmokeBombDeferredHandlers())
+            Assert.That(MinComponentContent.SmokeBombDeferredHandlers(), Is.Empty,
+                "This side of the gate: the content file withholds nothing any more.");
+            Assert.That(
+                MinComponentContent.SmokeBombRegisteredHandlers().Select(
+                    handler => handler.Reference.ToString())
+                    .OrderBy(value => value, System.StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    "min-place-smoke-bomb-in-radius@1",
+                    "min-smoke-bomb-in-radius@1",
+                    "min-smoke-bomb-in-range@1",
+                    "min-smoke-bomb-present@1",
+                    "min-smoke-bomb-space@1"
+                }),
+                "FIVE, not 8.61a's six: `min-place-smoke-bomb-in-range@1` is reached by no composed " +
+                "sentence of hers - Ruse RELOCATES a standing bomb through the registered " +
+                "`synthetic-place-in-range@1` - so the dealing dropped it rather than registering a " +
+                "contract nothing can start.");
+            foreach (var handler in MinComponentContent.SmokeBombRegisteredHandlers())
             {
-                Assert.That(build.Capabilities.Registered, Has.No.Member(handler.Reference),
-                    $"The other side: '{handler.Reference}' is not in the build's capability catalog, " +
-                    "so no configured match can start it. 8.61j is the block that flips this.");
+                Assert.That(build.Capabilities.Registered, Has.Member(handler.Reference),
+                    $"The other side: '{handler.Reference}' is in the build's capability catalog, " +
+                    "so a configured match can start it.");
             }
 
             Assert.That(
                 () => build.Components.LoadToken(MinComponentContent.SmokeBombDefinition.Reference),
-                Throws.InstanceOf<ComponentDefinitionLoadException>(),
-                "And the component catalog does not hold the token, so a snapshot naming it could " +
-                "not be restored by a configured match either.");
+                Throws.Nothing,
+                "And the component catalog holds the token, so a snapshot naming it restores.");
         }
 
         // =====================================================================================

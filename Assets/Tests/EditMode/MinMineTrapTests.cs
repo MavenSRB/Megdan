@@ -463,16 +463,22 @@ namespace GuardsDigital.Tests.EditMode
                 Throws.TypeOf<ArgumentOutOfRangeException>());
         }
 
+        /// <summary>
+        /// Milestone 8.61j FLIPPED this case. The blast's four consequence definitions are named BY
+        /// REFERENCE by a TOKEN DEFINITION rather than by a card node, and the trap operation
+        /// resolves that reference against the build's own triggered-effect catalog - so an
+        /// unregistered one would be a price the rule can name and the build cannot load.
+        /// </summary>
         [Test]
-        public void NothingAboutTheTrapIsRegisteredUntilTheDealing()
+        public void EveryTrapConsequenceIsRegisteredByTheDealing()
         {
             var registered = MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                 .Select(effect => effect.Id.Value)
                 .ToArray();
             foreach (var effect in MinEffectContent.MineTrapEffects())
             {
-                Assert.That(registered, Has.No.Member(effect.Id.Value),
-                    "Milestone 8.61j deals her and moves every definition across in one change.");
+                Assert.That(registered, Has.Member(effect.Id.Value),
+                    "Milestone 8.61j deals her and moved every definition across in one change.");
             }
         }
 
@@ -801,8 +807,15 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The build's own catalogs plus the trap's effects, which milestone 8.61j registers and this
-        /// fixture supplies in the meantime - the shape every deferred block of hers is driven through.
+        /// The build's own catalogs plus the trap's effects, deduplicated by id.
+        ///
+        /// <para><b>The concat is kept and the dedupe is what milestone 8.61j added</b>, which is
+        /// milestone 8.40j's BA-18 lesson stated for a triggered-effect catalog rather than for a
+        /// capability one: before the dealing this fixture SUPPLIED the four consequence definitions
+        /// the build withheld, and after it the build holds them - so the same line handed the
+        /// catalog each definition twice and it refused the duplicate. Reading the build's list alone
+        /// would have worked today and quietly stopped exercising the composition the moment a fifth
+        /// consequence existed; taking the union by id keeps the fixture saying what it meant.</para>
         /// </summary>
         private static MatchContentCatalogs TrapCatalogs()
         {
@@ -811,7 +824,10 @@ namespace GuardsDigital.Tests.EditMode
                 build.Capabilities,
                 build.Components,
                 new TriggeredEffectCatalog(
-                    build.TriggeredEffects.Definitions.Concat(MinEffectContent.MineTrapEffects())));
+                    build.TriggeredEffects.Definitions
+                        .Concat(MinEffectContent.MineTrapEffects())
+                        .GroupBy(effect => effect.Id.Value, StringComparer.Ordinal)
+                        .Select(group => group.First())));
         }
 
         /// <summary>

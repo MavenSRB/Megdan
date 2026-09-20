@@ -181,6 +181,24 @@ namespace GuardsDigital.Core.Cards
                     BainEffectContent.TriggeredEffects(BainCardContent.ContentRevision))
                 .Concat(new[] { GarrusEffectContent.ResolvedDiscardPrimary(GarrusCardContent.BattleFury, GarrusCardContent.ContentRevision) })
                 .Concat(new[] { WidgetEffectContent.DragonKnight(WidgetCardContent.DragonKnight, WidgetCardContent.ContentRevision) })
+                .Concat(
+                    // Milestone 8.61j, the milestone that deals Min the Dragonmonk as the NINETEENTH
+                    // hero. SEVEN, which is the largest group any dealing has added, and they reach
+                    // THREE different windows rather than one - the first time that has been true:
+                    //
+                    //   * `min-mine-trap-1..4` (8.61e) are the blast's consequence list, indexed by
+                    //     how many blasts a single crossing removed. They are named by the TOKEN
+                    //     DEFINITION rather than by a card node, through
+                    //     `TokenDefinition.MoveThroughTrapConsequences`, and the trap operation
+                    //     resolves that reference against this catalog - so an unregistered one is a
+                    //     price the rule can name and the build cannot load. They run on a route
+                    //     somebody else walks on a later turn, which is why they are triggered
+                    //     effects rather than steps of the Skill that placed the mine.
+                    //   * Both Grenades' end-of-turn bodies (8.61f) are named by reference by the
+                    //     Active effects those two faces stand, which is Tali's Blizzard shape.
+                    //   * Flurry of Blows' repeat (8.61h) is named by reference by a p.16 permanent
+                    //     ability, which is the shape every Ultimate in this list takes.
+                    MinComponentContent.TriggeredEffects)
                 .ToArray()));
 
         /// <summary>
@@ -284,6 +302,28 @@ namespace GuardsDigital.Core.Cards
                 .Concat(BainComponentContent.Handlers())
                 .Concat(GarrusActiveEffectContent.Handlers())
                 .Concat(WidgetComponentContent.RegisteredHandlers())
+                // Milestone 8.61j, the milestone that deals Min the Dragonmonk. SEVENTEEN handlers,
+                // which is the largest group a dealing has contributed from a hero's own file, and
+                // they are content of HERS rather than generic vocabulary - which is why they
+                // register from here exactly as Tali's six token operations and Bain's four marker
+                // ones do: FIVE Smoke bomb operations (presence, unbounded space, the two printed-icon
+                // spaces, the supply Place), TWO mine placements and ONE group reclaim, THREE grenade
+                // operations and TWO anchored hero selections, and her TWO end-of-turn Active
+                // effects and TWO doubling ones.
+                //
+                // NOT EVERY CONTRACT HER SERIES DECLARED IS HERE, and the two that are missing are
+                // missing on purpose: `min-place-smoke-bomb-in-range@1` and `min-reclaim-grenade@1`
+                // are reached by no composed sentence of hers, so this milestone DROPPED them rather
+                // than registering a contract nothing can start - which is what milestone 7.9's gate
+                // asks and what a permanent deferred list would only have said more quietly.
+                //
+                // Her two genuinely new contracts are NOT here for the opposite reason:
+                // `borrow-after-attack-text@1` registers from
+                // `SyntheticBorrowedCardTextCapabilities` and `take-deck-card-as-item@1` from
+                // `SyntheticRosterCapabilities`, because they are generic vocabulary this build now
+                // owns rather than content of hers. Both are new handler TYPES, so each took a
+                // showcase consumer in this same change.
+                .Concat(MinComponentContent.RegisteredHandlers())
                 .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
 
         // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate, adds NOTHING to the list

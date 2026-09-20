@@ -188,17 +188,27 @@ namespace GuardsDigital.Core.Cards.Verified
             new EffectCapabilityReference(ReclaimMine, 1);
 
         /// <summary>
-        /// The three capabilities her mines run on, held OUT of production registration until milestone
-        /// 8.61j deals her - the shape <c>BainComponentContent.DeferredHandlers</c> and
-        /// <c>SyntheticPlacementCapabilities.DeferredHandlers</c> both keep.
+        /// Nothing, from milestone 8.61j on - her three mine faces are cards a configured match now
+        /// puts in a hand, so the three capabilities below left this list for
+        /// <see cref="MineRegisteredHandlers"/> in that one edit. The member stays for the reason
+        /// every emptied deferred list in this build stays: the fixtures that assert the gate from
+        /// both sides ask a question rather than failing to compile.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> MineDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
+
+        /// <summary>
+        /// The three capabilities her mines run on, registered at milestone 8.61j - the shape
+        /// <c>BainComponentContent</c> and <c>SyntheticPlacementCapabilities</c> both took at their
+        /// own dealings.
         ///
         /// <para>All three run on handler TYPES this build already registers and showcases -
         /// <c>SyntheticTokenCapabilities</c>'s place and reclaim, registered at milestone 8.37 with the
-        /// showcase instances milestone 7.9's gate asks for - so none of them owes a showcase consumer
+        /// showcase instances milestone 7.9's gate asks for - so none of them owed a showcase consumer
         /// of its own at the dealing. What milestone 8.61d added to that type is an optional label on
         /// the minted instance ID, which is a parameter of an existing type and not a new one.</para>
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> MineDeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> MineRegisteredHandlers() =>
             new[]
             {
                 SyntheticTokenCapabilities.PlaceHandler(

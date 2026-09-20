@@ -128,18 +128,12 @@ namespace GuardsDigital.Core.Cards.Verified
             DisciplineRegisteredHandlers().Concat(DisciplineDeferredHandlers());
 
         /// <summary>
-        /// Empty, and it will stay empty until milestone 8.61j deals her. The member exists so the
-        /// fixture that asserts the deferral from both sides asks a question rather than failing to
-        /// compile, and so a "registered or deferred" sweep keeps its shape.
+        /// The two Active-effect creations her two doubling faces name, registered at milestone 8.61j
+        /// because Inner Strength and Perfect Self are cards a configured match now puts in a hand.
+        /// Both run on <see cref="ActiveEffectCreationHandler"/>, the type Arien's five persistent
+        /// texts proved at milestone 6.8, so neither owed a showcase consumer.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DisciplineRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>
-        /// The two Active-effect creations her two doubling faces name, deferred on the standing terms
-        /// the type remarks record.
-        /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> DisciplineDeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new ActiveEffectCreationHandler(
@@ -147,6 +141,14 @@ namespace GuardsDigital.Core.Cards.Verified
                 new ActiveEffectCreationHandler(
                     PerfectSelfDoubleItemBonusesV1, PerfectSelfDoubledItemsDefinition)
             };
+
+        /// <summary>
+        /// Empty, from milestone 8.61j on. The member exists so the fixture that asserts the gate
+        /// from both sides asks a question rather than failing to compile, and so a "registered or
+        /// deferred" sweep keeps its shape.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> DisciplineDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// The one sentence both faces print, at the uniqueness key each of them owns. One factory,

@@ -303,7 +303,19 @@ namespace GuardsDigital.Tests.EditMode
             // set names all run on types that already existed, and this rule counts TYPES.
             // Garrus adds resolved discard and named discarded-primary borrowing (two types).
             // Widget adds owned-token facts, anchored targets and coupled movement (three types).
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(89),
+            // Milestone 8.61j, the NINETEENTH dealing, moves it 89 -> 91. Min the Dragonmonk
+            // registers NINETEEN capability ids across exactly TWO new handler TYPES, which is the
+            // second-widest gap any dealing has had after Bain's: `BorrowAfterAttackTextHandler`
+            // (8.61g), the one contract in this build that names WHICH CARD'S TEXT another card's
+            // Attack is about to apply, and `TakeDeckCardAsItemHandler` (8.61h), the first that
+            // moves a card out of a deck and onto a dashboard as p.16's item. Each took a showcase
+            // consumer in the same change - the Red Understudy and the Red Archivist. Her other
+            // seventeen contracts all run on types that already existed: her token operations on
+            // `OwnedTokenFactHandler` and `PlaceHeroTokenHandler` (8.35z32, 8.37), her two anchored
+            // hero selections on Widget's anchored-target handler, and her four Active-effect
+            // creations on `ActiveEffectCreationHandler`, the type Arien's five persistent texts
+            // proved at milestone 6.8 - and this rule counts TYPES.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(91),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

@@ -375,6 +375,109 @@ namespace GuardsDigital.Tests.EditMode
                 fleet.LastFailure);
         }
 
+        /// <summary>
+        /// Milestone 8.61j, the milestone that deals Min the Dragonmonk. A LOBBY BOT actually holding
+        /// her printed set, playing it against three other bots until the host has accepted a hundred
+        /// commands, with nothing refused.
+        ///
+        /// <para><b>Why this tier and not another.</b> Milestone 8.38e's dealing found an
+        /// <c>AtomicityViolation</c> here that no other tier can see: a bot answered an effect choice,
+        /// that answer started a borrowed Attack with nobody in reach, and the command was refused as
+        /// <c>AttackActionRejected: TargetUnavailable</c> AFTER mutating state. A bot answers every
+        /// prompt a hero's content can raise, in orders a written journey never chooses.</para>
+        ///
+        /// <para><b>She raises more KINDS of prompt than any hero before her, which is the reason to
+        /// ask this of her by name.</b> Her mines make a bot place two or three tokens in one Skill
+        /// and order the spaces itself; both Grenades open an "up to N" pass a bot must be able to
+        /// DECLINE; Perfect Self's modal asks a bot to pick one bullet or both and then, on one of
+        /// them, to choose a card out of its own deck; her Blocks swap her with a token at p.14 step
+        /// 4; and the mine trap hands a DISCARD to the seat that walked over the blast, which is a
+        /// prompt issued to somebody who is not the acting bot at all. Any of those disagreeing with
+        /// the host's authorization fails here first.</para>
+        ///
+        /// <para><b>A bot must never see a mine's kind</b>, and that is asserted rather than assumed:
+        /// every seat but hers is handed <c>min-mine-facedown</c> by milestone 8.61d's projection
+        /// mask, bots included, so a fleet's own projections are swept for the two real kinds below.
+        /// The Director is deliberately unmasked and is not a seat this sweep reads.</para>
+        ///
+        /// <para><b>The seed is searched rather than written down, and the search is the assertion.</b>
+        /// A lobby bot drafts its own hero, so no caller can put her in a seat: what a fixture can do
+        /// is walk seeds until a draft seats her and then play THAT one. The walk is deterministic and
+        /// bounded, and a build in which no seed in the range seats her fails here - which would mean
+        /// she had fallen out of the offerable roster, the very thing milestone 8.35z41 exists to
+        /// catch.</para>
+        /// </summary>
+        [Test]
+        public void ALobbyBotDealtMin_PlaysHerWithoutTheHostRefusingAnything()
+        {
+            const string min = QuickGameSetupConfiguration.MinHeroIdValue;
+
+            var seed = 0;
+            for (var candidate = 1; candidate <= 64 && seed == 0; candidate++)
+            {
+                if (Draft(candidate).Contains(min))
+                {
+                    seed = candidate;
+                }
+            }
+
+            Assert.That(seed, Is.Not.Zero,
+                "No seed in 1..64 drafted Min, which means she is not offerable in a lobby at " +
+                "all - the exact defect milestone 8.35z41 was written to catch.");
+            TestContext.WriteLine("Min is drafted by lobby seed " + seed + ".");
+
+            var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
+            using var fleet = new PrivateSessionBotFleet(composer.Match, composer.Identity, "", new HumanWire(),
+                new CountingNonceSource(91), () => composer.Match.Projection,
+                composer.Configuration.ContentCatalogs, seed);
+            fleet.Host.Composition = composer;
+            fleet.FillOpenSeats(0, 0);
+            long tick = 0;
+            while (!fleet.Host.HasMatchStarted && tick < 200) fleet.Tick(++tick);
+            Assert.That(fleet.Host.HasMatchStarted, Is.True, fleet.LastFailure);
+
+            var hers = fleet.Host.Roster.Where(row => row.Hero.Value == min).ToArray();
+            Assert.That(hers, Is.Not.Empty, "The measured seed must still seat her.");
+
+            var accepted = 0;
+            var cursor = composer.Match.ReadResults(0).NextSequence;
+            var leakedKinds = new List<string>();
+            while (!fleet.Host.HasEnded && accepted < 100 && tick < 3000)
+            {
+                fleet.Tick(++tick);
+                var batch = composer.Match.ReadResults(cursor);
+                cursor = batch.NextSequence;
+                accepted += batch.Records.Count;
+
+                foreach (var row in fleet.Host.Roster.Where(seat => seat.Hero.Value != min))
+                {
+                    foreach (var token in composer.Match.ProjectionForSeat(row.Seat).PlacedTokens)
+                    {
+                        var definitionId = token.Definition.Id.Value;
+                        if (definitionId == "min-mine-blast" || definitionId == "min-mine-dud")
+                        {
+                            leakedKinds.Add(row.Seat + " sees " + definitionId);
+                        }
+                    }
+                }
+            }
+
+            var refusals = fleet.Host.DrainEvents()
+                .Where(record => record.Kind == PrivateSessionEventKind.SubmissionRefused)
+                .Select(record => record.Seat + "@" + record.Version + ": " + record.SubmissionRejection)
+                .ToArray();
+            Assert.That(refusals, Is.Empty,
+                "A bot offered something the host refused: " + string.Join(" | ", refusals) +
+                " ;; lastRefusal=" + fleet.LastRefusal);
+            Assert.That(fleet.LastFailure, Is.Empty);
+            Assert.That(accepted, Is.GreaterThanOrEqualTo(100),
+                "The fleet must play well past the first commitments with her in a seat. " +
+                fleet.LastFailure);
+            Assert.That(leakedKinds, Is.Empty,
+                "A bot's own projection named a mine's real kind: " +
+                string.Join(" | ", leakedKinds.Distinct()));
+        }
+
         [Test]
         public void InvalidPacingIsRefusedBeforeAnySeatIsClaimed()
         {

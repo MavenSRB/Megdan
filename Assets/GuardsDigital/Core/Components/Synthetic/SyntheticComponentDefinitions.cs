@@ -102,7 +102,16 @@ namespace GuardsDigital.Core.Components.Synthetic
                 // whose printed faces place TOKENS rather than markers.
                 new[] { HazardDefinition, WardDefinition }.Concat(
                     GuardsDigital.Core.Cards.Verified.TaliComponentContent.Tokens())
-                    .Concat(GuardsDigital.Core.Cards.Verified.WidgetComponentContent.Tokens()),
+                    .Concat(GuardsDigital.Core.Cards.Verified.WidgetComponentContent.Tokens())
+                    // Milestone 8.61j. Min the Dragonmonk's FIVE token definitions join the one
+                    // registered set at the milestone that deals her, on exactly the terms Tali's
+                    // three and Widget's Pyro joined on. Five definitions for THREE printed kinds,
+                    // and the extra two are the reason this hero is different: a facedown mine is a
+                    // real registered definition rather than an absence, because a client loads a
+                    // token's definition by id from this catalog and the value
+                    // `FacedownTokenMask` substitutes for every seat but hers has to be something
+                    // the catalog knows. Nothing places it and nothing ever will.
+                    .Concat(GuardsDigital.Core.Cards.Verified.MinComponentContent.Tokens()),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.

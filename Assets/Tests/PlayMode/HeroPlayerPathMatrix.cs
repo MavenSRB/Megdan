@@ -350,7 +350,31 @@ namespace GuardsDigital.Tests.PlayMode
         /// recorded the same sentence: a hero whose content reveals a card owes a journey where
         /// somebody else reads one.</para>
         /// </summary>
-        PublicCardRevealReading
+        PublicCardRevealReading,
+
+        /// <summary>
+        /// Milestone 8.61j. A token standing on the board whose KIND the reading seat is not allowed
+        /// to know - Min the Dragonmonk's mines, "Place 2 mine tokens, 1 blast and 1 dud, facedown in
+        /// radius".
+        ///
+        /// <para><b>It is a reading rather than an input</b>, on exactly the terms
+        /// <see cref="PublicCardRevealReading"/> and <see cref="HeldMarkerReading"/> are: nobody is
+        /// asked anything, and what the placement leaves behind is a thing every seat must be able to
+        /// see - and one thing about it that no seat but hers may see. Milestone 8.61d's
+        /// <c>FacedownTokenMask</c> substitutes <c>min-mine-facedown</c> for the real definition in
+        /// every other seat's projection, bots included, so the piece, its space, its supply and its
+        /// two printed properties all reach the table and only the price does not.</para>
+        ///
+        /// <para><b>Why it is its own shape and not folded into the Place beside it.</b> The Place is
+        /// answered by ONE seat clicking spaces it can see the contents of; this is the moment every
+        /// OTHER seat is shown a piece it must plan around and cannot identify. A row claiming only
+        /// the Place would be satisfied by a journey driven entirely from Min's own seat, which is
+        /// precisely the journey that cannot tell a working mask from no mask at all - so the shape
+        /// exists to force a journey that reads a LOSING seat's projection. It is the exact mirror of
+        /// milestone 8.40k's reveal: that one proves the other seats LEARN something, and this one
+        /// proves they DO NOT.</para>
+        /// </summary>
+        FacedownTokenReading
     }
 
     /// <summary>
@@ -1049,7 +1073,75 @@ namespace GuardsDigital.Tests.PlayMode
                 ["synthetic-place-in-range-beside-a-named-hero"] =
                     new[] { PlayerInteractionShape.BoardSpaceSelection },
                 ["synthetic-place-in-radius-beside-a-named-hero"] =
-                    new[] { PlayerInteractionShape.BoardSpaceSelection }
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // Milestone 8.61j. Min the Dragonmonk's thirteen entries - the NINETEENTH hero, and
+                // the first since Bain to introduce a new SHAPE: the facedown mine below. Everything
+                // else of hers is a shape this table already carries, which is what 8.61i's offline
+                // reading predicted and what this dealing measures.
+                //
+                // HER SMOKE BOMB AND HER GRENADE ARE WIDGET'S PYRO EXACTLY - an owned-token presence
+                // predicate, three bounded readings of where the piece stands, and a Place that is a
+                // space clicked on the board. The four readings ask nobody anything: each publishes a
+                // coordinate the Swap or the re-place beside it consumes, and a bomb out of reach
+                // publishes nothing and stops the step rather than drawing a control.
+                ["min-smoke-bomb-present"] = Array.Empty<PlayerInteractionShape>(),
+                ["min-smoke-bomb-space"] = Array.Empty<PlayerInteractionShape>(),
+                ["min-smoke-bomb-in-range"] = Array.Empty<PlayerInteractionShape>(),
+                ["min-smoke-bomb-in-radius"] = Array.Empty<PlayerInteractionShape>(),
+                ["min-place-smoke-bomb-in-radius"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["min-grenade-present"] = Array.Empty<PlayerInteractionShape>(),
+                ["min-grenade-space"] = Array.Empty<PlayerInteractionShape>(),
+                ["min-place-grenade"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // HER TWO MINE PLACEMENTS ARE THE SAME BOARD CLICK AND ONE THING BESIDES. The click
+                // is ordinary - a space inside the printed Radius, chosen by her, and her three Blue
+                // faces simply ask for it two or three times in printed order. What is not ordinary
+                // is what every OTHER seat is then shown, which is why both rows carry
+                // FacedownTokenReading as well: see that member's own remarks. Both rows carry it,
+                // because a journey proving the mask on a dud and never on a blast would prove the
+                // half of it that costs nothing.
+                ["min-place-mine-blast"] = new[]
+                {
+                    PlayerInteractionShape.BoardSpaceSelection,
+                    PlayerInteractionShape.FacedownTokenReading
+                },
+                ["min-place-mine-dud"] = new[]
+                {
+                    PlayerInteractionShape.BoardSpaceSelection,
+                    PlayerInteractionShape.FacedownTokenReading
+                },
+
+                // p.18's short-supply reclaim over the mine pile, answered by the rules rather than
+                // by anybody - the same classification `gain-item-from-the-box@1` carries.
+                ["min-reclaim-mine"] = Array.Empty<PlayerInteractionShape>(),
+
+                // Both Grenades' "Up to N enemy heroes adjacent to that token": a hero picked by
+                // clicking the piece where it stands, which is what every anchored target in this
+                // table has asked for since Widget's four. The "up to" itself is the node's own
+                // ConfirmOrDecline and is derived from the failure policy, not from here; the second
+                // pass differs only in excluding the hero the first one named, which narrows the
+                // candidates and not the input.
+                ["enemy-hero-beside-grenade"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["second-enemy-hero-beside-grenade"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Fast as Lightning's borrow: a card chosen on its whole face, which is the 8.15a
+                // contract `borrow-primary-action@1` and `discard-resolved-card@1` already ask for -
+                // and, like those two, the card is in her turn area or her discard rather than in her
+                // hand, which this table has never treated as a different input. On her real set the
+                // pool holds at most one card and the clause is a definite description, so the
+                // control is drawn only where p.10's undesignated decision genuinely opens.
+                ["borrow-after-attack-text"] = new[] { PlayerInteractionShape.HandCardSelection },
+
+                // Perfect Self's second bullet: a card chosen on its whole face out of her own DECK.
+                // The same input again - what is new is the zone it is drawn from and the fact that
+                // no other seat may see the candidates, and neither is a shape: milestone 8.40k
+                // settled that the privacy of a card choice is a projection property asserted inside
+                // the journey from a seat that must not see it, not a second control. The ITEM it
+                // becomes is read through ItemVisibilityAndUse, which every hero's row already owes.
+                ["take-deck-card-as-item"] = new[] { PlayerInteractionShape.HandCardSelection }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

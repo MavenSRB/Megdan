@@ -368,6 +368,12 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string RowennaHeroIdValue = "hero-rowenna";
 
+        /// <summary>
+        /// Milestone 8.61j. Min's own hero id - the NINETEENTH hero, on the 2026-09-19 user direction
+        /// that named her by name ("Time for new hero" -> "Min").
+        /// </summary>
+        public const string MinHeroIdValue = "hero-min";
+
         private static readonly (string HeroIdValue, string ContentId, string DisplayName)[]
             StagedDealtHeroRows =
             {
@@ -412,7 +418,11 @@ namespace GuardsDigital.Core.Setup
                 // Milestone 8.57g deals her and makes her pickable in the same commit, which is what
                 // the rule above asks for. She is the EIGHTEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
-                (RowennaHeroIdValue, "rowenna", "Rowenna the Vanguard")
+                (RowennaHeroIdValue, "rowenna", "Rowenna the Vanguard"),
+                // Milestone 8.61j deals her and makes her pickable in the same commit, which is what
+                // the rule above asks for. She is the NINETEENTH, so the sentence Tali's row wrote -
+                // "every hero this build can deal" - stays true only because this row is here too.
+                (MinHeroIdValue, "min", "Min the Dragonmonk")
             };
 
         /// <summary>
@@ -602,6 +612,36 @@ namespace GuardsDigital.Core.Setup
 
         public static QuickGameSetupConfiguration CreateStagedWaspVersusWidgetOneVsOne() =>
             CreateOneVsOne(new HeroContentId("widget"), "Widget");
+
+        /// <summary>
+        /// Milestone 8.61j. The same board with Min the Dragonmonk on the Blue seat, for the fixtures
+        /// whose subject is her printed set. The NINETEENTH hero.
+        ///
+        /// <para>Written in the SAME change as her five <c>SceneCardContent</c> members and her three
+        /// <c>MatchConfiguration</c> stagings, which is the whole of what milestone 8.38f's repair
+        /// teaches: without this arm every staged scene of hers falls through
+        /// <c>SelectSetupConfiguration</c>'s default to Arien's setup, and the hand factory - which
+        /// takes an owner id rather than naming a hero - then deals HER cards to a seat whose content
+        /// identity is <c>arien</c>. No offline tier can see that; only a loaded scene composes.</para>
+        ///
+        /// <para><b>She needs NO ally board, and it is worth saying so rather than leaving the
+        /// absence to be read as an oversight.</b> Not one of her nineteen faces names a friendly
+        /// hero, a friendly unit or an ally of any kind: her Stances push ENEMY units, her mines wait
+        /// for an ENEMY hero, both Grenades name ENEMY heroes adjacent to the token, and everything
+        /// else - the Smoke bomb, the three Blocks, the two doubling Skills and the Ultimate - is
+        /// about her own seat and her own pieces. Rowenna's, Brogan's and Tali's boards exist for a
+        /// clause hers never prints.</para>
+        ///
+        /// <para><b>What this staging reaches, measured at the dealing rather than assumed.</b> An
+        /// enemy MINION stands beside her, which is what her five Stances' "adjacent to you" needs
+        /// for both the Attack and the push; the enemy HERO is two spaces away, which is inside the
+        /// Radius 3 her Silver and her three mine faces print and the Radius 2 both Grenades print,
+        /// and outside every "adjacent" her set prints - so her mines have empty spaces to go into
+        /// and her Grenade has a space beside him. <c>MinDealingTests</c> measures all of it and
+        /// writes the coordinates out.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusMinOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("min"), "Min");
 
         /// <summary>
         /// Milestone 8.57g. The same board with Rowenna the Vanguard on the Blue seat, for the

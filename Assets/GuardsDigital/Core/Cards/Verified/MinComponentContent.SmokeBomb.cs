@@ -20,13 +20,15 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Ruse "in range", and Cobra and Ruse may then place it again. See
     /// <c>Docs/AI/Rules/HERO_MIN.md</c>, MI-Q1 and MI-Q2.</para>
     ///
-    /// <para><b>Nothing here is registered.</b> <c>MatchContentCatalogs</c> names no Min content, so no
-    /// configured match can put this token on a board and nothing reachable can start these
-    /// capabilities. That is milestone 7.9's gate rather than an oversight - the registered content
-    /// list is serialized, so registering a component before a dealt card can place it moves the pinned
-    /// list, every snapshot's bytes and every corpus digest while the content itself never moved.
-    /// 8.61j is the block that flips it; until then <see cref="SmokeBombDeferredHandlers"/> is the
-    /// whole list and <c>MinSmokeBombTests</c> asserts the deferral from both sides.</para>
+    /// <para><b>Everything here is registered, from milestone 8.61j on.</b> Until that block
+    /// <c>MatchContentCatalogs</c> named no Min content, so no configured match could put this token
+    /// on a board and nothing reachable could start these capabilities - milestone 7.9's gate rather
+    /// than an oversight, because the registered content list is serialized and registering a
+    /// component before a dealt card can place it moves the pinned list, every snapshot's bytes and
+    /// every corpus digest while the content itself never moved. 8.61j deals her, so
+    /// <see cref="SmokeBombRegisteredHandlers"/> is now the whole list,
+    /// <see cref="SmokeBombDeferredHandlers"/> is empty, and <c>MinSmokeBombTests</c> asserts the
+    /// registration from both sides.</para>
     /// </summary>
     public static partial class MinComponentContent
     {
@@ -117,15 +119,15 @@ namespace GuardsDigital.Core.Cards.Verified
         public static EffectCapabilityId PlaceSmokeBombInRadius { get; } =
             new EffectCapabilityId("min-place-smoke-bomb-in-radius");
 
-        /// <summary>
-        /// The supply Place a face reaching by printed Range would perform. Declared with its Radius
-        /// twin because <see cref="SyntheticTokenCapabilities.PlaceHandler"/> binds the channel into
-        /// the handler rather than taking it on the wire, and a Range-reaching supply Place is a
-        /// different capability from a Radius-reaching one for the same reason a definition-bound token
-        /// handler is: a payload can then name a node but never a different reach.
-        /// </summary>
-        public static EffectCapabilityId PlaceSmokeBombInRange { get; } =
-            new EffectCapabilityId("min-place-smoke-bomb-in-range");
+        // `min-place-smoke-bomb-in-range@1` WAS DECLARED HERE AT 8.61a AND IS GONE AT 8.61j, which is
+        // the dealing making a decision rather than losing a member. It was the supply Place a face
+        // reaching by printed Range would perform, and the composition blocks then measured that no
+        // printed sentence of hers reaches it: her only in-range placement is Ruse's second clause,
+        // which RELOCATES a standing bomb through the already-registered `synthetic-place-in-range@1`
+        // (see `MinEffectContent.PlaceSmokeBombInRange`, which is the sub-graph and not this id). A
+        // capability nothing can start is precisely what milestone 7.9's gate refuses to register, and
+        // leaving it in a deferred list forever would be a second, quieter way of saying the same
+        // thing. `MinPrintedSetTests.WithheldUntilTheDealing` never named it.
 
         public static EffectCapabilityReference SmokeBombPresentV1 =>
             new EffectCapabilityReference(SmokeBombPresent, 1);
@@ -142,9 +144,6 @@ namespace GuardsDigital.Core.Cards.Verified
         public static EffectCapabilityReference PlaceSmokeBombInRadiusV1 =>
             new EffectCapabilityReference(PlaceSmokeBombInRadius, 1);
 
-        public static EffectCapabilityReference PlaceSmokeBombInRangeV1 =>
-            new EffectCapabilityReference(PlaceSmokeBombInRange, 1);
-
         /// <summary>
         /// Her one token definition, for the offline content fixtures that compose catalogs of their
         /// own. It reaches no production catalog until 8.61j - see the type's own remarks.
@@ -152,17 +151,32 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IEnumerable<TokenDefinition> SmokeBombTokens() => new[] { SmokeBombDefinition };
 
         /// <summary>
-        /// The six Smoke bomb operations, every one of them deferred.
+        /// Nothing, from milestone 8.61j on. The member exists so the fixture that asserts the
+        /// deferral from both sides asks a question rather than failing to compile, and so a
+        /// "registered or deferred" sweep that concatenates both lists keeps its shape - the
+        /// arrangement <c>BainComponentContent</c> left behind after its own dealing moved four
+        /// handlers across, and the statement <c>SyntheticPlacementCapabilities</c> went back to
+        /// making at Rowenna's.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> SmokeBombDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
+
+        /// <summary>
+        /// The FIVE Smoke bomb operations, registered at milestone 8.61j because her Silver basic,
+        /// her two swapping Reds and her three Blocks are cards a configured match now puts in a hand.
         ///
         /// <para>Each is one capability per operation per token, which is the pattern milestones 8.23
         /// and 8.35z32 set for a hero's own components: the definition is bound to the handler rather
         /// than named on the wire, so a payload can name a node but never a different token. None is a
         /// new handler TYPE - <c>OwnedTokenFactHandler</c> is milestone 8.35z32's, showcased on the
         /// synthetic hazard, and <c>PlaceHeroTokenHandler</c> is milestone 8.37's, showcased as
-        /// <c>showcase-place-hero-token@1</c> - so none of the six owes a showcase consumer at the
-        /// dealing; what they owe is registration.</para>
+        /// <c>showcase-place-hero-token@1</c> - so none of the five owed a showcase consumer at the
+        /// dealing; what they owed is registration, and this is it.</para>
+        ///
+        /// <para>FIVE rather than 8.61a's six: the Range-reaching supply Place is DROPPED rather than
+        /// registered, for the reason recorded where its id used to be declared.</para>
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> SmokeBombDeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> SmokeBombRegisteredHandlers() =>
             new[]
             {
                 SyntheticOwnedTokenCapabilities.PresenceHandler(
@@ -174,18 +188,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 SyntheticOwnedTokenCapabilities.SpaceHandler(
                     SmokeBombInRadiusV1, SmokeBombDefinition, PrintedValueChannel.Radius),
                 SyntheticTokenCapabilities.PlaceHandler(
-                    PlaceSmokeBombInRadiusV1, SmokeBombDefinition, PrintedValueChannel.Radius),
-                SyntheticTokenCapabilities.PlaceHandler(
-                    PlaceSmokeBombInRangeV1, SmokeBombDefinition, PrintedValueChannel.Range)
+                    PlaceSmokeBombInRadiusV1, SmokeBombDefinition, PrintedValueChannel.Radius)
             };
-
-        /// <summary>
-        /// Nothing, until 8.61j. The member exists so the fixture that asserts the deferral from both
-        /// sides asks a question rather than failing to compile, and so a later "registered or
-        /// deferred" sweep that concatenates both lists keeps its shape - the arrangement
-        /// <c>BainComponentContent</c> left behind after its own dealing moved four handlers across.
-        /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> SmokeBombRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
     }
 }

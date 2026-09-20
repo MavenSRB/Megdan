@@ -125,6 +125,27 @@ namespace GuardsDigital.Core.Cards.Verified
                 ? CardTextTiming.DefenseAction
                 : CardTextTiming.None;
 
+        /// <summary>
+        /// The one decision window her three Block faces open - Ruse's "You may place the Smoke bomb
+        /// into a space in range", and nothing else.
+        ///
+        /// <para>Poof! and Vanish declare NOTHING, and that is the printed truth rather than an
+        /// omission: their whole body is one mandatory swap, which p.10 either performs or stops at.
+        /// Ruse's own swap is the same mandatory node, so the only control any of the three raises is
+        /// the <c>may</c> around the re-place. The Place underneath it asks for a SPACE rather than a
+        /// step, which is a board selection and not a confirm-or-decline.</para>
+        ///
+        /// <para>Milestone 8.61b composed these three faces and recorded this table as a debt for the
+        /// dealing, for the reason every contribution to <c>DecisionLabelCatalog</c> joins at a
+        /// dealing milestone: what a table is FOR is a window over a card a match deals.</para>
+        /// </summary>
+        public static IEnumerable<DecisionLabelDeclaration> VanishingDecisionLabels()
+        {
+            yield return DecisionLabelDeclaration.DecisionStep(
+                MinCardContent.Ruse, VanishingRePlaceMayId,
+                "Throw the smoke bomb again", "Leave the smoke bomb");
+        }
+
         private static EffectNodeId VanishingNode(string id) => new EffectNodeId(id);
     }
 }

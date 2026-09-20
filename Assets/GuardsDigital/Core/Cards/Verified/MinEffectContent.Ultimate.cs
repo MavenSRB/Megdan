@@ -60,9 +60,15 @@ namespace GuardsDigital.Core.Cards.Verified
         /// card says and nothing about how the engine finds it - which is the division Tigerclaw's
         /// identical node already records.</para>
         /// </summary>
+        /// <summary>
+        /// The one node her Ultimate's body has, named so that its decision label and the node agree
+        /// - the shape <c>PerfectSelfDoubleArmNode</c> keeps for Perfect Self's two bullets.
+        /// </summary>
+        public const string FlurryOfBlowsRepeatNode = "flurry-of-blows-repeat";
+
         public static EffectDefinition FlurryOfBlowsTriggeredEffect(string contentRevision)
         {
-            var repeat = new EffectNodeId("flurry-of-blows-repeat");
+            var repeat = new EffectNodeId(FlurryOfBlowsRepeatNode);
             return new EffectDefinition(
                 new EffectDefinitionId("min-flurry-of-blows-effect"),
                 contentRevision,

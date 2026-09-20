@@ -1460,6 +1460,78 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 hiddenGuessSkillProfile: RedHiddenGuessSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.61j: the TWO handler types Min the Dragonmonk's dealing registers, proved here
+        // on cards that are nobody's, on the division every dealing since 8.35z34 has drawn. They do
+        // NOT share a card, because they share no printed sentence - one is her Gold basic's rider
+        // and the other her Green Tier III's second bullet - and the grouping rule this file follows
+        // joins two contracts only when one face puts them in one sentence.
+        //
+        // Both are Skills although one of them only ever runs inside somebody's Attack, and that is
+        // the same latitude milestone 8.35z50's Scavenger took for `borrow-primary-action@1`: the
+        // contract itself asks the match which of the ACTOR'S OWN CARDS is named and needs no
+        // enclosing action to answer, so a Skill reaches the type honestly. What an enclosing Attack
+        // is for is the SPLICE that applies the named card's text, and that is
+        // `CardActionResolutionAuthority`'s work rather than this handler's.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.61j's rider-borrowing Skill, sitting outside its team's ordinary Initiative
+        /// band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedBorrowedCardTextSkillProfile { get; } =
+            new SyntheticSkillProfile("red-understudy", "Red Understudy", 40);
+
+        /// <summary>Milestone 8.61j's deck-card item Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedDeckItemSkillProfile { get; } =
+            new SyntheticSkillProfile("red-archivist", "Red Archivist", 41);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.61j's rider borrow, which is how
+        /// <c>BorrowAfterAttackTextHandler</c> (milestone 8.61g) becomes reachable from showcase
+        /// content rather than arriving for the first time inside Min's own slice.
+        ///
+        /// <para><b>The colour narrows nothing and the pool is the whole one</b>, which is the widest
+        /// reading of the two inputs and the same choice milestone 8.35z50's Scavenger made about its
+        /// own borrow: a fixture that narrowed to Red would prove the narrowing and leave the
+        /// contract's own reach unproved. Fast as Lightning binds <c>CardColor.Red</c>; this card
+        /// binds <c>CardColor.None</c>, which the schema's closed vocabulary admits precisely so that
+        /// a face narrowing nothing is expressible.</para>
+        ///
+        /// <para><b>Nothing consumes the named card, and that is deliberate rather than lazy.</b> The
+        /// consumer of this output in production is not an effect node at all - it is the p.14 step-7
+        /// splice <c>CardActionResolutionAuthority.AppendBorrowedAfterAttackText</c> reads back
+        /// through <c>BorrowedCardTextQuery</c> - so there is no node a fixture could add that would
+        /// be the printed one. What the gate asks of a new type is that a showcase card REACH it, and
+        /// the node below is Fast as Lightning's own rather than a weakened copy. It is
+        /// <c>IfAble</c>, because a fixture hand is dealt onto boards where the actor has resolved
+        /// and discarded nothing at all.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithBorrowedCardTextSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                borrowedCardTextSkillProfile: RedBorrowedCardTextSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.61j's deck-card item, which is how
+        /// <c>TakeDeckCardAsItemHandler</c> (milestone 8.61h) becomes reachable on the same terms.
+        ///
+        /// <para><b>Its Tier is deliberately one no fixture deck holds, and that is the fixture's
+        /// whole safety</b> - the same restraint milestone 8.39i's Red Privateer took with a
+        /// threshold that cannot end a match and milestone 8.35z53's cards took by selecting minions
+        /// they never defeated. The handler MOVES A CARD out of the actor's deck and onto her
+        /// dashboard, and this card is dealt into hands whose fixtures count what is in a deck. Every
+        /// showcase definition carries <c>CardProgressionProfile.NotStated</c>, so its Tier is
+        /// <c>CardTier.None</c> and a node asking for <c>CardTier.II</c> finds no candidate: the
+        /// contract is reached, anticipated and reported as p.10's impossible step, and nothing
+        /// moves. The binding is Perfect Self's own - the actor's own deck, one Tier, the three
+        /// published facts the node declares - rather than a weakened copy.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithDeckItemSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                deckItemSkillProfile: RedDeckItemSkillProfile);
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1623,6 +1695,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile soloVictorySkillProfile = null,
             SyntheticSkillProfile markerBoardSkillProfile = null,
             SyntheticSkillProfile hiddenGuessSkillProfile = null,
+            SyntheticSkillProfile borrowedCardTextSkillProfile = null,
+            SyntheticSkillProfile deckItemSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -1926,6 +2000,24 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateHiddenGuessSkillDefinition(hiddenGuessSkillProfile),
                     hiddenGuessSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            // Milestone 8.61j. Min's two showcase Skills, appended after every earlier one so no
+            // existing hand position moves.
+            if (borrowedCardTextSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateBorrowedCardTextSkillDefinition(borrowedCardTextSkillProfile),
+                    borrowedCardTextSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (deckItemSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateDeckItemSkillDefinition(deckItemSkillProfile),
+                    deckItemSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -4465,6 +4557,97 @@ namespace GuardsDigital.Core.Cards.Synthetic
         /// Milestone 8.40j. The hidden card pick and the public reveal that names a colour against it,
         /// on a card that is nobody's. See <see cref="RedHiddenGuessSkillProfile"/>.
         /// </summary>
+        /// <summary>
+        /// Milestone 8.61j. The card whose "After the attack" text a rider borrow names - Min's Fast
+        /// as Lightning's one node, on a card that is nobody's. See
+        /// <see cref="RedBorrowedCardTextSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateBorrowedCardTextSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("borrowed-card-text-root");
+            var borrow = new EffectNodeId("borrowed-card-text-name");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-61j-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { borrow }),
+                    // IfAble rather than Mandatory, which is the one difference from the printed
+                    // node: a fixture hand is dealt onto boards where the actor has resolved and
+                    // discarded nothing, and a card that refused to be played there would prove
+                    // nothing.
+                    new EffectNodeDefinition(
+                        borrow, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticBorrowedCardTextCapabilities.BorrowAfterAttackTextV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticBorrowedCardTextCapabilities.PoolParameter,
+                                BorrowedCardTextPool.OwnedResolvedOrDiscardedCards),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticBorrowedCardTextCapabilities.ColorParameter,
+                                CardColor.None)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticBorrowedCardTextCapabilities.BorrowedCardOutput,
+                                EffectValueKind.CardInstance)
+                        })
+                });
+
+            return SkillCard(profile, "primary-borrowed-card-text-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.61j. A Tier taken out of the actor's own deck and placed on her dashboard as a
+        /// permanent item - Min's Perfect Self's second bullet, on a card that is nobody's and at a
+        /// Tier no fixture deck holds. See <see cref="RedDeckItemSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateDeckItemSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("deck-item-root");
+            var take = new EffectNodeId("deck-item-take");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-61j-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { take }),
+                    new EffectNodeDefinition(
+                        take, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticRosterCapabilities.TakeDeckCardAsItemV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromRole(
+                                "hero", EffectRoleKind.Actor, EffectValueKind.Hero),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticRosterCapabilities.ItemCardTierParameter, CardTier.II)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("hero", EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.TakenItemCardOutput,
+                                EffectValueKind.CardInstance),
+                            new EffectOutputBinding(
+                                SyntheticRosterCapabilities.GrantedItemOrderOutput,
+                                EffectValueKind.Integer)
+                        })
+                });
+
+            return SkillCard(profile, "primary-deck-item-skill", effect);
+        }
+
         private static CardDefinition CreateHiddenGuessSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("hidden-guess-root");

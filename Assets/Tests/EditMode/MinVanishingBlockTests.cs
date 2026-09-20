@@ -469,16 +469,21 @@ namespace GuardsDigital.Tests.EditMode
         // (e) The deferral, from both sides
         // -------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Milestone 8.61j FLIPPED this case: the swap all three faces perform runs on 8.61a's
+        /// bounded owned-token fact, and a configured match can start it now.
+        /// </summary>
         [Test]
-        public void NothingOfHerVanishingBlockIsRegisteredInThisBuild()
+        public void HerVanishingBlocksContractsAreRegisteredInThisBuild()
         {
             var build = MatchContentCatalogs.ForThisBuild();
 
-            foreach (var handler in MinComponentContent.SmokeBombDeferredHandlers())
+            Assert.That(MinComponentContent.SmokeBombDeferredHandlers(), Is.Empty);
+            foreach (var handler in MinComponentContent.SmokeBombRegisteredHandlers())
             {
-                Assert.That(build.Capabilities.Registered, Has.No.Member(handler.Reference),
-                    $"'{handler.Reference}' is not in the build's catalog, so no configured match can " +
-                    "start the swap these three faces perform. 8.61j is the block that flips it.");
+                Assert.That(build.Capabilities.Registered, Has.Member(handler.Reference),
+                    $"'{handler.Reference}' is in the build's catalog, so a configured match can " +
+                    "start the swap these three faces perform.");
             }
 
             Assert.That(

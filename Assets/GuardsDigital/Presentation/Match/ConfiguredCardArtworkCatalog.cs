@@ -111,7 +111,15 @@ namespace GuardsDigital.Presentation.Match
                 // map's business. Written here at the same moment as the eighteen rows, for the
                 // reason those eight paragraphs give: the rows alone are what every offline tier can
                 // see, and this map is what turns them into a front on a card.
-                { "rowenna", "Rowenna" }
+                { "rowenna", "Rowenna" },
+                // Milestone 8.61j, the TWELFTH consecutive dealing told by the comment above rather
+                // than by a check. Her extraction directory spells the name plainly, and unlike
+                // Rowenna's her STANDEE agrees with it: the bundled manifest carries her circular
+                // faces under `Min` too, so for the first time since Cutter the card corpus and the
+                // token corpus name a hero the same way. Written here at the same moment as the
+                // eighteen rows, for the reason those paragraphs give: the rows alone are what every
+                // offline tier can see, and this map is what turns them into a front on a card.
+                { "min", "Min" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -418,6 +426,13 @@ namespace GuardsDigital.Presentation.Match
                 // Distance, Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard,
                 // Swift's Backup, Cutter's Few More Steps and Bain's Side Quest are not among theirs.
                 .Concat(RowennaCardContent.DealtDefinitions)
+                // Milestone 8.61j. Min's eighteen, on exactly the terms the rows above state. Chop
+                // Down is p.20's Handicap card and is not among her DealtDefinitions, exactly as
+                // Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance,
+                // Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard, Swift's
+                // Backup, Cutter's Few More Steps, Bain's Side Quest and Rowenna's Earn the Spurs
+                // are not among theirs.
+                .Concat(MinCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

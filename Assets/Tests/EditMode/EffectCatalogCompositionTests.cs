@@ -175,6 +175,20 @@ namespace GuardsDigital.Tests.EditMode
                 .Concat(BainComponentContent.Handlers())
                 .Concat(GarrusActiveEffectContent.Handlers())
                 .Concat(WidgetComponentContent.RegisteredHandlers())
+                // Milestone 8.61j. Min's SEVENTEEN - five Smoke bomb operations, two mine placements
+                // and one group reclaim, three grenade operations, two anchored hero selections and
+                // four Active-effect creations (both Grenades' end-of-turn arming and both doubling
+                // faces) - joining the moment her dealing milestone put them into
+                // MatchContentCatalogs, and mirrored BY HAND here for the reason Dodger's pair
+                // records: a mirror that called the production composer would agree with it by
+                // construction and prove nothing. She is the third hero whose contribution here is
+                // not ONLY an Active-effect list, on Tali's terms and Bain's: her token operations
+                // are content of HERS, bound to her own token definitions. Her TWO genuinely generic
+                // contracts are NOT in this list - `borrow-after-attack-text@1` registers from
+                // SyntheticBorrowedCardTextCapabilities and `take-deck-card-as-item@1` from
+                // SyntheticRosterCapabilities, and this mirror is of VerifiedCapabilityHandlers
+                // alone, exactly as Silverarrow's CardTextFastTravelHandler is excluded above.
+                .Concat(MinComponentContent.RegisteredHandlers())
                 .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
     }
 }

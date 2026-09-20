@@ -16,22 +16,24 @@ namespace GuardsDigital.Core.Cards.Verified
     /// triggered effects must a catalog hold - and those are the three aggregates below. The block
     /// lists stay where they are and remain the homes of their own declarations.</para>
     ///
-    /// <para><b>Nothing here is registered, and these aggregates are what 8.61j moves.</b>
-    /// <see cref="MatchContentCatalogs"/> names no Min content, so no configured match can put one of
-    /// her pieces on a board and nothing reachable can start one of her capabilities - milestone 7.9's
-    /// gate, on the terms every block of hers recorded: the registered list is serialized and pinned,
-    /// so a contract registered before a dealt card can start it moves pinned bytes while no content
-    /// moved. <see cref="RegisteredHandlers"/> is empty and <see cref="DeferredHandlers"/> is the whole
-    /// debt, which is the arrangement <c>BainComponentContent</c> left behind after its own dealing
-    /// moved four handlers across.</para>
+    /// <para><b>Everything here is registered, and these aggregates are what 8.61j moved.</b> Until
+    /// that block <see cref="MatchContentCatalogs"/> named no Min content, so no configured match
+    /// could put one of her pieces on a board and nothing reachable could start one of her
+    /// capabilities - milestone 7.9's gate, on the terms every block of hers recorded: the registered
+    /// list is serialized and pinned, so a contract registered before a dealt card can start it moves
+    /// pinned bytes while no content moved. 8.61j deals her, so <see cref="RegisteredHandlers"/> is
+    /// the whole list and <see cref="DeferredHandlers"/> is empty - the arrangement
+    /// <c>BainComponentContent</c> left behind after its own dealing moved four handlers
+    /// across.</para>
     ///
     /// <para><b>Two contracts of hers are deliberately NOT in this file's list</b>, because they are
-    /// shared vocabulary rather than her components: <c>borrow-after-attack-text@1</c> waits in
-    /// <c>SyntheticBorrowedCardTextCapabilities.DeferredHandlers</c> and
-    /// <c>take-deck-card-as-item@1</c> in <c>SyntheticRosterCapabilities.DeferredHandlers</c>, each
-    /// beside the family that owns its handler type. Both are new handler TYPES, so 8.61j owes each a
-    /// showcase consumer as well as a registration - which is the second half of milestone 7.9's gate,
-    /// and the half that cannot be discharged by a dealing alone.</para>
+    /// shared vocabulary rather than her components: <c>borrow-after-attack-text@1</c> registers from
+    /// <c>SyntheticBorrowedCardTextCapabilities.RegisteredHandlers</c> and
+    /// <c>take-deck-card-as-item@1</c> from <c>SyntheticRosterCapabilities.RegisteredHandlers</c>,
+    /// each beside the family that owns its handler type. Both are new handler TYPES, so 8.61j owed
+    /// each a showcase consumer as well as a registration - the second half of milestone 7.9's gate,
+    /// discharged by the Red Understudy and the Red Archivist in
+    /// <c>SyntheticShowcaseHand</c>.</para>
     /// </summary>
     public static partial class MinComponentContent
     {
@@ -55,19 +57,23 @@ namespace GuardsDigital.Core.Cards.Verified
             RegisteredHandlers().Concat(DeferredHandlers());
 
         /// <summary>
-        /// Nothing, until milestone 8.61j deals her. The member exists so that the fixtures asserting
-        /// the deferral from both sides ask a question rather than failing to compile, and so the
-        /// "registered or deferred" shape survives the dealing that empties the list below.
+        /// Her SEVENTEEN contracts, all of them registered by milestone 8.61j: five Smoke bomb
+        /// operations, two mine placements and one group reclaim, three grenade operations, two
+        /// anchored hero selections and four Active-effect creations.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            SmokeBombRegisteredHandlers().Concat(DisciplineRegisteredHandlers());
+            SmokeBombRegisteredHandlers()
+                .Concat(MineRegisteredHandlers())
+                .Concat(GrenadeRegisteredHandlers())
+                .Concat(DisciplineRegisteredHandlers());
 
         /// <summary>
-        /// Every contract of hers this build withholds: 8.61a's six Smoke bomb operations, 8.61d's two
-        /// mine placements and one reclaim, 8.61f's grenade presence, space, place, reclaim, two
-        /// anchored hero selections and two end-of-turn Active effects, and 8.61h's two doubling Active
-        /// effects. The two contracts that live in a shared family's own deferred list are named in
-        /// this type's remarks.
+        /// Nothing, from milestone 8.61j on - the block that deals her. Every contract this build
+        /// withheld while her faces were composed and undealt is now in
+        /// <see cref="RegisteredHandlers"/>, except the TWO that no composed sentence of hers reaches
+        /// and which the dealing therefore DROPPED rather than registered:
+        /// <c>min-place-smoke-bomb-in-range@1</c> and <c>min-reclaim-grenade@1</c>, each recorded
+        /// where its declaration used to stand.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             SmokeBombDeferredHandlers()

@@ -697,38 +697,51 @@ namespace GuardsDigital.Tests.EditMode
         // The deferral, asserted from both sides.
         // -------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// Milestone 8.61j FLIPPED this case, which until then asserted the opposite from the same
+        /// three sides. All FIVE of her token definitions are registered, the facedown one included
+        /// - a client loads a masked token's definition by id from that catalog, so the value the
+        /// mask substitutes has to be something the catalog knows.
+        /// </summary>
         [Test]
-        public void NothingAboutHerMinesIsRegisteredUntilTheDealing()
+        public void EverythingAboutHerMinesIsRegisteredByTheDealing()
         {
             var catalogs = MatchContentCatalogs.ForThisBuild();
 
             Assert.That(
-                catalogs.Components.RegisteredTokens.Select(reference => reference.DefinitionId.Value),
-                Has.None.StartsWith("min-"),
-                "A component registered before a dealt card could place it moves pinned bytes for " +
-                "nothing; milestone 8.61j moves all three across in one change.");
+                catalogs.Components.RegisteredTokens.Select(reference => reference.DefinitionId.Value)
+                    .Where(value => value.StartsWith("min-", StringComparison.Ordinal))
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    "min-grenade", "min-mine-blast", "min-mine-dud", "min-mine-facedown",
+                    "min-smoke-bomb-token"
+                }),
+                "Five definitions for three printed kinds, and the facedown face is a real "  +
+                "registration rather than an absence.");
 
-            var deferred = MinComponentContent.MineDeferredHandlers().ToArray();
-            Assert.That(deferred.Select(handler => handler.Reference),
+            Assert.That(MinComponentContent.MineDeferredHandlers(), Is.Empty);
+            var registered = MinComponentContent.MineRegisteredHandlers().ToArray();
+            Assert.That(registered.Select(handler => handler.Reference),
                 Is.EquivalentTo(new[]
                 {
                     MinComponentContent.PlaceMineBlastV1,
                     MinComponentContent.PlaceMineDudV1,
                     MinComponentContent.ReclaimMineV1
                 }));
-            foreach (var handler in deferred)
+            foreach (var handler in registered)
             {
-                Assert.That(catalogs.Capabilities.TryLoad(handler.Reference, out _), Is.False,
-                    $"'{handler.Reference}' is deferred, so this build must not be able to run it.");
+                Assert.That(catalogs.Capabilities.TryLoad(handler.Reference, out _), Is.True,
+                    $"'{handler.Reference}' is registered, so this build can run it.");
             }
 
             var configured = new HashSet<CardDefinitionId>(
-                MatchConfiguration.CreateOfficialSixPlayerForInternalTest(TeamSide.Red)
+                MatchConfiguration.CreateStagedMinForInternalTest(TeamSide.Red)
                     .CardDefinitions.Select(definition => definition.Id));
             Assert.That(
-                MinCardContent.MineDefinitions().Where(definition => configured.Contains(definition.Id)),
+                MinCardContent.MineDefinitions().Where(definition => !configured.Contains(definition.Id)),
                 Is.Empty,
-                "And no configured match deals one of her faces yet.");
+                "And a configured match deals every one of her mine faces.");
         }
 
         // -------------------------------------------------------------------------------------
@@ -827,11 +840,11 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static IEffectCapabilityHandler PlaceBlastHandler() =>
-            MinComponentContent.MineDeferredHandlers().Single(handler =>
+            MinComponentContent.MineRegisteredHandlers().Single(handler =>
                 handler.Reference.Equals(MinComponentContent.PlaceMineBlastV1));
 
         private static IEffectCapabilityHandler PlaceDudHandler() =>
-            MinComponentContent.MineDeferredHandlers().Single(handler =>
+            MinComponentContent.MineRegisteredHandlers().Single(handler =>
                 handler.Reference.Equals(MinComponentContent.PlaceMineDudV1));
 
         private static PlacedToken Placed(

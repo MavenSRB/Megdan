@@ -54,7 +54,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('tali', 'widget')]
+    [ValidateSet('tali', 'widget', 'min')]
     [string] $Hero = 'tali',
     [switch] $Check,
     [switch] $Force
@@ -68,6 +68,180 @@ $ErrorActionPreference = 'Stop'
 if ($Hero -eq 'widget') {
     & (Join-Path $PSScriptRoot 'Prepare-HeroTokens.ps1') -Hero widget -Companion -Neutral -Check:$Check -Force:$Force
     exit
+}
+
+# -------------------------------------------------------------------------------------------------
+# Milestone 8.61j. Min the Dragonmonk's FIVE prepared faces, in a self-contained arm.
+#
+# It is its own block rather than a third row of the `$declared` table below because her pieces are
+# not one family: Tali's three roles are one double-sided token in one atlas, and Min's three printed
+# KINDS are three separate physical pieces spread across TWO atlases, one of which is a modern hex
+# pair and the other a pair of older square-ish mine tiles. A table shaped for the first cannot
+# describe the second without becoming a table of arbitrary rectangles, which is the thing every note
+# in this file exists to avoid.
+#
+# WHAT EACH ELEMENT IS, read from the manifest and LOOKED AT rather than inferred from its name:
+#
+#   * `Smoke_Bomb` 1421883, `Image_0_Atlas` (349,2526) - a blue smoke cloud in a hex. Her Silver
+#     basic's piece, and the only one of the five whose manifest name says what it draws.
+#   * 1421877, `Image_0_Atlas` (0,2526) - NAMED `Mine_Dud` in the manifest and it is THE GRENADE: a
+#     fiery skull-bomb hex, identified by the user on 2026-09-19 and recorded as MI-Q6. It sits
+#     beside the Smoke bomb in the modern hex block and looks nothing like the two mine tiles below.
+#     The name is the corpus's mistake and this script does not repeat it.
+#   * 1134878 / 1134879, `Image_3_Atlas` - the older mine pair. Their FIRST sprite is byte-identical
+#     between the two elements at (2677,562) and is a skull-and-crossbones danger sign: that is the
+#     FACEDOWN back, which is exactly what `MinComponentContent.MineFacedownDefinition` is for, and
+#     the only face any seat but Min's is ever handed. Their SECONDS differ - 1134879's at
+#     (3103,562) is a green landmine (the blast) and 1134878's at (3543,562) is a bare grass patch
+#     (the dud) - which is the same shared-first / distinct-second shape Tali's family has, and the
+#     assertions below check it for the same reason hers do.
+#
+# MI-Q6 IS SETTLED AND THE CARD GLYPH IS NOT CROPPED. Every face here is a real extracted token.
+# -------------------------------------------------------------------------------------------------
+if ($Hero -eq 'min') {
+    $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $corpusRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
+    $targetRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
+
+    if (-not (Test-Path -LiteralPath $corpusRoot -PathType Container)) {
+        Write-Output "The private Tabletopia corpus is absent: $corpusRoot. Nothing was written."
+        exit 0
+    }
+
+    $manifests = @(Get-ChildItem -LiteralPath $corpusRoot -Filter 'manifest-bundled__*.json' -File)
+    if ($manifests.Count -ne 1) {
+        throw "Expected exactly one bundled manifest under $corpusRoot; found $($manifests.Count)."
+    }
+
+    $manifest = Get-Content -Raw -LiteralPath $manifests[0].FullName | ConvertFrom-Json
+
+    # Element id, which of its declared sprites, the expected top-left the milestone measured, and
+    # the token definition id the runtime addresses the file by. The expected origin is an
+    # ASSERTION rather than the crop: the width and height are read from the manifest, so a corpus
+    # that re-packs its atlas fails loudly here instead of writing a neighbouring token's pixels.
+    $minTokens = @(
+        @{ Element = 1421883; Sprite = 0; X = 349;  Y = 2526; TokenId = 'min-smoke-bomb-token'; Label = 'Smoke bomb' },
+        @{ Element = 1421877; Sprite = 0; X = 0;    Y = 2526; TokenId = 'min-grenade';          Label = 'Grenade (the misnamed Mine_Dud element - MI-Q6)' },
+        @{ Element = 1134878; Sprite = 0; X = 2677; Y = 562;  TokenId = 'min-mine-facedown';    Label = 'Mine, facedown back' },
+        @{ Element = 1134879; Sprite = 1; X = 3103; Y = 562;  TokenId = 'min-mine-blast';       Label = 'Mine (blast)' },
+        @{ Element = 1134878; Sprite = 1; X = 3543; Y = 562;  TokenId = 'min-mine-dud';         Label = 'Mine (dud)' }
+    )
+
+    # The shared facedown back is what the per-seat mask depends on, so it is proved rather than
+    # assumed: if the two mine elements stop agreeing on their first sprite, the piece this script
+    # calls a back is not one.
+    $backs = @()
+    foreach ($id in @(1134878, 1134879)) {
+        $found = @($manifest | Where-Object { $_.elementId -eq $id })
+        if ($found.Count -ne 1) {
+            throw "The manifest holds $($found.Count) elements with id $id; one was expected."
+        }
+        $first = @($found[0].atlases[0].sprites)[0]
+        $backs += "$($first.x),$($first.y),$($first.width),$($first.height)"
+    }
+
+    $backs = @($backs | Sort-Object -Unique)
+    if ($backs.Count -ne 1) {
+        throw ("The two mine elements declare different first sprites ($($backs -join '; ')), so " +
+            'there is no shared facedown back. Nothing was written.')
+    }
+
+    Write-Output "Declared: shared facedown mine back at $($backs[0])."
+
+    Add-Type -AssemblyName System.Drawing
+    if (-not $Check) { New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null }
+
+    $written = 0
+    $matched = 0
+    foreach ($token in $minTokens) {
+        $found = @($manifest | Where-Object { $_.elementId -eq $token.Element })
+        if ($found.Count -ne 1) {
+            throw "The manifest holds $($found.Count) elements with id $($token.Element); one was expected."
+        }
+
+        $element = $found[0]
+        if ($element.elementType -ne 'Tokens') {
+            throw "Element $($token.Element) is '$($element.elementType)', not 'Tokens'. Nothing was written."
+        }
+
+        $atlas = $element.atlases[0]
+        $sprites = @($atlas.sprites)
+        if ($sprites.Count -lt ($token.Sprite + 1)) {
+            throw "Element $($token.Element) declares $($sprites.Count) sprites; index $($token.Sprite) was expected."
+        }
+
+        $rect = $sprites[$token.Sprite]
+        if ([int] $rect.x -ne $token.X -or [int] $rect.y -ne $token.Y) {
+            throw ("Element $($token.Element) sprite $($token.Sprite) is at ($($rect.x),$($rect.y)), " +
+                "not the measured ($($token.X),$($token.Y)). Nothing was written.")
+        }
+
+        $atlasIndexMatch = [regex]::Match($atlas.resource.id, '^Image_(?<index>\d+)_Atlas$')
+        if (-not $atlasIndexMatch.Success) {
+            throw "The declared atlas resource id '$($atlas.resource.id)' is not in the expected form."
+        }
+
+        $atlasIndex = $atlasIndexMatch.Groups['index'].Value
+        $candidates = @(Get-ChildItem -LiteralPath $corpusRoot -Filter "*.sprite$atlasIndex`__*.jpg" -File)
+        if ($candidates.Count -ne 1) {
+            throw "Expected exactly one extracted image for atlas '$($atlas.resource.id)'; found $($candidates.Count)."
+        }
+
+        $x = [int] $rect.x
+        $y = [int] $rect.y
+        $w = [int] $rect.width
+        $h = [int] $rect.height
+        $target = [System.IO.Path]::Combine($targetRoot, "$($token.TokenId).png")
+        if ((Test-Path -LiteralPath $target) -and -not $Force) {
+            $existing = [System.Drawing.Image]::FromFile($target)
+            try { $same = $existing.Width -eq $w -and $existing.Height -eq $h }
+            finally { $existing.Dispose() }
+            if ($same) {
+                $matched++
+                Write-Output "OK: $($token.Label) already prepared at ${w}x${h}: $target"
+                continue
+            }
+        }
+
+        if ($Check) { throw "Missing or stale prepared token face: $target" }
+
+        $source = [System.Drawing.Image]::FromFile($candidates[0].FullName)
+        try {
+            if ($source.Width -ne [int] $atlas.width -or $source.Height -ne [int] $atlas.height) {
+                throw ("Atlas '$($candidates[0].Name)' is $($source.Width)x$($source.Height), but the " +
+                    "manifest declares $($atlas.width)x$($atlas.height). Nothing was written.")
+            }
+
+            if ($x -lt 0 -or $y -lt 0 -or ($x + $w) -gt $source.Width -or ($y + $h) -gt $source.Height) {
+                throw 'A declared face rectangle falls outside the atlas. Nothing was written.'
+            }
+
+            $bitmap = New-Object System.Drawing.Bitmap $w, $h
+            try {
+                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                try {
+                    $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
+                    $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
+                    $graphics.DrawImage(
+                        $source,
+                        (New-Object System.Drawing.Rectangle 0, 0, $w, $h),
+                        (New-Object System.Drawing.Rectangle $x, $y, $w, $h),
+                        [System.Drawing.GraphicsUnit]::Pixel)
+                } finally { $graphics.Dispose() }
+
+                $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+                $written++
+                Write-Output "WROTE: $($token.Label) -> $target (${w}x${h}, from ($x,$y) of $($atlas.resource.id))."
+            } finally { $bitmap.Dispose() }
+        } finally { $source.Dispose() }
+    }
+
+    Write-Output ("Prepared token faces: $written written, $matched already present. The source atlas " +
+        'and the extracted corpus were read only. The written resources are ignored by Git and are ' +
+        'never distributed.')
+    exit 0
 }
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))

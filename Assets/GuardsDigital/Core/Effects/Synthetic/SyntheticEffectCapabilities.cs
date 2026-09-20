@@ -149,6 +149,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 .Concat(SyntheticResolvedDiscardCapabilities.RegisteredHandlers())
                 .Concat(SyntheticNamedBorrowCapabilities.RegisteredHandlers())
                 .Concat(SyntheticOwnedTokenCapabilities.RegisteredHandlers())
+                // Milestone 8.61j, the milestone that deals Min the Dragonmonk. Milestone 8.61g built
+                // this file's one contract and deliberately left it out of the catalog on the same
+                // half of the rule every line above states: no dealt card printed the sentence, and
+                // the reachability gate refuses a registration no card can start. Her Fast as
+                // Lightning is the card that changes that, and the handler TYPE took a showcase
+                // consumer in the same change.
+                .Concat(SyntheticBorrowedCardTextCapabilities.RegisteredHandlers())
                 .Concat(contentHandlers ?? Enumerable.Empty<IEffectCapabilityHandler>()));
 
         /// <summary>

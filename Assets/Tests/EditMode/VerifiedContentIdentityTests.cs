@@ -190,7 +190,16 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: her staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("rowenna", "rowenna-8-57f-rev-1", "d3d66ab284dfb90aa842d9f75f07aab90646d95dd49722d1b7a6aa14cf209e22")
+            new IdentityPin("rowenna", "rowenna-8-57f-rev-1", "d3d66ab284dfb90aa842d9f75f07aab90646d95dd49722d1b7a6aa14cf209e22"),
+            // Milestone 8.61j. THE NINETEENTH PIN, on exactly the terms every pin from the seventh
+            // on arrived on: a pin is a claim about content a configured match loads, and milestone
+            // 8.61i composed Min's nineteen faces without dealing her.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run, with the eighteen pins above
+            // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for
+            // and did not recur: her staged configuration went into EveryDealtDefinition below in
+            // this same change, so the walk sees her eighteen rather than measuring her as zero.
+            new IdentityPin("min", "min-8-61i-rev-1", "364d994e0afac8ab6f35586c528ee341bdce236f91e9efb26e6eff61991aa198")
         };
 
         [Test]
@@ -339,6 +348,12 @@ namespace GuardsDigital.Tests.EditMode
                 // covering every hero this build deals is kept true by this row rather than by the
                 // one above it.
                 .Concat(MatchConfiguration.CreateStagedRowennaForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.61j. Min's staged configuration, on the same terms and added in the
+                // SAME change as her pin - which is what the two warnings above ask for. She is the
+                // nineteenth, so the union covering every hero this build deals is kept true by
+                // this row rather than by the one above it.
+                .Concat(MatchConfiguration.CreateStagedMinForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

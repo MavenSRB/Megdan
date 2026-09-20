@@ -442,9 +442,15 @@ namespace GuardsDigital.Tests.EditMode
                     MinEffectContent.PerfectSelfTakeArmNode
                 }));
 
+            // Milestone 8.61j added a THIRD declaration to this block's list - Flurry of Blows'
+            // repeat, which the dealing found: the roster-wide coverage check walks a dealt hero's
+            // TRIGGERED bodies as well as her cards, and her Ultimate's one node is a `May`
+            // RepeatAction that opens p.10's confirm-or-decline like any other optional step. What
+            // this case is about is the MODAL, so it names the two arms it has rather than the whole
+            // block list.
             Assert.That(
                 MinEffectContent.DisciplineDecisionLabels().Select(label => label.NodeId.Value),
-                Is.EquivalentTo(new[]
+                Is.SupersetOf(new[]
                 {
                     MinEffectContent.PerfectSelfDoubleArmNode,
                     MinEffectContent.PerfectSelfTakeArmNode
@@ -904,6 +910,10 @@ namespace GuardsDigital.Tests.EditMode
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
 
+            // Milestone 8.61j FLIPPED all three: Inner Strength, Perfect Self and Flurry of Blows
+            // are cards a configured match now deals, so the two doubling declarations and the
+            // deck-card item are contracts something reachable starts. The deck-card item is a new
+            // handler TYPE and took the Red Archivist as its showcase consumer in the same change.
             foreach (var reference in new[]
             {
                 MinComponentContent.InnerStrengthDoubleItemBonusesV1,
@@ -912,13 +922,14 @@ namespace GuardsDigital.Tests.EditMode
             })
             {
                 Assert.That(
-                    registered.TryLoad(reference, out _), Is.False,
-                    $"{reference} is reachable from no card a configured match deals.");
+                    registered.TryLoad(reference, out _), Is.True,
+                    $"{reference} is reachable from a card a configured match deals.");
             }
 
-            Assert.That(MinComponentContent.DisciplineRegisteredHandlers(), Is.Empty);
+            Assert.That(MinComponentContent.DisciplineDeferredHandlers(), Is.Empty);
             Assert.That(
-                MinComponentContent.DisciplineDeferredHandlers().Select(handler => handler.Reference),
+                MinComponentContent.DisciplineRegisteredHandlers()
+                    .Select(handler => handler.Reference),
                 Is.EquivalentTo(new[]
                 {
                     MinComponentContent.InnerStrengthDoubleItemBonusesV1,
@@ -931,28 +942,29 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 SyntheticRosterCapabilities.RegisteredHandlers()
                     .Select(handler => handler.Reference),
-                Has.No.Member(SyntheticRosterCapabilities.TakeDeckCardAsItemV1));
+                Has.Member(SyntheticRosterCapabilities.TakeDeckCardAsItemV1));
             Assert.That(
                 SyntheticRosterCapabilities.DeferredHandlers().Select(handler => handler.Reference),
-                Has.Member(SyntheticRosterCapabilities.TakeDeckCardAsItemV1));
+                Has.No.Member(SyntheticRosterCapabilities.TakeDeckCardAsItemV1));
         }
 
         /// <summary>
-        /// And her Ultimate's own triggered effect is not in the build's triggered-effect catalog
-        /// either, which is the other half of the same gate: a registered effect must be reachable from
-        /// a card a configured match puts beside a dashboard.
+        /// And her Ultimate's own triggered effect IS in the build's triggered-effect catalog from
+        /// milestone 8.61j on, which is the other half of the same gate: a p.16 permanent ability
+        /// names its effect BY REFERENCE and the owner walk resolves that reference against this
+        /// catalog, so an unregistered one is a definition the rule can name and the build cannot
+        /// load.
         /// </summary>
         [Test]
-        public void HerUltimatesTriggeredEffect_IsNotInTheBuildsOwnCatalog()
+        public void HerUltimatesTriggeredEffect_IsInTheBuildsOwnCatalog()
         {
             var registered = MatchContentCatalogs.ForThisBuild().TriggeredEffects;
             var flurry = MinEffectContent
                 .FlurryOfBlowsTriggeredEffect(MinCardContent.ContentRevision).Reference;
 
             Assert.That(
-                registered.TryGet(flurry, out _), Is.False,
-                "No dealt card of hers exists to reach it, and 7.9's gate refuses a registration " +
-                "nothing can start.");
+                registered.TryGet(flurry, out _), Is.True,
+                "A dealt card of hers stands beside a dashboard and names it.");
         }
 
         /// <summary>
@@ -1066,9 +1078,12 @@ namespace GuardsDigital.Tests.EditMode
             private World()
             {
                 heroItems = new HeroItemState(participants);
+                // Milestone 8.61j: the build registers both families now, so the fixture asks
+                // for the build's own catalog rather than composing a private one out of two
+                // deferred lists that are empty. `CreateCatalog` already concatenates every
+                // registered family, which is exactly what this World needs.
                 capabilities = SyntheticEffectCapabilities.CreateCatalog(
-                    SyntheticRosterCapabilities.DeferredHandlers()
-                        .Concat(MinComponentContent.DisciplineDeferredHandlers()));
+                    MinComponentContent.RegisteredHandlers());
 
                 // Her hand holds the two composed Green Skills and one Tier II card of another colour;
                 // everything else of hers sits in the deck, which is where p.6 leaves it and where

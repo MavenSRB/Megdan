@@ -162,8 +162,17 @@ namespace GuardsDigital.Presentation.Match
                 client, BoardView, ContentCatalogs?.Capabilities);
             HandsPresenter = new DirectorHandsPresenter(
                 client, HandsView, Seat?.HeroId ?? default);
+            // Milestone 8.61j pays milestone 8.61h's recorded debt, on exactly the terms the board
+            // treatment above is composed on. 8.61h threaded THIS composition's capability catalog
+            // down to the 8.55 Initiative badge so the badge can read p.16's item bonus as the rules
+            // do while Min's "This round: Double your item bonuses" stands, and then had no
+            // composition site to pass one from - she was not dealt, so no configured match could
+            // raise the effect. She is dealt here, so the argument is supplied here: without it the
+            // badge goes on reading "11+1" while the authority resolves "11+2", which is the one
+            // number on the rail a player would check the card against.
             HeroOverviewsPresenter = new HeroOverviewsPresenter(
-                client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId);
+                client, HeroOverviewsView, () => HandsPresenter.ViewedHeroId,
+                ContentCatalogs?.Capabilities);
             RoundPresenter = new RoundActionPresenter(client, RoundView, Seat?.HeroId ?? default);
             DecisionWindowPresenter = new DecisionWindowPresenter(
                 client, DecisionWindowView, Seat?.HeroId ?? default);

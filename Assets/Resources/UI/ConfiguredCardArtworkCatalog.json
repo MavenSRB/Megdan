@@ -330,6 +330,24 @@
     { "definitionId": "rowenna-opening-shots", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna15__7727059__front.png" },
     { "definitionId": "rowenna-grand-melee", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna16__7727058__front.png" },
     { "definitionId": "rowenna-opening-volley", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna17__7727057__front.png" },
-    { "definitionId": "rowenna-fabled-lance", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna18__7727056__front.png" }
+    { "definitionId": "rowenna-fabled-lance", "contentRevision": "rowenna-8-57f-rev-1", "sourcePath": "active-hero-cards/Rowenna/rowenna18__7727056__front.png" },
+    { "definitionId": "min-fast-as-lightning", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min__7582886__front.png" },
+    { "definitionId": "min-smoke-bomb", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min2__7348748__front.png" },
+    { "definitionId": "min-crane-stance", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min3__7721789__front.png" },
+    { "definitionId": "min-tiger-stance", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min4__7721790__front.png" },
+    { "definitionId": "min-viper-stance", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min5__7721791__front.png" },
+    { "definitionId": "min-dragon-stance", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min6__7721792__front.png" },
+    { "definitionId": "min-cobra-stance", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min7__7721793__front.png" },
+    { "definitionId": "min-trip-mine", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min8__7348762__front.png" },
+    { "definitionId": "min-cluster-mine", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min9__7582385__front.png" },
+    { "definitionId": "min-death-grenade", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min10__7571085__front.png" },
+    { "definitionId": "min-mine-field", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min11__7582386__front.png" },
+    { "definitionId": "min-holy-death-grenade", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min12__7571084__front.png" },
+    { "definitionId": "min-poof", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min13__7582935__front.png" },
+    { "definitionId": "min-vanish", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min14__7582936__front.png" },
+    { "definitionId": "min-inner-strength", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min15__7348761__front.png" },
+    { "definitionId": "min-ruse", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min16__7602331__front.png" },
+    { "definitionId": "min-perfect-self", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min17__7348755__front.png" },
+    { "definitionId": "min-flurry-of-blows", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min18__7543864__front.png" }
   ]
 }

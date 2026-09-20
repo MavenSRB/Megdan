@@ -116,24 +116,27 @@ namespace GuardsDigital.Tests.EditMode
         };
 
         /// <summary>
-        /// Every capability reference her composed bodies name that this build does NOT register, as
-        /// the build spells them - milestone 7.9's gate, written out.
+        /// Every capability reference her composed bodies name that milestone 8.61j MOVED INTO the
+        /// build's registration list - milestone 7.9's gate, written out and then discharged.
         ///
-        /// <para>8.61j registers every one of them, and the two that are new handler TYPES -
-        /// <c>borrow-after-attack-text@1</c> and <c>take-deck-card-as-item@1</c> - additionally owe a
-        /// showcase consumer, which is the gate's second half. The case below asserts this list as a
-        /// SET, so a registration that arrives early and a deferral nobody noticed both fail
-        /// here.</para>
+        /// <para>Until 8.61j this list was <c>WithheldUntilTheDealing</c> and the case below asserted
+        /// that the build refused every one of them. The dealing registers all nineteen, so the same
+        /// case now asserts the opposite from the same walk: nothing her composed bodies name is
+        /// withheld, and these are the ids the dealing was responsible for. The two that are new
+        /// handler TYPES - <c>borrow-after-attack-text@1</c> and <c>take-deck-card-as-item@1</c> -
+        /// additionally owed a showcase consumer, which is the gate's second half and which
+        /// <c>ConfiguredCardMatrixTests</c> is what actually holds.</para>
         ///
-        /// <para><b>Two of her series' declarations are deliberately NOT here, because no composed
-        /// sentence reaches them</b> - <c>min-reclaim-grenade@1</c>, which 8.61f recorded as
-        /// unreachable when the presence branch relocates instead of running the pile short, and
+        /// <para><b>Two of her series' declarations were never here, because no composed sentence
+        /// reaches them</b> - <c>min-reclaim-grenade@1</c>, which 8.61f recorded as unreachable when
+        /// the presence branch relocates instead of running the pile short, and
         /// <c>min-place-smoke-bomb-in-range@1</c>, 8.61a's Range-reaching supply Place, which her only
         /// in-range clause (Ruse's) does not use: that clause RELOCATES a standing bomb through the
         /// registered <c>synthetic-place-in-range@1</c>. A capability nothing can start is a
-        /// registration 8.61j should drop rather than make reachable by nothing.</para>
+        /// registration 8.61j DROPPED rather than made reachable by nothing, and both declarations are
+        /// gone from the tree.</para>
         /// </summary>
-        private static readonly string[] WithheldUntilTheDealing =
+        private static readonly string[] RegisteredByTheDealing =
         {
             "borrow-after-attack-text@1",
             "enemy-hero-beside-grenade@1",
@@ -649,13 +652,14 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// EXACTLY these capability references her composed bodies name are still withheld, and
-        /// EXACTLY these faces name one - milestone 7.9's gate read from both sides, so that a
-        /// registration arriving early, a deferral arriving unnoticed and a face that quietly stopped
-        /// asking for a contract each fail here rather than at her dealing.
+        /// NOTHING her composed bodies name is withheld any more, and every face of hers composes
+        /// against what this build registers - milestone 7.9's gate read from both sides after
+        /// milestone 8.61j discharged it. Before the dealing this case asserted the exact refusal
+        /// list; the same walk now asserts the empty one, so a registration silently dropped back
+        /// out and a face that quietly started naming an unregistered contract both fail here.
         /// </summary>
         [Test]
-        public void ExactlyTheseContractsAreWithheld_AndExactlyTheseFacesNameThem()
+        public void NothingSheNamesIsWithheld_AndEveryFaceOfHersComposes()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
 
@@ -674,16 +678,23 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(capability => capability.ToString())
                     .Distinct()
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(WithheldUntilTheDealing.OrderBy(value => value, StringComparer.Ordinal)),
-                "The set of contracts this build refuses to start for her is exactly the series' own " +
-                "deferral list. 8.61j registers every one of them.");
+                Is.Empty,
+                "Milestone 8.61j deals her, so this build starts every contract her bodies name.");
 
             Assert.That(
-                named.Count(capability => registered.IsRegistered(capability)),
-                Is.GreaterThan(0),
-                "and her bodies genuinely reach registered contracts too - the push, the direct " +
-                "move, the discard and the Defeat are the build's own - so the case above is not " +
-                "passing because the walk found nothing.");
+                RegisteredByTheDealing.Where(id => !registered.Registered
+                        .Any(capability => capability.ToString() == id))
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.Empty,
+                "and each of the nineteen ids the dealing was responsible for is in the build's " +
+                "catalog by name, so an empty walk above cannot pass this case by finding nothing.");
+
+            Assert.That(
+                named.Select(capability => capability.ToString())
+                    .Intersect(RegisteredByTheDealing),
+                Is.EquivalentTo(RegisteredByTheDealing),
+                "and her own faces are what reach them - the gate's first half, which is about a " +
+                "DEALT card starting the contract rather than about the id existing.");
 
             var refusedFaces = new List<string>();
             foreach (var definition in MinCardContent.AllDefinitions)
@@ -704,27 +715,12 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 refusedFaces.OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(new[]
-                {
-                    "min-cluster-mine",
-                    "min-cobra-stance",
-                    "min-death-grenade",
-                    "min-fast-as-lightning",
-                    "min-holy-death-grenade",
-                    "min-inner-strength",
-                    "min-mine-field",
-                    "min-perfect-self",
-                    "min-poof",
-                    "min-ruse",
-                    "min-smoke-bomb",
-                    "min-trip-mine",
-                    "min-vanish",
-                    "min-viper-stance"
-                }),
-                "Fourteen of her seventeen composed bodies are refused by what this build registers, " +
-                "and the three that are not - Crane, Tiger and Dragon Stance - name only contracts " +
-                "the build already owns, because a push and a direct move are the roster's own " +
-                "vocabulary. That asymmetry is the whole of what registration buys at 8.61j.");
+                Is.Empty,
+                "Before milestone 8.61j FOURTEEN of her seventeen composed bodies were refused by " +
+                "what this build registered, and the three that were not - Crane, Tiger and Dragon " +
+                "Stance - named only contracts the build already owned, because a push and a direct " +
+                "move are the roster's own vocabulary. That asymmetry is exactly what registration " +
+                "bought, and none of the fourteen may come back.");
         }
 
         /// <summary>
@@ -870,9 +866,9 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The set's own component aggregates, which are what milestone 8.61j moves across in one
-        /// change: five token definitions for three printed kinds, every withheld handler in one list,
-        /// the seven triggered effects, and the eight decision windows her faces open.
+        /// The set's own component aggregates, which are what milestone 8.61j moved across in one
+        /// change: five token definitions for three printed kinds, every handler in one list, the
+        /// seven triggered effects, and the ten decision windows her faces open.
         /// </summary>
         [Test]
         public void HerComponentsAndContracts_AreOneListEach()
@@ -887,50 +883,73 @@ namespace GuardsDigital.Tests.EditMode
                 }),
                 "Three printed kinds and the facedown face every seat but hers is handed.");
 
-            Assert.That(MinComponentContent.RegisteredHandlers(), Is.Empty,
-                "Nothing of hers is registered until 8.61j - milestone 7.9's gate.");
+            Assert.That(MinComponentContent.DeferredHandlers(), Is.Empty,
+                "Milestone 8.61j deals her, so nothing of hers waits any more - milestone 7.9's " +
+                "gate, discharged.");
             Assert.That(
                 MinComponentContent.Handlers().Select(handler => handler.Reference.ToString())
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(MinComponentContent.DeferredHandlers()
+                Is.EqualTo(MinComponentContent.RegisteredHandlers()
                     .Select(handler => handler.Reference.ToString())
                     .OrderBy(value => value, StringComparer.Ordinal)),
-                "so the registered-or-deferred list is the deferred one, exactly.");
+                "so the registered-or-deferred list is the registered one, exactly.");
+
+            Assert.That(
+                MinComponentContent.RegisteredHandlers().Count(), Is.EqualTo(17),
+                "Five Smoke bomb operations, two mine placements and a group reclaim, three grenade " +
+                "operations and two anchored hero selections, and four Active-effect creations. " +
+                "SEVENTEEN rather than the nineteen her blocks declared: the two no composed " +
+                "sentence reaches were dropped rather than registered.");
 
             var build = MatchContentCatalogs.ForThisBuild();
-            foreach (var handler in MinComponentContent.DeferredHandlers())
+            foreach (var handler in MinComponentContent.RegisteredHandlers())
             {
                 Assert.That(
-                    build.Capabilities.Registered, Has.No.Member(handler.Reference),
-                    handler.Reference + " must be out of the build's catalog until she is dealt.");
+                    build.Capabilities.Registered, Has.Member(handler.Reference),
+                    handler.Reference + " is content of hers and must be in the build's catalog.");
+            }
+
+            foreach (var dropped in new[] { "min-place-smoke-bomb-in-range@1", "min-reclaim-grenade@1" })
+            {
+                Assert.That(
+                    build.Capabilities.Registered.Select(capability => capability.ToString()),
+                    Has.No.Member(dropped),
+                    dropped + " is reached by no composed sentence of hers, so the dealing dropped " +
+                    "it rather than registering a contract nothing can start.");
             }
 
             foreach (var token in MinComponentContent.Tokens())
             {
                 Assert.That(
-                    build.Components.IsRegistered(token.Reference), Is.False,
-                    token.Id.Value + " must be out of the build's component catalog too: a piece a " +
-                    "match can put on a board before a dealt card places it moves pinned bytes.");
+                    build.Components.IsRegistered(token.Reference), Is.True,
+                    token.Id.Value + " is a piece her dealt cards put on a board, the facedown face " +
+                    "included - a client loads a masked token's definition by id from this catalog.");
             }
 
             foreach (var effect in MinComponentContent.TriggeredEffects)
             {
                 Assert.That(
                     build.TriggeredEffects.Definitions.Select(definition => definition.Id),
-                    Has.No.Member(effect.Id),
-                    effect.Id.Value + " must be out of the build's triggered-effect catalog.");
+                    Has.Member(effect.Id),
+                    effect.Id.Value + " is named BY REFERENCE - by a token definition, by an Active " +
+                    "effect or by a p.16 permanent ability - and the owner walk resolves that " +
+                    "reference against this catalog.");
             }
 
             Assert.That(
-                MinEffectContent.DecisionLabels().Count(), Is.GreaterThan(0),
-                "Her decision windows are declared beside her content.");
-            Assert.That(
-                DecisionLabelCatalog.Registered.Keys.Select(card => card.Value)
-                    .Intersect(MinCardContent.AllDefinitions.Select(card => card.Id.Value)),
-                Is.Empty,
-                "and NOT aggregated into the catalog, because every contribution in that file joins " +
-                "at a dealing: what a table is FOR is a window over a card a match deals. 8.61j adds " +
-                "the line.");
+                MinEffectContent.DecisionLabels().Count(), Is.EqualTo(11),
+                "Her two swapping Stances and Dragon's step, Cobra's and Ruse's re-places, both " +
+                "Grenades' \"up to N\" passes and Perfect Self's one-or-both modal.");
+            foreach (var declaration in MinEffectContent.DecisionLabels())
+            {
+                Assert.That(
+                    DecisionLabelCatalog.TryGetLabel(
+                        declaration.CardId, declaration.NodeId, out var label),
+                    Is.True,
+                    declaration.CardId.Value + " / " + declaration.NodeId.Value +
+                    " is declared beside her content and missing from the catalog.");
+                Assert.That(label, Is.EqualTo(declaration.Label));
+            }
         }
 
         // -------------------------------------------------------------------------------------------
@@ -1105,8 +1124,15 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The build's own catalog plus exactly what her series withholds: her components' handlers and
-        /// the two contracts that wait in a shared family's deferred list.
+        /// The build's own catalog, which since milestone 8.61j holds every contract of hers.
+        ///
+        /// <para>The three deferred lists are still concatenated and are all empty now, which is
+        /// deliberate rather than dead: they are the shape this fixture used before the dealing, and
+        /// keeping the concat means a contract that fell BACK out of the build and into a deferred
+        /// list would still be composed here and would fail in the cases that ask the build
+        /// directly, instead of failing everywhere at once with a composition error. The
+        /// <c>GroupBy</c> is milestone 8.40j's BA-18 lesson: handing a registered handler back in as
+        /// content is what threw "Capability references must be unique" at Bain's dealing.</para>
         /// </summary>
         private static EffectCapabilityCatalog Catalog()
         {

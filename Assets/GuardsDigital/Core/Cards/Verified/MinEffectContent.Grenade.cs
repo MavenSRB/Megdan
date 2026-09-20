@@ -263,15 +263,20 @@ namespace GuardsDigital.Core.Cards.Verified
         {
             yield return DecisionStep(MinCardContent.DeathGrenade,
                 GrenadePassNode(DeathGrenadePrefix, 0, "may").Value,
-                "An enemy hero beside the Grenade discards a card, or is defeated",
+                // Milestone 8.61j shortened these three. The dealing added her row to
+                // `DecisionLabelCoverageTests`, whose 60-character bound is the authoring
+                // discipline that keeps a label a consequence rather than a paraphrase of the whole
+                // card - and all three of these were 64, 64 and 70. What came out is the clause
+                // "a card", which the hero's own discard prompt says next anyway.
+                "An enemy hero beside the Grenade discards or is defeated",
                 "Leave them");
             yield return DecisionStep(MinCardContent.HolyDeathGrenade,
                 GrenadePassNode(HolyDeathGrenadePrefix, 0, "may").Value,
-                "An enemy hero beside the Grenade discards a card, or is defeated",
+                "An enemy hero beside the Grenade discards or is defeated",
                 "Leave them");
             yield return DecisionStep(MinCardContent.HolyDeathGrenade,
                 GrenadePassNode(HolyDeathGrenadePrefix, 1, "may").Value,
-                "A second enemy hero beside the Grenade discards a card, or is defeated",
+                "A second enemy hero beside it discards or is defeated",
                 "Stop at one");
         }
 

@@ -556,6 +556,11 @@ namespace GuardsDigital.Core.Participants
                 // covering the same heroes - is what this arm keeps true rather than establishes.
                 case Setup.QuickGameSetupConfiguration.RowennaHeroIdValue:
                     return Cards.Verified.RowennaCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.61j. The NINETEENTH hero this build deals, on exactly the terms the
+                // rows above are on. The agreement Tali's arm records - switch and offerable roster
+                // covering the same heroes - is what this arm keeps true rather than establishes.
+                case Setup.QuickGameSetupConfiguration.MinHeroIdValue:
+                    return Cards.Verified.MinCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1717,6 +1722,81 @@ namespace GuardsDigital.Core.Participants
             }
         }
 
+        /// <summary>
+        /// Milestone 8.61j. The staged Wasp-versus-Min match, on the same `DEV-005` terms the
+        /// eighteen staged matches before it are on. This is the configuration that makes Min
+        /// playable in a fixture, and the nineteenth of its shape.
+        ///
+        /// <para><b>She needs NO ally seat, and it is worth saying which hero's problem she does not
+        /// have.</b> Rowenna's board took an ally because three of her Reds print "a friendly hero in
+        /// radius" with her own seat excluded; Brogan's took one for War Drummer and Tali's for her
+        /// Spiritbinder. Min prints no such clause anywhere in her nineteen faces: every subject her
+        /// set names is an ENEMY unit, an ENEMY hero, a space, one of her own tokens or one of her
+        /// own cards. A third seat would prove nothing of hers and would cost every fixture of hers
+        /// an unrestaged board.</para>
+        ///
+        /// <para><b>What this staging reaches.</b> An enemy MINION stands beside her, which her five
+        /// Stances need twice over - once as the Attack's "unit adjacent to you" and once as the
+        /// push's "enemy unit adjacent to you" - and the enemy HERO stands two spaces away, inside
+        /// the Radius 3 her Silver and three mine faces print and the Radius 2 both Grenades print.
+        /// <c>MinDealingTests.TheEngagedStagedBoard_CarriesEverythingHerFacesAskFor</c> measures all
+        /// of it, writes the coordinates into the run output, and is where 8.61k's journeys start
+        /// from.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedMinForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedMinHand(TeamSide.Blue));
+
+        /// <summary>
+        /// Milestone 8.61j. The staged Wasp-versus-Min match at rulebook p.15's Tier II stage, with
+        /// Min holding one Tier II card of each colour on the branch the caller names - see
+        /// <see cref="Cards.Verified.MinUpgradeBranch"/>'s own remarks for what each branch reaches.
+        /// </summary>
+        public static MatchConfiguration CreateStagedMinTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.MinUpgradeBranch branch) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedMinHand(tierThree: false, branch));
+
+        /// <summary>
+        /// Milestone 8.61j. The staged Wasp-versus-Min match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Flurry of Blows in Min's.
+        ///
+        /// <para>Hers is a p.16 permanent ability that TRIGGERS - "Each time after you perform an
+        /// attack action you may repeat it once on a different target" - so unlocking it here is what
+        /// makes milestone 8.61h's <c>UltimateTriggerCondition.AfterControllerPerformsAttackAction</c>
+        /// reachable at all. On either branch her Tier III Stance is an Attack, so the trigger has a
+        /// performance of hers to fire after on both.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedMinTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.MinUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedMinHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.MinCardContent.FlurryOfBlows)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
         public static MatchConfiguration CreateStagedGarrusForInternalTest(TeamSide initialTieBreakerSide) =>
             Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red), owner => Cards.Verified.GarrusCardContent.CreateHand(owner, "blue"));
@@ -2261,6 +2341,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.RowennaProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.RowennaProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.61j. One seat's verified Min hand, prefixed by the seat's team side for the
+        /// reason the eighteen earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedMinHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.MinCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedMinHand(
+            bool tierThree, Cards.Verified.MinUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.MinProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.MinProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

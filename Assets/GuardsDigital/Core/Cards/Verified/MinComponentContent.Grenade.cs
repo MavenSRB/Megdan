@@ -37,13 +37,14 @@ namespace GuardsDigital.Core.Cards.Verified
     /// the sentence). Widget's Pyro is the contrast and the reason the enum has two members at all -
     /// Dragon Bond prints an explicit override and this does not.</para>
     ///
-    /// <para><b>Nothing here is registered.</b> Every capability below is deferred until 8.61j deals
-    /// her, for milestone 7.9's reason: the registered list is serialized and pinned, so a contract
-    /// registered before a dealt card can start it moves pinned bytes while no content moved. Both
-    /// handler TYPES these instances run on - <c>SyntheticOwnedTokenCapabilities</c>'s fact handler,
-    /// <c>SyntheticTokenCapabilities</c>'s place and reclaim, and
-    /// <see cref="ActiveEffectCreationHandler"/> - are already registered and showcased by earlier
-    /// milestones, so none of these instances owes the dealing a showcase consumer of its own.</para>
+    /// <para><b>Everything here is registered, from milestone 8.61j on.</b> Every capability below
+    /// was deferred until that block dealt her, for milestone 7.9's reason: the registered list is
+    /// serialized and pinned, so a contract registered before a dealt card can start it moves pinned
+    /// bytes while no content moved. The handler TYPES these instances run on -
+    /// <c>SyntheticOwnedTokenCapabilities</c>'s fact handler, <c>SyntheticTokenCapabilities</c>'s
+    /// place, <c>SyntheticAnchoredTargetCapabilities</c>'s handler and
+    /// <see cref="ActiveEffectCreationHandler"/> - were already registered and showcased by earlier
+    /// milestones, so none of these instances owed the dealing a showcase consumer of its own.</para>
     /// </summary>
     public static partial class MinComponentContent
     {
@@ -80,36 +81,45 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>"Place a [Grenade] Grenade token into a space in radius" from the supply.</summary>
         public static EffectCapabilityReference PlaceGrenadeV1 => GrenadeReference("min-place-grenade");
 
-        /// <summary>
-        /// p.18's short-supply step for the grenade pile.
-        ///
-        /// <para><b>No composed face reaches it, and that is recorded rather than hidden.</b> With one
-        /// grenade and the presence branch both faces open with, a placement that finds one standing
-        /// RELOCATES it (MI-Q1) instead of asking the supply for a second - so the pile is never short.
-        /// It is declared here because the deliverable list asks for it and because a later face or a
-        /// larger supply under MI-Q1 would reach it immediately; 8.61i and 8.61j should drop it if the
-        /// answered count still leaves no printed sentence that can run out.</para>
-        /// </summary>
-        public static EffectCapabilityReference ReclaimGrenadeV1 => GrenadeReference("min-reclaim-grenade");
+        // `min-reclaim-grenade@1` WAS DECLARED HERE AT 8.61f AND IS GONE AT 8.61j, which is the
+        // dealing taking the decision 8.61f asked it to take rather than losing a member. It was
+        // p.18's short-supply step for the grenade pile, and with MI-Q1's answered count of one and
+        // the presence branch both faces open with, a placement that finds a grenade standing
+        // RELOCATES it instead of asking the supply for a second - so the pile is never short and no
+        // composed sentence of hers can start this contract. Milestone 7.9's gate refuses to register
+        // a capability no dealt card reaches, and leaving it in a deferred list forever would be a
+        // second, quieter way of saying the same thing.
+        // `MinPrintedSetTests.WithheldUntilTheDealing` never named it.
 
         /// <summary>Her one token definition this block declares, for a fixture composing a catalog.</summary>
         public static IEnumerable<TokenDefinition> GrenadeTokens() => new[] { GrenadeDefinition };
 
         /// <summary>
-        /// Every capability the two Grenade faces name, and every one of them is deferred - see the
-        /// type's own remarks. The Active-effect creations live in <see cref="MinEffectContent"/>
-        /// because the definitions they create are composed beside the triggered bodies they schedule,
-        /// and they are concatenated here so this list is THE deferred list for the block: a fixture
-        /// that asserts the absence from production registration asks one question, not two.
+        /// Nothing, from milestone 8.61j on - Death Grenade and Holy Death Grenade are cards a
+        /// configured match now puts in a hand, so everything below moved into
+        /// <see cref="GrenadeRegisteredHandlers"/> in that one edit. The member stays so the fixtures
+        /// asserting the gate from both sides ask a question rather than failing to compile.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> GrenadeDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
+
+        /// <summary>
+        /// Every capability the two Grenade faces name, registered at milestone 8.61j - see the
+        /// type's own remarks. The Active-effect creations live in <see cref="MinEffectContent"/>
+        /// because the definitions they create are composed beside the triggered bodies they schedule,
+        /// and they are concatenated here so this list is THE list for the block: a fixture that
+        /// asserts what production registers asks one question, not two.
+        ///
+        /// <para>SEVEN rather than 8.61f's eight: <c>min-reclaim-grenade@1</c> is DROPPED rather than
+        /// registered, for the reason recorded where its reference used to be declared.</para>
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> GrenadeRegisteredHandlers() =>
             new[]
             {
                 SyntheticOwnedTokenCapabilities.PresenceHandler(GrenadePresentV1, GrenadeDefinition),
                 SyntheticOwnedTokenCapabilities.SpaceHandler(GrenadeSpaceV1, GrenadeDefinition),
                 SyntheticTokenCapabilities.PlaceHandler(
                     PlaceGrenadeV1, GrenadeDefinition, PrintedValueChannel.Radius),
-                SyntheticTokenCapabilities.ReclaimHandler(ReclaimGrenadeV1, GrenadeDefinition),
                 SyntheticAnchoredTargetCapabilities.Handler(
                     MinEffectContent.GrenadeBlastTargetV1,
                     RosterUnitKind.Hero,

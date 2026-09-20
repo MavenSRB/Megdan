@@ -261,27 +261,31 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The gate, from both sides. A capability the build registers is a capability a configured
-        /// match can start, and nothing of Min's may be startable before 8.61j deals her.
+        /// The gate, from both sides, FLIPPED at milestone 8.61j. A capability the build registers is
+        /// a capability a configured match can start, and Fast as Lightning is a card a configured
+        /// match now puts in a hand - so the contract is registered, its handler TYPE took a showcase
+        /// consumer in the same change, and her face composes against the build's own catalog.
         /// </summary>
         [Test]
-        public void TheRiderBorrowIsDeferred_AndIsNotRegisteredByThisBuild()
+        public void TheRiderBorrowIsRegisteredByThisBuild_AndHerFaceComposesAgainstIt()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities.Registered;
             Assert.That(
                 registered.Contains(SyntheticBorrowedCardTextCapabilities.BorrowAfterAttackTextV1),
-                Is.False,
-                "borrow-after-attack-text@1 is named by no dealt content, so registering it would " +
-                "move the serialized registered set for a capability nothing can reach.");
+                Is.True,
+                "borrow-after-attack-text@1 is named by her dealt Gold basic, which is what " +
+                "milestone 7.9's gate asks before a registration joins the serialized set.");
 
             Assert.That(
-                SyntheticBorrowedCardTextCapabilities.DeferredHandlers()
+                SyntheticBorrowedCardTextCapabilities.DeferredHandlers(), Is.Empty,
+                "and the deferred list is empty, which is the other side of the same claim.");
+            Assert.That(
+                SyntheticBorrowedCardTextCapabilities.RegisteredHandlers()
                     .Select(handler => handler.Reference),
                 Is.EqualTo(new[]
                 {
                     SyntheticBorrowedCardTextCapabilities.BorrowAfterAttackTextV1
-                }),
-                "and the deferred list is where it stands until then.");
+                }));
 
             var rider = MinCardContent
                 .BorrowedRiderDefinition(MinCardContent.FastAsLightning)
@@ -291,13 +295,13 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 EffectDefinitionValidator.Validate(
                     rider, MatchContentCatalogs.ForThisBuild().Capabilities),
-                Is.Not.Empty,
-                "and her face is refused by what the build registers, which is the gate read from " +
-                "the content's own side - Rowenna's deferred Place precedent exactly.");
+                Is.Empty,
+                "and her face composes against what the build registers, which is the gate read " +
+                "from the content's own side.");
         }
 
         [Test]
-        public void TheComposedRider_ValidatesAgainstACatalogHoldingTheDeferredHandler()
+        public void TheComposedRider_ValidatesAgainstTheFixturesOwnCatalog()
         {
             var body = MinCardContent
                 .BorrowedRiderDefinition(MinCardContent.FastAsLightning)

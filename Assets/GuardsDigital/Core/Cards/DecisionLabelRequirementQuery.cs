@@ -185,7 +185,9 @@ namespace GuardsDigital.Core.Cards
             // notice the day something does.
             while (pending.Count > 0)
             {
-                foreach (var referenced in NamedByActiveEffects(pending.Dequeue(), catalogs))
+                var root = pending.Dequeue();
+                foreach (var referenced in NamedByActiveEffects(root, catalogs)
+                    .Concat(NamedByPlacedTokens(root, catalogs)))
                 {
                     if (seen.Add(referenced.Reference))
                     {
@@ -281,6 +283,42 @@ namespace GuardsDigital.Core.Cards
                 catalogs.TriggeredEffects.TryGet(reference.Value, out var triggered))
             {
                 yield return triggered;
+            }
+        }
+
+        /// <summary>
+        /// Milestone 8.61j. The THIRD route a card has to a triggered body, and the first that is not
+        /// an effect naming an effect: a Place node puts a TOKEN on the board, and that token's own
+        /// definition can declare what its removal costs the unit that sprang it -
+        /// <c>TokenDefinition.MoveThroughTrapConsequences</c>, which Min the Dragonmonk's blast mine
+        /// is the only content in this build to carry.
+        ///
+        /// <para>Without this arm her four consequence bodies are owned by a dealt hero and reachable
+        /// from none of her cards, which is the state <c>DecisionLabelCoverageTests</c> refuses - and
+        /// refusing it is right: a body nothing attributes to a card is a body no label can be keyed
+        /// to. Trip Mine, Cluster Mine and Mine Field are the three cards that place a blast, and the
+        /// reference is followed exactly as an Ultimate's and an Active effect's are.</para>
+        /// </summary>
+        private static IEnumerable<EffectDefinition> NamedByPlacedTokens(
+            EffectDefinition root, MatchContentCatalogs catalogs)
+        {
+            foreach (var node in root.Nodes)
+            {
+                if (!node.Capability.IsDefined ||
+                    !catalogs.Capabilities.TryLoad(node.Capability, out var handler) ||
+                    !(handler is IPlacedTokenCapabilityHandler placement) ||
+                    placement.PlacedToken == null)
+                {
+                    continue;
+                }
+
+                foreach (var consequence in placement.PlacedToken.MoveThroughTrapConsequences)
+                {
+                    if (catalogs.TriggeredEffects.TryGet(consequence, out var triggered))
+                    {
+                        yield return triggered;
+                    }
+                }
             }
         }
 

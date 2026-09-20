@@ -592,29 +592,42 @@ namespace GuardsDigital.Tests.EditMode
         // -----------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Milestone 7.9's gate, asked from both directions. Every capability this block declares is in
-        /// <see cref="MinComponentContent.GrenadeDeferredHandlers"/> and none of them is registered; the
-        /// Grenade is not in the build's component catalog either. 8.61j moves both halves at once, and
-        /// this case is what refuses a change that moves one and forgets the other.
+        /// Milestone 7.9's gate, asked from both directions and FLIPPED at milestone 8.61j. Until the
+        /// dealing every capability this block declared was withheld and the Grenade was out of the
+        /// build's component catalog; the dealing moves both halves at once, and this case is what
+        /// refuses a change that moves one and forgets the other.
+        ///
+        /// <para>SEVEN contracts rather than 8.61f's eight: <c>min-reclaim-grenade@1</c> is reached
+        /// by no composed sentence of hers - with one grenade and the presence branch both faces open
+        /// with, a placement that finds one standing RELOCATES it instead of asking the supply for a
+        /// second - so the dealing DROPPED it rather than registering a contract nothing can
+        /// start.</para>
         /// </summary>
         [Test]
-        public void EveryGrenadeContractIsDeferred_AndNoneOfItIsRegistered()
+        public void EveryGrenadeContractIsRegistered_AndTheUnreachableOneIsGone()
         {
             var build = MatchContentCatalogs.ForThisBuild();
-            var deferred = MinComponentContent.GrenadeDeferredHandlers().ToArray();
+            var registered = MinComponentContent.GrenadeRegisteredHandlers().ToArray();
 
-            Assert.That(deferred, Is.Not.Empty);
-            foreach (var handler in deferred)
+            Assert.That(MinComponentContent.GrenadeDeferredHandlers(), Is.Empty);
+            Assert.That(registered, Has.Length.EqualTo(7));
+            foreach (var handler in registered)
             {
-                Assert.That(build.Capabilities.Registered.Contains(handler.Reference), Is.False,
-                    handler.Reference + " is registered before Min is dealt.");
+                Assert.That(build.Capabilities.Registered.Contains(handler.Reference), Is.True,
+                    handler.Reference + " is named by a face a configured match deals.");
             }
+
+            Assert.That(
+                build.Capabilities.Registered.Select(capability => capability.ToString()),
+                Has.No.Member("min-reclaim-grenade@1"),
+                "A capability nothing can start is a registration the dealing dropped rather than " +
+                "made reachable by nothing.");
 
             Assert.That(
                 SyntheticComponentDefinitions.CreateCatalog()
                     .IsRegistered(MinComponentContent.GrenadeDefinition.Reference),
-                Is.False,
-                "The Grenade joins the one registered token set at the dealing, not before.");
+                Is.True,
+                "The Grenade joined the one registered token set at the dealing.");
 
             var named = MinCardContent.GrenadeCards()
                 .SelectMany(cardId => MinCardContent.GrenadeDefinition(cardId).ActionDefinitions)
@@ -625,11 +638,10 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(node => node.Capability)
                 .Distinct()
                 .ToArray();
-            var covered = deferred.Select(handler => handler.Reference)
-                .Concat(build.Capabilities.Registered)
-                .ToArray();
-            Assert.That(named.Where(reference => !covered.Contains(reference)), Is.Empty,
-                "Every contract the two faces name is either registered already or deferred here.");
+            Assert.That(
+                named.Where(reference => !build.Capabilities.Registered.Contains(reference)),
+                Is.Empty,
+                "and every contract the two faces name is one the build now registers.");
         }
 
         /// <summary>

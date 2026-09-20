@@ -43,6 +43,17 @@ namespace GuardsDigital.Core.Cards.Verified
             yield return DecisionArm(
                 MinCardContent.PerfectSelf, PerfectSelfTakeArmNode,
                 "Take a Tier II card from your deck as a permanent item");
+
+            // Milestone 8.61j. Flurry of Blows' repeat, added at the dealing rather than at 8.61h -
+            // and found by the dealing rather than reasoned out, which is worth recording. The
+            // roster-wide check that every control in DEALT content names its consequence walks a
+            // hero's TRIGGERED bodies as well as her cards, and until she was dealt no walk saw
+            // hers. Her Ultimate's one node is a `May` RepeatAction and therefore opens p.10's
+            // confirm-or-decline exactly as every other optional step does; the words are the
+            // printed sentence's own - "you may repeat it once on a different target".
+            yield return DecisionStep(
+                MinCardContent.FlurryOfBlows, FlurryOfBlowsRepeatNode,
+                "Repeat the attack on a different target", "Stop at one attack");
         }
 
         /// <summary>Perfect Self's first bullet, named so its decision label and its node agree.</summary>

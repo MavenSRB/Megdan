@@ -126,7 +126,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// step into its own node: a handler is stateless and cannot tell a second resumption from a
         /// first, so a second decision belongs to a second node.</para>
         /// </summary>
-        private sealed class PlaceHeroTokenHandler : IEffectCapabilityHandler
+        private sealed class PlaceHeroTokenHandler
+            : IEffectCapabilityHandler, IPlacedTokenCapabilityHandler
         {
             private readonly TokenDefinition definition;
             private readonly PrintedValueChannel reachChannel;
@@ -166,6 +167,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
+
+            /// <summary>
+            /// Milestone 8.61j. The definition this placement puts on the board, read-only, so a walk
+            /// following what a CARD can reach can follow a token's own declarations too - see
+            /// <see cref="IPlacedTokenCapabilityHandler"/> for why that route exists.
+            /// </summary>
+            public TokenDefinition PlacedToken => definition;
 
             public EffectExecutionResult Execute(EffectCapabilityContext context)
             {

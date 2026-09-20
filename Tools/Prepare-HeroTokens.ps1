@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -214,6 +214,17 @@ $declaredHeroes = @{
     # earned being declared rather than derived. She takes the calibrated 2% field floor unless the
     # tool's own measurement says otherwise; Swift's per-hero zero stays hers alone.
     rowenna = @{ ElementId = 8629867; ElementName = 'Knighttt'; DisplayName = 'Rowenna' }
+
+    # Milestone 8.61j. THE NINETEENTH HERO, and the first since Cutter whose standee is filed under
+    # the hero's own name: the manifest carries her as `Min` (id 8597508, publicElementId 714735),
+    # read from
+    # Docs/Guards of Atlantis II - Tabletopia Cards/extracted/text-assets/manifest-bundled__42.json
+    # with ConvertFrom-Json as `elementType: "VerticalTokens"`, two 302x302 faces in `Image_2_Atlas`
+    # at (3296,0) and (3600,0). Her id sits in the 8597xxx block beside Garrus's 8597491 rather than
+    # in Rowenna's and Misa's far block, which is the seventh time this table has earned being
+    # declared rather than derived. She takes the calibrated 2% field floor unless the tool's own
+    # measurement says otherwise; Swift's per-hero zero stays hers alone.
+    min = @{ ElementId = 8597508; ElementName = 'Min'; DisplayName = 'Min' }
 }
 
 $declared = $declaredHeroes[$Hero]

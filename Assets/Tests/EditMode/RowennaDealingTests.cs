@@ -30,8 +30,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var rowenna = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == RowennaCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(18),
-                "She is the eighteenth hero this build can put on a board.");
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(19),
+                "She was the eighteenth hero this build could put on a board; milestone 8.61j " +
+                "deals Min as the nineteenth.");
             Assert.That(rowenna.HeroIdValue,
                 Is.EqualTo(QuickGameSetupConfiguration.RowennaHeroIdValue));
             Assert.That(rowenna.DisplayName, Is.EqualTo("Rowenna the Vanguard"),
@@ -427,8 +428,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(dealt, Has.Member(RowennaCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(18));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(18),
+            Assert.That(dealt, Has.Count.EqualTo(19));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(19),
                 "and no two rows name one printed set.");
         }
     }

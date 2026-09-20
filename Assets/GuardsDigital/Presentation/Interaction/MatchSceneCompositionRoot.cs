@@ -833,7 +833,41 @@ namespace GuardsDigital.Presentation.Interaction
         /// Paragon of Grace is the face this arm exists for: its p.10 repeat is offered only when the
         /// rider was performed, and the rider needs the ally.
         /// </summary>
-        VerifiedStagedRowennaWithAllyAtTierThree = 98
+        VerifiedStagedRowennaWithAllyAtTierThree = 98,
+
+        /// <summary>
+        /// Milestone 8.61j. The engaged staging with Min the Dragonmonk on the Blue seat, holding
+        /// rulebook p.6's five starting cards. The NINETEENTH hero.
+        /// </summary>
+        VerifiedEngagedStagedMin = 99,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Min holding the first sibling
+        /// of each colour: Tiger Stance, Cluster Mine and Vanish.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedMin = 100,
+
+        /// <summary>
+        /// The Tier II staging with Min holding the second sibling of each colour: Viper Stance,
+        /// Death Grenade and Inner Strength - the only Tier II arm that reaches a Grenade's
+        /// end-of-turn window and the item-bonus doubling.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedMin = 101,
+
+        /// <summary>
+        /// The Tier III staging with Min holding the first sibling of each colour - Dragon Stance,
+        /// Mine Field and Ruse - and Flurry of Blows unlocked beside her dashboard. This is the only
+        /// arm that reaches Mine Field's two blasts, Dragon's "1 or 2 spaces" step and Ruse's
+        /// re-place.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedMin = 102,
+
+        /// <summary>
+        /// The Tier III staging with Min holding the second sibling of each colour - Cobra Stance,
+        /// Holy Death Grenade and Perfect Self - and Flurry of Blows unlocked. This is the only arm
+        /// that reaches the two-hero end-of-turn grenade and Perfect Self's deck-card permanent item.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedMin = 103
     }
 
     [ExecuteAlways]
@@ -1423,6 +1457,25 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedStagedRowennaWithAllyAtTierThree =>
                     MatchConfiguration.CreateStagedRowennaWithAllyForInternalTest(
                         TeamSide.Red, RowennaAllyStage.TierThree),
+                SceneCardContent.VerifiedEngagedStagedMin =>
+                    MatchConfiguration.CreateStagedMinForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedMin =>
+                    MatchConfiguration.CreateStagedMinTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MinUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedMin =>
+                    MatchConfiguration.CreateStagedMinTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MinUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedMin =>
+                    MatchConfiguration.CreateStagedMinTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MinUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedMin =>
+                    MatchConfiguration.CreateStagedMinTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.MinUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1486,7 +1539,10 @@ namespace GuardsDigital.Presentation.Interaction
                 // offline tier can see it. Her three ALLY arms are deliberately NOT here, exactly as
                 // Brogan's and Tali's are not - a restaging moves two seats and those boards carry
                 // three.
-                IsStagedRowenna(content))
+                IsStagedRowenna(content) ||
+                // Milestone 8.61j. Written in the SAME change as her five engaged members above, on
+                // the same terms. She has no ally arm at all, so all five of hers are here.
+                IsStagedMin(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1977,6 +2033,15 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusRowennaOneVsOne();
                     }
 
+                    // Milestone 8.61j. The nineteenth hero's arm, written in the SAME change as her
+                    // five members and her restaging line - the three arms milestone 8.38f had to
+                    // add for Swift after the fact, and which every dealing since has shipped
+                    // together.
+                    if (IsStagedMin(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusMinOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -2182,6 +2247,19 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedStagedRowennaWithAlly ||
             content == SceneCardContent.VerifiedStagedRowennaWithAllyAtTierTwo ||
             content == SceneCardContent.VerifiedStagedRowennaWithAllyAtTierThree;
+
+        /// <summary>
+        /// Whether this content is one of milestone 8.61j's five staged Min scenes. Written in the
+        /// same change as those five members, the setup configuration they name and the restaging
+        /// list above - the three arms milestone 8.38f had to add for Swift after the fact, and which
+        /// every dealing since has therefore shipped together.
+        /// </summary>
+        private static bool IsStagedMin(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedMin ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedMin ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedMin ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedMin ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedMin;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

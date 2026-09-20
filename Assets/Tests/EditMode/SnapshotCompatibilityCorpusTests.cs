@@ -1439,24 +1439,63 @@ namespace GuardsDigital.Tests.EditMode
         // refused by the existing strict catalog comparison rather than silently reinterpreted, and
         // nothing this build wrote has become unreadable - these captures are rebuilt from the
         // fixtures every run and were never stored.
+        //
+        // MILESTONE 8.61j: MIGRATE, and it is a re-pin rather than a schema move. Dealing Min the
+        // Dragonmonk as the NINETEENTH hero registers NINETEEN capabilities and FIVE token
+        // definitions, and every snapshot records both registration lists, so all sixteen captures
+        // grow and re-hash while no field, no reader, no `MatchLogEntryKind` and no behaviour moves.
+        // SCHEMA STAYS v43 AND THE WIRE STAYS `/18`.
+        //
+        // AND THE BYTE DELTA IS ATTRIBUTED RATHER THAN ASSERTED, which is what makes the isolation
+        // unnecessary to guess at. It is **+666 bytes on all sixteen**, measured against the two
+        // captures whose byte counts this list writes down: `setup` 12,245 -> 12,911 and
+        // `verified-hand-setup` 11,344 -> 12,010. Six hundred and sixty-six is exactly what the two
+        // registration lists cost and nothing else:
+        //
+        //   * The NINETEEN capability ids spell 472 characters
+        //     (`min-smoke-bomb-present` 22, `-space` 20, `-in-range` 23, `-in-radius` 24,
+        //     `min-place-smoke-bomb-in-radius` 30, `min-place-mine-blast` 20, `min-place-mine-dud`
+        //     18, `min-reclaim-mine` 16, `min-grenade-present` 19, `min-grenade-space` 17,
+        //     `min-place-grenade` 17, `enemy-hero-beside-grenade` 25,
+        //     `second-enemy-hero-beside-grenade` 32, `min-death-grenade-at-end-of-turn` 32,
+        //     `min-holy-death-grenade-at-end-of-turn` 37,
+        //     `min-inner-strength-double-item-bonuses` 38,
+        //     `min-perfect-self-double-item-bonuses` 36, `borrow-after-attack-text` 24,
+        //     `take-deck-card-as-item` 22), plus nineteen one-byte length prefixes and nineteen
+        //     four-byte revision integers: 472 + 19 + 76 = 567.
+        //   * The FIVE token definition ids spell 74 characters (`min-smoke-bomb-token` 20,
+        //     `min-mine-blast` 14, `min-mine-dud` 12, `min-mine-facedown` 17, `min-grenade` 11),
+        //     plus five length prefixes and five four-byte revisions: 74 + 5 + 20 = 99.
+        //
+        // 567 + 99 = 666, and both captures agree on it while carrying completely different content,
+        // which is what says the growth is the recorded registration lists rather than anything a
+        // capture plays. The SEVEN triggered effects cost these captures nothing, because a
+        // triggered-effect catalog is not a registration list a snapshot records - which is worth
+        // saying out loud, since hers is the largest group of triggered definitions any dealing has
+        // added.
+        //
+        // Migrate rather than reject, on this list's own standing reasoning: an earlier payload is
+        // refused by the existing strict catalog comparison rather than silently reinterpreted, and
+        // nothing this build wrote has become unreadable - these captures are rebuilt from the
+        // fixtures every run and were never stored.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v43", "602abafbc8be1afd1dd6a64d1ae374db37925f36e3bb32797b78514ae6b6a78c"),
-            new CompatibilityFixture("active-turn-v43", "039d3df5ac9c28a95b16e0c5b2f889eba0867ca3ed450c523f906f56ae842440"),
-            new CompatibilityFixture("pending-choice-v43", "704e8009e92371b9f95ec11a65f84c1b28b59480c2df1642b8c470d7139e37b4"),
-            new CompatibilityFixture("end-of-round-v43", "c02285ec42ac51cd9cbd0777fae95914eec5a8e7ca416f0433064fa395bf6302"),
-            new CompatibilityFixture("pending-minion-battle-v43", "2217fb01f189960fc205c7854aa860b2d20309305887abaa5d0a3e0ef2d54ea5"),
-            new CompatibilityFixture("placed-token-v43", "ec70554605bc5aa3d9747453b93ef571969602e76521278aec8572e279aaa86b"),
-            new CompatibilityFixture("attached-marker-v43", "f54a9823e35b7ba090de2ba7a8e5e5c669ff96331da54ac89f1684576458b2c5"),
-            new CompatibilityFixture("pending-correction-v43", "0e589d9c8c583d8de9442c7a65031b0e1e91209593a28035a5787467922564eb"),
-            new CompatibilityFixture("paused-level-up-v43", "159057e94d07e5f0e1fdd7851e34ab669cae4b500bf6d7aa78afbfbed45578c5"),
-            new CompatibilityFixture("ended-match-v43", "3f9bced71d7a812ac0de91f1421832dd8fda4507ac92cdb6e8aa0aa891fff8f7"),
-            new CompatibilityFixture("verified-hand-setup-v43", "4803320fbf76448e61b1c233bc0b7b45ee08046164d9775f3d7d651a4b1dc11a"),
-            new CompatibilityFixture("paused-orbit-repeat-v43", "0a34b19a350efcf6f9d5d9e03d353bf12bb38156cc63e4915e9ab6bdc4b1b63c"),
-            new CompatibilityFixture("paused-card-text-v43", "a2f0f05ac9f2fea2b390b9d0d2ef495cb1f06b52a88b8abded789f0559efa1de"),
-            new CompatibilityFixture("paused-block-rider-v43", "8f3521a04ab1c03feafc27dba06360bac7798323253748bd043c66671a5bb8a6"),
-            new CompatibilityFixture("paused-repeated-attack-v43", "1154a605f051fb8dc5e7892a3516d92a6e991d369f57a33c551e4c51dedaa66f"),
-            new CompatibilityFixture("parked-pre-action-v43", "909e95dd1932cce5a1cc1b179c7a8883818dd0f6b0449e5a153e5503fd34940a")
+            new CompatibilityFixture("setup-v43", "cc4201b933aa2eb8434e89f69e187a7f3ab1b1ecbe47a5c3e5fb75b8deda824f"),
+            new CompatibilityFixture("active-turn-v43", "eb1ade1bfaeacc60d0e112c16546a1e861e50b89274a6fa1f21810f7c740c6a4"),
+            new CompatibilityFixture("pending-choice-v43", "d858b8d76d3bdebb0a58c5feadd2fb00819c19984e2da4bb5f55ebdbc8f4f04a"),
+            new CompatibilityFixture("end-of-round-v43", "b19069a9b2b1269e53ffae4e3b53914e88262892b6f7711c74efd45c575d99e6"),
+            new CompatibilityFixture("pending-minion-battle-v43", "14f0ecb38558a547d8f91ade21754ca14f9feae3e03fbbdf91aeaafecb947bcf"),
+            new CompatibilityFixture("placed-token-v43", "f46be4ad321763e5aa25dbaff404e9d0fb6427683067b0cfec2a4ff281206aa1"),
+            new CompatibilityFixture("attached-marker-v43", "bf40d6c329834e9429ef2c408bd9069d66682c6a327a277878e7deb600bd7376"),
+            new CompatibilityFixture("pending-correction-v43", "44c2d4967d5288b51703051ba0050c5a6ebd14eee73dd594eb232557e3c5aadd"),
+            new CompatibilityFixture("paused-level-up-v43", "95a15886c6cdc00a56767b1be8b06b8506e008cb95a4d1b8ce21dfcbdcad3fea"),
+            new CompatibilityFixture("ended-match-v43", "f19e830660a3d9390939720d1668dd361235b9e22bf75252e80a75771ac16d16"),
+            new CompatibilityFixture("verified-hand-setup-v43", "400081ad633a6a42464a13214d17356de51d5b39d93190b0761a228e62d0b70d"),
+            new CompatibilityFixture("paused-orbit-repeat-v43", "00cc75f954a013849779122ae5cb7f8fab8ac81abf7846417535659a111ecde1"),
+            new CompatibilityFixture("paused-card-text-v43", "931ed341bda916d30eabe12ade95806f866a5a22d062ba99975c6831ea5b4677"),
+            new CompatibilityFixture("paused-block-rider-v43", "a6fef292c29dd77bb99345b2f4c6fd4e372d03f2648c4d3ce71a6a02329dce49"),
+            new CompatibilityFixture("paused-repeated-attack-v43", "4dc40650814f2a93891fde99a2ac80096559fa9182c56571236cbe5db8e1dacc"),
+            new CompatibilityFixture("parked-pre-action-v43", "14a942ca659c54114f201bb906f5021a4a95d7ef97d1168a0ce2550ebba691e6")
         };
 
         [Test]

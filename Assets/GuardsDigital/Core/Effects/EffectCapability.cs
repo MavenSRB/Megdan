@@ -878,6 +878,31 @@ namespace GuardsDigital.Core.Effects
     /// parameter without implementing this, so a selection can never accept a consumer it has no way to
     /// answer for.
     /// </summary>
+    public interface IPlacedTokenCapabilityHandler
+    {
+        /// <summary>
+        /// The token definition this capability puts on the board. Milestone 8.61j.
+        ///
+        /// <para><b>Why it is asked at all.</b> A hero's triggered bodies are named BY REFERENCE and
+        /// carry no card id, so every walk that has to attribute one to a card follows the references
+        /// a card can reach: <c>UltimateRule.TriggeredEffect</c> for a p.16 permanent ability, and an
+        /// Active effect's own <c>TriggeredEffect</c> for an "End of turn:" clause. Min the
+        /// Dragonmonk's mine trap is a THIRD route and the first of its kind - the price a blast
+        /// charges is declared by the TOKEN DEFINITION
+        /// (<see cref="Components.TokenDefinition.MoveThroughTrapConsequences"/>), and the card that
+        /// can reach it is the card that PLACES that token. Without this declaration the four
+        /// consequence bodies are owned by a hero and reachable from none of her cards, which is
+        /// exactly the state <c>DecisionLabelCoverageTests</c> exists to refuse.</para>
+        ///
+        /// <para>It is a separate interface rather than a member on
+        /// <see cref="IEffectCapabilityHandler"/>, on the same terms
+        /// <see cref="IEffectSelectionCapabilityHandler"/> is: one handler in the build answers it and
+        /// every other one has nothing to say, so asking all of them would be asking a question that
+        /// is not about them. It is READ-ONLY and mutates nothing.</para>
+        /// </summary>
+        Components.TokenDefinition PlacedToken { get; }
+    }
+
     public interface IEffectSelectionCapabilityHandler
     {
         /// <summary>

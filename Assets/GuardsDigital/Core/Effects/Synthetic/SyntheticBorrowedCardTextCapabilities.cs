@@ -29,10 +29,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// text stops that text and nothing else. Where the pool somehow held two, p.10 gives the
     /// undesignated decision to the card's controller and the choice is opened for exactly that.</para>
     ///
-    /// <para><b>Deferred, not registered</b>, for the reason every unreachable capability in this build
-    /// is: the registered set is serialized, and the only content naming this is a hero this build does
-    /// not deal. 8.61j is the block that flips it, and <c>MinBorrowedRiderTests</c> asserts the gate
-    /// from both sides until then.</para>
+    /// <para><b>Registered from milestone 8.61j on.</b> Until that block it was deferred for the
+    /// reason every unreachable capability in this build is: the registered set is serialized, and the
+    /// only content naming this was a hero this build did not deal. 8.61j deals her, so the handler
+    /// joins the build's catalog together with the showcase consumer its new TYPE owes, and
+    /// <c>MinBorrowedRiderTests</c> asserts the registration from both sides.</para>
     /// </summary>
     public static class SyntheticBorrowedCardTextCapabilities
     {
@@ -56,12 +57,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string BorrowedCardOutput = "borrowedCard";
 
         /// <summary>
-        /// The handler this build does NOT register. Kept in a deferred list the way
-        /// <c>BainComponentContent.DeferredHandlers</c> and
-        /// <c>SyntheticPlacementCapabilities.DeferredHandlers</c> are, so the offline content tests can
-        /// compose a catalog of their own from it without any of it becoming reachable.
+        /// Nothing, from milestone 8.61j on. The member stays for the reason every emptied deferred
+        /// list in this build stays: the fixtures that assert the gate from both sides ask a question
+        /// rather than failing to compile.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
+
+        /// <summary>
+        /// The one handler this file owns, registered at milestone 8.61j - the block that deals Min
+        /// the Dragonmonk, whose Fast as Lightning is the card a configured match now puts in a hand
+        /// and the only composed sentence in this build that names this contract.
+        ///
+        /// <para>It is a NEW handler TYPE, so the dealing owed it the second half of milestone 7.9's
+        /// gate as well as this line: <c>SyntheticShowcaseHand.CreateRedWithBorrowedCardTextSkill</c>
+        /// is the showcase consumer, so the type does not arrive for the first time inside a verified
+        /// hero's slice.</para>
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             new IEffectCapabilityHandler[] { new BorrowAfterAttackTextHandler() };
 
         /// <summary>

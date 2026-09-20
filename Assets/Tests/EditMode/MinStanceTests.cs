@@ -779,31 +779,38 @@ namespace GuardsDigital.Tests.EditMode
         // The gate, the labels and the claim
         // =========================================================================================
 
+        /// <summary>
+        /// Milestone 8.61j FLIPPED this case, which until then asserted the opposite from the same
+        /// three sides. This block still adds no handler of its own - the five Stances compose
+        /// entirely on vocabulary the build already owned plus 8.61a's Smoke bomb - so what the
+        /// dealing changed for them is the two things below it: the hero is offerable, and her
+        /// riders' labels are in the one catalog presentation asks.
+        /// </summary>
         [Test]
-        public void NothingOfTheStancesIsRegisteredOrDealtInThisBuild()
+        public void TheStancesAreDealtAndTheirLabelsAreRegistered()
         {
             Assert.That(
-                MinComponentContent.SmokeBombRegisteredHandlers(), Is.Empty,
-                "This block adds no handler at all, so the one list her content has stays empty.");
+                MinComponentContent.SmokeBombDeferredHandlers(), Is.Empty,
+                "This block adds no handler of its own, and 8.61a's five are registered now.");
             Assert.That(
                 RegisteredHeroRoster.ForThisBuild.Select(hero => hero.ContentId.Value),
-                Has.No.Member("min"),
-                "The other side of milestone 7.9's gate: no configured match deals her, so nothing " +
-                "reachable can play one of these faces. 8.61j is the block that flips it.");
+                Has.Member("min"),
+                "The other side of milestone 7.9's gate: a configured match deals her, so every one " +
+                "of these faces is one something reachable can play.");
             Assert.That(
                 DecisionLabelCatalog.Registered.Keys.Select(card => card.Value)
                     .Intersect(MinCardContent.StanceDefinitions.Select(card => card.Id.Value)),
-                Is.Empty,
-                "and her labels are declared beside her content rather than aggregated, because " +
-                "what a table is FOR is a window over a card a match deals.");
+                Is.Not.Empty,
+                "and her riders' labels joined the catalog at the dealing, because what a table is " +
+                "FOR is a window over a card a match deals.");
 
             Assert.That(
                 MinCardContent.DealtDefinitions.Select(card => card.Id),
                 Is.SupersetOf(MinCardContent.StanceDefinitions.Select(card => card.Id)),
                 "Milestone 8.61i filled the dealt set with her eighteen playable faces, the five " +
                 "Stances included - and 8.61j is what makes the word true, which is what the two " +
-                "assertions above are: the capabilities are withheld and no configured match deals " +
-                "her, so a face in that list is still a face nothing reachable can start.");
+                "assertions above are: the capabilities are registered and a configured match " +
+                "deals her, so every face in that list is a face something reachable can start.");
         }
 
         [Test]

@@ -1070,14 +1070,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
         {
             yield return new PlayedAttackThisTurnHandler();
 
-            // Milestone 8.61h. `take-deck-card-as-item@1`, minted for Min the Dragonmonk's Perfect
-            // Self - "Take a Tier II card from your deck and add it to your dashboard as a permanent
-            // item." It is deferred on the standing terms: 8.61h composes three of her faces and does
-            // not deal her, so no card a configured match deals starts this contract, and milestone
-            // 7.9's deferral gate refuses a registration no card can reach. Milestone 8.61j is what
-            // moves this line into the registration list, together with the showcase consumer the
-            // gate's second half requires of a NEW handler type - which this is.
-            yield return new TakeDeckCardAsItemHandler();
+            // MILESTONE 8.61h'S ONE HAS LEFT THIS LIST - see `RegisteredHandlers` below.
+            // `take-deck-card-as-item@1` was minted for Min the Dragonmonk's Perfect Self ("Take a
+            // Tier II card from your deck and add it to your dashboard as a permanent item") and
+            // waited here while 8.61h composed three of her faces without dealing her. Milestone
+            // 8.61j deals her, so the contract is one a card a configured match puts in a hand
+            // starts, and both halves of milestone 7.9's gate are satisfied in that one commit: the
+            // dealing satisfies the first, and the showcase Skill it adds - the Red Quartermaster -
+            // satisfies the second, which a new handler TYPE owes.
 
             // MILESTONE 8.35z38'S SIX HAVE LEFT THIS LIST - see `RegisteredHandlers` below. Misa the
             // Samurai is dealt, so her Red ranged pair, her five Blue Skills and her two Swap Skills
@@ -1292,6 +1292,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
             // threshold is deliberately unreachable so that proving the contract cannot end a fixture
             // match as a side effect.
             yield return new ClaimSoloVictoryHandler();
+
+            // Milestone 8.61j, the milestone that deals Min the Dragonmonk as the NINETEENTH hero.
+            // `take-deck-card-as-item@1` is Perfect Self's second bullet - "Take a Tier II card from
+            // your deck and add it to your dashboard as a permanent item" - which milestone 8.61h
+            // minted and deliberately left out of this list, because 8.61h composed three of her
+            // faces without dealing her and the gate refuses a registration no dealt card can start.
+            // Her Green Tier III is that card. It IS a new handler type, so it owes the gate's second
+            // half a showcase consumer, and this milestone adds one - the Red Archivist, whose
+            // own Tier is one no fixture deck holds, so proving the contract cannot take a card out
+            // of somebody else's deck as a side effect.
+            yield return new TakeDeckCardAsItemHandler();
         }
 
         private static EffectCapabilityReference Reference(string id, int revision) =>
