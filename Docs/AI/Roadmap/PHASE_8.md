@@ -359,7 +359,7 @@ Completed 2026-09-20 (`3fd22c10`, squash-merged from `fe86a06a` on `8.66-silvera
 
 Historical evidence: [8.67 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-867-triggered-checkpoint-continuation-completion-evidence).
 
-### [ ] 8.68 Package the playtest build with the Silverarrow corrections
+### [x] 8.68 Package the playtest build with the Silverarrow corrections
 
 Authorized 2026-09-20 by the user ("Cut a new build with the silverarrow fixes"), the same evening 8.66 and 8.67 landed after the 8.65 package was cut.
 
@@ -368,3 +368,7 @@ Outcome: `Builds/Playtest-8.66-silverarrow` and its zip, built from main at the 
 Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged commit; the packaged exe launches and reaches the lobby; the identity stamp names the commit; Treetop Sentinel's empty-handed defeat and the second end-of-turn face at one checkpoint are what the package ships.
 
 Non-goals: new gameplay beyond 8.66 and 8.67.
+
+Completed 2026-09-20, the same evening 8.66 and 8.67 landed - the user's order ("Cut a new build with the silverarrow fixes"). `Builds/Playtest-8.66-silverarrow` and `Builds/Playtest-8.66-silverarrow.zip` (183 entries, no logs, no debug folder, 71 MB), built from main at `2a436794` (the 8.66/8.67 ceremony plus the version stamp) with bundleVersion `1.0-8.66-silverarrow`, stamp `1.0-8.66-silverarrow+20260920182640-ffb7d068`; protocol `guards-private-online/18` and schema 43 unchanged; the configured content digest re-measured at this commit is `c9dd1b66...`, IDENTICAL to the 8.65 package's (8.66 and 8.67 changed effect bodies, revision strings and engine code, none of which the registered-content digest covers - so the digest cannot tell the two packages apart at the join and the README tells every player to use this one). The gate on the packaged tree: complete Edit Mode 4925 / 4889 / 0 / 36 established skips; complete Play Mode 705/705 with zero skips; harness 3945/3945; the build-and-launch smoke (GATE PASSED); the packaged exe launched once from its own folder with `-guardsPrivateLobby` to `LOBBY_BEGIN`. Manifest, READ ME FIRST (what is new: the two corrections, then the 8.65 package's news restated; known problems: MI-Q13k stated as the designer's confirmed rule, the two corrections checked by suites and one journey each) and BUILD IDENTITY written by hand per the 8.44 recipe.
+
+Historical evidence: [8.68 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-868-silverarrow-corrections-package-completion-evidence).
