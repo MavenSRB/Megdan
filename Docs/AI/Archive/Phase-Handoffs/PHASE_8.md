@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69 Brynn inventory completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69 | The user: "ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen". `Docs/AI/Rules/HERO_BRYNN.md` records the twentieth hero from the curated corpus (`active-hero-cards/Brynn/`, internal name `brynn`, atlas 8, one deck-back hash, selection front byte-identical to `randomizers-tt23__7723707__front.png`): three stars, roles Tactician/Damager/Durable, stat bars Attack 4+4 / Initiative 7 / Defense 4 / Movement 5+1 by scanline; the nineteen-row inventory (Gold Familiar Ground 12/2/1 Ranged A2 R3; Silver Decoy 1/2 r4; Reds High Ground, Elevated Ambush, Split Attack, Peak Precision, Split Throw; Blues Tread Lightly, Cover Tracks, Mountain Guide, Hide Traces, Expedition Leader; Greens Bear Trap, Log Trap, True Grit, Deadfall Trap, Die Hard; Purple Over the Top; Handicap Home Turf) with items montaged against Rowenna's six (Initiative x3, Defense x3, Attack x3, Radius, Range, Movement); exact printed rules; BR-01-BR-07 facts (no rulebook mention, corners matching ribbons, the Handicap's "Basic Skill - Ranged" band over an Attack, the manifest's `Brynn` standee 8629140 and its "the Tracker" group name against the dashboard's "the Seeker", no token); the capability contract map over the modal, direct-move, swap, discard-or-defeat, repeat and retrieve contracts predicting eight new pieces around one obstacle-adjacency query; BR-Q1-BR-Q13 with BR-Q4 and BR-Q13 held for the user. `PHASE_8_TWENTIETH_HERO.md` records the bounded sequence 8.69a-8.69h with 8.69a first and 8.69b-8.69e as a parallel wave. T0 documentation validation. [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869-inventory-brynn-and-map-the-implementation-sequence). | `milestone/8.69` |
+
 ## Milestone 8.35z86 hero-pick filter completion evidence
 
 | ID | Outcome | Commit |
