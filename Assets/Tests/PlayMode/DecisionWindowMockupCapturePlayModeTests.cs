@@ -82,6 +82,9 @@ namespace GuardsDigital.Tests.PlayMode
                         AssertNothingIsPrintedTwice(root, label);
                         AssertTheBodyIsCentredInThePanel(root, label);
                         AssertTheDockedBarFinishesItsLines(root, label);
+                        // Milestone 8.63, stated on every family this fixture stages: "popup should
+                        // be on top, not behind stuff :D".
+                        DecisionWindowTopMostPlayModeTests.AssertTheWindowIsTopMost(root, label);
                         frame.Verify(root, label);
 
                         yield return UiPlayer.CaptureScreen(
@@ -843,7 +846,7 @@ namespace GuardsDigital.Tests.PlayMode
         // The victory screen's two variants
         // -----------------------------------------------------------------------------------------
 
-        private static VictoryScreenViewModel TeamWin(ConfiguredMatchSceneRuntime runtime)
+        internal static VictoryScreenViewModel TeamWin(ConfiguredMatchSceneRuntime runtime)
         {
             var heroes = runtime.Setup.Heroes.ToArray();
             var red = heroes.Where(hero => hero.TeamSide == TeamSide.Red).ToArray();
@@ -865,7 +868,7 @@ namespace GuardsDigital.Tests.PlayMode
                 });
         }
 
-        private static VictoryScreenViewModel SoloWin(ConfiguredMatchSceneRuntime runtime)
+        internal static VictoryScreenViewModel SoloWin(ConfiguredMatchSceneRuntime runtime)
         {
             var heroes = runtime.Setup.Heroes.ToArray();
             var red = heroes.Where(hero => hero.TeamSide == TeamSide.Red).ToArray();

@@ -475,6 +475,13 @@ namespace GuardsDigital.Presentation.Match
         // the geometry gate's viewport sweep found it drawn at the reference's numbers on every
         // viewport after the first.
         private Vector2 laidOutDecisionViewport;
+
+        /// <summary>
+        /// Milestone 8.63. The window host's own rectangle as it was last laid out, so its own hover
+        /// breakdown - hosted inside it rather than beside it - can be drawn at the same panel-space
+        /// place it always was. See <see cref="KeepTheDecisionWindowOnTop"/>.
+        /// </summary>
+        private Rect laidOutDecisionRect;
         private bool contextUsesTray;
 
         /// <summary>
@@ -1599,6 +1606,10 @@ namespace GuardsDigital.Presentation.Match
             // presenter - so it is placed here, on the same per-frame pass and by the same
             // changed-state rule the tray host above uses.
             LayoutDecisionWindow(force: false);
+            // Milestone 8.63. And nothing paints over it while it is open - including a layer that
+            // attached itself to this root after the composition, which is every one of them that
+            // ever covered the window.
+            KeepTheDecisionWindowOnTop(windowOwnsTheDecision);
             // Milestone 8.8a. The tray's own bound depends on what the contextual region is drawing, and
             // that can change without the header changing - a paused prompt is rendered into the region
             // by its own presenter. Re-laying out only on the transition keeps this a two-state answer
@@ -2363,11 +2374,94 @@ namespace GuardsDigital.Presentation.Match
             var rect = state == DecisionWindowState.Docked
                 ? CalculateDecisionWindowDockedRect(viewport.x, viewport.y)
                 : CalculateDecisionWindowExpandedRect(viewport.x, viewport.y);
+            laidOutDecisionRect = rect;
             var host = decisionWindow.Root;
             host.style.left = rect.x;
             host.style.top = rect.y;
             host.style.width = rect.width;
             host.style.height = rect.height;
+        }
+
+        /// <summary>
+        /// Milestone 8.63. NOTHING ON THIS PANEL PAINTS OVER AN OPEN DECISION WINDOW.
+        ///
+        /// <para><b>The user, on a screenshot of a Defense window with a panel across it:</b> "popup
+        /// should be on top, not behind stuff :D".</para>
+        ///
+        /// <para><b>Why composition order alone could not hold it.</b> <see cref="Compose"/> adds the
+        /// window after every standing surface, which is right and was never enough: this root is also
+        /// attached to LAZILY, by layers that do not exist when it is composed - the phase banner, the
+        /// kinetic layer, the attack spotlight - and by surfaces that deliberately raise themselves
+        /// with <c>BringToFront</c> while they are shown: a drag proxy, a hand's hover preview, a
+        /// rail's revealed face. Every one of them therefore painted above an open window, and the
+        /// live hierarchy in the first run of this milestone's own fixture had <c>gd-kinetic-flight</c>
+        /// over the DEFEND AGAINST THIS ATTACK? window exactly as the screenshot showed.</para>
+        ///
+        /// <para><b>So the rule is enforced rather than arranged</b>, on the same per-frame pass that
+        /// lays the window out, and it costs one reference comparison on a frame where the window is
+        /// already last. It is skipped while the ended-match screen stands, because 8.53's own rule is
+        /// that the victory screen is the one surface that is never drawn beside another.</para>
+        ///
+        /// <para><b>The one popup that belongs to the window goes INSIDE it.</b> The per-card Defense
+        /// breakdown 8.58 kept ("keep the old mouseover when mousing over the defense cards") is
+        /// opened BY the window and anchored to a candidate inside it, so as a sibling it was either
+        /// across the window or - as it actually was - invisible behind it. Hosted inside the window's
+        /// own rectangle it is readable again without being something else covering the window, which
+        /// is the only exception this rule has and is not an exception to the paint order at all.</para>
+        /// </summary>
+        private void KeepTheDecisionWindowOnTop(bool windowOwnsTheDecision)
+        {
+            if (decisionWindow == null || round == null)
+            {
+                return;
+            }
+
+            var breakdown = round.PreviewRoot;
+            var host = decisionWindow.Root;
+            if (!windowOwnsTheDecision || victoryScreenStanding)
+            {
+                if (ReferenceEquals(breakdown.parent, host))
+                {
+                    breakdown.RemoveFromHierarchy();
+                    root.Insert(Mathf.Max(0, root.IndexOf(host)), breakdown);
+                    round.SetPreviewOrigin(Vector2.zero);
+                }
+
+                return;
+            }
+
+            if (!ReferenceEquals(breakdown.parent, host))
+            {
+                breakdown.RemoveFromHierarchy();
+                host.Add(breakdown);
+            }
+
+            round.SetPreviewOrigin(new Vector2(laidOutDecisionRect.x, laidOutDecisionRect.y));
+
+            // The one-line popup that explains whatever is being pointed at rides above the window,
+            // because while the window is open the thing being pointed at is usually one of ITS
+            // controls and a tooltip drawn under the control it explains says nothing. It is the
+            // window's own reading rather than a panel beside it - and it is hidden on every frame a
+            // pointer is not resting on something, which is why the rule below can still say that
+            // nothing SHOWN is painted after the window.
+            var tip = tooltipLayer?.Root;
+            var tipIsSibling = tip != null && ReferenceEquals(tip.parent, root);
+            var last = root.childCount - 1;
+            var ordered = tipIsSibling
+                ? root.childCount >= 2 &&
+                    ReferenceEquals(root.ElementAt(last), tip) &&
+                    ReferenceEquals(root.ElementAt(last - 1), host)
+                : root.childCount >= 1 && ReferenceEquals(root.ElementAt(last), host);
+            if (ordered)
+            {
+                return;
+            }
+
+            host.BringToFront();
+            if (tipIsSibling)
+            {
+                tip.BringToFront();
+            }
         }
 
         /// <summary>

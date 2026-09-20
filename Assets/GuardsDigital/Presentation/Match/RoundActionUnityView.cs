@@ -127,6 +127,7 @@ namespace GuardsDigital.Presentation.Match
 
         private DefenseBreakdownViewModel activeDefensePreview;
         private Rect defensePreviewAnchor;
+        private Vector2 previewOrigin;
         private double dismissPreviewAt = -1d;
 
         public RoundActionUnityView()
@@ -2422,6 +2423,28 @@ namespace GuardsDigital.Presentation.Match
             return control;
         }
 
+        /// <summary>
+        /// Milestone 8.63, at the user's direction on the captured breakdown: "spacing is a bit off" -
+        /// its rows were drawn ON TOP OF ONE ANOTHER.
+        ///
+        /// <para><b>The element that built the overlap</b> was this panel's own <c>maxHeight</c>. The
+        /// breakdown is a column inside an absolutely positioned panel whose height
+        /// <see cref="LayoutPreview"/> capped at a flat 240 units, and every
+        /// <c>gd-defense-contribution-row</c> kept UI Toolkit's default <c>flex-shrink: 1</c>. A
+        /// breakdown with more rows than that cap holds - an attack line plus a defense line plus two
+        /// minion modifiers is already past it - therefore had its ROWS squeezed towards zero height
+        /// while the LABELS inside them, which <c>HudElements.Text</c> builds with
+        /// <c>flex-shrink: 0</c>, kept their full size and painted over the line below. Nothing was
+        /// absolutely positioned and nothing was missing a layout: the container was simply too short
+        /// and the wrong children gave way.</para>
+        ///
+        /// <para>So the panel is CONTENT-SIZED now - <see cref="CalculateDefensePreviewHeight"/> is
+        /// the same arithmetic the drawing below performs, line for line - and every line in it is
+        /// rigid: one declared height each, one gap above each section heading, the totals on their
+        /// own emphasised lines, the label on the left and the signed value hard against the right.
+        /// Nothing overlaps because nothing can be squeezed, and nothing clips because the panel is
+        /// as tall as what it holds.</para>
+        /// </summary>
         public void ShowDefensePreview(DefenseBreakdownViewModel model, Rect anchorScreenRect)
         {
             activeDefensePreview = model ?? throw new ArgumentNullException(nameof(model));
@@ -2431,7 +2454,8 @@ namespace GuardsDigital.Presentation.Match
             var title = HudElements.Text(model.Title, 13f, MatchHudTheme.PrimaryText);
             title.name = "gd-defense-preview-title";
             title.style.unityFontStyleAndWeight = FontStyle.Bold;
-            title.style.marginBottom = 6f;
+            title.style.marginBottom = DefenseBreakdownTitleGap;
+            Rigid(title, DefenseBreakdownTitleHeight);
             preview.Add(title);
 
             AddDefenseSection("ATTACK", model.AttackRows);
@@ -2439,8 +2463,9 @@ namespace GuardsDigital.Presentation.Match
                 $"ATTACK TOTAL  {model.AttackTotal}", 13f, MatchHudTheme.PrimaryText);
             attackTotal.name = "gd-defense-attack-total";
             attackTotal.style.unityFontStyleAndWeight = FontStyle.Bold;
-            attackTotal.style.marginTop = 3f;
-            attackTotal.style.marginBottom = 7f;
+            attackTotal.style.marginTop = DefenseBreakdownTotalGapAbove;
+            attackTotal.style.marginBottom = DefenseBreakdownTotalGapBelow;
+            Rigid(attackTotal, DefenseBreakdownTotalHeight);
             preview.Add(attackTotal);
 
             AddDefenseSection("DEFENSE", model.DefenseRows);
@@ -2455,8 +2480,9 @@ namespace GuardsDigital.Presentation.Match
                 defenseTotalText, 13f, MatchHudTheme.PrimaryText);
             defenseTotal.name = "gd-defense-defense-total";
             defenseTotal.style.unityFontStyleAndWeight = FontStyle.Bold;
-            defenseTotal.style.marginTop = 3f;
-            defenseTotal.style.marginBottom = 7f;
+            defenseTotal.style.marginTop = DefenseBreakdownTotalGapAbove;
+            defenseTotal.style.marginBottom = DefenseBreakdownTotalGapBelow;
+            Rigid(defenseTotal, DefenseBreakdownTotalHeight);
             preview.Add(defenseTotal);
 
             var resultColor = model.Outcome == AttackResolutionOutcome.SuccessfullyDefended
@@ -2473,8 +2499,9 @@ namespace GuardsDigital.Presentation.Match
                 resultColor.g * 0.12f,
                 resultColor.b * 0.12f,
                 1f);
-            HudElements.Padding(result, 6f);
+            HudElements.Padding(result, DefenseBreakdownResultPadding);
             HudElements.Border(result, resultColor, 1f, 3f);
+            Rigid(result, DefenseBreakdownResultHeight);
             preview.Add(result);
             preview.style.display = DisplayStyle.Flex;
             LayoutPreview();
@@ -2487,26 +2514,54 @@ namespace GuardsDigital.Presentation.Match
             var section = HudElements.Text(heading, 10f, MatchHudTheme.MutedText);
             section.name = "gd-defense-section";
             section.style.unityFontStyleAndWeight = FontStyle.Bold;
+            section.style.marginTop = DefenseBreakdownHeadingGap;
+            Rigid(section, DefenseBreakdownHeadingHeight);
             preview.Add(section);
             foreach (var contribution in contributionRows)
             {
                 var row = HudElements.Row(8f);
                 row.name = "gd-defense-contribution-row";
                 row.style.justifyContent = Justify.SpaceBetween;
+                // Milestone 8.63: one line, never wrapped onto a second and never squeezed onto the
+                // line below it.
+                row.style.flexWrap = Wrap.NoWrap;
+                Rigid(row, DefenseBreakdownRowHeight);
                 var source = HudElements.Text(
                     contribution.SourceLabel, 11f, MatchHudTheme.PrimaryText);
                 source.name = "gd-defense-contribution-source";
                 source.style.flexGrow = 1f;
+                // The NAME is the one thing here that may give way, and it gives way by being
+                // clipped at the panel's edge rather than by pushing its own value off the row.
+                source.style.flexShrink = 1f;
+                source.style.whiteSpace = WhiteSpace.NoWrap;
+                source.style.overflow = Overflow.Hidden;
+                source.style.unityTextAlign = TextAnchor.MiddleLeft;
                 var amountColor = contribution.Amount >= 0
                     ? new Color(0.30f, 0.90f, 0.48f, 1f)
                     : new Color(1f, 0.30f, 0.20f, 1f);
                 var amount = HudElements.Text(contribution.SignedAmount, 12f, amountColor);
                 amount.name = "gd-defense-contribution-amount";
                 amount.style.unityFontStyleAndWeight = FontStyle.Bold;
+                amount.style.flexShrink = 0f;
+                amount.style.marginLeft = 10f;
+                amount.style.whiteSpace = WhiteSpace.NoWrap;
+                amount.style.unityTextAlign = TextAnchor.MiddleRight;
                 row.Add(source);
                 row.Add(amount);
                 preview.Add(row);
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.63. One line of the breakdown, at its own declared height and unable to give
+        /// that height up - which is the whole of what stopped the rows drawing over one another.
+        /// </summary>
+        private static void Rigid(VisualElement line, float height)
+        {
+            line.style.height = height;
+            line.style.minHeight = height;
+            line.style.flexShrink = 0f;
+            line.style.flexGrow = 0f;
         }
 
         public void ScheduleDefensePreviewDismissal(double now)
@@ -2533,19 +2588,110 @@ namespace GuardsDigital.Presentation.Match
             preview.style.display = DisplayStyle.None;
         }
 
+        /// <summary>
+        /// Milestone 8.63. Where this breakdown's own host sits on the panel, so the rectangle below
+        /// - which is computed in PANEL coordinates and clamped to the panel - can be expressed
+        /// inside a host that is not itself at the panel's origin.
+        ///
+        /// <para>The window's own hover breakdown is drawn INSIDE the decision window ("popup should
+        /// be on top, not behind stuff"), and the window's host is an absolutely positioned rectangle
+        /// somewhere on the panel. Nothing about WHERE the breakdown is drawn changes: the same
+        /// anchor, the same size and the same viewport clamp produce the same panel-space rectangle,
+        /// and this origin is subtracted from it so the same pixels are covered.</para>
+        /// </summary>
+        public void SetPreviewOrigin(Vector2 origin)
+        {
+            if (previewOrigin == origin)
+            {
+                return;
+            }
+
+            previewOrigin = origin;
+            LayoutPreview();
+        }
+
+        /// <summary>The breakdown panel's own inside padding.</summary>
+        public const float DefenseBreakdownPadding = 10f;
+
+        /// <summary>Milestone 8.63. Every line of the breakdown, at the height it is drawn at.</summary>
+        public const float DefenseBreakdownTitleHeight = 18f;
+
+        public const float DefenseBreakdownTitleGap = 6f;
+        public const float DefenseBreakdownHeadingHeight = 14f;
+
+        /// <summary>The breath above a section heading, which is what separates ATTACK from DEFENSE.</summary>
+        public const float DefenseBreakdownHeadingGap = 8f;
+
+        public const float DefenseBreakdownRowHeight = 18f;
+        public const float DefenseBreakdownTotalHeight = 20f;
+        public const float DefenseBreakdownTotalGapAbove = 3f;
+        public const float DefenseBreakdownTotalGapBelow = 7f;
+        public const float DefenseBreakdownResultPadding = 6f;
+
+        /// <summary>The verdict band: its own line, its padding and its border.</summary>
+        public const float DefenseBreakdownResultHeight =
+            20f + (DefenseBreakdownResultPadding * 2f) + 2f;
+
+        /// <summary>
+        /// The panel's own one-unit border, top and bottom, plus a line of breath under the verdict.
+        ///
+        /// <para>Milestone 8.63's first run measured the cost of leaving both out: the verdict band
+        /// ended 5.3 units below the panel that held it, because a height that counts only the lines
+        /// counts neither the border drawn around them nor the fraction a laid-out text line rounds
+        /// up by. The breath is small and deliberate - the panel is sized to its content, and this is
+        /// the content's own edge rather than padding it out.</para>
+        /// </summary>
+        public const float DefenseBreakdownEdge = (1f * 2f) + 6f;
+
+        /// <summary>
+        /// Milestone 8.63. What this breakdown NEEDS, line for line - the same arithmetic
+        /// <see cref="ShowDefensePreview"/> draws, so the panel is exactly as tall as its content.
+        ///
+        /// <para>It is arithmetic rather than a measurement for the reason every other fixed fit in
+        /// this HUD is: the panel is laid out in reference units the frame after it is filled, and a
+        /// hover popup that waited a frame to size itself would be drawn at the wrong height in the
+        /// frame a player actually sees it appear.</para>
+        /// </summary>
+        public static float CalculateDefensePreviewHeight(DefenseBreakdownViewModel model)
+        {
+            if (model == null)
+            {
+                throw new ArgumentNullException(nameof(model));
+            }
+
+            var height = (DefenseBreakdownPadding * 2f) + DefenseBreakdownEdge +
+                DefenseBreakdownTitleHeight + DefenseBreakdownTitleGap +
+                DefenseBreakdownResultHeight;
+            foreach (var rows in new[] { model.AttackRows, model.DefenseRows })
+            {
+                height += DefenseBreakdownHeadingGap + DefenseBreakdownHeadingHeight;
+                height += (rows?.Count ?? 0) * DefenseBreakdownRowHeight;
+                height += DefenseBreakdownTotalGapAbove + DefenseBreakdownTotalHeight +
+                    DefenseBreakdownTotalGapBelow;
+            }
+
+            return height;
+        }
+
         private void LayoutPreview()
         {
             // Milestone 8.25c: the panel's rectangle in reference units, not the screen's in pixels.
             // The three style writes below are panel coordinates, so a device pixel here would put the
             // breakdown outside the panel on any screen that is not the reference one.
             var viewport = ConfiguredMatchHudRenderer.PanelViewport;
+            // Milestone 8.63: the height is the CONTENT's, clamped only by the panel it has to stay
+            // inside. It used to be a flat 240 units, which is where the overlapping rows came from.
+            var content = activeDefensePreview == null
+                ? DefenseBreakdownRowHeight
+                : CalculateDefensePreviewHeight(activeDefensePreview);
             var size = new Vector2(
                 Mathf.Min(440f, Mathf.Max(240f, viewport.x - 24f)),
-                Mathf.Min(240f, Mathf.Max(120f, viewport.y - 24f)));
+                Mathf.Min(content, Mathf.Max(DefenseBreakdownRowHeight, viewport.y - 24f)));
             var rect = CalculateDefensePreviewRect(defensePreviewAnchor, viewport, size);
-            preview.style.left = rect.x;
-            preview.style.top = rect.y;
+            preview.style.left = rect.x - previewOrigin.x;
+            preview.style.top = rect.y - previewOrigin.y;
             preview.style.width = rect.width;
+            preview.style.height = rect.height;
             preview.style.maxHeight = rect.height;
         }
 
