@@ -192,12 +192,13 @@ namespace GuardsDigital.Tests.EditMode
             // than a list: her line is owed the moment a `RowennaCardContent` exists, dealt or not.
             // None of her five bodies binds an Attack target by card text, so she adds no at-risk gate.
             foreach (var card in RowennaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("rowenna", d);
-            // Milestone 8.61g. The nineteenth hero's first composed faces. Her set has no aggregate
-            // yet - five blocks compose it at once and 8.61i mints AllDefinitions - so her line reads
-            // the per-block lists the partial class declares, through the shared corpus helper. Neither
-            // of 8.61g's two faces binds an Attack target by card text, so she adds no at-risk gate.
-            foreach (var card in VerifiedContentCorpus.AllDefinitionsOf(typeof(MinCardContent)))
-                foreach (var d in EffectRoots(card)) yield return ("min", d);
+            // Milestone 8.61g added the nineteenth hero's line while her set was being composed by a
+            // parallel wave, reading the per-block lists through the shared corpus helper because no
+            // aggregate existed yet. MILESTONE 8.61i MINTED IT, so this reads her nineteen directly
+            // like every hero above. None of her faces binds an Attack target by card text - her
+            // Stance riders push, move and swap off the attack's own facts - so she adds no at-risk
+            // gate.
+            foreach (var card in MinCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("min", d);
         }
 
         /// <summary>

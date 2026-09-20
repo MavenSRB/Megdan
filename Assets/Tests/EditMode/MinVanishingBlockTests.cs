@@ -80,7 +80,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var block = card.ActionDefinitions.Single(
                 action => action.DefenseResolution == PrintedDefenseResolution.Block);
-            Assert.That(block.Id, Is.EqualTo(MinCardContent.VanishingPrimaryBlock));
+            Assert.That(block.Id, Is.EqualTo(MinCardContent.PrimaryBlock));
             Assert.That(block.Origin, Is.EqualTo(ActionDefinitionOrigin.PrintedPrimary),
                 "p.14 prints a Block as the card's own primary action, never as a secondary reaction.");
             Assert.That(
@@ -456,7 +456,7 @@ namespace GuardsDigital.Tests.EditMode
                 () => DefenseBlockQuery.Evaluate(
                     new ActionOffer(
                         new CardInstanceId("min-vanishing-textless"), textless[1].Reference,
-                        MinCardContent.VanishingPrimaryBlock, Min,
+                        MinCardContent.PrimaryBlock, Min,
                         ActionInvocationContext.PrintedPrimary, true),
                     textless, textless[0].Reference, AttackActionId,
                     new MarkerAttachmentRegister(), Attacker, Set(board), board, null, Capabilities),
@@ -852,7 +852,7 @@ namespace GuardsDigital.Tests.EditMode
                 heroItems: items);
             var started = EffectResolutionSession.Start(
                 new EffectResolutionId("min-vanishing-swap-probe"),
-                Instance(cardId), definition.Reference, MinCardContent.VanishingPrimaryBlock,
+                Instance(cardId), definition.Reference, MinCardContent.PrimaryBlock,
                 Min, Min, ActionInvocationContext.PrintedPrimary, context);
             Assert.That(started.Accepted, Is.True, started.RejectionReason.ToString());
 
@@ -866,7 +866,7 @@ namespace GuardsDigital.Tests.EditMode
             new ActionOffer(
                 Instance(cardId),
                 MinCardContent.VanishingDefinition(cardId).Reference,
-                MinCardContent.VanishingPrimaryBlock,
+                MinCardContent.PrimaryBlock,
                 Min,
                 ActionInvocationContext.PrintedPrimary,
                 true);
@@ -890,7 +890,7 @@ namespace GuardsDigital.Tests.EditMode
         private static CardDefinition AttackCard(CardDefinitionId cardId, AttackRangeKind classification) =>
             new CardDefinition(
                 cardId,
-                MinCardContent.VanishingRevision,
+                MinCardContent.ContentRevision,
                 "TEST - Min vanishing attacker",
                 new InitiativeValue(6),
                 CardContentAuthority.SyntheticTestFixture,
@@ -920,7 +920,7 @@ namespace GuardsDigital.Tests.EditMode
         private static CardDefinition BlockCardWithoutItsText() =>
             new CardDefinition(
                 new CardDefinitionId("min-vanishing-textless-block"),
-                MinCardContent.VanishingRevision,
+                MinCardContent.ContentRevision,
                 "TEST - Min Block without its text",
                 new InitiativeValue(2),
                 CardContentAuthority.SyntheticTestFixture,
@@ -928,7 +928,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[]
                 {
                     new ActionDefinition(
-                        MinCardContent.VanishingPrimaryBlock,
+                        MinCardContent.PrimaryBlock,
                         ActionKind.Defense,
                         ActionDefinitionOrigin.PrintedPrimary,
                         new[] { new PrintedValueDefinition(PrintedValueChannel.Range, 3) },
@@ -1206,7 +1206,7 @@ namespace GuardsDigital.Tests.EditMode
                         BlockCardInstance,
                         instances.Single(instance => instance.Id.Equals(BlockCardInstance))
                             .DefinitionReference,
-                        MinCardContent.VanishingPrimaryBlock,
+                        MinCardContent.PrimaryBlock,
                         Min,
                         ActionInvocationContext.PrintedPrimary,
                         true),
@@ -1437,7 +1437,7 @@ namespace GuardsDigital.Tests.EditMode
 
             /// <summary>A card the seats commit so the round has a turn for each of them.</summary>
             private static readonly CardDefinition Filler = new CardDefinition(
-                TurnFillerCard, MinCardContent.VanishingRevision, "TEST - filler",
+                TurnFillerCard, MinCardContent.ContentRevision, "TEST - filler",
                 new InitiativeValue(20), CardContentAuthority.SyntheticTestFixture,
                 CardProgressionProfile.BasicCard(CardColor.Silver),
                 new[]
@@ -1456,7 +1456,7 @@ namespace GuardsDigital.Tests.EditMode
             /// </summary>
             private static CardDefinition AttackingCard(bool pushesAfterTheAttack, bool ranged) =>
                 new CardDefinition(
-                    AttackerCard, MinCardContent.VanishingRevision, "TEST - Min's attacker",
+                    AttackerCard, MinCardContent.ContentRevision, "TEST - Min's attacker",
                     new InitiativeValue(6), CardContentAuthority.SyntheticTestFixture,
                     CardProgressionProfile.BasicCard(CardColor.Gold),
                     new[]
@@ -1491,7 +1491,7 @@ namespace GuardsDigital.Tests.EditMode
                 var push = new EffectNodeId("attacker-push");
                 return new EffectDefinition(
                     new EffectDefinitionId("min-vanishing-attacker-after-attack"),
-                    MinCardContent.VanishingRevision,
+                    MinCardContent.ContentRevision,
                     root,
                     new[]
                     {

@@ -22,12 +22,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// fulfilled, you successfully defend, regardless of the attack value. If not, you are defeated."
     /// Tigerclaw's five Blocks are the precedent for every part of that shape but the condition.</para>
     ///
-    /// <para><b>The upgrade ladder is stated only as far as this block owns it.</b> p.15 makes Poof!
-    /// upgrade into either face of Green Tier II - Vanish or Inner Strength - and Vanish into either
-    /// Tier III, Ruse or Perfect Self. Inner Strength and Perfect Self are 8.61h's faces, and naming
-    /// their definition IDs from here would be this block reaching into another's; 8.61i composes the
-    /// whole set and completes both pairs. Nothing about the three definitions below changes when it
-    /// does.</para>
+    /// <para><b>The Green ladder is whole here since milestone 8.61i.</b> p.15 makes Poof! upgrade into
+    /// either face of Green Tier II - Vanish or Inner Strength - and Vanish into either Tier III, Ruse
+    /// or Perfect Self. Inner Strength and Perfect Self are 8.61h's faces, so this block could name
+    /// only the halves it owned while the two branches ran in parallel; the block that composed her set
+    /// completed both pairs, and nothing else about the three definitions below moved when it did.</para>
     ///
     /// <para><b>Nothing here is registered.</b> <c>MatchContentCatalogs</c> names no Min content, so no
     /// configured match can deal these three cards and nothing reachable can start their swap -
@@ -35,12 +34,6 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static partial class MinCardContent
     {
-        /// <summary>
-        /// The per-block placeholder revision, deliberately not a value that could be mistaken for a
-        /// real content revision. 8.61i mints the one real string the whole set carries.
-        /// </summary>
-        public const string VanishingRevision = "min-8-61b-vanishing";
-
         /// <summary>Green Tier I. "Swap with a [Smoke bomb] Smoke bomb token in range; if you do, block the attack."</summary>
         public static CardDefinitionId Poof { get; } = new CardDefinitionId("min-poof");
 
@@ -49,18 +42,6 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>Green Tier III. The same, and "You may place the Smoke bomb into a space in range."</summary>
         public static CardDefinitionId Ruse { get; } = new CardDefinitionId("min-ruse");
-
-        /// <summary>
-        /// The Block primary all three faces print. The identity string is every earlier set's - an
-        /// action identity is local to its card - and only the C# member name is this block's, so five
-        /// partial files over one class never collide on it.
-        /// </summary>
-        public static ActionDefinitionId VanishingPrimaryBlock { get; } =
-            new ActionDefinitionId("primary-block");
-
-        /// <summary>The Movement ribbon all three print, whose card text p.11 suppresses.</summary>
-        public static ActionDefinitionId VanishingSecondaryMovement { get; } =
-            new ActionDefinitionId("secondary-movement");
 
         /// <summary>Poof!'s printed text, transcribed. Vanish prints the identical sentence.</summary>
         public const string PoofText =
@@ -77,10 +58,6 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>The three faces this block composes.</summary>
         public static IEnumerable<CardDefinitionId> VanishingCards() =>
             new[] { Poof, Vanish, Ruse };
-
-        // MERGE NOTE (8.61b -> main): this block's faces join the class aggregate declared in
-        // MinCardContent.SmokeBomb.cs (LazyAllDefinitions concatenates VanishingDefinitions) until
-        // 8.61i mints the real set; this partial declares no AllDefinitions of its own.
 
         /// <summary>The three printed definitions, built once so two readers compare the same object.</summary>
         public static IReadOnlyList<CardDefinition> VanishingDefinitions => LazyVanishing.Value;
@@ -103,9 +80,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 return Compose(
                     Poof, "Poof!", initiative: 2, range: 3, printedText: PoofText,
                     mayRePlaceTheBomb: false,
-                    // 8.61i adds Inner Strength, the sibling Tier II this block does not own.
+                    // p.15's fork, whole since 8.61i: Vanish is this block's and Inner Strength is
+                    // 8.61h's, and a Tier I names both of its colour's Tier II faces.
                     progression: CardProgressionProfile.NonBasicCard(
-                        CardColor.Green, CardTier.I, PrintedValueChannel.None, Vanish));
+                        CardColor.Green, CardTier.I, PrintedValueChannel.None,
+                        Vanish, InnerStrength));
             }
 
             if (cardId.Equals(Vanish))
@@ -113,9 +92,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 return Compose(
                     Vanish, "Vanish", initiative: 2, range: 4, printedText: VanishText,
                     mayRePlaceTheBomb: false,
-                    // 8.61i adds Perfect Self, the sibling Tier III this block does not own.
+                    // The Tier III fork, whole since 8.61i: Ruse is this block's and Perfect Self is
+                    // 8.61h's.
                     progression: CardProgressionProfile.NonBasicCard(
-                        CardColor.Green, CardTier.II, PrintedValueChannel.Defense, Ruse));
+                        CardColor.Green, CardTier.II, PrintedValueChannel.Defense,
+                        Ruse, PerfectSelf));
             }
 
             if (cardId.Equals(Ruse))
@@ -154,7 +135,7 @@ namespace GuardsDigital.Core.Cards.Verified
             CardProgressionProfile progression) =>
             new CardDefinition(
                 cardId,
-                VanishingRevision,
+                ContentRevision,
                 displayName,
                 new InitiativeValue(initiative),
                 CardContentAuthority.VerifiedOfficial,
@@ -162,21 +143,21 @@ namespace GuardsDigital.Core.Cards.Verified
                 new[]
                 {
                     new ActionDefinition(
-                        VanishingPrimaryBlock,
+                        PrimaryBlock,
                         ActionKind.Defense,
                         ActionDefinitionOrigin.PrintedPrimary,
                         new[] { new PrintedValueDefinition(PrintedValueChannel.Range, range) },
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, false),
                         AttackRangeKind.None,
                         new ActionCardStateTransition(CardLocation.Hand, CardLocation.DiscardPile),
-                        MinEffectContent.VanishingBlock(cardId, VanishingRevision, mayRePlaceTheBomb),
+                        MinEffectContent.VanishingBlock(cardId, ContentRevision, mayRePlaceTheBomb),
                         PrintedTextComposition.None,
                         PrintedDefenseResolution.Block,
                         MinEffectContent.VanishingDefenseTextTimingFor(cardId),
                         blockCondition: PrintedBlockCondition
                             .TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange),
                     new ActionDefinition(
-                        VanishingSecondaryMovement,
+                        SecondaryMovement,
                         ActionKind.Movement,
                         ActionDefinitionOrigin.PrintedSecondary,
                         new[]

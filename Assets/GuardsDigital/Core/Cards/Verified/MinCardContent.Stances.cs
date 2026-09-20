@@ -28,10 +28,9 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Cobra's Radius 4 is read by their card TEXT alone. What each face composes is only the rider
     /// after that sentence; see <see cref="MinEffectContent.StanceTextFor"/>.</para>
     ///
-    /// <para><b>Nothing here is registered or dealt</b>, and the revision is
-    /// <see cref="MinComponentContent.PrepRevision"/> - see <see cref="MinComponentContent"/>'s own
-    /// remarks for why the gate is the point. Milestone 8.61i states her whole set of nineteen under
-    /// one real content revision and mints <c>DealtDefinitions</c>.</para>
+    /// <para><b>Nothing here is registered</b> - see <see cref="MinComponentContent"/>'s own remarks
+    /// for why the gate is the point. The revision is <see cref="ContentRevision"/>, the one real
+    /// string milestone 8.61i minted when her set of nineteen became whole.</para>
     /// </summary>
     public static partial class MinCardContent
     {
@@ -49,14 +48,6 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>Tier III over Viper's clause: the swap gains a re-place.</summary>
         public static CardDefinitionId CobraStance { get; } = new CardDefinitionId("min-cobra-stance");
-
-        /// <summary>p.9's Red band with an Attack primary.</summary>
-        public static ActionDefinitionId PrimaryAttack { get; } =
-            new ActionDefinitionId("primary-attack");
-
-        /// <summary>p.9's Movement ribbon icon, which every face printing one declares as a secondary.</summary>
-        public static ActionDefinitionId SecondaryMovement { get; } =
-            new ActionDefinitionId("secondary-movement");
 
         // -----------------------------------------------------------------------------------------
         // The printed text, transcribed.
@@ -87,11 +78,10 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The five faces this block composes, in printed order - Tier I, the two Tier IIs, the two
         /// Tier IIIs.
         ///
-        /// <para>A list of its own rather than a second <c>AllDefinitions</c>, which would not compile
-        /// beside milestone 8.61a's: that member is owed to seven assembly sweeps the moment a
-        /// <c>MinCardContent</c> exists, so the block that first declared the class owns it and every
-        /// later block of hers adds its faces to it. Milestone 8.61i replaces both with the whole
-        /// nineteen under one real content revision.</para>
+        /// <para>A list of its own rather than an <c>AllDefinitions</c>, which the eight parallel
+        /// partials of this class could not have shared: milestone 8.61i reads every block's list into
+        /// the whole nineteen, in her shard's inventory order and under one real content
+        /// revision.</para>
         /// </summary>
         public static IReadOnlyList<CardDefinition> StanceDefinitions => LazyStances.Value;
 
@@ -157,7 +147,7 @@ namespace GuardsDigital.Core.Cards.Verified
             string printedText) =>
             new CardDefinition(
                 cardId,
-                MinComponentContent.PrepRevision,
+                ContentRevision,
                 displayName,
                 new InitiativeValue(initiative),
                 CardContentAuthority.VerifiedOfficial,
@@ -186,7 +176,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         // means when the card narrows nothing.
                         AttackRangeKind.NonRanged,
                         default,
-                        MinEffectContent.StanceTextFor(cardId, MinComponentContent.PrepRevision),
+                        MinEffectContent.StanceTextFor(cardId, ContentRevision),
                         default,
                         PrintedDefenseResolution.None,
                         MinEffectContent.StanceTextTimingFor(cardId)),

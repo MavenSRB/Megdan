@@ -253,7 +253,7 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(attack.EffectRoot, Is.Null,
                 "and what is deferred is the COMPOSITION, so the parked face ships no body at all.");
             Assert.That(attack.CardTextTiming, Is.EqualTo(CardTextTiming.None));
-            Assert.That(MinCardContent.BorrowedRiderReturnedToBoxAtSetup,
+            Assert.That(MinCardContent.ReturnedToBoxAtSetup,
                 Is.EqualTo(new[] { MinCardContent.ChopDown }));
             Assert.That(definition.SourceContent.PrintedText,
                 Does.Contain("Target a hero adjacent to you"),
@@ -1098,7 +1098,7 @@ namespace GuardsDigital.Tests.EditMode
                             .GetAvailableTurnActionOffers(
                                 definitions, instances, Min, attackCard.Id)
                             .Single(value => value.ActionDefinitionId.Equals(
-                                MinCardContent.BorrowedRiderPrimaryRangedAttack));
+                                MinCardContent.PrimaryRangedAttack));
                         Accept(round.TryStartAttack(
                             new ActionResolutionId("min-borrowed-rider"), offer));
                         started = true;
@@ -1220,7 +1220,7 @@ namespace GuardsDigital.Tests.EditMode
             new[]
             {
                 new ActionDefinition(
-                    MinCardContent.BorrowedRiderPrimaryRangedAttack, ActionKind.Attack,
+                    MinCardContent.PrimaryRangedAttack, ActionKind.Attack,
                     ActionDefinitionOrigin.PrintedPrimary,
                     new[]
                     {

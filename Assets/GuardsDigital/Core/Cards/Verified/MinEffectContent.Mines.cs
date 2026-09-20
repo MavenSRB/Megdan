@@ -28,13 +28,6 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class MinEffectContent
     {
         /// <summary>
-        /// The block-scoped placeholder content revision. Milestone 8.61i composes Min's set and mints
-        /// the real one; this string is deliberately not shaped like a landed revision id, so it can
-        /// never be mistaken for one.
-        /// </summary>
-        public const string MineRevision = "min-8-61d-mines";
-
-        /// <summary>
         /// Where the trap each of the three faces prints actually lives, now that milestone 8.61e has
         /// built it - and it is deliberately still not a node of the placements below.
         ///
@@ -90,9 +83,9 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>
         /// The effect that prices a crossing which removed exactly <paramref name="blasts"/>. It is
-        /// authored at <see cref="MinComponentContent.MineTrapEffectRevision"/> rather than at a
-        /// caller's revision, because the blast's own declaration names these by reference and a
-        /// reference whose revision a caller could choose would be a link that stopped resolving.
+        /// authored at <see cref="MinCardContent.ContentRevision"/> rather than at a caller's revision,
+        /// because the blast's own declaration names these by reference and a reference whose revision
+        /// a caller could choose would be a link that stopped resolving.
         /// </summary>
         public static EffectDefinition MineTrapEffect(int blasts)
         {
@@ -133,7 +126,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 childNodeIds: children));
             return new EffectDefinition(
                 MinComponentContent.MineTrapEffectId(blasts),
-                MinComponentContent.MineTrapEffectRevision,
+                MinCardContent.ContentRevision,
                 root,
                 nodes);
         }

@@ -31,13 +31,6 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class MinComponentContent
     {
         /// <summary>
-        /// The per-block placeholder revision. Deliberately not a value that could be mistaken for a
-        /// real content revision: 8.61i mints the one real string the whole set carries, and this
-        /// disappears with it.
-        /// </summary>
-        public const string PrepRevision = "min-8-61a-prep";
-
-        /// <summary>
         /// MI-Q1's working count, held for the user: <b>one</b> Smoke bomb.
         ///
         /// <para>Her faces point the same way her box is expected to. Every sentence that names it says

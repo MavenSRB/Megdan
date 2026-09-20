@@ -48,13 +48,6 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class MinComponentContent
     {
         /// <summary>
-        /// The revision this block's declarations are composed under - a deliberate placeholder, not a
-        /// value that could be mistaken for a real content revision, on the project's standing
-        /// placeholder rule. Milestone 8.61i mints the one real string the whole set carries.
-        /// </summary>
-        public const string DisciplineRevision = "min-8-61h-items-and-flurry";
-
-        /// <summary>
         /// p.17's cancellation set, less the one the duration already covers. "At the end of the
         /// round" is the <see cref="ActiveEffectDurationKind.ThisRound"/> expiry; the three that remain
         /// are the page's others - the source card changing state, the controller being defeated, and

@@ -15,12 +15,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// card with a Defense of 5 and Tier III's classification. See <c>Docs/AI/Rules/HERO_MIN.md</c>,
     /// MI-01.</para>
     ///
-    /// <para><b>The upgrade ladder is stated only as far as this block owns it.</b> p.15 makes Death
-    /// Grenade upgrade into either face of Blue Tier III - Mine Field or Holy Death Grenade - and only
-    /// the second of those is composed here; Mine Field is 8.61d's face and naming its definition ID
-    /// from this file would be this block reaching into another's. 8.61i composes the whole set and is
-    /// where the pair of candidates is completed; nothing about the two definitions below changes when
-    /// it does.</para>
+    /// <para><b>The Blue ladder is whole here since milestone 8.61i.</b> p.15 makes Death Grenade
+    /// upgrade into either face of Blue Tier III - Mine Field or Holy Death Grenade - and only the
+    /// second of those is composed in this file; Mine Field is 8.61d's face, so while the two branches
+    /// ran in parallel this pair named one candidate, and the block that composed her set completed
+    /// it. Nothing else about the two definitions below moved when it did.</para>
     ///
     /// <para><b>Nothing here is registered.</b> <c>MatchContentCatalogs</c> names no Min content, so no
     /// configured match can deal these two cards and nothing reachable can start them - milestone 7.9's
@@ -36,22 +35,6 @@ namespace GuardsDigital.Core.Cards.Verified
         public static CardDefinitionId HolyDeathGrenade { get; } =
             new CardDefinitionId("min-holy-death-grenade");
 
-        /// <summary>
-        /// The Skill primary both faces print. The identity string is every earlier set's - an action
-        /// identity is local to its card - and only the C# member name is this block's, so five partial
-        /// files over one class never collide on it.
-        /// </summary>
-        public static ActionDefinitionId GrenadePrimarySkill { get; } =
-            new ActionDefinitionId("primary-skill");
-
-        /// <summary>The Movement ribbon both faces print, whose card text p.11 suppresses.</summary>
-        public static ActionDefinitionId GrenadeSecondaryMovement { get; } =
-            new ActionDefinitionId("secondary-movement");
-
-        /// <summary>The Defense ribbon both faces print.</summary>
-        public static ActionDefinitionId GrenadeSecondaryDefense { get; } =
-            new ActionDefinitionId("secondary-defense");
-
         /// <summary>Death Grenade's printed text, transcribed whole.</summary>
         public const string DeathGrenadeText =
             "Place a [Grenade] Grenade token into a space in radius. End of turn: Up to 1 enemy hero " +
@@ -66,10 +49,6 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IEnumerable<CardDefinitionId> GrenadeCards() =>
             new[] { DeathGrenade, HolyDeathGrenade };
 
-        // MERGE NOTE (8.61f -> main): this block's faces join the class aggregate declared in
-        // MinCardContent.SmokeBomb.cs (LazyAllDefinitions concatenates GrenadeCards()) until 8.61i
-        // mints the real set; the per-block AllDefinitions this partial carried on its branch is gone.
-
         /// <summary>One of the two printed definitions, by ID.</summary>
         public static CardDefinition GrenadeDefinition(CardDefinitionId cardId)
         {
@@ -80,8 +59,9 @@ namespace GuardsDigital.Core.Cards.Verified
                     printedText: DeathGrenadeText, holy: false,
                     progression: CardProgressionProfile.NonBasicCard(
                         CardColor.Blue, CardTier.II, PrintedValueChannel.Initiative,
-                        // 8.61i adds Mine Field, the sibling Tier III this block does not own.
-                        HolyDeathGrenade));
+                        // p.15's fork, whole since 8.61i: Mine Field is 8.61d's face and Holy Death
+                        // Grenade is this block's.
+                        MineField, HolyDeathGrenade));
             }
 
             if (cardId.Equals(HolyDeathGrenade))
@@ -112,7 +92,7 @@ namespace GuardsDigital.Core.Cards.Verified
             CardProgressionProfile progression) =>
             new CardDefinition(
                 cardId,
-                MinComponentContent.GrenadeRevision,
+                ContentRevision,
                 displayName,
                 new InitiativeValue(GrenadeInitiative),
                 CardContentAuthority.VerifiedOfficial,
@@ -120,16 +100,16 @@ namespace GuardsDigital.Core.Cards.Verified
                 new[]
                 {
                     new ActionDefinition(
-                        GrenadePrimarySkill,
+                        PrimarySkill,
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, GrenadeRadius) },
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
                         default,
-                        MinEffectContent.Grenade(cardId, MinComponentContent.GrenadeRevision, holy)),
+                        MinEffectContent.Grenade(cardId, ContentRevision, holy)),
                     new ActionDefinition(
-                        GrenadeSecondaryMovement,
+                        SecondaryMovement,
                         ActionKind.Movement,
                         ActionDefinitionOrigin.PrintedSecondary,
                         new[]
@@ -139,7 +119,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         },
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true)),
                     new ActionDefinition(
-                        GrenadeSecondaryDefense,
+                        SecondaryDefense,
                         ActionKind.Defense,
                         ActionDefinitionOrigin.Reaction,
                         new[]

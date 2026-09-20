@@ -428,7 +428,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void PerfectSelf_IsAOneOrBothModalOverItsTwoPrintedBullets()
         {
-            var effect = MinEffectContent.PerfectSelfSkillEffect(MinCardContent.DisciplineRevision);
+            var effect = MinEffectContent.PerfectSelfSkillEffect(MinCardContent.ContentRevision);
             var modal = effect.Nodes.Single(node => node.Kind == EffectNodeKind.Choose);
 
             Assert.That(modal.MinimumSelections, Is.EqualTo(1));
@@ -452,7 +452,7 @@ namespace GuardsDigital.Tests.EditMode
                 "Every arm the window can show says what taking it does, in the card's own words.");
 
             Assert.That(
-                MinEffectContent.InnerStrengthSkillEffect(MinCardContent.DisciplineRevision).Nodes
+                MinEffectContent.InnerStrengthSkillEffect(MinCardContent.ContentRevision).Nodes
                     .Any(node => node.Kind == EffectNodeKind.Choose),
                 Is.False,
                 "Inner Strength prints one mandatory sentence and opens no decision at all.");
@@ -693,7 +693,7 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new[] { TimingCheckpoint.ActionEnded }));
 
             var repeat = MinEffectContent
-                .FlurryOfBlowsTriggeredEffect(MinCardContent.DisciplineRevision).Nodes.Single();
+                .FlurryOfBlowsTriggeredEffect(MinCardContent.ContentRevision).Nodes.Single();
             Assert.That(repeat.Kind, Is.EqualTo(EffectNodeKind.RepeatAction));
             Assert.That(repeat.FailurePolicy, Is.EqualTo(EffectFailurePolicy.May), "\"you may\".");
             Assert.That(repeat.MaximumRepeats, Is.EqualTo(1), "\"once\".");
@@ -947,7 +947,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var registered = MatchContentCatalogs.ForThisBuild().TriggeredEffects;
             var flurry = MinEffectContent
-                .FlurryOfBlowsTriggeredEffect(MinCardContent.DisciplineRevision).Reference;
+                .FlurryOfBlowsTriggeredEffect(MinCardContent.ContentRevision).Reference;
 
             Assert.That(
                 registered.TryGet(flurry, out _), Is.False,
@@ -1162,7 +1162,7 @@ namespace GuardsDigital.Tests.EditMode
             internal void PlayInnerStrength() =>
                 RunSkill(
                     MinCardContent.InnerStrength,
-                    MinEffectContent.InnerStrengthSkillEffect(MinCardContent.DisciplineRevision),
+                    MinEffectContent.InnerStrengthSkillEffect(MinCardContent.ContentRevision),
                     Array.Empty<string>());
 
             /// <summary>
@@ -1172,7 +1172,7 @@ namespace GuardsDigital.Tests.EditMode
             internal void PlayPerfectSelfDoublingDirectly() =>
                 RunSkill(
                     MinCardContent.PerfectSelf,
-                    MinEffectContent.PerfectSelfSkillEffect(MinCardContent.DisciplineRevision),
+                    MinEffectContent.PerfectSelfSkillEffect(MinCardContent.ContentRevision),
                     new[] { MinEffectContent.PerfectSelfDoubleArmNode });
 
             internal int LiveEffectCount(string effectKind) => timing.Effects.Count(effect =>
@@ -1209,7 +1209,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Calculate(
                     SecondaryOffer(
                         MinCardContent.InnerStrength,
-                        MinCardContent.DisciplineSecondaryMovement,
+                        MinCardContent.SecondaryMovement,
                         ActionKind.Movement),
                     AllDefinitions,
                     heroItems,
@@ -1220,7 +1220,7 @@ namespace GuardsDigital.Tests.EditMode
                 .Calculate(
                     SecondaryOffer(
                         MinCardContent.InnerStrength,
-                        MinCardContent.DisciplineSecondaryDefense,
+                        MinCardContent.SecondaryDefense,
                         ActionKind.Defense),
                     AllDefinitions,
                     Min,
@@ -1279,7 +1279,7 @@ namespace GuardsDigital.Tests.EditMode
                     TeamSide.Blue,
                     default,
                     Instance(Min, MinCardContent.InnerStrength),
-                    MinCardContent.DisciplinePrimarySkill,
+                    MinCardContent.PrimarySkill,
                     1,
                     1);
                 foreach (var standing in timing.Effects.Where(effect =>
@@ -1373,7 +1373,7 @@ namespace GuardsDigital.Tests.EditMode
             internal CardInstanceId ResolvePerfectSelf(params string[] armNodeIds) =>
                 RunSkill(
                     MinCardContent.PerfectSelf,
-                    MinEffectContent.PerfectSelfSkillEffect(MinCardContent.DisciplineRevision),
+                    MinEffectContent.PerfectSelfSkillEffect(MinCardContent.ContentRevision),
                     armNodeIds);
 
             internal IReadOnlyList<CardInstanceId> DeckCardIds() => instances
@@ -1491,7 +1491,7 @@ namespace GuardsDigital.Tests.EditMode
                     new TriggeredEffectCatalog(new[]
                     {
                         MinEffectContent.FlurryOfBlowsTriggeredEffect(
-                            MinCardContent.DisciplineRevision)
+                            MinCardContent.ContentRevision)
                     }),
                     capabilities);
                 authority.ApplyCheckpoint(
@@ -1565,7 +1565,7 @@ namespace GuardsDigital.Tests.EditMode
                     Min,
                     Instance(Min, MinCardContent.PerfectSelf),
                     Reference(MinCardContent.PerfectSelf),
-                    MinCardContent.DisciplinePrimarySkill,
+                    MinCardContent.PrimarySkill,
                     new Dictionary<string, EffectValue>
                     {
                         { "hero", EffectValue.Hero(Min) },
@@ -1607,7 +1607,7 @@ namespace GuardsDigital.Tests.EditMode
                     new EffectResolutionId($"min-discipline-{++createdEffects}"),
                     cardInstanceId,
                     Reference(cardId),
-                    MinCardContent.DisciplinePrimarySkill,
+                    MinCardContent.PrimarySkill,
                     Min,
                     Min,
                     ActionInvocationContext.PrintedPrimary,

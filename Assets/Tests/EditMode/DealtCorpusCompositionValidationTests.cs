@@ -78,6 +78,24 @@ namespace GuardsDigital.Tests.EditMode
                     .Concat(GarrusActiveEffectContent.DeferredHandlers())
                     .Concat(WidgetComponentContent.DeferredHandlers())
                     .Concat(SyntheticCoupledMoveCapabilities.DeferredHandlers())
+
+                    // Milestone 8.61i widened it again, for the nineteenth hero and for exactly the
+                    // reason every line above it was added. Her printed set became whole at that
+                    // block and its eighteen playable faces went into `DealtDefinitions`, while
+                    // milestone 7.9's gate holds every contract they name out of the registration
+                    // list until 8.61j deals her. Validating her against the registered list alone
+                    // would report seventeen faces as naming unregistered capabilities and say
+                    // NOTHING about the parameter and output names this case exists to check - which
+                    // is the opposite of covering a composition milestone, and is what 8.57f's
+                    // precedent settled for Rowenna's two withheld Places.
+                    //
+                    // `MinComponentContent.DeferredHandlers` is her own components' whole debt - the
+                    // Smoke bomb's six operations, the mines' three, the Grenade's eight and the two
+                    // doubling Active effects - and the borrowed after-attack text waits beside the
+                    // family that owns its handler type. `take-deck-card-as-item@1`, her other new
+                    // type, already arrives through `SyntheticRosterCapabilities` above.
+                    .Concat(MinComponentContent.DeferredHandlers())
+                    .Concat(SyntheticBorrowedCardTextCapabilities.DeferredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();

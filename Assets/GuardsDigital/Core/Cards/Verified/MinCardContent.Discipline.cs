@@ -20,12 +20,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// makes its whole row a statement rather than an omission: it is never played and never discarded
     /// to defend, and the only content it carries is p.16's permanent ability.</para>
     ///
-    /// <para><b>The upgrade ladder is stated at milestone 8.61i, not here.</b> Inner Strength is a
-    /// Green Tier II that upgrades to Ruse or Perfect Self; Ruse is composed by a sibling block, and
-    /// naming an id this file does not declare would be a compile dependency between two partials
-    /// being written at the same time. Its row therefore names no next-Tier candidate, exactly as a
-    /// Tier III's does, and 8.61i - which composes the whole set under one revision - restates both
-    /// Green pairs whole.</para>
+    /// <para><b>The Green ladder is whole here since milestone 8.61i.</b> Inner Strength is a Green
+    /// Tier II that upgrades to Ruse or Perfect Self; Ruse is composed by a sibling block, so while
+    /// the two branches ran in parallel this row named no next-Tier candidate at all - naming an id
+    /// this file does not declare would have been a compile dependency between two partials being
+    /// written at the same time - and the block that composed her set stated the pair.</para>
     ///
     /// <para><b>Nothing here is registered.</b> <c>MatchContentCatalogs</c> names no Min content, so no
     /// configured match deals these cards. That is milestone 7.9's gate: the registered content list
@@ -35,14 +34,6 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static partial class MinCardContent
     {
-        /// <summary>
-        /// The revision this block's three definitions carry - a deliberate placeholder, and not a
-        /// value that could be mistaken for a real content revision, on the project's standing
-        /// placeholder rule. Milestone 8.61i mints the one real string every one of her nineteen
-        /// definitions and every effect body they reach will carry.
-        /// </summary>
-        public const string DisciplineRevision = MinComponentContent.DisciplineRevision;
-
         /// <summary>
         /// Her printed Green Tier II whose whole text is the doubling - the first face in the corpus
         /// to change rulebook p.16's own arithmetic.
@@ -58,31 +49,21 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>Her Purple Tier IV: p.16's permanent ability, and nothing else.</summary>
         public static CardDefinitionId FlurryOfBlows { get; } = DisciplineId("flurry-of-blows");
 
-        // -----------------------------------------------------------------------------------------
-        // Local action identities. The STRINGS are the per-card-local ones every earlier set uses;
-        // the C# members are named for this block, because five parallel partials of one class are
-        // being written at once and one shared member name would be a compile error rather than a
-        // merge. Milestone 8.61i folds them onto the set's own trio.
-        // -----------------------------------------------------------------------------------------
-
-        /// <summary>The Skill primary both of this block's composed faces print.</summary>
-        public static ActionDefinitionId DisciplinePrimarySkill { get; } =
-            new ActionDefinitionId("primary-skill");
-
-        /// <summary>p.9's green Movement ribbon, whose text is suppressed (p.11).</summary>
-        public static ActionDefinitionId DisciplineSecondaryMovement { get; } =
-            new ActionDefinitionId("secondary-movement");
-
-        /// <summary>p.14's Defense reaction, spent by discarding the card from hand.</summary>
-        public static ActionDefinitionId DisciplineSecondaryDefense { get; } =
-            new ActionDefinitionId("secondary-defense");
-
         /// <summary>
         /// The three definitions this block composes, in the shard's own row order. Milestone 8.61i is
         /// what assembles the nineteen; this list exists so a fixture can reach exactly these.
+        ///
+        /// <para><b>Built lazily since 8.61i, and the reason was measured rather than assumed.</b>
+        /// Completing p.15's Green ladder made this list name <c>Ruse</c>, an id another partial of
+        /// this class declares - and a static field initializer reading one across a partial boundary
+        /// reads whatever the compiler had reached, which here was an UNDEFINED definition id and a
+        /// <c>TypeInitializationException</c> out of the first case that touched her set.</para>
         /// </summary>
-        public static IReadOnlyList<CardDefinition> DisciplineDefinitions { get; } =
-            Array.AsReadOnly(new[]
+        public static IReadOnlyList<CardDefinition> DisciplineDefinitions =>
+            LazyDisciplineDefinitions.Value;
+
+        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyDisciplineDefinitions =
+            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]
             {
                 // min15 - Green II, Initiative 2, Defense 2, Movement 3, Skill with no reach icon,
                 // Attack item.
@@ -92,10 +73,13 @@ namespace GuardsDigital.Core.Cards.Verified
                     initiative: 2,
                     secondaryDefense: 2,
                     secondaryMovement: 3,
+                    // p.15's fork, whole since 8.61i: Ruse is 8.61b's face and Perfect Self is this
+                    // block's, and a Tier II names both of its colour's Tier III faces.
                     progression: CardProgressionProfile.NonBasicCard(
-                        CardColor.Green, CardTier.II, PrintedValueChannel.Attack),
+                        CardColor.Green, CardTier.II, PrintedValueChannel.Attack,
+                        Ruse, PerfectSelf),
                     printedText: "This round: Double your item bonuses.",
-                    skillEffect: MinEffectContent.InnerStrengthSkillEffect(DisciplineRevision)),
+                    skillEffect: MinEffectContent.InnerStrengthSkillEffect(ContentRevision)),
 
                 // min17 - Green III, Initiative 1, Defense 3, Movement 3, Skill with no reach icon,
                 // Range item.
@@ -110,23 +94,23 @@ namespace GuardsDigital.Core.Cards.Verified
                     printedText:
                         "Choose one or both - (1) This round: Double your item bonuses. (2) Take a " +
                         "Tier II card from your deck and add it to your dashboard as a permanent item.",
-                    skillEffect: MinEffectContent.PerfectSelfSkillEffect(DisciplineRevision)),
+                    skillEffect: MinEffectContent.PerfectSelfSkillEffect(ContentRevision)),
 
                 // min18 - Purple Tier IV. No Initiative, no icons, no action: the whole card is the
                 // permanent ability.
                 new CardDefinition(
                     FlurryOfBlows,
-                    DisciplineRevision,
+                    ContentRevision,
                     "Flurry of Blows",
                     default,
                     CardContentAuthority.VerifiedOfficial,
                     CardProgressionProfile.UltimateCard(),
                     Array.Empty<ActionDefinition>(),
-                    MinEffectContent.FlurryOfBlowsRule(DisciplineRevision),
+                    MinEffectContent.FlurryOfBlowsRule(ContentRevision),
                     CardSourceContent.Transcribed(
                         "Each time after you perform an attack action you may repeat it once on a " +
                         "different target."))
-            });
+            }));
 
         /// <summary>
         /// One Green Skill face, built the one way both of this block's composed cards are built: the
@@ -144,7 +128,7 @@ namespace GuardsDigital.Core.Cards.Verified
             EffectDefinition skillEffect) =>
             new CardDefinition(
                 id,
-                DisciplineRevision,
+                ContentRevision,
                 displayName,
                 new InitiativeValue(initiative),
                 CardContentAuthority.VerifiedOfficial,
@@ -154,7 +138,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     // MI-05: neither face prints a Range or a Radius icon, so the primary carries no
                     // printed value at all. A missing icon is absent, never zero.
                     new ActionDefinition(
-                        DisciplinePrimarySkill,
+                        PrimarySkill,
                         ActionKind.Skill,
                         ActionDefinitionOrigin.PrintedPrimary,
                         Array.Empty<PrintedValueDefinition>(),
@@ -164,7 +148,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         skillEffect),
 
                     new ActionDefinition(
-                        DisciplineSecondaryMovement,
+                        SecondaryMovement,
                         ActionKind.Movement,
                         ActionDefinitionOrigin.PrintedSecondary,
                         new[]
@@ -175,7 +159,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true)),
 
                     new ActionDefinition(
-                        DisciplineSecondaryDefense,
+                        SecondaryDefense,
                         ActionKind.Defense,
                         ActionDefinitionOrigin.Reaction,
                         new[]
@@ -192,10 +176,9 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>
         /// Her content-set identity spelled into a definition id - the same <c>min-</c> prefix every
-        /// block of the series uses, written locally so this partial depends on no member a sibling
-        /// block owns.
+        /// block of the series uses, which milestone 8.61i states once as
+        /// <see cref="ContentSetId"/>.
         /// </summary>
-        private static CardDefinitionId DisciplineId(string cardId) =>
-            new CardDefinitionId("min-" + cardId);
+        private static CardDefinitionId DisciplineId(string cardId) => Id(cardId);
     }
 }

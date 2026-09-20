@@ -8,11 +8,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Milestone 8.61g. The two printed faces of Min the Dragonmonk's whose text is the borrowed rider:
     /// her Gold basic Fast as Lightning, and rulebook p.20's boxed Handicap Chop Down.
     ///
-    /// <para><b>This partial declares its own two faces and no set.</b> Five blocks compose her
-    /// nineteen faces in parallel, so <c>AllDefinitions</c>, <c>DealtDefinitions</c>, the starting hand,
-    /// the deck and the one real <c>ContentRevision</c> are 8.61i's to mint when the set becomes whole.
-    /// Until then every body composed here carries <see cref="BorrowedRiderRevision"/>, which is
-    /// deliberately not a value that could be mistaken for a real revision.</para>
+    /// <para><b>This partial declares its own two faces and no set.</b> Eight blocks composed her
+    /// nineteen faces in parallel, so <see cref="AllDefinitions"/>, <see cref="DealtDefinitions"/>,
+    /// <see cref="StartingHand"/>, <see cref="Deck"/>, <see cref="ReturnedToBoxAtSetup"/> and the one
+    /// real <see cref="ContentRevision"/> are milestone 8.61i's, minted when the set became
+    /// whole.</para>
     ///
     /// <para><b>Nothing here is registered.</b> <c>MatchContentCatalogs</c> names no Min content, so no
     /// configured match can deal these faces and nothing reachable can start them - milestone 7.9's
@@ -28,13 +28,6 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class MinCardContent
     {
         /// <summary>
-        /// The placeholder revision 8.61g's two faces and their one body carry. It is malformed on
-        /// purpose - the project's rule is that a placeholder must never be a value that could be
-        /// mistaken for a real one - and 8.61i replaces it with the set's single real revision.
-        /// </summary>
-        public const string BorrowedRiderRevision = "min-8-61g-borrowed-rider";
-
-        /// <summary>
         /// Her Gold basic. Initiative 13, secondary Defense 1, secondary Movement 1, "BASIC ATTACK -
         /// RANGED" with Attack 2 and Range 1, no printed item.
         /// </summary>
@@ -46,38 +39,12 @@ namespace GuardsDigital.Core.Cards.Verified
         /// Movement 1, "BASIC ATTACK - RANGED" with Attack 1 and Range 1.
         ///
         /// <para>Inventory rather than deck content: p.6's setup returns it to the box and p.20 brings
-        /// it back only for an odd player count, which is why it is in
-        /// <see cref="BorrowedRiderReturnedToBoxAtSetup"/>. Its printed values, words, colour and both
-        /// secondary icons ship here all the same - what the established deferral defers is the
-        /// COMPOSITION of its text, not the card.</para>
+        /// it back only for an odd player count, which is why it is the one card in
+        /// <see cref="ReturnedToBoxAtSetup"/>. Its printed values, words, colour and both secondary
+        /// icons ship here all the same - what the established deferral defers is the COMPOSITION of
+        /// its text, not the card.</para>
         /// </summary>
         public static CardDefinitionId ChopDown { get; } = new CardDefinitionId("min-chop-down");
-
-        /// <summary>
-        /// p.9's Gold band with a Ranged Attack primary - "BASIC ATTACK - RANGED" on both faces.
-        ///
-        /// <para>The member is named after this block rather than after the band because five partials
-        /// compose her set in parallel and a shared member declared twice is a compile error, not a
-        /// merge. Its VALUE is the conventional one, so 8.61i reconciles the names without moving a
-        /// single identity.</para>
-        /// </summary>
-        public static ActionDefinitionId BorrowedRiderPrimaryRangedAttack { get; } =
-            new ActionDefinitionId("primary-ranged-attack");
-
-        /// <summary>p.9's lower-band boot, suppressed text: a secondary Movement performs none.</summary>
-        public static ActionDefinitionId BorrowedRiderSecondaryMovement { get; } =
-            new ActionDefinitionId("secondary-movement");
-
-        /// <summary>p.14's numeric Defense, spent from hand.</summary>
-        public static ActionDefinitionId BorrowedRiderSecondaryDefense { get; } =
-            new ActionDefinitionId("secondary-defense");
-
-        /// <summary>
-        /// p.6's setup returns the Handicap card to the box; p.20 brings it back only for an odd player
-        /// count. Stated per block because the aggregate list is 8.61i's.
-        /// </summary>
-        public static IReadOnlyList<CardDefinitionId> BorrowedRiderReturnedToBoxAtSetup { get; } =
-            Array.AsReadOnly(new[] { ChopDown });
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyBorrowedRiderDefinitions =
             new Lazy<IReadOnlyList<CardDefinition>>(() =>
@@ -134,7 +101,7 @@ namespace GuardsDigital.Core.Cards.Verified
         private static CardDefinition BuildBorrowedRiderFace(BorrowedRiderProfile profile) =>
             new CardDefinition(
                 profile.Id,
-                BorrowedRiderRevision,
+                ContentRevision,
                 profile.DisplayName,
                 new InitiativeValue(profile.Initiative),
                 CardContentAuthority.VerifiedOfficial,
@@ -147,7 +114,7 @@ namespace GuardsDigital.Core.Cards.Verified
             BorrowedRiderProfile profile)
         {
             yield return new ActionDefinition(
-                BorrowedRiderPrimaryRangedAttack,
+                PrimaryRangedAttack,
                 ActionKind.Attack,
                 ActionDefinitionOrigin.PrintedPrimary,
                 new[]
@@ -163,13 +130,13 @@ namespace GuardsDigital.Core.Cards.Verified
                 // BorrowedCardTextRefusal.PrintedTextNotComposed exists to refuse one layer up.
                 profile.Boxed
                     ? null
-                    : MinEffectContent.BorrowedAfterAttackRider(profile.Id, BorrowedRiderRevision),
+                    : MinEffectContent.BorrowedAfterAttackRider(profile.Id, ContentRevision),
                 profile.TextComposition,
                 PrintedDefenseResolution.None,
                 profile.Boxed ? CardTextTiming.None : CardTextTiming.AfterTheAttack);
 
             yield return new ActionDefinition(
-                BorrowedRiderSecondaryMovement,
+                SecondaryMovement,
                 ActionKind.Movement,
                 ActionDefinitionOrigin.PrintedSecondary,
                 new[]
@@ -180,7 +147,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 new ActionDefinitionPolicy(CardTextApplicationPolicy.Suppressed, false, true));
 
             yield return new ActionDefinition(
-                BorrowedRiderSecondaryDefense,
+                SecondaryDefense,
                 ActionKind.Defense,
                 ActionDefinitionOrigin.Reaction,
                 new[]

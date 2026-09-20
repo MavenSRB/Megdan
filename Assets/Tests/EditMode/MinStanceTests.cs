@@ -173,7 +173,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void HerAggregateNowCarriesTheSilverAndTheFiveRedsUnderOnePlaceholderRevision()
+        public void HerAggregateCarriesTheSilverAndTheFiveRedsUnderTheSetsOneRevision()
         {
             var six = new[] { MinCardContent.SmokeBomb }
                 .Concat(MinCardContent.StanceDefinitions.Select(card => card.Id))
@@ -181,17 +181,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 MinCardContent.AllDefinitions.Select(definition => definition.Id),
                 Is.SupersetOf(six),
-                "Six of nineteen: this block adds its five to milestone 8.61a's aggregate rather " +
-                "than declaring a second AllDefinitions beside it. On the integrated tree the " +
-                "aggregate also carries every other block's faces, so this reads containment.");
+                "Six of nineteen: this block's five faces reach the set milestone 8.61i composed " +
+                "rather than declaring an AllDefinitions of their own, so this reads containment.");
             Assert.That(
                 MinCardContent.AllDefinitions
                     .Where(definition => six.Contains(definition.Id))
                     .Select(definition => definition.Reference.ContentRevision)
                     .Distinct().Single(),
-                Is.EqualTo(MinComponentContent.PrepRevision),
-                "Still the deliberately malformed placeholder on these six; 8.61i mints the one " +
-                "real string for all nineteen.");
+                Is.EqualTo(MinCardContent.ContentRevision),
+                "and they carry the one real revision 8.61i minted for all nineteen, not the " +
+                "placeholder this block was written under.");
         }
 
         [Test]
@@ -200,7 +199,7 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var definition in MinCardContent.StanceDefinitions)
             {
                 var body = MinEffectContent.StanceTextFor(
-                    definition.Id, MinComponentContent.PrepRevision);
+                    definition.Id, MinCardContent.ContentRevision);
                 Assert.That(body, Is.Not.Null);
                 Assert.That(body.Id.Value, Is.EqualTo(definition.Id.Value + "-attack-text"),
                     "Five bodies rather than one shape referenced five times, so a paused " +
@@ -799,11 +798,12 @@ namespace GuardsDigital.Tests.EditMode
                 "what a table is FOR is a window over a card a match deals.");
 
             Assert.That(
-                MinCardContent.DealtDefinitions.Select(card => card.Id)
-                    .Intersect(MinCardContent.StanceDefinitions.Select(card => card.Id)),
-                Is.Empty,
-                "The dealt set milestone 8.61a's follow-up declares is EMPTY until 8.61i fills it " +
-                "and 8.61j makes the word true; none of the Stances is in it.");
+                MinCardContent.DealtDefinitions.Select(card => card.Id),
+                Is.SupersetOf(MinCardContent.StanceDefinitions.Select(card => card.Id)),
+                "Milestone 8.61i filled the dealt set with her eighteen playable faces, the five " +
+                "Stances included - and 8.61j is what makes the word true, which is what the two " +
+                "assertions above are: the capabilities are withheld and no configured match deals " +
+                "her, so a face in that list is still a face nothing reachable can start.");
         }
 
         [Test]
@@ -996,7 +996,7 @@ namespace GuardsDigital.Tests.EditMode
                 bool withBattleZone = false)
             {
                 card = MinCardContent.StanceDefinition(stance);
-                var effect = MinEffectContent.StanceTextFor(stance, MinComponentContent.PrepRevision);
+                var effect = MinEffectContent.StanceTextFor(stance, MinCardContent.ContentRevision);
                 var capabilities = Capabilities;
                 Assert.That(EffectDefinitionValidator.Validate(effect, capabilities), Is.Empty);
 
@@ -1301,7 +1301,7 @@ namespace GuardsDigital.Tests.EditMode
             /// has somebody to push.
             /// </summary>
             private static readonly CardDefinition Wall = new CardDefinition(
-                new CardDefinitionId("min-stance-wall"), "min-8-61c-fixture",
+                new CardDefinitionId("min-stance-wall"), "min-stance-fixture-rev-1",
                 "TEST - Min stance wall", new InitiativeValue(1),
                 CardContentAuthority.SyntheticTestFixture,
                 CardProgressionProfile.BasicCard(CardColor.Silver),

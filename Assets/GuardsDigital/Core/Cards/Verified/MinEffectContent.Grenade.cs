@@ -128,7 +128,7 @@ namespace GuardsDigital.Core.Cards.Verified
             public static EffectDefinition Definition { get; } =
                 CreateGrenadeEndOfTurn(
                     new EffectDefinitionId("min-death-grenade-triggered"),
-                    MinComponentContent.GrenadeRevision,
+                    MinCardContent.ContentRevision,
                     DeathGrenadePrefix,
                     performances: 1);
 
@@ -145,7 +145,7 @@ namespace GuardsDigital.Core.Cards.Verified
             public static EffectDefinition Definition { get; } =
                 CreateGrenadeEndOfTurn(
                     new EffectDefinitionId("min-holy-death-grenade-triggered"),
-                    MinComponentContent.GrenadeRevision,
+                    MinCardContent.ContentRevision,
                     HolyDeathGrenadePrefix,
                     performances: 2);
 

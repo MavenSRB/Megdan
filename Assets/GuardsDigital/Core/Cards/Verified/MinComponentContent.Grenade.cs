@@ -47,13 +47,6 @@ namespace GuardsDigital.Core.Cards.Verified
     /// </summary>
     public static partial class MinComponentContent
     {
-        /// <summary>
-        /// This block's placeholder revision. Deliberately malformed against the project's real
-        /// <c>&lt;hero&gt;-&lt;milestone&gt;-rev-&lt;n&gt;</c> spelling so it cannot be mistaken for a
-        /// content revision; 8.61i mints the one real string the whole set carries.
-        /// </summary>
-        public const string GrenadeRevision = "min-8-61f-grenade";
-
         /// <summary>MI-Q1's working count: the one physical grenade in her box.</summary>
         public const int GrenadeSupplyCount = 1;
 

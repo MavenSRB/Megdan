@@ -890,7 +890,7 @@ namespace GuardsDigital.Tests.EditMode
                         CardActionResolutionEvent.MoveThroughTrapSprung(
                             new ActionResolutionId("fixture-trap"),
                             new CardInstanceId("fixture-card"),
-                            MinCardContent.MinePrimarySkill,
+                            MinCardContent.PrimarySkill,
                             Min,
                             Enemy,
                             new TokenInstanceId("blast-1"),

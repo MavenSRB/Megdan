@@ -656,7 +656,7 @@ namespace GuardsDigital.Tests.EditMode
             var blast = PlaceMine(board, MinComponentContent.MineBlastDefinition, 1, "blast-1");
             var dud = PlaceMine(board, MinComponentContent.MineDudDefinition, 2, "dud-1");
             var option = new ClearOptionProjection(
-                ClearOffer(), MinCardContent.MinePrimarySkill, new[] { blast, dud });
+                ClearOffer(), MinCardContent.PrimarySkill, new[] { blast, dud });
 
             var masked = FacedownTokenMask
                 .MaskClearOptions(new[] { option }, SeatOf(Enemy))
@@ -803,7 +803,7 @@ namespace GuardsDigital.Tests.EditMode
             new ActionOffer(
                 new CardInstanceId("fixture-card"),
                 MinCardContent.MineDefinition(MinCardContent.TripMine).Reference,
-                MinCardContent.MinePrimarySkill,
+                MinCardContent.PrimarySkill,
                 Min,
                 ActionInvocationContext.Replacement,
                 true);
@@ -863,7 +863,7 @@ namespace GuardsDigital.Tests.EditMode
             return new EffectCapabilityContext(
                 new EffectNodeId(nodeId), EffectFailurePolicy.Mandatory, Min, Min,
                 new CardInstanceId("fixture-card"), definition.Reference,
-                MinCardContent.MinePrimarySkill, new Dictionary<string, EffectValue>(), 1, 1,
+                MinCardContent.PrimarySkill, new Dictionary<string, EffectValue>(), 1, 1,
                 StagedBoardParticipants.Create(), null, RuleModificationSet.Empty,
                 EffectCardState.Of(MinCardContent.MineDefinitions(), Array.Empty<CardInstance>()),
                 ActionKind.Skill,

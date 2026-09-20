@@ -549,7 +549,7 @@ namespace GuardsDigital.Tests.EditMode
                 ? MinEffectContent.SwapWithSmokeBombInRadius("swap")
                 : MinEffectContent.SwapWithSmokeBombInRange("swap");
             var effect = new EffectDefinition(
-                new EffectDefinitionId("min-swap-probe"), MinComponentContent.PrepRevision,
+                new EffectDefinitionId("min-swap-probe"), MinCardContent.ContentRevision,
                 MinEffectContent.SubGraphRootNodeId("swap"), nodes);
             Assert.That(EffectDefinitionValidator.Validate(effect, Capabilities), Is.Empty);
 
@@ -582,7 +582,7 @@ namespace GuardsDigital.Tests.EditMode
                 ? MinEffectContent.PlaceSmokeBombInRadius("again")
                 : MinEffectContent.PlaceSmokeBombInRange("again");
             var effect = new EffectDefinition(
-                new EffectDefinitionId("min-replace-probe"), MinComponentContent.PrepRevision,
+                new EffectDefinitionId("min-replace-probe"), MinCardContent.ContentRevision,
                 MinEffectContent.SubGraphRootNodeId("again"), nodes);
             Assert.That(EffectDefinitionValidator.Validate(effect, Capabilities), Is.Empty);
 
@@ -882,7 +882,7 @@ namespace GuardsDigital.Tests.EditMode
         /// Range-reaching twins of both sub-graphs can be measured against the same distances.
         /// </summary>
         private static CardDefinition RangeProbeCard { get; } = new CardDefinition(
-            new CardDefinitionId("min-range-probe"), MinComponentContent.PrepRevision,
+            new CardDefinitionId("min-range-probe"), MinCardContent.ContentRevision,
             "TEST - Min printed Range", new InitiativeValue(12),
             CardContentAuthority.SyntheticTestFixture,
             CardProgressionProfile.BasicCard(CardColor.Silver),
@@ -957,7 +957,7 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var definition = MinCardContent.SmokeBombDefinition();
                 var effect = MinEffectContent.SmokeBomb(
-                    MinCardContent.SmokeBomb, MinComponentContent.PrepRevision);
+                    MinCardContent.SmokeBomb, MinCardContent.ContentRevision);
                 Assert.That(EffectDefinitionValidator.Validate(effect, Capabilities), Is.Empty);
                 context = new EffectResolutionContext(
                     effect, Capabilities, Participants, null, 1, 1, Set(board),

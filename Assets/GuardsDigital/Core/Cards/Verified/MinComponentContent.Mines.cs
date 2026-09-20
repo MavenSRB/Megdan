@@ -85,15 +85,6 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public const string MineInstanceIdentityLabel = "mine";
 
-        /// <summary>
-        /// The revision the trap's own effects are authored at, and the one the blast's declaration
-        /// names them by. Milestone 8.61e; block-scoped exactly as <c>MinEffectContent.MineRevision</c>
-        /// is, and milestone 8.61i mints the real one for her whole set at once. It is separate from
-        /// the placements' revision because the two are separate definitions: the cards place, and the
-        /// piece they placed carries the trap.
-        /// </summary>
-        public const string MineTrapEffectRevision = "min-8-61e-mine-trap";
-
         /// <summary>The effect that prices a crossing which removed <paramref name="blasts"/> blasts.</summary>
         public static EffectDefinitionId MineTrapEffectId(int blasts) =>
             new EffectDefinitionId($"min-mine-trap-{blasts}");
@@ -102,12 +93,17 @@ namespace GuardsDigital.Core.Cards.Verified
         /// "for every blast removed, that hero discards a card, if able", as the blast declares it: one
         /// entry per number of blasts one crossing can take off the board at once, which the pile
         /// bounds at <see cref="MineSupplyCount"/>.
+        ///
+        /// <para>The reference names <see cref="MinCardContent.ContentRevision"/>, the one real string
+        /// her whole set carries since milestone 8.61i - a reference whose revision disagreed with the
+        /// definition's would be a link that stopped resolving, which is why the trap's own effects are
+        /// authored at exactly this value rather than at a caller's.</para>
         /// </summary>
         public static IEnumerable<EffectDefinitionReference> MineTrapConsequences() =>
             Enumerable
                 .Range(1, MineSupplyCount)
-                .Select(blasts =>
-                    new EffectDefinitionReference(MineTrapEffectId(blasts), MineTrapEffectRevision))
+                .Select(blasts => new EffectDefinitionReference(
+                    MineTrapEffectId(blasts), MinCardContent.ContentRevision))
                 .ToArray();
 
         public static TokenDefinitionId MineBlast { get; } = new TokenDefinitionId("min-mine-blast");
