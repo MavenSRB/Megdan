@@ -330,3 +330,23 @@ Non-goals: new gameplay; MI-Q13k's ruling (the build ships the measured reading;
 Completed 2026-09-20, after 8.61k and 8.62-8.64 landed - the user's order ("just cut the build after everything lands"). `Builds/Playtest-8.61-min` and `Builds/Playtest-8.61-min.zip` (183 entries, no logs, no debug folder, 71 MB), built from main at `35681cc2` (tag `milestone/8.61k` plus the HUD ceremony and the version stamp) with bundleVersion `1.0-8.61-min`, stamp `1.0-8.61-min+20260920134915-190efed7`; protocol `guards-private-online/18` (moved from /17 by 8.61e's reveal row - a Playtest-8.55-rowenna client cannot join this host) and schema 43 unchanged; the configured content digest re-measured at this commit is `c9dd1b66...`, moved from `36da22a7...` by Min's registration (eighteen definitions, nineteen capabilities, five tokens, seven triggered effects). The gate on the packaged MERGED tree (Min's gate and the HUD block were each proved on their own branch, so both unfiltered suites ran again on main): complete Edit Mode 4910 / 4874 / 0 / 36 established skips; complete Play Mode 704/704 with zero skips; harness 3930/3930; the build-and-launch smoke (GATE PASSED); the packaged exe launched once from its own folder to `LOBBY_BEGIN`. Manifest, READ ME FIRST (what is new: Min and her hidden mines with the two cross-seat discard questions, the targeting marks, the window on top with the breakdown as lines, the victory footnote gone; known problems: Min unplayed by people so far, MI-Q13k stated to the players, the marks settled on screenshots) and BUILD IDENTITY written by hand per the 8.44 recipe.
 
 Historical evidence: [8.65 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-865-nineteen-hero-package-completion-evidence).
+
+### [ ] 8.66 Treetop Sentinel selects the empty-handed hero its text is written for
+
+Authorized 2026-09-20 by the user ("go ahead, fix silverarrow"), from the defect 8.61f measured on shipped content: Silverarrow's `CreateEndOfTurnDiscard` declares the discard as its selection's consumer for both revisions, so Treetop Sentinel ("End of turn: An enemy hero in radius discards a card, or is defeated") never offers an enemy hero with an empty hand - the hero the second half of the sentence exists for - while Warning Shot ("if able", no escalation) is right to narrow.
+
+Outcome: Treetop Sentinel offers every enemy hero in radius; a chosen hero with cards discards, a chosen hero with none is defeated with p.13's coins to Silverarrow and the scoreboard's Kill; Warning Shot keeps its narrowing.
+
+Acceptance: the escalating variant of `CreateEndOfTurnDiscard` declares no narrowing consumer (the reading whose offer admits exactly what the answer performs); `SilverarrowCardContent.ContentRevision` moves to `silverarrow-8-66-rev-1` with the artwork catalog rows, the identity pin (every other hero's byte-identical) and any digest re-pinned from one blanked run with the cause attributed; a fixture driving the empty-handed defeat, the discard, Warning Shot's unchanged narrowing and the pair beside each other; the Play Mode journey through the real HUD; every other escalating "discards or is defeated" face audited for the same narrowing; the complete Edit Mode and Play Mode suites (T3, a dealt-content revision) green with zero Play Mode skips.
+
+Non-goals: Warning Shot's behaviour; new Silverarrow content.
+
+### [ ] 8.67 A triggered checkpoint continues past its first pause
+
+Authorized 2026-09-20 by the user with 8.66, from the second defect 8.61f measured: `TriggeredEffectResolutionAuthority.ApplyCheckpoint` breaks its candidate loop at the first pause and nothing resumes the rest, so a second triggered face at one checkpoint never runs (measured with Min's Death Grenade beside Silverarrow's Warning Shot at one end of turn: only the trigger the pipeline reached first took a card).
+
+Outcome: when a paused triggered effect at a checkpoint is answered, the remaining candidates of that checkpoint run in the same tie-breaker order until the list is exhausted or another pauses; snapshot, restore and Undo across the pause keep the continuation.
+
+Acceptance: a continuation for every trigger family at every checkpoint, persisted the way the pending resolution is (re-derived from the lifecycle at resume time, schema v43 unmoved unless reported first); the 8.61f assertion flipped to both triggers taking a card in order; a fixture over two pausing families, a quiet candidate after a paused one, exhaustion, a non-end-of-turn checkpoint, snapshot during the first pause, Undo across it; every fixture that pinned the old stop swept; harness and the complete suites green.
+
+Non-goals: the order candidates run in (the tie-breaker rule stands); content changes.
