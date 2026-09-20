@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69a Brynn obstacle adjacency completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69a | "Adjacent to 3 or more obstacles" as one pure query (`ObstacleAdjacencyQuery`) every consumer asks, with Over the Top's overlay asked first inside it: `RuleModificationKind.CountsAsAdjacentToThreeOrMoreObstacles` (18), `RuleValueApplicability.ControllerAction` (3), the declaration expanded per enemy hero while the controller acts; `AttackSequenceSubjectNarrowing.IsAdjacentToThreeOrMoreObstacles` (4) for Familiar Ground's second bullet; `RosterValueQueryKind.AttackTargetHeroAdjacentToThreeOrMoreObstacles` (9) for the +2 at the Attack total; the optional Boolean narrowing on `synthetic-radius-hero-target@1`; two deferred Brynn predicates (new handler types) and three sub-graph factories for the wave; Familiar Ground, High Ground, Elevated Ambush and Over the Top composed under a placeholder revision. No registration, no pin moved, schema v43 and wire /19 unmoved. `BrynnObstacleAdjacencyTests` 21; harness 3971/3971; focused Edit Mode 147/147. Landed as `89b9629f` (squash of `0821c047` on `8.69a-obstacle-adjacency`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869a-support-obstacle-adjacency-and-over-the-top). | `milestone/8.69a` |
+
 ## Milestone 8.69 Brynn inventory completion evidence
 
 | Milestone | Outcome and definition | Commit |
