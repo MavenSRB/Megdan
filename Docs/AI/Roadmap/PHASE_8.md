@@ -317,7 +317,7 @@ Completed 2026-09-20 (`de886e51`, squash-merged from `bc270186` on `8.62-hud-cue
 
 Historical evidence: [8.64 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-864-victory-legend-dropped-completion-evidence).
 
-### [ ] 8.65 Package the nineteen-hero playtest build
+### [x] 8.65 Package the nineteen-hero playtest build
 
 Authorized 2026-09-20 by the user ("just cut the build after everything lands"), after 8.61k and the three HUD corrections 8.62-8.64 landed. The build carries 8.61-8.61k (Min the Dragonmonk, the nineteenth hero, dealt with her real artwork, her three token kinds and gated), 8.62 (the target cue as the user settled it), 8.63 (the decision window topmost, the defence breakdown content-sized) and 8.64 (the victory legend dropped).
 
@@ -326,3 +326,7 @@ Outcome: `Builds/Playtest-8.61-min` and its zip, built from main at the tag of t
 Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged commit (the MERGED main, since Min's gate and the HUD block were each proved on their own branch); the packaged exe launches and reaches the lobby; the identity stamp names the commit; Min pickable in the packaged lobby with her pick card, her standee and her five token faces.
 
 Non-goals: new gameplay; MI-Q13k's ruling (the build ships the measured reading; the ruling is content work after it).
+
+Completed 2026-09-20, after 8.61k and 8.62-8.64 landed - the user's order ("just cut the build after everything lands"). `Builds/Playtest-8.61-min` and `Builds/Playtest-8.61-min.zip` (183 entries, no logs, no debug folder, 71 MB), built from main at `35681cc2` (tag `milestone/8.61k` plus the HUD ceremony and the version stamp) with bundleVersion `1.0-8.61-min`, stamp `1.0-8.61-min+20260920134915-190efed7`; protocol `guards-private-online/18` (moved from /17 by 8.61e's reveal row - a Playtest-8.55-rowenna client cannot join this host) and schema 43 unchanged; the configured content digest re-measured at this commit is `c9dd1b66...`, moved from `36da22a7...` by Min's registration (eighteen definitions, nineteen capabilities, five tokens, seven triggered effects). The gate on the packaged MERGED tree (Min's gate and the HUD block were each proved on their own branch, so both unfiltered suites ran again on main): complete Edit Mode 4910 / 4874 / 0 / 36 established skips; complete Play Mode 704/704 with zero skips; harness 3930/3930; the build-and-launch smoke (GATE PASSED); the packaged exe launched once from its own folder to `LOBBY_BEGIN`. Manifest, READ ME FIRST (what is new: Min and her hidden mines with the two cross-seat discard questions, the targeting marks, the window on top with the breakdown as lines, the victory footnote gone; known problems: Min unplayed by people so far, MI-Q13k stated to the players, the marks settled on screenshots) and BUILD IDENTITY written by hand per the 8.44 recipe.
+
+Historical evidence: [8.65 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-865-nineteen-hero-package-completion-evidence).
