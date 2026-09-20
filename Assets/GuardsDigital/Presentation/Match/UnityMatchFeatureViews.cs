@@ -378,9 +378,17 @@ namespace GuardsDigital.Presentation.Match
                 // projection owns.
                 ReleaseHeroDefeatGhost(hero);
 
-                // Every board choice is now carried by the occupied hex's six corners. The retained
-                // ring remains part of the reusable piece view, but configured play never activates it.
-                hero.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+                // Milestone 8.62, AT THE USER'S DIRECTION - and it reverses 8.30h's rule for the one
+                // cue the user was looking at. "can you make targeting highlights more visible, they
+                // are almost impossible to see like this.. Blood red light instead of this pink i
+                // think." 8.30h routed every board choice into the occupied hex's six corner marks
+                // and left the fitted piece ring built, projected and never drawn; what a player saw
+                // of a targeted HERO was therefore six small marks on the sand around them. The
+                // projection has named these pieces all along - `BoardInteractionPresenter` gives
+                // every legal Attack, Removal and card-text target its typed cue - so this draws the
+                // cue that was already being computed. The six corner marks are UNCHANGED and still
+                // mark the space: the ring and its wash are what say the PIECE is the target.
+                ApplyPieceTargetCue(hero, model, BoardObjectReference.ForHero(occupancy.HeroId));
 
                 // Milestone 8.35z63: the tray's own Active violet, on the piece the effect is
                 // standing on. It is a separate, inner annulus beside the token, so a
@@ -519,6 +527,7 @@ namespace GuardsDigital.Presentation.Match
                     allyCoordinates.Add(coordinate);
                 }
             }
+            var targetOutlineSides = TargetOutlineSides(model);
             foreach (var tile in tiles.Where(value => value.IsPlayable))
             {
                 // Clear any state left by a pre-8.30h renderer. Configured play no longer activates
@@ -558,13 +567,30 @@ namespace GuardsDigital.Presentation.Match
                                       resultingSpace.Value.Equals(tile.Coordinate)
                                         ? HexCornerHighlightKind.EffectResult
                                         : HexCornerHighlightKind.None;
+                    var pointedAt = hoveredCoordinate.HasValue &&
+                        hoveredCoordinate.Value.Equals(tile.Coordinate);
+                    var outlineSide =
+                        targetOutlineSides.TryGetValue(tile.Coordinate, out var side)
+                            ? side
+                            : BoardTargetOutlineSide.None;
+                    // Milestone 8.62. A target's outline also thickens when the pointer is on the
+                    // PIECE rather than on the sand around it, which is where a player actually puts
+                    // it. Only the outline reads this: the six corner marks keep the hover language
+                    // every shipped journey pins them with.
+                    if (outlineSide != BoardTargetOutlineSide.None &&
+                        hoveredHeroCoordinate.HasValue &&
+                        hoveredHeroCoordinate.Value.Equals(tile.Coordinate))
+                    {
+                        pointedAt = true;
+                    }
+
                     tile.SetCornerHighlighted(
                         kind,
-                        hoveredCoordinate.HasValue &&
-                        hoveredCoordinate.Value.Equals(tile.Coordinate),
+                        pointedAt,
                         defenseCoordinates.TryGetValue(tile.Coordinate, out var defenseKind)
                             ? defenseKind
-                            : HexCornerHighlightKind.None);
+                            : HexCornerHighlightKind.None,
+                        outlineSide);
                 }
             }
 
@@ -786,7 +812,11 @@ namespace GuardsDigital.Presentation.Match
                         minion.Configure(state, minion.OuterRadius);
                     }
 
-                    minion.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+                    // Milestone 8.62: the same cue on the same terms as the hero loop's. A minion an
+                    // attack can take is the target a player most often has to find on a crowded
+                    // board.
+                    ApplyPieceTargetCue(
+                        minion, model, BoardObjectReference.ForMinion(state.MinionId));
 
                     projectedMinions.Remove(state.MinionId);
                 }
@@ -844,7 +874,9 @@ namespace GuardsDigital.Presentation.Match
                         token.Configure(state, token.OuterRadius);
                     }
 
-                    token.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+                    // Milestone 8.62: a placed token is a piece like any other, and a card that can
+                    // remove one names it the same way.
+                    ApplyPieceTargetCue(token, model, BoardObjectReference.ForToken(boundId));
                     projectedTokens.Remove(boundId);
                 }
                 else
@@ -873,8 +905,177 @@ namespace GuardsDigital.Presentation.Match
                     view.gameObject.SetActive(true);
                 }
 
-                view.SetTargetCue(BoardTargetCueState.None, BoardTargetConsequenceIntent.None);
+                ApplyPieceTargetCue(view, model, BoardObjectReference.ForToken(state.Id));
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.62. Draws one piece's own projected target cue - the fitted ring and the
+        /// translucent wash of its exact footprint - or clears it.
+        ///
+        /// <para>The state and the consequence are the PROJECTION's, never inferred here: a piece
+        /// with no cue in <see cref="BoardInteractionViewModel.PieceTargetCues"/> is not a target and
+        /// wears nothing. The three overloads exist because a hero, a minion and a placed token each
+        /// own their own fitted ring and expose the same two-argument call.</para>
+        /// </summary>
+        private static void ApplyPieceTargetCue(
+            GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView piece,
+            BoardInteractionViewModel model,
+            BoardObjectReference reference)
+        {
+            var cue = Drawable(piece.CanWearATargetCue, CueFor(model, reference));
+            piece.SetTargetCue(
+                cue?.State ?? BoardTargetCueState.None,
+                cue?.ConsequenceIntent ?? BoardTargetConsequenceIntent.None);
+        }
+
+        private static void ApplyPieceTargetCue(
+            GuardsDigital.Presentation.Units.Minions.StandardMinionView piece,
+            BoardInteractionViewModel model,
+            BoardObjectReference reference)
+        {
+            var cue = Drawable(piece.CanWearATargetCue, CueFor(model, reference));
+            piece.SetTargetCue(
+                cue?.State ?? BoardTargetCueState.None,
+                cue?.ConsequenceIntent ?? BoardTargetConsequenceIntent.None);
+        }
+
+        private static void ApplyPieceTargetCue(
+            PlacedTokenView piece,
+            BoardInteractionViewModel model,
+            BoardObjectReference reference)
+        {
+            var cue = Drawable(piece.CanWearATargetCue, CueFor(model, reference));
+            piece.SetTargetCue(
+                cue?.State ?? BoardTargetCueState.None,
+                cue?.ConsequenceIntent ?? BoardTargetConsequenceIntent.None);
+        }
+
+        /// <summary>
+        /// Milestone 8.62's hex-outline variant. For every space that carries a PIECE target cue,
+        /// which side that piece stands on relative to the seat that is choosing.
+        ///
+        /// <para>The user: "Let's try how it looks when we remove the outline of the token, just
+        /// outline the hex", and "Keep the colors, blood red on enemy, green on ally". So the colour
+        /// is a fact about the TARGET, not about the operation - which is a different rule from the
+        /// shipped intent palette, and differs from it exactly twice: an effect aimed at an enemy
+        /// (intent green, side red) and any consequence aimed at a friendly piece.</para>
+        ///
+        /// <para><b>Read entirely from what the view already holds.</b> The choosing side is the
+        /// focused hero's own view's <c>TeamSide</c>; a target hero's side is its view's, a target
+        /// minion's is its occupancy's. The PROJECTION is untouched - no new field, no presenter
+        /// change - which is what lets either treatment ship from one constant. A placed token has
+        /// no side of its own, so it keeps the operation's intent.</para>
+        /// </summary>
+        private Dictionary<GuardsDigital.Core.Board.HexCoordinate, BoardTargetOutlineSide>
+            TargetOutlineSides(BoardInteractionViewModel model)
+        {
+            var sides =
+                new Dictionary<GuardsDigital.Core.Board.HexCoordinate, BoardTargetOutlineSide>();
+            if (!BoardTargetCuePresentation.MarksTheTargetTileBySide) return sides;
+
+            var choosingSide = ChoosingTeamSide(model);
+            foreach (var cue in model.PieceTargetCues)
+            {
+                if (cue.State == BoardTargetCueState.None) continue;
+                if (!TryResolveCoordinate(model, cue.Target, out var coordinate)) continue;
+
+                var side = BoardTargetCuePresentation.ColourByTargetSide
+                    ? SideOf(model, cue, choosingSide)
+                    : IntentSide(cue);
+                if (side == BoardTargetOutlineSide.None) continue;
+
+                // A space that is both an enemy target and a friendly one cannot happen - one piece
+                // stands on it - but a later cue wins deterministically rather than by dictionary
+                // order.
+                sides[coordinate] = side;
+            }
+
+            return sides;
+        }
+
+        private static BoardTargetOutlineSide IntentSide(PieceTargetCueViewModel cue) =>
+            cue.ConsequenceIntent == BoardTargetConsequenceIntent.Attack ||
+            cue.ConsequenceIntent == BoardTargetConsequenceIntent.Removal
+                ? BoardTargetOutlineSide.Enemy
+                : BoardTargetOutlineSide.Friendly;
+
+        private BoardTargetOutlineSide SideOf(
+            BoardInteractionViewModel model,
+            PieceTargetCueViewModel cue,
+            TeamSide? choosingSide)
+        {
+            if (!choosingSide.HasValue) return IntentSide(cue);
+
+            if (cue.Target.HeroId.IsDefined)
+            {
+                var view = HeroViewFor(cue.Target.HeroId);
+                if (view == null) return IntentSide(cue);
+                return view.TeamSide == choosingSide.Value
+                    ? BoardTargetOutlineSide.Friendly
+                    : BoardTargetOutlineSide.Enemy;
+            }
+
+            if (cue.Target.MinionId.IsDefined)
+            {
+                for (var index = 0; index < model.Minions.Count; index++)
+                {
+                    if (!model.Minions[index].MinionId.Equals(cue.Target.MinionId)) continue;
+                    return model.Minions[index].TeamSide == choosingSide.Value
+                        ? BoardTargetOutlineSide.Friendly
+                        : BoardTargetOutlineSide.Enemy;
+                }
+            }
+
+            return IntentSide(cue);
+        }
+
+        private TeamSide? ChoosingTeamSide(BoardInteractionViewModel model)
+        {
+            if (!model.FocusedHeroId.IsDefined) return null;
+            var view = HeroViewFor(model.FocusedHeroId);
+            return view == null ? (TeamSide?)null : view.TeamSide;
+        }
+
+        private GuardsDigital.Presentation.Units.Heroes.PrimitiveHeroView HeroViewFor(HeroId heroId)
+        {
+            for (var index = 0; index < heroes.Count; index++)
+            {
+                var hero = heroes[index];
+                if (hero != null && hero.Occupancy.HeroId.Equals(heroId)) return hero;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Milestone 8.62. The cue a piece can actually be drawn with.
+        ///
+        /// <para>A fitted ring is measured against the piece's own visible footprint, and a piece can
+        /// legitimately have none to measure - a minion whose sprite the art catalog has not supplied,
+        /// a view configured outside a loaded scene. <c>BoardTargetRing.SetCue</c> refuses such a
+        /// footprint loudly rather than fitting a ring to nothing, so a piece that cannot wear the cue
+        /// is left to the six corner marks on its space instead of taking the whole render pass down
+        /// with it. The PROJECTION is untouched: it still names the piece, and every other reader of
+        /// it - the corner marks, the pointer, the log - is unaffected.</para>
+        /// </summary>
+        private static PieceTargetCueViewModel? Drawable(
+            bool canWearACue, PieceTargetCueViewModel? cue) =>
+            canWearACue && BoardTargetCuePresentation.DrawsTheRingOnThePiece ? cue : null;
+
+        private static PieceTargetCueViewModel? CueFor(
+            BoardInteractionViewModel model, BoardObjectReference reference)
+        {
+            var cues = model.PieceTargetCues;
+            for (var index = 0; index < cues.Count; index++)
+            {
+                if (cues[index].Target.Equals(reference))
+                {
+                    return cues[index];
+                }
+            }
+
+            return null;
         }
 
         /// <summary>

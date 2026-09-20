@@ -330,7 +330,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.RoundView.Model.RemovalPreventionPrompt, Is.Not.Null,
                 "and the region must have been given it to draw.");
             var subjectView = MinionView(subject);
-            Assert.That(subjectView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62: the threatened piece wears the removal cue itself.
+            Assert.That(subjectView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(subjectView.TargetRing.ConsequenceIntent,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetConsequenceIntent.Removal)));
             Assert.That(Tile(subjectView.Occupancy.Coordinate).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
                 "with the threatened minion identified by blood-red removal corners.");

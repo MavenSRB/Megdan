@@ -319,6 +319,14 @@ namespace GuardsDigital.Presentation.Units.Heroes
             ? BoardTargetFootprintKind.Circular
             : BoardTargetFootprintKind.ConvexMeshBase;
 
+        /// <summary>
+        /// Milestone 8.62. Whether this piece is currently drawn as something a fitted ring can be
+        /// measured against - see <see cref="BoardTargetRing.CanFit"/>. A piece with nothing to
+        /// measure keeps the corner marks on its space and wears no ring.
+        /// </summary>
+        public bool CanWearATargetCue =>
+            BoardTargetRing.CanFit(GetComponent<MeshRenderer>(), TargetFootprintKind());
+
         private float BoardPlaneWorldY() => transform.parent == null
             ? transform.position.y - verticalOffset
             : transform.parent.TransformPoint(Vector3.zero).y;

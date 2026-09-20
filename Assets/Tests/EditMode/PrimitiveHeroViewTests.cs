@@ -196,18 +196,11 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(sourceRenderer.sortingLayerID));
                 Assert.That(ring.GetComponent<MeshRenderer>().sortingOrder,
                     Is.EqualTo(sourceRenderer.sortingOrder + 1));
-                var washVertices = ring.GeneratedMesh.GetTriangles(2)
-                    .Distinct()
-                    .Select(index => ring.transform.TransformPoint(
-                        ring.GeneratedMesh.vertices[index]))
-                    .ToArray();
-                Assert.That(washVertices, Is.Not.Empty);
-                Assert.That(washVertices,
-                    Has.All.Matches<Vector3>(vertex => Mathf.Abs(
-                        vertex.y - footprint.max.y - BoardTargetRing.PieceWashSurfaceOffset) <
-                        Tolerance),
-                    "The translucent wash lies just over the actual hero art rather than under it " +
-                    "on the board plane.");
+                // Milestone 8.62, at the user's direction: "Don't color on the inside." This used to
+                // measure that the translucent wash lay just over the hero's art; there is no wash
+                // to measure, so it measures that the piece's own artwork is left alone.
+                Assert.That(ring.GeneratedMesh.GetTriangles(2), Is.Empty,
+                    "The cue draws its ring on the board plane and nothing over the piece itself.");
 
                 view.SetTargetCue(
                     BoardTargetCueState.Selected,
@@ -296,7 +289,8 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(mismatches, Is.Empty,
                     "The neutral keyline's inner boundary must meet every source-mesh edge, not " +
-                    "only the footprint's furthest vertices.\n" + string.Join("\n", mismatches));
+                    "only the footprint's furthest vertices, and nothing at all is " +
+                    "drawn inside it.\n" + string.Join("\n", mismatches));
             }
             finally
             {
@@ -400,16 +394,33 @@ namespace GuardsDigital.Tests.EditMode
                 AssertColor(BoardTargetRing.AffectColor, new Color32(27, 129, 71, 255));
                 AssertColor(BoardTargetRing.BloodRedColor, new Color32(194, 10, 24, 255));
                 AssertColor(BoardTargetRing.KeylineColor, new Color32(248, 247, 242, 255));
-                Assert.That(BoardTargetRing.EligibleWashAlpha, Is.EqualTo(0.18f));
-                Assert.That(BoardTargetRing.SelectedWashAlpha, Is.EqualTo(0.23f));
-                Assert.That(BoardTargetRing.HoverWashAlpha, Is.EqualTo(0.28f));
-                Assert.That(BoardTargetRing.EligibleWashAlpha,
-                    Is.LessThan(BoardTargetRing.SelectedWashAlpha));
-                Assert.That(BoardTargetRing.SelectedWashAlpha,
-                    Is.LessThan(BoardTargetRing.HoverWashAlpha));
-                Assert.That(BoardTargetRing.HoverWashAlpha,
-                    Is.EqualTo(BoardOverlayMaterial.OverlayAlpha),
-                    "The strongest reserved wash never exceeds the reviewed transparent-overlay cap.");
+                // Milestone 8.62 re-pins these six numbers at the user's direction, after they looked
+                // at the cue twice. First, on the shipped board: "can you make targeting highlights
+                // more visible, they are almost impossible to see like this.. Blood red light instead
+                // of this pink i think." Then, on the photographs of the answer - a wider ring and a
+                // 40% blood-red wash of the piece's footprint: "I like the new outline, but coloring
+                // on the inside is a bit too much", and finally "actually, just keep the previous
+                // shape, and use the new color for the outline. Don't color on the inside."
+                //
+                // So the SHAPES are the shapes this cue always had, and THE WASH IS GONE. What makes
+                // a target visible now is that the ring is drawn at all - 8.30h had left it built and
+                // never activated - in the blood red it has declared since 8.11d.
+                Assert.That(BoardTargetRing.EligibleWidth, Is.EqualTo(0.11f));
+                Assert.That(BoardTargetRing.SelectedWidth, Is.EqualTo(0.055f));
+                Assert.That(BoardTargetRing.HoverWidth, Is.EqualTo(0.11f));
+                Assert.That(BoardTargetRing.EligibleWashAlpha, Is.Zero);
+                Assert.That(BoardTargetRing.SelectedWashAlpha, Is.Zero);
+                Assert.That(BoardTargetRing.HoverWashAlpha, Is.Zero);
+                // THE RETIRED PIN. These three used to be ordered 0.18 < 0.23 < 0.28 and the
+                // strongest was DECLARED to be `BoardOverlayMaterial.OverlayAlpha`, the reviewed cap
+                // for a transparent board overlay ("The strongest reserved wash never exceeds the
+                // reviewed transparent-overlay cap"). There is no wash to order or to cap: the ring
+                // carries the cue, and the three states are told apart by its own treatment -
+                // segmented, doubled, solid with ticks - which
+                // `TargetRing_ConstructsSegmentedDoubleAndSolidFourTickTreatments` states below.
+                Assert.That(BoardOverlayMaterial.OverlayAlpha, Is.GreaterThan(0f),
+                    "The overlay cap still governs every overlay that IS a tint; this cue is not " +
+                    "one of them any more.");
 
                 view.SetTargetCue(
                     BoardTargetCueState.Eligible,
@@ -432,7 +443,11 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo((int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha));
                 Assert.That(washMaterial.GetInt("_ZWrite"), Is.Zero);
                 Assert.That(washMaterial.IsKeywordEnabled("_SURFACE_TYPE_TRANSPARENT"), Is.True,
-                    "The over-piece wash must be genuinely blended, not merely assigned a low alpha.");
+                    "The wash material is RETAINED - one cue owns four native resources - and is " +
+                    "still genuinely blended; what changed at 8.62 is that it paints nothing.");
+                Assert.That(ring.GeneratedMesh.GetTriangles(2), Is.Empty,
+                    "and the wash is not built at all - the user's own words: don't color on the " +
+                    "inside.");
                 StringAssert.Contains("DARK GREEN", ring.AssistiveReading);
 
                 view.SetTargetCue(
@@ -442,7 +457,8 @@ namespace GuardsDigital.Tests.EditMode
                     "Selected changes ring count, not the operation's dark-green palette.");
                 Assert.That(ring.VisibleWashColor.a,
                     Is.EqualTo(BoardTargetRing.SelectedWashAlpha).Within(Tolerance),
-                    "Selected reinforces the double ring with a stronger but still transparent wash.");
+                    "Nothing is washed in any state: the DOUBLE RING is the whole of Selected.");
+                Assert.That(ring.GeneratedMesh.GetTriangles(2), Is.Empty);
 
                 view.SetTargetCue(
                     BoardTargetCueState.Eligible,
@@ -597,6 +613,14 @@ namespace GuardsDigital.Tests.EditMode
             ICollection<string> mismatches)
         {
             var centre = new Vector2(ring.transform.position.x, ring.transform.position.z);
+            if (ring.GeneratedMesh.GetTriangles(2).Length != 0)
+            {
+                mismatches.Add(
+                    $"{label}: the wash submesh carries geometry, but the user settled on " +
+                    "\"just keep the previous shape, and use the new color for " +
+                    "the outline. Don't color on the inside.\"");
+            }
+
             var perimeter = ProjectedPerimeter(footprint, centre);
             if (perimeter.Count != expectedPerimeterVertices)
             {
@@ -618,27 +642,12 @@ namespace GuardsDigital.Tests.EditMode
                     direction,
                     subMesh: 0,
                     nearest: true);
-                var washDistance = RayMeshDistance(
-                    ring.GeneratedMesh,
-                    ring.transform,
-                    centre,
-                    direction,
-                    subMesh: 2,
-                    nearest: false);
                 if (float.IsNaN(footprintDistance) || float.IsNaN(ringDistance) ||
                     Mathf.Abs(ringDistance - footprintDistance) > Tolerance)
                 {
                     mismatches.Add(
                         $"{label} edge {index + 1}: source perimeter={footprintDistance:F4}, " +
                         $"keyline inner boundary={ringDistance:F4}.");
-                }
-
-                if (float.IsNaN(washDistance) ||
-                    Mathf.Abs(washDistance - footprintDistance) > Tolerance)
-                {
-                    mismatches.Add(
-                        $"{label} edge {index + 1}: source perimeter={footprintDistance:F4}, " +
-                        $"wash boundary={washDistance:F4}.");
                 }
             }
         }

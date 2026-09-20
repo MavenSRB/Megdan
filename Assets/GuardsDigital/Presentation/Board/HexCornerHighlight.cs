@@ -41,6 +41,29 @@ namespace GuardsDigital.Presentation.Board
         public const string DefensePositiveCoreMaterialName = "Positive Defense Corner Shine Core";
         public const string DefenseNegativeHaloMaterialName = "Negative Defense Corner Shine Halo";
         public const string DefenseNegativeCoreMaterialName = "Negative Defense Corner Shine Core";
+        public const string TargetEnemyOutlineContourMaterialName = "Enemy Target Hex Outline Contour";
+        public const string TargetEnemyOutlineCoreMaterialName = "Enemy Target Hex Outline Core";
+        public const string TargetFriendlyOutlineContourMaterialName =
+            "Friendly Target Hex Outline Contour";
+        public const string TargetFriendlyOutlineCoreMaterialName =
+            "Friendly Target Hex Outline Core";
+        public const string FullEdgeMeshName = "Six Hex Edge Outline";
+
+        /// <summary>
+        /// Milestone 8.62 hex-outline variant, sized in WORLD units on a unit-radius hex - the same
+        /// units <see cref="BoardTargetRing.EligibleWidth"/> is measured in, and the same number, so
+        /// the edge reads as heavily as the ring the user is comparing it against.
+        /// </summary>
+        public const float OutlineCoreHalfWidth = BoardTargetRing.EligibleWidth / 2f;
+
+        /// <summary>The dark rim carried each side of the coloured edge, so it holds on sand.</summary>
+        public const float OutlineContourBleed = 0.022f;
+
+        public const float OutlineContourHalfWidth = OutlineCoreHalfWidth + OutlineContourBleed;
+
+        /// <summary>How far the dark rim is carried towards black from the edge own colour.</summary>
+        public const float OutlineContourDarkening = 0.55f;
+
         public const string DefensePositiveSaturatedCoreMaterialName =
             "Positive Defense Corner Shine Saturated Core";
         public const string DefenseNegativeSaturatedCoreMaterialName =
@@ -49,6 +72,31 @@ namespace GuardsDigital.Presentation.Board
         // The whole board now speaks one six-corner language. Green is travel, cyan is return to the
         // board, blood red is an Attack or removal, warm ivory is a teammate, and cool neutral grey
         // is every other selectable effect. A darker slate keeps a projected result distinct.
+        /// <summary>
+        /// How far a mark's narrow filament is carried towards white. Milestone 8.35z39's light pass
+        /// chose it so the filament keeps the shape on the bright half of the board.
+        /// </summary>
+        public const float CoreWhiteLift = 0.82f;
+
+        /// <summary>
+        /// Milestone 8.62, at the user's direction. The ATTACK mark's filament keeps far more of its
+        /// own blood red than every other mark's does.
+        ///
+        /// <para>The user, on a screenshot of an attack's targets: "can you make targeting highlights
+        /// more visible, they are almost impossible to see like this.. Blood red light instead of this
+        /// pink i think." The declared colour was already the reviewed blood red; what reached the
+        /// screen was this filament, and at <see cref="CoreWhiteLift"/> the blood red arrives as
+        /// <c>(0.95, 0.82, 0.82)</c> - a pale pink, and a pale warm pink on painted SAND at that,
+        /// which is the lowest-contrast thing this mark could have been. At this lift it arrives as
+        /// <c>(0.78, 0.23, 0.24)</c>: blood red against the sand by hue AND by value, and still well
+        /// above the board's dark rock and water by value.</para>
+        ///
+        /// <para>Only the harmful mark moves. The other seven keep <see cref="CoreWhiteLift"/>,
+        /// because none of them was reported as unreadable and the six-corner language's whole point
+        /// is that a colour means one thing everywhere it appears.</para>
+        /// </summary>
+        public const float AttackCoreWhiteLift = 0.22f;
+
         public static readonly Color MovementColor = new Color(0.22f, 1f, 0.48f, 1f);
         public static readonly Color AttackColor = new Color(0.72f, 0.025f, 0.035f, 1f);
         public static readonly Color RespawnColor = new Color(0.05f, 0.78f, 1f, 1f);
@@ -83,6 +131,16 @@ namespace GuardsDigital.Presentation.Board
         private readonly Material defensePositiveSaturatedCore;
         private readonly Material defenseNegativeSaturatedCore;
 
+        // Milestone 8.62's hex-outline variant. A continuous six-edge outline of the WHOLE tile,
+        // in the ring's own two colours, on the same two layers the corner marks use - a target hex
+        // shows the outline INSTEAD of its corner bars, never both.
+        private readonly Mesh outlineContourMesh;
+        private readonly Mesh outlineCoreMesh;
+        private readonly Material targetEnemyOutlineContour;
+        private readonly Material targetEnemyOutlineCore;
+        private readonly Material targetFriendlyOutlineContour;
+        private readonly Material targetFriendlyOutlineCore;
+
         public HexCornerHighlightTemplate(float outerRadius)
         {
             if (outerRadius <= 0f || float.IsNaN(outerRadius) || float.IsInfinity(outerRadius))
@@ -95,18 +153,19 @@ namespace GuardsDigital.Presentation.Board
             coreMesh = BuildSixCornerMesh(outerRadius, 0.034f);
             coreMesh.name = MeshName + " Core";
             movementHalo = CreateHaloMaterial(MovementHaloMaterialName, MovementColor);
-            movementCore = CreateMaterial(MovementCoreMaterialName, Color.Lerp(MovementColor, Color.white, 0.82f));
+            movementCore = CreateMaterial(MovementCoreMaterialName, Color.Lerp(MovementColor, Color.white, CoreWhiteLift));
             attackHalo = CreateHaloMaterial(AttackHaloMaterialName, AttackColor);
-            attackCore = CreateMaterial(AttackCoreMaterialName, Color.Lerp(AttackColor, Color.white, 0.82f));
+            attackCore = CreateMaterial(
+                AttackCoreMaterialName, Color.Lerp(AttackColor, Color.white, AttackCoreWhiteLift));
             respawnHalo = CreateHaloMaterial(RespawnHaloMaterialName, RespawnColor);
-            respawnCore = CreateMaterial(RespawnCoreMaterialName, Color.Lerp(RespawnColor, Color.white, 0.82f));
+            respawnCore = CreateMaterial(RespawnCoreMaterialName, Color.Lerp(RespawnColor, Color.white, CoreWhiteLift));
             effectHalo = CreateHaloMaterial(EffectHaloMaterialName, EffectColor);
-            effectCore = CreateMaterial(EffectCoreMaterialName, Color.Lerp(EffectColor, Color.white, 0.82f));
+            effectCore = CreateMaterial(EffectCoreMaterialName, Color.Lerp(EffectColor, Color.white, CoreWhiteLift));
             effectResultHalo = CreateHaloMaterial(EffectResultHaloMaterialName, EffectResultColor);
             effectResultCore = CreateMaterial(EffectResultCoreMaterialName,
-                Color.Lerp(EffectResultColor, Color.white, 0.82f));
+                Color.Lerp(EffectResultColor, Color.white, CoreWhiteLift));
             allyHalo = CreateHaloMaterial(AllyHaloMaterialName, AllyColor);
-            allyCore = CreateMaterial(AllyCoreMaterialName, Color.Lerp(AllyColor, Color.white, 0.82f));
+            allyCore = CreateMaterial(AllyCoreMaterialName, Color.Lerp(AllyColor, Color.white, CoreWhiteLift));
             defensePositiveHalo = CreateHaloMaterial(
                 DefensePositiveHaloMaterialName, DefensePositiveColor);
             defensePositiveCore = CreateMaterial(
@@ -121,12 +180,49 @@ namespace GuardsDigital.Presentation.Board
                 DefensePositiveSaturatedCoreMaterialName, DefensePositiveColor);
             defenseNegativeSaturatedCore = CreateMaterial(
                 DefenseNegativeSaturatedCoreMaterialName, DefenseNegativeColor);
+            outlineContourMesh = BuildSixEdgeMesh(outerRadius, OutlineContourHalfWidth);
+            outlineContourMesh.name = FullEdgeMeshName + " Contour";
+            outlineCoreMesh = BuildSixEdgeMesh(outerRadius, OutlineCoreHalfWidth);
+            outlineCoreMesh.name = FullEdgeMeshName + " Core";
+            targetEnemyOutlineContour = CreateMaterial(
+                TargetEnemyOutlineContourMaterialName,
+                Color.Lerp(BoardTargetRing.BloodRedColor, Color.black, OutlineContourDarkening));
+            targetEnemyOutlineCore = CreateMaterial(
+                TargetEnemyOutlineCoreMaterialName, BoardTargetRing.BloodRedColor);
+            targetFriendlyOutlineContour = CreateMaterial(
+                TargetFriendlyOutlineContourMaterialName,
+                Color.Lerp(BoardTargetRing.AffectColor, Color.black, OutlineContourDarkening));
+            targetFriendlyOutlineCore = CreateMaterial(
+                TargetFriendlyOutlineCoreMaterialName, BoardTargetRing.AffectColor);
         }
 
         public Mesh HaloMesh => haloMesh;
         public Mesh CoreMesh => coreMesh;
+        public Mesh OutlineContourMesh => outlineContourMesh;
+        public Mesh OutlineCoreMesh => outlineCoreMesh;
+
         public int MarkCount => CornerCount;
-        public int OwnedNativeResourceCount => 20;
+        public int OwnedNativeResourceCount => 26;
+
+        /// <summary>
+        /// Milestone 8.62's hex-outline variant. The light and the paint a target hex's continuous
+        /// outline is drawn with, chosen by the target's SIDE. The user: "Keep the colors, blood red
+        /// on enemy, green on ally" - and the colours are the RING's own two, so the variant is the
+        /// approved palette on a different shape rather than a third palette.
+        /// </summary>
+        public Material OutlineContour(BoardTargetOutlineSide side) =>
+            side == BoardTargetOutlineSide.Enemy
+                ? targetEnemyOutlineContour
+                : side == BoardTargetOutlineSide.Friendly
+                    ? targetFriendlyOutlineContour
+                    : null;
+
+        public Material OutlineCore(BoardTargetOutlineSide side) =>
+            side == BoardTargetOutlineSide.Enemy
+                ? targetEnemyOutlineCore
+                : side == BoardTargetOutlineSide.Friendly
+                    ? targetFriendlyOutlineCore
+                    : null;
 
         /// <summary>
         /// Milestone 8.35z39. The composite mark's core: the contributing kind's own colour at FULL
@@ -216,6 +312,35 @@ namespace GuardsDigital.Presentation.Board
             return result;
         }
 
+        /// <summary>
+        /// Milestone 8.62's hex-outline variant. The same bar construction as the corner marks, but
+        /// each of the six EDGES drawn whole instead of two 30% stubs at each corner, so the tile
+        /// reads as one closed hexagon. Each bar is extended by its own half-width at both ends, so
+        /// consecutive edges meet without a notch at the corner.
+        /// </summary>
+        private static Mesh BuildSixEdgeMesh(float radius, float halfWidth)
+        {
+            var vertices = new Vector3[CornerCount * 4];
+            var triangles = new int[CornerCount * 6];
+            for (var edge = 0; edge < CornerCount; edge++)
+            {
+                var angle = Mathf.Deg2Rad * (30f + (edge * 60f));
+                var nextAngle = Mathf.Deg2Rad * (30f + (((edge + 1) % 6) * 60f));
+                var start = new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+                var end = new Vector3(
+                    Mathf.Cos(nextAngle) * radius, 0f, Mathf.Sin(nextAngle) * radius);
+                var along = (end - start).normalized * halfWidth;
+                AddBar(vertices, triangles, edge * 4, edge * 6, start - along, end + along, halfWidth);
+            }
+
+            var result = new Mesh { name = FullEdgeMeshName };
+            result.vertices = vertices;
+            result.triangles = triangles;
+            result.RecalculateBounds();
+            result.RecalculateNormals();
+            return result;
+        }
+
         private static void AddBar(
             Vector3[] vertices, int[] triangles, int vertex, int triangle,
             Vector3 start, Vector3 end, float halfWidth)
@@ -285,6 +410,12 @@ namespace GuardsDigital.Presentation.Board
             DestroyOwned(defenseNegativeCore);
             DestroyOwned(defensePositiveSaturatedCore);
             DestroyOwned(defenseNegativeSaturatedCore);
+            DestroyOwned(outlineContourMesh);
+            DestroyOwned(outlineCoreMesh);
+            DestroyOwned(targetEnemyOutlineContour);
+            DestroyOwned(targetEnemyOutlineCore);
+            DestroyOwned(targetFriendlyOutlineContour);
+            DestroyOwned(targetFriendlyOutlineCore);
         }
 
         private static void DestroyOwned(UnityEngine.Object value)
@@ -309,6 +440,18 @@ namespace GuardsDigital.Presentation.Board
             ? BaseKind
             : ContributionKind;
         public bool IsHovered { get; private set; }
+
+        /// <summary>
+        /// Milestone 8.62's hex-outline variant. Which side's continuous outline this tile is
+        /// wearing instead of its corner bars, or <c>None</c> for the corner bars.
+        /// </summary>
+        public BoardTargetOutlineSide OutlineSide { get; private set; }
+
+        /// <summary>
+        /// Whether the six marks are currently drawn as one closed hexagon rather than as the six
+        /// corner bars. A target's space does that when the pointer is on it.
+        /// </summary>
+        public bool IsFullEdgeOutline { get; private set; }
         public int VisibleMarkCount => Kind == HexCornerHighlightKind.None ? 0 : HexCornerHighlightTemplate.CornerCount;
         public Bounds LocalBounds => core == null ? default : core.localBounds;
         public Color VisibleCoreMaterialColor => core == null || core.sharedMaterial == null
@@ -323,10 +466,19 @@ namespace GuardsDigital.Presentation.Board
             Set(HexCornerHighlightKind.None, false);
         }
 
+        /// <param name="outlineSide">
+        /// Milestone 8.62's hex-outline variant. When it is not <c>None</c> the two layers draw the
+        /// tile's six EDGES as one continuous hexagon in that side's colour instead of the six
+        /// corner bars - the user: "Let's try how it looks when we remove the outline of the token,
+        /// just outline the hex", and "Keep the colors, blood red on enemy, green on ally". The
+        /// declared <paramref name="kind"/> is still recorded, so every reader that asks what a
+        /// space MEANS reads the same answer under either treatment.
+        /// </param>
         public void Set(
             HexCornerHighlightKind kind,
             bool hovered,
-            HexCornerHighlightKind contributionKind = HexCornerHighlightKind.None)
+            HexCornerHighlightKind contributionKind = HexCornerHighlightKind.None,
+            BoardTargetOutlineSide outlineSide = BoardTargetOutlineSide.None)
         {
             if (contributionKind != HexCornerHighlightKind.None &&
                 contributionKind != HexCornerHighlightKind.DefensePositive &&
@@ -344,6 +496,11 @@ namespace GuardsDigital.Presentation.Board
             BaseKind = kind;
             ContributionKind = contributionKind;
             IsHovered = Kind != HexCornerHighlightKind.None && hovered;
+            OutlineSide = Kind == HexCornerHighlightKind.None
+                ? BoardTargetOutlineSide.None
+                : outlineSide;
+            IsFullEdgeOutline = OutlineSide != BoardTargetOutlineSide.None &&
+                (IsHovered || BoardTargetCuePresentation.OutlinesTheWholeHex);
             if (halo == null || core == null) return;
             var visible = Kind != HexCornerHighlightKind.None;
             halo.enabled = visible;
@@ -358,12 +515,53 @@ namespace GuardsDigital.Presentation.Board
             var coreMaterial = composite
                 ? template.SaturatedCore(coreKind)
                 : template.Core(coreKind);
+            if (OutlineSide != BoardTargetOutlineSide.None)
+            {
+                // The variant, and it is PAINT rather than light. The first photographed attempt
+                // drew the edge as an additive halo under a white-lifted filament, and the result
+                // measured as a pale pink line with a whitish halo - the same fault the user
+                // rejected in the original wash. So the wide layer is a DARK rim of the edge own
+                // colour and the narrow layer is the ring colour itself, both at full alpha:
+                // (194,10,24) on an enemy, the Affect green on a friendly piece, at the ring own
+                // EligibleWidth. Pointing at it swaps in the thicker pair and lifts the colour, so
+                // hovered and resting cannot be mistaken for each other.
+                var wider = template.OutlineContour(OutlineSide);
+                var edge = template.OutlineCore(OutlineSide);
+
+                // AT REST the shapes are the six corner bars this type has always drawn - the user,
+                // shown a zoom of the original cue: "No, not the ring, but the old highlight mark."
+                // Only the paint changes. POINTED AT, the same two layers become one closed hexagon
+                // at the same edge width: "Then on mouseover we can do full hex."
+                SetLayerMesh(halo, IsFullEdgeOutline
+                    ? template.OutlineContourMesh
+                    : template.HaloMesh);
+                SetLayerMesh(core, IsFullEdgeOutline
+                    ? template.OutlineCoreMesh
+                    : template.CoreMesh);
+                halo.sharedMaterial = wider;
+                core.sharedMaterial = edge;
+                halo.transform.localScale = Vector3.one;
+                core.transform.localScale = Vector3.one;
+                SetColor(halo, WithAlpha(wider.color, 1f));
+                SetColor(core, WithAlpha(edge.color, 1f));
+                return;
+            }
+
+            SetLayerMesh(halo, template.HaloMesh);
+            SetLayerMesh(core, template.CoreMesh);
             halo.sharedMaterial = template.Halo(haloKind);
             core.sharedMaterial = coreMaterial;
             halo.transform.localScale = Vector3.one;
             core.transform.localScale = Vector3.one;
-            var strength = IsHovered ? 1f : 0.84f;
-            SetColor(halo, WithAlpha(template.Halo(haloKind).color, IsHovered ? 1f : 0.72f));
+            // Milestone 8.62. The harmful mark is drawn at full strength whether or not the pointer
+            // is on it: "they are almost impossible to see like this". Every other mark keeps the
+            // reviewed resting pair, so hover still means something everywhere else on the board,
+            // and the attack mark still has somewhere to go - its own hovered treatment is the
+            // brightened one the shared `ConsequenceColor` lift already gives the piece cue.
+            var harmful = haloKind == HexCornerHighlightKind.Attack;
+            var strength = IsHovered || harmful ? 1f : 0.84f;
+            var haloAlpha = IsHovered || harmful ? 1f : 0.72f;
+            SetColor(halo, WithAlpha(template.Halo(haloKind).color, haloAlpha));
             SetColor(core, WithAlpha(coreMaterial.color, strength));
         }
 
@@ -383,6 +581,12 @@ namespace GuardsDigital.Presentation.Board
             var renderer = child.GetComponent<MeshRenderer>();
             if (renderer == null) renderer = child.gameObject.AddComponent<MeshRenderer>();
             return renderer;
+        }
+
+        private static void SetLayerMesh(Renderer layer, Mesh mesh)
+        {
+            var filter = layer.GetComponent<MeshFilter>();
+            if (filter != null) filter.sharedMesh = mesh;
         }
 
         private static Color WithAlpha(Color color, float alpha) =>

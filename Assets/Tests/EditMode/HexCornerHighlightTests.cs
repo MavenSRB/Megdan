@@ -19,6 +19,25 @@ namespace GuardsDigital.Tests.EditMode
 {
     public sealed class HexCornerHighlightTests
     {
+
+        /// <summary>
+        /// Milestone 8.62. Every case below but one is about the six CORNER MARKS, and configured
+        /// play now outlines a piece target's whole hex instead ("I like this. Keep it."). The marks
+        /// are unchanged and still mark every space that is not a piece target, so these cases name
+        /// the treatment they measure and put the shipped one back.
+        /// </summary>
+        private BoardTargetCueTreatment restoreCueTreatment;
+
+        [SetUp]
+        public void MeasureTheCornerMarkTreatment()
+        {
+            restoreCueTreatment = BoardTargetCuePresentation.Treatment;
+            BoardTargetCuePresentation.Treatment = BoardTargetCueTreatment.RingOnThePiece;
+        }
+
+        [TearDown]
+        public void RestoreTheShippedCueTreatment() =>
+            BoardTargetCuePresentation.Treatment = restoreCueTreatment;
         private readonly List<UnityEngine.Object> owned = new List<UnityEngine.Object>();
         private HexCornerHighlightTemplate template;
 
@@ -476,6 +495,174 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(new Color(0.92f, 0.90f, 0.80f, 1f)));
             Assert.That(HexCornerHighlightTemplate.AllyColor,
                 Is.Not.EqualTo(HexCornerHighlightTemplate.EffectColor));
+        }
+
+        /// <summary>
+        /// Milestone 8.62. The attack mark is blood red LIGHT, at full strength, whether or not the
+        /// pointer is on it - and its shape is the shape it always was.
+        ///
+        /// <para>The user, on a screenshot of an attack's targets: "can you make targeting highlights
+        /// more visible, they are almost impossible to see like this.. Blood red light instead of this
+        /// pink i think." What they were looking at is measured here: the filament inside the mark was
+        /// carried 82% of the way to white, so the reviewed blood red arrived on painted sand as a
+        /// pale warm pink, and both layers rested below full strength.</para>
+        ///
+        /// <para>Three things are therefore pinned, and one is pinned as UNCHANGED: the filament keeps
+        /// its own red, both layers rest at full strength, every other kind keeps the treatment it was
+        /// reviewed with, and the geometry of the marks does not move - 8.35z39's promise, which this
+        /// milestone had no reason to break.</para>
+        /// </summary>
+        [Test]
+        public void AttackCornerMarks_AreBloodRedAtFullStrengthWhileEveryOtherMarkKeepsItsOwnTreatment()
+        {
+            var movement = Tile(new HexCoordinate(0, 0));
+            var attack = Tile(new HexCoordinate(1, 0));
+            var target = new HeroId("target");
+            var view = View(new[] { movement, attack });
+            view.Render(Model(
+                new[] { movement.Coordinate },
+                new[] { new HeroOccupancy(target, attack.Coordinate) },
+                new[] { target }));
+
+            Assert.That(HexCornerHighlightTemplate.AttackCoreWhiteLift,
+                Is.LessThan(HexCornerHighlightTemplate.CoreWhiteLift),
+                "The attack's filament keeps more of its own blood red than any other mark's does.");
+            Assert.That(
+                template.Core(HexCornerHighlightKind.Attack).color,
+                Is.EqualTo(Color.Lerp(
+                    HexCornerHighlightTemplate.AttackColor,
+                    Color.white,
+                    HexCornerHighlightTemplate.AttackCoreWhiteLift)),
+                "and it is that colour rather than the pale pink 0.82 produced.");
+            Assert.That(
+                template.Core(HexCornerHighlightKind.Attack).color.g,
+                Is.LessThan(0.5f),
+                "A blood red reads as red rather than as pink: the filament is nowhere near neutral.");
+            Assert.That(
+                template.Core(HexCornerHighlightKind.Movement).color,
+                Is.EqualTo(Color.Lerp(
+                    HexCornerHighlightTemplate.MovementColor,
+                    Color.white,
+                    HexCornerHighlightTemplate.CoreWhiteLift)),
+                "Travel, and every other kind, keeps the filament the light pass reviewed.");
+            Assert.That(
+                BoardOverlayMaterial.IsAdditive(template.Halo(HexCornerHighlightKind.Attack)),
+                Is.True,
+                "The attack's skirt is still drawn as light rather than as paint.");
+
+            // Resting strength, read off the renderers the component actually paints through.
+            Assert.That(attack.CornerHighlight.IsHovered, Is.False);
+            Assert.That(LayerAlpha(attack, "Corner Shine Halo"), Is.EqualTo(1f).Within(0.0001f),
+                "The attack's skirt rests at full strength: it is never almost invisible again.");
+            Assert.That(LayerAlpha(attack, "Corner Shine Core"), Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(LayerAlpha(movement, "Corner Shine Halo"), Is.EqualTo(0.72f).Within(0.0001f),
+                "and every other mark keeps the resting pair, so hover still means something there.");
+            Assert.That(LayerAlpha(movement, "Corner Shine Core"), Is.EqualTo(0.84f).Within(0.0001f));
+
+            var attackBounds = attack.CornerHighlight.LocalBounds;
+            view.SetHoveredCoordinate(attack.Coordinate);
+
+            Assert.That(attack.CornerHighlight.IsHovered, Is.True);
+            Assert.That(attack.CornerHighlight.LocalBounds, Is.EqualTo(attackBounds),
+                "Milestone 8.35z39's promise holds: the marking shapes do not move.");
+            Assert.That(LayerAlpha(attack, "Corner Shine Halo"), Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(LayerAlpha(movement, "Corner Shine Halo"), Is.EqualTo(0.72f).Within(0.0001f));
+        }
+
+        /// <summary>
+        /// Milestone 8.62, the shipped treatment. The user, from the photographs: "Let's try how it
+        /// looks when we remove the outline of the token, just outline the hex", "Keep the colors,
+        /// blood red on enemy, green on ally", "I like this. Keep it." and, of the first hovered
+        /// frames, "So make it a bit thicker on hover. Go x2, or even more."
+        ///
+        /// <para>The first attempt drew the edge as an additive halo under a white-lifted filament
+        /// and photographed as a pale pink line - the same fault the user rejected in the wash. So
+        /// this states the edge as PAINT: the ring's own colours at full alpha, no white lift, a
+        /// darker rim of the same hue under them, at the ring's own width, and a pointed-at edge
+        /// more than twice as wide.</para>
+        /// </summary>
+        [Test]
+        public void ATargetsSpace_KeepsItsCornerMarksInTheSideColourAndClosesIntoAHexWhenPointedAt()
+        {
+            var tile = Tile(new HexCoordinate(0, 0));
+            View(new[] { tile });
+
+            Assert.That(HexCornerHighlightTemplate.OutlineCoreHalfWidth * 2f,
+                Is.EqualTo(BoardTargetRing.EligibleWidth).Within(0.0001f),
+                "The edge is as heavy as the ring the user compared it against.");
+
+            var enemy = template.OutlineCore(BoardTargetOutlineSide.Enemy);
+            var friendly = template.OutlineCore(BoardTargetOutlineSide.Friendly);
+            Assert.That(enemy.color, Is.EqualTo(BoardTargetRing.BloodRedColor),
+                "An enemy target is the ring's blood red itself, not a lift towards white.");
+            Assert.That(friendly.color, Is.EqualTo(BoardTargetRing.AffectColor),
+                "and a friendly target is the ring's green itself.");
+            Assert.That(enemy.color.a, Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(friendly.color.a, Is.EqualTo(1f).Within(0.0001f));
+            Assert.That(BoardOverlayMaterial.IsAdditive(enemy), Is.False,
+                "It is paint. Drawn as light it photographed as a pale pink line.");
+            Assert.That(
+                BoardOverlayMaterial.IsAdditive(
+                    template.OutlineContour(BoardTargetOutlineSide.Enemy)),
+                Is.False,
+                "and so is the rim that carries it on sand.");
+            Assert.That(template.OutlineContour(BoardTargetOutlineSide.Enemy).color.r,
+                Is.LessThan(enemy.color.r),
+                "The rim is a DARKER red than the edge, never a lighter halo around it.");
+
+            // AT REST a target's space keeps the SHAPES it has always had - the user, shown a zoom
+            // of the original cue: "No, not the ring, but the old highlight mark" - and takes only
+            // the side's paint. The meshes are the template's own corner meshes, unchanged.
+            BoardTargetCuePresentation.Treatment =
+                BoardTargetCueTreatment.CornerMarksThenHoveredHexOutline;
+            tile.SetCornerHighlighted(
+                HexCornerHighlightKind.Attack, false, HexCornerHighlightKind.None,
+                BoardTargetOutlineSide.Enemy);
+            Assert.That(tile.CornerHighlight.OutlineSide,
+                Is.EqualTo(BoardTargetOutlineSide.Enemy));
+            Assert.That(tile.CornerHighlight.IsFullEdgeOutline, Is.False,
+                "At rest the six corner bars are the cue, exactly as before this milestone.");
+            Assert.That(LayerMesh(tile, "Corner Shine Core"), Is.SameAs(template.CoreMesh),
+                "and their geometry is the corner mesh itself, not a new shape.");
+            Assert.That(LayerMesh(tile, "Corner Shine Halo"), Is.SameAs(template.HaloMesh));
+            Assert.That(LayerAlpha(tile, "Corner Shine Core"), Is.EqualTo(1f).Within(0.0001f),
+                "drawn at full opacity rather than the pale resting pair.");
+
+            // POINTED AT they grow into the closed hexagon, at the same edge width.
+            tile.SetCornerHighlighted(
+                HexCornerHighlightKind.Attack, true, HexCornerHighlightKind.None,
+                BoardTargetOutlineSide.Enemy);
+            Assert.That(tile.CornerHighlight.IsFullEdgeOutline, Is.True);
+            Assert.That(LayerMesh(tile, "Corner Shine Core"), Is.SameAs(template.OutlineCoreMesh));
+            Assert.That(
+                tile.CornerHighlight.LocalBounds.size.x,
+                Is.GreaterThan(0f));
+
+            tile.SetCornerHighlighted(HexCornerHighlightKind.Attack, true);
+            Assert.That(tile.CornerHighlight.IsFullEdgeOutline, Is.False,
+                "and a space that is not a piece target keeps its six corner bars, pointed at or not.");
+        }
+
+        /// <summary>The mesh one named layer of a tile's marks is actually drawing.</summary>
+        private static Mesh LayerMesh(HexTileView tile, string layerName)
+        {
+            var layer = tile.CornerHighlight.transform.Find(layerName);
+            Assert.That(layer, Is.Not.Null, "The mark has a layer named " + layerName + ".");
+            var filter = layer.GetComponent<MeshFilter>();
+            Assert.That(filter, Is.Not.Null);
+            return filter.sharedMesh;
+        }
+
+        /// <summary>The alpha one named layer of a tile's marks is actually painted with.</summary>
+        private static float LayerAlpha(HexTileView tile, string layerName)
+        {
+            var layer = tile.CornerHighlight.transform.Find(layerName);
+            Assert.That(layer, Is.Not.Null, "The mark has a layer named " + layerName + ".");
+            var renderer = layer.GetComponent<MeshRenderer>();
+            Assert.That(renderer, Is.Not.Null);
+            var block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            return block.GetColor("_BaseColor").a;
         }
 
         private HexTileView Tile(HexCoordinate coordinate)

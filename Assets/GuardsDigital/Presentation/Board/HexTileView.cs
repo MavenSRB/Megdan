@@ -277,7 +277,8 @@ namespace GuardsDigital.Presentation.Board
         public void SetCornerHighlighted(
             HexCornerHighlightKind kind,
             bool hovered,
-            HexCornerHighlightKind contributionKind = HexCornerHighlightKind.None)
+            HexCornerHighlightKind contributionKind = HexCornerHighlightKind.None,
+            BoardTargetOutlineSide outlineSide = BoardTargetOutlineSide.None)
         {
             var highlight = CornerHighlight;
             if (highlight == null)
@@ -287,7 +288,7 @@ namespace GuardsDigital.Presentation.Board
                 throw new System.InvalidOperationException("The tile has no shared corner-highlight template.");
             }
 
-            highlight.Set(kind, hovered, contributionKind);
+            highlight.Set(kind, hovered, contributionKind, outlineSide);
         }
 
         private void ApplyRim(bool highlighted, Material rimMaterial)

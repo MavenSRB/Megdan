@@ -87,6 +87,15 @@ namespace GuardsDigital.Presentation.Units.Minions
                 BoardTargetFootprintKind.Circular);
         }
 
+        /// <summary>
+        /// Milestone 8.62. Whether this piece is currently drawn as something a fitted ring can be
+        /// measured against - see <see cref="BoardTargetRing.CanFit"/>. A minion whose sprite the art
+        /// catalog has not supplied keeps the corner marks on its space and wears no ring.
+        /// </summary>
+        public bool CanWearATargetCue =>
+            BoardTargetRing.CanFit(
+                GetComponent<SpriteRenderer>(), BoardTargetFootprintKind.Circular);
+
         private BoardTargetRing EnsureTargetRing() =>
             targetRing != null ? targetRing : targetRing = BoardTargetRing.GetOrCreate(transform);
 

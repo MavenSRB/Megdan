@@ -132,6 +132,14 @@ namespace GuardsDigital.Presentation.Board
                 BoardTargetFootprintKind.ConvexMeshBase);
         }
 
+        /// <summary>
+        /// Milestone 8.62. Whether this piece is currently drawn as something a fitted ring can be
+        /// measured against - see <see cref="BoardTargetRing.CanFit"/>.
+        /// </summary>
+        public bool CanWearATargetCue =>
+            BoardTargetRing.CanFit(
+                GetComponent<MeshRenderer>(), BoardTargetFootprintKind.ConvexMeshBase);
+
         private BoardTargetRing EnsureTargetRing() =>
             targetRing != null ? targetRing : targetRing = BoardTargetRing.GetOrCreate(transform);
 

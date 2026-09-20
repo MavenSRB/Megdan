@@ -32,6 +32,26 @@ namespace GuardsDigital.Tests.PlayMode
 {
     public sealed class MinimalHexGridPlayModeTests
     {
+
+        /// <summary>
+        /// Milestone 8.62. This fixture's cue cases are about the fitted PIECE RING - its geometry,
+        /// its retained resources, its fit to a footprint - and the user settled on the hex outline
+        /// for configured play ("I like this. Keep it."). The ring is not deleted, it is switched
+        /// off, so the cases that measure it say which treatment they are measuring and put the
+        /// shipped one back.
+        /// </summary>
+        private BoardTargetCueTreatment restoreCueTreatment;
+
+        [SetUp]
+        public void MeasureTheRingTreatment()
+        {
+            restoreCueTreatment = BoardTargetCuePresentation.Treatment;
+            BoardTargetCuePresentation.Treatment = BoardTargetCueTreatment.RingOnThePiece;
+        }
+
+        [TearDown]
+        public void RestoreTheShippedCueTreatment() =>
+            BoardTargetCuePresentation.Treatment = restoreCueTreatment;
         [UnityTest]
         public IEnumerator Scene_LoadsCompleteSelectedMapPresentationUnderFramedFixedCamera()
         {
@@ -2880,7 +2900,8 @@ namespace GuardsDigital.Tests.PlayMode
 
             var ring = hero.TargetRing;
             Assert.That(ring, Is.Not.Null);
-            Assert.That(ring.IsVisible, Is.True);
+            Assert.That(ring.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.Eligible));
             Assert.That(hero.TargetConsequenceIntent,
                 Is.EqualTo(BoardTargetConsequenceIntent.Affect));
@@ -2949,8 +2970,12 @@ namespace GuardsDigital.Tests.PlayMode
             var ring = heroView.TargetRing;
             Assert.That(runtime.BoardView.Model.PieceTargetCues.Single().Target,
                 Is.EqualTo(targetReference));
-            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(ring.IsVisible, Is.False);
+            // Milestone 8.62, at the user's direction: the named PIECE wears the cue, and its hex
+            // keeps the neutral corner language this test was written for.
+            Assert.That(heroView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(ring.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(target.Coordinate)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Effect));
@@ -2976,8 +3001,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(heroView.Occupancy.Coordinate, Is.EqualTo(movedTo));
             Assert.That(heroView.TargetRing, Is.SameAs(ring));
-            Assert.That(ring.IsVisible, Is.False);
-            Assert.That(heroView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(ring.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
+            Assert.That(heroView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(movedTo)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Effect),
@@ -3112,13 +3139,18 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return new WaitForEndOfFrame();
 
+            // Milestone 8.62, at the user's direction, and this block USED TO SAY the opposite:
+            // "Configured play uses no fitted piece ring for any board-choice family." Five pieces
+            // are named by the five cues above, and five fitted rings are what a player now sees on
+            // them; the six corner marks on their spaces are unchanged below.
             var rings = Object.FindObjectsByType<BoardTargetRing>()
                 .Where(value => value.IsVisible)
                 .ToArray();
-            Assert.That(rings, Is.Empty,
-                "Configured play uses no fitted piece ring for any board-choice family.");
+            Assert.That(rings, Has.Length.EqualTo(cues.Length),
+                "Every piece the projection names wears its own fitted ring.");
             Assert.That(runtime.BoardView.TokenViews.Single(value =>
-                value.BoundTokenId.Equals(token.Id)).TargetRing.IsVisible, Is.False);
+                value.BoundTokenId.Equals(token.Id)).TargetRing.IsVisible,
+                    Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             var movementCorner = runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(destination)).CornerHighlight;
             Assert.That(movementCorner.Kind, Is.EqualTo(HexCornerHighlightKind.Movement));
@@ -3250,7 +3282,9 @@ namespace GuardsDigital.Tests.PlayMode
                     Has.All.Matches<HexCornerHighlight>(value => value.VisibleMarkCount == 6));
                 Assert.That(available, Has.All.Matches<HexTileView>(value => !value.IsHighlighted));
                 Assert.That(runtime.BoardView.MinionViews.Single(value =>
-                    value.BoundMinionId.Equals(minion.MinionId)).TargetRing.IsVisible, Is.False);
+                    value.BoundMinionId.Equals(minion.MinionId)).TargetRing.IsVisible,
+                        Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece),
+                    "Milestone 8.62: the named piece wears its own ring beside the corner marks.");
                 Assert.That(heroAttack.IsHovered, Is.True);
                 Assert.That(movement.IsHovered, Is.False);
                 var stableBounds = heroAttack.LocalBounds;
@@ -3641,9 +3675,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "Attack carries its typed blood-red intent even though this live attack will defeat " +
                 "its target; it is distinct from Removal rather than predicted from the result.");
             var retainedRing = minion.TargetRing;
-            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(retainedRing.IsVisible, Is.False,
-                "Configured play retires the fitted piece ring for every board choice.");
+            // Milestone 8.62, at the user's direction, and this pair USED TO SAY "Configured play
+            // retires the fitted piece ring for every board choice." The piece the attack can take
+            // now wears the projection's own cue; the corner marks below are unchanged.
+            Assert.That(minion.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(tile.IsHighlighted, Is.False);
             Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
             Assert.That(tile.CornerHighlight.VisibleMarkCount, Is.EqualTo(6));
@@ -3679,10 +3717,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
             Assert.That(minion.TargetRing, Is.SameAs(retainedRing));
-            Assert.That(retainedRing.IsVisible, Is.False);
-            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
+            Assert.That(minion.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
             Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
-                "Undo restores the projected Attack through the blood-red corner language.");
+                "Undo restores the projected Attack on the piece and through the blood-red corner " +
+                "language on its space alike.");
 
             Assert.That(runtime.Restart(), Is.True);
             yield return null;
@@ -3701,10 +3742,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetMinionIds, Does.Contain(targetId));
             Assert.That(minion.gameObject.activeSelf, Is.True);
             Assert.That(minion.TargetRing, Is.SameAs(retainedRing));
-            Assert.That(retainedRing.IsVisible, Is.False);
-            Assert.That(minion.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
+            Assert.That(minion.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
             Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
-                "and snapshot restore restores the blood-red corner cue with the choice.");
+                "and snapshot restore restores both cues with the choice.");
             Assert.That(pointerInput.TryHandlePointerRay(DownRay(minion.transform.position)), Is.True);
             yield return null;
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
@@ -3745,8 +3788,11 @@ namespace GuardsDigital.Tests.PlayMode
                     $" active={value.gameObject.activeSelf}")) +
                 $"; heroes on board: {string.Join(", ", runtime.Heroes.Select(value => value.HeroId.Value))}.");
             var heroRing = hero.TargetRing;
-            Assert.That(hero.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(heroRing.IsVisible, Is.False);
+            // Milestone 8.62: the targeted hero wears the cue.
+            Assert.That(hero.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(heroRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(hero.Occupancy.Coordinate)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack));
@@ -4416,10 +4462,15 @@ namespace GuardsDigital.Tests.PlayMode
                 value.BoundMinionId.Equals(blue[1].MinionId));
             var firstRing = firstView.TargetRing;
             var secondRing = secondView.TargetRing;
-            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(firstRing.IsVisible, Is.False);
-            Assert.That(secondRing.IsVisible, Is.False);
+            // Milestone 8.62: each candidate piece wears the removal cue, beside the corner marks.
+            Assert.That(firstView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(secondView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(firstRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
+            Assert.That(secondRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Where(value =>
                     value.Coordinate.Equals(blue[0].Coordinate) ||
                     value.Coordinate.Equals(blue[1].Coordinate)),
@@ -4472,12 +4523,18 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.MinionChoiceView.Model.Candidates.Single().IsSelected, Is.True);
             Assert.That(runtime.MinionChoiceView.Model.ConfirmInvocation.Command.Kind,
                 Is.EqualTo(DirectorCommandKind.ConfirmMinionBattleRemovals));
-            Assert.That(firstView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(secondView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62: the chosen one is SELECTED and the other stays Eligible - one
+            // retained cue per piece, changing state in place.
+            Assert.That(firstView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)));
+            Assert.That(secondView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
             Assert.That(firstView.TargetRing, Is.SameAs(firstRing));
             Assert.That(secondView.TargetRing, Is.SameAs(secondRing));
-            Assert.That(firstRing.IsVisible, Is.False);
-            Assert.That(secondRing.IsVisible, Is.False);
+            Assert.That(firstRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
+            Assert.That(secondRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Where(value =>
                     value.Coordinate.Equals(blue[0].Coordinate) ||
                     value.Coordinate.Equals(blue[1].Coordinate)),
@@ -4736,8 +4793,11 @@ namespace GuardsDigital.Tests.PlayMode
                 });
             yield return null;
             var retainedRing = blueView.TargetRing;
-            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(retainedRing.IsVisible, Is.False);
+            // Milestone 8.62: the named piece wears the cue.
+            Assert.That(blueView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(blueView.Occupancy.Coordinate)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
@@ -4785,8 +4845,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(blueView.Occupancy.Coordinate, Is.EqualTo(returnedCoordinate),
                 "Respawn, Undo, or restore reuses and repositions the configured hero view.");
             Assert.That(blueView.TargetRing, Is.SameAs(retainedRing));
-            Assert.That(blueView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(blueView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(returnedCoordinate)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Effect),
@@ -4822,7 +4884,9 @@ namespace GuardsDigital.Tests.PlayMode
             // with the rest and disposed with the rest, which is what this case actually guards -
             // that the set is bounded and released, not that it is forever exactly eighteen.
             // The 210 tiles retain renderers only; none owns a material or mesh of its own.
-            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(20));
+            // Milestone 8.62's hex-outline cue adds SIX more: two full-edge outline meshes and
+            // four side-coloured materials. Built with the rest, released with the rest.
+            Assert.That(first.OwnedHighlightNativeResourceCount, Is.EqualTo(26));
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(first);
@@ -4849,8 +4913,8 @@ namespace GuardsDigital.Tests.PlayMode
                 Has.All.Matches<Material>(value => value == null),
                 "The runtime Destroy branch releases keyline, consequence, and wash materials.");
             var second = Root();
-            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(20),
-                "and a reload rebuilds the same bounded twenty rather than accumulating them.");
+            Assert.That(second.OwnedHighlightNativeResourceCount, Is.EqualTo(26),
+                "and a reload rebuilds the same bounded set rather than accumulating them.");
             Assert.That(CountHighlightMaterials(), Is.Zero);
             Assert.That(CountResultingSpaceMaterials(), Is.Zero);
             AssertCurrentMinionBindings(second);

@@ -57,6 +57,13 @@ namespace GuardsDigital.Presentation.Board
     {
         public const int EligibleSegmentCount = 8;
         public const int HoverTickCount = 4;
+
+        // Milestone 8.62, at the user's direction on the photographs of the widened ring: "actually,
+        // just keep the previous shape, and use the new color for the outline. Don't color on the
+        // inside." These three are therefore the shapes the cue has always had - eight segments at
+        // 0.11, a double ring at 0.055, a solid 0.11 with four ticks - and what changed is that the
+        // ring is DRAWN at all (see `BoardInteractionUnityView`), in the blood red it always
+        // declared.
         public const float EligibleWidth = 0.11f;
         public const float SelectedWidth = 0.055f;
         public const float SelectedGap = 0.03f;
@@ -65,9 +72,23 @@ namespace GuardsDigital.Presentation.Board
         public const float HoverTickWidth = 0.07f;
         public const float KeylineWidth = 0.018f;
         public const float BoardSurfaceOffset = 0.028f;
-        public const float EligibleWashAlpha = 0.18f;
-        public const float SelectedWashAlpha = 0.23f;
-        public const float HoverWashAlpha = BoardOverlayMaterial.OverlayAlpha;
+
+        // Milestone 8.62, at the user's direction, and THERE IS NO WASH ANY MORE.
+        //
+        // They asked first for a target that could be seen - "can you make targeting highlights more
+        // visible, they are almost impossible to see like this.. Blood red light instead of this pink
+        // i think." - and the piece cue came back with its ring AND a 0.40 blood-red wash of the
+        // piece's own footprint. Looking at that: "I like the new outline, but coloring on the inside
+        // is a bit too much", and then the settled word: "actually, just keep the previous shape, and
+        // use the new color for the outline. Don't color on the inside."
+        //
+        // So the three reserved wash alphas are zero and the wash geometry is not built at all: the
+        // RING carries the cue, at the piece's own shape, and the artwork inside it is the artwork.
+        // The wash material is retained (one cue owns four native resources, and a later treatment
+        // may want it back) but it paints nothing.
+        public const float EligibleWashAlpha = 0f;
+        public const float SelectedWashAlpha = 0f;
+        public const float HoverWashAlpha = 0f;
         public const float PieceWashSurfaceOffset = 0.004f;
 
         private const int ArcSubdivisions = 4;
@@ -244,6 +265,43 @@ namespace GuardsDigital.Presentation.Board
                 centre.z)).y;
             RebuildMesh(state, outline, washSurface);
             meshRenderer.enabled = true;
+        }
+
+        /// <summary>
+        /// Milestone 8.62. Whether a piece drawn by this renderer has a footprint a ring can be
+        /// fitted to at all.
+        ///
+        /// <para>It exists because the cue is now applied to every piece the projection names, and a
+        /// piece can legitimately have nothing to measure: a minion whose sprite the art catalog has
+        /// not supplied, a view configured outside a loaded scene. <see cref="SetCue"/> refuses such
+        /// a footprint LOUDLY - a ring fitted to nothing would silently mark nothing - so the caller
+        /// asks first and leaves that piece to the corner marks on its space.</para>
+        /// </summary>
+        public static bool CanFit(Renderer footprint, BoardTargetFootprintKind footprintKind)
+        {
+            if (footprint == null)
+            {
+                return false;
+            }
+
+            var radius = Mathf.Max(footprint.bounds.extents.x, footprint.bounds.extents.z);
+            if (footprintKind == BoardTargetFootprintKind.Circular &&
+                footprint is SpriteRenderer spriteRenderer)
+            {
+                if (spriteRenderer.sprite == null)
+                {
+                    return radius > 0f && !float.IsNaN(radius) && !float.IsInfinity(radius);
+                }
+
+                var spriteBounds = spriteRenderer.sprite.bounds;
+                radius = Mathf.Max(
+                    spriteRenderer.transform.TransformVector(
+                        Vector3.right * spriteBounds.extents.x).magnitude,
+                    spriteRenderer.transform.TransformVector(
+                        Vector3.up * spriteBounds.extents.y).magnitude);
+            }
+
+            return radius > 0f && !float.IsNaN(radius) && !float.IsInfinity(radius);
         }
 
         public static string Describe(
@@ -528,7 +586,13 @@ namespace GuardsDigital.Presentation.Board
             var consequenceTriangles = new List<int>();
             var washTriangles = new List<int>();
 
-            AddPieceWash(vertices, washTriangles, outline, washSurface);
+            // Milestone 8.62, at the user's direction: "Don't color on the inside." A zero wash is
+            // not drawn at all rather than drawn invisibly, so the piece's own artwork is never
+            // behind a transparent quad.
+            if (WashAlpha(state) > 0f)
+            {
+                AddPieceWash(vertices, washTriangles, outline, washSurface);
+            }
 
             switch (state)
             {

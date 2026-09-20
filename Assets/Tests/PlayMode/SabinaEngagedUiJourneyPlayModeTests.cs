@@ -170,7 +170,9 @@ namespace GuardsDigital.Tests.PlayMode
             var partnerId = partner.Occupancy.MinionId;
             var partnerAt = partner.Occupancy.Coordinate;
             var swapNode = StandingNode(runtime);
-            Assert.That(partner.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62: the offered piece wears its own cue - an ally, in the ally colour.
+            Assert.That(partner.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
             Assert.That(Tile(partnerAt).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Ally),
                 "The friendly swap partner uses the warm teammate corners where it stands.");

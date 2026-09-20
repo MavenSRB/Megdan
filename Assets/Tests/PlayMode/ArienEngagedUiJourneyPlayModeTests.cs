@@ -136,7 +136,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
             var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
             var minionView = MinionView(targetId);
-            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62, at the user's direction: the PIECE wears the cue too now, not only the
+            // space it stands on ("can you make targeting highlights more visible").
+            Assert.That(minionView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(minionView.TargetRing.ConsequenceIntent,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetConsequenceIntent.Attack)));
             Assert.That(Tile(minionView.Occupancy.Coordinate).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
                 "The one legal Attack target carries blood-red corners where it stands.");

@@ -33,6 +33,26 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class MinionCorrectionPlayModeTests
     {
+
+        /// <summary>
+        /// Milestone 8.62. This fixture's cue cases are about the fitted PIECE RING - its geometry,
+        /// its retained resources, its fit to a footprint - and the user settled on the hex outline
+        /// for configured play ("I like this. Keep it."). The ring is not deleted, it is switched
+        /// off, so the cases that measure it say which treatment they are measuring and put the
+        /// shipped one back.
+        /// </summary>
+        private BoardTargetCueTreatment restoreCueTreatment;
+
+        [SetUp]
+        public void MeasureTheRingTreatment()
+        {
+            restoreCueTreatment = BoardTargetCuePresentation.Treatment;
+            BoardTargetCuePresentation.Treatment = BoardTargetCueTreatment.RingOnThePiece;
+        }
+
+        [TearDown]
+        public void RestoreTheShippedCueTreatment() =>
+            BoardTargetCuePresentation.Treatment = restoreCueTreatment;
         [UnityTest]
         public IEnumerator Scene_CorrectionPromptRidesTheConfiguredMinionChoiceViews()
         {
@@ -173,8 +193,13 @@ namespace GuardsDigital.Tests.PlayMode
             var subjectView = runtime.BoardView.MinionViews.Single(value =>
                 value.BoundMinionId.Equals(subject.MinionId));
             var subjectRing = subjectView.TargetRing;
-            Assert.That(subjectView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(subjectRing.IsVisible, Is.False);
+            // Milestone 8.62, at the user's direction: the piece a projected cue names wears it. This
+            // model carries one, so the correction's subject is ringed where it stands and the neutral
+            // corner marks below still mark its space.
+            Assert.That(subjectView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)));
+            Assert.That(subjectRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(subject.Coordinate)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Effect),
@@ -226,7 +251,11 @@ namespace GuardsDigital.Tests.PlayMode
             runtime.MinionChoicePresenter.Refresh();
             yield return null;
             Assert.That(runtime.MinionChoiceView.Model, Is.Null);
-            Assert.That(subjectView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // The BOARD has not been re-rendered yet, so it still carries the staged cue - on the
+            // piece since 8.62 and on the hex as before. The authoritative rebuild below is what
+            // clears both, which is the point of the two assertions after it.
+            Assert.That(subjectView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(subject.Coordinate)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Effect));

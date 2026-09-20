@@ -56,7 +56,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Does.Contain(waspId),
                 "The enemy hero must be reachable at the printed Range 2.");
             var waspView = HeroView(waspId);
-            Assert.That(waspView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62: the targeted PIECE wears the cue now, not only its space.
+            Assert.That(waspView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(waspView.TargetRing.ConsequenceIntent,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetConsequenceIntent.Attack)));
             Assert.That(Tile(waspView.Occupancy.Coordinate).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
                 "and must carry blood-red corners where they stand before the click.");

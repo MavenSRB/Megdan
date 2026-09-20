@@ -137,8 +137,19 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.62, at the user's direction, and this test USED TO SAY THE OPPOSITE - it was
+        /// called "uses its hex corners and never reactivates the retired piece ring".
+        ///
+        /// <para>8.30h routed every board choice into the occupied hex's six corner marks and left the
+        /// fitted piece ring built, projected and never drawn. On 2026-09-19 the user looked at an
+        /// attack's targets in the packaged build: "can you make targeting highlights more visible,
+        /// they are almost impossible to see like this.. Blood red light instead of this pink i
+        /// think." A piece now wears the cue the projection has been computing for it all along, and
+        /// the hex corners are unchanged - the two together are the target.</para>
+        /// </summary>
         [Test]
-        public void ATargetedToken_UsesItsHexCornersAndNeverReactivatesTheRetiredPieceRing()
+        public void ATargetedToken_WearsItsOwnRingAndItsHexCornersFromOneProjectedCue()
         {
             var space = new HexCoordinate(1, 0);
             using (var board = new TokenBoard(space))
@@ -149,7 +160,8 @@ namespace GuardsDigital.Tests.EditMode
                 var ring = view.TargetRing;
                 var retainedMesh = ring.GeneratedMesh;
 
-                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(view.TargetCueState,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.None)));
                 Assert.That(ring.IsVisible, Is.False);
 
                 board.Render(2, new[] { token },
@@ -158,9 +170,15 @@ namespace GuardsDigital.Tests.EditMode
                         BoardTargetCueState.Eligible,
                         BoardTargetConsequenceIntent.Affect));
 
-                Assert.That(view.TargetRing, Is.SameAs(ring));
-                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-                Assert.That(ring.IsVisible, Is.False);
+                Assert.That(view.TargetRing, Is.SameAs(ring),
+                    "One retained cue changes state in place rather than being rebuilt.");
+                Assert.That(view.TargetCueState,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+                Assert.That(ring.ConsequenceIntent,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(
+                        BoardTargetConsequenceIntent.Affect)));
+                Assert.That(ring.IsVisible,
+                    Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
                 Assert.That(board.View.TileViews.Single().CornerHighlight.Kind,
                     Is.EqualTo(HexCornerHighlightKind.Effect));
 
@@ -171,8 +189,13 @@ namespace GuardsDigital.Tests.EditMode
                         BoardTargetConsequenceIntent.Removal));
 
                 Assert.That(view.TargetRing, Is.SameAs(ring));
-                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-                Assert.That(ring.IsVisible, Is.False);
+                Assert.That(view.TargetCueState,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)));
+                Assert.That(ring.ConsequenceIntent,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(
+                        BoardTargetConsequenceIntent.Removal)));
+                Assert.That(ring.IsVisible,
+                    Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
                 Assert.That(board.View.TileViews.Single().CornerHighlight.Kind,
                     Is.EqualTo(HexCornerHighlightKind.Attack));
 
@@ -180,7 +203,9 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(view.TargetRing, Is.SameAs(ring));
                 Assert.That(ring.GeneratedMesh, Is.SameAs(retainedMesh));
-                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None),
+                    "and a projection with no cue for this piece clears it rather than leaving a " +
+                    "stale ring standing.");
                 Assert.That(ring.IsVisible, Is.False);
                 Assert.That(board.View.TileViews.Single().CornerHighlight.Kind,
                     Is.EqualTo(HexCornerHighlightKind.None));
@@ -205,13 +230,15 @@ namespace GuardsDigital.Tests.EditMode
                         BoardTargetConsequenceIntent.Removal));
                 var view = board.View.TokenViews.Single();
                 var ring = view.TargetRing;
-                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(view.TargetCueState,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)));
                 Assert.That(board.View.TileViews.Single().CornerHighlight.Kind,
                     Is.EqualTo(HexCornerHighlightKind.Attack));
 
                 board.Render(2);
 
-                Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(view.TargetCueState,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.None)));
                 Assert.That(ring.IsVisible, Is.False);
                 Assert.That(board.View.TileViews.Single().CornerHighlight.Kind,
                     Is.EqualTo(HexCornerHighlightKind.None));

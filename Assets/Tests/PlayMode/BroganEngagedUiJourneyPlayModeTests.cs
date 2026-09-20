@@ -77,7 +77,11 @@ namespace GuardsDigital.Tests.PlayMode
             var targetId = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.Single();
             var minionView = MinionView(targetId);
             var vacated = minionView.Occupancy.Coordinate;
-            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62: the targeted PIECE wears the cue now, not only its space.
+            Assert.That(minionView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(minionView.TargetRing.ConsequenceIntent,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetConsequenceIntent.Attack)));
             Assert.That(Tile(vacated).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
                 "The one legal Attack target carries blood-red corners before a player clicks it.");
@@ -520,7 +524,11 @@ namespace GuardsDigital.Tests.PlayMode
                 "Presentation composes no option of its own: one control per projected payment.");
             Assert.That(drawn.Decline, Is.Not.Null, "and declining is always drawn.");
             var subjectMinionView = MinionView(prompt.SubjectMinionId);
-            Assert.That(subjectMinionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62: the threatened piece wears the removal cue itself.
+            Assert.That(subjectMinionView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(subjectMinionView.TargetRing.ConsequenceIntent,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetConsequenceIntent.Removal)));
             Assert.That(Tile(subjectMinionView.Occupancy.Coordinate).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
                 "The threatened minion is identified by blood-red removal corners on its hex.");

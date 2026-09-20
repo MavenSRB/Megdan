@@ -95,9 +95,14 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(view.MinionViews, Is.EquivalentTo(new[] { replacement }));
                 Assert.That(replacementObject.activeSelf, Is.True);
-                Assert.That(replacement.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-                Assert.That(replacement.TargetRing.IsVisible, Is.False,
-                    "Milestone 8.30h retired the fitted piece ring from configured target cues.");
+                // Milestone 8.62, at the user's direction: the piece carries the projection's own cue
+                // again ("they are almost impossible to see like this"), and a REPLACEMENT view is
+                // reconciled into the standing projection, cue included.
+                Assert.That(replacement.TargetCueState,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+                Assert.That(replacement.TargetRing.IsVisible,
+                    Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece),
+                    "A rebound view draws the standing cue rather than waiting for the next change.");
                 Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
                     "A replacement view is rebound before its identity-keyed blood-red corners redraw.");
                 Assert.That(selector.TrySelectFromPointerRay(
@@ -170,9 +175,18 @@ namespace GuardsDigital.Tests.EditMode
                     }));
 
                 var ring = minion.TargetRing;
-                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.None));
-                Assert.That(ring.IsVisible, Is.False,
-                    "Configured piece targeting no longer activates the retained legacy ring.");
+                // Milestone 8.62, at the user's direction, reversing 8.30h for this one cue: the
+                // targeted PIECE is ringed and washed in the operation's own colour, and the hex's
+                // six corner marks below are exactly what they were.
+                Assert.That(ring.State,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+                Assert.That(ring.ConsequenceIntent,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(
+                        BoardTargetConsequenceIntent.Attack)));
+                Assert.That(ring.IsVisible,
+                    Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece),
+                    "The piece a player has to find is named on its own space now: " +
+                    "the six marks below carry the cue, in the target's own side colour.");
                 Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack));
                 Assert.That(tile.CornerHighlight.VisibleMarkCount, Is.EqualTo(6));
                 Assert.That(spriteRenderer.sprite, Is.SameAs(sourceSprite));
@@ -206,7 +220,11 @@ namespace GuardsDigital.Tests.EditMode
                     }));
 
                 Assert.That(minion.TargetRing, Is.SameAs(ring));
-                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(ring.State,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)));
+                Assert.That(ring.ConsequenceIntent,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(
+                        BoardTargetConsequenceIntent.Removal)));
                 Assert.That(tile.CornerHighlight.Kind, Is.EqualTo(HexCornerHighlightKind.Attack),
                     "Selected removal retains the shared blood-red corner language.");
 
@@ -221,7 +239,8 @@ namespace GuardsDigital.Tests.EditMode
 
                 Assert.That(minionObject.activeSelf, Is.False);
                 Assert.That(minion.TargetRing, Is.SameAs(ring));
-                Assert.That(ring.State, Is.EqualTo(BoardTargetCueState.None));
+                Assert.That(ring.State,
+                    Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.None)));
                 Assert.That(ring.IsVisible, Is.False,
                     "Removal clears the retained cue before the piece view is deactivated.");
                 Assert.That(tile.IsHighlighted, Is.False);

@@ -59,7 +59,17 @@ namespace GuardsDigital.Tests.PlayMode
             var minionView = Object.FindObjectsByType<StandardMinionView>()
                 .Single(view => view.Occupancy != null &&
                     view.Occupancy.MinionId.Equals(targetId));
-            Assert.That(minionView.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            // Milestone 8.62, at the user's direction. This assertion USED TO SAY `None`: 8.30h routed
+            // every board choice into the hex's six corner marks and left the fitted piece ring built
+            // and never drawn, so a targeted minion was marked only by the sand around it - "they are
+            // almost impossible to see like this". The piece now wears the projection's own cue, and
+            // the corner marks below are unchanged.
+            Assert.That(minionView.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(minionView.TargetRing.ConsequenceIntent,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetConsequenceIntent.Attack)));
+            Assert.That(minionView.TargetRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(Object.FindObjectsByType<HexTileView>().Single(value =>
                     value.Coordinate.Equals(minionView.Occupancy.Coordinate)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack));

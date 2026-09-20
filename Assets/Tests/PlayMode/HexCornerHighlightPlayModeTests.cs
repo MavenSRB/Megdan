@@ -96,7 +96,11 @@ namespace GuardsDigital.Tests.PlayMode
                 // Milestone 8.35z39: eighteen plus the two saturated-core materials the composite
                 // mark needs now that halos are light. What this case guards is that four rebuilds
                 // grow the set by NOTHING, which is unchanged - the bound simply moved once.
-                Assert.That(template.OwnedNativeResourceCount, Is.EqualTo(20));
+                // Milestone 8.62's hex-outline cue adds SIX: two full-edge outline meshes
+                // and the four materials (light and paint) of the two sides the user named - "blood
+                // red on enemy, green on ally". They are built with the rest and released with the
+                // rest, which is what this case guards; the bound simply moved a second time.
+                Assert.That(template.OwnedNativeResourceCount, Is.EqualTo(26));
                 Assert.That(new[] { movement, heroTile, minionTile }
                     .Select(tile => tile.GetComponentsInChildren<MeshRenderer>(true).Length),
                     Is.EqualTo(layerCounts));

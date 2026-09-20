@@ -42,6 +42,26 @@ namespace GuardsDigital.Tests.PlayMode
     /// </summary>
     public sealed class PlacedTokenPlayModeTests
     {
+
+        /// <summary>
+        /// Milestone 8.62. This fixture's cue cases are about the fitted PIECE RING - its geometry,
+        /// its retained resources, its fit to a footprint - and the user settled on the hex outline
+        /// for configured play ("I like this. Keep it."). The ring is not deleted, it is switched
+        /// off, so the cases that measure it say which treatment they are measuring and put the
+        /// shipped one back.
+        /// </summary>
+        private BoardTargetCueTreatment restoreCueTreatment;
+
+        [SetUp]
+        public void MeasureTheRingTreatment()
+        {
+            restoreCueTreatment = BoardTargetCuePresentation.Treatment;
+            BoardTargetCuePresentation.Treatment = BoardTargetCueTreatment.RingOnThePiece;
+        }
+
+        [TearDown]
+        public void RestoreTheShippedCueTreatment() =>
+            BoardTargetCuePresentation.Treatment = restoreCueTreatment;
         private static readonly ActionDefinitionId FeintSkill =
             new ActionDefinitionId("primary-immunity-skill");
 
@@ -159,8 +179,12 @@ namespace GuardsDigital.Tests.PlayMode
             var marked = runtime.BoardView.TokenViews.Single(value =>
                 value.BoundTokenId.Equals(target.TokenId));
             var retainedRing = marked.TargetRing;
-            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(retainedRing.IsVisible, Is.False);
+            // Milestone 8.62, at the user's direction: the piece the projection names wears its own
+            // cue. This token is an ally-coloured candidate, so it is ringed where it stands.
+            Assert.That(marked.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Ally));
@@ -171,8 +195,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.EffectChoiceTargetSpace, Is.EqualTo(placed));
             Assert.That(marked.TargetRing, Is.SameAs(retainedRing),
                 "Pointing changes one retained cue instance rather than building another.");
-            Assert.That(retainedRing.IsVisible, Is.False);
-            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
+            Assert.That(marked.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Ally));
@@ -184,8 +210,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.BoardView.Model.PieceTargetCues.Single(value =>
                     value.Target.Equals(targetReference)).State,
                 Is.EqualTo(BoardTargetCueState.Eligible));
-            Assert.That(marked.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(retainedRing.IsVisible, Is.False);
+            Assert.That(marked.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(retainedRing.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Ally));
@@ -247,8 +275,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(eligible.State, Is.EqualTo(BoardTargetCueState.Eligible));
             Assert.That(eligible.ConsequenceIntent,
                 Is.EqualTo(BoardTargetConsequenceIntent.Removal));
-            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
-            Assert.That(ring.IsVisible, Is.False);
+            // Milestone 8.62: the offered piece wears the removal cue itself.
+            Assert.That(view.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Eligible)));
+            Assert.That(ring.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack),
@@ -266,10 +297,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "The board click on the offered token must be claimed by the Clear selection.");
             yield return null;
 
-            Assert.That(view.TargetCueState, Is.EqualTo(BoardTargetCueState.None));
+            Assert.That(view.TargetCueState,
+                Is.EqualTo(BoardTargetCuePresentation.AsDrawn(BoardTargetCueState.Selected)),
+                "and a clicked candidate is the SELECTED state of the same retained cue.");
             Assert.That(view.TargetRing, Is.SameAs(ring),
                 "Selection does not build a second legacy cue.");
-            Assert.That(ring.IsVisible, Is.False);
+            Assert.That(ring.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(runtime.BoardView.TileViews.Single(value =>
                 value.Coordinate.Equals(placed)).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Attack));
@@ -308,7 +342,8 @@ namespace GuardsDigital.Tests.PlayMode
             var camera = Object.FindAnyObjectByType<Camera>();
             var ring = view.TargetRing;
             Assert.That(ring, Is.Not.Null);
-            Assert.That(ring.IsVisible, Is.True);
+            Assert.That(ring.IsVisible,
+                Is.EqualTo(BoardTargetCuePresentation.DrawsTheRingOnThePiece));
             Assert.That(Vector3.Dot(ring.transform.up, Vector3.up), Is.GreaterThan(0.99f),
                 "The ring lies flat on the board rather than standing edge-on.");
             var onScreen = camera.WorldToViewportPoint(ring.transform.position);
