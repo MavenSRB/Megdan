@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69f Brynn printed set completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69f | Brynn's nineteen definitions composed as one set under `brynn-8-69f-rev-1`: eighteen dealt, Home Turf boxed under p.20 with BR-05's band transcribed, the starting hand, the deck, the three ladders with their twelve items, the folded handler and decision-label aggregates (nineteen labels, ten of them found missing by deriving the requirement set), the unconsumed hero-subject predicate dropped, exactly three deferred ids left for the dealing. No registration, no pin moved, schema v43 and wire /19 unmoved. `BrynnPrintedSetTests` 19; full harness 4095/4095; focused Edit Mode 203/203. Landed as `13223e5f` (squash of `32dbf6ff` on `8.69f-printed-set`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869f-compose-brynns-printed-set). | `milestone/8.69f` |
+
 ## Milestone 8.69c Brynn Decoy and guides completion evidence
 
 | Milestone | Outcome and definition | Commit |
