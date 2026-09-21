@@ -249,6 +249,16 @@ Completed 2026-09-21 (`69f0bd3d`, squash-merged from `aa3ac093` on `8.72-delegat
 
 Historical evidence: [8.72 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-872-delegated-action-controls-completion-evidence).
 
+### [ ] 8.73 Package the twenty-one-hero playtest build
+
+Authorized 2026-09-21 by the user ("cut out the build"), after 8.72 closed the Hanu series and nothing further was queued for it.
+
+Outcome: `Builds/Playtest-8.71-hanu` and its zip, built from main at the 8.72 ceremony plus the version stamp by the 8.44 recipe (bundleVersion `1.0-8.71-hanu`, `Invoke-PlayerBuildSmoke.ps1`, the launcher batch, READ ME FIRST, PACKAGE MANIFEST, BUILD IDENTITY), launched once from its own folder.
+
+Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged tree; the packaged exe launches and reaches the lobby; the identity stamp names the commit; Brynn (8.69-8.69h), Hanu (8.71-8.71i; schema v44 and wire `/20`), the greyed empty modal bullet (8.70), the delegated action's controls on the deciding seat (8.72), the hero-pick filters (8.35z86) and the coin-award narration (8.35z73) are what the package ships.
+
+Non-goals: new gameplay beyond what main carries at the cut.
+
 ### [x] 8.68 Package the playtest build with the Silverarrow corrections
 
 Authorized 2026-09-20 by the user ("Cut a new build with the silverarrow fixes"), the same evening 8.66 and 8.67 landed after the 8.65 package was cut.
