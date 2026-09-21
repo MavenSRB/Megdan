@@ -1400,6 +1400,68 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess for a definition naming two heroes, for a scope that names a minion or a " +
                 "team member the same way, or for a binding that must survive the named hero " +
                 "leaving the board.")
+            ,
+
+            // Milestone 8.71b (appended at the squash-merge)
+            new SharedFoundationClaim(
+                "authorization.delegated-action",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Rules.CardResolution.DelegatedActionQuery),
+                    nameof(GuardsDigital.Core.Rules.CardResolution.DelegatedActionQuery.ForActor),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuUltimateTrickTests),
+                            nameof(HanuUltimateTrickTests
+                                .TheDecidingSeatIsOfferedTheWholeActionAndTheDelegatedSeatIsOfferedNothing),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a driven six-seat match at the moment a rewritten hero is the selected " +
+                        "actor: the deciding seat holds the whole offer and the acting seat holds " +
+                        "nothing at either of the two boundaries a surface reads"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuUltimateTrickTests),
+                            nameof(HanuUltimateTrickTests
+                                .EveryPendingFamilyIsClassified_AndTheDefensiveOnesAreNeverDelegated),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "each member of PendingDecisionFamilies named on exactly one of the two " +
+                        "lists, so a family nobody classified cannot join the delegation by " +
+                        "accident"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuUltimateTrickTests),
+                            nameof(HanuUltimateTrickTests
+                                .TheDelegationEndsWithTheRewriteAtEveryOneOfItsExits),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "one case per p.10 exit of the rewrite it is read from - resolved, " +
+                        "retrieved mid-action, discarded, retrieved at the round's end - and the " +
+                        "hero decides their own action again after each"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuUltimateTrickTests),
+                            nameof(HanuUltimateTrickTests
+                                .ADefeatedRewriter_DecidesNothingWhileTheRewriteStands),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "p.16's own lifetime, which is shorter than the rewrite's: the ability " +
+                        "goes with its hero and the rewritten icon stays on the card")
+                },
+                new[] { "card state", "authorization", "decision ownership", "lifetime", "seat" },
+                "One hero's next action performed by another hero's seat, derived from milestone " +
+                "8.71a's card-instance Initiative rewrite in the company of p.16's unlocked " +
+                "Ultimate declaring one named rule kind. It re-homes the action's start commands " +
+                "and the three decision families a hero answers because they are performing an " +
+                "action - Movement, Attack target and card-text choice - and it leaves p.14's " +
+                "Defense, p.13's respawn, the removal prompt, the turn release, the end-of-round " +
+                "transitions and every team-owned decision with the players the authority gave " +
+                "them. Nothing of it is stored, so schema v44 and wire guards-private-online/20 " +
+                "are unmoved and each seat derives the same answer from its own projection.",
+                "Reassess for a second Ultimate declaring this rule kind, for a card text that " +
+                "delegates something other than a whole action, for one whose delegation outlives " +
+                "the rewritten card's state change, or for a delegation that must reach a decision " +
+                "family this milestone left with its own player.")
         };
     }
 

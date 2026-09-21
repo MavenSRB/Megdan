@@ -1550,9 +1550,31 @@ namespace GuardsDigital.Application
             return Commitments.Single(value => value.HeroId.Equals(heroId));
         }
 
+        /// <summary>
+        /// A read-only copy of one authoritative card, carrying every fact about that card the
+        /// authority holds.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Milestone 8.71b fixed a shipped defect here, and it was 8.71a's.</b> This clone
+        /// dropped <see cref="CardInstance.InitiativeOverride"/>, so a printed Initiative rewritten
+        /// by Hanu the Trickster's Hurry up! reached the authority, the turn order and the snapshot
+        /// - and reached NOTHING that reads the projection. Three readers were silently answering
+        /// about a board that did not exist: <c>NetworkSeatProjection.WriteCards</c> wrote a
+        /// rewritten-Initiative block that was always empty, so no client ever learned the number
+        /// its own rail was about to be ordered by; <c>HeroOverviewPresentation</c> and
+        /// <c>KineticCuePresenter</c> read the un-rewritten printed icon through the same query
+        /// that would have returned the rewritten one; and <c>MatchHost.OpposingFingerprint</c>'s
+        /// own 8.71a term - the interaction wall's whole answer to a Hurry up! on an enemy -
+        /// compared a field that was never set, so the wall it was added to close stayed open.</para>
+        /// <para>It is fixed by carrying the fact rather than by teaching each reader to fetch it,
+        /// because the defect is that a COPY of a card was not a copy of that card. Every card fact
+        /// this type ever gains belongs on this line for the same reason.</para>
+        /// </remarks>
         private static CardInstance CloneCard(CardInstance card)
         {
-            return new CardInstance(card.Id, card.DefinitionReference, card.OwnerId, card.State);
+            return new CardInstance(
+                card.Id, card.DefinitionReference, card.OwnerId, card.State,
+                card.InitiativeOverride);
         }
 
         /// <summary>

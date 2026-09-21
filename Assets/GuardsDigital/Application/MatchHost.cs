@@ -1139,7 +1139,27 @@ namespace GuardsDigital.Application
                 var actorId = projection.PendingTurnRelease != null
                     ? projection.PendingTurnRelease.ActorId
                     : projection.SelectedActor.ActorId;
-                var actor = marker.Length == 0 ? null : CurrentSeats().FindByHero(actorId);
+
+                // Milestone 8.71b. The seat this turn's rewind belongs to is the seat that TAKES
+                // this turn's decisions, and under Hanu the Trickster's The Ultimate Trick those
+                // are not the same seat: the delegated hero submits nothing, so a rewind of theirs
+                // would step back through commands another player sent, and every command the
+                // deciding seat sends would otherwise raise the other-seat wall above itself and
+                // leave the whole delegated action unrewindable by anyone (HA-Q4).
+                //
+                // Read once, where the actor's seat is read, and not per command: the delegation
+                // stands for the whole of the action by construction - it ends when the action's
+                // card resolves - and a seat whose rewind appeared and vanished inside one turn
+                // would be a worse answer than either.
+                //
+                // What this does NOT relax is 8.42e's interaction wall. The fingerprint below is
+                // taken against the DECIDING seat's opponents, so a delegated ENEMY hero moving is
+                // a change to an opponent's own piece and walls the rewind exactly as any other
+                // interaction does; a delegated ALLY's action stays the deciding seat's to take
+                // back, which is the same line the user drew for a friendly buff.
+                var deciderId = GuardsDigital.Core.Rules.CardResolution.DelegatedActionQuery.DecidingHeroFor(
+                    projection.Definitions, projection.Cards, projection.Heroes, actorId);
+                var actor = marker.Length == 0 ? null : CurrentSeats().FindByHero(deciderId);
                 undoActorSeat = actor == null ? default : actor.Id;
                 undoAttackStanding = projection.HasPendingAttackResolution;
                 undoOpposingFingerprint = OpposingFingerprint(undoActorSeat);

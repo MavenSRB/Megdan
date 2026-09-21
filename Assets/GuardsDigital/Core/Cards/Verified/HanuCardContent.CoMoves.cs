@@ -150,7 +150,8 @@ namespace GuardsDigital.Core.Cards.Verified
                 .Concat(HurryUpDefinitions())
                 .Concat(RedDefinitions())
                 .Concat(GreenDefinitions())
-                .Concat(JourneyDefinitions());
+                .Concat(JourneyDefinitions())
+                .Concat(UltimateDefinitions());
         public static IReadOnlyList<CardDefinition> DealtDefinitions { get; } = Array.Empty<CardDefinition>();
         // ===== END MERGE BLOCK =====
     }

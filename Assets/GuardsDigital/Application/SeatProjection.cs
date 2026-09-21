@@ -952,8 +952,15 @@ namespace GuardsDigital.Application
                         card.State.Location == CardLocation.Deck)))
                 .ToArray();
 
+            // Milestone 8.71b. The seat that PERFORMS the selected actor's action, which is that
+            // hero's own seat unless Hanu the Trickster's The Ultimate Trick stands over it: "You
+            // choose the next action, and how it is performed for a hero you target with the
+            // 'Hurry Up!'." The delegated hero's own seat becomes a spectator of its own hero's
+            // action - it is offered nothing, because there is nothing it may submit - and the
+            // deciding seat is offered the offers, which is the whole of the printed sentence at
+            // this boundary.
             var isActor = source.IsTurnActive && source.SelectedActor.IsDefined &&
-                seat.Owns(source.SelectedActor.ActorId);
+                seat.Owns(DecidingActor(source));
 
             // Milestone 8.40f. The cards this seat may name, derived once here and handed to the
             // pending surface rather than recomputed there: the running effect frame published to a
@@ -985,7 +992,113 @@ namespace GuardsDigital.Application
         /// order of this method's choosing, is what keeps the two from disagreeing - and a family
         /// added without an owner rule fails loudly here instead of quietly belonging to nobody.
         /// </remarks>
-        public static PendingDecisionOwner OwnerOfStandingDecision(MatchSessionProjection source)
+        public static PendingDecisionOwner OwnerOfStandingDecision(MatchSessionProjection source) =>
+            Delegated(source, DeclaredOwnerOfStandingDecision(source));
+
+        /// <summary>
+        /// Milestone 8.71b. The delegation standing over the selected actor's own action, or
+        /// <see cref="DelegatedAction.None"/> - see <see cref="DelegatedActionQuery"/>.
+        /// </summary>
+        public static DelegatedAction DelegationOf(MatchSessionProjection source) =>
+            source == null
+                ? throw new ArgumentNullException(nameof(source))
+                : source.IsTurnActive && source.SelectedActor.IsDefined
+                    ? DelegatedActionQuery.ForActor(
+                        source.Definitions, source.Cards, source.Heroes,
+                        source.SelectedActor.ActorId)
+                    : DelegatedAction.None;
+
+        /// <summary>
+        /// Milestone 8.71b. The hero whose seat may start and answer the selected actor's action.
+        /// </summary>
+        public static HeroId DecidingActor(MatchSessionProjection source)
+        {
+            var delegation = DelegationOf(source);
+            return delegation.IsDefined
+                ? delegation.DecidingHeroId
+                : source.SelectedActor.ActorId;
+        }
+
+        /// <summary>
+        /// Milestone 8.71b. The families a delegated action re-homes to the deciding seat, and the
+        /// families it deliberately leaves where the authority put them.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>HA-Q3, as the user settled it on 2026-09-21.</b> The Ultimate hands over "the
+        /// next action, and how it is performed", which is the three families a hero answers
+        /// BECAUSE they are performing one: where their Movement goes, which unit their Attack
+        /// takes, and every question their card text asks THEM.</para>
+        /// <para>Every other family is named below rather than falling through, because a family
+        /// nobody classified would belong to the delegation by accident:
+        /// <list type="bullet">
+        /// <item><b>Defense</b> - the page's own exception, and the user's: a hero's answer to
+        /// somebody else's attack is never the action they are performing.</item>
+        /// <item><b>HeroRespawn</b> and <b>RemovalPrevention</b> - the same shape as a Defense.
+        /// They ask a hero about their own unit being removed, which is not how an action is
+        /// performed, and a hero defeated INSIDE their delegated action still answers their own
+        /// p.13 question.</item>
+        /// <item><b>TurnRelease</b> - milestone 8.35g's question is whether this player's TURN is
+        /// finished, asked after the action is over. It never reaches a delegation anyway: the
+        /// action that ends resolves the card, and the rewrite the delegation is read from ends
+        /// with it.</item>
+        /// <item><b>SystemTransition</b> - p.15's leveling and p.6's blocked-respawn Place, both
+        /// outside any action. The user's answer names end-of-round choices explicitly.</item>
+        /// <item><b>Initiative</b>, <b>MinionBattle</b> and <b>Correction</b> - team-owned, so
+        /// re-homing one would take a decision from three players the card does not mention. They
+        /// are also structurally out of reach, because only a single-hero owner is ever
+        /// re-homed.</item>
+        /// </list></para>
+        /// </remarks>
+        public static readonly IReadOnlyList<PendingDecisionFamilyId> DelegatedDecisionFamilies =
+            Array.AsReadOnly(new[]
+            {
+                PendingDecisionFamilies.Movement,
+                PendingDecisionFamilies.AttackTarget,
+                PendingDecisionFamilies.Effect
+            });
+
+        /// <summary>Milestone 8.71b. The families a delegation never re-homes, stated rather than omitted.</summary>
+        public static readonly IReadOnlyList<PendingDecisionFamilyId> UndelegatedDecisionFamilies =
+            Array.AsReadOnly(new[]
+            {
+                PendingDecisionFamilies.Initiative,
+                PendingDecisionFamilies.Defense,
+                PendingDecisionFamilies.Correction,
+                PendingDecisionFamilies.MinionBattle,
+                PendingDecisionFamilies.HeroRespawn,
+                PendingDecisionFamilies.SystemTransition,
+                PendingDecisionFamilies.RemovalPrevention,
+                PendingDecisionFamilies.TurnRelease
+            });
+
+        /// <summary>
+        /// Milestone 8.71b. The declared owner, re-homed to the deciding seat where a delegation
+        /// covers it.
+        /// </summary>
+        /// <remarks>
+        /// <para>It re-homes only a decision whose single owner IS the hero the delegation is
+        /// about, and the delegation is read against the SELECTED ACTOR - so a card text that names
+        /// a third hero as its chooser is untouched by construction. Hanu's own This Way! asks the
+        /// friendly hero for a distance on that hero's seat (milestone 8.71e); a delegation over
+        /// some other hero's turn must not swallow it, and cannot.</para>
+        /// </remarks>
+        private static PendingDecisionOwner Delegated(
+            MatchSessionProjection source, PendingDecisionOwner declared)
+        {
+            if (!declared.IsDefined || declared.IsTeamOwned || declared.HeroIds.Count != 1 ||
+                !DelegatedDecisionFamilies.Contains(declared.FamilyId))
+            {
+                return declared;
+            }
+
+            var delegation = DelegationOf(source);
+            return delegation.Delegates(declared.HeroIds[0])
+                ? PendingDecisionOwner.ForHero(declared.FamilyId, delegation.DecidingHeroId)
+                : declared;
+        }
+
+        private static PendingDecisionOwner DeclaredOwnerOfStandingDecision(
+            MatchSessionProjection source)
         {
             var contract = source.DecisionContract;
             if (contract == null)
@@ -1175,9 +1288,13 @@ namespace GuardsDigital.Application
                 return CommitmentCommands(source, seat);
             }
 
+            // Milestone 8.71b. The action's START commands - the primary, the secondary, p.12's
+            // Hold and p.11's Fast Travel and p.13's Clear replacements - go to the seat that
+            // DECIDES this actor's action rather than to the actor's own. With no delegation
+            // standing those are the same seat and this is the line it always was.
             if (!source.IsTurnActive ||
                 !source.SelectedActor.IsDefined ||
-                !seat.Owns(source.SelectedActor.ActorId))
+                !seat.Owns(DecidingActor(source)))
             {
                 return Array.Empty<DirectorCommand>();
             }
