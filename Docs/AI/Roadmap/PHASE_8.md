@@ -359,7 +359,7 @@ Completed 2026-09-20 (`3fd22c10`, squash-merged from `fe86a06a` on `8.66-silvera
 
 Historical evidence: [8.67 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-867-triggered-checkpoint-continuation-completion-evidence).
 
-### [ ] 8.70 Grey a modal bullet that has no legal target
+### [~] 8.70 Grey a modal bullet that has no legal target
 
 Authorized 2026-09-21 by the user, settling BR-Q19h in Brynn's shard: "Q19 i think we should gray it out if no legal targets." This reverses milestone 8.35z27's reading that choosing a bullet is always possible, for the four heroes whose modal Attacks share `attack-sequence@1`: Brynn's Familiar Ground, Bain's Hand Crossbow, Hunter-Seeker and Bounty Hunter, Dodger's Middlefinger of Death and Whisper's Swift Justice (Home Turf is parked).
 
