@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71b Hanu Ultimate Trick completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71b | The Ultimate Trick as a `PermanentDeclaration` read by the new `DelegatedActionQuery`: the delegation IS 8.71a's persisted, wired card-instance rewrite in the company of the unlocked Ultimate, so nothing new is stored, sent or persisted and every lapse (action complete, defeat, round end, Hold/Fast Travel/Clear) follows from the card's own resolution; `OwnerOfStandingDecision` re-homes the Movement, AttackTarget and Effect families, `AuthorizedCommands`/`isActor` read the deciding actor, the undo watermark follows the deciding seat. Shipped defect fixed: `MatchSessionProjection.CloneCard` dropped the Initiative override (wire block always empty, badge un-rewritten, 8.42e wall still open). No new handler type; schema v44 / wire /20 unmoved; HA-Q13b, HA-Q13c. `HanuUltimateTrickTests` 30 with falsification; harness 4216/4216; focused Edit Mode 564/564. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871b-support-the-ultimate-trick). | `ac76dd54` |
+
 ## Milestone 8.71d Hanu journeys completion evidence
 
 | Milestone | Outcome and definition | Commit |
