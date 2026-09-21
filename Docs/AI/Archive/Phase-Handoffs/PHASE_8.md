@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69e Brynn traps and grit completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69e | Bear Trap, Log Trap, Deadfall Trap, True Grit and Die Hard as deferred content on Brogan's modal, Misa's adjacent-enemy-hero binding, 8.69a's narrowed radius hero target and presence predicate, the discard-if-able and discard-or-defeat contracts, `retrieve-card@1` gaining the optional Boolean `attackCardsOnly` (p.9's Attack card read off the printed primary), and the conditional self-move. No handler type, no enum ordinal, no registration, no pin moved, schema v43 and wire /19 unmoved. `BrynnTrapAndGritTests` 23; harness 3994/3994 on its base; focused Edit Mode 62/62; merged tree compile-probed and focused-tested 101/101. Landed as `ebd62b5a` (squash of `a0d0cb55` on `8.69e-traps-grit`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869e-support-the-traps-and-the-grit). | `milestone/8.69e` |
+
 ## Milestone 8.69d Brynn tracking swaps completion evidence
 
 | Milestone | Outcome and definition | Commit |
