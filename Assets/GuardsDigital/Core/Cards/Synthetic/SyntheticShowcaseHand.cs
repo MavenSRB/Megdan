@@ -1532,6 +1532,111 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 deckItemSkillProfile: RedDeckItemSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.69g: the THREE handler types Brynn the Seeker's dealing registers, proved here
+        // on cards that are nobody's, on the division every dealing since 8.35z34 has drawn. They do
+        // NOT share a card: no printed face of his puts two of them in one sentence, and the grouping
+        // rule this file follows joins two contracts only when one face does.
+        //
+        // TWO are questions a Skill can ask and ONE needs an enclosing Attack to be about, which is
+        // the same split milestone 8.35z53's four took: `brynn-attack-target-was-adjacent-to-
+        // obstacles@1` reads the target the running Attack BOUND, so a Skill would have nothing to ask
+        // it about and would only ever prove the refusal. It is therefore an "After the attack:" rider
+        // beside milestone 8.35z50's survival one, whose shape it copies exactly.
+        //
+        // BOTH SKILLS PRINT A RADIUS 3, and that is load-bearing rather than decoration: both of the
+        // contracts they name measure their reach off the PERFORMING CARD's printed Radius icon with
+        // p.16's matching items composed on, the way `synthetic-radius-hero-target@1` does. A fixture
+        // card printing no Radius would name the contract, find a disk of zero and answer "nobody" for
+        // a reason that is about the fixture rather than about the board - which is the weaker of the
+        // two things a showcase card can prove.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.69g's obstacle-radius presence Skill, sitting outside its team's ordinary
+        /// Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedObstacleRadiusSkillProfile { get; } =
+            new SyntheticSkillProfile("red-surveyor", "Red Surveyor", 42);
+
+        /// <summary>Milestone 8.69g's union swap-subject Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedTrackingSwapSkillProfile { get; } =
+            new SyntheticSkillProfile("red-pathkeeper", "Red Pathkeeper", 43);
+
+        /// <summary>
+        /// Brynn's Split Attack shape as showcase content: an Attack whose "After the attack" body asks
+        /// whether the unit this very Attack took was a HERO adjacent to 3 or more obstacles when it
+        /// was bound.
+        /// </summary>
+        private static SyntheticAttackTextProfile RedQuarrymanProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-quarryman", "Red Quarryman", 14, 4, 2, 2, CardTextTiming.AfterTheAttack,
+                false, false,
+                continuation: SyntheticContinuationShape.AfterAttackTargetWasAdjacentToObstaclesRider);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.69g's obstacle-radius presence Skill, which is how
+        /// <c>brynn-enemy-hero-in-radius-adjacent-to-obstacles@1</c> becomes reachable from showcase
+        /// content rather than arriving for the first time inside Brynn's own slice.
+        ///
+        /// <para>The node is Mountain Guide's own - no parameters, one Boolean <c>present</c>, and a
+        /// <c>synthetic-is-flagged@1</c> Conditional over it, which is the shape all four of his faces
+        /// that print the clause compose. The gate governs nothing, and that is deliberate rather than
+        /// lazy: what the printed clause governs is a second friendly-unit move, and a fixture that
+        /// performed one would drag a displacement of somebody else's piece into the showcase-reachable
+        /// set as a side effect of proving a PREDICATE. What milestone 7.9's gate asks of a new type is
+        /// that a showcase card REACH it, and the predicate node here is his verbatim.</para>
+        ///
+        /// <para>It publishes without applying, so a board with no qualifying enemy hero leaves the
+        /// card doing nothing and spending nothing - which is the contract as printed rather than a
+        /// fixture limitation, and is the whole reason 8.69a declared
+        /// <c>PublishesWithoutApplying</c>.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithObstacleRadiusSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                obstacleRadiusSkillProfile: RedObstacleRadiusSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.69g's union swap-subject Skill, which is how
+        /// <c>brynn-tracking-swap-subject@1</c> becomes reachable on the same terms.
+        ///
+        /// <para>The contract is ONE selection over the union of two differently reached sets - "a unit
+        /// adjacent to you, or an enemy hero in radius who is adjacent to 3 or more obstacles" - which
+        /// is Tread Lightly's, Cover Tracks' and Hide Traces' printed sentence. It takes no parameters
+        /// at all, so the node below is his verbatim and cannot be a widened copy: the reaches, the
+        /// predicate and the de-duplication are all inside the handler.</para>
+        ///
+        /// <para><b>Nothing consumes the selection here</b>, on milestone 8.35z53's own stated terms:
+        /// the natural consumer is <c>synthetic-swap-actor@1</c>, and a fixture that exchanged the
+        /// actor with whatever it named would make every board this hand is dealt onto reorder itself
+        /// as a side effect of proving a SELECTION. The three published facts are declared exactly as
+        /// his faces declare them so the schema is proved whole.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithTrackingSwapSubjectSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                trackingSwapSubjectSkillProfile: RedTrackingSwapSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards with milestone 8.69g's obstacle-targeting rider Attack, which is how
+        /// <c>brynn-attack-target-was-adjacent-to-obstacles@1</c> becomes reachable from showcase
+        /// content rather than waiting for the hero whose three split Reds print it.
+        ///
+        /// <para>It is on an Attack rather than a Skill because the fact it publishes is a fact about
+        /// THAT Attack's own target - read live off the board, and off the space milestone 8.19a
+        /// captured when p.14's step 6 removed the defender - so a Skill has nothing to ask it about.
+        /// That is the same reason milestone 8.35z50's survival rider and milestone 8.35z53's defended
+        /// forced move are Attacks, and the node shape below is 8.35z50's line for line: the affirmative
+        /// fact, the ordinary <c>synthetic-is-flagged@1</c> gate, and a one-space displacement of the
+        /// former target's space, because what this card exists to prove is the READING and not the
+        /// consequence.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithObstacleTargetingRiderText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedQuarrymanProfile });
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1697,6 +1802,8 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile hiddenGuessSkillProfile = null,
             SyntheticSkillProfile borrowedCardTextSkillProfile = null,
             SyntheticSkillProfile deckItemSkillProfile = null,
+            SyntheticSkillProfile obstacleRadiusSkillProfile = null,
+            SyntheticSkillProfile trackingSwapSubjectSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -2018,6 +2125,24 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateDeckItemSkillDefinition(deckItemSkillProfile),
                     deckItemSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            // Milestone 8.69g. Brynn's two showcase Skills, appended after every earlier one so no
+            // existing hand position moves.
+            if (obstacleRadiusSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateObstacleRadiusSkillDefinition(obstacleRadiusSkillProfile),
+                    obstacleRadiusSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (trackingSwapSubjectSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateTrackingSwapSubjectSkillDefinition(trackingSwapSubjectSkillProfile),
+                    trackingSwapSubjectSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -4648,6 +4773,119 @@ namespace GuardsDigital.Core.Cards.Synthetic
             return SkillCard(profile, "primary-deck-item-skill", effect);
         }
 
+        /// <summary>
+        /// Milestone 8.69g. "If an enemy hero in radius is adjacent to 3 or more obstacles" - Brynn's
+        /// Mountain Guide's second sentence, on a card that is nobody's. See
+        /// <see cref="RedObstacleRadiusSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateObstacleRadiusSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("obstacle-radius-root");
+            var present = new EffectNodeId("obstacle-radius-present");
+            var gate = new EffectNodeId("obstacle-radius-gate");
+            var clause = new EffectNodeId("obstacle-radius-clause");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-69g-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { present, gate }),
+                    new EffectNodeDefinition(
+                        present, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        Verified.BrynnComponentContent.EnemyHeroInRadiusAdjacentToObstaclesV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.BrynnComponentContent.PresentOutputName,
+                                EffectValueKind.Boolean)
+                        }),
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        SyntheticEffectCapabilities.IsFlaggedV1,
+                        childNodeIds: new[] { clause },
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "flag", present,
+                                Verified.BrynnComponentContent.PresentOutputName,
+                                EffectValueKind.Boolean)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("value", EffectValueKind.Boolean)
+                        }),
+                    // What the gate governs is deliberately the most inert node this build has: the
+                    // actor's own space, published and consumed by nobody. `EffectNodeDefinition`
+                    // refuses an empty Sequence outright - a Conditional must govern SOMETHING - and
+                    // what the printed clause governs is a second friendly unit's move, which a
+                    // fixture performing it would drag a displacement of somebody else's piece into
+                    // the showcase-reachable set as a side effect of proving a PREDICATE.
+                    new EffectNodeDefinition(
+                        clause, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                        })
+                });
+
+            return SkillCard(
+                profile, "primary-obstacle-radius-skill", effect,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, 3) });
+        }
+
+        /// <summary>
+        /// Milestone 8.69g. "Swap either with a unit adjacent to you, or with an enemy hero in radius
+        /// who is adjacent to 3 or more obstacles" - Brynn's Tread Lightly's one selection, on a card
+        /// that is nobody's. See <see cref="RedTrackingSwapSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateTrackingSwapSubjectSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("tracking-swap-root");
+            var subject = new EffectNodeId("tracking-swap-selection");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-69g-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { subject }),
+                    // IfAble rather than Mandatory, which is the one difference from the printed node:
+                    // a fixture hand is dealt onto boards where nothing stands in the actor's ring and
+                    // no enemy hero is boxed in, and a card that refused to be played there would
+                    // prove nothing. What the contract offers when there IS a candidate is measured on
+                    // his own faces by `BrynnTrackingSwapTests`.
+                    new EffectNodeDefinition(
+                        subject, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        Verified.BrynnComponentContent.TrackingSwapSubjectV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.BrynnComponentContent.ChosenSpaceOutputName,
+                                EffectValueKind.Coordinate),
+                            new EffectOutputBinding(
+                                Verified.BrynnComponentContent.ChosenHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                Verified.BrynnComponentContent.ChosenMinionOutputName,
+                                EffectValueKind.Minion)
+                        })
+                });
+
+            return SkillCard(
+                profile, "primary-tracking-swap-skill", effect,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, 3) });
+        }
+
         private static CardDefinition CreateHiddenGuessSkillDefinition(SyntheticSkillProfile profile)
         {
             var root = new EffectNodeId("hidden-guess-root");
@@ -5386,7 +5624,31 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// card-text altitude a text that gave to a hero named in advance would never have
             /// visited.</para>
             /// </summary>
-            AfterAttackGiveMarker = 17
+            AfterAttackGiveMarker = 17,
+
+            /// <summary>
+            /// Milestone 8.69g. Brynn's Split Attack shape: "After the attack:" text that asks whether
+            /// the unit THIS Attack took was a hero adjacent to 3 or more obstacles at the moment it
+            /// was bound.
+            ///
+            /// <para>It is the second question in this enum that can only be asked at rulebook p.14's
+            /// step 7 and can only be answered by the Attack that is still resolving - and it is a
+            /// strictly harder version of <see cref="AfterAttackTargetSurvivedRider"/>, because the
+            /// answer must survive the defender being REMOVED at step 6: the handler reads the live
+            /// hero first and falls back to milestone 8.19a's captured target space only when the page
+            /// took the hero off the board, so the clause is about the targeting rather than about a
+            /// hero who is standing somewhere. A Skill has nothing to ask it about, which is why
+            /// <c>brynn-attack-target-was-adjacent-to-obstacles@1</c> reaches showcase content through
+            /// an Attack while its two siblings in the same dealing reach it through Skills.</para>
+            ///
+            /// <para>Its published fact is the affirmative one - "was adjacent" rather than "was not" -
+            /// so the Conditional below it is the ordinary <c>synthetic-is-flagged@1</c> gate every
+            /// other rider uses and no node anywhere has to invert a Boolean. The clause it governs is
+            /// the same one-space displacement <see cref="AfterAttackTargetSurvivedRider"/> performs,
+            /// because what this card exists to prove is the READING and not the consequence - his own
+            /// faces gate a p.10 repeat and a retrieval on it, and both are measured on them.</para>
+            /// </summary>
+            AfterAttackTargetWasAdjacentToObstaclesRider = 18
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -5928,6 +6190,13 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         new EffectNodeId("target-survived-root"),
                         TargetSurvivedRiderNodes());
 
+                case SyntheticContinuationShape.AfterAttackTargetWasAdjacentToObstaclesRider:
+                    return new EffectDefinition(
+                        new EffectDefinitionId($"placeholder-{id}-text"),
+                        "phase-8-69g-rev-1",
+                        new EffectNodeId("target-boxed-in-root"),
+                        TargetWasAdjacentToObstaclesRiderNodes());
+
                 case SyntheticContinuationShape.AfterAttackDefendedCardForcedMove:
                     return new EffectDefinition(
                         new EffectDefinitionId($"placeholder-{id}-text"),
@@ -6445,6 +6714,80 @@ namespace GuardsDigital.Core.Cards.Synthetic
                         EffectInputBinding.FromNodeOutput(
                             "flag", survived,
                             SyntheticAttackTargetSurvivalCapabilities.TargetSurvivedOutput,
+                            EffectValueKind.Boolean)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("value", EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    moveSequence, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { targetSpace, move }),
+                new EffectNodeDefinition(
+                    targetSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.FormerTargetSpaceV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                    }),
+                new EffectNodeDefinition(
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    SyntheticDisplacementCapabilities.DirectMoveV3,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "mover", targetSpace, "space", EffectValueKind.Coordinate),
+                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
+                        EffectInputBinding.FromClosedVocabulary(
+                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                            GuardsDigital.Core.Rules.Displacement.DirectMoveDestinationPolicy
+                                .AwayFromActor)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                    })
+            };
+        }
+
+        /// <summary>
+        /// Milestone 8.69g. Split Attack's gate, line for line with milestone 8.35z50's survival rider
+        /// above: the affirmative fact, the ordinary flag Conditional, and a displacement of the space
+        /// the target stood on. See
+        /// <see cref="SyntheticContinuationShape.AfterAttackTargetWasAdjacentToObstaclesRider"/>.
+        /// </summary>
+        private static EffectNodeDefinition[] TargetWasAdjacentToObstaclesRiderNodes()
+        {
+            var root = new EffectNodeId("target-boxed-in-root");
+            var wasBoxedIn = new EffectNodeId("target-boxed-in-fact");
+            var gate = new EffectNodeId("target-boxed-in-gate");
+            var moveSequence = new EffectNodeId("target-boxed-in-move-sequence");
+            var targetSpace = new EffectNodeId("target-boxed-in-space");
+            var move = new EffectNodeId("target-boxed-in-move");
+
+            return new[]
+            {
+                new EffectNodeDefinition(
+                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                    childNodeIds: new[] { wasBoxedIn, gate }),
+                new EffectNodeDefinition(
+                    wasBoxedIn, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    Verified.BrynnComponentContent.AttackTargetWasAdjacentToObstaclesV1,
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            Verified.BrynnComponentContent.PresentOutputName,
+                            EffectValueKind.Boolean)
+                    }),
+                new EffectNodeDefinition(
+                    gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                    SyntheticEffectCapabilities.IsFlaggedV1,
+                    childNodeIds: new[] { moveSequence },
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromNodeOutput(
+                            "flag", wasBoxedIn,
+                            Verified.BrynnComponentContent.PresentOutputName,
                             EffectValueKind.Boolean)
                     },
                     outputs: new[]

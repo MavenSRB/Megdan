@@ -395,6 +395,13 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string MinHeroIdValue = "hero-min";
 
+        /// <summary>
+        /// Milestone 8.69g. Brynn's own hero id - the TWENTIETH hero, on the 2026-09-21 user direction
+        /// that named him by name ("ok go for Byrnn, keep in mind he needs to be correctly implemented
+        /// in new hero pick screen").
+        /// </summary>
+        public const string BrynnHeroIdValue = "hero-brynn";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -466,7 +473,21 @@ namespace GuardsDigital.Core.Setup
                 // the rule above asks for. She is the NINETEENTH, so the sentence Tali's row wrote -
                 // "every hero this build can deal" - stays true only because this row is here too.
                 (MinHeroIdValue, "min", "Min the Dragonmonk", HeroComplexity.Complex,
-                    HeroRole.Tokens | HeroRole.Disabler | HeroRole.Damager | HeroRole.Melee)
+                    HeroRole.Tokens | HeroRole.Disabler | HeroRole.Damager | HeroRole.Melee),
+                // Milestone 8.69g deals him and makes him pickable in the same commit, which is what
+                // the rule above asks for. He is the TWENTIETH, so the sentence Tali's row wrote -
+                // "every hero this build can deal" - stays true only because this row is here too.
+                //
+                // HIS PROFILE FACTS ARE THE USER'S ONE NAMED REQUIREMENT FOR THIS HERO ("keep in mind
+                // he needs to be correctly implemented in new hero pick screen"), so they are read off
+                // the extracted selection front rather than guessed: `active-hero-cards/_selection-
+                // cards/Brynn__front.png` shows THREE filled stars - p.21's "Very Complex" - and the
+                // three role icons TACTICIAN, DAMAGER and DURABLE, in that printed order. The dashboard
+                // names him "Brynn the Seeker"; the Tabletopia card group says "the Tracker" and is not
+                // the authority. `HeroSelectionStageTests` pins both facts and
+                // `PrivateLobbyPlayModeTests` drives the star and role filters over his button.
+                (BrynnHeroIdValue, "brynn", "Brynn the Seeker", HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Durable)
             };
 
         /// <summary>
@@ -688,6 +709,37 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusMinOneVsOne() =>
             CreateOneVsOne(new HeroContentId("min"), "Min");
+
+        /// <summary>
+        /// Milestone 8.69g. The same board with Brynn the Seeker on the Blue seat, for the fixtures
+        /// whose subject is his printed set. The TWENTIETH hero.
+        ///
+        /// <para>Written in the SAME change as his five <c>SceneCardContent</c> members and his three
+        /// <c>MatchConfiguration</c> stagings, which is the whole of what milestone 8.38f's repair
+        /// teaches: without this arm every staged scene of his falls through
+        /// <c>SelectSetupConfiguration</c>'s default to Arien's setup, and the hand factory - which
+        /// takes an owner id rather than naming a hero - then deals HIS cards to a seat whose content
+        /// identity is <c>arien</c>. No offline tier can see that; only a loaded scene composes.</para>
+        ///
+        /// <para><b>He needs NO ally board, and it is worth saying so rather than leaving the absence
+        /// to be read as an oversight.</b> The one clause of his that names his own side is the
+        /// guides' "a friendly unit adjacent to you ... a different friendly unit in radius", and p.17
+        /// makes a friendly MINION as good a subject as a friendly hero - the engaged staging leaves a
+        /// friendly melee minion in his ring and more of his own side inside every Radius his Blues
+        /// print. Rowenna's ally board exists because her riders name a friendly HERO in radius and
+        /// exclude herself; Brynn prints no such word. <c>BrynnDealingTests</c> measures the friendly
+        /// units this board actually leaves him rather than assuming them.</para>
+        ///
+        /// <para><b>What this staging reaches, measured at the dealing rather than assumed.</b> The
+        /// enemy HERO stands two spaces away, which is inside every printed Radius his Silver, Blue and
+        /// Green faces carry and outside p.19's ring - so his three traps and Decoy reach him through
+        /// their radius arm and his "adjacent to you" arms need a step or a minion first. How many
+        /// obstacles stand beside each hero is the one measurement his whole set turns on, and
+        /// <c>BrynnDealingTests</c> writes both counts into the run output for 8.69h to start
+        /// from.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusBrynnOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("brynn"), "Brynn");
 
         /// <summary>
         /// Milestone 8.57g. The same board with Rowenna the Vanguard on the Blue seat, for the

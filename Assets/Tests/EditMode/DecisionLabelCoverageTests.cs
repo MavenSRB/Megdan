@@ -54,14 +54,15 @@ namespace GuardsDigital.Tests.EditMode
             yield return new DealtHero("widget", WidgetCardContent.ContentRevision, WidgetCardContent.DealtDefinitions);
             yield return new DealtHero("rowenna", RowennaCardContent.ContentRevision, RowennaCardContent.DealtDefinitions);
             yield return new DealtHero("min", MinCardContent.ContentRevision, MinCardContent.DealtDefinitions);
+            yield return new DealtHero("brynn", BrynnCardContent.ContentRevision, BrynnCardContent.DealtDefinitions);
         }
 
         /// <summary>
-        /// The seventeen heroes milestone 8.44 packaged, plus Rowenna the Vanguard (milestone 8.57g)
-        /// and Min the Dragonmonk (milestone 8.61j) - the two dealings since, each of which is what
-        /// makes that hero one a match configuration deals.
+        /// The seventeen heroes milestone 8.44 packaged, plus Rowenna the Vanguard (milestone 8.57g),
+        /// Min the Dragonmonk (milestone 8.61j) and Brynn the Seeker (milestone 8.69g) - the three
+        /// dealings since, each of which is what makes that hero one a match configuration deals.
         /// </summary>
-        private const int MatchConfigurationRosterSize = 19;
+        private const int MatchConfigurationRosterSize = 20;
 
         /// <summary>
         /// The longest label in the content as milestone 8.46a shipped it is 58 characters. The bound

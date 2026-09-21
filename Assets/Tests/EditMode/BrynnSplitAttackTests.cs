@@ -565,18 +565,21 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Milestone 7.9's gate, asserted from both sides: this block's one contract is composed and
-        /// withheld, it is absent from everything the build registers, and the list that names it says
-        /// so. 8.69g owes it a registration and - because it is a new handler TYPE - a showcase
-        /// consumer.
+        /// Milestone 7.9's gate, asserted from both sides and now from the far end of it: this block's
+        /// one contract is composed and REGISTERED since milestone 8.69g dealt him, the deferral list
+        /// that used to name it is empty, and the registration is what makes its three faces startable.
+        /// Because it is a new handler TYPE, 8.69g also owed it a showcase consumer - the Red
+        /// Quarryman's "After the attack" rider, which is an Attack rather than a Skill for the same
+        /// reason this predicate is: it is a fact about the Attack that is running.
         /// </summary>
         [Test]
-        public void ThisBlocksContractIsWithheld_AndTheDeferralListSaysWhich()
+        public void ThisBlocksContractIsRegistered_AndTheDeferralListIsEmpty()
         {
-            Assert.That(BrynnComponentContent.SplitAttackRegisteredHandlers(), Is.Empty);
+            Assert.That(BrynnComponentContent.SplitAttackDeferredHandlers(), Is.Empty);
 
-            var deferred = BrynnComponentContent.SplitAttackDeferredHandlers().ToArray();
-            Assert.That(deferred.Select(handler => handler.Reference.ToString()), Is.EqualTo(new[]
+            var registeredHere = BrynnComponentContent.SplitAttackRegisteredHandlers().ToArray();
+            Assert.That(
+                registeredHere.Select(handler => handler.Reference.ToString()), Is.EqualTo(new[]
             {
                 BrynnComponentContent.AttackTargetWasAdjacentToObstaclesV1.ToString()
             }));
@@ -585,16 +588,14 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 registered.Capabilities.IsRegistered(
                     BrynnComponentContent.AttackTargetWasAdjacentToObstaclesV1),
-                Is.False,
-                "No configured match can start it, which is why composing it moves no pinned " +
-                "registration list and no corpus digest.");
+                Is.True,
+                "Split Attack, Split Throw and Peak Precision are cards a configured match now " +
+                "deals, so the build must be able to start the gate all three of them read.");
 
             Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
                 "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap "
-                + "the nineteenth. The dealt-corpus validator stays green because it validates "
-                + "against what the build registers PLUS the declarations it deliberately withholds "
-                + "- 8.57f's precedent - and the registration debt is asserted by name in "
-                + "BrynnPrintedSetTests.");
+                + "the nineteenth. With the registration in place the dealt-corpus validator refuses "
+                + "none of them.");
 
             foreach (var id in new[]
             {
@@ -712,7 +713,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var catalogs = new MatchContentCatalogs(
                 SyntheticEffectCapabilities.CreateCatalog(
-                    BrynnComponentContent.SplitAttackDeferredHandlers()),
+                    BrynnComponentContent.SplitAttackRegisteredHandlers()),
                 SyntheticComponentDefinitions.CreateCatalog(),
                 new TriggeredEffectCatalog(Array.Empty<EffectDefinition>()));
             var cardActions = new CardActionResolutionAuthority(catalogs, board);
@@ -839,7 +840,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var catalogs = new MatchContentCatalogs(
                 SyntheticEffectCapabilities.CreateCatalog(
-                    BrynnComponentContent.SplitAttackDeferredHandlers()),
+                    BrynnComponentContent.SplitAttackRegisteredHandlers()),
                 SyntheticComponentDefinitions.CreateCatalog(),
                 new TriggeredEffectCatalog(Array.Empty<EffectDefinition>()));
             var cardActions = new CardActionResolutionAuthority(catalogs, board);
@@ -1068,7 +1069,7 @@ namespace GuardsDigital.Tests.EditMode
             RuleModificationSet modifications = null,
             MatchParticipants participants = null)
         {
-            var handler = BrynnComponentContent.SplitAttackDeferredHandlers().Single();
+            var handler = BrynnComponentContent.SplitAttackRegisteredHandlers().Single();
             var definition = Face(BrynnCardContent.SplitAttack);
             var card = CardInstance.CreateInHand(
                 new CardInstanceId("brynn-gate-probe"), definition.Reference, Brynn);

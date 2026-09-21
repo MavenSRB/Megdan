@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Synthetic;
 using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects.Synthetic;
@@ -72,7 +73,27 @@ namespace GuardsDigital.Tests.EditMode
                 "composes the staged match and therefore states which printed set each seat is dealt"),
             (typeof(QuickGameSetupConfiguration),
                 "binds a hero content identity to a participant at a configured spawn point, which is " +
-                "what addresses that hero's prepared token")
+                "what addresses that hero's prepared token"),
+            // Milestone 8.69g. THE TWENTIETH HERO IS THE FIRST WHOSE NEW HANDLER TYPES ARE HIS OWN,
+            // and that is what puts this type on the list: milestone 7.9's gate says a new handler
+            // TYPE must be reachable from a showcase card, and Brynn the Seeker's three -
+            // `brynn-enemy-hero-in-radius-adjacent-to-obstacles@1`,
+            // `brynn-attack-target-was-adjacent-to-obstacles@1` and `brynn-tracking-swap-subject@1` -
+            // are declared in `BrynnComponentContent` because 8.69a, 8.69b and 8.69d each measured
+            // their question to be one no shared contract expresses. Every showcase consumer before
+            // his named a capability declared in a `Synthetic*Capabilities` file, so the two rules had
+            // never met.
+            //
+            // The permission is narrow in what it PERMITS even though it is granted to a whole type:
+            // this file composes CARDS THAT ARE NOBODY'S, and naming a contract is exactly the
+            // "registering content, dealing a hand" composition this list's own failure message admits.
+            // Nothing here resolves a rule, branches on a hero, or reads a printed value; the three
+            // references are capability REFERENCES and output NAMES, and the cards carrying them are
+            // dealt to no seat a match composes.
+            (typeof(SyntheticShowcaseHand),
+                "composes the fixture cards milestone 7.9's gate requires for every new handler type, " +
+                "and the twentieth hero's three types are declared in his own content file - so the " +
+                "showcase consumer naming them is composition, not a rule reading a hero")
         };
 
         /// <summary>

@@ -561,6 +561,11 @@ namespace GuardsDigital.Core.Participants
                 // covering the same heroes - is what this arm keeps true rather than establishes.
                 case Setup.QuickGameSetupConfiguration.MinHeroIdValue:
                     return Cards.Verified.MinCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.69g. The TWENTIETH hero this build deals, on exactly the terms the rows
+                // above are on. The agreement Tali's arm records - switch and offerable roster covering
+                // the same heroes - is what this arm keeps true rather than establishes.
+                case Setup.QuickGameSetupConfiguration.BrynnHeroIdValue:
+                    return Cards.Verified.BrynnCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1797,6 +1802,83 @@ namespace GuardsDigital.Core.Participants
             return configuration;
         }
 
+        /// <summary>
+        /// Milestone 8.69g. The staged Wasp-versus-Brynn match, on the same `DEV-005` terms the
+        /// nineteen staged matches before it are on. This is the configuration that makes Brynn
+        /// playable in a fixture, and the twentieth of its shape.
+        ///
+        /// <para><b>He needs NO ally seat, and it is worth saying which hero's problem he does not
+        /// have.</b> Rowenna's board took an ally because three of her Reds print "a friendly hero in
+        /// radius" with her own seat excluded; Brogan's took one for War Drummer and Tali's for her
+        /// Spiritbinder. Brynn's only own-side clause is the two guides' "a friendly unit adjacent to
+        /// you ... a different friendly unit in radius", and p.17's Friendly covers a minion - the
+        /// engaged staging leaves one in his ring. A third seat would prove nothing of his and would
+        /// cost every fixture of his an unrestaged board.</para>
+        ///
+        /// <para><b>What this staging reaches.</b> The enemy HERO stands two spaces away, inside every
+        /// printed Radius his set carries and outside p.19's ring; a friendly melee MINION and an enemy
+        /// ranged minion stand beside him, which is what the guides' first sentence and every
+        /// "adjacent to you" arm of his swaps and his Attacks need.
+        /// <c>BrynnDealingTests.TheEngagedStagedBoard_CarriesEverythingHisFacesAskFor</c> measures all
+        /// of it - INCLUDING THE OBSTACLE COUNT BESIDE EACH HERO, which is the one number his whole set
+        /// turns on - writes the coordinates into the run output, and is where 8.69h's journeys start
+        /// from.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedBrynnForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedBrynnHand(TeamSide.Blue));
+
+        /// <summary>
+        /// Milestone 8.69g. The staged Wasp-versus-Brynn match at rulebook p.15's Tier II stage, with
+        /// Brynn holding one Tier II card of each colour on the branch the caller names - see
+        /// <see cref="Cards.Verified.BrynnUpgradeBranch"/>'s own remarks for what each branch reaches.
+        /// </summary>
+        public static MatchConfiguration CreateStagedBrynnTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.BrynnUpgradeBranch branch) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedBrynnHand(tierThree: false, branch));
+
+        /// <summary>
+        /// Milestone 8.69g. The staged Wasp-versus-Brynn match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and Over
+        /// the Top in Brynn's.
+        ///
+        /// <para>His is a p.16 PERMANENT ability - "While you are performing actions all enemy heroes
+        /// in play count as adjacent to 3 or more obstacles" - so unlocking it here is what makes
+        /// 8.69a's <c>RuleValueApplicability.ControllerAction</c> and its counts-as modification
+        /// reachable from a configured match at all, rather than only from an effect frame a fixture
+        /// builds by hand. On either branch his Tier III Red is an Attack and his Tier III Blue and
+        /// Green both read the predicate, so the overlay has something of his to widen on both.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedBrynnTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.BrynnUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedBrynnHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.BrynnCardContent.OverTheTop)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
         public static MatchConfiguration CreateStagedGarrusForInternalTest(TeamSide initialTieBreakerSide) =>
             Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red), owner => Cards.Verified.GarrusCardContent.CreateHand(owner, "blue"));
@@ -2357,6 +2439,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.MinProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.MinProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.69g. One seat's verified Brynn hand, prefixed by the seat's team side for the
+        /// reason the nineteen earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedBrynnHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.BrynnCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedBrynnHand(
+            bool tierThree, Cards.Verified.BrynnUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.BrynnProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.BrynnProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

@@ -1141,7 +1141,38 @@ namespace GuardsDigital.Tests.PlayMode
                 // settled that the privacy of a card choice is a projection property asserted inside
                 // the journey from a seat that must not see it, not a second control. The ITEM it
                 // becomes is read through ItemVisibilityAndUse, which every hero's row already owes.
-                ["take-deck-card-as-item"] = new[] { PlayerInteractionShape.HandCardSelection }
+                ["take-deck-card-as-item"] = new[] { PlayerInteractionShape.HandCardSelection },
+
+                // Milestone 8.69g. Brynn the Seeker's THREE entries - the TWENTIETH hero, and the
+                // first dealing since Rowenna's to introduce no new SHAPE at all. Every one of his
+                // three contracts is either a question nobody is asked or the board click this table
+                // has carried since milestone 8.15, which is what 8.69f's offline reading predicted
+                // and what this dealing measures. The rest of his set names only contracts already
+                // above: `attack-sequence@1`, `choose-target@2`, `retrieve-card@1`,
+                // `synthetic-actor-space@1`, `synthetic-defeat-hero@1`, `synthetic-direct-move@3`,
+                // `synthetic-discard-chosen-card@1` and `@2`, `synthetic-is-flagged@1`,
+                // `synthetic-radius-hero-target@1`, `synthetic-radius-minion-target@1`,
+                // `synthetic-radius-unit-target@1` and `synthetic-swap-actor@1`.
+                //
+                // THE TWO PREDICATES ASK NOBODY ANYTHING, which is what a presence check is under
+                // rulebook p.19 ("Effects that check for unit presence ... do not target"): each
+                // publishes one Boolean a `synthetic-is-flagged@1` Conditional branches on, and a
+                // board where nothing qualifies simply does not take the branch. No control is drawn
+                // for either, and a journey that expected one would be asserting a prompt the printed
+                // text does not open.
+                ["brynn-enemy-hero-in-radius-adjacent-to-obstacles"] =
+                    Array.Empty<PlayerInteractionShape>(),
+                ["brynn-attack-target-was-adjacent-to-obstacles"] =
+                    Array.Empty<PlayerInteractionShape>(),
+
+                // The tracking swap's subject: a unit picked by clicking it where it stands, which is
+                // exactly what every selection in this table has asked for since milestone 8.15 - and
+                // the same classification `choose-swap-subject@1` carries two rows above, because the
+                // UNION of two reaches narrows the candidates and not the input. That the union is
+                // his own contract rather than Whisper's is a fact about which icon measures the
+                // ranged arm (BR-Q17d: Radius, not Range), and an icon is not a shape.
+                ["brynn-tracking-swap-subject"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection }
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;

@@ -83,10 +83,18 @@ namespace GuardsDigital.Core.Cards.Verified
                     "An enemy hero in radius beside 3 obstacles discards a card");
             }
 
+            // MILESTONE 8.69g CUT BOTH OF THESE TO THE SIXTY-CHARACTER BOUND, which is a fact about
+            // the control the words are drawn in rather than about the card: `DecisionLabelCoverage-
+            // Tests` measures every label in the one catalog, and his table only joined that catalog
+            // at the dealing. Printed at the length Bear Trap's and Log Trap's are - "An enemy hero
+            // adjacent to you discards a card, or is defeated" and "An enemy hero in radius beside 3
+            // obstacles discards, or is defeated" - they read 61 and 67. The escalation is what the
+            // two of them say and neither had room for, so the subject is shortened and the
+            // escalation kept whole: that is the half of the sentence a player is choosing.
             yield return DecisionArm(BrynnCardContent.DeadfallTrap, TrapAdjacentArmNode,
-                "An enemy hero adjacent to you discards a card, or is defeated");
+                "An adjacent enemy hero discards a card, or is defeated");
             yield return DecisionArm(BrynnCardContent.DeadfallTrap, TrapRadiusArmNode,
-                "An enemy hero in radius beside 3 obstacles discards, or is defeated");
+                "A boxed-in enemy hero in radius discards, or is defeated");
         }
 
         /// <summary>

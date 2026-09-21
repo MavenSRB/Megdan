@@ -926,16 +926,18 @@ namespace GuardsDigital.Tests.EditMode
         {
             Assert.That(BrynnComponentContent.GuidesDeferredHandlers(), Is.Empty,
                 "Decoy and the guides name only contracts this build already has, plus 8.69a's own " +
-                "deferred predicate - so this block mints nothing and defers nothing.");
-            Assert.That(BrynnComponentContent.GuidesRegisteredHandlers(), Is.Empty);
+                "predicate - so this block mints nothing and defers nothing.");
+            Assert.That(BrynnComponentContent.GuidesRegisteredHandlers(), Is.Empty,
+                "and it registers nothing of its own either, which is this block's headline result " +
+                "rather than an omission: BOTH of its lists are empty on both sides of the dealing.");
 
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
             Assert.That(
                 registered.IsRegistered(
                     BrynnComponentContent.EnemyHeroInRadiusAdjacentToObstaclesV1),
-                Is.False,
-                "and the predicate the guides DO name is still withheld from every configured match, " +
-                "because 8.69g is the block that deals him.");
+                Is.True,
+                "and the predicate the guides DO name reaches every configured match since milestone " +
+                "8.69g dealt him - it registers from 8.69a's own list, which is where it was minted.");
 
             Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
                 "milestone 8.69f states his set, and only the boxed Handicap stays out of it.");
@@ -1451,15 +1453,18 @@ namespace GuardsDigital.Tests.EditMode
                         new HeroCoinLedger(participants)));
 
             /// <summary>
-            /// This build's whole synthetic vocabulary plus the two predicates milestone 8.69a still
-            /// defers - the guides' "if" names one of them, and a fixture that could not load it could
-            /// not prove the faces at all. Naming the DEFERRED list rather than the whole one is
-            /// milestone 8.40j's BA-18: a fixture handing back already-registered handlers is refused
-            /// for a duplicate reference.
+            /// This build's whole synthetic vocabulary plus the predicate the guides' "if" names.
+            ///
+            /// <para>Until milestone 8.69g that predicate came from 8.69a's DEFERRED list; the dealing
+            /// moved it to the registered one, so this catalog names 8.69a's own block list directly.
+            /// It is deliberately the block list and not <c>MatchContentCatalogs</c>'s: this is a
+            /// bounded synthetic catalog rather than the build's, and handing back a handler the
+            /// synthetic vocabulary already holds is refused for a duplicate reference - milestone
+            /// 8.40j's BA-18.</para>
             /// </summary>
             internal static EffectCapabilityCatalog Catalog() =>
                 SyntheticEffectCapabilities.CreateCatalog(
-                    BrynnComponentContent.ObstacleDeferredHandlers());
+                    BrynnComponentContent.ObstacleRegisteredHandlers());
 
             internal EffectResolutionStepResult Run()
             {

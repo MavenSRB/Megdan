@@ -789,18 +789,25 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 7.9's gate, asserted from BOTH sides: this build registers nothing of his, and the
-        /// two contracts he declares are exactly the ones the deferral list names.
+        /// Milestone 7.9's gate, asserted from BOTH sides AND FROM THE FAR END OF IT: milestone 8.69g
+        /// dealt him, so the one contract this block declares is now REGISTERED, the deferral list is
+        /// empty, and the two facts are one claim rather than two.
+        ///
+        /// <para>The case is deliberately kept rather than deleted with the deferral it used to
+        /// assert. What it guards now is the other direction - a contract of his quietly falling OUT
+        /// of the registration list, or a second declaration appearing in this block and reaching the
+        /// build without anybody deciding to register it - and that is the failure a dealing makes
+        /// possible rather than one it closes.</para>
         /// </summary>
         [Test]
-        public void EveryContractOfHisIsWithheldFromThisBuild_AndTheDeferralListSaysWhich()
+        public void EveryContractOfHisIsRegisteredByThisBuild_AndTheDeferralListIsEmpty()
         {
-            var deferred = BrynnComponentContent.ObstacleDeferredHandlers()
+            var registeredHere = BrynnComponentContent.ObstacleRegisteredHandlers()
                 .Select(handler => handler.Reference)
                 .ToArray();
 
             Assert.That(
-                deferred.Select(reference => reference.CapabilityId.Value).ToArray(),
+                registeredHere.Select(reference => reference.CapabilityId.Value).ToArray(),
                 Is.EqualTo(new[]
                 {
                     BrynnComponentContent.EnemyHeroInRadiusAdjacentToObstacles.Value
@@ -809,24 +816,24 @@ namespace GuardsDigital.Tests.EditMode
                 "'brynn-hero-adjacent-to-obstacles' - which 8.69b superseded and 8.69f dropped, " +
                 "because no printed sentence of his asks about a named hero and a capability nothing " +
                 "can start is not a registration a dealing should make.");
-            Assert.That(BrynnComponentContent.ObstacleRegisteredHandlers(), Is.Empty,
-                "and nothing of his is registered, because 8.69g is the block that deals him.");
+            Assert.That(BrynnComponentContent.ObstacleDeferredHandlers(), Is.Empty,
+                "and nothing of his is withheld any more, because 8.69g is the block that dealt him " +
+                "and registration and dealing land in ONE change - Silverarrow's 8.35z46 law.");
 
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
-            foreach (var reference in deferred)
+            foreach (var reference in registeredHere)
             {
-                Assert.That(registered.IsRegistered(reference), Is.False,
-                    $"'{reference}' must not be reachable from a configured match before a dealt " +
-                    "card of his can start it: the registered content list is serialized and pinned, " +
-                    "so registering early moves pinned bytes while no content moved.");
+                Assert.That(registered.IsRegistered(reference), Is.True,
+                    $"'{reference}' is named by four faces a configured match now deals - Mountain " +
+                    "Guide, Expedition Leader, True Grit and Die Hard - so a match that could not " +
+                    "start it would grey out every one of them.");
             }
 
             Assert.That(
                 BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
                 "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap " +
-                "the nineteenth. The dealt-corpus validator stays green because it validates against " +
-                "what the build registers PLUS the declarations it deliberately withholds - 8.57f's " +
-                "precedent - and the registration debt is asserted by name in BrynnPrintedSetTests.");
+                "the nineteenth. With the registration in place the dealt-corpus validator refuses " +
+                "NONE of them, which is the half of 8.57f's precedent a dealing discharges.");
             Assert.That(BrynnCardContent.ObstacleDefinitions, Has.Count.EqualTo(4),
                 "while the four faces this block composes are still exactly four.");
             Assert.That(
@@ -1065,7 +1072,7 @@ namespace GuardsDigital.Tests.EditMode
             bool withRadiusItem,
             RuleModificationSet modifications = null)
         {
-            var handler = BrynnComponentContent.ObstacleDeferredHandlers().Single(candidate =>
+            var handler = BrynnComponentContent.Handlers().Single(candidate =>
                 candidate.Reference.Equals(
                     BrynnComponentContent.EnemyHeroInRadiusAdjacentToObstaclesV1));
             var action = RadiusSkillAction(3);

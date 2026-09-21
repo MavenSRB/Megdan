@@ -1490,24 +1490,47 @@ namespace GuardsDigital.Tests.EditMode
         // refused by the existing strict catalog comparison rather than silently reinterpreted, and
         // nothing this build wrote has become unreadable - these captures are rebuilt from the
         // fixtures every run and were never stored.
+        // MILESTONE 8.69g: MIGRATE, and it is a re-pin rather than a schema move. Dealing Brynn the
+        // Seeker as the TWENTIETH hero registers THREE capabilities and nothing else - no token, no
+        // marker, no triggered effect - and every snapshot records the registration list, so all
+        // sixteen captures grow and re-hash while no field, no reader, no `MatchLogEntryKind` and no
+        // behaviour moves. SCHEMA STAYS v43 AND THE WIRE STAYS `/19`.
+        //
+        // AND THE BYTE DELTA IS ATTRIBUTED RATHER THAN ASSERTED, which is what makes the isolation
+        // unnecessary to guess at. It is **+135 bytes on all sixteen**, measured against the two
+        // captures whose byte counts this list writes down: `setup` 12,911 -> 13,046 and
+        // `verified-hand-setup` 12,010 -> 12,145. One hundred and thirty-five is exactly what the one
+        // registration list he moves costs and nothing else:
+        //
+        //   * The THREE capability ids spell 120 characters
+        //     (`brynn-enemy-hero-in-radius-adjacent-to-obstacles` 48,
+        //     `brynn-attack-target-was-adjacent-to-obstacles` 45,
+        //     `brynn-tracking-swap-subject` 27), plus three one-byte length prefixes and three
+        //     four-byte revision integers: 120 + 3 + 12 = 135.
+        //   * There is no second term. He places NOTHING on a board, so unlike Min's dealing there is
+        //     no token-definition list to grow, and he holds no triggered effect - and a
+        //     triggered-effect catalog is not a registration list a snapshot records anyway.
+        //
+        // Both captures agree on 135 while carrying completely different content, which is what says
+        // the growth is the recorded registration list rather than anything a capture plays.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v43", "cc4201b933aa2eb8434e89f69e187a7f3ab1b1ecbe47a5c3e5fb75b8deda824f"),
-            new CompatibilityFixture("active-turn-v43", "eb1ade1bfaeacc60d0e112c16546a1e861e50b89274a6fa1f21810f7c740c6a4"),
-            new CompatibilityFixture("pending-choice-v43", "d858b8d76d3bdebb0a58c5feadd2fb00819c19984e2da4bb5f55ebdbc8f4f04a"),
-            new CompatibilityFixture("end-of-round-v43", "b19069a9b2b1269e53ffae4e3b53914e88262892b6f7711c74efd45c575d99e6"),
-            new CompatibilityFixture("pending-minion-battle-v43", "14f0ecb38558a547d8f91ade21754ca14f9feae3e03fbbdf91aeaafecb947bcf"),
-            new CompatibilityFixture("placed-token-v43", "f46be4ad321763e5aa25dbaff404e9d0fb6427683067b0cfec2a4ff281206aa1"),
-            new CompatibilityFixture("attached-marker-v43", "bf40d6c329834e9429ef2c408bd9069d66682c6a327a277878e7deb600bd7376"),
-            new CompatibilityFixture("pending-correction-v43", "44c2d4967d5288b51703051ba0050c5a6ebd14eee73dd594eb232557e3c5aadd"),
-            new CompatibilityFixture("paused-level-up-v43", "1d258bcf65dd00bf8948c38ad8a5cfef8318415314bcc20c5b9725aec0bed88c"),
-            new CompatibilityFixture("ended-match-v43", "26ba021803cdaf1b9f6c17e802779e3838ff5af5d16d47941f852f9be842f0bb"),
-            new CompatibilityFixture("verified-hand-setup-v43", "400081ad633a6a42464a13214d17356de51d5b39d93190b0761a228e62d0b70d"),
-            new CompatibilityFixture("paused-orbit-repeat-v43", "00cc75f954a013849779122ae5cb7f8fab8ac81abf7846417535659a111ecde1"),
-            new CompatibilityFixture("paused-card-text-v43", "9516035e01d4798f80a50d4d457afa918e1a83aac6d7e183b8a84c5730c909b8"),
-            new CompatibilityFixture("paused-block-rider-v43", "a6fef292c29dd77bb99345b2f4c6fd4e372d03f2648c4d3ce71a6a02329dce49"),
-            new CompatibilityFixture("paused-repeated-attack-v43", "6d979c130860c927ee0001a03b7fe2addb23f83c8f5488c58a82482bd5727665"),
-            new CompatibilityFixture("parked-pre-action-v43", "14a942ca659c54114f201bb906f5021a4a95d7ef97d1168a0ce2550ebba691e6")
+            new CompatibilityFixture("setup-v43", "04b4c05d9ddeec3242af2941c7bbb6b284016324f8e2acfa81c00f0c01ecea38"),
+            new CompatibilityFixture("active-turn-v43", "99c9d3bbf767ee1dae69347540f667b617e73e8820f726ad7d768d249454834b"),
+            new CompatibilityFixture("pending-choice-v43", "bb71175205c906af15ce11673400f83803c7abb8ed9ff32c188be833e9bcdfe0"),
+            new CompatibilityFixture("end-of-round-v43", "6939978febb78d800c7528618e06a0c843f9d7593aac1b5cb04e9e19d4641130"),
+            new CompatibilityFixture("pending-minion-battle-v43", "561ce5bb25904fe71f51b317b0a176484c2b1cd432831dd7adb16c44544e9f14"),
+            new CompatibilityFixture("placed-token-v43", "1166330a7c26bcb34bd590e8ea719570c0a239e4bab4436b05238eeebc98358e"),
+            new CompatibilityFixture("attached-marker-v43", "cf00184acb85bfd4c92298ddae52d068239303b45522252b7b5a3d47eb5e5cfa"),
+            new CompatibilityFixture("pending-correction-v43", "c2cb6f210d173c10c9968598298e55a79bf7fbfd3f5410d651262a450ef60bb4"),
+            new CompatibilityFixture("paused-level-up-v43", "0702332ec47994eec84763820d4f3bd15b3614b0bd83b31135d79b4b0236cc16"),
+            new CompatibilityFixture("ended-match-v43", "0739547bf5cc69c6c06936137cd22fa9c7ca73ae6813536577f6064ffce377d6"),
+            new CompatibilityFixture("verified-hand-setup-v43", "38e96ecba69701669ed814fdbde4f39cee228299abf5b33a33effe670ab69aff"),
+            new CompatibilityFixture("paused-orbit-repeat-v43", "2cb271bc70b68971d627faaf3f2169175056e88a772d1ef63b38cb806af3b5ae"),
+            new CompatibilityFixture("paused-card-text-v43", "0e887893eb31f338f8758e3b00ffaedf4eae85f4630c9b74d7d4be3842175048"),
+            new CompatibilityFixture("paused-block-rider-v43", "f37c648cbb926aef27cc2e448967b82d8a079a6944f7fa2c96ddd233979975ac"),
+            new CompatibilityFixture("paused-repeated-attack-v43", "1ad6a48b56d579baacebd41cd70e8a654d52c40c5ddbcaa1df5f0365c312e993"),
+            new CompatibilityFixture("parked-pre-action-v43", "141d6b859b22d58b053fd46eb8e3f5ccc006c6f2383bc94aa993b450f896a5ee")
         };
 
         [Test]

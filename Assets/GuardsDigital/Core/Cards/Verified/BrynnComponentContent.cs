@@ -22,21 +22,25 @@ namespace GuardsDigital.Core.Cards.Verified
     /// permanent ability whose whole content is a standing rule declaration rather than a body a
     /// <c>TriggeredEffectCatalog</c> must hold. His set is positional from end to end.</para>
     ///
-    /// <para><b>Nothing here is registered, and that is the point rather than an oversight.</b>
-    /// <see cref="MatchContentCatalogs"/> names no Brynn content until 8.69g deals him, so no
-    /// configured match can start one of his capabilities - milestone 7.9's gate, on the terms every
-    /// block of his recorded: the registered list is serialized and pinned, so a contract registered
-    /// before a dealt card can start it moves pinned bytes while no content moved. So
-    /// <see cref="DeferredHandlers"/> is the whole list and <see cref="RegisteredHandlers"/> is empty -
-    /// the arrangement <c>MinComponentContent</c> carried at 8.61i and its dealing then reversed.</para>
+    /// <para><b>All three are REGISTERED since milestone 8.69g dealt him, and the order of those two
+    /// facts is the whole of milestone 7.9's gate.</b> <see cref="MatchContentCatalogs"/> named no
+    /// Brynn content until his eighteen faces were cards a configured match deals, because the
+    /// registered list is serialized and pinned: a contract registered before a dealt card can start it
+    /// moves pinned bytes while no content moved. 8.69g flipped both halves in ONE change - the
+    /// registration and the dealing - which is Silverarrow's 8.35z46 law. So
+    /// <see cref="RegisteredHandlers"/> is now the whole list and <see cref="DeferredHandlers"/> is
+    /// empty; the empty concats stay, because an empty deferral list is what a discharged gate looks
+    /// like and the next block to withhold something of his finds the shape already here.</para>
     ///
-    /// <para><b>All three deferred contracts are new handler TYPES</b>, so 8.69g owes each a showcase
-    /// consumer as well as a registration - the second half of milestone 7.9's gate. A FOURTH
-    /// declaration, 8.69a's <c>brynn-hero-adjacent-to-obstacles@1</c>, is deliberately NOT here: no
-    /// composed sentence of his reaches it, because 8.69b measured the split faces' gate to be a
-    /// question about the targeting rather than about a hero and minted its own. A capability nothing
-    /// can start is a registration this milestone DROPPED rather than one a dealing makes reachable by
-    /// nothing, and the declaration is gone from the tree.</para>
+    /// <para><b>All three are new handler TYPES</b>, so 8.69g gave each a showcase consumer as well as
+    /// a registration - the second half of milestone 7.9's gate: the Red Surveyor for the radius
+    /// presence predicate, the Red Pathkeeper for the union swap selection, and the Red Quarryman's
+    /// "After the attack" rider for the question the split faces ask of the Attack that is running,
+    /// which needs an enclosing Attack and therefore cannot be a Skill. A FOURTH declaration, 8.69a's
+    /// <c>brynn-hero-adjacent-to-obstacles@1</c>, is deliberately NOT here: no composed sentence of his
+    /// reaches it, because 8.69b measured the split faces' gate to be a question about the targeting
+    /// rather than about a hero and minted its own. A capability nothing can start is a registration
+    /// 8.69f DROPPED rather than one a dealing makes reachable by nothing.</para>
     /// </summary>
     public static partial class BrynnComponentContent
     {
@@ -48,9 +52,12 @@ namespace GuardsDigital.Core.Cards.Verified
             RegisteredHandlers().Concat(DeferredHandlers());
 
         /// <summary>
-        /// Nothing, until 8.69g deals him. The member exists so a "registered or deferred" sweep keeps
-        /// its shape and so the fixtures asserting the gate ask a question rather than failing to
-        /// compile.
+        /// His THREE contracts, all registered since 8.69g dealt him: 8.69a's
+        /// <c>brynn-enemy-hero-in-radius-adjacent-to-obstacles@1</c> (Mountain Guide, Expedition
+        /// Leader, True Grit, Die Hard), 8.69b's <c>brynn-attack-target-was-adjacent-to-obstacles@1</c>
+        /// (Split Attack, Split Throw, Peak Precision) and 8.69d's <c>brynn-tracking-swap-subject@1</c>
+        /// (Tread Lightly, Cover Tracks, Hide Traces). 8.69c and 8.69e contribute empty lists, which
+        /// was each of those blocks' own headline result.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             ObstacleRegisteredHandlers()
@@ -60,13 +67,10 @@ namespace GuardsDigital.Core.Cards.Verified
                 .Concat(TrapAndGritRegisteredHandlers());
 
         /// <summary>
-        /// His THREE withheld contracts: 8.69a's <c>brynn-enemy-hero-in-radius-adjacent-to-obstacles@1</c>
-        /// (Mountain Guide, Expedition Leader, True Grit, Die Hard), 8.69b's
-        /// <c>brynn-attack-target-was-adjacent-to-obstacles@1</c> (Split Attack, Split Throw, Peak
-        /// Precision) and 8.69d's <c>brynn-tracking-swap-subject@1</c> (Tread Lightly, Cover Tracks,
-        /// Hide Traces). 8.69c and 8.69e contribute empty lists, which is their own result rather than
-        /// an omission, and the empty concats stay so a block that later defers something finds the
-        /// shape already here.
+        /// EMPTY since 8.69g dealt him, and stated rather than deleted: every one of the three moved to
+        /// <see cref="RegisteredHandlers"/> in the same change that made his eighteen faces dealable.
+        /// The five block concats stay so a later block of his that withholds something finds the shape
+        /// already here, and so the sweeps reading "registered or deferred" keep asking one question.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             ObstacleDeferredHandlers()

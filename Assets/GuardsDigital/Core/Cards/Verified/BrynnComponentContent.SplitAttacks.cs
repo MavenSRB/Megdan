@@ -63,22 +63,26 @@ namespace GuardsDigital.Core.Cards.Verified
             new EffectCapabilityReference(AttackTargetWasAdjacentToObstacles, 1);
 
         /// <summary>
-        /// Nothing this build registers, until 8.69g deals him. The member exists so a "registered or
-        /// deferred" sweep keeps its shape and so the fixture asserting the deferral asks a question
-        /// rather than failing to compile.
+        /// The one predicate this block declares, REGISTERED since milestone 8.69g dealt him: Split
+        /// Attack, Split Throw and Peak Precision are cards a configured match now deals, which is what
+        /// milestone 7.9's gate asks before a contract joins the build's catalog. It is a new handler
+        /// TYPE, so the same change gave it a showcase consumer - the Red Quarryman's "After the
+        /// attack" rider, on an Attack rather than a Skill because the question is about the Attack
+        /// that is running.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> SplitAttackRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>
-        /// The one predicate this block declares and this build withholds. It is a new handler TYPE, so
-        /// 8.69g owes it a showcase consumer as well as a registration.
-        /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> SplitAttackDeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new AttackTargetWasAdjacentToObstaclesHandler()
             };
+
+        /// <summary>
+        /// Nothing, since milestone 8.69g dealt him. The member stays rather than being deleted, on the
+        /// terms the obstacle partial's own pair states: an empty deferral list is what a discharged
+        /// gate looks like.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> SplitAttackDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// "a hero who is adjacent to 3 or more obstacles", asked about the unit the enclosing Attack

@@ -31,8 +31,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var min = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == MinCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(19),
-                "She is the nineteenth hero this build can put on a board.");
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(20),
+                "She was the nineteenth hero this build could put on a board; milestone 8.69g " +
+                "deals Brynn as the twentieth.");
             Assert.That(min.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.MinHeroIdValue));
             Assert.That(min.DisplayName, Is.EqualTo("Min the Dragonmonk"),
                 "Setup step 7's own name, which is a label on the seat rather than an identity.");
@@ -401,8 +402,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(dealt, Has.Member(MinCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(19));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(19),
+            Assert.That(dealt, Has.Count.EqualTo(20));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(20),
                 "and no two rows name one printed set.");
         }
     }

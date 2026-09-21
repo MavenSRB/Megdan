@@ -468,6 +468,18 @@ namespace GuardsDigital.Tests.EditMode
                     // fixture's own deck as a side effect.
                     SyntheticShowcaseHand.CreateRedWithBorrowedCardTextSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithDeckItemSkill(owner),
+                    // Milestone 8.69g's THREE handler types on THREE cards, and the grouping rule is
+                    // why there are three rather than one: a card carries two contracts only when one
+                    // printed SENTENCE carries both, and Brynn's three questions live on three
+                    // different faces - the guides' second sentence, the split Reds' gate and the
+                    // tracking swaps' subject. Two are Skills printing a Radius 3, because both
+                    // contracts measure their reach off the performing card's own printed icon; the
+                    // third is an "After the attack" rider on an Attack, because the fact it publishes
+                    // is a fact about the Attack that is running and a Skill would have nothing to ask
+                    // it about.
+                    SyntheticShowcaseHand.CreateRedWithObstacleRadiusSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithTrackingSwapSubjectSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithObstacleTargetingRiderText(owner),
                     SyntheticResolvedRepriseHand.Create(owner),
                     SyntheticCoupledEscortHand.Create(owner)
                 }
@@ -627,6 +639,16 @@ namespace GuardsDigital.Tests.EditMode
                 // capabilities through the triggered-effect concat below rather than through a card
                 // node, which is what that concat is there for.
                 .Concat(MinCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.69g, the twentieth dealing and the narrowest a dealing has been since
+                // Rowenna's: his THREE own contracts are reachable from this concat and from nowhere
+                // else. ALL THREE are new handler TYPES, each proved on its own showcase card above
+                // before this concat admits the ten faces that name them. Nothing else of his owes a
+                // showcase consumer, because everything else his eighteen faces name is the roster's
+                // own vocabulary - the modal Attack, `choose-target@2`, the three printed-Radius
+                // selections, `synthetic-direct-move@3`, `synthetic-swap-actor@1`, both discards, the
+                // Defeat and `retrieve-card@1`. He declares no token, no marker and no triggered
+                // effect, so there is no triggered-effect contribution of his to the concat below.
+                .Concat(BrynnCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

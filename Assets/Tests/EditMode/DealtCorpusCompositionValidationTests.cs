@@ -100,16 +100,21 @@ namespace GuardsDigital.Tests.EditMode
                     // Milestone 8.69f widened it again, for the twentieth hero and for exactly the
                     // reason every line above it was added. Brynn the Seeker's printed set became
                     // whole at that block and its eighteen playable faces went into
-                    // `DealtDefinitions`, while milestone 7.9's gate holds his three contracts out of
-                    // the registration list until 8.69g deals him. Validating him against the
-                    // registered list alone would report ten faces as naming unregistered capabilities
-                    // and say NOTHING about the parameter and output names this case exists to check.
+                    // `DealtDefinitions`, while milestone 7.9's gate held his three contracts out of
+                    // the registration list until 8.69g dealt him. Validating him against the
+                    // registered list alone would then have reported ten faces as naming unregistered
+                    // capabilities and said NOTHING about the parameter and output names this case
+                    // exists to check.
                     //
-                    // `BrynnComponentContent.DeferredHandlers` is his whole debt: the obstacle-radius
+                    // MILESTONE 8.69g DEALT HIM, so `BrynnComponentContent.DeferredHandlers` now
+                    // returns EMPTY and the three entries it used to supply - the obstacle-radius
                     // presence predicate, the question his split faces ask of the Attack that is
-                    // running, and the union selection his three swaps choose over. He declares no
-                    // token, no marker and no triggered effect, and every other contract his bodies
-                    // name is the roster's own.
+                    // running, and the union selection his three swaps choose over - arrive through
+                    // the registered catalog above. The line stays rather than being deleted, on the
+                    // terms the eight discharged lines above state: an empty concat is what a
+                    // discharged deferral looks like, and the next hero to compose against these files
+                    // finds the shape already here. He declares no token, no marker and no triggered
+                    // effect, and every other contract his bodies name is the roster's own.
                     .Concat(BrynnComponentContent.DeferredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));

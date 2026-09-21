@@ -324,6 +324,32 @@ namespace GuardsDigital.Core.Cards
                 // owns rather than content of hers. Both are new handler TYPES, so each took a
                 // showcase consumer in this same change.
                 .Concat(MinComponentContent.RegisteredHandlers())
+                // Milestone 8.69g, the milestone that deals Brynn the Seeker as the TWENTIETH hero.
+                // THREE handlers, which is the narrowest group any dealing since Rowenna's has
+                // contributed, and every one of them is content of HIS rather than generic vocabulary -
+                // which is why they register from here exactly as Min's seventeen and Bain's four do:
+                //
+                //   * `brynn-enemy-hero-in-radius-adjacent-to-obstacles@1` (8.69a), the presence
+                //     predicate Mountain Guide, Expedition Leader, True Grit and Die Hard gate their
+                //     second sentence on. It is hero-scoped rather than a widening of
+                //     `subject-adjacent-terrain-presence@1`, because that contract answers about p.18's
+                //     terrain and this one about a THRESHOLD over p.18's whole obstacle list.
+                //   * `brynn-attack-target-was-adjacent-to-obstacles@1` (8.69b), the question Split
+                //     Attack, Split Throw and Peak Precision ask of the Attack that is running - about
+                //     the TARGETING rather than about a hero, which is why p.14's step-6 removal of a
+                //     defeated target does not turn the answer over.
+                //   * `brynn-tracking-swap-subject@1` (8.69d), the one selection Tread Lightly, Cover
+                //     Tracks and Hide Traces choose over: the union of p.19's ring and the enemy heroes
+                //     in the performing card's printed Radius who satisfy his predicate.
+                //
+                // ALL THREE ARE NEW HANDLER TYPES, so each took a showcase consumer in this same
+                // change - the Red Surveyor, the Red Quarryman's rider and the Red Pathkeeper. NOTHING
+                // ELSE OF HIS REGISTERS: he places no token, attaches no marker and holds no triggered
+                // effect (his shard records that outright), and his Ultimate is a permanent ability
+                // whose whole content is a standing rule declaration `UltimateUnlockQuery` derives -
+                // Rowenna's and Whisper's shape - so there is no `BrynnActiveEffectContent` and no
+                // triggered-effect concat above.
+                .Concat(BrynnComponentContent.RegisteredHandlers())
                 .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
 
         // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate, adds NOTHING to the list

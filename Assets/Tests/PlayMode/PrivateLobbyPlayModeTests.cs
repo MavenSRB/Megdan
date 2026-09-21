@@ -1246,6 +1246,108 @@ namespace GuardsDigital.Tests.PlayMode
                 "Zero matches is explicit rather than a stale highlighted hero or a blank unexplained row.");
         }
 
+        /// <summary>
+        /// Milestone 8.69g, and THE USER'S ONE NAMED REQUIREMENT FOR THE TWENTIETH HERO: "keep in mind
+        /// he needs to be correctly implemented in new hero pick screen". Brynn the Seeker's roster
+        /// row carries three stars and Tactician, Damager, Durable, and this case drives the RENDERED
+        /// star and role buttons over his button to prove the picker reads them.
+        ///
+        /// <para>It is the rendered tier rather than <c>HeroSelectionStageTests</c>'s because a row
+        /// with the right facts and a filter that cannot see them looks identical offline. Each of his
+        /// three roles is selected in turn and his button has to survive all three - role filters
+        /// combine with AND, so a row missing one of them drops out at that click - and then Healer, a
+        /// role he does not carry, has to remove him. The capture is taken with the three-star filter
+        /// and Durable selected and is INSPECTED, not merely written.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator BrynnIsFoundByHisThreeStarsAndEachOfHisThreeRoles()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var starButtons = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roleButtons = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => starButtons.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roleButtons.Single(button =>
+                button.userData is HeroRole role && role == value);
+
+            bool BrynnIsVisible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-brynn");
+
+            Assert.That(BrynnIsVisible(), Is.True,
+                "He is the twentieth pick and the unfiltered list has to offer him at all.");
+
+            UiPlayer.Click(Star(HeroComplexity.VeryComplex));
+            yield return null;
+            Assert.That(BrynnIsVisible(), Is.True,
+                "THREE STARS: the selection card prints three filled stars, which p.21 calls Very " +
+                "Complex, and the star filter reads the roster row this dealing wrote.");
+            Assert.That(HeroOptions(driver).Select(button =>
+                    ((PrivateLobbyHeroOption)button.userData).Complexity),
+                Is.All.EqualTo(HeroComplexity.VeryComplex));
+
+            UiPlayer.Click(Role(HeroRole.Tactician));
+            yield return null;
+            Assert.That(BrynnIsVisible(), Is.True, "and he is a TACTICIAN.");
+
+            UiPlayer.Click(Role(HeroRole.Damager));
+            yield return null;
+            Assert.That(BrynnIsVisible(), Is.True,
+                "and a DAMAGER - role filters combine with AND, so surviving the second click is a " +
+                "claim about the row carrying both.");
+
+            UiPlayer.Click(Role(HeroRole.Durable));
+            yield return null;
+            Assert.That(BrynnIsVisible(), Is.True, "and DURABLE, which is his third and last role.");
+
+            var brynn = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-brynn");
+            UiPlayer.Click(brynn);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-brynn"),
+                "and his button is pickable where it stands, with his own pick card shown beside it.");
+
+            UiPlayer.Click(Role(HeroRole.Tactician));
+            UiPlayer.Click(Role(HeroRole.Damager));
+            yield return null;
+            Assert.That(BrynnIsVisible(), Is.True,
+                "Three stars and DURABLE alone is the state the capture below is taken in.");
+
+            // The hover half, which is what the capture has to show: the picker draws the hovered
+            // hero's own selection front out of `Private/HeroSelection/<heroId>`, so an overview that
+            // stays hidden for him is a prepared front the dealing never wrote. The pointer is rested
+            // on the button and on its tile, because the view registers the enter on the tile and the
+            // focus on the button and a fixture must not depend on which of the two it gets.
+            var hovered = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-brynn");
+            if (hovered.parent != null)
+            {
+                UiPlayer.PointAt(hovered.parent);
+            }
+
+            UiPlayer.PointAt(hovered);
+            yield return null;
+            Assert.That(
+                UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroOverviewName)), Is.True,
+                "Hovering his button draws HIS pick card - the extraction's own selection front, " +
+                "prepared as an ignored private resource by this same dealing.");
+            yield return UiPlayer.CaptureScreen("tmp/869g-brynn-filters-1920x1080.png");
+
+            UiPlayer.Click(Role(HeroRole.Healer));
+            yield return null;
+            Assert.That(BrynnIsVisible(), Is.False,
+                "and a role he does NOT carry removes him, which is what says the filter is reading " +
+                "his row rather than showing every hero whatever is selected.");
+        }
+
         [UnityTest]
         public IEnumerator PickerRemainsReadableAtNormalAndShortViewports()
         {

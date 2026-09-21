@@ -121,22 +121,22 @@ namespace GuardsDigital.Tests.EditMode
         };
 
         /// <summary>
-        /// Every capability reference his composed bodies name that this build does NOT register, as the
-        /// build spells them - milestone 7.9's gate, written out.
+        /// The THREE capability references that are his own - the contracts his series minted and that
+        /// no other hero's content names - as the build spells them.
         ///
-        /// <para>8.69g registers every one of them, and all THREE are new handler TYPES, so each
-        /// additionally owes a showcase consumer - the gate's second half. The case below asserts this
-        /// list as a SET, so a registration that arrives early and a deferral nobody noticed both fail
-        /// here.</para>
+        /// <para>They were the deferral list until milestone 8.69g; that milestone dealt him and
+        /// registered every one of them in the same change, and all THREE are new handler TYPES, so
+        /// each additionally took a showcase consumer - the gate's second half. The case below asserts
+        /// this list as a SET from three directions at once: what the build refuses (nothing), what his
+        /// declaration list holds, and what a walk over his faces names.</para>
         ///
         /// <para><b>A fourth declaration of his series is deliberately NOT here, because no composed
         /// sentence reaches it</b> - 8.69a's <c>brynn-hero-adjacent-to-obstacles@1</c>, minted for the
         /// split faces' gate and superseded by 8.69b's, which asks the question of the ATTACK rather
-        /// than of a hero. A capability nothing can start is a registration this milestone DROPPED
-        /// rather than one 8.69g makes reachable by nothing, and the declaration is gone from the
-        /// tree.</para>
+        /// than of a hero. A capability nothing can start is a registration 8.69f DROPPED rather than
+        /// one 8.69g makes reachable by nothing, and the declaration is gone from the tree.</para>
         /// </summary>
-        private static readonly string[] WithheldUntilTheDealing =
+        private static readonly string[] HisOwnContracts =
         {
             "brynn-attack-target-was-adjacent-to-obstacles@1",
             "brynn-enemy-hero-in-radius-adjacent-to-obstacles@1",
@@ -675,13 +675,19 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// EXACTLY these capability references his composed bodies name are still withheld, and EXACTLY
-        /// these faces name one - milestone 7.9's gate read from both sides, so that a registration
-        /// arriving early, a deferral arriving unnoticed and a face that quietly stopped asking for a
-        /// contract each fail here rather than at his dealing.
+        /// EXACTLY these capability references are his own, EXACTLY these faces name them, and NOT ONE
+        /// of his composed bodies is refused by what this build registers - milestone 7.9's gate read
+        /// from both sides at the far end of it, so that a contract falling out of the registration, a
+        /// deferral arriving unnoticed and a face that quietly stopped asking for a contract each fail
+        /// here.
+        ///
+        /// <para>Before milestone 8.69g this case asserted the mirror image: the same three contracts
+        /// unregistered, and TEN of his fifteen composed bodies refused. The ten are named in the
+        /// closing message rather than deleted, because what the dealing bought is exactly the
+        /// difference between those two lists.</para>
         /// </summary>
         [Test]
-        public void ExactlyTheseContractsAreWithheld_AndExactlyTheseFacesNameThem()
+        public void ExactlyTheseContractsAreHisOwn_AndNoFaceOfHisIsRefused()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
 
@@ -699,24 +705,37 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(capability => capability.ToString())
                     .Distinct()
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(WithheldUntilTheDealing.OrderBy(value => value, StringComparer.Ordinal)),
-                "The set of contracts this build refuses to start for him is exactly the series' own " +
-                "deferral list. 8.69g registers every one of them.");
+                Is.Empty,
+                "Every contract his composed bodies name is one a configured match can start, which " +
+                "is what dealing him means. The three that were withheld until 8.69g are " +
+                string.Join(", ", HisOwnContracts) + ".");
 
             Assert.That(
-                named.Count(capability => registered.IsRegistered(capability)),
+                named.Select(capability => capability.ToString())
+                    .Where(value => value.StartsWith("brynn-", StringComparison.Ordinal))
+                    .Distinct()
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(HisOwnContracts.OrderBy(value => value, StringComparer.Ordinal)),
+                "and exactly three of them are HIS - a contract of his that no face names, and a " +
+                "fourth one appearing, both fail here.");
+
+            Assert.That(
+                named.Count(capability =>
+                    !capability.ToString().StartsWith("brynn-", StringComparison.Ordinal)),
                 Is.GreaterThan(0),
-                "and his bodies genuinely reach registered contracts too - the modal Attack, the " +
-                "direct move, the swap, the discard, the Defeat and the retrieval are the build's " +
-                "own - so the case above is not passing because the walk found nothing.");
+                "and his bodies genuinely reach the roster's own contracts too - the modal Attack, " +
+                "the direct move, the swap, the discard, the Defeat and the retrieval - so the cases " +
+                "above are not passing because the walk found nothing.");
 
             Assert.That(
-                BrynnComponentContent.DeferredHandlers()
+                BrynnComponentContent.RegisteredHandlers()
                     .Select(handler => handler.Reference.ToString())
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(WithheldUntilTheDealing.OrderBy(value => value, StringComparer.Ordinal)),
+                Is.EqualTo(HisOwnContracts.OrderBy(value => value, StringComparer.Ordinal)),
                 "and the declaration list and the walk over his faces agree, which is what says the " +
                 "dropped fourth declaration is dropped from BOTH sides rather than just unreferenced.");
+            Assert.That(BrynnComponentContent.DeferredHandlers(), Is.Empty,
+                "with nothing of his withheld any more.");
 
             var refusedFaces = new List<string>();
             foreach (var definition in BrynnCardContent.AllDefinitions)
@@ -730,31 +749,22 @@ namespace GuardsDigital.Tests.EditMode
                         : EffectDefinitionValidator.Validate(action.EffectRoot, registered);
                     if (rejections.Count > 0)
                     {
-                        refusedFaces.Add(definition.Id.Value);
+                        refusedFaces.Add(definition.Id.Value + ": " + string.Join(
+                            "; ", rejections.Select(rejection => rejection.ToString())));
                     }
                 }
             }
 
             Assert.That(
-                refusedFaces.OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(new[]
-                {
-                    "brynn-cover-tracks",
-                    "brynn-die-hard",
-                    "brynn-expedition-leader",
-                    "brynn-hide-traces",
-                    "brynn-mountain-guide",
-                    "brynn-peak-precision",
-                    "brynn-split-attack",
-                    "brynn-split-throw",
-                    "brynn-tread-lightly",
-                    "brynn-true-grit"
-                }),
-                "TEN of his fifteen composed bodies are refused by what this build registers, and the " +
-                "five that are not - Familiar Ground, Decoy and the three traps - name only contracts " +
-                "the build already owns, because a modal Attack, a printed-Radius selection, a direct " +
-                "move, a discard and a Defeat are the roster's own vocabulary. That asymmetry is the " +
-                "whole of what registration buys at 8.69g.");
+                refusedFaces, Is.Empty,
+                "NONE of his fifteen composed bodies is refused any more. Until milestone 8.69g TEN " +
+                "of them were - Cover Tracks, Die Hard, Expedition Leader, Hide Traces, Mountain " +
+                "Guide, Peak Precision, Split Attack, Split Throw, Tread Lightly and True Grit - " +
+                "while the other five, Familiar Ground, Decoy and the three traps, named only " +
+                "contracts the build already owned, because a modal Attack, a printed-Radius " +
+                "selection, a direct move, a discard and a Defeat are the roster's own vocabulary. " +
+                "That difference is the whole of what registration bought. Refused now: " +
+                string.Join(" | ", refusedFaces));
         }
 
         /// <summary>
@@ -906,15 +916,15 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void HisContractsAndDecisionLabels_AreOneListEach()
         {
-            Assert.That(BrynnComponentContent.RegisteredHandlers(), Is.Empty,
-                "Milestone 7.9's gate holds until 8.69g deals him.");
+            Assert.That(BrynnComponentContent.DeferredHandlers(), Is.Empty,
+                "Milestone 7.9's gate held until 8.69g dealt him, and 8.69g discharged it.");
             Assert.That(
                 BrynnComponentContent.Handlers().Select(handler => handler.Reference.ToString())
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(BrynnComponentContent.DeferredHandlers()
+                Is.EqualTo(BrynnComponentContent.RegisteredHandlers()
                     .Select(handler => handler.Reference.ToString())
                     .OrderBy(value => value, StringComparer.Ordinal)),
-                "so the registered-or-deferred list is the deferred one, exactly.");
+                "so the registered-or-deferred list is the registered one, exactly.");
             Assert.That(
                 BrynnComponentContent.Handlers().Select(handler => handler.Reference).Distinct()
                     .Count(),
@@ -978,9 +988,10 @@ namespace GuardsDigital.Tests.EditMode
                 Assert.That(
                     DecisionLabelCatalog.TryGetLabel(
                         declaration.CardId, declaration.NodeId, out _),
-                    Is.False,
-                    declaration.NodeId.Value + " must NOT be in the catalog yet: every hero's table " +
-                    "joins it at the milestone that DEALS them, which for him is 8.69g.");
+                    Is.True,
+                    declaration.NodeId.Value + " must be in the catalog: every hero's table joins it " +
+                    "at the milestone that DEALS them, which for him was 8.69g. Until then this " +
+                    "case asserted the opposite, which is what kept the join honest.");
             }
         }
 
@@ -1095,19 +1106,20 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The bounded catalog his content runs against: everything this build registers, plus exactly
-        /// the three contracts his series withholds.
+        /// The bounded catalog his content runs against: everything this build registers, plus his own
+        /// three contracts - which, since milestone 8.69g dealt him, are a subset of the first list.
         ///
-        /// <para>The <c>GroupBy</c> is milestone 8.40j's BA-18 lesson: handing a registered handler
-        /// back in as content is what threw "Capability references must be unique" at Bain's
-        /// dealing.</para>
+        /// <para>The concat stays rather than being deleted, because it is what says which contracts
+        /// this fixture depends on, and the <c>GroupBy</c> is what keeps it harmless - milestone
+        /// 8.40j's BA-18 lesson: handing a registered handler back in as content is what threw
+        /// "Capability references must be unique" at Bain's dealing.</para>
         /// </summary>
         private static EffectCapabilityCatalog Catalog()
         {
             var build = MatchContentCatalogs.ForThisBuild().Capabilities;
             return new EffectCapabilityCatalog(
                 build.Registered.Select(build.Load)
-                    .Concat(BrynnComponentContent.DeferredHandlers())
+                    .Concat(BrynnComponentContent.Handlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
         }

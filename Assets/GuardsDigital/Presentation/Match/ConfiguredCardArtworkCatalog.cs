@@ -119,7 +119,18 @@ namespace GuardsDigital.Presentation.Match
                 // token corpus name a hero the same way. Written here at the same moment as the
                 // eighteen rows, for the reason those paragraphs give: the rows alone are what every
                 // offline tier can see, and this map is what turns them into a front on a card.
-                { "min", "Min" }
+                { "min", "Min" },
+                // Milestone 8.69g, the THIRTEENTH consecutive dealing told by the comment above rather
+                // than by a check. His extraction directory spells the name plainly and his STANDEE
+                // agrees with it - the bundled manifest carries his circular faces under `Brynn` too -
+                // so for the second dealing running the card corpus and the token corpus name a hero
+                // the same way. What does NOT agree is the Tabletopia card GROUP, which calls him
+                // "Brynn the Tracker" where the dashboard prints "the Seeker"; the dashboard is the
+                // printed authority and the display name follows it, while this map follows the
+                // DIRECTORY. Written here at the same moment as the eighteen rows, for the reason
+                // those paragraphs give: the rows alone are what every offline tier can see, and this
+                // map is what turns them into a front on a card.
+                { "brynn", "Brynn" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -433,6 +444,13 @@ namespace GuardsDigital.Presentation.Match
                 // Backup, Cutter's Few More Steps, Bain's Side Quest and Rowenna's Earn the Spurs
                 // are not among theirs.
                 .Concat(MinCardContent.DealtDefinitions)
+                // Milestone 8.69g. Brynn's eighteen, on exactly the terms the rows above state. Home
+                // Turf is p.20's Handicap card and is not among his DealtDefinitions, exactly as
+                // Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance,
+                // Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard, Swift's
+                // Backup, Cutter's Few More Steps, Bain's Side Quest, Rowenna's Earn the Spurs and
+                // Min's Chop Down are not among theirs.
+                .Concat(BrynnCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

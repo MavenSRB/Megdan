@@ -687,7 +687,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSelection_DeclaresNoParametersAndPublishesTheThreeConventionalOutputs()
         {
-            var handler = BrynnComponentContent.SwapDeferredHandlers().Single();
+            var handler = BrynnComponentContent.SwapRegisteredHandlers().Single();
 
             Assert.That(handler.Reference, Is.EqualTo(BrynnComponentContent.TrackingSwapSubjectV1));
             Assert.That(handler.Schema.Parameters, Is.Empty);
@@ -824,33 +824,32 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The selection is declared and withheld, asserted from BOTH sides: it is in his own deferred
-        /// list, and it is not registered in the catalog a configured match loads.
+        /// The selection is declared and REGISTERED since milestone 8.69g dealt him, asserted from
+        /// BOTH sides: it is in his own registered list, the deferral list that used to hold it is
+        /// empty, and the catalog a configured match loads can start it.
         /// </summary>
         [Test]
-        public void TheSelection_IsDeferredAndUnreachableFromAConfiguredMatch()
+        public void TheSelection_IsRegisteredAndReachableFromAConfiguredMatch()
         {
-            Assert.That(BrynnComponentContent.SwapRegisteredHandlers(), Is.Empty,
-                "Nothing of his is registered, because 8.69g is the block that deals him.");
+            Assert.That(BrynnComponentContent.SwapDeferredHandlers(), Is.Empty,
+                "Nothing of his is withheld any more, because 8.69g is the block that dealt him.");
             Assert.That(
-                BrynnComponentContent.SwapDeferredHandlers()
+                BrynnComponentContent.SwapRegisteredHandlers()
                     .Select(handler => handler.Reference.ToString()).ToArray(),
                 Is.EqualTo(new[] { BrynnComponentContent.TrackingSwapSubjectV1.ToString() }));
 
             Assert.That(
                 MatchContentCatalogs.ForThisBuild().Capabilities
                     .IsRegistered(BrynnComponentContent.TrackingSwapSubjectV1),
-                Is.False,
-                "'brynn-tracking-swap-subject@1' must not be reachable from a configured match " +
-                "before a dealt card of his can start it: the registered content list is serialized " +
-                "and pinned, so registering early moves pinned bytes while no content moved.");
+                Is.True,
+                "'brynn-tracking-swap-subject@1' is the one selection Tread Lightly, Cover Tracks " +
+                "and Hide Traces choose over, and all three are cards a configured match now deals - " +
+                "so a build that could not start it would grey out every swap he prints.");
 
             Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
                 "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap "
-                + "the nineteenth. The dealt-corpus validator stays green because it validates "
-                + "against what the build registers PLUS the declarations it deliberately withholds "
-                + "- 8.57f's precedent - and the registration debt is asserted by name in "
-                + "BrynnPrintedSetTests.");
+                + "the nineteenth. With the registration in place the dealt-corpus validator refuses "
+                + "none of them.");
             foreach (var definition in BrynnCardContent.SwapDefinitions)
             {
                 Assert.That(
@@ -1289,14 +1288,15 @@ namespace GuardsDigital.Tests.EditMode
                     heroItems: items);
 
             /// <summary>
-            /// This build's whole synthetic vocabulary plus the ONE selection this block defers.
-            /// Naming the deferred list rather than the whole one is milestone 8.40j's BA-18: a
-            /// fixture that hands back already-registered handlers is refused for a duplicate
-            /// reference.
+            /// This build's whole synthetic vocabulary plus the ONE selection this block declares.
+            /// It named the DEFERRED list until milestone 8.69g moved the selection to the registered
+            /// one; naming a block list rather than the build's whole catalog is milestone 8.40j's
+            /// BA-18, because this is a bounded synthetic catalog and handing back a handler the
+            /// synthetic vocabulary already holds is refused for a duplicate reference.
             /// </summary>
             private static EffectCapabilityCatalog Catalog() =>
                 SyntheticEffectCapabilities.CreateCatalog(
-                    BrynnComponentContent.SwapDeferredHandlers());
+                    BrynnComponentContent.SwapRegisteredHandlers());
 
             internal EffectResolutionStepResult Run()
             {

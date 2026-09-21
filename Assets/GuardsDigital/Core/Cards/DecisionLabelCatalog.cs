@@ -118,6 +118,14 @@ namespace GuardsDigital.Core.Cards
                 // same rule: her two swapping Stances and Dragon's step, Ruse's and Cobra's
                 // re-places, both Grenades' "up to N enemy heroes", Perfect Self's one-or-both modal
                 // and Flurry of Blows' repeat.
-                .Concat(MinEffectContent.DecisionLabels());
+                .Concat(MinEffectContent.DecisionLabels())
+                // Milestone 8.69g, the milestone that deals Brynn the Seeker as the TWENTIETH hero.
+                // His NINETEEN declarations join here rather than at the five blocks that composed
+                // them, on the same rule: what a table is FOR is a window over a card a match deals.
+                // Decoy's three performances, Familiar Ground's two p.10 bullets, the two bullets each
+                // of his three traps prints, Split Attack's printed "may repeat" and Peak Precision's
+                // "you may retrieve" - derived at 8.69f from `DecisionLabelRequirementQuery` over his
+                // dealt faces rather than counted by hand, which is what found ten of them.
+                .Concat(BrynnEffectContent.DecisionLabels());
     }
 }

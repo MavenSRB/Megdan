@@ -315,7 +315,19 @@ namespace GuardsDigital.Tests.EditMode
             // hero selections on Widget's anchored-target handler, and her four Active-effect
             // creations on `ActiveEffectCreationHandler`, the type Arien's five persistent texts
             // proved at milestone 6.8 - and this rule counts TYPES.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(91),
+            // Milestone 8.69g, the TWENTIETH dealing, moves it 91 -> 94. Brynn the Seeker registers
+            // exactly THREE capability ids and every one of them is a new handler TYPE, which is the
+            // first time a dealing's id count and its type count have been equal: nothing of his
+            // reuses a contract of his own, because his three questions are asked of three different
+            // subjects - a disk of enemy heroes, the target the running Attack bound, and the union
+            // of p.19's ring with that disk. `EnemyHeroInRadiusAdjacentToObstaclesHandler` (8.69a),
+            // `AttackTargetWasAdjacentToObstaclesHandler` (8.69b) and `TrackingSwapSubjectHandler`
+            // (8.69d) each took a showcase consumer in the same change - the Red Surveyor, the Red
+            // Quarryman's "After the attack" rider and the Red Pathkeeper. Everything else his
+            // eighteen faces name runs on types this build already had - the modal Attack, the
+            // printed-Radius selections, the direct move, the swap, the discard, the Defeat and the
+            // retrieval - and this rule counts TYPES.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(94),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

@@ -189,6 +189,14 @@ namespace GuardsDigital.Tests.EditMode
                 // SyntheticRosterCapabilities, and this mirror is of VerifiedCapabilityHandlers
                 // alone, exactly as Silverarrow's CardTextFastTravelHandler is excluded above.
                 .Concat(MinComponentContent.RegisteredHandlers())
+                // Milestone 8.69g. Brynn's THREE - the obstacle-radius presence predicate, the
+                // question his three split faces ask of the running Attack, and the union selection
+                // his three swaps choose over - joining the moment his dealing milestone put them
+                // into MatchContentCatalogs, and mirrored BY HAND here for the reason Dodger's pair
+                // records: a mirror that called the production composer would agree with it by
+                // construction and prove nothing. He contributes NO Active effect and NO token, so
+                // all three of his are ordinary capability handlers of his own.
+                .Concat(BrynnComponentContent.RegisteredHandlers())
                 .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
     }
 }

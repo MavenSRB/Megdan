@@ -73,19 +73,19 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string ChosenMinionOutputName = "chosenMinion";
 
         /// <summary>
-        /// Nothing this build registers, until 8.69g deals him. The member exists so a "registered or
-        /// deferred" sweep keeps its shape and so the fixture asserting the deferral asks a question
-        /// rather than failing to compile.
+        /// The one selection this block declares, REGISTERED since milestone 8.69g dealt him: Tread
+        /// Lightly, Cover Tracks and Hide Traces are cards a configured match now deals. It is a new
+        /// handler TYPE, so the same change gave it a showcase consumer - the Red Pathkeeper.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> SwapRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[] { new TrackingSwapSubjectHandler() };
 
         /// <summary>
-        /// The one selection this block declares and this build withholds. It is a new handler TYPE, so
-        /// 8.69g owes it a showcase consumer as well as a registration.
+        /// Nothing, since milestone 8.69g dealt him. The member stays rather than being deleted, on the
+        /// terms the obstacle partial's own pair states.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> SwapDeferredHandlers() =>
-            new IEffectCapabilityHandler[] { new TrackingSwapSubjectHandler() };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// The union, whole: every unit standing in p.19's innermost ring around him, plus every enemy

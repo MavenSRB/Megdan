@@ -868,20 +868,23 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Milestone 7.9's gate, asserted from BOTH sides. This block mints no contract at all - every
-        /// clause its five faces print composes on something already registered, or on the predicate
-        /// 8.69a deferred - and none of it reaches a configured match before 8.69g deals him.
+        /// Milestone 7.9's gate, asserted from BOTH sides and now from the far end of it. This block
+        /// mints no contract at all - every clause its five faces print composes on something the
+        /// build already registered, or on the predicate 8.69a minted - and since milestone 8.69g
+        /// dealt him EVERY one of them is reachable from a configured match.
         /// </summary>
         [Test]
-        public void ThisBlockMintsNothing_AndEveryContractItsFacesNameIsRegisteredOrDeferredBy869a()
+        public void ThisBlockMintsNothing_AndEveryContractItsFacesNameIsRegistered()
         {
             Assert.That(BrynnComponentContent.TrapAndGritDeferredHandlers(), Is.Empty,
                 "Five printed faces and not one new capability, which is this block's result rather " +
                 "than a gap - see BrynnComponentContent.Traps' own remarks.");
-            Assert.That(BrynnComponentContent.TrapAndGritRegisteredHandlers(), Is.Empty);
+            Assert.That(BrynnComponentContent.TrapAndGritRegisteredHandlers(), Is.Empty,
+                "and it registers nothing of its own either: both of its lists are empty on both " +
+                "sides of the dealing.");
 
             var build = MatchContentCatalogs.ForThisBuild();
-            var deferred = BrynnComponentContent.ObstacleDeferredHandlers()
+            var mintedBy869a = BrynnComponentContent.ObstacleRegisteredHandlers()
                 .Select(handler => handler.Reference)
                 .ToArray();
 
@@ -898,23 +901,18 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var reference in named)
             {
                 Assert.That(
-                    build.Capabilities.Registered.Contains(reference) || deferred.Contains(reference),
+                    build.Capabilities.IsRegistered(reference),
                     Is.True,
-                    reference + " is named by a face of his, so it is either a contract this build " +
-                    "already registers or one 8.69a deferred - never a third thing nobody owns.");
+                    reference + " is named by a face of his that a configured match now deals, so " +
+                    "the build must be able to start it - a card naming a contract nobody registers " +
+                    "is a card the offer query greys out.");
             }
 
             Assert.That(
-                named.Where(reference => deferred.Contains(reference)).ToArray(),
+                named.Where(reference => mintedBy869a.Contains(reference)).ToArray(),
                 Is.EqualTo(new[] { BrynnComponentContent.EnemyHeroInRadiusAdjacentToObstaclesV1 }),
-                "and exactly one of them is deferred: the presence predicate the two grit faces ask.");
-
-            foreach (var reference in deferred)
-            {
-                Assert.That(build.Capabilities.IsRegistered(reference), Is.False,
-                    reference + " must not be reachable from a configured match before a dealt card " +
-                    "of his can start it.");
-            }
+                "and exactly one of them is a contract of HIS: the presence predicate the two grit " +
+                "faces ask. Everything else these five faces name is the roster's own vocabulary.");
 
             Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
                 "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap "
@@ -1159,8 +1157,10 @@ namespace GuardsDigital.Tests.EditMode
 
         /// <summary>
         /// The bounded catalog this block's content runs against: everything the build registers, plus
-        /// the ONE contract 8.69a deferred. Nothing of this block's own is added, because this block
-        /// declares nothing.
+        /// the ONE contract 8.69a minted. Since milestone 8.69g dealt him the second list is a subset
+        /// of the first, and the GroupBy is what keeps that harmless - milestone 8.40j's BA-18: handing
+        /// a registered handler back in as content is what threw "Capability references must be
+        /// unique" at Bain's dealing. The concat stays so the fixture keeps naming what it depends on.
         /// </summary>
         private static MatchContentCatalogs Catalogs()
         {
@@ -1168,7 +1168,7 @@ namespace GuardsDigital.Tests.EditMode
             return new MatchContentCatalogs(
                 new EffectCapabilityCatalog(
                     build.Capabilities.Registered.Select(build.Capabilities.Load)
-                        .Concat(BrynnComponentContent.ObstacleDeferredHandlers())
+                        .Concat(BrynnComponentContent.ObstacleRegisteredHandlers())
                         .GroupBy(handler => handler.Reference)
                         .Select(group => group.First())),
                 build.Components,

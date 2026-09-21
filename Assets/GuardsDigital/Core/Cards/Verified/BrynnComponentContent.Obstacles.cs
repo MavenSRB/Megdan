@@ -78,23 +78,27 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string PresentOutputName = "present";
 
         /// <summary>
-        /// Nothing this build registers, until 8.69g deals him - see the type's own remarks for why the
-        /// gate is the point. The member exists so a "registered or deferred" sweep keeps its shape and
-        /// so the fixture asserting the deferral asks a question rather than failing to compile.
+        /// The ONE predicate this block declares, REGISTERED since milestone 8.69g dealt him. Mountain
+        /// Guide, Expedition Leader, True Grit and Die Hard gate their second sentence on it, and all
+        /// four are cards a configured match now deals - which is the whole of what milestone 7.9's
+        /// gate asks before a contract joins the build's catalog. It is a new handler TYPE, so the
+        /// same change gave it a showcase consumer (<c>SyntheticShowcaseHand</c>'s Red Surveyor).
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> ObstacleRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>
-        /// The ONE predicate this block declares and this build withholds. It is a new handler TYPE,
-        /// so 8.69g owes it a showcase consumer as well as a registration. The block's second
-        /// declaration was dropped at 8.69f - see the note where it used to stand.
-        /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> ObstacleDeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new EnemyHeroInRadiusAdjacentToObstaclesHandler()
             };
+
+        /// <summary>
+        /// Nothing, since milestone 8.69g dealt him. The member stays rather than being deleted: an
+        /// empty deferral list is what a DISCHARGED gate looks like, the sweeps that read "registered
+        /// or deferred" keep their shape, and a later block that withholds something of his finds the
+        /// shape already here. The block's second declaration was dropped at 8.69f - see the note
+        /// where it used to stand.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> ObstacleDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// "If an enemy hero in radius is adjacent to 3 or more obstacles" - whole.

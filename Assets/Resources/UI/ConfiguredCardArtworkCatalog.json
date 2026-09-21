@@ -348,6 +348,24 @@
     { "definitionId": "min-inner-strength", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min15__7348761__front.png" },
     { "definitionId": "min-ruse", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min16__7602331__front.png" },
     { "definitionId": "min-perfect-self", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min17__7348755__front.png" },
-    { "definitionId": "min-flurry-of-blows", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min18__7543864__front.png" }
+    { "definitionId": "min-flurry-of-blows", "contentRevision": "min-8-61i-rev-1", "sourcePath": "active-hero-cards/Min/min18__7543864__front.png" },
+    { "definitionId": "brynn-familiar-ground", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn__7690719__front.png" },
+    { "definitionId": "brynn-decoy", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn2__7711616__front.png" },
+    { "definitionId": "brynn-high-ground", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn3__7696235__front.png" },
+    { "definitionId": "brynn-elevated-ambush", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn4__7696236__front.png" },
+    { "definitionId": "brynn-split-attack", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn5__7690722__front.png" },
+    { "definitionId": "brynn-peak-precision", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn6__7696234__front.png" },
+    { "definitionId": "brynn-split-throw", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn7__7690723__front.png" },
+    { "definitionId": "brynn-tread-lightly", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn8__7690726__front.png" },
+    { "definitionId": "brynn-cover-tracks", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn9__7690727__front.png" },
+    { "definitionId": "brynn-mountain-guide", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn10__7724914__front.png" },
+    { "definitionId": "brynn-hide-traces", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn11__7690728__front.png" },
+    { "definitionId": "brynn-expedition-leader", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn12__7724915__front.png" },
+    { "definitionId": "brynn-bear-trap", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn13__7715988__front.png" },
+    { "definitionId": "brynn-log-trap", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn14__7715987__front.png" },
+    { "definitionId": "brynn-true-grit", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn15__7418476__front.png" },
+    { "definitionId": "brynn-deadfall-trap", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn16__7715986__front.png" },
+    { "definitionId": "brynn-die-hard", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn17__7418486__front.png" },
+    { "definitionId": "brynn-over-the-top", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn18__7550498__front.png" }
   ]
 }

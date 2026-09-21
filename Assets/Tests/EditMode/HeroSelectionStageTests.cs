@@ -123,7 +123,15 @@ namespace GuardsDigital.Tests.EditMode
                 ["hero-rowenna"] = (HeroComplexity.Complex,
                     HeroRole.Melee | HeroRole.Durable | HeroRole.Healer | HeroRole.Farming | HeroRole.Pusher | HeroRole.Tactician),
                 ["hero-min"] = (HeroComplexity.Complex,
-                    HeroRole.Tokens | HeroRole.Disabler | HeroRole.Damager | HeroRole.Melee)
+                    HeroRole.Tokens | HeroRole.Disabler | HeroRole.Damager | HeroRole.Melee),
+                // Milestone 8.69g. The TWENTIETH row, and the one the user asked for by name ("keep
+                // in mind he needs to be correctly implemented in new hero pick screen"): three
+                // filled stars and Tactician, Damager, Durable, read off
+                // `active-hero-cards/_selection-cards/Brynn__front.png` at the dealing rather than
+                // inferred from his kit. `PrivateLobbyPlayModeTests` drives the star and the three
+                // role buttons over his rendered button; this row is what those filters read.
+                ["hero-brynn"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Durable)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

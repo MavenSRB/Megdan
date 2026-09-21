@@ -867,7 +867,42 @@ namespace GuardsDigital.Presentation.Interaction
         /// Holy Death Grenade and Perfect Self - and Flurry of Blows unlocked. This is the only arm
         /// that reaches the two-hero end-of-turn grenade and Perfect Self's deck-card permanent item.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedMin = 103
+        VerifiedTierThreeAlternateEngagedStagedMin = 103,
+
+        /// <summary>
+        /// Milestone 8.69g. The engaged staging with Brynn the Seeker on the Blue seat, holding
+        /// rulebook p.6's five starting cards. The TWENTIETH hero.
+        /// </summary>
+        VerifiedEngagedStagedBrynn = 104,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Brynn holding the first sibling
+        /// of each colour: Elevated Ambush, Cover Tracks and Log Trap.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedBrynn = 105,
+
+        /// <summary>
+        /// The Tier II staging with Brynn holding the second sibling of each colour: Split Attack,
+        /// Mountain Guide and True Grit - the only Tier II arm that reaches a split repeat, a guide's
+        /// two sentences or the attack-card retrieval.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedBrynn = 106,
+
+        /// <summary>
+        /// The Tier III staging with Brynn holding the first sibling of each colour - Peak Precision,
+        /// Hide Traces and Deadfall Trap - and Over the Top unlocked beside his dashboard. This is the
+        /// only arm that reaches Peak Precision's self-retrieval, Hide Traces' "up to 2" trailing move
+        /// and Deadfall Trap's defeat.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedBrynn = 107,
+
+        /// <summary>
+        /// The Tier III staging with Brynn holding the second sibling of each colour - Split Throw,
+        /// Expedition Leader and Die Hard - and Over the Top unlocked. This is the only arm that
+        /// reaches Split Throw's mandatory repeat, Expedition Leader's second sentence and Die Hard's
+        /// four-space conditional move.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedBrynn = 108
     }
 
     [ExecuteAlways]
@@ -1476,6 +1511,25 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedMinTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.MinUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedBrynn =>
+                    MatchConfiguration.CreateStagedBrynnForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedBrynn =>
+                    MatchConfiguration.CreateStagedBrynnTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BrynnUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrynn =>
+                    MatchConfiguration.CreateStagedBrynnTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BrynnUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedBrynn =>
+                    MatchConfiguration.CreateStagedBrynnTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BrynnUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrynn =>
+                    MatchConfiguration.CreateStagedBrynnTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.BrynnUpgradeBranch.SecondSibling),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1542,7 +1596,11 @@ namespace GuardsDigital.Presentation.Interaction
                 IsStagedRowenna(content) ||
                 // Milestone 8.61j. Written in the SAME change as her five engaged members above, on
                 // the same terms. She has no ally arm at all, so all five of hers are here.
-                IsStagedMin(content))
+                IsStagedMin(content) ||
+                // Milestone 8.69g. Written in the SAME change as his five engaged members above, on
+                // the same terms. He has no ally arm at all either - p.17's Friendly covers the melee
+                // minion the restaging already leaves in his ring - so all five of his are here.
+                IsStagedBrynn(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2042,6 +2100,14 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusMinOneVsOne();
                     }
 
+                    // Milestone 8.69g. The twentieth hero's arm, written in the SAME change as his
+                    // five members and his restaging line - the three arms milestone 8.38f had to add
+                    // for Swift after the fact, and which every dealing since has shipped together.
+                    if (IsStagedBrynn(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusBrynnOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -2260,6 +2326,19 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedMin ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedMin ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedMin;
+
+        /// <summary>
+        /// Whether this content is one of milestone 8.69g's five staged Brynn scenes. Written in the
+        /// same change as those five members, the setup configuration they name and the restaging list
+        /// above - the three arms milestone 8.38f had to add for Swift after the fact, and which every
+        /// dealing since has therefore shipped together.
+        /// </summary>
+        private static bool IsStagedBrynn(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedBrynn ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedBrynn ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrynn ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedBrynn ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrynn;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

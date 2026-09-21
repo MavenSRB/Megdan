@@ -106,8 +106,29 @@ namespace GuardsDigital.Tests.EditMode
         /// shapes, whose mix is what most of the 21 KB is. 64 KiB is roughly three times that
         /// residual, and a third of the way to the removed term, so the line fails on the growth
         /// mechanism returning rather than on the match being late-game-shaped.
+        ///
+        /// <para><b>MILESTONE 8.69g RE-DERIVED IT 64 KiB -> 96 KiB, and the cause is ISOLATED and
+        /// ATTRIBUTED rather than absorbed.</b> Dealing Brynn the Seeker as the twentieth hero moved
+        /// this measurement from +22,544 B to +88,104 B in one step, which looks exactly like the
+        /// growth mechanism returning and is not. The isolation probe was a clean checkout of the
+        /// branch's own base commit, measured on this machine in the same session:</para>
+        /// <list type="bullet">
+        /// <item><description>base: early 132,776 B / late 155,320 B, captured 23,644 -> 32,709;</description></item>
+        /// <item><description>dealt: early 132,912 B / late 221,016 B, captured 23,780 -> 32,844.</description></item>
+        /// </list>
+        /// <para>The EARLY window moved by 136 bytes and the LATE window by 65,696. One hundred and
+        /// thirty-six bytes is what his three registered capability ids and his content identity cost
+        /// the registration list every snapshot records - it is the same +136 in both windows, and the
+        /// captured-byte line above measures it directly. Sixty-five thousand five hundred and thirty-
+        /// six is 64 KiB exactly: the late-match authoritative payload crossed 32,768 bytes (32,709 ->
+        /// 32,844) and the serialization buffer therefore doubles ONE more time than it did before.
+        /// That is a step function at a power of two, not a per-command term, and the next hero will
+        /// not pay it again.</para>
+        /// <para>96 KiB is above the measured 88,104 with room for the residual to breathe and BELOW
+        /// the 105,584-byte growth term milestone 7.9b removed, so this line still fails if
+        /// `RISK-PERF-001`'s mechanism comes back - which is the only thing it was ever for.</para>
         /// </remarks>
-        private const long MaximumAllocationGrowthAcrossACompleteMatch = 64 * 1024;
+        private const long MaximumAllocationGrowthAcrossACompleteMatch = 96 * 1024;
 
         /// <summary>
         /// How much more one command kind's median authoritative serialization may write at
