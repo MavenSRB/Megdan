@@ -1361,6 +1361,45 @@ namespace GuardsDigital.Tests.EditMode
                 "is unbound on every other arm.",
                 "Reassess for a face pairing the clause with a Radius icon, for one that names a " +
                 "MINION's card, or for one that asks about a card in a place p.4 keeps hidden.")
+            ,
+
+            // Milestone 8.71d (appended at the squash-merge)
+            new SharedFoundationClaim(
+                "timing.hero-scoped-active-effect-creation",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.ActiveEffectCreationHandler),
+                    nameof(GuardsDigital.Core.Effects.ActiveEffectCreationHandler
+                        .AffectedHeroParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuJourneyTests),
+                            nameof(HanuJourneyTests
+                                .TheSwapHappensAndBindsTheJourneyToTheHeroItNamed),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a selection's published hero becomes the created occurrence's affected " +
+                        "hero and its published affected output, while the controller stays the " +
+                        "hero who performed the action"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuJourneyTests),
+                            nameof(HanuJourneyTests
+                                .AnImmuneEnemyIsNeverOffered_AndADiskOfNobodyElseStopsTheSkill),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a selection with no legal subject stops the sequence, so no hero-scoped " +
+                        "occurrence is created at all")
+                },
+                new[] { "affected scope", "binding", "requiredness", "occurrence identity" },
+                "One required Hero input, declared only where the definition's affected scope names " +
+                "a hero, bound from an earlier node's output, carried onto the created occurrence " +
+                "and published as its affected output. Every other affected scope keeps the " +
+                "parameterless schema and the controller-named occurrence it had.",
+                "Reassess for a definition naming two heroes, for a scope that names a minion or a " +
+                "team member the same way, or for a binding that must survive the named hero " +
+                "leaving the board.")
         };
     }
 

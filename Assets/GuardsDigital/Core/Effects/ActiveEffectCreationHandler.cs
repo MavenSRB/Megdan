@@ -28,8 +28,39 @@ namespace GuardsDigital.Core.Effects
     /// </summary>
     public sealed class ActiveEffectCreationHandler : IEffectCapabilityHandler
     {
-        /// <summary>The acting hero, published so a later node can name whose effect this is.</summary>
+        /// <summary>
+        /// The hero this occurrence is about, published so a later node can name whose effect this is.
+        ///
+        /// <para>It is the acting hero for every scope whose membership the definition already
+        /// decides, and the NAMED hero for
+        /// <see cref="ActiveEffectAffectedScopeKind.Hero"/> - which is the one scope where the acting
+        /// hero is not who the effect is about. Milestone 8.71d; see
+        /// <see cref="AffectedHeroParameterName"/>.</para>
+        /// </summary>
         public const string AffectedOutputName = "affected";
+
+        /// <summary>
+        /// Milestone 8.71d. The one hero an
+        /// <see cref="ActiveEffectAffectedScopeKind.Hero"/>-scoped occurrence affects, as an input
+        /// bound from the node that named them.
+        ///
+        /// <para><b>Why the parameter exists only on that scope.</b> Every other scope decides its own
+        /// membership from the definition and the controller - the controller himself, his team, his
+        /// disk, everybody - so there is nothing for a caller to say. The Hero scope is the one that
+        /// names somebody, <see cref="ActiveEffectInstance"/> refuses an occurrence of it without a
+        /// hero, and until this milestone the only way to create one was to reach past this handler
+        /// and call the lifecycle directly. Hanu's three journeys - "Swap with an enemy hero in
+        /// radius. <b>This turn:</b> That hero is immune." - are the first printed content whose
+        /// Active effect is about somebody the card chose, so the selection's output is where the hero
+        /// comes from.</para>
+        ///
+        /// <para>It is REQUIRED on that scope rather than optional, which is the same invariant the
+        /// instance states said from the other side: an occurrence of a Hero-scoped definition with no
+        /// hero is not a weaker effect, it is a state this build refuses. Declaring it optional would
+        /// have moved that refusal from definition validation - where an unbound required input is
+        /// caught before a match ever runs - to the middle of a resolution.</para>
+        /// </summary>
+        public const string AffectedHeroParameterName = "affectedHero";
 
         private readonly ActiveEffectDefinition definition;
 
@@ -46,20 +77,48 @@ namespace GuardsDigital.Core.Effects
             Reference = reference;
             this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
             ActiveEffectDefinitions = Array.AsReadOnly(new[] { definition });
+            NamesAHero = definition.AffectedScope == ActiveEffectAffectedScopeKind.Hero;
+            Schema = NamesAHero
+                ? new EffectCapabilityParameterSchema(
+                    new[]
+                    {
+                        new EffectCapabilityParameter(
+                            AffectedHeroParameterName, EffectValueKind.Hero)
+                    },
+                    new[] { new EffectOutputBinding(AffectedOutputName, EffectValueKind.Hero) })
+                : new EffectCapabilityParameterSchema(
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(AffectedOutputName, EffectValueKind.Hero)
+                    });
         }
 
         public EffectCapabilityReference Reference { get; }
 
-        public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-            outputs: new[] { new EffectOutputBinding(AffectedOutputName, EffectValueKind.Hero) });
+        /// <summary>Whether this registration's definition is the one scope that names a hero.</summary>
+        private bool NamesAHero { get; }
+
+        public EffectCapabilityParameterSchema Schema { get; }
 
         public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; }
 
         public EffectExecutionResult Execute(EffectCapabilityContext context)
         {
+            var namedHero = NamedHero(context);
+            if (NamesAHero && !namedHero.IsDefined)
+            {
+                // Milestone 8.71d. A Hero-scoped occurrence with nobody named is not a weaker effect,
+                // so it is not created as one: the step cannot be performed and p.10 stops there.
+                // Definition validation refuses an unbound required input long before this, so the
+                // path reached here is a node whose selection published no hero at all.
+                return EffectExecutionResult.ImpossibleMandatory();
+            }
+
             var affected = new[]
             {
-                new EffectOutcomeFact(AffectedOutputName, EffectValue.Hero(context.ActorId))
+                new EffectOutcomeFact(
+                    AffectedOutputName,
+                    EffectValue.Hero(NamesAHero ? namedHero : context.ActorId))
             };
             if (context.Timing == null || context.Participants == null)
             {
@@ -75,7 +134,7 @@ namespace GuardsDigital.Core.Effects
                     definition,
                     context.ActorId,
                     context.Participants.GetTeamForHero(context.ActorId).Side,
-                    default,
+                    namedHero,
                     context.SourceCardInstanceId,
                     context.ActionDefinitionId,
                     Math.Max(context.RoundIndex, 1),
@@ -84,6 +143,22 @@ namespace GuardsDigital.Core.Effects
             }
 
             return EffectExecutionResult.Applied(affected);
+        }
+
+        /// <summary>
+        /// The hero a Hero-scoped occurrence affects, read from the input the node bound, or the
+        /// undefined hero for every other scope - which is the value the lifecycle has always been
+        /// handed and the value <see cref="ActiveEffectInstance"/> requires for those scopes.
+        /// </summary>
+        private GuardsDigital.Core.Units.Heroes.HeroId NamedHero(EffectCapabilityContext context)
+        {
+            if (!NamesAHero)
+            {
+                return default;
+            }
+
+            var named = context.Input(AffectedHeroParameterName);
+            return named.Kind == EffectValueKind.Hero ? named.HeroId : default;
         }
 
         /// <summary>
@@ -121,8 +196,20 @@ namespace GuardsDigital.Core.Effects
         /// rather than executing: this handler's own execution creates the effect and mints its
         /// instance identity, and a probe that ran it would grant the modification it was asked
         /// whether the actor could grant.
+        ///
+        /// <para><b>Milestone 8.71d gives it one thing to read, and it reads the same member the
+        /// execution reads.</b> A Hero-scoped creation can now refuse - a named hero who turns out to
+        /// be nobody is not a weaker effect - and a probe that answered from a second derivation, or
+        /// from none, is exactly the disagreement milestone 6.5ac's conformance rule exists to stop.
+        /// It costs nothing before the hero is chosen: <c>affectedHero</c> is a REQUIRED parameter, so
+        /// the feasibility walk treats a node whose binding has not been published yet as undecidable
+        /// and never asks this at all. Every other scope still answers the bare constant it always
+        /// did, because every other scope decides its own membership and has no refusal to
+        /// derive.</para>
         /// </summary>
         public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-            EffectExecutionResultKind.Applied;
+            NamesAHero && !NamedHero(context).IsDefined
+                ? EffectExecutionResultKind.ImpossibleMandatory
+                : EffectExecutionResultKind.Applied;
     }
 }
