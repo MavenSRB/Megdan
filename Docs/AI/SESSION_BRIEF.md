@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.69e**.
+- Current completed milestone: **8.69b**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.69b**.
+- Next proposed milestone: **8.69c**.
 
 On 2026-09-20 the user explicitly authorized and completed
 **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: two unlabeled, client-local hero-pick filter rows provide
@@ -48,7 +48,7 @@ The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57
 
 The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`, the current playtest package).
 
-On 2026-09-21 the user opened the TWENTIETH hero ("ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen") and chose **Brynn the Seeker**: **[8.69](Roadmap/PHASE_8_TWENTIETH_HERO.md)** (inventory; [his shard](Rules/HERO_BRYNN.md)) **8.69a** (`89b9629f`, the obstacle-adjacency query and Over the Top), **8.69d** (`2b246051`, the tracking swaps) and **8.69e** (`ebd62b5a`, the traps and grit) **are complete**; **8.69b** and **8.69c** finish the parallel wave, then **8.69f-8.69h** compose, deal and gate through a fully selectable, artworked hero whose picker row carries three stars and Tactician/Damager/Durable for the 8.35z86 filters. His set is built on one predicate, "adjacent to 3 or more obstacles", which his Ultimate makes true of every enemy hero while he acts; BR-Q13 was settled by the user 2026-09-21 (the water ring counts); BR-Q4 waits on the user. No other hero or package is authorized.
+On 2026-09-21 the user opened the TWENTIETH hero ("ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen") and chose **Brynn the Seeker**: **[8.69](Roadmap/PHASE_8_TWENTIETH_HERO.md)** (inventory; [his shard](Rules/HERO_BRYNN.md)) **8.69a** (`89b9629f`, the obstacle-adjacency query and Over the Top), **8.69d** (`2b246051`, the tracking swaps), **8.69e** (`ebd62b5a`, the traps and grit) and **8.69b** (`9c772092`, the split attacks and Peak Precision) **are complete**; **8.69c** finishes the parallel wave, then **8.69f-8.69h** compose, deal and gate through a fully selectable, artworked hero whose picker row carries three stars and Tactician/Damager/Durable for the 8.35z86 filters. His set is built on one predicate, "adjacent to 3 or more obstacles", which his Ultimate makes true of every enemy hero while he acts; BR-Q13 was settled by the user 2026-09-21 (the water ring counts); BR-Q4 waits on the user. No other hero or package is authorized.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 

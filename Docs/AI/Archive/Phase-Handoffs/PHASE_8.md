@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69b Brynn split attacks completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69b | Split Attack, Split Throw and Peak Precision as deferred content: `RepeatTargetBinding.DifferentUnitAdjacentToActor` (6) enforced in four agreeing arms, Split Throw's repeat as `IfAble` (a mandatory `RepeatAction` is refused by construction), the gate a fact about the targeting through the new deferred predicate `brynn-attack-target-was-adjacent-to-obstacles@1` (a new handler type), Peak Precision's self-retrieval as `RosterCardRetrievalKind.OwnedResolvingSourceCard` (3) with `CardLifecycleAuthority.TryRetrieveResolvingCard` and the two action-completion authorities accepting the retrieved shape. 8.69a's hero-subject predicate is left without a consumer for 8.69f to settle. No registration, no pin moved, schema v43 and wire /19 unmoved. `BrynnSplitAttackTests` 20; harness 3991/3991 on its base; focused Edit Mode 117/117. Landed as `9c772092` (squash of `5016c030` on `8.69b-split-attacks`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869b-support-the-split-attacks-and-peak-precision). | `milestone/8.69b` |
+
 ## Milestone 8.69e Brynn traps and grit completion evidence
 
 | Milestone | Outcome and definition | Commit |
