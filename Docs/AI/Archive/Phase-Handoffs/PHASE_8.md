@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.72 delegated action controls completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.72 | The user, on HA-Q15i: "Q15i means that currently that card wont work". One Presentation owner (`DelegatedActionPresentation`) decides which seat draws the selected actor's printed controls; the deciding seat draws the delegated hero's revealed resolving card in a `gd-deciding-for-slot` with a "DECIDING FOR X" ribbon and the controls its `AuthorizedCommands` carry, the targeted seat's tray draws no region and goes dark, the narration names both heroes, and the slot blocks the pointer beneath it. No Core/Application change; wire /20 and schema v44 unmoved. `DelegatedActionPresentationTests` 12; a seat-scoped two-viewport journey pressing the delegated enemy action and a friendly Hold from Hanu's own HUD; 8.71i's journey re-stated. Harness 4328/4328; complete Edit Mode 5322/5286/0/36; complete Play Mode 783/783 zero skips. [Definition](../../Roadmap/PHASE_8.md#x-872-draw-a-delegated-actions-controls-on-the-deciding-seat). | `69f0bd3d` |
+
 ## Milestone 8.71i Hanu player-path gate completion evidence
 
 | Milestone | Outcome and definition | Commit |
