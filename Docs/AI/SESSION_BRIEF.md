@@ -14,9 +14,9 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.70**.
+- Current completed milestone: **8.71**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z71**.
+- Next proposed milestone: **8.71a**.
 
 On 2026-09-20 the user explicitly authorized and completed
 **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: two unlabeled, client-local hero-pick filter rows provide
@@ -26,11 +26,7 @@ unchanged.
 
 On 2026-09-18 the user authorized the **[decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)** ("Ok, get on it then"); **8.46 is complete** (8.46a-8.46g): every card-text decision, tied initiative, defense, removal prevention, card chooser and the level-up upgrade open in one two-state window whose controls name their consequence, a direction is six arrows on the board, and a choice of exactly one resolves in one press.
 
-On 2026-09-18 the user selected **Widget** after withdrawing Razzle. The authorized bounded sequence **8.43 -> 8.43a -> 8.43b -> 8.43c -> 8.43d -> 8.43e -> 8.43f** delivers the seventeenth fully playable, selectable, artworked hero and his permanent player-path gate. [Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md) owns acceptance; [Widget's shard](Rules/HERO_WIDGET.md) owns source facts and unresolved rules. No other hero, package or remote publication is authorized. The cleanup route below is superseded until this sequence ends.
-
-**Widget's sequence is complete**: his complete printed set, private artwork, Pyro and permanent player-path gate are integrated. WI-Q1-WI-Q3 are resolved. FINISH MOVEMENT preserves optional follow-ups; Pyro's artwork has no name overlay.
-
-**[8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) is complete**: status narration now names the hero a standing public decision waits on, read from the authoritative `DecisionOwner` rather than guessed from the acting hero, while a responder keeps their own actionable prompt and no foreign hand or candidate is exposed. Ignatia was explicitly withdrawn; no hero follows Widget. Widget's local build-smoke exception is approved in his rules shard.
+On 2026-09-18 the user selected **Widget** after withdrawing Razzle; the SEVENTEENTH hero's sequence **8.43-8.43f** ([Seventeenth-hero dealing](Roadmap/PHASE_8_SEVENTEENTH_HERO.md), [Widget's shard](Rules/HERO_WIDGET.md)) is COMPLETE with his printed set, private artwork, Pyro and permanent player-path gate (WI-Q1-WI-Q3 resolved; his local build-smoke exception is approved in his shard). **[8.42c](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) is complete**: status narration names the hero a standing public decision waits on, read from the authoritative `DecisionOwner`. Ignatia was explicitly withdrawn.
 
 On 2026-09-18 the user authorized two packages, both complete: **[8.44](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.44-seventeen-hero`, seventeen heroes) and **[8.45](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.45-undo-corrections`, the same heroes plus 8.42d's visible seat rewind and 8.42e's interaction wall, content digest unchanged). Neither authorizes upload or public distribution.
 
@@ -40,7 +36,7 @@ The playtest's "Lives are not being counted correctly" report became **[8.49](Ro
 
 From the same night's "Silverarrow" report, once 8.51 had named the press: **[8.52](Roadmap/PHASE_8.md) is complete** - the drawn END TURN control no longer answers Enter or Space, only the pointer.
 
-**[8.53](Roadmap/PHASE_8.md) is complete** (`87dacf6c`): when a match ends the whole HUD gives way to the victory screen - winner, cause, the winners' block above the defeated with every hero's token, level, worth and the columns Kills, Deaths, Attacks at heroes, Times defended, Minions Killed, Coins earned, a solo winner split above her crew; the numbers are the authority's `MatchScoreboard` (snapshot **v43**, wire `guards-private-online/17`). **[8.56](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.53-victory-screen` (+ zip) carries 8.46-8.53; 8.54 and 8.55 remain queued.
+**[8.53](Roadmap/PHASE_8.md) is complete** (`87dacf6c`): when a match ends the whole HUD gives way to the victory screen (winner, cause, every hero's token, level, worth and six scoreboard columns, a solo winner split above her crew), the numbers being the authority's `MatchScoreboard` (snapshot **v43**, wire `guards-private-online/17`). **[8.56](Roadmap/PHASE_8.md) is complete**: `Builds/Playtest-8.53-victory-screen` (+ zip) carries 8.46-8.53; 8.54 and 8.55 remain queued.
 
 The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57h](Roadmap/PHASE_8_EIGHTEENTH_HERO.md) and [her shard](Rules/HERO_ROWENNA.md) own the detail (RO-03 settled by the user as the ribbon colour). The same day's **8.58** (the decision window per the mockup), **8.59** (the line picker's floor), **8.54** (Bounce through Bullet Time), **8.55** (the "6+1" badge) and **[8.60](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.55-rowenna`, cut at the 8.55 tag, digest `36da22a7...`) are complete.
 
@@ -48,7 +44,9 @@ The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57
 
 The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`, the current playtest package).
 
-The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21: "ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen"), is COMPLETE the same day: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** ([his shard](Rules/HERO_BRYNN.md)) - inventoried, built on one predicate ("adjacent to 3 or more obstacles", which Over the Top makes true of every enemy while he acts), composed, dealt with his picker row (three stars; Tactician, Damager, Durable) proven on the rendered lobby, and gated (Play Mode 744 with zero skips, gate landed as `3b733fc8`). BR-Q4 and BR-Q13 were settled by the user as built; BR-Q19h was settled the same day as "grey it out if no legal targets" and **[8.70](Roadmap/PHASE_8.md)** built it (`1687b595`): an empty modal bullet is greyed at the choice for every face sharing the contract (Brynn, Bain, Dodger, Whisper, Tali), Play Mode 744 with zero skips. No other hero or package is authorized.
+The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21), is COMPLETE the same day: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** ([his shard](Rules/HERO_BRYNN.md)) - dealt with his picker row (three stars; Tactician, Damager, Durable) proven on the rendered lobby and gated at Play Mode 744 with zero skips; BR-Q4, BR-Q13 and BR-Q19h were settled by the user, the last built as **[8.70](Roadmap/PHASE_8.md)** (an empty modal bullet greyed at the choice for every face sharing the contract).
+
+On 2026-09-21 the user opened the TWENTY-FIRST hero ("Lets go for a new hero", "Make sure pick screen is correctly imeplented") and chose **Hanu the Trickster**: **[8.71](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** (inventory; [his shard](Rules/HERO_HANU.md)) **is complete**; **8.71a-8.71i** are authorized in that shard's order (8.71a, 8.71c, 8.71d, 8.71e and 8.71f as a parallel wave, 8.71b after 8.71a, then compose, deal and gate) through a fully selectable, artworked hero whose picker row carries three stars and Tactician/Sniper/Pusher for the 8.35z86 filters. His set carries four mechanisms no earlier hero had: a rewritten Initiative on another hero's unresolved card, a delegated next action, an end-of-turn swap-back behind a turn of immunity, and a coupled move whose distance a teammate chooses; HA-Q3 and HA-Q8 wait on the user. No other hero or package is authorized.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 

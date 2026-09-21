@@ -1,0 +1,93 @@
+# Phase 8 - Twenty-first-hero dealing: Hanu the Trickster
+
+Return to [roadmap](../ROADMAP.md). Current authorization and next route live in [the brief](../SESSION_BRIEF.md).
+
+## Authorization and scope
+
+On 2026-09-21 the user opened the twenty-first hero ("Lets go for a new hero", then choosing Hanu from the twelve undealt heroes surveyed by stars and roles, then "Make sure pick screen is correctly imeplented"), naming the same requirement Brynn carried: his row in the 8.35z86 hero picker carries the verified profile facts (three stars; Tactician, Sniper, Pusher) so the star and role filters find him, proven at the rendered tier. This authorizes **8.71 -> 8.71a -> 8.71b -> 8.71c -> 8.71d -> 8.71e -> 8.71f -> 8.71g -> 8.71h -> 8.71i**, through a fully selectable, artworked hero with working printed cards and the permanent player-path gate. Execute with separate validation and local commits; 8.71a, 8.71c, 8.71d, 8.71e and 8.71f touch disjoint faces and may run as a parallel wave in separate worktrees, 8.71b follows 8.71a because the Ultimate rides Hurry up!'s target, and 8.71g-8.71i are sequential. Necessary corrections demonstrated by those checks belong to the block that found them.
+
+[Hanu's rules shard](../Rules/HERO_HANU.md) owns source facts and the capability map. Eighteen faces are dealt; Fight or Flight is the boxed p.20 Handicap. Inspect existing contracts before adding vocabulary. New contracts stay outside production registration until reachable from dealt content; reconcile each new or widened shared-foundation claim with the test-owned claim catalog. HA-Q3 (what "the next action" covers) and HA-Q8 (where Safe Travels' trailing move sits) are held for the user; the blocks build the shard's stated readings until answered.
+
+### [x] 8.71 Inventory Hanu and map the implementation sequence
+
+Outcome: Hanu's nineteen faces are inventoried from the curated corpus with values, icons, items, exact printed rules, the manifest identities and the four mechanisms his set is built on; the capability map names the foundation each clause reuses and the delta it needs; the open readings are stated with two held for the user.
+
+Acceptance: every front, the selection card and the dashboard inspected; ribbons, corners, primary icons, Range/Radius icons and items montaged (items beside Rowenna's six verified icons); stat bars read by scanline against the dashboard; the deck-back hash, atlas index, selection-card hashes and the standee element verified by crop (and the mis-named second element recorded); every engine seam the map names probed in the tree; the series bounded with its wave plan. T0 documentation validation.
+
+Non-goals: any code, composition, registration or artwork.
+
+Completed 2026-09-21 as this shard and [his rules shard](../Rules/HERO_HANU.md): nineteen-row inventory (Gold Fight and Flight 13/1/2 A2; Silver Hurry up! 12/1 Ranged R4; Reds Helping Hand, Even the Odds, Outnumber, Trusted Sidekick, Pile On; Blues Unexpected Journey, There and Back Again, This Way!, Safe Travels, That Way!; Greens Monkey Trick, Monkey Twist, Hear Nothing, Monkey Business, See Nothing; Purple The Ultimate Trick; Handicap Fight or Flight), items Initiative x3 / Defense x3 / Attack x3 / Radius / Range / Movement, stat bars Attack 4 / Initiative 9 / Defense 1 / Movement 7+1, one deck back `cc3a1182...`, atlas 13, selection front byte-identical to `randomizers-tt10__7723692__front.png`, standee element 8597492 (the second `Hanu`-named element 8597495 draws another hero), dashboard "Hanu the Trickster". The four mechanisms none of the twenty dealt heroes carried: a card-instance Initiative override (Hurry up!), a delegated next action (the Ultimate), an end-of-turn swap-back with an enemy hero immune in between (three Blues), and a coupled move whose distance another seat chooses (two Blues). Probed and named in the map: `InitiativeResolutionAuthority.QuerySelection`'s three additive contribution sources with no card-keyed replacement, `SeatProjectionFactory.AuthorizedCommands` / `OwnerOfStandingDecision` and `EffectChoiceRequest.ChooserHeroId`, `ActiveEffectDefinition`'s `Hero` scope with `AffectedHeroId` and Silverarrow's `EndOfTurn` duration, `ImmunityOverrideReason`'s one member, `coupled-direct-move@1`'s actor-asked destination, `AttackSequenceSubjectNarrowing`'s five members, `choose-target-pair@1`, `choose-line-destination@1` and the showcase's `AfterAttackTargetSurvivedRider`. Baselines at 8.71: harness 4137, complete Edit Mode 5118/5082/0/36, complete Play Mode 744/744 with zero skips, schema v43, wire `/19`. Twelve heroes undealt before him; eleven after (Emmitt, Gydion, Ignatia, Mortimer, Mrak, Nebkher, Razzle, Snorri, Takahide, Trinkets, Wuk).
+
+Historical evidence: [8.71 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-871-hanu-inventory-completion-evidence).
+
+### [ ] 8.71a Support Hurry up!
+
+Outcome: Hurry up! sets the printed Initiative of an unresolved card of a hero in range to 11 until that card is resolved or otherwise changes state, and the turn order reads it.
+
+Acceptance: the target selection over heroes in printed Range (with items) on either team, never Hanu, holding a faceup unresolved card, immunity honoured (HA-Q1); the override written on the card instance and read by the Initiative selection in place of the printed icon with items and hero modifiers composing on top; cleared on resolution, discard, retrieval and facedown (HA-Q2), with a test per exit; the order re-checked after the next resolution so a mid-round rewrite reorders the round; a tie at 11 broken by the coin; the override through snapshot, replay and seat Undo (schema moved only if measured necessary, with the ceremony a bump owes); the Presentation's badge and legal set reading the rewritten value. Compose Hurry up!. T2 minimum.
+
+Non-goals: the Ultimate, the Reds, the Blues, the Greens, dealing.
+
+### [ ] 8.71b Support The Ultimate Trick
+
+Outcome: after Hanu targets a hero with Hurry up! while his Ultimate is unlocked, Hanu's seat chooses that hero's next action and every choice inside it.
+
+Acceptance: the delegation created by the Ultimate riding Hurry up!'s resolution and stored on the targeted hero; while that hero is the selected actor of their next action, the start commands (primary, secondary, Hold, Fast Travel, Clear) and every pending choice inside the action authorized to and owned by Hanu's seat and by no other (HA-Q3), the targeted seat's own Defense responses untouched; consumed when the action completes, lapsed on that hero's defeat and at the round's end, not stacking (HA-Q4); the delegation and its owner visible on the wire to every seat (wire moved with the four protocol tripwires swept); the Undo watermark rule stated and tested; lobby bots answering a delegated action; through snapshot, replay and Undo. Compose The Ultimate Trick. T2 minimum.
+
+Non-goals: the Reds, the Blues, the Greens, dealing.
+
+### [ ] 8.71c Support the Reds and Fight and Flight
+
+Outcome: the five Reds target an adjacent unit or a hero (minion) in range adjacent to a friendly hero, Trusted Sidekick and Pile On taking one or both bullets in the order chosen; Fight and Flight moves Hanu exactly three spaces in a straight line after an attack whose target survived, if able.
+
+Acceptance: the two new narrowing members read against each bullet's targetable units with "your friendly hero" excluding Hanu (HA-Q5); the 1..2 modal performing the chosen bullets in the chosen order with each bullet targeting afresh, Pile On admitting one minion twice and Trusted Sidekick's bullets disjoint (HA-Q6); an empty bullet greyed at the choice (8.70); the rider gated on the target's survival, exactly three spaces under p.11, nothing when no line is legal (HA-Q7); Undo and restore across the pauses. Compose Helping Hand, Even the Odds, Outnumber, Trusted Sidekick, Pile On and Fight and Flight. T2 minimum.
+
+Non-goals: Hurry up!, the Ultimate, the Blues, the Greens, dealing.
+
+### [ ] 8.71d Support the journeys
+
+Outcome: Unexpected Journey, There and Back Again and Safe Travels swap Hanu with an enemy hero in radius, make that hero immune for the turn, and swap the two back at the end of the turn regardless of radius and immunity; Safe Travels adds a move of up to one space.
+
+Acceptance: the swap over the enemy heroes in printed Radius with immunity honoured; one active effect per face bound to the swapped hero carrying whole immunity against every hero's actions for the rest of the turn with p.18's own-actions exception and presence checks counting (HA-Q11); the end-of-turn body exchanging Hanu with the bound hero with no reach check and under the printed immunity override, nothing when either is off the board, cancelled by Hanu's defeat; Safe Travels' trailing move where HA-Q8 puts it, zero allowed; two journeys in one turn by two Hanus impossible by roster but two effects on one board ordered by the pipeline; Undo and restore across the pauses. Compose Unexpected Journey, There and Back Again and Safe Travels. T2 minimum.
+
+Non-goals: Hurry up!, the Ultimate, the Reds, the co-moves, the Greens, dealing.
+
+### [ ] 8.71e Support the co-moves
+
+Outcome: This Way! and That Way! let a friendly hero in radius choose the distance and Hanu the direction, moving both the full distance or neither.
+
+Acceptance: the friendly hero chosen in printed Radius, Hanu excluded, immunity honoured; the distance asked of that hero's seat over the printed values with a distance no direction satisfies greyed (HA-Q9); the coupled move bound to that output with Hanu choosing among the legal directions; both move or neither, under p.11 for both units; a lobby bot answering the friend's choice; Undo and restore across the two seats' pauses. Compose This Way! and That Way!. T2 minimum.
+
+Non-goals: Hurry up!, the Ultimate, the Reds, the journeys, the Greens, dealing.
+
+### [ ] 8.71f Support the Greens
+
+Outcome: Monkey Trick, Monkey Twist and Monkey Business swap two friendly units in radius; Hear Nothing and See Nothing swap Hanu with an enemy hero in radius; the two Tier III faces then move Hanu up to one space.
+
+Acceptance: the unordered friendly pair excluding Hanu, hero or minion, immunity asked of both (HA-Q10); the enemy-hero swap with immunity honoured; the trailing moves as Hanu's own card-text moves from his post-swap space with zero allowed; Undo and restore across the pauses. Compose Monkey Trick, Monkey Twist, Hear Nothing, Monkey Business and See Nothing. T2 minimum.
+
+Non-goals: Hurry up!, the Ultimate, the Reds, the Blues, dealing.
+
+### [ ] 8.71g Compose Hanu's printed set
+
+Outcome: all nineteen definitions with progression, items, starting hand, deck, the Ultimate on no ladder and the boxed Handicap compose under one content revision, with the set facts and the deferred ids asserted.
+
+Acceptance: every face's values, icons and text as the shard prints them; `DealtDefinitions` stated; the dealt-corpus composition validator green for all eighteen dealt faces; the deferral list equal to the series' declared ids; the decision-label requirement set DERIVED from the dealt faces and covered; corner/ribbon agreement; no registration. T2 minimum.
+
+Non-goals: dealing, artwork registration or player-gate completion claims.
+
+### [ ] 8.71h Deal, register and artwork Hanu
+
+Outcome: Hanu is the twenty-first legal pick, with profile, real card fronts, board visuals for his standee, hand/deck/upgrades, reachable catalog registrations, and a roster row the 8.35z86 picker filters by his three stars and his three printed roles.
+
+Acceptance: all configured/staged/engaged/progressed adapters with both scene-composition arms, selection/definition/artwork bijections, correct source visual identities (standee `Hanu` 8597492, pick card `randomizers-tt10__7723692__front.png`), private-resource boundaries, content identity and snapshot compatibility decision preserving existing hero identities; every deferred id registered and every new handler type reaching a showcase consumer; the roster row's `HeroComplexity.VeryComplex` and `Tactician | Sniper | Pusher` asserted by the metadata coverage and shown at the RENDERED tier - a three-star filter and each of his three roles keep his button visible and a role he lacks hides it, in an inspected capture; scene/picker/artwork/footprint checks; lobby bots holding his set and answering his cross-seat prompts. Apply the highest tier triggered by catalog/configuration changes and the affected local build-and-launch smoke gate.
+
+Non-goals: package creation/upload or final player-gate claims.
+
+### [ ] 8.71i Complete Hanu's permanent player-path gate
+
+Outcome: mechanically complete coverage of every playable face and distinct interaction through configured real-input journeys.
+
+Acceptance: pick/spawn/identity through the filtered picker, actual pointer/board input, commit/reveal, all primaries/secondaries, Hurry up! reordering a round and lapsing at each exit, the Ultimate's delegated action driven from Hanu's seat with the targeted seat's controls withheld, each Red bullet and both orders of a 1..2 modal, Fight and Flight's straight-line move and its refusal, each journey's swap, immunity and swap back, each co-move with the friend's cross-seat choice, each Green swap and trailing move, progression/earned items, round persistence, defeat/respawn, stale input, no EngineFault, projection agreement, snapshot/restore/retained-prefix Undo on Hanu-specific pauses, whole-face footprint. Complete Play Mode with zero skips.
+
+Non-goals: new scope beyond Hanu's faces.

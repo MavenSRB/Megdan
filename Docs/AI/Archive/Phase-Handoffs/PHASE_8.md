@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71 Hanu inventory completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71 | The user: "Lets go for a new hero" (Hanu chosen from the twelve undealt heroes) and "Make sure pick screen is correctly imeplented". `Docs/AI/Rules/HERO_HANU.md` records the twenty-first hero from the curated corpus (`active-hero-cards/Hanu/`, internal name `hanu`, atlas 13, one deck-back hash, selection front byte-identical to `randomizers-tt10__7723692__front.png`): three stars, roles Tactician/Sniper/Pusher, stat bars Attack 4 / Initiative 9 / Defense 1 / Movement 7+1 by scanline; the nineteen-row inventory (Gold Fight and Flight 13/1/2 A2; Silver Hurry up! 12/1 Ranged R4; Reds Helping Hand, Even the Odds, Outnumber, Trusted Sidekick, Pile On; Blues Unexpected Journey, There and Back Again, This Way!, Safe Travels, That Way!; Greens Monkey Trick, Monkey Twist, Hear Nothing, Monkey Business, See Nothing; Purple The Ultimate Trick; Handicap Fight or Flight) with items montaged against Rowenna's six (Initiative x3, Defense x3, Attack x3, Radius, Range, Movement); exact printed rules; HA-01-HA-07 facts (no rulebook mention, corners matching ribbons, the Handicap's "Basic Skill" band over an Attack, the manifest's `Hanu` standee 8597492 verified by crop against a second mis-named `Hanu` element, the dashboard's "the Trickster", no token); the four mechanisms his set is built on (a card-instance Initiative override, a delegated next action, an end-of-turn swap-back behind a turn of immunity, a coupled move whose distance another seat chooses) each probed against the seam it needs; the capability contract map; HA-Q1-HA-Q12 with HA-Q3 and HA-Q8 held for the user. `PHASE_8_TWENTY_FIRST_HERO.md` records the bounded sequence 8.71a-8.71i with 8.71a/c/d/e/f as a parallel wave and 8.71b after 8.71a. T0 documentation validation. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871-inventory-hanu-and-map-the-implementation-sequence). | `milestone/8.71` |
+
 ## Milestone 8.70 greyed modal bullet completion evidence
 
 | Milestone | Outcome and definition | Commit |

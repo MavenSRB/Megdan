@@ -1,0 +1,121 @@
+# Guards Digital - Hanu Rules Shard
+
+Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
+
+## Hanu content ledger
+
+Hanu is the twenty-first playable hero. [The implementation series](../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md) owns acceptance. This shard records his nineteen printed definitions, the general rules they lean on, the four printed mechanisms none of the twenty heroes before him carried, the capability map and the open readings. Nothing of his is composed, registered or artworked yet; each later block updates the relevant row here.
+
+## Source authority
+
+The curated `Docs/Guards of Atlantis II - Tabletopia Cards/active-hero-cards/Hanu/` contains nineteen fronts and nineteen backs, stored internally under the Tabletopia name `hanu` (`hanu`, `hanu2` .. `hanu19`). Every front, the selection card and the dashboard were visually inspected on 2026-09-21; the twelve item icons were montaged beside Rowenna's six verified icons, the nineteen ribbons, corners, primary icons and Range/Radius icons were montaged, and the profile card's stat bars were read by luminance scanline. The dashboard names **Hanu the Trickster**; the selection card names **Hanu**, shows **three stars** (p.21 "Very Complex") and the role icons **Tactician, Sniper, Pusher** in that printed order.
+
+HA-01: text extraction of all twenty-four pages of the local second-printing rulebook finds no Hanu, Trickster or card-name mention. The extracted cards (verified on 2026-09-18 as the printed second edition wherever physical cards could be checked - see the parent ledger's "Edition of the extraction") are the local authority for individual text. General p.7 (Initiative order: "the player with the highest Initiative on their unresolved card is next to act", ties by the Tie Breaker coin, "After the player who acted first has resolved their card, check the Initiative again"), p.10 (card states: a played card is unresolved "until after you perform one of its actions"; "You make all the choices in your card's text, unless the card text instructs the other hero to make a choice"; modal actions), p.12 (Hold, Fast Travel and Clear as actions), p.14 (the Attack/Defense detailed order; "After the attack" at its step 7), p.17 ("Friendly": "another unit on your team. It never includes you"; "This Turn" comes into effect immediately for the whole turn; "End of Turn" is applied once at the end of the current turn; Active effects are cancelled "If you are defeated" and "When the card changes state"), p.18 (Immune: "you cannot target that unit, and that unit is not affected by your actions"; presence checks count immune units; "You are never immune to your own actions"), p.19 (Swap "does not count as movement or placement"; Straight Line: "a sequence of spaces arranged in a file", "3 spaces in a straight line" pictured; Target) and p.11 (card-text movement follows the Movement rules; no unit ends its movement on an obstacle) are the rules his faces lean on.
+
+HA-02: all nineteen backs share one MD5 (`cc3a1182b89532a9308b523808575cb5`); this set has ONE deck back. The 2nd-printing atlas index is `cards.csv` atlas 13. The selection front is byte-identical to `cards/hero-selection/randomizers-tt10__7723692__front.png` (MD5 `41ae8061a5adb95429078f231db20b87`, SHA-256 `f300a8b894b85ebbaec64c0018ec993c06734b6ac2b0479cf185029f93861c17`).
+
+HA-03: every corner letter matches its ribbon (D, S, R x5, B x5, G x5, P, D-H); there is no printed colour conflict in this set.
+
+HA-04: stat bars read Attack **4**, Initiative **9**, Defense **1**, Movement **7** plus **1** brighter pip (p.21: brighter sections depend on level-up choices and card text - his Movement item). The dashboard's bottom bars agree.
+
+HA-05: Fight or Flight, the Handicap, prints the band **"Basic Skill"** over an Attack value of 1 and the text "Target a hero adjacent to you. If the target is not defeated, After the attack: ..." - Brynn's BR-05 mirror. It is read as a printed Attack under a mislabelled band; it is the boxed p.20 Handicap and is never dealt, so nothing runs on it.
+
+HA-06: absent icons. Hurry up! prints Defense 1 and no Movement. Fight and Flight and the five Greens print no Range (Fight and Flight targets adjacent; the Greens print Radius). The five Reds print Range with the Ranged band; the five Blues print Radius; The Ultimate Trick prints no values at all. A missing icon is absent, never zero.
+
+HA-07: Tabletopia manifest elements (`extracted/text-assets/manifest-bundled__42.json`): standee **`Hanu`** element 8597492 (publicElementId 1007041, VerticalTokens/Standee, `Image_1_Atlas` sprites (2068,3020) and (2372,3020), 302x302 - verified by crop as the blue-ringed and orange-ringed portraits of the masked monkey-king on his selection card). A SECOND standee element is also named `Hanu` (8597495, publicElementId 1024393, sprites (1551,3501) and (1855,3501)) but draws a different, ape-faced hero - the manifest's name is wrong there, the crop decides (Min's MI-Q6 lesson). His card group is named **"Hanu the Trickster"** (agreeing with the dashboard). No token element is his.
+
+## Printed inventory
+
+All file stems below are under the Hanu source directory and end in `__front.png`. D/M are Defense/Movement ribbon icons; A is Attack, R Range, r Radius. A missing icon is absent, never zero. Item icons are independent of card values.
+
+| File stem | Face / color / tier | Initiative | D | M | Primary / icon | Item |
+| --- | --- | --- | --- | --- | --- | --- |
+| hanu__7635525 | Fight and Flight / Gold / Basic | 13 | 1 | 2 | Basic Attack / A 2 | - |
+| hanu2__7635511 | Hurry up! / Silver / Basic | 12 | 1 | - | Basic Skill - Ranged / R 4 | - |
+| hanu3__7635516 | Helping Hand / Red / I | 9 | 4 | 5 | Attack - Ranged / A 3, R 3 | - |
+| hanu4__7635517 | Even the Odds / Red / II | 9 | 4 | 5 | Attack - Ranged / A 4, R 4 | Initiative |
+| hanu5__7635520 | Outnumber / Red / II | 9 | 5 | 5 | Attack - Ranged / A 5, R 4 | Defense |
+| hanu6__7635518 | Trusted Sidekick / Red / III | 10 | 5 | 5 | Attack - Ranged / A 4, R 4 | Movement |
+| hanu7__7635512 | Pile On / Red / III | 10 | 6 | 5 | Attack - Ranged / A 5, R 4 | Radius |
+| hanu8__7635528 | Unexpected Journey / Blue / I | 10 | 4 | 3 | Skill / r 2 | - |
+| hanu9__7635513 | There and Back Again / Blue / II | 11 | 4 | 3 | Skill / r 3 | Attack |
+| hanu10__7635523 | This Way! / Blue / II | 11 | 4 | 3 | Skill / r 3 | Initiative |
+| hanu11__7635522 | Safe Travels / Blue / III | 11 | 5 | 3 | Skill / r 3 | Attack |
+| hanu12__7635524 | That Way! / Blue / III | 11 | 5 | 3 | Skill / r 3 | Initiative |
+| hanu13__7635529 | Monkey Trick / Green / I | 2 | 1 | 2 | Skill / r 1 | - |
+| hanu14__7635519 | Monkey Twist / Green / II | 2 | 2 | 2 | Skill / r 2 | Defense |
+| hanu15__7635515 | Hear Nothing / Green / II | 2 | 2 | 2 | Skill / r 3 | Attack |
+| hanu16__7635521 | Monkey Business / Green / III | 1 | 2 | 2 | Skill / r 2 | Defense |
+| hanu17__7635527 | See Nothing / Green / III | 1 | 2 | 2 | Skill / r 3 | Range |
+| hanu18__7635514 | The Ultimate Trick / Purple / IV | - | - | - | Ultimate | - |
+| hanu19__7635526 | Fight or Flight / Gold / Handicap | 12 | 1 | 1 | "Basic Skill" (HA-05) / A 1 | - |
+
+### Exact printed rules
+
+- **Fight and Flight:** Target a unit adjacent to you. If the target is not defeated, After the attack: If able, move 3 spaces in a straight line.
+- **Hurry up!:** Set the printed [Initiative] Initiative value of an unresolved card of a hero in range to 11, until it is resolved or otherwise changes state. ( This may change the initiative order and tie breakers ).
+- **Helping Hand / Even the Odds:** Choose one - (1) Target a unit adjacent to you. (2) Target a hero in range, adjacent to your friendly hero.
+- **Outnumber:** Choose one - (1) Target a unit adjacent to you. (2) Target a minion in range, adjacent to your friendly hero.
+- **Trusted Sidekick:** Choose one, or both, in any order - (1) Target a unit adjacent to you. (2) Target a hero in range, adjacent to your friendly hero and not adjacent to you.
+- **Pile On:** Choose one, or both, in any order - (1) Target a unit adjacent to you. (2) Target a minion in range, adjacent to your friendly hero.
+- **Unexpected Journey / There and Back Again:** Swap with an enemy hero in radius. This turn: That hero is immune. End of turn: Swap with that hero regardless of radius and immunity.
+- **This Way!:** A friendly hero in radius chooses a distance of 1 or 2; move both of you that number of spaces in the same direction of your choice. ( Both must be moved the full distance, or neither one moves ).
+- **Safe Travels:** Swap with an enemy hero in radius. This turn: That hero is immune. End of turn: Swap with that hero regardless of radius and immunity. Move up to 1 space.
+- **That Way!:** A friendly hero in radius chooses a distance of 1, 2 or 3; move both of you that number of spaces in the same direction of your choice.
+- **Monkey Trick / Monkey Twist:** Swap two friendly units in radius.
+- **Hear Nothing:** Swap with an enemy hero in radius.
+- **Monkey Business:** Swap two friendly units in radius. Move up to 1 space.
+- **See Nothing:** Swap with an enemy hero in radius. Move up to 1 space.
+- **The Ultimate Trick (Ultimate):** You choose the next action, and how it is performed for a hero you target with the "Hurry Up!".
+- **Fight or Flight (Handicap):** Target a hero adjacent to you. If the target is not defeated, After the attack: If able, move 3 spaces in a straight line.
+
+The Ultimate quotes the Silver as "Hurry Up!" where the Silver's own title prints "Hurry up!"; it is the same card.
+
+## Setup and progression
+
+Starting hand: Fight and Flight, Hurry up!, Helping Hand, Unexpected Journey, Monkey Trick. Deck: twelve Tier II/III faces plus The Ultimate Trick. Each colored Tier I upgrades to either face of its Tier II, then either Tier III (Red to Even the Odds or Outnumber then Trusted Sidekick or Pile On; Blue to There and Back Again or This Way! then Safe Travels or That Way!; Green to Monkey Twist or Hear Nothing then Monkey Business or See Nothing); the unchosen face becomes its printed item (Initiative x3, Defense x3, Attack x3, Radius, Range, Movement - the same distribution as Min's and Brynn's). Fight or Flight remains the established odd-player Handicap deferral (p.20). He places nothing and gives no marker; his set repositions units, rewrites one Initiative and, at Tier III, takes another hero's next action.
+
+## The four mechanisms his set is built on
+
+1. **A rewritten Initiative on another hero's unresolved card** (Hurry up!). `InitiativeResolutionAuthority.QuerySelection` reads each faceup unresolved card's `PrintedValueQuery.CalculatePrintedInitiative` (a `ValueContributionKind.PrintedIcon`), adds p.16's Initiative items through `ItemBonusQuery.Apply`, then adds any hero-scoped `ValueContributions` on `PrintedValueChannel.Initiative` (Xargatha's Metamorphosis, Tigerclaw's poison marker) - all additive, all keyed on the HERO. Nothing today replaces a printed value or is keyed on a CARD INSTANCE (`RuleObject` has hero, minion and token factories only), and nothing today lapses when a specific card changes state (`ActiveEffectCancellationCondition.SourceCardStateChanged` watches the effect's own source card). The override is new state that must survive snapshot, replay and Undo.
+2. **A delegated next action** (The Ultimate Trick). A seat may submit only `SeatProjection.AuthorizedCommands` (host-checked in `MatchHost`), which derives `StartAction`, Hold, Fast Travel and Clear from `source.SelectedActor.ActorId` being a hero the seat owns, and every pending choice's owner from the pending object's `ChooserId` (`SeatProjectionFactory.OwnerOfStandingDecision`, one arm per `PendingDecisionFamilies` member). Cross-seat choices already exist at the node level (`EffectChoiceRequest.ChooserHeroId`; Brynn's traps make the enemy discard on their own seat), but no state today re-homes a whole action - its start and all of its choices - to another seat.
+3. **A swap-and-swap-back with immunity in between** (the three Blue journeys). `synthetic-swap-actor@1` over `synthetic-radius-hero-target@1` is Brynn's and Whisper's swap; `ActiveEffectDefinition` already carries an `AffectedHeroId` (scope `ActiveEffectAffectedScopeKind.Hero`), `ActiveEffectDurationKind.EndOfTurn` (Silverarrow's Warning Shot: created by the Skill, fires once at that turn's end, expires at the same checkpoint, and may carry rule modifications while it stands), `RuleModification.ForImmunity(RuleActivity.All, scope)` (Whisper's Death Seeker) and `ImmunityOverrideDeclaration` with one reason (`PrintedHeavyMinionImmunity`). What is new: an immunity granted to an ENEMY hero against every actor, an end-of-turn body that swaps with the effect's bound hero wherever they stand, and a printed "regardless of immunity" reason.
+4. **A coupled move whose distance another seat chooses** (This Way!, That Way!). `coupled-direct-move@1` (Widget's Drag Off) moves two named objects one common direction and distance or neither, with `leastDistance`/`distance` bounds, and asks the ACTOR for the destination. What is new: the friendly hero chooses the distance on their own seat and Hanu then chooses only the direction.
+
+Everything else composes on shipped contracts: Bain's `CreateMarkerModal` (a `Choose` 1..1 / 1..2 over `attack-sequence@1` bullets) with two new `AttackSequenceSubjectNarrowing` members; Misa's and Sabina's `choose-target-pair@1` feeding p.19's Swap; Swift's `choose-line-destination@1` for a straight-line count; the showcase's `AfterAttackTargetSurvivedRider` for "If the target is not defeated"; `synthetic-direct-move@3` for the trailing "Move up to 1 space".
+
+## Capability contract map
+
+These routes identify the composed contracts. Registration at the dealing block makes each reachable from dealt content; the gate block separately owns complete configured-player coverage.
+
+| Printed clause | Existing foundation / required delta | Owner |
+| --- | --- | --- |
+| Set the printed Initiative value of an unresolved card of a hero in range to 11, until it is resolved or otherwise changes state (Hurry up!) | NEW deferred selection over heroes in printed Range (either team, never Hanu) holding a faceup unresolved card; NEW card-instance Initiative override consulted by `InitiativeResolutionAuthority.QuerySelection` in place of the `PrintedIcon` contribution (items and hero modifiers still compose on top), persisted, and cleared by the card lifecycle the moment that card is resolved, discarded, retrieved or turned facedown - HA-Q1, HA-Q2 | 8.71a |
+| You choose the next action, and how it is performed for a hero you target with the "Hurry Up!" (The Ultimate Trick) | `UltimateRuleDefinition` permanent ability riding Hurry up!'s resolution: NEW delegation state on the targeted hero naming Hanu; while that hero is the selected actor of their next action, the action's start and every choice inside it are authorized to and owned by Hanu's seat (`AuthorizedCommands`, `OwnerOfStandingDecision`, the wire's decision owner); consumed when that action completes, lapsed on defeat or round end - HA-Q3, HA-Q4 | 8.71b |
+| Choose one - adjacent unit / a hero (minion) in range adjacent to your friendly hero (Helping Hand, Even the Odds, Outnumber) | Bain's `CreateMarkerModal` (`Choose` 1..1 over two `attack-sequence@1` bullets, `AttackTargetReach.PrintedRange`) with a NEW `AttackSequenceSubjectNarrowing.AdjacentToAFriendlyHeroOfTheActor`, read against the bullet's `AttackTargetableUnits` - HA-Q5 | 8.71c |
+| Choose one, or both, in any order - ... adjacent to your friendly hero and not adjacent to you (Trusted Sidekick) / ... a minion in range adjacent to your friendly hero (Pile On) | the same modal at 1..2 with the chosen bullets performed in the order chosen; NEW `AttackSequenceSubjectNarrowing.AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor`; Pile On's bullets may name one minion twice (RULING 19: no "on different targets" printed) - HA-Q6 | 8.71c |
+| Target a unit adjacent to you. If the target is not defeated, After the attack: If able, move 3 spaces in a straight line (Fight and Flight; Fight or Flight parked) | the showcase's target-survived after-attack rider; `choose-line-destination@1` with both bounds 3 and obstacles NOT ignored into `synthetic-direct-move@3`, `EffectFailurePolicy.IfAble` - HA-Q7 | 8.71c |
+| Swap with an enemy hero in radius. This turn: That hero is immune. End of turn: Swap with that hero regardless of radius and immunity [Move up to 1 space] (Unexpected Journey, There and Back Again, Safe Travels) | `synthetic-radius-hero-target@1` + `synthetic-swap-actor@1`; ONE NEW active-effect definition per face: `EndOfTurn` duration, scope `Hero` bound to the swapped hero, carrying `ForImmunity(RuleActivity.All, AnyActor)` while it stands, whose triggered body exchanges Hanu with `AffectedHeroId` under a NEW `ImmunityOverrideReason.PrintedRegardlessOfImmunity` and no reach check; cancelled by `ControllerHeroDefeated`; Safe Travels' trailing `synthetic-direct-move@3` (UpTo 1) placed where HA-Q8 decides | 8.71d |
+| A friendly hero in radius chooses a distance of 1 or 2 (1, 2 or 3); move both of you that number of spaces in the same direction of your choice (This Way!, That Way!) | `synthetic-radius-hero-target@1` (AlliedWithSource); NEW deferred choice `hanu-friend-chooses-distance@1` asked of the chosen hero (`EffectChoiceRequest.ChooserHeroId`) over the printed distances, greying a distance with no legal direction; `coupled-direct-move@1` with `leastDistance` and `distance` bound to that output, Hanu choosing the direction - HA-Q9 | 8.71e |
+| Swap two friendly units in radius [Move up to 1 space] (Monkey Trick, Monkey Twist, Monkey Business) | Sabina's `choose-target-pair@1` (`SourceTeamRelation.AlliedWithSource`, units, Hanu excluded by p.17) into `synthetic-exchange` Swap; the trailing `synthetic-direct-move@3` (UpTo 1) from Hanu's own space - HA-Q10 | 8.71f |
+| Swap with an enemy hero in radius [Move up to 1 space] (Hear Nothing, See Nothing) | `synthetic-radius-hero-target@1` + `synthetic-swap-actor@1`; the trailing move from the exchanged space (Brynn's BR-Q20d binding) | 8.71f |
+| Printed set, upgrades, items, registration and artwork | `HanuCardContent` composes nineteen definitions, five starting cards, thirteen deck cards and the boxed Handicap; only the Handicap is deferred; the roster row carries THREE stars and Tactician/Sniper/Pusher for the 8.35z86 picker filters | 8.71g-8.71h; gate 8.71i |
+
+## Integration identity and private artwork
+
+To be recorded at 8.71h: schema (v43 at 8.71, expected to move at 8.71a for the Initiative override and again or once at 8.71b for the delegation - each block measures) and wire (`/19` at 8.71; the delegation is a fact every seat must see); content revision `hanu-8-71g-rev-1`; the pick card at HA-02's SHA-256 as `Assets/Resources/Private/HeroSelection/hero-hanu.png`; the standee pair `Heroes/hanu-red.png` / `hanu-blue.png` from element 8597492 (NOT 8597495); eighteen prepared fronts under `Cards/hanu/`; no token art. The roster row: `HeroComplexity.VeryComplex`, `HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher`, display name "Hanu the Trickster".
+
+## Open verification points
+
+- **HA-Q1:** Hurry up! targets a hero in printed Range (with items) on either team, never Hanu (p.10: an action affects you only when the text says so), who holds a faceup unresolved card; p.19 makes it a target, so an immune hero cannot be chosen. The override replaces the card's printed icon with 11 and nothing else - Initiative items and hero-scoped modifiers still add on top - and it is written on that CARD INSTANCE, so it follows the card and not the hero.
+- **HA-Q2:** "until it is resolved or otherwise changes state" ends the override at the first p.10 state change of that card: resolved by performing an action on it, discarded, retrieved to hand, or turned facedown. p.7's "check the Initiative again" after every resolution is what makes the override reorder the round mid-way; a tie at 11 is broken by the coin as usual.
+- **HA-Q3 (user):** The Ultimate Trick's "the next action" is read as the action performed on the turn that hero's card is next selected as the actor: Hanu's seat chooses among exactly the offers that hero's seat would have (primary, secondary, Hold, and the Fast Travel and Clear replacements) and answers every choice inside it - targets, destinations, card-text prompts. The hero's own Defense responses, respawn and end-of-round choices are not "the action" and stay theirs. It applies to any hero Hanu targets with Hurry up!, friend or enemy.
+- **HA-Q4:** the delegation lapses when the delegated action completes, when the targeted hero is defeated before acting, and at the end of the round; a second Hurry up! on the same hero before they act does not stack. Undo: the delegated decisions are Hanu's seat's, so they rewind under Hanu's watermark and the targeted seat cannot rewind them - and targeting an enemy with Hurry up! is an interaction under 8.42e's wall.
+- **HA-Q5:** "your friendly hero" is p.17's Friendly: another hero on Hanu's team, never Hanu himself. A hero in range adjacent to Hanu therefore satisfies bullet (1), not bullet (2), unless a teammate also stands beside them.
+- **HA-Q6:** "Choose one, or both, in any order" is Bain's Hunter-Seeker at 1..2 with the order of the two complete p.14 sequences chosen by Hanu; each bullet targets afresh, so a unit defeated by the first is not a candidate for the second. Trusted Sidekick's bullets are disjoint by their own words; Pile On prints no "on different targets", so one minion adjacent to Hanu and to a teammate may take both bullets (RULING 19).
+- **HA-Q7:** Fight and Flight's rider fires at p.14 step 7 only if the target survived step 6; "move 3 spaces in a straight line" is exactly three under p.11 (no obstacle transit, no ending on an obstacle, any of the six directions); "If able" makes an empty offer nothing rather than an impossible step.
+- **HA-Q8 (user):** on Safe Travels, "Move up to 1 space." is printed AFTER the "End of turn:" sentence. Read as Hanu's own optional move at the end of the turn, after the swap back (p.17: the text after the keyword is the end-of-turn text) - the alternative, a move at resolution after the first swap, is Monkey Business's and See Nothing's plain sentence, which Safe Travels does not print in that position.
+- **HA-Q9:** in This Way! and That Way! the friendly hero chooses the distance on their own seat (p.10's "unless the card text instructs the other hero to make a choice"), Hanu chooses the direction, and both move the full distance or neither (the printed reminder; `coupled-direct-move@1`'s contract). A distance no direction can satisfy is greyed at the friend's choice (8.70's channel); the friendly hero is targeted (p.19), so immunity applies. The move follows p.11 for both units.
+- **HA-Q10:** "Swap two friendly units in radius" names two units on Hanu's team other than Hanu (p.17), hero or minion, either order (the pair is unordered); p.19's Swap is neither movement nor placement and asks immunity of both. Monkey Business's and See Nothing's "Move up to 1 space" is Hanu's own card-text move after the swap, zero allowed (p.11; Garrus's GA-Q1 precedent).
+- **HA-Q11:** the immunity the journeys grant is p.18's whole immunity against every hero's actions for the rest of the turn (the enemy hero's own actions excepted by p.18); presence checks still count them. The swap back is mandatory and skips no reach or immunity check; it is nothing when either hero is off the board at the turn's end, and it is cancelled if Hanu is defeated first (p.17 "If you are defeated").
+- **HA-Q12:** Fight or Flight is parked under p.20 and HA-05; no reading is needed until a Handicap is ever dealt.
