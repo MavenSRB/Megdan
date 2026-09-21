@@ -1778,10 +1778,35 @@ namespace GuardsDigital.Presentation.Match
         /// else's decision." The Director answers every family at once and passes a default
         /// <paramref name="homeHeroId"/>, so it reads every branch below as its own.
         /// </summary>
+        /// <remarks>
+        /// <b>Milestone 8.71h.</b> The comparison is against the DECIDING hero rather than against the
+        /// selected actor, which is the whole of Hanu the Trickster's The Ultimate Trick at this tier:
+        /// "You choose the next action, and how it is performed for a hero you target with the 'Hurry
+        /// Up!'." While that delegation stands, the acting piece on the board is the targeted hero and
+        /// the seat that must be given the controls is Hanu's - so an actor-based comparison lit the
+        /// wrong tray in both directions at once, offering the targeted player controls the host would
+        /// refuse and darkening the controls of the seat the host was actually waiting on.
+        /// <c>DelegatedActionQuery.DecidingHeroFor</c> answers the actor itself whenever no delegation
+        /// stands, so every other hero, every other card and every earlier milestone reads exactly as
+        /// before; and both the rewritten card and the unlocked Ultimate are rulebook p.4 OPEN zones,
+        /// so every seat derives the same answer from the frame it already receives rather than
+        /// needing a fact of its own on the wire.
+        /// </remarks>
         private static bool IsViewerTheActingHero(IMatchReadModel projection, HeroId homeHeroId) =>
             projection.IsTurnActive &&
             projection.SelectedActor.IsDefined &&
-            (!homeHeroId.IsDefined || projection.SelectedActor.ActorId.Equals(homeHeroId));
+            (!homeHeroId.IsDefined || DecidingHeroFor(projection).Equals(homeHeroId));
+
+        /// <summary>
+        /// Milestone 8.71h. Whose seat is choosing the selected actor's action - the actor themselves
+        /// on every turn no delegation stands over, and Hanu while one does.
+        /// </summary>
+        private static HeroId DecidingHeroFor(IMatchReadModel projection) =>
+            GuardsDigital.Core.Rules.CardResolution.DelegatedActionQuery.DecidingHeroFor(
+                projection.Definitions,
+                projection.Cards,
+                projection.Heroes,
+                projection.SelectedActor.ActorId);
 
         /// <summary>
         /// Milestone 8.35v. Reached only once <see cref="CreateEndTurnInvocation"/> found no direct

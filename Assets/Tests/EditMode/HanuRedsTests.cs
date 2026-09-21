@@ -737,10 +737,21 @@ namespace GuardsDigital.Tests.EditMode
                 .Select(reference => reference.CapabilityId.Value)
                 .ToArray();
             Assert.That(
-                registered.Where(value => value.StartsWith("hanu", StringComparison.Ordinal)),
-                Is.Empty,
-                "and the build's catalog names no contract of his, which is what keeps the pinned " +
-                "registered list, every snapshot's bytes and every corpus digest still.");
+                registered.Where(value => value.StartsWith("hanu", StringComparison.Ordinal))
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    "hanu-friendly-unit-pair",
+                    "hanu-hurry-up-initiative",
+                    "hanu-journey-partner",
+                    "hanu-safe-travels-effect",
+                    "hanu-there-and-back-again-effect",
+                    "hanu-unexpected-journey-effect"
+                }),
+                "and the SIX contracts the build has named for him since milestone 8.71h dealt him " +
+                "are every other block's: not one of them belongs to these six faces, which is this " +
+                "block's headline result read from the build's own catalog rather than from its own " +
+                "empty lists.");
         }
 
         /// <summary>

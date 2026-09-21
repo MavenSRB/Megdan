@@ -61,11 +61,27 @@ namespace GuardsDigital.Presentation.Match
         /// The affected scopes this layer knows how to place on a board, and therefore the complete
         /// set a shipped definition may declare.
         ///
-        /// <para>The three absent members are absent because no shipped definition declares them and
-        /// because two of the three could not be honestly drawn if one did.
-        /// <see cref="ActiveEffectAffectedScopeKind.Hero"/> names a hero the DEFINITION does not know -
-        /// <see cref="ActiveEffectInstance.AffectedHeroId"/> carries it, and no projection does - so a
-        /// guess here would be presentation inventing who an effect is on.
+        /// <para><b>Milestone 8.71h added <see cref="ActiveEffectAffectedScopeKind.Hero"/>, and the
+        /// paragraph this replaces predicted the day exactly.</b> It read "names a hero the DEFINITION
+        /// does not know - <see cref="ActiveEffectInstance.AffectedHeroId"/> carries it, and no
+        /// projection does - so a guess here would be presentation inventing who an effect is on", and
+        /// Hanu the Trickster's three Blue journeys are the first content to declare it: "Swap with an
+        /// enemy hero in radius. This turn: That hero is immune. End of turn: Swap with that hero
+        /// regardless of radius and immunity." That reading still stands and nothing below guesses the
+        /// affected hero. What this scope draws is the CONTROLLER's own ring - the hero whose card is
+        /// standing the effect - because that is the one participant every seat can name from the
+        /// facts it already holds, and because the alternative was a live effect that rendered
+        /// NOTHING on every seat, which is the exact silent failure this list exists to refuse.</para>
+        ///
+        /// <para>It draws no disk, and that is the content rather than a limitation: "regardless of
+        /// radius" is stated structurally by declaring none, so there is no circle to paint. A seat
+        /// that wants to see WHO is immune reads the tray, and putting
+        /// <see cref="ActiveEffectInstance.AffectedHeroId"/> on the wire so the ring could sit on the
+        /// affected piece is a wire revision a later milestone may decide to spend - milestone 8.71h
+        /// deliberately did not, because it is a dealing and moves neither the schema nor the
+        /// wire.</para>
+        ///
+        /// <para>The two still-absent members are absent because no shipped definition declares them:
         /// <see cref="ActiveEffectAffectedScopeKind.ControllerTeam"/> and
         /// <see cref="ActiveEffectAffectedScopeKind.Global"/> are derivable but would be speculative
         /// code for a sentence no card prints; the fixture turns red the day one does.</para>
@@ -74,6 +90,7 @@ namespace GuardsDigital.Presentation.Match
             Array.AsReadOnly(new[]
             {
                 ActiveEffectAffectedScopeKind.ControllerHero,
+                ActiveEffectAffectedScopeKind.Hero,
                 ActiveEffectAffectedScopeKind.UnitsInRadius,
                 ActiveEffectAffectedScopeKind.HeroesInRadius,
                 ActiveEffectAffectedScopeKind.MinionsInRadius,
@@ -393,8 +410,19 @@ namespace GuardsDigital.Presentation.Match
         /// Dagger would say the pin is on Wasp. The disk still paints his space, because a disk
         /// contains its centre.</para>
         /// </summary>
+        /// <remarks>
+        /// <b>Milestone 8.71h.</b> <see cref="ActiveEffectAffectedScopeKind.Hero"/> is the one member
+        /// here whose rules are NOT on the hero this marks, and the ring it draws says the weaker of
+        /// the two things a ring can say: "this hero's card is standing a live effect", rather than
+        /// "these rules are on this hero". It is the strongest statement a seat can make from facts it
+        /// holds - the affected hero lives on <see cref="ActiveEffectInstance.AffectedHeroId"/> and
+        /// reaches no projection - and the alternative was a live effect drawing nothing at all. See
+        /// <see cref="RenderedScopes"/>' own remarks for the wire revision that would move the ring
+        /// onto the affected piece.
+        /// </remarks>
         public static bool MarksItsController(ActiveEffectAffectedScopeKind scope) =>
             scope == ActiveEffectAffectedScopeKind.ControllerHero ||
+            scope == ActiveEffectAffectedScopeKind.Hero ||
             scope == ActiveEffectAffectedScopeKind.ControllerAndUnitsInRadius ||
             scope == ActiveEffectAffectedScopeKind.ControllerAndHeroesInRadius;
 

@@ -1178,6 +1178,42 @@ namespace GuardsDigital.Tests.PlayMode
                 // his own contract rather than Whisper's is a fact about which icon measures the
                 // ranged arm (BR-Q17d: Radius, not Range), and an icon is not a shape.
                 ["brynn-tracking-swap-subject"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Milestone 8.71h. Hanu the Trickster's THREE entries - the TWENTY-FIRST hero, and
+                // the second dealing running to introduce no new SHAPE at all. The rest of his set
+                // names only contracts already above: `attack-sequence@1`, `coupled-direct-move@1`,
+                // `synthetic-actor-space@1`, `synthetic-choose-line-destination@1`,
+                // `synthetic-direct-move@3`, `synthetic-is-flagged@1`,
+                // `synthetic-range-hero-target@1`, `synthetic-radius-hero-target@1`,
+                // `synthetic-swap@2` and `synthetic-swap-actor@1`. His three Active-effect creations
+                // need no row at all: `ActiveEffectCreationHandler` is classified by the DEFINITION
+                // it creates, through `activeEffectsByCapability` below, which is how every
+                // persistent text since Arien's five has been read.
+                //
+                // THE REWRITE ASKS NOBODY ANYTHING. "Set the printed Initiative value of an
+                // unresolved card of a hero in range to 11" is two nodes on Hurry up!: the SELECTION
+                // is `synthetic-range-hero-target@1`, which is the board click already in this table,
+                // and this node is the sentence's verb - it takes that hero as an input, takes the
+                // printed eleven as a literal, and draws no control of its own. A row claiming one
+                // would name a journey for an input no player is ever offered.
+                ["hanu-hurry-up-initiative"] = Array.Empty<PlayerInteractionShape>(),
+
+                // THE PARTNER LOOKUP ASKS NOBODY ANYTHING EITHER, and for a stronger reason: it runs
+                // inside an end-of-turn TRIGGERED body, where there is no acting player to ask. It
+                // takes no parameter, reads the Hero-scoped Active effect this frame's own card and
+                // action created, and publishes "that hero" and the space they are standing in. The
+                // swap it feeds is mandatory and measured by nothing the player names, which is what
+                // "regardless of radius and immunity" says.
+                ["hanu-journey-partner"] = Array.Empty<PlayerInteractionShape>(),
+
+                // THE FRIENDLY PAIR is two units picked by clicking them where they stand, which is
+                // exactly what every selection in this table has asked for since milestone 8.15 - and
+                // the same classification `choose-target-pair@1` and `brynn-tracking-swap-subject`
+                // carry above. That it names TWO rather than one is a bound on the same control
+                // rather than a second shape: the player clicks a unit, then clicks another, and the
+                // pair is unordered so neither click is a different question from the other.
+                ["hanu-friendly-unit-pair"] =
                     new[] { PlayerInteractionShape.BoardUnitSelection }
             };
 

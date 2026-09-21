@@ -902,7 +902,65 @@ namespace GuardsDigital.Presentation.Interaction
         /// reaches Split Throw's mandatory repeat, Expedition Leader's second sentence and Die Hard's
         /// four-space conditional move.
         /// </summary>
-        VerifiedTierThreeAlternateEngagedStagedBrynn = 108
+        VerifiedTierThreeAlternateEngagedStagedBrynn = 108,
+
+        /// <summary>
+        /// Milestone 8.71h. The engaged staging with Hanu the Trickster on the Blue seat, holding
+        /// rulebook p.6's five starting cards. The TWENTY-FIRST hero.
+        /// </summary>
+        VerifiedEngagedStagedHanu = 109,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Hanu holding the first sibling
+        /// of each colour: Even the Odds, There and Back Again and Monkey Twist.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedHanu = 110,
+
+        /// <summary>
+        /// The Tier II staging with Hanu holding the second sibling of each colour: Outnumber, This
+        /// Way! and Hear Nothing - the only Tier II arm that reaches the Reds' MINION bullet, a
+        /// co-move or the plain enemy-hero swap.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedHanu = 111,
+
+        /// <summary>
+        /// The Tier III staging with Hanu holding the first sibling of each colour - Trusted Sidekick,
+        /// Safe Travels and Monkey Business - and The Ultimate Trick unlocked beside his dashboard.
+        /// This is the only arm that reaches the 1..2 modal's disjoint bullets, Safe Travels' trailing
+        /// move after the swap back (HA-Q8) and Monkey Business's pair swap with its own move.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedHanu = 112,
+
+        /// <summary>
+        /// The Tier III staging with Hanu holding the second sibling of each colour - Pile On, That
+        /// Way! and See Nothing - and The Ultimate Trick unlocked. This is the only arm that reaches
+        /// Pile On's two minion bullets (RULING 19), That Way!'s three printed distances and See
+        /// Nothing's trailing move from the exchanged space.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedHanu = 113,
+
+        /// <summary>
+        /// Milestone 8.71h. The staged board that gives Hanu an ALLY - the one configuration on which
+        /// "a friendly hero in radius" has a candidate, because milestone 8.71e composed that
+        /// selection with <c>includeSelf</c> false. Hanu holds p.6's five and Arien stands beside him;
+        /// it is deliberately NOT restaged, exactly as Brogan's, Tali's and Rowenna's ally arms are
+        /// not.
+        /// </summary>
+        VerifiedStagedHanuWithAlly = 114,
+
+        /// <summary>
+        /// The ally staging with Hanu's own seat at rulebook p.15's Tier II stage on the second
+        /// sibling of each colour, which is where This Way! lives - the first of his two co-moves, and
+        /// the only face on that branch that asks the friendly hero a question on their own seat.
+        /// </summary>
+        VerifiedStagedHanuWithAllyAtTierTwo = 115,
+
+        /// <summary>
+        /// The ally staging with Hanu's own seat at Tier III on the second sibling of each colour.
+        /// That Way! is the face this arm exists for: its three printed distances are the widest
+        /// cross-seat choice in his set, and the friendly hero it asks is the ally.
+        /// </summary>
+        VerifiedStagedHanuWithAllyAtTierThree = 116
     }
 
     [ExecuteAlways]
@@ -1530,6 +1588,34 @@ namespace GuardsDigital.Presentation.Interaction
                     MatchConfiguration.CreateStagedBrynnTierThreeForInternalTest(
                         TeamSide.Red,
                         GuardsDigital.Core.Cards.Verified.BrynnUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedEngagedStagedHanu =>
+                    MatchConfiguration.CreateStagedHanuForInternalTest(
+                        TeamSide.Red),
+                SceneCardContent.VerifiedTierTwoEngagedStagedHanu =>
+                    MatchConfiguration.CreateStagedHanuTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.HanuUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedHanu =>
+                    MatchConfiguration.CreateStagedHanuTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.HanuUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedHanu =>
+                    MatchConfiguration.CreateStagedHanuTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.HanuUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedHanu =>
+                    MatchConfiguration.CreateStagedHanuTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.HanuUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedStagedHanuWithAlly =>
+                    MatchConfiguration.CreateStagedHanuWithAllyForInternalTest(
+                        TeamSide.Red, HanuAllyStage.StartingHand),
+                SceneCardContent.VerifiedStagedHanuWithAllyAtTierTwo =>
+                    MatchConfiguration.CreateStagedHanuWithAllyForInternalTest(
+                        TeamSide.Red, HanuAllyStage.TierTwo),
+                SceneCardContent.VerifiedStagedHanuWithAllyAtTierThree =>
+                    MatchConfiguration.CreateStagedHanuWithAllyForInternalTest(
+                        TeamSide.Red, HanuAllyStage.TierThree),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1600,7 +1686,13 @@ namespace GuardsDigital.Presentation.Interaction
                 // Milestone 8.69g. Written in the SAME change as his five engaged members above, on
                 // the same terms. He has no ally arm at all either - p.17's Friendly covers the melee
                 // minion the restaging already leaves in his ring - so all five of his are here.
-                IsStagedBrynn(content))
+                IsStagedBrynn(content) ||
+                // Milestone 8.71h. Written in the SAME change as his five engaged members above, on
+                // the same terms. His THREE ALLY arms are deliberately absent from this list, exactly
+                // as Rowenna's three are: what This Way! and That Way! need is a friendly hero in
+                // RADIUS, and the two Blue spawns already are - restaging them would move the ally out
+                // of the disk the co-moves measure.
+                IsStagedHanu(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2108,6 +2200,24 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusBrynnOneVsOne();
                     }
 
+                    // Milestone 8.71h. The ALLY arms are asked first, for the reason 8.57g's line
+                    // above gives: they are a different BOARD rather than a different hand, and a
+                    // three-seat configuration composed onto the one-versus-one setup would leave
+                    // Arien's cards with no seat to stand on.
+                    if (IsHanuWithAlly(content))
+                    {
+                        return QuickGameSetupConfiguration
+                            .CreateStagedWaspVersusHanuWithAllyOneVsTwo();
+                    }
+
+                    // The twenty-first hero's arm, written in the SAME change as his eight members
+                    // and his restaging line - the three arms milestone 8.38f had to add for Swift
+                    // after the fact, and which every dealing since has shipped together.
+                    if (IsStagedHanu(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusHanuOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -2339,6 +2449,30 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedBrynn ||
             content == SceneCardContent.VerifiedTierThreeEngagedStagedBrynn ||
             content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedBrynn;
+
+        /// <summary>
+        /// Whether this content is one of milestone 8.71h's five staged Hanu scenes. Written in the
+        /// same change as those five members, the setup configuration they name and the restaging list
+        /// above - the three arms milestone 8.38f had to add for Swift after the fact, and which every
+        /// dealing since has therefore shipped together.
+        /// </summary>
+        private static bool IsStagedHanu(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedHanu ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedHanu ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedHanu ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedHanu ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedHanu;
+
+        /// <summary>
+        /// Whether this content deals two heroes to the Blue team with Hanu beside an ally. Milestone
+        /// 8.71h's three-hero arms, which take the two-Blue-hero setup and are deliberately
+        /// <em>not</em> restaged, exactly as milestone 8.57g's Rowenna arms are not: what This Way!
+        /// and That Way! need is a friendly hero in RADIUS, and the two Blue spawns already are.
+        /// </summary>
+        private static bool IsHanuWithAlly(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedStagedHanuWithAlly ||
+            content == SceneCardContent.VerifiedStagedHanuWithAllyAtTierTwo ||
+            content == SceneCardContent.VerifiedStagedHanuWithAllyAtTierThree;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

@@ -626,18 +626,20 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Milestone 7.9's gate, from both sides: this build registers none of the four contracts this
-        /// block declares, holds none of the three end-of-turn bodies, and can deal none of the three
-        /// faces - and the deferral list names exactly what is withheld.
+        /// Milestone 7.9's gate, from both sides - and since milestone 8.71h it reads the other way
+        /// round: this build registers all four contracts this block declares, holds all three
+        /// end-of-turn bodies, and deals all three faces. The gate itself is unchanged; 8.71h is the
+        /// milestone at which dealt content could reach them, and it dealt, registered and showcased
+        /// in ONE change, which is Silverarrow's 8.35z46 law.
         /// </summary>
         [Test]
-        public void EveryContractThisBlockDeclaresIsWithheldFromTheBuild()
+        public void EveryContractThisBlockDeclaresIsRegisteredSinceTheDealing()
         {
             var build = MatchContentCatalogs.ForThisBuild();
-            var deferred = HanuComponentContent.JourneyDeferredHandlers().ToArray();
+            var registered = HanuComponentContent.JourneyRegisteredHandlers().ToArray();
 
-            Assert.That(HanuComponentContent.JourneyRegisteredHandlers(), Is.Empty);
-            Assert.That(deferred.Select(handler => handler.Reference.CapabilityId.Value).OrderBy(value => value),
+            Assert.That(HanuComponentContent.JourneyDeferredHandlers(), Is.Empty);
+            Assert.That(registered.Select(handler => handler.Reference.CapabilityId.Value).OrderBy(value => value),
                 Is.EqualTo(new[]
                 {
                     "hanu-journey-partner",
@@ -646,15 +648,18 @@ namespace GuardsDigital.Tests.EditMode
                     "hanu-unexpected-journey-effect"
                 }));
 
-            foreach (var handler in deferred)
+            foreach (var handler in registered)
             {
-                Assert.That(build.Capabilities.Registered.Contains(handler.Reference), Is.False,
-                    handler.Reference + " must not be registered until 8.71h deals him.");
+                Assert.That(build.Capabilities.Registered.Contains(handler.Reference), Is.True,
+                    handler.Reference + " is named by a face a configured match now deals.");
             }
 
             foreach (var body in HanuEffectContent.JourneyTriggeredEffects())
             {
-                Assert.That(build.TriggeredEffects.TryGet(body.Reference, out _), Is.False);
+                Assert.That(build.TriggeredEffects.TryGet(body.Reference, out _), Is.True,
+                    body.Id.Value + " is the end-of-turn swap back its own Active effect names by " +
+                    "reference, so an unregistered one would be a step the rule can name and the " +
+                    "build cannot load.");
             }
         }
 
@@ -798,17 +803,12 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         private static MatchContentCatalogs Catalogs()
         {
-            var build = MatchContentCatalogs.ForThisBuild();
-            return new MatchContentCatalogs(
-                new EffectCapabilityCatalog(
-                    build.Capabilities.Registered.Select(build.Capabilities.Load)
-                        .Concat(HanuComponentContent.JourneyDeferredHandlers())
-                        .GroupBy(handler => handler.Reference)
-                        .Select(group => group.First())),
-                build.Components,
-                new TriggeredEffectCatalog(
-                    build.TriggeredEffects.Definitions
-                        .Concat(HanuEffectContent.JourneyTriggeredEffects())));
+            // MILESTONE 8.71h. The build's own catalogs, unadorned: it registers his four contracts
+            // and holds his three end-of-turn bodies since the dealing, so the concat this method
+            // used to make would now hand the same reference in twice and be refused - milestone
+            // 8.40j's BA-18, "Capability references must be unique", and the identical rule the
+            // triggered-effect catalog states for its definitions.
+            return MatchContentCatalogs.ForThisBuild();
         }
 
         private static IEnumerable<HexCoordinate> Disk(int radius)

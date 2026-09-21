@@ -125,6 +125,75 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(model.AuraSpaces, Is.EquivalentTo(ExpectedDisk(declared.Radius.Value)));
         }
 
+        /// <summary>
+        /// Milestone 8.71h. Hanu the Trickster's Unexpected Journey is the first content in this
+        /// build to declare <see cref="ActiveEffectAffectedScopeKind.Hero"/>, and the dealing is where
+        /// the two sweeps above went red: the scope was on neither list, so three of his faces would
+        /// have stood a live effect and drawn NOTHING on every seat.
+        ///
+        /// <para><b>What it draws, and the boundary of the claim.</b> A ring on the CONTROLLER - the
+        /// hero whose card is standing the effect - and no painted hex. The ring says "this hero's
+        /// card is doing something", which is weaker than the "these rules are on this hero" every
+        /// other marked scope means, and deliberately so: the affected hero lives on
+        /// <c>ActiveEffectInstance.AffectedHeroId</c> and reaches no projection, so a ring on the
+        /// immune enemy would be presentation inventing who an effect is on. The absence of a disk is
+        /// the CONTENT rather than a limitation - "regardless of radius" is stated by declaring
+        /// none.</para>
+        /// </summary>
+        [Test]
+        public void AHeroScopedJourneyRingsItsControllerAndPaintsNoHexes()
+        {
+            var declared = HanuActiveEffectContent.UnexpectedJourneyDefinition;
+            var card = CardDeclaring(declared.DefinitionId);
+
+            Assert.That(card, Is.Not.Null, "No dealt card creates his Unexpected Journey.");
+            Assert.That(declared.AffectedScope, Is.EqualTo(ActiveEffectAffectedScopeKind.Hero));
+            Assert.That(declared.Radius.IsDefined, Is.False,
+                "and it measures no disk at all, which is the 'regardless of radius' half of the " +
+                "printed sentence stated structurally.");
+
+            var model = Derive(card, live: true);
+
+            Assert.That(model.MarkedHeroes, Is.EqualTo(new[] { Carrier }),
+                "The ring sits on the hero whose CARD stands the effect, which is the only " +
+                "participant a seat can name from the facts it already holds.");
+            Assert.That(model.AuraSpaces, Is.Empty,
+                "and nothing is painted, because the definition declares no radius to paint.");
+        }
+
+        /// <summary>
+        /// Milestone 8.71h, the other side of the same claim: the widening reaches the Hero scope and
+        /// NOTHING ELSE. <see cref="ActiveEffectAffectedScopeKind.ControllerTeam"/> and
+        /// <see cref="ActiveEffectAffectedScopeKind.Global"/> stay off both lists, so the day content
+        /// declares one the two sweeps above go red exactly as they did for his journeys - which is
+        /// what keeps this list a decision rather than a habit.
+        /// </summary>
+        [Test]
+        public void TheWideningReachesTheHeroScopeAndNoOtherUnrenderedScope()
+        {
+            Assert.That(
+                ActiveEffectVisibility.RenderedScopes,
+                Has.Member(ActiveEffectAffectedScopeKind.Hero));
+            Assert.That(
+                ActiveEffectVisibility.MarksItsController(ActiveEffectAffectedScopeKind.Hero),
+                Is.True);
+            Assert.That(
+                ActiveEffectVisibility.DrawsADisk(ActiveEffectAffectedScopeKind.Hero), Is.False,
+                "It is a ring and never a disk: a Hero-scoped occurrence is about a NAMED hero " +
+                "rather than about a circle, so there is no membership for a disk to decide.");
+
+            foreach (var scope in new[]
+            {
+                ActiveEffectAffectedScopeKind.ControllerTeam,
+                ActiveEffectAffectedScopeKind.Global
+            })
+            {
+                Assert.That(ActiveEffectVisibility.RenderedScopes, Has.No.Member(scope),
+                    scope + " is still unrendered, and the sweeps above are what will say so the " +
+                    "day a card declares it.");
+            }
+        }
+
         /// <summary>Nothing live means nothing drawn, on the same card and the same board.</summary>
         [Test]
         public void ACardWhoseEffectIsNotLiveCarriesNoTreatment()
@@ -563,6 +632,11 @@ namespace GuardsDigital.Tests.EditMode
                     .Concat(MatchConfiguration.CreateStagedUrsafarForInternalTest(TeamSide.Red)
                         .CardDefinitions)
                     .Concat(MatchConfiguration.CreateStagedWhisperForInternalTest(TeamSide.Red)
+                        .CardDefinitions)
+                    // Milestone 8.71h. Hanu's staged configuration, because his three Blue journeys
+                    // are the only content in this build that declares the Hero scope and the two
+                    // sweeps above are asked of every definition a configured match can load.
+                    .Concat(MatchConfiguration.CreateStagedHanuForInternalTest(TeamSide.Red)
                         .CardDefinitions)
                     .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                     .Select(group => group.First())

@@ -651,31 +651,34 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// The one selection this block mints is DEFERRED, asserted from BOTH sides: it is in his
-        /// block's deferral list, his block's registered list is empty, and the catalog a configured
-        /// match loads cannot start it. Registering a contract before dealt content can reach it moves
-        /// the pinned capability list, every snapshot's bytes and every corpus digest while the content
-        /// never moved - which is why 8.71h is the block that flips it.
+        /// The one selection this block mints is REGISTERED since milestone 8.71h, asserted from BOTH
+        /// sides: it is in his block's registered list, his block's deferral list is empty, and the
+        /// catalog a configured match loads can start it. Until that milestone it was withheld,
+        /// because registering a contract before dealt content can reach it moves the pinned
+        /// capability list, every snapshot's bytes and every corpus digest while the content never
+        /// moved - and 8.71h is the block that flipped both halves in one change.
         /// </summary>
         [Test]
-        public void TheFriendlyPairSelection_IsDeferredAndUnreachableFromAConfiguredMatch()
+        public void TheFriendlyPairSelection_IsRegisteredAndReachableFromAConfiguredMatch()
         {
-            Assert.That(HanuComponentContent.GreenRegisteredHandlers(), Is.Empty,
-                "Nothing of his is registered until the dealing block.");
+            Assert.That(HanuComponentContent.GreenDeferredHandlers(), Is.Empty,
+                "Nothing of his is withheld any more; the dealing block moved all six across.");
             Assert.That(
-                HanuComponentContent.GreenDeferredHandlers()
+                HanuComponentContent.GreenRegisteredHandlers()
                     .Select(handler => handler.Reference.ToString()).ToArray(),
                 Is.EqualTo(new[] { HanuComponentContent.FriendlyUnitPairV1.ToString() }));
 
             Assert.That(
                 MatchContentCatalogs.ForThisBuild().Capabilities
                     .IsRegistered(HanuComponentContent.FriendlyUnitPairV1),
-                Is.False,
-                "'hanu-friendly-unit-pair@1' is reachable from no dealt card in this build.");
+                Is.True,
+                "'hanu-friendly-unit-pair@1' is named by three faces a configured match now deals, " +
+                "and by the Red Troupemaster - the showcase consumer milestone 7.9's gate asks of a " +
+                "new handler type.");
 
-            // MILESTONE 8.71g STATED HIS SET: eighteen dealt faces, and still nothing registered.
+            // MILESTONE 8.71g STATED HIS SET and 8.71h deals it: eighteen dealt faces.
             Assert.That(HanuCardContent.DealtDefinitions, Has.Count.EqualTo(18),
-                "his set is stated; what 8.71h still owes is the registration above.");
+                "his set is stated and registered.");
             foreach (var id in GreenFaces)
             {
                 Assert.That(
@@ -1124,7 +1127,7 @@ namespace GuardsDigital.Tests.EditMode
             /// </summary>
             private static EffectCapabilityCatalog Catalog() =>
                 SyntheticEffectCapabilities.CreateCatalog(
-                    HanuComponentContent.GreenDeferredHandlers());
+                    HanuComponentContent.GreenRegisteredHandlers());
 
             internal EffectResolutionStepResult Run()
             {

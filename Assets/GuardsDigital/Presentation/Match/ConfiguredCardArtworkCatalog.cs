@@ -130,7 +130,22 @@ namespace GuardsDigital.Presentation.Match
                 // DIRECTORY. Written here at the same moment as the eighteen rows, for the reason
                 // those paragraphs give: the rows alone are what every offline tier can see, and this
                 // map is what turns them into a front on a card.
-                { "brynn", "Brynn" }
+                { "brynn", "Brynn" },
+                // Milestone 8.71h, the FOURTEENTH consecutive dealing told by the comment above
+                // rather than by a check - and the first in three dealings where every source agrees
+                // at once. His extraction directory spells the name plainly, the bundled manifest
+                // carries his standee under `Hanu`, the dashboard prints "Hanu the Trickster" and the
+                // Tabletopia card GROUP prints it too, where Brynn's said "the Tracker" and Min's
+                // said something else again. Written here at the same moment as the eighteen rows,
+                // for the reason those paragraphs give: the rows alone are what every offline tier
+                // can see, and this map is what turns them into a front on a card.
+                //
+                // The manifest's agreement is only about the NAME: it holds a SECOND element also
+                // called `Hanu` (8597495) that draws a different, ape-faced hero, so the standee this
+                // dealing prepared is 8597492, chosen by crop rather than by the name - Min's MI-Q6
+                // lesson, and the reason this comment does not claim the two corpora agree about the
+                // PICTURE.
+                { "hanu", "Hanu" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -451,6 +466,13 @@ namespace GuardsDigital.Presentation.Match
                 // Backup, Cutter's Few More Steps, Bain's Side Quest, Rowenna's Earn the Spurs and
                 // Min's Chop Down are not among theirs.
                 .Concat(BrynnCardContent.DealtDefinitions)
+                // Milestone 8.71h. Hanu's eighteen, on exactly the terms the rows above state. Fight
+                // or Flight is p.20's Handicap card and is not among his DealtDefinitions, exactly as
+                // Dodger's Rusty Razor, Misa's Leaf on the Wind, Silverarrow's Keep the Distance,
+                // Ursafar's Jaws That Bite, Whisper's Vile Accusation, Tali's Ice Shard, Swift's
+                // Backup, Cutter's Few More Steps, Bain's Side Quest, Rowenna's Earn the Spurs, Min's
+                // Chop Down and Brynn's Home Turf are not among theirs.
+                .Concat(HanuCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

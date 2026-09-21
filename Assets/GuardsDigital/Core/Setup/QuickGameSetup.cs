@@ -402,6 +402,14 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string BrynnHeroIdValue = "hero-brynn";
 
+        /// <summary>
+        /// Milestone 8.71h. Hanu's own hero id - the TWENTY-FIRST hero, on the 2026-09-21 user
+        /// direction that opened him ("Lets go for a new hero", then choosing Hanu from the twelve
+        /// undealt heroes surveyed by stars and roles, then "Make sure pick screen is correctly
+        /// imeplented").
+        /// </summary>
+        public const string HanuHeroIdValue = "hero-hanu";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -487,7 +495,21 @@ namespace GuardsDigital.Core.Setup
                 // the authority. `HeroSelectionStageTests` pins both facts and
                 // `PrivateLobbyPlayModeTests` drives the star and role filters over his button.
                 (BrynnHeroIdValue, "brynn", "Brynn the Seeker", HeroComplexity.VeryComplex,
-                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Durable)
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Durable),
+                // Milestone 8.71h deals him and makes him pickable in the same commit, which is what
+                // the rule above asks for. He is the TWENTY-FIRST, so the sentence Tali's row wrote -
+                // "every hero this build can deal" - stays true only because this row is here too.
+                //
+                // HIS PROFILE FACTS ARE THE USER'S ONE NAMED REQUIREMENT FOR THIS HERO ("Make sure
+                // pick screen is correctly imeplented"), so they are read off the extracted selection
+                // front rather than guessed: `active-hero-cards/_selection-cards/Hanu__front.png`
+                // shows THREE filled stars - p.21's "Very Complex" - and the three role icons
+                // TACTICIAN, SNIPER and PUSHER, in that printed order. The dashboard names him "Hanu
+                // the Trickster" and the Tabletopia card group agrees, which the last two dealings'
+                // rows could not say. `HeroSelectionStageTests` pins both facts and
+                // `PrivateLobbyPlayModeTests` drives the star and role filters over his button.
+                (HanuHeroIdValue, "hanu", "Hanu the Trickster", HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher)
             };
 
         /// <summary>
@@ -740,6 +762,75 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusBrynnOneVsOne() =>
             CreateOneVsOne(new HeroContentId("brynn"), "Brynn");
+
+        /// <summary>
+        /// Milestone 8.71h. The same board with Hanu the Trickster on the Blue seat, for the fixtures
+        /// whose subject is his printed set. The TWENTY-FIRST hero.
+        ///
+        /// <para>Written in the SAME change as his eight <c>SceneCardContent</c> members and his four
+        /// <c>MatchConfiguration</c> stagings, which is the whole of what milestone 8.38f's repair
+        /// teaches: without this arm every staged scene of his falls through
+        /// <c>SelectSetupConfiguration</c>'s default to Arien's setup, and the hand factory - which
+        /// takes an owner id rather than naming a hero - then deals HIS cards to a seat whose content
+        /// identity is <c>arien</c>. No offline tier can see that; only a loaded scene composes.</para>
+        ///
+        /// <para><b>He ALSO needs an ally board, and this is not it.</b> Two of his faces name a
+        /// friendly HERO with himself excluded - This Way! and That Way! ask one to choose the
+        /// distance on their own seat - so
+        /// <see cref="CreateStagedWaspVersusHanuWithAllyOneVsTwo"/> is the smallest board on which
+        /// either co-move has a candidate at all. This one-versus-one arm is where every other face of
+        /// his lives: both swap families, the Reds' two bullets over the friendly MINION p.17's
+        /// Friendly admits, Hurry up!'s rewrite of the enemy hero's unresolved card, and the
+        /// Ultimate's delegated action.</para>
+        ///
+        /// <para><b>What this staging reaches, measured at the dealing rather than assumed.</b> The
+        /// enemy HERO stands two spaces away - inside every printed Radius his Blues and Greens carry
+        /// and inside every printed Range his Reds and his Silver carry, and outside p.19's ring, so
+        /// his journeys and Hear Nothing reach him while his "adjacent to you" bullets need a minion
+        /// first. <c>HanuDealingTests</c> writes the coordinates into the run output for 8.71i to
+        /// start from.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusHanuOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("hanu"), "Hanu");
+
+        /// <summary>
+        /// Milestone 8.71h. Wasp on Red against Hanu and Arien on Blue - the shape
+        /// <see cref="CreateStagedWaspVersusRowennaWithAllyOneVsTwo"/> already proves, with Hanu in the
+        /// seat under test and an ally beside him.
+        ///
+        /// <para>This Way! and That Way! print "A friendly hero in radius chooses a distance ..." and
+        /// milestone 8.71e composed that selection with <c>includeSelf</c> false, so his own seat is
+        /// excluded and this is the smallest board on which either co-move has a candidate at all -
+        /// and therefore the only one on which the friend's cross-seat distance choice can be raised.
+        /// It is also the board on which the five Red bullets that print "adjacent to your friendly
+        /// hero" can be satisfied by a HERO rather than only by the friendly melee minion.</para>
+        ///
+        /// <para>Arien holds the ally seat at <c>blue-hero-02</c>, for the identical reason Brogan's,
+        /// Tali's and Rowenna's ally configurations give it to him: he is a hero this build already
+        /// deals, so a fixture proves the selection against real content rather than inventing a
+        /// printed set. The spawn is the same two spaces from the first that Rowenna's board uses,
+        /// which is inside the Radius 3 both co-moves print and inside the Radius 2 This Way!'s own
+        /// shorter distance needs.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusHanuWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("hanu"), "Hanu");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"),
+                        "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
 
         /// <summary>
         /// Milestone 8.57g. The same board with Rowenna the Vanguard on the Blue seat, for the

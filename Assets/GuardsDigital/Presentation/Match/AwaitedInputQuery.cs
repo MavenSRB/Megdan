@@ -213,10 +213,24 @@ namespace GuardsDigital.Presentation.Match
         /// nothing stands - and a decision this same hero owns both count as "nothing else is standing
         /// on top of it"; a decision naming anyone else does not.
         /// </summary>
+        /// <remarks>
+        /// <b>Milestone 8.71h.</b> The comparison is against the DECIDING hero rather than against the
+        /// selected actor, which is Hanu the Trickster's The Ultimate Trick at this tier: while his
+        /// delegation stands, the acting piece is the targeted hero and the seat being waited on is
+        /// his, so an actor-based read would shine the targeted player's tray while the host was
+        /// refusing that seat's every command. <c>DelegatedActionQuery.DecidingHeroFor</c> answers the
+        /// actor itself whenever no delegation stands, so nothing before this milestone reads
+        /// differently; and the rewrite and the unlocked Ultimate are both rulebook p.4 open zones, so
+        /// every viewer derives the same answer from the frame it already has.
+        /// </remarks>
         private static bool IsActingWithNoDecisionStandingOnTop(IMatchReadModel projection, HeroId heroId)
         {
             if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined ||
-                !projection.SelectedActor.ActorId.Equals(heroId))
+                !GuardsDigital.Core.Rules.CardResolution.DelegatedActionQuery.DecidingHeroFor(
+                    projection.Definitions,
+                    projection.Cards,
+                    projection.Heroes,
+                    projection.SelectedActor.ActorId).Equals(heroId))
             {
                 return false;
             }

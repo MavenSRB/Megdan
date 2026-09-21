@@ -1546,24 +1546,50 @@ namespace GuardsDigital.Tests.EditMode
         // the Initiative after every resolution, so the wrong number is consulted at the very next
         // selection and nothing in the match could detect it. No persisted state exists outside this
         // corpus to strand.
+        // MILESTONE 8.71h RE-PINS ALL SIXTEEN AGAIN, AND THE CAUSE IS REGISTRATION AND NOTHING ELSE.
+        // The schema does not move: v44 is what 8.71a left and no field is added here. What moves is
+        // the REGISTERED CONTENT LIST every payload records - the id and revision of every capability
+        // this build can load - because the milestone that deals Hanu the Trickster is the milestone
+        // that registers his six contracts, and milestone 7.9's gate is what had kept them out.
+        //
+        // THE BYTE DELTA IS ATTRIBUTED BY ARITHMETIC RATHER THAN ASSERTED. It is **+221 bytes on all
+        // sixteen**, measured against the two captures whose byte counts this list writes down:
+        // `setup` 13,050 -> 13,271 and `verified-hand-setup` 12,149 -> 12,370. Seven capability ids
+        // join the list and their names are 186 characters in total -
+        // `hanu-hurry-up-initiative` (24), `hanu-journey-partner` (20),
+        // `hanu-unexpected-journey-effect` (30), `hanu-there-and-back-again-effect` (32),
+        // `hanu-safe-travels-effect` (24), `hanu-friendly-unit-pair` (23) and the showcase's own
+        // `synthetic-journey-showcase-effect` (33) - plus seven length prefixes and seven four-byte
+        // revisions: 186 + 7 + 28 = 221 exactly. Both captures agreeing on 221 while carrying
+        // completely different content is what says the growth is the registration list and not
+        // anything a capture plays: NO capture in this corpus deals Hanu or plays a face of his, and
+        // the three end-of-turn bodies his journeys arm are TRIGGERED effects, which this payload
+        // does not enumerate.
+        //
+        // MIGRATE rather than reject, on this list's own standing argument and for the twelfth
+        // dealing running: a v44 payload written before this milestone records a registration list
+        // that is a strict subset of this build's, every id in it still resolves to the same handler
+        // at the same revision, and nothing a restored match reads changes meaning. A registration
+        // list that GREW is the one shape this corpus has always migrated across, because the
+        // question it answers - "can this build load everything that payload named" - is still yes.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v44", "ba164913d05673bfe22f13d4104519744a2d60ab0251ab9c92e3c15101df1c56"),
-            new CompatibilityFixture("active-turn-v44", "e99efba490ddddb4d2c0eba2e7db09af9c6a524a35d07617da36bd02c804e49f"),
-            new CompatibilityFixture("pending-choice-v44", "ae1ae44a312d23d2e54fbcf3237596df8cc9f693308214766ce28ca190fecba0"),
-            new CompatibilityFixture("end-of-round-v44", "f56490020d367cc25e4046f918e479c492549ecc57df045945f8293ea9148097"),
-            new CompatibilityFixture("pending-minion-battle-v44", "0ca9feed053ae009020ed9d202dbed0c0b2f8f37628f97e2a980a61054e0ddc7"),
-            new CompatibilityFixture("placed-token-v44", "51ad6ea4ad348e867ac2d2c1c66ed1e88f0dd978f53e26bcca76e72b91d52f70"),
-            new CompatibilityFixture("attached-marker-v44", "30b87f4c282ac3882a396f4f4c63d24f02f0a8d894bdcee3f69a35ea6a1a63a7"),
-            new CompatibilityFixture("pending-correction-v44", "abb8f5e3ab985c871861e113a2be36b834227fd7f18f7897fa5fc07d7e042c71"),
-            new CompatibilityFixture("paused-level-up-v44", "4056a2b699eade974ce9635c396928bfed7931b4e951502c92c2c45ef7f73689"),
-            new CompatibilityFixture("ended-match-v44", "cf6e2a3843c012421f5c2f3c13cb5102d211d7dee8d32d41434d819bbae7e9e8"),
-            new CompatibilityFixture("verified-hand-setup-v44", "7108ab2a7aa1bc01749978c7ba592caf2f4772fad64155c87f0f58eb4a1bc941"),
-            new CompatibilityFixture("paused-orbit-repeat-v44", "e2bd4f0f9bcfcc2727bdf72968b55587605712592c9e220d8af4e7892ab2a0b8"),
-            new CompatibilityFixture("paused-card-text-v44", "4596fd7894a84fe515aef5e452ecb25326b2466943b0567b8ce49d08688732d8"),
-            new CompatibilityFixture("paused-block-rider-v44", "d7f5e9c66a9010e2bb39a1488371a5f321564f211a2c99fa83246f4c0739e55a"),
-            new CompatibilityFixture("paused-repeated-attack-v44", "7f776b3f83ddac631f04f4d28083b31039a6befaa2870a5640f313cee452f515"),
-            new CompatibilityFixture("parked-pre-action-v44", "918c37926551482151b46fd244fb981d378a2b23c0765cd04e29dbb11add36fe")
+            new CompatibilityFixture("setup-v44", "514ff27e2688d1f05ba938b32ccb09bba0adfa3188e2db11acf8ce21a8399c7b"),
+            new CompatibilityFixture("active-turn-v44", "b7b611e9d9fe3f21c8e425b9f2b02fab5afdeb519ac5d682681f4c2bf42d6542"),
+            new CompatibilityFixture("pending-choice-v44", "4e62593553afa99a17d8f52966ebbc7044c896e1e8e4043379166db38c26e95f"),
+            new CompatibilityFixture("end-of-round-v44", "bc8c540ce007a56670120e201de8ec46f2d782b97de11b65ca4f24c8994cf128"),
+            new CompatibilityFixture("pending-minion-battle-v44", "b4c886d24a862573c6b4154800bb9e5f021136b4c764425835188ceea5382983"),
+            new CompatibilityFixture("placed-token-v44", "a81df2822a577c4e13b730f2458b6d2f171d629a74f40a86b967462ed9b15dec"),
+            new CompatibilityFixture("attached-marker-v44", "fc725d778021e7ab4a76b07388a07512e3e2caa587c23670b1575d126c1d355d"),
+            new CompatibilityFixture("pending-correction-v44", "acdafc0988f65c1b46bd874667928849d3fd0138a7ad97d449a36e1005f032ca"),
+            new CompatibilityFixture("paused-level-up-v44", "08c26c7f6217e0c954364dab16dd8cde46e12f17db69ba557e940eae2bc2d727"),
+            new CompatibilityFixture("ended-match-v44", "ab06b79072981c09910680e000b5b73d86ba6db520753273ff4992b3d97a15b2"),
+            new CompatibilityFixture("verified-hand-setup-v44", "f0700bd4a96a7e1d2685a64d9b1a626cdb846e3e84925f02156416860813d8ac"),
+            new CompatibilityFixture("paused-orbit-repeat-v44", "0c4ddcb19af684f245eecd87ff4ab7ccd6f28cdf60129e11472a3373dcef7460"),
+            new CompatibilityFixture("paused-card-text-v44", "ef76062e2315360194097c5ea5aa88c4addcccd9bd79d58660bd62307ec9c3e0"),
+            new CompatibilityFixture("paused-block-rider-v44", "87ae12eb48c421bb8a29737e17846463fdd634afd483e157f97baa510c5f0261"),
+            new CompatibilityFixture("paused-repeated-attack-v44", "3cc7d366b30ffaa27eb780a8f162495afa9a706272df789fa7666f54b0aa03b6"),
+            new CompatibilityFixture("parked-pre-action-v44", "ee0ad20704ca1f6f143aa49cfb00b21ebc2a85773efe8f354527eedd1705f4e0")
         };
 
         [Test]

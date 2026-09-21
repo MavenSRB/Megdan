@@ -659,7 +659,7 @@ namespace GuardsDigital.Tests.EditMode
 
             var rule = HanuCardContent.Definition(HanuCardContent.TheUltimateTrick).UltimateRule;
             Assert.That(rule, Is.Not.Null);
-            Assert.That(rule.TriggeredEffect, Is.Null,
+            Assert.That(rule.TriggeredEffect.HasValue, Is.False,
                 "and his Ultimate names neither an effect nor a modification: the whole of The " +
                 "Ultimate Trick is a standing declaration a rule query derives, because what it " +
                 "changes is WHO CHOOSES.");
@@ -668,16 +668,21 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// EXACTLY these six capability references are his own, EXACTLY these seven faces are refused by
-        /// what this build registers, and his declaration list holds the same six - milestone 7.9's gate
-        /// read from three sides at once, so that a contract arriving unnoticed, a face that quietly
-        /// stopped asking for one, and a declaration nothing reaches each fail here.
+        /// EXACTLY these six capability references are his own, EXACTLY these seven faces were refused
+        /// before the dealing and NONE is refused now, and his declaration list holds the same six -
+        /// milestone 7.9's gate read from three sides at once, so that a contract arriving unnoticed,
+        /// a face that quietly stopped asking for one, and a declaration nothing reaches each fail
+        /// here.
         ///
-        /// <para>8.71h is the block that flips it, and the difference between the two lists below is
-        /// exactly what the registration buys.</para>
+        /// <para><b>Milestone 8.71h flipped it</b>, and the list below is what the registration
+        /// bought: the seven faces this case used to name as refused - Hurry up!, the three journeys
+        /// and the three friendly-pair Greens - are refused by nothing now, while the six contracts
+        /// and the seven names stay exactly where they were. Each half of that is asserted, because a
+        /// registration that quietly admitted a face nobody meant to register would look the same
+        /// from one side.</para>
         /// </summary>
         [Test]
-        public void ExactlyTheseContractsAreHisOwn_AndExactlyTheseFacesAreRefused()
+        public void ExactlyTheseContractsAreHisOwn_AndNoFaceOfHisIsRefusedAnyMore()
         {
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities;
 
@@ -710,14 +715,14 @@ namespace GuardsDigital.Tests.EditMode
                 "above is not passing because the walk found nothing.");
 
             Assert.That(
-                HanuComponentContent.DeferredHandlers()
+                HanuComponentContent.RegisteredHandlers()
                     .Select(handler => handler.Reference.ToString())
                     .OrderBy(value => value, StringComparer.Ordinal),
                 Is.EqualTo(HisOwnContracts),
                 "and the declaration list and the walk over his bodies agree, which is what says the " +
-                "deferral list 8.71h registers is neither short nor long by one.");
-            Assert.That(HanuComponentContent.RegisteredHandlers(), Is.Empty,
-                "with nothing of his registered until 8.71h deals him.");
+                "list 8.71h registered is neither short nor long by one.");
+            Assert.That(HanuComponentContent.DeferredHandlers(), Is.Empty,
+                "with nothing of his withheld since 8.71h dealt him.");
             Assert.That(
                 HanuComponentContent.Handlers().Select(handler => handler.Reference).Distinct().Count(),
                 Is.EqualTo(6),
@@ -727,9 +732,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 named.Where(capability => registered.IsRegistered(capability))
                     .Select(capability => capability.ToString())
-                    .Any(value => value.StartsWith("hanu-", StringComparison.Ordinal)),
-                Is.False,
-                "No capability of his reaches production registration before the dealing.");
+                    .Where(value => value.StartsWith("hanu-", StringComparison.Ordinal))
+                    .Distinct()
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(HisOwnContracts),
+                "and every one of them reaches production registration since the dealing - the same " +
+                "six, from the build's own catalog rather than from his declaration list.");
 
             var refusedFaces = new List<string>();
             foreach (var definition in HanuCardContent.AllDefinitions)
@@ -750,13 +758,18 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 refusedFaces.OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(FacesThisBuildRefuses),
-                "SEVEN of his seventeen composed bodies are refused by this build, and these seven: " +
-                "Hurry up! names the Initiative rewrite, the three journeys each name their own " +
-                "Active-effect creation, and the three friendly-pair Greens name the pair selection. " +
-                "Hear Nothing and See Nothing are the two Greens that are NOT refused, because an " +
-                "enemy-hero swap in printed Radius is the roster's own vocabulary. Refused now: " +
+                Is.Empty,
+                "NONE of his seventeen composed bodies is refused by this build any more. Until " +
+                "8.71h these SEVEN were - Hurry up! names the Initiative rewrite, the three " +
+                "journeys each name their own Active-effect creation, and the three friendly-pair " +
+                "Greens name the pair selection - and `FacesThisBuildRefuses` still records which " +
+                "seven, because what the registration bought is exactly that list becoming empty. " +
+                "Refused now: " +
                 string.Join(", ", refusedFaces.OrderBy(value => value, StringComparer.Ordinal)));
+            Assert.That(
+                FacesThisBuildRefuses, Has.Length.EqualTo(7),
+                "and the seven are still named, so a face that quietly stopped naming a contract of " +
+                "his would move this list rather than pass unnoticed.");
         }
 
         /// <summary>
@@ -992,11 +1005,14 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(
                     DecisionLabelCatalog.TryGetLabel(
-                        declaration.CardId, declaration.NodeId, out _),
-                    Is.False,
-                    declaration.NodeId.Value + " must NOT be in the catalog yet: every hero's table " +
-                    "joins it at the milestone that DEALS them, which for him is 8.71h. Asserting " +
-                    "the absence is what keeps that join honest.");
+                        declaration.CardId, declaration.NodeId, out var label),
+                    Is.True,
+                    declaration.NodeId.Value + " is in the catalog since milestone 8.71h: every " +
+                    "hero's table joins it at the milestone that DEALS them, which is what the one " +
+                    "line into `DecisionLabelCatalog` buys and what this case now holds.");
+                Assert.That(label, Is.EqualTo(declaration.Label),
+                    declaration.NodeId.Value + " must reach the catalog with the words it declares " +
+                    "beside his content, not a copy that has drifted.");
             }
         }
 
@@ -1121,26 +1137,16 @@ namespace GuardsDigital.Tests.EditMode
         /// in as content is what threw "Capability references must be unique" at Bain's dealing, and it
         /// is what keeps this concat harmless on the day the dealing lands.</para>
         /// </summary>
-        private static EffectCapabilityCatalog Catalog()
-        {
-            var build = MatchContentCatalogs.ForThisBuild().Capabilities;
-            return new EffectCapabilityCatalog(
-                build.Registered.Select(build.Load)
-                    .Concat(HanuComponentContent.Handlers())
-                    .GroupBy(handler => handler.Reference)
-                    .Select(group => group.First()));
-        }
+        // MILESTONE 8.71h. Both of these were a concat of the build's catalogs with his withheld
+        // declarations, de-duplicated by reference. The build registers his six and holds his three
+        // end-of-turn bodies since the dealing, so the concat is now the same reference twice - which
+        // the capability catalog refuses as 8.40j's BA-18 and the triggered-effect catalog refuses in
+        // its own words. What both methods answer is the same question they always did: the catalog a
+        // configured match would load.
+        private static EffectCapabilityCatalog Catalog() =>
+            MatchContentCatalogs.ForThisBuild().Capabilities;
 
-        private static MatchContentCatalogs Catalogs()
-        {
-            var build = MatchContentCatalogs.ForThisBuild();
-            return new MatchContentCatalogs(
-                Catalog(),
-                build.Components,
-                new TriggeredEffectCatalog(
-                    build.TriggeredEffects.Definitions
-                        .Concat(HanuComponentContent.TriggeredEffects)));
-        }
+        private static MatchContentCatalogs Catalogs() => MatchContentCatalogs.ForThisBuild();
 
         // -------------------------------------------------------------------------------------------
         // Helpers - describing a face

@@ -126,6 +126,15 @@ namespace GuardsDigital.Core.Cards
                 // of his three traps prints, Split Attack's printed "may repeat" and Peak Precision's
                 // "you may retrieve" - derived at 8.69f from `DecisionLabelRequirementQuery` over his
                 // dealt faces rather than counted by hand, which is what found ten of them.
-                .Concat(BrynnEffectContent.DecisionLabels());
+                .Concat(BrynnEffectContent.DecisionLabels())
+                // Milestone 8.71h, the milestone that deals Hanu the Trickster as the TWENTY-FIRST
+                // hero. His FIFTEEN declarations join here rather than at the six blocks that composed
+                // them, on the same rule: what a table is FOR is a window over a card a match deals.
+                // Ten of them are the two bullets each of his five Reds prints, and five are the
+                // printed distances This Way! and That Way! let a FRIENDLY hero choose on their own
+                // seat - the first rows in this catalog that name a control another seat answers.
+                // Derived at 8.71g from `DecisionLabelRequirementQuery` over his dealt faces and the
+                // three end-of-turn bodies, rather than counted by hand.
+                .Concat(HanuEffectContent.DecisionLabels());
     }
 }

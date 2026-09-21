@@ -337,7 +337,25 @@ namespace GuardsDigital.Tests.EditMode
             // eighteen faces name runs on types this build already had - the modal Attack, the
             // printed-Radius selections, the direct move, the swap, the discard, the Defeat and the
             // retrieval - and this rule counts TYPES.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(94),
+            // Milestone 8.71h, the TWENTY-FIRST dealing, moves it 94 -> 97. Hanu the Trickster
+            // registers SIX capability ids of which exactly THREE are new handler TYPES, which is the
+            // first dealing since Min's whose two counts differ again - and they differ for the
+            // reason her tokens made them differ, not for a new one: three of his six are
+            // `ActiveEffectCreationHandler` registrations over his three journeys' Hero-scoped
+            // end-of-turn definitions, and that type has been counted since Arien's five persistent
+            // texts proved it at milestone 6.8. `HurryUpInitiativeHandler` (8.71a) is the first
+            // contract in this build that REPLACES a printed value rather than adding to one;
+            // `JourneyPartnerHandler` (8.71d) re-derives "that hero" from the lifecycle at fire time;
+            // `FriendlyUnitPairHandler` (8.71f) is one selection over an unordered pair of friendly
+            // units in the performing card's own printed Radius. Each took a showcase consumer in
+            // this same change - the Red Hastener, the Red Wayfarer and the Red Troupemaster. The
+            // Red Wayfarer also registers ONE more id than a showcase card usually does,
+            // `synthetic-journey-showcase-effect@1`, and it moves no type for the same reason his
+            // three journeys' do not. Everything else his eighteen faces name runs on types this
+            // build already had - the modal Attack, the printed-Radius and printed-Range selections,
+            // the swap, the coupled move, the direct move and the straight line - and this rule
+            // counts TYPES.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(97),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

@@ -3,6 +3,7 @@ using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Effects.Synthetic;
 using System.Collections.Generic;
 using System.Linq;
+using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards.Synthetic
@@ -1637,6 +1638,112 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 attackTextProfiles: new[] { RedQuarrymanProfile });
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.71h: the THREE handler types Hanu the Trickster's dealing registers, proved here
+        // on cards that are nobody's, on the division every dealing since 8.35z34 has drawn. They do
+        // NOT share a card: no printed face of his puts two of them in one sentence, and the grouping
+        // rule this file follows joins two contracts only when one face does.
+        //
+        // ALL THREE ARE SKILLS, which is the first time since milestone 8.37 that a dealing's whole
+        // group avoided the Attack: none of the three is a question about an Attack that is running.
+        // Two of them PRINT A VALUE, and that is load-bearing rather than decoration - the rewrite's
+        // own selection reads the performing card's printed Range and the pair selection reads its
+        // printed Radius, both with p.16's matching items composed on, so a card printing neither
+        // would name the contract, find a disk of zero and answer "nobody" for a reason that is about
+        // the fixture rather than about the board.
+        //
+        // The THIRD is the one showcase card in this file that could not be written as a single node.
+        // `hanu-journey-partner@1` publishes "that hero" by reading the Hero-scoped Active effect the
+        // frame's own card and action created, so a Skill that merely NAMED it would prove only the
+        // refusal. The Red Wayfarer therefore stands the effect and reads it back from the effect's
+        // own triggered body, which is Hanu's two-body journey shape with the swaps taken out - and
+        // the only shape in which this contract is about anything at all.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.71h's printed-Initiative rewrite Skill, sitting outside its team's ordinary
+        /// Initiative band for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedHastenerSkillProfile { get; } =
+            new SyntheticSkillProfile("red-hastener", "Red Hastener", 44);
+
+        /// <summary>Milestone 8.71h's friendly-pair selection Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedTroupemasterSkillProfile { get; } =
+            new SyntheticSkillProfile("red-troupemaster", "Red Troupemaster", 45);
+
+        /// <summary>
+        /// Milestone 8.71h's journey-partner Skill, on the same terms. It is the only showcase profile
+        /// in this file whose card arms an Active effect of its own.
+        /// </summary>
+        private static SyntheticSkillProfile RedWayfarerSkillProfile { get; } =
+            new SyntheticSkillProfile("red-wayfarer", "Red Wayfarer", 46);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.71h's printed-Initiative rewrite Skill, which is
+        /// how <c>hanu-hurry-up-initiative@1</c> becomes reachable from showcase content rather than
+        /// arriving for the first time inside Hanu's own slice.
+        ///
+        /// <para>The node is Hurry up!'s own: the shipped <c>synthetic-range-hero-target@1</c> arm over
+        /// either team's heroes holding an unresolved card, and the rewrite consuming the hero it
+        /// named. The printed eleven is a LITERAL at this call site exactly as it is on his card,
+        /// because the contract takes the number as a required Integer - an optional one would read as
+        /// zero when a definition forgot it and set every card it touched to act first.</para>
+        ///
+        /// <para>The card prints Range 4, which is the reach the selection measures. Its own printed
+        /// Initiative is 44 and is NOT what the rewrite writes: the contract rewrites the TARGET's
+        /// card, so a fixture reads the change on somebody else's icon and never on this one.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithPrintedInitiativeRewriteSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                printedInitiativeRewriteSkillProfile: RedHastenerSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.71h's friendly-pair selection Skill, which is how
+        /// <c>hanu-friendly-unit-pair@1</c> becomes reachable on the same terms.
+        ///
+        /// <para>The contract is ONE selection over an unordered PAIR - "two friendly units in radius",
+        /// Monkey Trick's, Monkey Twist's and Monkey Business's printed sentence - and it takes no
+        /// parameters at all, so the node below is his verbatim and cannot be a widened copy: the
+        /// reach, p.17's exclusion of the actor himself, p.18's immunity asked of both members and
+        /// p.19's own restriction are all inside the handler.</para>
+        ///
+        /// <para><b>Nothing consumes the pair here</b>, on milestone 8.35z53's own stated terms: the
+        /// natural consumer is <c>synthetic-swap@2</c>, and a fixture that exchanged whatever it named
+        /// would make every board this hand is dealt onto reorder itself as a side effect of proving a
+        /// SELECTION. All six published facts are declared exactly as his faces declare them so the
+        /// schema is proved whole.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithFriendlyUnitPairSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                friendlyUnitPairSkillProfile: RedTroupemasterSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.71h's journey Skill, which is how
+        /// <c>hanu-journey-partner@1</c> becomes reachable from showcase content.
+        ///
+        /// <para><b>It is two bodies rather than one, and that is the contract rather than a
+        /// flourish.</b> The partner lookup publishes the hero a Hero-scoped Active effect created by
+        /// THIS frame's own card and action is bound to - it carries no parameter and stores nothing,
+        /// which is how the referent survives snapshot, replay and rewind with no payload growth - so
+        /// a Skill that merely named it would find no occurrence and prove only p.10's impossible
+        /// mandatory step. The Skill below therefore names an enemy hero in its printed Radius and
+        /// stands <see cref="JourneyShowcaseActiveEffect"/> on them, and the effect's own end-of-turn
+        /// body is where the lookup runs.</para>
+        ///
+        /// <para><b>The effect carries no rule modification and the body performs no exchange</b>, for
+        /// the reason every showcase card in this file gives: what this card exists to prove is the
+        /// READING, and Hanu's own faces are where the immunity and the swap back are measured. What
+        /// is his verbatim is the SHAPE - <c>ActiveEffectAffectedScopeKind.Hero</c>, an
+        /// <c>EndOfTurn</c> duration triggering and expiring at <c>TimingCheckpoint.TurnEnded</c>, and
+        /// a triggered body whose first node is the lookup.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithJourneyPartnerSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                journeyPartnerSkillProfile: RedWayfarerSkillProfile);
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1804,6 +1911,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile deckItemSkillProfile = null,
             SyntheticSkillProfile obstacleRadiusSkillProfile = null,
             SyntheticSkillProfile trackingSwapSubjectSkillProfile = null,
+            SyntheticSkillProfile printedInitiativeRewriteSkillProfile = null,
+            SyntheticSkillProfile friendlyUnitPairSkillProfile = null,
+            SyntheticSkillProfile journeyPartnerSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -2143,6 +2253,33 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateTrackingSwapSubjectSkillDefinition(trackingSwapSubjectSkillProfile),
                     trackingSwapSubjectSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            // Milestone 8.71h. Hanu's three showcase Skills, appended after every earlier one so no
+            // existing hand position moves.
+            if (printedInitiativeRewriteSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreatePrintedInitiativeRewriteSkillDefinition(
+                        printedInitiativeRewriteSkillProfile),
+                    printedInitiativeRewriteSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (friendlyUnitPairSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateFriendlyUnitPairSkillDefinition(friendlyUnitPairSkillProfile),
+                    friendlyUnitPairSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (journeyPartnerSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateJourneyPartnerSkillDefinition(journeyPartnerSkillProfile),
+                    journeyPartnerSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -4883,6 +5020,233 @@ namespace GuardsDigital.Core.Cards.Synthetic
 
             return SkillCard(
                 profile, "primary-tracking-swap-skill", effect,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, 3) });
+        }
+
+        /// <summary>
+        /// Milestone 8.71h. "Set the printed Initiative value of an unresolved card of a hero in range
+        /// to 11" - Hanu's Hurry up!, on a card that is nobody's. See
+        /// <see cref="RedHastenerSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreatePrintedInitiativeRewriteSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("printed-initiative-root");
+            var target = new EffectNodeId("printed-initiative-target");
+            var rewrite = new EffectNodeId("printed-initiative-rewrite");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-71h-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { target, rewrite }),
+                    // IfAble rather than Mandatory, which is the one difference from the printed node:
+                    // a fixture hand is dealt onto boards where nobody is holding an unresolved card,
+                    // and a card that refused to be played there would prove nothing. What the
+                    // contract offers when there IS a candidate is measured on his own face by
+                    // `HanuHurryUpTests`.
+                    new EffectNodeDefinition(
+                        target, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticTargetingCapabilities.RangeHeroTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.AnyTeam),
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity",
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.ExcludeTheAttackerParameterName,
+                                EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities
+                                    .HoldsAnUnresolvedCardParameterName,
+                                EffectValue.Boolean(true))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("chosenHero", EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        rewrite, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        Verified.HanuComponentContent.HurryUpInitiativeV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                Verified.HanuComponentContent.HurryUpHeroParameterName,
+                                target, "chosenHero", EffectValueKind.Hero),
+                            // A REQUIRED Integer, declared at the call site exactly as his card
+                            // declares its own printed eleven - the contract takes the number rather
+                            // than knowing it.
+                            EffectInputBinding.FromLiteral(
+                                Verified.HanuComponentContent
+                                    .HurryUpPrintedInitiativeParameterName,
+                                EffectValue.Integer(11))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.TargetedHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.RewrittenCardOutputName,
+                                EffectValueKind.CardInstance)
+                        })
+                });
+
+            return SkillCard(
+                profile, "primary-printed-initiative-skill", effect,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Range, 4) });
+        }
+
+        /// <summary>
+        /// Milestone 8.71h. "Swap two friendly units in radius" - the PAIR Hanu's three Monkey faces
+        /// choose over, on a card that is nobody's. See <see cref="RedTroupemasterSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateFriendlyUnitPairSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("friendly-pair-root");
+            var pair = new EffectNodeId("friendly-pair-selection");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-71h-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { pair }),
+                    // IfAble rather than Mandatory, for the reason the Red Pathkeeper's node gives: a
+                    // fixture hand is dealt onto boards with fewer than two friendly units inside the
+                    // disk, and a card that refused to be played there would prove nothing.
+                    new EffectNodeDefinition(
+                        pair, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        Verified.HanuComponentContent.FriendlyUnitPairV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.FirstSpaceOutputName,
+                                EffectValueKind.Coordinate),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.SecondSpaceOutputName,
+                                EffectValueKind.Coordinate),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.FirstHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.FirstMinionOutputName,
+                                EffectValueKind.Minion),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.SecondHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.SecondMinionOutputName,
+                                EffectValueKind.Minion)
+                        })
+                });
+
+            return SkillCard(
+                profile, "primary-friendly-pair-skill", effect,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, 3) });
+        }
+
+        /// <summary>
+        /// Milestone 8.71h. The Skill half of Hanu's journey shape: name an enemy hero in radius and
+        /// stand a Hero-scoped end-of-turn effect on them, so that
+        /// <see cref="JourneyShowcaseTriggeredEffect"/> has an occurrence to read "that hero" out of.
+        /// See <see cref="RedWayfarerSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateJourneyPartnerSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("journey-showcase-root");
+            var subject = new EffectNodeId("journey-showcase-subject");
+            var arm = new EffectNodeId("journey-showcase-effect");
+            var partner = new EffectNodeId("journey-showcase-partner");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-71h-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { subject, arm, partner }),
+                    new EffectNodeDefinition(
+                        subject, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticTargetingCapabilities.RadiusHeroTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity",
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticTargetingCapabilities.TargetRelationParameterName,
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation
+                                    .OpposingSource),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.ExcludeAdjacentParameterName,
+                                EffectValue.Boolean(false)),
+                            EffectInputBinding.FromLiteral(
+                                SyntheticTargetingCapabilities.IncludeSelfParameterName,
+                                EffectValue.Boolean(false))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        arm, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        JourneyShowcaseEffectV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                ActiveEffectCreationHandler.AffectedHeroParameterName,
+                                subject,
+                                SyntheticTargetingCapabilities.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                ActiveEffectCreationHandler.AffectedOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    // THE LOOKUP, READ BACK ON THE CARD THAT ARMED IT. The node above has just
+                    // created a Hero-scoped occurrence whose controller, source card and source
+                    // action are this very frame's, which is exactly what the partner lookup matches
+                    // on - so here, and only here, it has something to be about. It is named on the
+                    // CARD as well as inside `JourneyShowcaseTriggeredEffect` because milestone 7.9's
+                    // gate asks that a new handler type be reachable from SHOWCASE CONTENT, and a
+                    // triggered body the build registers is reachable from the catalog rather than
+                    // from a card. Nothing consumes what it publishes, on the terms every showcase
+                    // card in this file states.
+                    new EffectNodeDefinition(
+                        partner, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        Verified.HanuComponentContent.JourneyPartnerV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.JourneyPartnerHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.JourneyPartnerSpaceOutputName,
+                                EffectValueKind.Coordinate)
+                        })
+                });
+
+            return SkillCard(
+                profile, "primary-journey-showcase-skill", effect,
                 new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, 3) });
         }
 
@@ -8374,6 +8738,108 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 "phase-8-19a-rev-1",
                 new EffectNodeId("may-move"),
                 MayMoveAnotherUnitNodes("may-move", includeSelf: true));
+        }
+
+        /// <summary>
+        /// Milestone 8.71h. The capability the Red Wayfarer's Skill names to stand
+        /// <see cref="JourneyShowcaseActiveEffect"/> on the hero it chose - an ordinary
+        /// <see cref="ActiveEffectCreationHandler"/> registration, which is the type Arien's five
+        /// persistent texts proved at milestone 6.8 and which therefore owes no showcase consumer of
+        /// its own. It exists so that <c>hanu-journey-partner@1</c> has an occurrence to be about.
+        /// </summary>
+        public static EffectCapabilityReference JourneyShowcaseEffectV1 { get; } =
+            new EffectCapabilityReference(
+                new EffectCapabilityId("synthetic-journey-showcase-effect"), 1);
+
+        /// <summary>
+        /// Milestone 8.71h. Hanu's journey shape with the immunity and both swaps taken out: a
+        /// <see cref="ActiveEffectAffectedScopeKind.Hero"/>-scoped effect bound to the hero the Skill
+        /// named, standing from the action that created it until the turn's close, triggering once at
+        /// <see cref="TimingCheckpoint.TurnEnded"/> and expiring at the same checkpoint.
+        ///
+        /// <para>It declares NO rule modification, which is the deliberate difference from his three:
+        /// what this card exists to prove is that the partner lookup can find an occurrence of this
+        /// shape and publish its hero, and an immunity granted to somebody on a board a fixture merely
+        /// dealt this hand onto would change that board as a side effect of proving a LOOKUP.</para>
+        /// </summary>
+        public static ActiveEffectDefinition JourneyShowcaseActiveEffect { get; } =
+            new ActiveEffectDefinition(
+                "synthetic-journey-showcase-effect",
+                ActiveEffectAffectedScopeKind.Hero,
+                ActiveEffectDurationKind.EndOfTurn,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.ActionStarted,
+                TimingCheckpoint.TurnEnded,
+                new[]
+                {
+                    ActiveEffectCancellationCondition.ControllerHeroDefeated,
+                    ActiveEffectCancellationCondition.CardsRetrieved
+                },
+                false,
+                "SyntheticJourneyShowcase",
+                "synthetic-journey-showcase",
+                new[] { TimingCheckpoint.TurnEnded },
+                triggeredEffect: JourneyShowcaseTriggeredEffect.Reference);
+
+        /// <summary>
+        /// Milestone 8.71h. The creation handler the build registers for
+        /// <see cref="JourneyShowcaseActiveEffect"/>, contributed to
+        /// <c>MatchContentCatalogs.ForThisBuild</c> beside the verified ones.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
+            new IEffectCapabilityHandler[]
+            {
+                new ActiveEffectCreationHandler(
+                    JourneyShowcaseEffectV1, JourneyShowcaseActiveEffect)
+            };
+
+        /// <summary>
+        /// Milestone 8.71h. What the showcase journey runs at the turn's end: the partner lookup, and
+        /// nothing else.
+        ///
+        /// <para><b>Nothing consumes what it publishes</b>, on the terms every showcase card in this
+        /// file states: the natural consumer is <c>synthetic-swap-actor@1</c>, and a fixture that
+        /// exchanged the actor with whoever the lookup named would reorder every board this hand is
+        /// dealt onto as a side effect of proving a READING. Hanu's own three faces are where the
+        /// exchange, the "regardless of radius and immunity" override and Safe Travels' trailing move
+        /// are measured.</para>
+        ///
+        /// <para>The node is <see cref="EffectFailurePolicy.IfAble"/> rather than his Mandatory, which
+        /// is the one difference from the printed body: a showcase occurrence whose bound hero left
+        /// the board publishes nothing and the body ends, where his card's step stops the effect. That
+        /// is a fixture concession and not a reading - HA-Q11 is measured on his faces.</para>
+        /// </summary>
+        public static class JourneyShowcaseTriggeredEffect
+        {
+            public static EffectDefinitionReference Reference => Definition.Reference;
+
+            /// <summary>
+            /// The one node this effect has, named so a fixture can read its event back. Declared
+            /// BEFORE <see cref="Definition"/> for the static-order reason
+            /// <see cref="AfterMarkerGivenTriggeredEffect.DiscardNodeId"/> records.
+            /// </summary>
+            public static EffectNodeId PartnerNodeId { get; } =
+                new EffectNodeId("synthetic-journey-showcase-partner");
+
+            public static EffectDefinition Definition { get; } = new EffectDefinition(
+                new EffectDefinitionId("synthetic-journey-showcase-partner"),
+                "phase-8-71h-rev-1",
+                PartnerNodeId,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        PartnerNodeId, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        Verified.HanuComponentContent.JourneyPartnerV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.JourneyPartnerHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                Verified.HanuComponentContent.JourneyPartnerSpaceOutputName,
+                                EffectValueKind.Coordinate)
+                        })
+                });
         }
 
         /// <summary>

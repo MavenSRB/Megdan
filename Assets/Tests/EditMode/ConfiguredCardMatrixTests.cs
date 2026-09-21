@@ -480,6 +480,20 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticShowcaseHand.CreateRedWithObstacleRadiusSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithTrackingSwapSubjectSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithObstacleTargetingRiderText(owner),
+                    // Milestone 8.71h's THREE handler types on THREE cards, and the grouping rule is
+                    // why there are three rather than one: a card carries two contracts only when one
+                    // printed SENTENCE carries both, and Hanu's three questions live on three
+                    // different colours - his Silver's rewrite, his Blues' partner lookup and his
+                    // Greens' friendly pair. All three are Skills, which is the first dealing since
+                    // Tali's whose whole group avoided the Attack; two PRINT A VALUE, because the
+                    // rewrite's own selection reads the performing card's printed Range and the pair
+                    // selection reads its printed Radius. The Red Wayfarer is the only showcase card
+                    // in the file that arms an Active effect of its own, and it has to be: the
+                    // partner lookup is ABOUT an occurrence, so a Skill that merely named it would
+                    // prove the refusal and nothing else.
+                    SyntheticShowcaseHand.CreateRedWithPrintedInitiativeRewriteSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithFriendlyUnitPairSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithJourneyPartnerSkill(owner),
                     SyntheticResolvedRepriseHand.Create(owner),
                     SyntheticCoupledEscortHand.Create(owner)
                 }
@@ -649,6 +663,16 @@ namespace GuardsDigital.Tests.EditMode
                 // Defeat and `retrieve-card@1`. He declares no token, no marker and no triggered
                 // effect, so there is no triggered-effect contribution of his to the concat below.
                 .Concat(BrynnCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.71h, the twenty-first dealing: his SIX own contracts are reachable from
+                // this concat and from the triggered-effect concat below, and from nowhere else.
+                // THREE of the six are new handler TYPES, each proved on its own showcase card above
+                // before this concat admits the eight faces that name them; the other three are the
+                // `ActiveEffectCreationHandler` registrations his three journeys arm, which owe no
+                // showcase consumer because that type was proved by Arien's five persistent texts.
+                // `hanu-journey-partner@1` is named by no CARD of his at all - it lives inside the
+                // three end-of-turn bodies - so the walk has to include the triggered effects, which
+                // is what that concat is there for.
+                .Concat(HanuCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

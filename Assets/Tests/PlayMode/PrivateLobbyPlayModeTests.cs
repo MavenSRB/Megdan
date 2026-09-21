@@ -1239,6 +1239,21 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(HeroOptions(driver).Count, Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count));
 
             UiPlayer.Click(Star(HeroComplexity.Challenging));
+            // MILESTONE 8.71h. The frame is let settle between these two clicks, which is what every
+            // other pair in this case already does and what this one alone did not.
+            //
+            // <b>Why it had to change at the twenty-first hero.</b> A click that changes the filter
+            // rebuilds the hero list, and the list's height is what decides where the filter rows
+            // above it sit. Reading a control's `worldBound` resolves that control's own layout on
+            // demand, while `panel.Pick` answers from the panel's built pick geometry, so between a
+            // tree mutation and the next frame the two can disagree - and a click aimed at the
+            // freshly resolved centre lands on the row behind the button. With twenty heroes the two
+            // readings happened to agree; with twenty-one the row moves far enough that they do not,
+            // and milestone 8.71h's dealing is what made it visible. Nothing about the SCREEN is
+            // wrong: a player's clicks are frames apart, and
+            // `HanuIsFoundByHisThreeStarsAndEachOfHisThreeRoles` drives four filter buttons over the
+            // whole twenty-one-hero roster with the layout settled between each.
+            yield return null;
             UiPlayer.Click(Role(HeroRole.Tokens));
             yield return null;
             Assert.That(HeroOptions(driver), Is.Empty);
@@ -1360,6 +1375,108 @@ namespace GuardsDigital.Tests.PlayMode
                 "roster's own options.");
             Assert.That(HeroOptions(driver).Count,
                 Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count));
+        }
+
+        /// <summary>
+        /// Milestone 8.71h, and THE USER'S ONE NAMED REQUIREMENT FOR THE TWENTY-FIRST HERO: "Make
+        /// sure pick screen is correctly imeplented". Hanu the Trickster's roster row carries three
+        /// stars and Tactician, Sniper, Pusher, and this case drives the RENDERED star and role
+        /// buttons over his button to prove the picker reads them.
+        ///
+        /// <para>It is the rendered tier rather than <c>HeroSelectionStageTests</c>'s because a row
+        /// with the right facts and a filter that cannot see them looks identical offline. Each of
+        /// his three roles is selected in turn and his button has to survive all three - role filters
+        /// combine with AND, so a row missing one of them drops out at that click - and then Healer, a
+        /// role he does not carry, has to remove him. The capture is taken with the three-star filter
+        /// and Pusher selected and is INSPECTED, not merely written.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator HanuIsFoundByHisThreeStarsAndEachOfHisThreeRoles()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var starButtons = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roleButtons = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => starButtons.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roleButtons.Single(button =>
+                button.userData is HeroRole role && role == value);
+
+            bool HanuIsVisible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-hanu");
+
+            Assert.That(HanuIsVisible(), Is.True,
+                "He is the twenty-first pick and the unfiltered list has to offer him at all.");
+
+            UiPlayer.Click(Star(HeroComplexity.VeryComplex));
+            yield return null;
+            Assert.That(HanuIsVisible(), Is.True,
+                "THREE STARS: the selection card prints three filled stars, which p.21 calls Very " +
+                "Complex, and the star filter reads the roster row this dealing wrote.");
+            Assert.That(HeroOptions(driver).Select(button =>
+                    ((PrivateLobbyHeroOption)button.userData).Complexity),
+                Is.All.EqualTo(HeroComplexity.VeryComplex));
+
+            UiPlayer.Click(Role(HeroRole.Tactician));
+            yield return null;
+            Assert.That(HanuIsVisible(), Is.True, "and he is a TACTICIAN.");
+
+            UiPlayer.Click(Role(HeroRole.Sniper));
+            yield return null;
+            Assert.That(HanuIsVisible(), Is.True,
+                "and a SNIPER - role filters combine with AND, so surviving the second click is a " +
+                "claim about the row carrying both.");
+
+            UiPlayer.Click(Role(HeroRole.Pusher));
+            yield return null;
+            Assert.That(HanuIsVisible(), Is.True, "and a PUSHER, which is his third and last role.");
+
+            var hanu = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-hanu");
+            UiPlayer.Click(hanu);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-hanu"),
+                "and his button is pickable where it stands, with his own pick card shown beside it.");
+
+            UiPlayer.Click(Role(HeroRole.Tactician));
+            UiPlayer.Click(Role(HeroRole.Sniper));
+            yield return null;
+            Assert.That(HanuIsVisible(), Is.True,
+                "Three stars and PUSHER alone is the state the capture below is taken in.");
+
+            // The hover half, which is what the capture has to show: the picker draws the hovered
+            // hero's own selection front out of `Private/HeroSelection/<heroId>`, so an overview that
+            // stays hidden for him is a prepared front the dealing never wrote. The pointer is rested
+            // on the button and on its tile, because the view registers the enter on the tile and the
+            // focus on the button and a fixture must not depend on which of the two it gets.
+            var hovered = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-hanu");
+            if (hovered.parent != null)
+            {
+                UiPlayer.PointAt(hovered.parent);
+            }
+
+            UiPlayer.PointAt(hovered);
+            yield return null;
+            Assert.That(
+                UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroOverviewName)), Is.True,
+                "Hovering his button draws HIS pick card - the extraction's own selection front, " +
+                "prepared as an ignored private resource by this same dealing.");
+            yield return UiPlayer.CaptureScreen("tmp/871h-hanu-filters-1920x1080.png");
+
+            UiPlayer.Click(Role(HeroRole.Healer));
+            yield return null;
+            Assert.That(HanuIsVisible(), Is.False,
+                "and a role he does NOT carry removes him, which is what says the filter is reading " +
+                "his row rather than showing every hero whatever is selected.");
         }
 
         [UnityTest]

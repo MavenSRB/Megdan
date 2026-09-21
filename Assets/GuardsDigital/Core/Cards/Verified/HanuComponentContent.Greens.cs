@@ -90,18 +90,21 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string SecondMinionOutputName = "secondMinion";
 
         /// <summary>
-        /// The one selection this block declares, DEFERRED until 8.71h deals him: milestone 7.9's gate
-        /// keeps a contract out of production registration until dealt content can reach it.
+        /// Nothing, since milestone 8.71h dealt him. The member stays so a LATER composition of his
+        /// has one place to park a contract no dealt face can start yet, and one pair of lists a
+        /// fixture can assert from both sides.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> GreenDeferredHandlers() =>
-            new IEffectCapabilityHandler[] { new FriendlyUnitPairHandler() };
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
-        /// Nothing, and the member exists so the dealing block has one place to move the selection to
-        /// and one pair of lists a fixture can assert from both sides.
+        /// The one selection this block declares, REGISTERED since milestone 8.71h:
+        /// <c>hanu-friendly-unit-pair@1</c>. It is a new handler TYPE, so the same change gave it a
+        /// showcase consumer - <c>SyntheticShowcaseHand</c>'s Red Troupemaster, a Skill printing
+        /// Radius 3 because this contract measures its reach off the performing card's own icon.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> GreenRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
+            new IEffectCapabilityHandler[] { new FriendlyUnitPairHandler() };
 
         /// <summary>
         /// The pair, whole: every unit on Hanu's own team standing inside the performing card's

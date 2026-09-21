@@ -67,18 +67,26 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         public const string JourneyPartnerSpaceOutputName = "space";
 
-        /// <summary>Nothing, until 8.71h deals him - see the type's own remarks.</summary>
-        public static IEnumerable<IEffectCapabilityHandler> JourneyRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
         /// <summary>
-        /// The four contracts this block declares and this build withholds: the partner lookup, and
-        /// the three Active-effect creations in <see cref="HanuActiveEffectContent"/> - one per face,
-        /// because <see cref="ActiveEffectCreationHandler"/> is one registration per definition.
+        /// The four contracts this block declares, REGISTERED since milestone 8.71h dealt him: the
+        /// partner lookup <c>hanu-journey-partner@1</c>, and the three Active-effect creations in
+        /// <see cref="HanuActiveEffectContent"/> - <c>hanu-unexpected-journey-effect@1</c>,
+        /// <c>hanu-there-and-back-again-effect@1</c> and <c>hanu-safe-travels-effect@1</c>, one per
+        /// face, because <see cref="ActiveEffectCreationHandler"/> is one registration per definition
+        /// rather than a type of its own.
+        ///
+        /// <para>Only the partner lookup is a new handler TYPE, so only it owed a showcase consumer -
+        /// <c>SyntheticShowcaseHand</c>'s Red Wayfarer, whose Skill creates a Hero-scoped
+        /// <c>EndOfTurn</c> effect and whose triggered body reads the partner back, which is the only
+        /// shape that reaches this contract at all.</para>
         /// </summary>
-        public static IEnumerable<IEffectCapabilityHandler> JourneyDeferredHandlers() =>
+        public static IEnumerable<IEffectCapabilityHandler> JourneyRegisteredHandlers() =>
             new IEffectCapabilityHandler[] { new JourneyPartnerHandler() }
                 .Concat(HanuActiveEffectContent.Handlers());
+
+        /// <summary>Nothing, since milestone 8.71h - see the type's own remarks.</summary>
+        public static IEnumerable<IEffectCapabilityHandler> JourneyDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// The lookup itself. It performs nothing and chooses nothing: it reads one recorded fact and

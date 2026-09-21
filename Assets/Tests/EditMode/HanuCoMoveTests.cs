@@ -588,24 +588,35 @@ namespace GuardsDigital.Tests.EditMode
         /// own, this build registers nothing of Hanu's, and nothing of his is dealable yet.
         /// </summary>
         [Test]
-        public void NothingOfHanusIsRegisteredOrDealable_AndThisBlockDeclaresNoContractAtAll()
+        public void ThisBlockDeclaresNoContractAtAll_AndTheDealingRegisteredNoneOfItsOwn()
         {
             Assert.That(HanuComponentContent.CoMoveDeferredHandlers(), Is.Empty,
                 "The two faces compose entirely on shipped contracts - the block's headline result.");
             Assert.That(HanuComponentContent.CoMoveRegisteredHandlers(), Is.Empty);
-            // MILESTONE 8.71g STATED HIS SET, so the eighteen playable faces are dealt content and
-            // the claim that matters here is the one below it: no capability of his is REGISTERED.
-            // 8.57f's precedent is what separates the two - a composed face inside `DealtDefinitions`
-            // is not a face a configured match can start.
+            // MILESTONE 8.71g STATED HIS SET and 8.71h DEALT it, so the claim that matters here is
+            // narrower than it was: the six capabilities the build now registers for him are OTHER
+            // blocks' - not one of them is named by either of these two faces, which is this block's
+            // headline result read from the build's own catalog.
             Assert.That(HanuCardContent.DealtDefinitions, Has.Count.EqualTo(18),
-                "and 8.71h is still the block that registers him.");
+                "and 8.71h registered him without adding anything for these two.");
 
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities.Registered
                 .Select(reference => reference.CapabilityId.Value)
                 .ToArray();
-            Assert.That(registered.Where(id => id.StartsWith("hanu", StringComparison.Ordinal)),
-                Is.Empty,
-                "No Hanu capability reaches production registration before the dealing.");
+            Assert.That(
+                registered.Where(id => id.StartsWith("hanu", StringComparison.Ordinal))
+                    .OrderBy(value => value, StringComparer.Ordinal),
+                Is.EqualTo(new[]
+                {
+                    "hanu-friendly-unit-pair",
+                    "hanu-hurry-up-initiative",
+                    "hanu-journey-partner",
+                    "hanu-safe-travels-effect",
+                    "hanu-there-and-back-again-effect",
+                    "hanu-unexpected-journey-effect"
+                }),
+                "SIX contracts of his are registered since the dealing, and NONE of them is this " +
+                "block's: the co-moves mint nothing, which is what this case is for.");
 
             foreach (var required in new[]
             {

@@ -93,15 +93,21 @@ namespace GuardsDigital.Core.Cards.Verified
         public const string RewrittenCardOutputName = "rewrittenCard";
 
         /// <summary>
-        /// Nothing, until 8.71h deals him. Stated rather than omitted, on the terms every hero's
-        /// component partial before his states them.
+        /// The one declaration this block contributes to production registration, REGISTERED since
+        /// milestone 8.71h dealt him: <c>hanu-hurry-up-initiative@1</c>. It is a new handler TYPE, so
+        /// the same change gave it a showcase consumer - <c>SyntheticShowcaseHand</c>'s Red
+        /// Hastener - which is the second half of milestone 7.9's gate.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> HurryUpRegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>The one declaration this block withholds from production registration.</summary>
-        public static IEnumerable<IEffectCapabilityHandler> HurryUpDeferredHandlers() =>
             new IEffectCapabilityHandler[] { new HurryUpInitiativeHandler() };
+
+        /// <summary>
+        /// Nothing, since milestone 8.71h. Stated rather than omitted, on the terms every hero's
+        /// component partial before his states them: the member is where a LATER composition of his
+        /// would park a contract no dealt face can start yet.
+        /// </summary>
+        public static IEnumerable<IEffectCapabilityHandler> HurryUpDeferredHandlers() =>
+            Array.Empty<IEffectCapabilityHandler>();
 
         /// <summary>
         /// The rewrite, whole: find the named hero's unresolved card and set its printed Initiative.

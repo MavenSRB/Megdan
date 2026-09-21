@@ -366,6 +366,24 @@
     { "definitionId": "brynn-true-grit", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn15__7418476__front.png" },
     { "definitionId": "brynn-deadfall-trap", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn16__7715986__front.png" },
     { "definitionId": "brynn-die-hard", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn17__7418486__front.png" },
-    { "definitionId": "brynn-over-the-top", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn18__7550498__front.png" }
+    { "definitionId": "brynn-over-the-top", "contentRevision": "brynn-8-69f-rev-1", "sourcePath": "active-hero-cards/Brynn/brynn18__7550498__front.png" },
+    { "definitionId": "hanu-fight-and-flight", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu__7635525__front.png" },
+    { "definitionId": "hanu-hurry-up", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu2__7635511__front.png" },
+    { "definitionId": "hanu-helping-hand", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu3__7635516__front.png" },
+    { "definitionId": "hanu-even-the-odds", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu4__7635517__front.png" },
+    { "definitionId": "hanu-outnumber", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu5__7635520__front.png" },
+    { "definitionId": "hanu-trusted-sidekick", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu6__7635518__front.png" },
+    { "definitionId": "hanu-pile-on", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu7__7635512__front.png" },
+    { "definitionId": "hanu-unexpected-journey", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu8__7635528__front.png" },
+    { "definitionId": "hanu-there-and-back-again", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu9__7635513__front.png" },
+    { "definitionId": "hanu-this-way", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu10__7635523__front.png" },
+    { "definitionId": "hanu-safe-travels", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu11__7635522__front.png" },
+    { "definitionId": "hanu-that-way", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu12__7635524__front.png" },
+    { "definitionId": "hanu-monkey-trick", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu13__7635529__front.png" },
+    { "definitionId": "hanu-monkey-twist", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu14__7635519__front.png" },
+    { "definitionId": "hanu-hear-nothing", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu15__7635515__front.png" },
+    { "definitionId": "hanu-monkey-business", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu16__7635521__front.png" },
+    { "definitionId": "hanu-see-nothing", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu17__7635527__front.png" },
+    { "definitionId": "hanu-the-ultimate-trick", "contentRevision": "hanu-8-71g-rev-1", "sourcePath": "active-hero-cards/Hanu/hanu18__7635514__front.png" }
   ]
 }

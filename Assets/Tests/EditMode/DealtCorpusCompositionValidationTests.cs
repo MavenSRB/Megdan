@@ -120,16 +120,20 @@ namespace GuardsDigital.Tests.EditMode
                     // Milestone 8.71g widened it again, for the TWENTY-FIRST hero and for exactly the
                     // reason every line above it was added. Hanu the Trickster's printed set became
                     // whole at that block and its eighteen playable faces went into
-                    // `DealtDefinitions`, while milestone 7.9's gate holds his SIX contracts out of the
-                    // registration list until 8.71h deals him: 8.71a's Initiative rewrite, 8.71d's
+                    // `DealtDefinitions`, while milestone 7.9's gate held his SIX contracts out of
+                    // the registration list until 8.71h dealt him: 8.71a's Initiative rewrite, 8.71d's
                     // partner lookup and its three Active-effect creations, and 8.71f's friendly pair.
-                    // Validating him against the registered list alone would report seven of his faces
-                    // as naming unregistered capabilities and say NOTHING about the parameter and
-                    // output names this case exists to check - which is the opposite of covering a
-                    // composition milestone, and is what 8.57f's precedent settled.
+                    // Validating him against the registered list alone would then have reported seven
+                    // of his faces as naming unregistered capabilities and said NOTHING about the
+                    // parameter and output names this case exists to check - which is the opposite of
+                    // covering a composition milestone, and is what 8.57f's precedent settled.
                     //
-                    // `HanuComponentContent.DeferredHandlers` is his whole debt in one list. He places
-                    // no token and gives no marker, so there is no components line beside it; his three
+                    // MILESTONE 8.71h DEALT HIM, so `HanuComponentContent.DeferredHandlers` now
+                    // returns EMPTY and all six arrive through the registered catalog above. The line
+                    // stays rather than being deleted, on the terms the nine discharged lines above
+                    // state: an empty concat is what a discharged deferral looks like, and the next
+                    // hero to compose against these files finds the shape already here. He places no
+                    // token and gives no marker, so there is no components line beside it; his three
                     // end-of-turn journey bodies are TRIGGERED effects rather than capabilities and
                     // reach this case through no concat at all, because nothing here resolves one.
                     .Concat(HanuComponentContent.DeferredHandlers())

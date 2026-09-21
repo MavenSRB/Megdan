@@ -199,6 +199,35 @@ namespace GuardsDigital.Core.Cards
                     //   * Flurry of Blows' repeat (8.61h) is named by reference by a p.16 permanent
                     //     ability, which is the shape every Ultimate in this list takes.
                     MinComponentContent.TriggeredEffects)
+                .Concat(
+                    // Milestone 8.71h, the milestone that deals Hanu the Trickster as the TWENTY-FIRST
+                    // hero. THREE, one per Blue journey: Unexpected Journey's, There and Back Again's
+                    // and Safe Travels' end-of-turn bodies, each named BY REFERENCE by the Active
+                    // effect its own face stands - Tali's Blizzard shape, and Min's two Grenades'.
+                    //
+                    // They are triggered effects rather than card text for the reason p.17 gives: "End
+                    // of turn: Swap with that hero regardless of radius and immunity" runs at the END
+                    // of the turn that played the card rather than inside the action, so the body is
+                    // held by the effect and fired at `TimingCheckpoint.TurnEnded`. An unregistered one
+                    // would be a swap back the rule can name and the build cannot load, which is the
+                    // half of the journey that the printed sentence makes mandatory.
+                    //
+                    // His Ultimate adds NOTHING here. The Ultimate Trick runs no effect at all - it is
+                    // a standing declaration `DelegatedActionQuery` reads by rule kind, which is
+                    // Ursafar's Unbound Fury shape - so there is no fourth entry, and no arm of this
+                    // catalog has to learn what "you choose the next action" means.
+                    HanuComponentContent.TriggeredEffects)
+                .Concat(new[]
+                {
+                    // Milestone 8.71h. What the Red Wayfarer's Hero-scoped end-of-turn effect runs -
+                    // the showcase consumer milestone 7.9's gate asks of `hanu-journey-partner@1`,
+                    // which is the one contract of his that cannot be proved by a card naming it:
+                    // the lookup is ABOUT an occurrence, so a Skill with no occurrence behind it
+                    // would prove only the refusal. It joins the one catalog rather than forming a
+                    // second, for the reason 8.19a's before-action body above gives.
+                    GuardsDigital.Core.Cards.Synthetic.SyntheticShowcaseHand
+                        .JourneyShowcaseTriggeredEffect.Definition
+                })
                 .ToArray()));
 
         /// <summary>
@@ -350,6 +379,47 @@ namespace GuardsDigital.Core.Cards
                 // Rowenna's and Whisper's shape - so there is no `BrynnActiveEffectContent` and no
                 // triggered-effect concat above.
                 .Concat(BrynnComponentContent.RegisteredHandlers())
+                // Milestone 8.71h, the milestone that deals Hanu the Trickster as the TWENTY-FIRST
+                // hero. SIX handlers behind THREE new types, which is the first dealing since Min's
+                // whose two counts differ because a hero stands Active effects of his own:
+                //
+                //   * `hanu-hurry-up-initiative@1` (8.71a), the rewrite his Silver performs. It is the
+                //     first contract in this build that REPLACES a printed value rather than adding to
+                //     one, and the first keyed on a CARD INSTANCE rather than on a hero - which is why
+                //     it could not be a widening of anything `InitiativeResolutionAuthority` already
+                //     composed.
+                //   * `hanu-journey-partner@1` (8.71d), the "that hero" his three journeys' end-of-turn
+                //     bodies re-derive from the lifecycle at fire time rather than carry - so the
+                //     referent survives snapshot, replay and rewind with no payload growth.
+                //   * `hanu-friendly-unit-pair@1` (8.71f), the one selection Monkey Trick, Monkey Twist
+                //     and Monkey Business choose over: two units of his own team inside the performing
+                //     card's printed Radius, himself excluded by p.17. `choose-target-pair@1` could not
+                //     carry it - that contract's candidates are minions and its reach is a literal
+                //     distance where his Greens print a Radius icon with an item on it.
+                //
+                // ALL THREE ARE NEW HANDLER TYPES, so each took a showcase consumer in this same change
+                // - the Red Hastener, the Red Wayfarer and the Red Troupemaster.
+                //
+                // The other three are `ActiveEffectCreationHandler` registrations over the three
+                // definitions in `HanuActiveEffectContent`, one per journey face, reached ONCE through
+                // `JourneyRegisteredHandlers` rather than concatenated a second time from here -
+                // milestone 8.40j's BA-18, "Capability references must be unique". They owe no showcase
+                // consumer: that handler type was proved by Arien's five persistent texts, and the gate
+                // asks its second half of the TYPE.
+                //
+                // He places no token and gives no marker, so nothing of his reaches the component
+                // catalog, and his Ultimate is a permanent declaration rather than content - see the
+                // triggered-effect list above.
+                .Concat(HanuComponentContent.RegisteredHandlers())
+                // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
+                // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
+                // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary
+                // `ActiveEffectCreationHandler`, the type Arien's five persistent texts proved, so it
+                // adds a registration without adding a type - and it is registered from here for the
+                // same reason `SyntheticCoupledMoveCapabilities` below is: the synthetic catalog's own
+                // groups are composed before any showcase card exists.
+                .Concat(GuardsDigital.Core.Cards.Synthetic.SyntheticShowcaseHand
+                    .RegisteredHandlers())
                 .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
 
         // Milestone 8.39i, the milestone that deals Cutter the Sky Pirate, adds NOTHING to the list

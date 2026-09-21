@@ -852,24 +852,30 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// Milestone 7.9's gate, asserted from BOTH sides: the one contract this block declares is in
-        /// the deferred list, and no catalog this build composes for production registers it.
+        /// Milestone 7.9's gate, asserted from BOTH sides - and from milestone 8.71h it is asserted
+        /// the other way round: the one contract this block declares is in the REGISTERED list, the
+        /// deferred list is empty, and the catalog a configured match loads can start it.
+        ///
+        /// <para>The gate itself has not changed. It withholds a contract until dealt content can
+        /// reach it, and 8.71h is the milestone where that became true: it deals him, registers his
+        /// six contracts and gives each new handler TYPE a showcase consumer in ONE change, which is
+        /// Silverarrow's 8.35z46 law.</para>
         /// </summary>
         [Test]
-        public void TheOneNewContract_IsDeferredAndUnregistered()
+        public void TheOneNewContract_IsRegisteredSinceTheDealing()
         {
             Assert.That(
-                HanuComponentContent.HurryUpDeferredHandlers()
+                HanuComponentContent.HurryUpRegisteredHandlers()
                     .Select(handler => handler.Reference).ToArray(),
                 Is.EqualTo(new[] { HanuComponentContent.HurryUpInitiativeV1 }));
-            Assert.That(HanuComponentContent.HurryUpRegisteredHandlers(), Is.Empty);
+            Assert.That(HanuComponentContent.HurryUpDeferredHandlers(), Is.Empty);
 
             Assert.That(
                 MatchContentCatalogs.ForThisBuild().Capabilities
                     .IsRegistered(HanuComponentContent.HurryUpInitiativeV1),
-                Is.False,
-                "Nothing of Hanu's is registered until 8.71h deals him: a contract registered " +
-                "before a dealt card can start it moves pinned bytes while no content moved.");
+                Is.True,
+                "Hurry up! is a face a configured match deals since 8.71h, so the rewrite its text " +
+                "performs is one the build can start - and `HanuDealingTests` drives it end to end.");
         }
 
         /// <summary>
@@ -1544,7 +1550,7 @@ namespace GuardsDigital.Tests.EditMode
                 new EffectResolutionContext(
                     HurryUpBody(),
                     SyntheticEffectCapabilities.CreateCatalog(
-                        HanuComponentContent.HurryUpDeferredHandlers()),
+                        HanuComponentContent.HurryUpRegisteredHandlers()),
                     participants,
                     null,
                     1,
@@ -1563,7 +1569,7 @@ namespace GuardsDigital.Tests.EditMode
             internal EffectExecutionResult InvokeRewrite(HeroId hero)
             {
                 var node = Node(HurryUpBody(), HanuEffectContent.HurryUpRewriteNode);
-                var handler = HanuComponentContent.HurryUpDeferredHandlers()
+                var handler = HanuComponentContent.HurryUpRegisteredHandlers()
                     .Single(value => value.Reference.Equals(
                         HanuComponentContent.HurryUpInitiativeV1));
                 return handler.Execute(new EffectCapabilityContext(

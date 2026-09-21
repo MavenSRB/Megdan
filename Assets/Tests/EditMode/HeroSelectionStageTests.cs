@@ -131,7 +131,15 @@ namespace GuardsDigital.Tests.EditMode
                 // inferred from his kit. `PrivateLobbyPlayModeTests` drives the star and the three
                 // role buttons over his rendered button; this row is what those filters read.
                 ["hero-brynn"] = (HeroComplexity.VeryComplex,
-                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Durable)
+                    HeroRole.Tactician | HeroRole.Damager | HeroRole.Durable),
+                // Milestone 8.71h. The TWENTY-FIRST row, and the one the user asked for by name
+                // ("Make sure pick screen is correctly imeplented"): three filled stars and
+                // Tactician, Sniper, Pusher, read off
+                // `active-hero-cards/_selection-cards/Hanu__front.png` at the dealing rather than
+                // inferred from his kit. `PrivateLobbyPlayModeTests` drives the star and the three
+                // role buttons over his rendered button; this row is what those filters read.
+                ["hero-hanu"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

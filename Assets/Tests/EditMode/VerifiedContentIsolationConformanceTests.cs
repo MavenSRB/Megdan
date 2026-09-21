@@ -94,6 +94,13 @@ namespace GuardsDigital.Tests.EditMode
                 "composes the fixture cards milestone 7.9's gate requires for every new handler type, " +
                 "and the twentieth hero's three types are declared in his own content file - so the " +
                 "showcase consumer naming them is composition, not a rule reading a hero")
+            // Milestone 8.71h names no new site. Hanu the Trickster's three new handler types are
+            // declared in `HanuComponentContent` exactly as Brynn's three are, and the permission
+            // granted above already covers the three showcase cards that name them - which is the
+            // point of granting it to the TYPE rather than to three references. His Red Wayfarer
+            // does one thing no earlier showcase card did, and it still needs no new permission: it
+            // declares an Active-effect definition and a triggered body of the SHOWCASE's own, whose
+            // only reference to his content is the capability the body's single node names.
         };
 
         /// <summary>

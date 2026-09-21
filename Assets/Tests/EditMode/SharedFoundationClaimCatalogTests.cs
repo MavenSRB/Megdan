@@ -1462,6 +1462,54 @@ namespace GuardsDigital.Tests.EditMode
                 "delegates something other than a whole action, for one whose delegation outlives " +
                 "the rewritten card's state change, or for a delegation that must reach a decision " +
                 "family this milestone left with its own player.")
+            ,
+
+            // Milestone 8.71h
+            new SharedFoundationClaim(
+                "presentation.hero-scoped-active-effect-treatment",
+                new MemberLocator(
+                    typeof(GuardsDigital.Presentation.Match.ActiveEffectVisibility),
+                    nameof(GuardsDigital.Presentation.Match.ActiveEffectVisibility.RenderedScopes),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(ActiveEffectVisibilityTests),
+                            nameof(ActiveEffectVisibilityTests
+                                .AHeroScopedJourneyRingsItsControllerAndPaintsNoHexes),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a dealt Hero-scoped journey draws a ring on the hero whose CARD stands it " +
+                        "and paints no hex, which is the strongest statement a seat can make from " +
+                        "the facts it holds"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(ActiveEffectVisibilityTests),
+                            nameof(ActiveEffectVisibilityTests
+                                .TheWideningReachesTheHeroScopeAndNoOtherUnrenderedScope),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "ControllerTeam and Global stay off both lists, so the two catalog sweeps " +
+                        "still go red the day content declares one of them"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(ActiveEffectVisibilityTests),
+                            nameof(ActiveEffectVisibilityTests
+                                .EveryRegisteredActiveEffectResolvesToAtLeastOneTreatment),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the catalog sweep that found the gap in the first place, walked over every " +
+                        "definition this build registers rather than over a hand-kept list")
+                },
+                new[] { "affected scope", "treatment", "anchor", "disk" },
+                "One scope added to the rendered list, drawn as the CONTROLLER's ring and never as " +
+                "a disk. It says 'this hero's card is standing a live effect' rather than 'these " +
+                "rules are on this hero', because the affected hero lives on " +
+                "ActiveEffectInstance.AffectedHeroId and reaches no projection - the paragraph the " +
+                "list carried before this milestone predicted exactly that and is kept. No wire " +
+                "field and no schema version moves, and every other scope draws what it drew.",
+                "Reassess the day the affected hero reaches a projection - a wire revision would " +
+                "let the ring sit on the piece the rules are actually on - and for a Hero-scoped " +
+                "definition that declares a radius, which nothing does today.")
         };
     }
 

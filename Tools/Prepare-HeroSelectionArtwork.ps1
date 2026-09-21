@@ -59,6 +59,13 @@ $sources = [ordered]@{
     # (1E9BFCB798492DD134A810C88213119C8DBA6C03171C14C6BBFD05F6F53ABAD3), so the face is his by the
     # extraction's own naming and not by a reading of the picture.
     brynn = 'randomizers-tt23__7723707__front.png'
+    # Milestone 8.71h. SHA-256 matched rather than eyeballed, on the measurement Cutter's, Bain's,
+    # Rowenna's, Min's and Brynn's lines above record: this front is byte-identical to the corpus's
+    # own `active-hero-cards/_selection-cards/Hanu__front.png`
+    # (F300A8B894B85EBBAEC64C0018EC993C06734B6AC2B0479CF185029F93861C17), so the face is his by the
+    # extraction's own naming and not by a reading of the picture. It is the front the three stars
+    # and the Tactician/Sniper/Pusher icons were read off for his roster row.
+    hanu = 'randomizers-tt10__7723692__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

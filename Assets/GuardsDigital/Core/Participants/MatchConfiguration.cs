@@ -47,6 +47,28 @@ namespace GuardsDigital.Core.Participants
     }
 
     /// <summary>
+    /// Milestone 8.71h. Which of rulebook p.15's stages HANU'S OWN seat is dealt at on the staged
+    /// board that gives him an ally - <see cref="RowennaAllyStage"/>'s shape exactly, with him in the
+    /// seat under test and the ally as the candidate.
+    ///
+    /// <para>It exists because the two faces that seat is there to prove sit on different Tiers: This
+    /// Way! is a Tier II fork of the Blue ladder and That Way! its Tier III one, and neither shares a
+    /// branch with a journey. The Tier II arm therefore takes the SecondSibling branch and the Tier
+    /// III arm takes it too, which is the one place this enum differs from Rowenna's: both co-moves
+    /// live on the SAME branch, so an arm on the other one would deal a hand with no cross-seat
+    /// question in it at all. The starting-hand arm holds p.6's five, where his Blue is Unexpected
+    /// Journey and the friendly hero is reached by no card - which is the useful negative: the
+    /// selection is empty for a reason about the HAND rather than about the board.</para>
+    /// </summary>
+    public enum HanuAllyStage
+    {
+        /// <summary>p.6's own five, which is what a match deals before any Level Up.</summary>
+        StartingHand = 0,
+        TierTwo = 1,
+        TierThree = 2
+    }
+
+    /// <summary>
     /// A composed match: who is playing, what each seat holds, and the content that match runs on.
     ///
     /// <para><b>Milestone 8.25b named this type after what it composes.</b> It was
@@ -566,6 +588,11 @@ namespace GuardsDigital.Core.Participants
                 // the same heroes - is what this arm keeps true rather than establishes.
                 case Setup.QuickGameSetupConfiguration.BrynnHeroIdValue:
                     return Cards.Verified.BrynnCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.71h. The TWENTY-FIRST hero this build deals, on exactly the terms the
+                // rows above are on. The agreement Tali's arm records - switch and offerable roster
+                // covering the same heroes - is what this arm keeps true rather than establishes.
+                case Setup.QuickGameSetupConfiguration.HanuHeroIdValue:
+                    return Cards.Verified.HanuCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -1879,6 +1906,127 @@ namespace GuardsDigital.Core.Participants
             return configuration;
         }
 
+        /// <summary>
+        /// Milestone 8.71h. The staged Wasp-versus-Hanu match, on the same `DEV-005` terms the twenty
+        /// staged matches before it are on. This is the configuration that makes Hanu playable in a
+        /// fixture, and the twenty-first of its shape.
+        ///
+        /// <para><b>He needs an ally seat too, and this is not it.</b> Two of his faces - This Way!
+        /// and That Way! - print "A friendly hero in radius chooses a distance", and milestone 8.71e
+        /// composed that selection with <c>includeSelf</c> false, so on this board the co-moves find
+        /// nobody. <see cref="CreateStagedHanuWithAllyForInternalTest"/> is where they live. Everything
+        /// else of his is reachable here, and the Reds' "adjacent to your friendly hero" bullet is
+        /// reachable from BOTH boards, because p.17's Friendly covers the melee MINION the engaged
+        /// restaging leaves in his ring.</para>
+        ///
+        /// <para><b>What this staging reaches.</b> The enemy HERO stands two spaces away - inside the
+        /// Radius 2 and 3 his Blues and Greens print and inside the Range 3 and 4 his Reds and his
+        /// Silver print, and outside p.19's ring - so his journeys, Hear Nothing and Hurry up! reach
+        /// him while every "adjacent to you" bullet needs a minion first. A friendly melee MINION and
+        /// an enemy ranged minion stand beside him, which is what the Reds' first bullet and the
+        /// friendly PAIR his Greens swap both need.
+        /// <c>HanuDealingTests.TheEngagedStagedBoard_CarriesEverythingHisFacesAskFor</c> measures all
+        /// of it, writes the coordinates into the run output, and is where 8.71i's journeys start
+        /// from.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedHanuForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedHanuHand(TeamSide.Blue));
+
+        /// <summary>
+        /// Milestone 8.71h. The staged Wasp-versus-Hanu match at rulebook p.15's Tier II stage, with
+        /// Hanu holding one Tier II card of each colour on the branch the caller names - see
+        /// <see cref="Cards.Verified.HanuUpgradeBranch"/>'s own remarks for what each branch reaches.
+        /// </summary>
+        public static MatchConfiguration CreateStagedHanuTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.HanuUpgradeBranch branch) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedHanuHand(tierThree: false, branch));
+
+        /// <summary>
+        /// Milestone 8.71h. The staged Wasp-versus-Hanu match at rulebook p.15's Tier III stage with
+        /// p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and The
+        /// Ultimate Trick in Hanu's.
+        ///
+        /// <para>His is a p.16 PERMANENT ability that changes WHO CHOOSES - "You choose the next
+        /// action, and how it is performed for a hero you target with the 'Hurry Up!'" - so unlocking
+        /// it here is what makes <c>DelegatedActionQuery</c> reachable from a configured match at all,
+        /// rather than only from a projection a fixture builds by hand. Hurry up! is a BASIC and stays
+        /// in hand on both branches, so the rewrite the Ultimate rides is available whichever branch
+        /// the caller names.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedHanuTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.HanuUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedHanuHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.HanuCardContent.TheUltimateTrick)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
+        /// Milestone 8.71h. Wasp on Red against Hanu <em>and</em> an ally on Blue - the configuration
+        /// This Way! and That Way! need, because milestone 8.71e composed "a friendly hero in radius"
+        /// with his own seat excluded, and the one-versus-one board leaves that selection empty.
+        ///
+        /// <para>It is Rowenna's 8.57g board with the hero swapped, and it is deliberately NOT
+        /// restaged: what the co-moves need is a friendly hero in RADIUS, and the two Blue spawns
+        /// already are.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedHanuWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide,
+            HanuAllyStage stage = HanuAllyStage.StartingHand)
+        {
+            var allyId = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            return new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                CreateStagedHanuSeatHand(stage)(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: GuardsDigital.Core.Cards.Verified.ArienCardContent.CreateHand(
+                    allyId, "blue-ally"));
+        }
+
+        private static Func<HeroId, ConfiguredHand> CreateStagedHanuSeatHand(HanuAllyStage stage)
+        {
+            switch (stage)
+            {
+                case HanuAllyStage.TierTwo:
+                    return CreateProgressedHanuHand(
+                        tierThree: false,
+                        GuardsDigital.Core.Cards.Verified.HanuUpgradeBranch.SecondSibling);
+                case HanuAllyStage.TierThree:
+                    return CreateProgressedHanuHand(
+                        tierThree: true,
+                        GuardsDigital.Core.Cards.Verified.HanuUpgradeBranch.SecondSibling);
+                default:
+                    return CreateVerifiedHanuHand(TeamSide.Blue);
+            }
+        }
+
         public static MatchConfiguration CreateStagedGarrusForInternalTest(TeamSide initialTieBreakerSide) =>
             Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red), owner => Cards.Verified.GarrusCardContent.CreateHand(owner, "blue"));
@@ -2455,6 +2603,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.BrynnProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.BrynnProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.71h. One seat's verified Hanu hand, prefixed by the seat's team side for the
+        /// reason the twenty earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedHanuHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.HanuCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedHanuHand(
+            bool tierThree, Cards.Verified.HanuUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.HanuProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.HanuProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

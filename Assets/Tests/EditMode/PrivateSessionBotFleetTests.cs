@@ -564,6 +564,94 @@ namespace GuardsDigital.Tests.EditMode
                 fleet.LastFailure);
         }
 
+        /// <summary>
+        /// Milestone 8.71h, the milestone that deals Hanu the Trickster. A LOBBY BOT actually holding
+        /// his printed set, playing it against three other bots until the host has accepted a hundred
+        /// commands, with nothing refused.
+        ///
+        /// <para><b>Why this tier and not another.</b> Milestone 8.38e's dealing found an
+        /// <c>AtomicityViolation</c> here that no other tier can see: a bot answered an effect choice,
+        /// that answer started a borrowed Attack with nobody in reach, and the command was refused as
+        /// <c>AttackActionRejected: TargetUnavailable</c> AFTER mutating state. A bot answers every
+        /// prompt a hero's content can raise, in orders a written journey never chooses.</para>
+        ///
+        /// <para><b>What a bot has to be able to answer for HIM, and his list is unlike any set before
+        /// it.</b> A modal on five Attack Reds, at 1..1 on three of them and 1..2 on two, with the
+        /// chosen bullets performed in the order named; a HERO SELECTION that rewrites a printed
+        /// Initiative icon on somebody else's card and reorders the round mid-way; a CROSS-SEAT choice
+        /// - This Way! and That Way! ask a FRIENDLY hero for the distance on THAT hero's own seat, so
+        /// a bot has to answer a question raised by another bot's card; an unordered PAIR of friendly
+        /// units; three swaps that arm an end-of-turn body which then fires and swaps back; trailing
+        /// "up to 1 space" moves that admit zero; a three-space straight line that is often illegal;
+        /// and - the one no earlier set has - a DELEGATED ACTION, where one seat's unlocked Ultimate
+        /// makes ANOTHER hero's whole next action that seat's to choose. Any of those disagreeing with
+        /// the host's authorization fails here first.</para>
+        ///
+        /// <para><b>He puts NOTHING on the board</b>, so unlike Min's fleet case there is no facedown
+        /// projection to sweep: the thing a bot must never see does not exist in his set at all.</para>
+        ///
+        /// <para><b>The seed is searched rather than written down, and the search is the
+        /// assertion.</b> A lobby bot drafts its own hero, so no caller can put him in a seat: what a
+        /// fixture can do is walk seeds until a draft seats him and then play THAT one. The walk is
+        /// deterministic and bounded, and a build in which no seed in the range seats him fails here -
+        /// which would mean he had fallen out of the offerable roster, the very thing milestone
+        /// 8.35z41 exists to catch.</para>
+        /// </summary>
+        [Test]
+        public void ALobbyBotDealtHanu_PlaysHimWithoutTheHostRefusingAnything()
+        {
+            const string hanu = QuickGameSetupConfiguration.HanuHeroIdValue;
+
+            var seed = 0;
+            for (var candidate = 1; candidate <= 64 && seed == 0; candidate++)
+            {
+                if (Draft(candidate).Contains(hanu))
+                {
+                    seed = candidate;
+                }
+            }
+
+            Assert.That(seed, Is.Not.Zero,
+                "No seed in 1..64 drafted Hanu, which means he is not offerable in a lobby at " +
+                "all - the exact defect milestone 8.35z41 was written to catch.");
+            TestContext.WriteLine("Hanu is drafted by lobby seed " + seed + ".");
+
+            var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
+            using var fleet = new PrivateSessionBotFleet(composer.Match, composer.Identity, "", new HumanWire(),
+                new CountingNonceSource(97), () => composer.Match.Projection,
+                composer.Configuration.ContentCatalogs, seed);
+            fleet.Host.Composition = composer;
+            fleet.FillOpenSeats(0, 0);
+            long tick = 0;
+            while (!fleet.Host.HasMatchStarted && tick < 200) fleet.Tick(++tick);
+            Assert.That(fleet.Host.HasMatchStarted, Is.True, fleet.LastFailure);
+
+            var his = fleet.Host.Roster.Where(row => row.Hero.Value == hanu).ToArray();
+            Assert.That(his, Is.Not.Empty, "The measured seed must still seat him.");
+
+            var accepted = 0;
+            var cursor = composer.Match.ReadResults(0).NextSequence;
+            while (!fleet.Host.HasEnded && accepted < 100 && tick < 3000)
+            {
+                fleet.Tick(++tick);
+                var batch = composer.Match.ReadResults(cursor);
+                cursor = batch.NextSequence;
+                accepted += batch.Records.Count;
+            }
+
+            var refusals = fleet.Host.DrainEvents()
+                .Where(record => record.Kind == PrivateSessionEventKind.SubmissionRefused)
+                .Select(record => record.Seat + "@" + record.Version + ": " + record.SubmissionRejection)
+                .ToArray();
+            Assert.That(refusals, Is.Empty,
+                "A bot offered something the host refused: " + string.Join(" | ", refusals) +
+                " ;; lastRefusal=" + fleet.LastRefusal);
+            Assert.That(fleet.LastFailure, Is.Empty);
+            Assert.That(accepted, Is.GreaterThanOrEqualTo(100),
+                "The fleet must play well past the first commitments with him in a seat. " +
+                fleet.LastFailure);
+        }
+
         [Test]
         public void InvalidPacingIsRefusedBeforeAnySeatIsClaimed()
         {

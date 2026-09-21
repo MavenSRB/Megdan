@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA360EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA378EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -148,15 +148,20 @@ namespace GuardsDigital.Tests.EditMode
             // catalog's twenty `contentRevision` values equal the twenty `ContentRevision` constants
             // as sets. Home Turf is p.20's Handicap card and is excluded exactly as the eleven named
             // above are.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(360));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(360));
+            // MILESTONE 8.71h TAKES IT 360 TO 378 with Hanu the Trickster's eighteen, and ran the
+            // same offline revision check the paragraph above names BEFORE launching an Editor: the
+            // catalog's twenty-one `contentRevision` values equal the twenty-one `ContentRevision`
+            // constants as sets. Fight or Flight is p.20's Handicap card and is excluded exactly as
+            // the twelve named above are.
+            Assert.That(catalog.Entries, Has.Count.EqualTo(378));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(378));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(360),
+                Is.EqualTo(378),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -166,7 +171,8 @@ namespace GuardsDigital.Tests.EditMode
                 {
                     ("arien", 18), ("bain", 18), ("brogan", 18), ("brynn", 18), ("cutter", 18),
                     ("dodger", 18),
-                    ("garrus", 18), ("min", 18), ("misa", 18), ("rowenna", 18), ("sabina", 18),
+                    ("garrus", 18), ("hanu", 18), ("min", 18), ("misa", 18), ("rowenna", 18),
+                    ("sabina", 18),
                     ("silverarrow", 18), ("swift", 18), ("tali", 18),
                     ("tigerclaw", 18), ("ursafar", 18), ("wasp", 18), ("whisper", 18),
                     ("widget", 18), ("xargatha", 18)
@@ -295,6 +301,46 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(entry.SourcePath,
                     Does.StartWith("active-hero-cards/Brynn/brynn")
+                        .And.EndWith("__front.png"));
+            }
+
+            Assert.That(
+                entries.Select(entry => entry.SourcePath).Distinct().Count(), Is.EqualTo(18),
+                "One private front cannot illustrate two of his definitions.");
+        }
+
+        /// <summary>
+        /// Milestone 8.71h's own read of the artwork half of a dealing: every dealt face of Hanu's
+        /// has a catalog row, the rows point at his own extraction directory, and every one carries
+        /// his content revision. Milestone 8.35l's trap in one case - a revision bump owes the
+        /// catalog row - asserted for the hero this milestone deals rather than left to the aggregate
+        /// counts above, which would still pass if eighteen rows of his carried somebody else's
+        /// revision.
+        /// </summary>
+        [Test]
+        public void EveryDealtFaceOfHanus_HasAnArtworkRowAtHisOwnRevision()
+        {
+            var entries = ConfiguredCardArtworkCatalog.Catalog.Entries
+                .Where(entry => entry.ContentSetId == HanuCardContent.ContentSetId)
+                .ToArray();
+
+            Assert.That(entries, Has.Length.EqualTo(18));
+            Assert.That(
+                entries.Select(entry => entry.Reference),
+                Is.EquivalentTo(HanuCardContent.DealtDefinitions
+                    .Select(definition => definition.Reference)),
+                "A bijection onto his dealt definitions, so an extracted face nobody deals and a " +
+                "dealt face nobody illustrated both fail here.");
+            Assert.That(
+                entries.Select(entry => entry.Reference.ContentRevision).Distinct(),
+                Is.EqualTo(new[] { HanuCardContent.ContentRevision }),
+                "and every row carries the one revision his content does - milestone 8.35l's trap: " +
+                "a revision bump owes the catalog row, and a row on the old string simply stops " +
+                "addressing the definition.");
+            foreach (var entry in entries)
+            {
+                Assert.That(entry.SourcePath,
+                    Does.StartWith("active-hero-cards/Hanu/hanu")
                         .And.EndWith("__front.png"));
             }
 

@@ -197,6 +197,20 @@ namespace GuardsDigital.Tests.EditMode
                 // construction and prove nothing. He contributes NO Active effect and NO token, so
                 // all three of his are ordinary capability handlers of his own.
                 .Concat(BrynnComponentContent.RegisteredHandlers())
+                // Milestone 8.71h. Hanu's SIX - the printed-Initiative rewrite his Silver performs,
+                // the partner lookup his three journeys' end-of-turn bodies re-derive, the friendly
+                // pair his Greens exchange, and the three Active-effect creations those journeys arm
+                // - joining the moment his dealing milestone put them into MatchContentCatalogs, and
+                // mirrored BY HAND here for the reason Dodger's pair records: a mirror that called
+                // the production composer would agree with it by construction and prove nothing.
+                .Concat(HanuComponentContent.RegisteredHandlers())
+                // and the ONE creation the SHOWCASE owns rather than a hero: the Hero-scoped
+                // end-of-turn effect the Red Wayfarer stands so `hanu-journey-partner@1` has an
+                // occurrence to read. It registers beside the verified declarations rather than with
+                // the synthetic groups because the synthetic catalog's own groups are composed before
+                // any showcase card exists.
+                .Concat(GuardsDigital.Core.Cards.Synthetic.SyntheticShowcaseHand
+                    .RegisteredHandlers())
                 .Concat(SyntheticCoupledMoveCapabilities.RegisteredHandlers());
     }
 }

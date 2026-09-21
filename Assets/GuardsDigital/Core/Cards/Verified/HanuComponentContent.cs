@@ -23,21 +23,23 @@ namespace GuardsDigital.Core.Cards.Verified
     /// (his shard records that outright - "He places nothing and gives no marker"). What his set does is
     /// reposition units, rewrite one Initiative and, at Tier III, take another hero's next action.</para>
     ///
-    /// <para><b>Nothing is registered, and that is milestone 7.9's gate rather than an oversight.</b>
-    /// <see cref="MatchContentCatalogs"/> names no Hanu content, so <see cref="RegisteredHandlers"/> is
-    /// EMPTY and <see cref="DeferredHandlers"/> is the whole list: the registered list is serialized and
-    /// pinned, so a contract registered before a dealt card can start it moves pinned bytes while no
-    /// content moved. 8.71h is the block that flips both halves in one change - the registration and
-    /// the dealing - which is Silverarrow's 8.35z46 law, and the six references are the exact debt
-    /// <c>HanuPrintedSetTests</c> states from both sides.</para>
+    /// <para><b>All six are REGISTERED since milestone 8.71h dealt him.</b>
+    /// <see cref="MatchContentCatalogs"/> names his content, so <see cref="RegisteredHandlers"/> is the
+    /// whole list and <see cref="DeferredHandlers"/> is EMPTY - the other side of milestone 7.9's gate,
+    /// which kept every one of them out of production registration until a dealt card could start it.
+    /// The registration and the dealing are ONE change, which is Silverarrow's 8.35z46 law: the
+    /// registered list is serialized and pinned, so a registration that arrived a milestone early would
+    /// have moved pinned bytes while no content moved.</para>
     ///
-    /// <para><b>THREE of the six are new handler TYPES</b>, so 8.71h owes each a showcase consumer as
+    /// <para><b>THREE of the six are new handler TYPES</b>, so 8.71h gave each a showcase consumer as
     /// well as a registration - the second half of milestone 7.9's gate:
-    /// <c>hanu-hurry-up-initiative@1</c>, <c>hanu-journey-partner@1</c> and
-    /// <c>hanu-friendly-unit-pair@1</c>. The other three are
+    /// <c>hanu-hurry-up-initiative@1</c> (the Red Hastener), <c>hanu-journey-partner@1</c> (the Red
+    /// Wayfarer, whose Skill stands the Hero-scoped end-of-turn effect its own triggered body reads
+    /// back) and <c>hanu-friendly-unit-pair@1</c> (the Red Troupemaster). The other three are
     /// <see cref="GuardsDigital.Core.Effects.ActiveEffectCreationHandler"/> registrations over the three
     /// definitions in <see cref="HanuActiveEffectContent"/> - one per journey face, because that handler
-    /// is one registration per definition rather than a type of its own.</para>
+    /// is one registration per definition rather than a type of its own, and the type was proved by
+    /// Arien's five persistent texts long ago.</para>
     /// </summary>
     public static partial class HanuComponentContent
     {
@@ -49,9 +51,9 @@ namespace GuardsDigital.Core.Cards.Verified
             RegisteredHandlers().Concat(DeferredHandlers());
 
         /// <summary>
-        /// NOTHING, until 8.71h deals him. Stated as the six block concats rather than as an empty
-        /// array, so the dealing moves declarations between two lists whose shape already exists and no
-        /// sweep asking "registered or deferred" has to learn a new member name.
+        /// His SIX contracts, every one registered by milestone 8.71h. Stated as the six block concats
+        /// rather than as one flat array, so the declarations stay in the partials that own their
+        /// clauses and no sweep asking "registered or deferred" has to learn a new member name.
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
             HurryUpRegisteredHandlers()
@@ -62,19 +64,23 @@ namespace GuardsDigital.Core.Cards.Verified
                 .Concat(GreenRegisteredHandlers());
 
         /// <summary>
-        /// His SIX contracts, every one withheld from production registration: 8.71a's
-        /// <c>hanu-hurry-up-initiative@1</c> (Hurry up!), 8.71d's <c>hanu-journey-partner@1</c> and its
-        /// three Active-effect creations <c>hanu-unexpected-journey-effect@1</c>,
-        /// <c>hanu-there-and-back-again-effect@1</c> and <c>hanu-safe-travels-effect@1</c> (the three
-        /// Blue journeys), and 8.71f's <c>hanu-friendly-unit-pair@1</c> (Monkey Trick, Monkey Twist and
-        /// Monkey Business). 8.71b, 8.71c and 8.71e contribute empty lists, which was each of those
-        /// blocks' own headline result.
+        /// NOTHING, since milestone 8.71h. All six moved across to <see cref="RegisteredHandlers"/> in
+        /// the change that dealt him: 8.71a's <c>hanu-hurry-up-initiative@1</c> (Hurry up!), 8.71d's
+        /// <c>hanu-journey-partner@1</c> and its three Active-effect creations
+        /// <c>hanu-unexpected-journey-effect@1</c>, <c>hanu-there-and-back-again-effect@1</c> and
+        /// <c>hanu-safe-travels-effect@1</c> (the three Blue journeys), and 8.71f's
+        /// <c>hanu-friendly-unit-pair@1</c> (Monkey Trick, Monkey Twist and Monkey Business).
         ///
-        /// <para><see cref="HanuActiveEffectContent"/>'s three handlers are NOT concatenated here
-        /// separately: <c>JourneyDeferredHandlers</c> already carries them, because they belong to the
-        /// clause that creates them, and a second concat would hand the same reference in twice -
-        /// milestone 8.40j's BA-18, "Capability references must be unique", which is what threw at
-        /// Bain's dealing.</para>
+        /// <para>The member is stated as the six block concats rather than as an empty array for the
+        /// reason every dealt hero's equivalent is: it is where a LATER composition of his would park a
+        /// contract no dealt face can start yet, and the shape a sweep asking "registered or deferred"
+        /// already knows.</para>
+        ///
+        /// <para><see cref="HanuActiveEffectContent"/>'s three handlers are NOT concatenated here or in
+        /// <see cref="RegisteredHandlers"/> separately: <c>JourneyRegisteredHandlers</c> carries them,
+        /// because they belong to the clause that creates them, and a second concat would hand the same
+        /// reference in twice - milestone 8.40j's BA-18, "Capability references must be unique", which
+        /// is what threw at Bain's dealing.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             HurryUpDeferredHandlers()

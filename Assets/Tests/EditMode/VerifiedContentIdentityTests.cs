@@ -208,7 +208,16 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: his staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees his eighteen rather than measuring him as zero.
-            new IdentityPin("brynn", "brynn-8-69f-rev-1", "eafde64d49552397d570d5ee6ec7fd14a915004745f88f6e7d0487116a78601f")
+            new IdentityPin("brynn", "brynn-8-69f-rev-1", "eafde64d49552397d570d5ee6ec7fd14a915004745f88f6e7d0487116a78601f"),
+            // Milestone 8.71h. THE TWENTY-FIRST PIN, on exactly the terms every pin from the seventh
+            // on arrived on: a pin is a claim about content a configured match loads, and milestone
+            // 8.71g composed Hanu's nineteen faces without dealing him.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run, with the twenty pins above
+            // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
+            // did not recur: his staged configuration went into EveryDealtDefinition below in this
+            // same change, so the walk sees his eighteen rather than measuring him as zero.
+            new IdentityPin("hanu", "hanu-8-71g-rev-1", "b5251764a41fb9c1b70358471e03819d3dc749ed64adfbaa86bceededee59fcc")
         };
 
         [Test]
@@ -369,6 +378,12 @@ namespace GuardsDigital.Tests.EditMode
                 // twentieth, so the union covering every hero this build deals is kept true by this
                 // row rather than by the one above it.
                 .Concat(MatchConfiguration.CreateStagedBrynnForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.71h. Hanu's staged configuration, on the same terms and added in the
+                // SAME change as his pin - which is what the two warnings above ask for. He is the
+                // twenty-first, so the union covering every hero this build deals is kept true by
+                // this row rather than by the one above it.
+                .Concat(MatchConfiguration.CreateStagedHanuForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

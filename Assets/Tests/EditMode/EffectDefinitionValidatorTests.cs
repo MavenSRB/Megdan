@@ -81,6 +81,27 @@ namespace GuardsDigital.Tests.EditMode
                 // written. That is worth recording beside them as the other half of the same class.
                 "minimumCardsInHand",
                 "minimumDistance",
+                // Milestone 8.71h. The number Hanu's Hurry up! sets a printed icon TO - "Set the
+                // printed Initiative value of an unresolved card of a hero in range to 11". It is an
+                // ordinary quantity in every sense this list means: it is an Initiative value, a
+                // second card printing a different number costs a binding rather than a capability,
+                // and there is no closed set of legal Initiative values to enumerate. It is named the
+                // way this list's own precedent names a qualified quantity, beside
+                // `minimumCardsInHand` and `assistCoinMultiplier`: WHAT is being set is said in the
+                // name, because the icon the sentence rewrites is a different thing from the number
+                // it rewrites it to.
+                //
+                // IT IS REQUIRED RATHER THAN OPTIONAL, and that is the whole reason it may be an
+                // Integer at all - an unbound optional Integer reads as zero, so a definition that
+                // forgot to bind this would quietly set every card it touched to Initiative 0 and act
+                // first for the rest of the round. 8.71a's own remarks record the choice.
+                //
+                // It reaches this rule at the DEALING and not at 8.71a, which is the class
+                // `maximumCounted` and `threshold` above both record arriving again: rules here apply
+                // to REGISTERED parameters, milestone 7.9's gate held `hanu-hurry-up-initiative@1`
+                // out of that list until a dealt card could start it, and this check was structurally
+                // silent about the declaration until 8.71h registered it.
+                "printedInitiative",
                 "radius",
                 "range",
                 "reach",

@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -236,6 +236,17 @@ $declaredHeroes = @{
     # derived. He takes the calibrated 2% field floor unless the tool's own measurement says
     # otherwise; Swift's per-hero zero stays hers alone.
     brynn = @{ ElementId = 8629140; ElementName = 'Brynn'; DisplayName = 'Brynn' }
+
+    # Milestone 8.71h. THE TWENTY-FIRST HERO, and the one entry in this table where the manifest's
+    # own naming is NOT sufficient: it holds TWO `VerticalTokens` elements called `Hanu`, and only
+    # one of them draws the masked monkey-king the selection card shows. 8597492 (publicElementId
+    # 1007041, two 302x302 faces in `Image_1_Atlas` at (2068,3020) and (2372,3020)) is his, verified
+    # by cropping both pairs and looking at them on 2026-09-21; 8597495 (publicElementId 1024393,
+    # (1551,3501) and (1855,3501)) draws a different, ape-faced hero and must never be taken. That is
+    # Min's MI-Q6 lesson - the crop decides, never the name - and it is the ninth time this table has
+    # earned being declared rather than derived. He takes the calibrated 2% field floor unless the
+    # tool's own measurement says otherwise; Swift's per-hero zero stays hers alone.
+    hanu = @{ ElementId = 8597492; ElementName = 'Hanu'; DisplayName = 'Hanu' }
 }
 
 $declared = $declaredHeroes[$Hero]
