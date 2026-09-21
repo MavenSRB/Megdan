@@ -96,6 +96,21 @@ namespace GuardsDigital.Tests.EditMode
                     // type, already arrives through `SyntheticRosterCapabilities` above.
                     .Concat(MinComponentContent.DeferredHandlers())
                     .Concat(SyntheticBorrowedCardTextCapabilities.DeferredHandlers())
+
+                    // Milestone 8.69f widened it again, for the twentieth hero and for exactly the
+                    // reason every line above it was added. Brynn the Seeker's printed set became
+                    // whole at that block and its eighteen playable faces went into
+                    // `DealtDefinitions`, while milestone 7.9's gate holds his three contracts out of
+                    // the registration list until 8.69g deals him. Validating him against the
+                    // registered list alone would report ten faces as naming unregistered capabilities
+                    // and say NOTHING about the parameter and output names this case exists to check.
+                    //
+                    // `BrynnComponentContent.DeferredHandlers` is his whole debt: the obstacle-radius
+                    // presence predicate, the question his split faces ask of the Attack that is
+                    // running, and the union selection his three swaps choose over. He declares no
+                    // token, no marker and no triggered effect, and every other contract his bodies
+                    // name is the roster's own.
+                    .Concat(BrynnComponentContent.DeferredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();

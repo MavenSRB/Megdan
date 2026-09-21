@@ -156,33 +156,10 @@ namespace GuardsDigital.Core.Cards.Verified
                         BrynnComponentContent.PresentOutputName, EffectValueKind.Boolean)
                 });
 
-        /// <summary>
-        /// "a hero who is adjacent to 3 or more obstacles" asked about a hero an earlier node bound -
-        /// the gate Split Attack, Split Throw and Peak Precision read off the Attack target the first
-        /// instance chose.
-        ///
-        /// <para>The subject arrives as a node output rather than as a literal, because the hero is
-        /// whoever the action targeted; <paramref name="subjectOutputName"/> is the name the binding
-        /// node published them under.</para>
-        /// </summary>
-        public static EffectNodeDefinition HeroAdjacentToObstaclesNode(
-            EffectNodeId nodeId, EffectNodeId subjectNodeId, string subjectOutputName) =>
-            new EffectNodeDefinition(
-                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
-                BrynnComponentContent.HeroAdjacentToObstaclesV1,
-                inputs: new[]
-                {
-                    EffectInputBinding.FromNodeOutput(
-                        BrynnComponentContent.SubjectParameterName,
-                        subjectNodeId,
-                        subjectOutputName,
-                        EffectValueKind.Hero)
-                },
-                outputs: new[]
-                {
-                    new EffectOutputBinding(
-                        BrynnComponentContent.PresentOutputName, EffectValueKind.Boolean)
-                });
+        // MILESTONE 8.69f DROPPED `HeroAdjacentToObstaclesNode`, which composed this block's
+        // subject-scoped predicate: no printed sentence of his asks the question it asked, because
+        // 8.69b measured the split faces' gate to be about the TARGETING rather than about a hero.
+        // See BrynnComponentContent.Obstacles.cs for the whole note.
 
         /// <summary>
         /// The printed "If ..." over either predicate: a <see cref="EffectNodeKind.Conditional"/> whose
@@ -277,8 +254,8 @@ namespace GuardsDigital.Core.Cards.Verified
         public static EffectDefinitionId SkillEffectId(CardDefinitionId cardId) =>
             new EffectDefinitionId(cardId.Value + "-skill");
 
-        /// <summary>The conventional effect identity for one face's Movement card text.</summary>
-        public static EffectDefinitionId MovementTextEffectId(CardDefinitionId cardId) =>
-            new EffectDefinitionId(cardId.Value + "-movement-text");
+        // MILESTONE 8.69f DROPPED `MovementTextEffectId`. p.11 suppresses every Movement ribbon's own
+        // card text on every face of his - the sentence belongs to the primary on all nineteen - so no
+        // composed body of his was ever named by it.
     }
 }

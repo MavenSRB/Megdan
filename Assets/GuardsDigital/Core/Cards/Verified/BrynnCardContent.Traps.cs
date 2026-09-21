@@ -17,26 +17,26 @@ namespace GuardsDigital.Core.Cards.Verified
     /// (<c>brynn16__7715986</c>) Tier III, 2/4/2, Radius 4, Initiative item; Die Hard
     /// (<c>brynn17__7418486</c>) Tier III, 2/4/2, Radius 4, Movement item.</para>
     ///
-    /// <para><b>The Green ladder is stated WHOLE here, where the Red one was not.</b> p.15 forks each
-    /// colour twice, and the reason 8.69a left High Ground naming half its fork was that the other half
-    /// is a sibling branch's face - naming an id another worktree owns is what Min's series refused
-    /// four times over. Green has no such problem: all five faces are this block's, so Bear Trap names
-    /// both Tier IIs and each Tier II names both Tier IIIs, exactly as the shard's progression
-    /// paragraph prints it. 8.69f states every ladder again as one set; this one will not change.</para>
+    /// <para><b>The Green ladder was stated WHOLE here while the other two were not.</b> p.15 forks
+    /// each colour twice, and the reason 8.69a left High Ground naming half its fork was that the other
+    /// half is a sibling branch's face - naming an id another worktree owns is what Min's series
+    /// refused four times over. Green had no such problem: all five faces are this block's, so Bear
+    /// Trap names both Tier IIs and each Tier II names both Tier IIIs, exactly as the shard's
+    /// progression paragraph prints it. Milestone 8.69f completed the other two ladders and left this
+    /// one untouched.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b> - milestone 7.9's gate, the same
-    /// one 8.69a's remarks explain. The revision is
-    /// <see cref="BrynnComponentContent.TrapPrepRevision"/>, a deliberately malformed placeholder that
-    /// 8.69f replaces with the one real string every face of his carries.</para>
+    /// one 8.69a's remarks explain. The revision is <see cref="ContentRevision"/>, the one real string
+    /// milestone 8.69f states his whole set under and which replaced this block's placeholder.</para>
     /// </summary>
     public static partial class BrynnCardContent
     {
         // -----------------------------------------------------------------------------------------
         // Identities
+        //
+        // The conventional action identities his whole set shares - p.9's Skill band among them - are
+        // declared ONCE, in BrynnCardContent.cs, by milestone 8.69f's fold over the five wave blocks.
         // -----------------------------------------------------------------------------------------
-
-        // MERGE NOTE (8.69e landed after 8.69d): `PrimarySkill` ("primary-skill") is declared once,
-        // in BrynnCardContent.Swaps.cs; the copy this block carried was dropped at the merge.
 
         /// <summary>His Green Tier I: the trap modal, at Radius 3 and with no item.</summary>
         public static CardDefinitionId BearTrap { get; } =
@@ -135,7 +135,7 @@ namespace GuardsDigital.Core.Cards.Verified
             id, displayName, initiative, tier, radius, defense, itemIcon, printedText,
             nextTierCandidates,
             BrynnEffectContent.TrapModal(
-                id, BrynnComponentContent.TrapPrepRevision, escalatesToDefeat));
+                id, ContentRevision, escalatesToDefeat));
 
         /// <summary>
         /// True Grit and Die Hard, which print one Initiative, one Radius, one Defense apiece and
@@ -153,7 +153,7 @@ namespace GuardsDigital.Core.Cards.Verified
             id, displayName, initiative: 2, tier: tier, radius: 4, defense: defense,
             itemIcon: itemIcon, printedText: printedText, nextTierCandidates: nextTierCandidates,
             body: BrynnEffectContent.Grit(
-                id, BrynnComponentContent.TrapPrepRevision, distance));
+                id, ContentRevision, distance));
 
         /// <summary>
         /// The shape all five share: a Skill primary carrying p.9's Radius icon and the card's own
@@ -172,7 +172,7 @@ namespace GuardsDigital.Core.Cards.Verified
             IReadOnlyList<CardDefinitionId> nextTierCandidates,
             EffectDefinition body) => new CardDefinition(
             id,
-            BrynnComponentContent.TrapPrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(initiative),
             CardContentAuthority.VerifiedOfficial,

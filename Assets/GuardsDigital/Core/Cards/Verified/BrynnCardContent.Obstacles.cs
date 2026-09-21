@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using GuardsDigital.Core.Rules.CardResolution;
 
 namespace GuardsDigital.Core.Cards.Verified
@@ -8,7 +7,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>
     /// Brynn the Seeker's four faces whose clauses milestone 8.69a owns: Familiar Ground, High Ground,
     /// Elevated Ambush and Over the Top. The other fifteen belong to the blocks that own their clauses,
-    /// and 8.69f states the whole set under one real content revision.
+    /// and milestone 8.69f states the whole set under one real content revision in
+    /// <c>BrynnCardContent.cs</c>.
     ///
     /// <para><b>Where these numbers come from.</b> <c>Docs/AI/Rules/HERO_BRYNN.md</c>'s printed
     /// inventory, read off the extracted fronts at milestone 8.69: Familiar Ground
@@ -26,45 +26,28 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <see cref="RosterValueContributionDefinition"/> of +2 on the Attack channel - Tigerclaw's
     /// Backstab shape, and BR-Q6's reading of when it is read.</para>
     ///
-    /// <para><b>Two of the three progression pairs cross a block boundary and are therefore left
-    /// unstated here.</b> p.15 forks Red twice - High Ground climbs to Elevated Ambush or Split Attack,
-    /// and either of those to Peak Precision or Split Throw - and Split Attack, Split Throw and Peak
-    /// Precision are 8.69b's faces. Naming an id a sibling branch owns is what Min's series refused
-    /// four times over, so High Ground names only the half this block composes and Elevated Ambush
-    /// names none; 8.69f states both ladders whole.</para>
+    /// <para><b>Both Red progression pairs are stated whole from milestone 8.69f on.</b> p.15 forks
+    /// Red twice - High Ground climbs to Elevated Ambush or Split Attack, and either of those to Peak
+    /// Precision or Split Throw - and Split Attack, Split Throw and Peak Precision are 8.69b's faces.
+    /// While that block was being written on another branch this one named only the half it composed,
+    /// because naming an id a sibling branch owns is what Min's series refused four times over; the
+    /// set exists now, so each row names both of its successors.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's gate
     /// rather than an oversight - see <see cref="BrynnComponentContent"/>'s own remarks. The revision
-    /// is <see cref="BrynnComponentContent.PrepRevision"/>, a deliberately malformed placeholder that
-    /// 8.69f replaces with the one real string every face of his carries.</para>
+    /// is <see cref="ContentRevision"/>, the one real string milestone 8.69f states his whole set
+    /// under and which replaced this block's placeholder.</para>
     /// </summary>
     public static partial class BrynnCardContent
     {
         // -----------------------------------------------------------------------------------------
         // Identities.
         //
-        // The four action identities below are LOCAL to a card - every hero in the roster prints
-        // "primary-attack" on its Attack faces - so the strings are the corpus's own and only the C#
-        // members are his. They are declared by this block because it is the first, on the arrangement
-        // Min's 8.61a used: a partial class cannot declare one member twice, so the sibling wave blocks
-        // REUSE these rather than restating them, and 8.69f folds in whatever else the set needs.
+        // The conventional action identities his whole set shares - PrimaryRangedAttack,
+        // PrimaryAttack, PrimaryBasicSkill, PrimarySkill, SecondaryMovement and SecondaryDefense - are
+        // declared ONCE, in BrynnCardContent.cs, which is the fold milestone 8.69f performed over the
+        // five wave blocks that each declared the ones its own faces needed.
         // -----------------------------------------------------------------------------------------
-
-        /// <summary>p.9's Gold band with a Ranged Attack primary - "BASIC ATTACK - RANGED".</summary>
-        public static ActionDefinitionId PrimaryRangedAttack { get; } =
-            new ActionDefinitionId("primary-ranged-attack");
-
-        /// <summary>p.9's Red band with an Attack primary - five of his faces.</summary>
-        public static ActionDefinitionId PrimaryAttack { get; } =
-            new ActionDefinitionId("primary-attack");
-
-        /// <summary>p.9's Movement ribbon, whose own card text p.11 suppresses.</summary>
-        public static ActionDefinitionId SecondaryMovement { get; } =
-            new ActionDefinitionId("secondary-movement");
-
-        /// <summary>p.14's numeric Defense ribbon, spent by discarding the card from hand.</summary>
-        public static ActionDefinitionId SecondaryDefense { get; } =
-            new ActionDefinitionId("secondary-defense");
 
         /// <summary>
         /// His Gold basic: "Choose one - • Target a unit adjacent to you. • Target a hero in range who
@@ -107,36 +90,6 @@ namespace GuardsDigital.Core.Cards.Verified
             "While you are performing actions all enemy heroes in play count as adjacent to 3 or " +
             "more obstacles.";
 
-        /// <summary>
-        /// His faces as this block leaves them: <b>four</b>, not nineteen.
-        ///
-        /// <para><b>Why the member exists in the first block rather than in the one that owns the
-        /// set.</b> Several Edit Mode sweeps reflect over every <c>*CardContent</c> class this assembly
-        /// declares and read <c>AllDefinitions</c> off it - so the moment a class of that name exists,
-        /// it owes them a list or a whole suite goes silently uncovered. Rowenna's 8.57a and Min's
-        /// 8.61a each did exactly this.</para>
-        ///
-        /// <para><b>What a later block of his does with it.</b> A block composing more of his faces
-        /// adds one <c>.Concat(...)</c> line to <see cref="ComposedFaces"/> rather than a second
-        /// <c>AllDefinitions</c>, which would not compile beside this one. 8.69f replaces both with the
-        /// whole nineteen under one real content revision.</para>
-        ///
-        /// <para>Lazy, on the convention milestone 8.38d adopted after a static-initialization cycle
-        /// cost milestone 8.37 1,423 failing cases: a static field initializer runs in textual order
-        /// within one file and in the compiler's order ACROSS the files of a partial class, so an eager
-        /// list here would read a sibling partial's ids as undefined.</para>
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAllDefinitions.Value;
-
-        /// <summary>
-        /// Deliberately EMPTY until 8.69f states his set. <c>DealtCorpusCompositionValidationTests</c>
-        /// validates every face this returns against the capabilities the build REGISTERS, and this
-        /// block registers nothing at all - so a composed-but-unregistered face inside it would be a
-        /// red. The member exists because <c>ConfiguredCardArtworkCatalogTests</c> asks every content
-        /// class for one, and an empty list is the honest answer for a hero who deals nothing yet.
-        /// </summary>
-        public static IReadOnlyList<CardDefinition> DealtDefinitions => LazyDealtDefinitions.Value;
-
         /// <summary>The four faces this block composes, in his shard's inventory order.</summary>
         public static IReadOnlyList<CardDefinition> ObstacleDefinitions => LazyObstacle.Value;
 
@@ -146,28 +99,13 @@ namespace GuardsDigital.Core.Cards.Verified
                 BuildFamiliarGround(),
                 BuildRaisedAttack(
                     HighGround, "High Ground", CardTier.I, 4, PrintedValueChannel.None,
-                    HighGroundText, new[] { ElevatedAmbush }),
+                    HighGroundText, new[] { ElevatedAmbush, SplitAttack }),
                 BuildRaisedAttack(
                     ElevatedAmbush, "Elevated Ambush", CardTier.II, 5,
                     PrintedValueChannel.Initiative, ElevatedAmbushText,
-                    Array.Empty<CardDefinitionId>()),
+                    new[] { PeakPrecision, SplitThrow }),
                 BuildOverTheTop()
             }));
-
-        /// <summary>The blocks' own lists; a sibling adds one <c>.Concat(...)</c> line here.</summary>
-        private static IEnumerable<CardDefinition> ComposedFaces() =>
-            ObstacleDefinitions.Concat(SwapDefinitions)
-                .Concat(TrapAndGritDefinitions)
-                .Concat(SplitAttackFaces())
-                .Concat(GuidesDefinitions);
-
-        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =
-            new Lazy<IReadOnlyList<CardDefinition>>(
-                () => Array.AsReadOnly(ComposedFaces().ToArray()));
-
-        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyDealtDefinitions =
-            new Lazy<IReadOnlyList<CardDefinition>>(
-                () => Array.AsReadOnly(Array.Empty<CardDefinition>()));
 
         /// <summary>
         /// Familiar Ground. p.9's Gold band with a RANGED Attack primary, so p.13 reads its printed
@@ -180,7 +118,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static CardDefinition BuildFamiliarGround() => new CardDefinition(
             FamiliarGround,
-            BrynnComponentContent.PrepRevision,
+            ContentRevision,
             "Familiar Ground",
             new InitiativeValue(12),
             CardContentAuthority.VerifiedOfficial,
@@ -200,7 +138,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     AttackRangeKind.Ranged,
                     default,
                     BrynnEffectContent.FamiliarGround(
-                        FamiliarGround, BrynnComponentContent.PrepRevision),
+                        FamiliarGround, ContentRevision),
                     PrintedTextComposition.None,
                     PrintedDefenseResolution.None,
                     CardTextTiming.BeforeTheAttack,
@@ -245,7 +183,7 @@ namespace GuardsDigital.Core.Cards.Verified
             string printedText,
             IReadOnlyList<CardDefinitionId> nextTierCandidates) => new CardDefinition(
             id,
-            BrynnComponentContent.PrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(9),
             CardContentAuthority.VerifiedOfficial,
@@ -309,7 +247,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static CardDefinition BuildOverTheTop() => new CardDefinition(
             OverTheTop,
-            BrynnComponentContent.PrepRevision,
+            ContentRevision,
             "Over the Top",
             default,
             CardContentAuthority.VerifiedOfficial,

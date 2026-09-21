@@ -22,36 +22,27 @@ namespace GuardsDigital.Core.Cards.Verified
     /// them; the Radius is the same 4 on both, which is why it is read off the card rather than
     /// written into the body.</para>
     ///
-    /// <para><b>Only the half of the Blue ladder this block composes is stated.</b> p.15 forks it -
-    /// Tread Lightly climbs to Cover Tracks or Mountain Guide, and either of those to Hide Traces or
-    /// Expedition Leader - and Tread Lightly, Cover Tracks and Hide Traces are 8.69d's faces. Naming
-    /// an id a sibling branch owns is what Min's series refused four times over, so Mountain Guide
-    /// names only Expedition Leader and Expedition Leader names none; 8.69f states the ladder
-    /// whole.</para>
+    /// <para><b>The Blue ladder is stated whole from milestone 8.69f on.</b> p.15 forks it - Tread
+    /// Lightly climbs to Cover Tracks or Mountain Guide, and either of those to Hide Traces or
+    /// Expedition Leader - and Tread Lightly, Cover Tracks and Hide Traces are 8.69d's faces. While
+    /// that block was being written on another branch this one named only the half it composed, on the
+    /// rule Min's series kept four times over; the set exists now, so Mountain Guide names both Tier
+    /// III faces and Expedition Leader, a Tier III itself, names none.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it.</b> The revision is
-    /// <see cref="BrynnComponentContent.GuidesPrepRevision"/>, a deliberately malformed placeholder
-    /// 8.69f replaces with the one real string every face of his carries.</para>
+    /// <see cref="ContentRevision"/>, the one real string milestone 8.69f states his whole set under
+    /// and which replaced this block's placeholder.</para>
     /// </summary>
     public static partial class BrynnCardContent
     {
         // -----------------------------------------------------------------------------------------
         // Identities.
         //
-        // The two action identities below are LOCAL to a card - every hero in the roster prints
-        // "primary-skill" on its Skill faces - so the strings are the corpus's own and only the C#
-        // members are his. 8.69a declared the four its own faces needed; these are the two a Skill
-        // face needs, declared here because this is the first block of his to compose one. A SIBLING
-        // BLOCK COMPOSING A SKILL FACE DECLARES THE SAME MEMBER, and a partial class cannot declare
-        // one twice: the merge keeps one copy, exactly as it keeps one `ComposedFaces` line.
+        // The conventional action identities his whole set shares are declared ONCE, in
+        // BrynnCardContent.cs - milestone 8.69f's fold over the five wave blocks, each of which had
+        // declared the ones its own faces needed because a partial class cannot declare one member
+        // twice.
         // -----------------------------------------------------------------------------------------
-
-        /// <summary>p.9's Silver band with a Skill primary - "BASIC SKILL".</summary>
-        public static ActionDefinitionId PrimaryBasicSkill { get; } =
-            new ActionDefinitionId("primary-basic-skill");
-
-        // MERGE NOTE (8.69c landed last): `PrimarySkill` ("primary-skill") is declared once, in
-        // BrynnCardContent.Swaps.cs; the copy this block carried was dropped at the merge.
 
         /// <summary>
         /// His Silver basic: "Choose up to two times, on different targets - • Move an enemy minion in
@@ -95,7 +86,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 BuildDecoy(),
                 BuildGuide(
                     MountainGuide, "Mountain Guide", CardTier.II, 10, 5, 2, MountainGuideText,
-                    new[] { ExpeditionLeader }),
+                    new[] { HideTraces, ExpeditionLeader }),
                 BuildGuide(
                     ExpeditionLeader, "Expedition Leader", CardTier.III, 11, 6, 3,
                     ExpeditionLeaderText, Array.Empty<CardDefinitionId>())
@@ -110,7 +101,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static CardDefinition BuildDecoy() => new CardDefinition(
             Decoy,
-            BrynnComponentContent.GuidesPrepRevision,
+            ContentRevision,
             "Decoy",
             new InitiativeValue(1),
             CardContentAuthority.VerifiedOfficial,
@@ -125,7 +116,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                     AttackRangeKind.None,
                     default,
-                    BrynnEffectContent.Decoy(Decoy, BrynnComponentContent.GuidesPrepRevision)),
+                    BrynnEffectContent.Decoy(Decoy, ContentRevision)),
 
                 new ActionDefinition(
                     SecondaryDefense,
@@ -154,7 +145,7 @@ namespace GuardsDigital.Core.Cards.Verified
             string printedText,
             IReadOnlyList<CardDefinitionId> nextTierCandidates) => new CardDefinition(
             id,
-            BrynnComponentContent.GuidesPrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(initiative),
             CardContentAuthority.VerifiedOfficial,
@@ -171,7 +162,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     AttackRangeKind.None,
                     default,
                     BrynnEffectContent.Guide(
-                        id, BrynnComponentContent.GuidesPrepRevision, spaces)),
+                        id, ContentRevision, spaces)),
 
                 new ActionDefinition(
                     SecondaryMovement,

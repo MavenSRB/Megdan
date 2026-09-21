@@ -32,17 +32,6 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class BrynnComponentContent
     {
         /// <summary>
-        /// The placeholder revision the five faces milestone 8.69e composes carry, replaced by 8.69f
-        /// with the one real string his whole set is stated under.
-        ///
-        /// <para>Deliberately malformed, on the project's standing rule that a placeholder must not be
-        /// a value that could be mistaken for a real one - and its own, rather than 8.69a's
-        /// <see cref="PrepRevision"/>, so the four blocks of the parallel wave can be told apart in a
-        /// composed list before 8.69f folds them into one.</para>
-        /// </summary>
-        public const string TrapPrepRevision = "brynn-8-69e-prep";
-
-        /// <summary>
         /// Nothing, and see the type's own remarks for why that is the milestone's answer rather than
         /// an omission. The member sits beside <see cref="ObstacleDeferredHandlers"/> rather than
         /// inside it, because a partial class cannot declare one member twice and the two lists belong

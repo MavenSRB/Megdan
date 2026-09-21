@@ -28,16 +28,6 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class BrynnComponentContent
     {
         /// <summary>
-        /// The placeholder revision this block's three faces carry until 8.69f states his whole set
-        /// under one real string.
-        ///
-        /// <para>Deliberately malformed, on the project's standing rule that a placeholder must not be
-        /// a value that could be mistaken for a real one - the same shape
-        /// <see cref="PrepRevision"/> takes for 8.69a's four faces.</para>
-        /// </summary>
-        public const string GuidesPrepRevision = "brynn-8-69c-prep";
-
-        /// <summary>
         /// Nothing, because this block declares no capability at all - see the type's own remarks.
         /// The member exists beside <see cref="ObstacleDeferredHandlers"/> so a "registered or
         /// deferred" sweep keeps its shape and so the fixture asking the question compiles.

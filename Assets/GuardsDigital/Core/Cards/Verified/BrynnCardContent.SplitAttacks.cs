@@ -7,8 +7,8 @@ namespace GuardsDigital.Core.Cards.Verified
 {
     /// <summary>
     /// Brynn the Seeker's three Red faces whose clauses milestone 8.69b owns: Split Attack, Split Throw
-    /// and Peak Precision. The other sixteen belong to the blocks that own their clauses, and 8.69f
-    /// states the whole set under one real content revision.
+    /// and Peak Precision. The other sixteen belong to the blocks that own their clauses, and milestone
+    /// 8.69f states the whole set under one real content revision in <c>BrynnCardContent.cs</c>.
     ///
     /// <para><b>Where these numbers come from.</b> <c>Docs/AI/Rules/HERO_BRYNN.md</c>'s printed
     /// inventory, read off the extracted fronts at milestone 8.69: Split Attack
@@ -27,15 +27,15 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <see cref="RaisedAttack"/> - 8.69a's member, reused here rather than restated, so that the three
     /// faces printing "+2 [Attack] attack" cannot come to disagree about when it is read (BR-Q6).</para>
     ///
-    /// <para><b>Only this block's own progression rows are stated.</b> p.15 forks Red twice, and the
-    /// halves of both forks cross block boundaries: High Ground and Elevated Ambush are 8.69a's. So
-    /// Split Attack names the two Tier III faces this block composes, and both of those name none -
-    /// 8.69f states the ladders whole. Naming an id a sibling branch owns is what Min's series refused
-    /// four times over.</para>
+    /// <para><b>The progression rows this block owns were always whole.</b> p.15 forks Red twice, and
+    /// the halves of the FIRST fork cross a block boundary - High Ground and Elevated Ambush are
+    /// 8.69a's, and each of them now names Split Attack beside its own twin. Split Attack names the two
+    /// Tier III faces this block composes and both of those name none, which is where a Tier III
+    /// ladder ends.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's gate:
-    /// the revision is <see cref="BrynnComponentContent.SplitAttackPrepRevision"/>, a deliberately
-    /// malformed placeholder that 8.69f replaces, and <c>DealtDefinitions</c> stays empty.</para>
+    /// the revision is <see cref="ContentRevision"/>, the one real string milestone 8.69f states his
+    /// whole set under and which replaced this block's placeholder.</para>
     /// </summary>
     public static partial class BrynnCardContent
     {
@@ -91,8 +91,7 @@ namespace GuardsDigital.Core.Cards.Verified
             }));
 
         /// <summary>
-        /// This block's faces, appended to milestone 8.69a's aggregate by the one
-        /// <c>.Concat(...)</c> line its remarks reserve for a wave block.
+        /// This block's faces, as <c>BrynnCardContent.cs</c>'s composition reads them.
         /// </summary>
         private static IEnumerable<CardDefinition> SplitAttackFaces() => SplitAttackDefinitions;
 
@@ -116,7 +115,7 @@ namespace GuardsDigital.Core.Cards.Verified
             bool printsMay,
             IReadOnlyList<CardDefinitionId> nextTierCandidates) => new CardDefinition(
             id,
-            BrynnComponentContent.SplitAttackPrepRevision,
+            ContentRevision,
             displayName,
             initiative,
             CardContentAuthority.VerifiedOfficial,
@@ -137,7 +136,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     AttackRangeKind.Ranged,
                     default,
                     BrynnEffectContent.SplitRepeat(
-                        id, BrynnComponentContent.SplitAttackPrepRevision, binding, printsMay),
+                        id, ContentRevision, binding, printsMay),
                     PrintedTextComposition.None,
                     PrintedDefenseResolution.None,
 
@@ -177,7 +176,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static CardDefinition BuildPeakPrecision() => new CardDefinition(
             PeakPrecision,
-            BrynnComponentContent.SplitAttackPrepRevision,
+            ContentRevision,
             "Peak Precision",
             new InitiativeValue(10),
             CardContentAuthority.VerifiedOfficial,
@@ -195,7 +194,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     AttackRangeKind.NonRanged,
                     default,
                     BrynnEffectContent.PeakPrecisionRetrieval(
-                        PeakPrecision, BrynnComponentContent.SplitAttackPrepRevision),
+                        PeakPrecision, ContentRevision),
                     PrintedTextComposition.None,
                     PrintedDefenseResolution.None,
                     CardTextTiming.AfterTheAttack,

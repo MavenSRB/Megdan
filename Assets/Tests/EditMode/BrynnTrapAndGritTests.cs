@@ -176,8 +176,8 @@ namespace GuardsDigital.Tests.EditMode
                     face.DisplayName);
                 Assert.That(
                     skill.EffectRoot.Reference.ContentRevision,
-                    Is.EqualTo(BrynnComponentContent.TrapPrepRevision),
-                    face.DisplayName + " carries this block's own placeholder revision until 8.69f.");
+                    Is.EqualTo(BrynnCardContent.ContentRevision),
+                    face.DisplayName + " carries the one real revision 8.69f stated his set under.");
             }
         }
 
@@ -916,9 +916,12 @@ namespace GuardsDigital.Tests.EditMode
                     "of his can start it.");
             }
 
-            Assert.That(BrynnCardContent.DealtDefinitions, Is.Empty,
-                "and he still deals nothing, which is what keeps the dealt-corpus validator green " +
-                "while his set is composed.");
+            Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap "
+                + "the nineteenth. The dealt-corpus validator stays green because it validates "
+                + "against what the build registers PLUS the declarations it deliberately withholds "
+                + "- 8.57f's precedent - and the registration debt is asserted by name in "
+                + "BrynnPrintedSetTests.");
             Assert.That(
                 BrynnCardContent.AllDefinitions.Select(face => face.Id.Value).ToArray(),
                 Is.SupersetOf(

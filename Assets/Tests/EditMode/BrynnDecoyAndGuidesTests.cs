@@ -872,9 +872,12 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(3));
             Assert.That(
                 mountainGuide.Progression.NextTierCandidateIds,
-                Is.EqualTo(new[] { BrynnCardContent.ExpeditionLeader }),
-                "p.15 forks the Blue ladder and this block states the half it composes; Hide Traces " +
-                "is 8.69d's face and 8.69f states the ladder whole.");
+                Is.EquivalentTo(new[]
+                {
+                    BrynnCardContent.HideTraces, BrynnCardContent.ExpeditionLeader
+                }),
+                "p.15 forks the Blue ladder; while 8.69d was being written on another branch this " +
+                "row named only Expedition Leader, and milestone 8.69f completed it.");
 
             var expeditionLeader = Face(BrynnCardContent.ExpeditionLeader);
             Assert.That(expeditionLeader.Initiative.Value, Is.EqualTo(11));
@@ -934,7 +937,8 @@ namespace GuardsDigital.Tests.EditMode
                 "and the predicate the guides DO name is still withheld from every configured match, " +
                 "because 8.69g is the block that deals him.");
 
-            Assert.That(BrynnCardContent.DealtDefinitions, Is.Empty);
+            Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "milestone 8.69f states his set, and only the boxed Handicap stays out of it.");
             Assert.That(BrynnCardContent.GuidesDefinitions, Has.Count.EqualTo(3));
             Assert.That(
                 BrynnCardContent.AllDefinitions, Is.SupersetOf(BrynnCardContent.GuidesDefinitions),
@@ -1426,11 +1430,10 @@ namespace GuardsDigital.Tests.EditMode
             private EffectResolutionContext BuildContext() =>
                 new EffectResolutionContext(
                     cardId.Equals(BrynnCardContent.Decoy)
-                        ? BrynnEffectContent.Decoy(
-                            cardId, BrynnComponentContent.GuidesPrepRevision)
+                        ? BrynnEffectContent.Decoy(cardId, BrynnCardContent.ContentRevision)
                         : BrynnEffectContent.Guide(
                             cardId,
-                            BrynnComponentContent.GuidesPrepRevision,
+                            BrynnCardContent.ContentRevision,
                             cardId.Equals(BrynnCardContent.MountainGuide) ? 2 : 3),
                     Catalog(),
                     participants,

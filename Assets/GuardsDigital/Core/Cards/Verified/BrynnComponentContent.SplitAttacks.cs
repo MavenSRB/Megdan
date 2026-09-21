@@ -13,10 +13,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// than about a hero somebody named. Milestone 8.69b.
     ///
     /// <para><b>Why this is a second predicate beside milestone 8.69a's, and not a call to it.</b>
-    /// <see cref="HeroAdjacentToObstacles"/> answers about a hero a node bound, wherever that hero is
-    /// standing, and answers NOTHING about a hero who is standing nowhere - which its own remarks state
-    /// as the reading it wants: "a hero who has left the board is not the hero the clause is about".
-    /// That is exactly right for a clause whose subject is a hero. It is exactly wrong for these three,
+    /// 8.69a's <c>brynn-hero-adjacent-to-obstacles@1</c> answered about a hero a node bound, wherever
+    /// that hero was standing, and answered NOTHING about a hero standing nowhere - which its own
+    /// remarks stated as the reading it wanted: "a hero who has left the board is not the hero the
+    /// clause is about". That is exactly right for a clause whose subject is a hero. It is exactly
+    /// wrong for these three,
     /// because their subject is the TARGETING, which already happened. Rulebook p.14 removes a defeated
     /// hero at step 6 and applies "After the attack:" text at step 7, so Peak Precision's retrieval -
     /// gated on the same condition as its +2, BR-Q7 - is asked about a target the successful attack has
@@ -36,21 +37,18 @@ namespace GuardsDigital.Core.Cards.Verified
     /// milestone 8.7's overlay and Over the Top's counts-as reach this clause without this file knowing
     /// any of them exist.</para>
     ///
+    /// <para>Milestone 8.69f took that reading to its conclusion and DROPPED 8.69a's predicate, which
+    /// no printed sentence of his reaches - a capability nothing can start is one a set drops rather
+    /// than one a dealing registers. This one stands.</para>
+    ///
     /// <para><b>Nothing here is registered</b>, on milestone 7.9's gate and for the reason the 8.69a
     /// partial states at length: <see cref="SplitAttackRegisteredHandlers"/> is empty,
     /// <see cref="SplitAttackDeferredHandlers"/> is the whole list until 8.69g deals him, and
     /// <c>BrynnSplitAttackTests</c> asserts the gate from both sides. 8.69f aggregates this block's two
-    /// lists into the hero-wide ones.</para>
+    /// lists into the hero-wide ones in <c>BrynnComponentContent.cs</c>.</para>
     /// </summary>
     public static partial class BrynnComponentContent
     {
-        /// <summary>
-        /// The placeholder revision every definition THIS block composes carries, replaced by 8.69f
-        /// with the one real string his whole set is stated under. Deliberately malformed, on the
-        /// standing rule that a placeholder must not be a value that could be mistaken for a real one.
-        /// </summary>
-        public const string SplitAttackPrepRevision = "brynn-8-69b-prep";
-
         /// <summary>
         /// "If you target a hero who is adjacent to 3 or more obstacles" - Split Attack's, Split
         /// Throw's and Peak Precision's shared condition, asked of the enclosing Attack.

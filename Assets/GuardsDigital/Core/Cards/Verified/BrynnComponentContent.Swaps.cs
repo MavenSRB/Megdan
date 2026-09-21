@@ -46,13 +46,6 @@ namespace GuardsDigital.Core.Cards.Verified
     public static partial class BrynnComponentContent
     {
         /// <summary>
-        /// The placeholder revision this block's three faces carry, replaced by 8.69f with the one real
-        /// string his whole set is stated under. Deliberately malformed, on the project's standing rule
-        /// that a placeholder must not be a value that could be mistaken for a real one.
-        /// </summary>
-        public const string SwapPrepRevision = "brynn-8-69d-prep";
-
-        /// <summary>
         /// "Swap either with a unit adjacent to you, or with an enemy hero in radius who is adjacent to
         /// 3 or more obstacles" - the subject of that swap, as ONE selection over the union the
         /// sentence names.

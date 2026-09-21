@@ -589,8 +589,12 @@ namespace GuardsDigital.Tests.EditMode
                 "No configured match can start it, which is why composing it moves no pinned " +
                 "registration list and no corpus digest.");
 
-            Assert.That(BrynnCardContent.DealtDefinitions, Is.Empty,
-                "and nothing of his is dealt until 8.69f states the set and 8.69g registers it.");
+            Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap "
+                + "the nineteenth. The dealt-corpus validator stays green because it validates "
+                + "against what the build registers PLUS the declarations it deliberately withholds "
+                + "- 8.57f's precedent - and the registration debt is asserted by name in "
+                + "BrynnPrintedSetTests.");
 
             foreach (var id in new[]
             {
@@ -599,9 +603,9 @@ namespace GuardsDigital.Tests.EditMode
             })
             {
                 Assert.That(Face(id).ContentRevision,
-                    Is.EqualTo(BrynnComponentContent.SplitAttackPrepRevision),
-                    "Every face this block composes carries its own placeholder revision, which " +
-                    "8.69f replaces with the one real string his whole set is stated under.");
+                    Is.EqualTo(BrynnCardContent.ContentRevision),
+                    "Every face this block composes carries the one real revision milestone 8.69f " +
+                    "stated his whole set under, which replaced this block's placeholder.");
             }
         }
 

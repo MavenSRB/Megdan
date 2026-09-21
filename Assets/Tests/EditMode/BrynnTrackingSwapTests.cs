@@ -753,9 +753,9 @@ namespace GuardsDigital.Tests.EditMode
             {
                 var face = Face(id);
                 Assert.That(face.ContentRevision,
-                    Is.EqualTo(BrynnComponentContent.SwapPrepRevision),
-                    "Every face this block composes carries its own placeholder revision, which " +
-                    "8.69f replaces with the one real string his whole set is stated under.");
+                    Is.EqualTo(BrynnCardContent.ContentRevision),
+                    "Every face this block composes carries the one real revision milestone 8.69f " +
+                    "stated his whole set under, which replaced this block's placeholder.");
                 Assert.That(
                     face.ActionDefinitions.Single(action => action.Kind == ActionKind.Skill).Id,
                     Is.EqualTo(BrynnCardContent.PrimarySkill));
@@ -763,21 +763,27 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// Each face names only the half of p.15's Blue fork this block composes - Mountain Guide and
-        /// Expedition Leader are 8.69c's ids, and naming an id a sibling branch owns is what Min's
-        /// series refused four times over. 8.69f states both ladders whole.
+        /// p.15's Blue fork, whole. While 8.69c was being written on another branch each face here
+        /// named only the half this block composed - naming an id a sibling branch owns is what Min's
+        /// series refused four times over - and milestone 8.69f completed both rows with the guides.
         /// </summary>
         [Test]
-        public void TheBlueLadder_NamesOnlyTheHalfThisBlockComposes()
+        public void TheBlueLadder_ForksTwiceAndEndsAtTierThree()
         {
             Assert.That(
                 Face(BrynnCardContent.TreadLightly).Progression.NextTierCandidateIds
                     .Select(id => id.Value).ToArray(),
-                Is.EqualTo(new[] { BrynnCardContent.CoverTracks.Value }));
+                Is.EquivalentTo(new[]
+                {
+                    BrynnCardContent.CoverTracks.Value, BrynnCardContent.MountainGuide.Value
+                }));
             Assert.That(
                 Face(BrynnCardContent.CoverTracks).Progression.NextTierCandidateIds
                     .Select(id => id.Value).ToArray(),
-                Is.EqualTo(new[] { BrynnCardContent.HideTraces.Value }));
+                Is.EquivalentTo(new[]
+                {
+                    BrynnCardContent.HideTraces.Value, BrynnCardContent.ExpeditionLeader.Value
+                }));
             Assert.That(
                 Face(BrynnCardContent.HideTraces).Progression.NextTierCandidateIds, Is.Empty,
                 "p.15's Blue line ends at Tier III.");
@@ -839,9 +845,12 @@ namespace GuardsDigital.Tests.EditMode
                 "before a dealt card of his can start it: the registered content list is serialized " +
                 "and pinned, so registering early moves pinned bytes while no content moved.");
 
-            Assert.That(BrynnCardContent.DealtDefinitions, Is.Empty,
-                "and he deals nothing, which is what keeps the dealt-corpus validator green while " +
-                "his set is being composed.");
+            Assert.That(BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap "
+                + "the nineteenth. The dealt-corpus validator stays green because it validates "
+                + "against what the build registers PLUS the declarations it deliberately withholds "
+                + "- 8.57f's precedent - and the registration debt is asserted by name in "
+                + "BrynnPrintedSetTests.");
             foreach (var definition in BrynnCardContent.SwapDefinitions)
             {
                 Assert.That(

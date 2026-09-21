@@ -7,7 +7,8 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>
     /// Brynn the Seeker's three Blue tracking swaps - Tread Lightly, Cover Tracks and Hide Traces -
     /// whose clause milestone 8.69d owns. The other sixteen faces belong to the blocks that own their
-    /// clauses, and 8.69f states the whole set under one real content revision.
+    /// clauses, and milestone 8.69f states the whole set under one real content revision in
+    /// <c>BrynnCardContent.cs</c>.
     ///
     /// <para><b>Where these numbers come from.</b> <c>Docs/AI/Rules/HERO_BRYNN.md</c>'s printed
     /// inventory, read off the extracted fronts at milestone 8.69: Tread Lightly
@@ -22,30 +23,22 @@ namespace GuardsDigital.Core.Cards.Verified
     /// measurement that settles which contract the swap composes on - see
     /// <see cref="BrynnComponentContent.TrackingSwapSubject"/> and BR-Q17d.</para>
     ///
-    /// <para><b>Two of the three progression pairs cross a block boundary and are therefore stated by
-    /// half.</b> p.15 forks Blue twice - Tread Lightly climbs to Cover Tracks or Mountain Guide, and
-    /// either of those to Hide Traces or Expedition Leader - and Mountain Guide and Expedition Leader
-    /// are 8.69c's faces. Naming an id a sibling branch owns is what Min's series refused four times
-    /// over, so each face here names only the half this block composes and 8.69f states both ladders
-    /// whole.</para>
+    /// <para><b>Both Blue progression pairs are stated whole from milestone 8.69f on.</b> p.15 forks
+    /// Blue twice - Tread Lightly climbs to Cover Tracks or Mountain Guide, and either of those to Hide
+    /// Traces or Expedition Leader - and Mountain Guide and Expedition Leader are 8.69c's faces. While
+    /// that block was being written on another branch each face here named only the half this one
+    /// composed; the set exists now, so every row names both of its successors.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's gate:
-    /// the revision is <see cref="BrynnComponentContent.SwapPrepRevision"/>, a deliberately malformed
-    /// placeholder that 8.69f replaces with the one real string every face of his carries.</para>
+    /// the revision is <see cref="ContentRevision"/>, the one real string milestone 8.69f states his
+    /// whole set under and which replaced this block's placeholder.</para>
     /// </summary>
     public static partial class BrynnCardContent
     {
-        /// <summary>
-        /// p.9's Skill band - eleven of his nineteen faces, of which this block composes three.
-        ///
-        /// <para>It is declared here because this block is the first of the wave to compose a Skill
-        /// face, on the arrangement 8.69a's four identities use: a partial class cannot declare one
-        /// member twice, so a sibling block composing a Skill REUSES this rather than restating it.
-        /// The string is the corpus's own - every hero in the roster prints "primary-skill" on its
-        /// Skill faces - and only the C# member is his.</para>
-        /// </summary>
-        public static ActionDefinitionId PrimarySkill { get; } =
-            new ActionDefinitionId("primary-skill");
+        // The conventional action identities his whole set shares - p.9's Skill band among them - are
+        // declared ONCE, in BrynnCardContent.cs: milestone 8.69f's fold over the five wave blocks,
+        // each of which had declared the ones its own faces needed because a partial class cannot
+        // declare one member twice.
 
         /// <summary>His Blue Tier I: the swap, and nothing after it.</summary>
         public static CardDefinitionId TreadLightly { get; } =
@@ -83,11 +76,11 @@ namespace GuardsDigital.Core.Cards.Verified
                 BuildTrackingSwap(
                     TreadLightly, "Tread Lightly", CardTier.I, 10, 5, 3, 2,
                     PrintedValueChannel.None, TreadLightlyText, 0, false,
-                    new[] { CoverTracks }),
+                    new[] { CoverTracks, MountainGuide }),
                 BuildTrackingSwap(
                     CoverTracks, "Cover Tracks", CardTier.II, 10, 5, 3, 3,
                     PrintedValueChannel.Defense, CoverTracksText, 1, false,
-                    new[] { HideTraces }),
+                    new[] { HideTraces, ExpeditionLeader }),
                 BuildTrackingSwap(
                     HideTraces, "Hide Traces", CardTier.III, 11, 6, 3, 3,
                     PrintedValueChannel.Range, HideTracesText, 2, true,
@@ -118,7 +111,7 @@ namespace GuardsDigital.Core.Cards.Verified
             bool moveIsUpTo,
             IReadOnlyList<CardDefinitionId> nextTierCandidates) => new CardDefinition(
             id,
-            BrynnComponentContent.SwapPrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(initiative),
             CardContentAuthority.VerifiedOfficial,
@@ -135,7 +128,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     AttackRangeKind.None,
                     default,
                     BrynnEffectContent.TrackingSwap(
-                        id, BrynnComponentContent.SwapPrepRevision, moveDistance, moveIsUpTo),
+                        id, ContentRevision, moveDistance, moveIsUpTo),
                     PrintedTextComposition.None),
 
                 new ActionDefinition(

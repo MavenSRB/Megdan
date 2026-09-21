@@ -503,7 +503,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
-        // The two deferred predicates
+        // The deferred predicate
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
@@ -529,41 +529,14 @@ namespace GuardsDigital.Tests.EditMode
                 "every printed-icon consumer performs, rather than a number this predicate invents.");
         }
 
-        /// <summary>
-        /// The subject-scoped predicate 8.69b's gate binds to: one named hero, answered about that
-        /// hero's own space, and refused outright for a hero who is standing nowhere.
-        /// </summary>
-        [Test]
-        public void TheSubjectPredicate_AnswersAboutOneNamedHero_AndRefusesAnAbsentOne()
-        {
-            var board = Board(
-                heroes: new[] { At(Brynn, Around[0]), At(Enemy, Subject) },
-                terrain: new[] { Around[1], Around[2] });
-
-            var applied = RunSubjectPredicate(board, Enemy, RuleModificationSet.Empty);
-            Assert.That(applied.Kind, Is.EqualTo(EffectExecutionResultKind.Applied));
-            Assert.That(
-                applied.Outcomes.Single(fact =>
-                    fact.OutputName == BrynnComponentContent.PresentOutputName).Value.BooleanValue,
-                Is.True);
-
-            var openBoard = Board(
-                heroes: new[] { At(Brynn, Around[0]), At(Enemy, Subject) },
-                terrain: new[] { Around[1] });
-            Assert.That(
-                RunSubjectPredicate(openBoard, Enemy, RuleModificationSet.Empty).Outcomes
-                    .Single(fact => fact.OutputName == BrynnComponentContent.PresentOutputName)
-                    .Value.BooleanValue,
-                Is.False,
-                "Two obstacles is the clause not being met, and the predicate says so rather than " +
-                "refusing - a false answer is a rule and a refusal is the absence of one.");
-
-            Assert.That(
-                RunSubjectPredicate(board, SecondEnemy, RuleModificationSet.Empty).Kind,
-                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory),
-                "A hero who is not on the board is refused rather than answered false, on the same " +
-                "terms `subject-adjacent-terrain-presence@1` refuses one.");
-        }
+        // MILESTONE 8.69F DROPPED THIS BLOCK'S SECOND PREDICATE and the case that drove it. 8.69a
+        // minted `brynn-hero-adjacent-to-obstacles@1` for the three split faces' gate, and 8.69b
+        // measured that their subject is the TARGETING rather than a hero - p.14 removes a defeated
+        // target at step 6, so a predicate reading the live hero refuses Peak Precision's retrieval
+        // exactly when the attack worked. No printed sentence of his asks about one named hero, so
+        // the composition block dropped a contract nothing could start rather than leaving the dealing
+        // a handler type to register and find a showcase consumer for. `BrynnPrintedSetTests` asserts
+        // the three ids that remain, as a set, from both sides.
 
         // -------------------------------------------------------------------------------------------
         // Over the Top
@@ -639,11 +612,13 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// All four consumers of the printed phrase see the Ultimate at once, because the overlay lives
-        /// inside the one query rather than beside each of them.
+        /// Every consumer of the printed phrase this block owns sees the Ultimate at once, because the
+        /// overlay lives inside the one query rather than beside each of them. (8.69b's gate and
+        /// 8.69d's swap selection are the other two, each measured in its own block's fixture, and
+        /// <c>BrynnPrintedSetTests</c> asks three of his faces at once on one board.)
         /// </summary>
         [Test]
-        public void OverTheTop_WidensTheSelection_ThePresence_TheSubjectPredicateAndTheRaise()
+        public void OverTheTop_WidensTheSelection_ThePresenceAndTheRaise()
         {
             var board = OpenBoard();
             var rules = Rules(board, RuleObject.ForHero(Brynn));
@@ -659,16 +634,9 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(PresentInRadius(board, withRadiusItem: false, modifications: rules), Is.True,
                 "the presence predicate holds,");
 
-            Assert.That(
-                RunSubjectPredicate(board, Enemy, rules).Outcomes
-                    .Single(fact => fact.OutputName == BrynnComponentContent.PresentOutputName)
-                    .Value.BooleanValue,
-                Is.True,
-                "the subject predicate holds,");
-
             Assert.That(AmountFor(board, AttackTarget.Hero(Enemy), rules, ThreeHeroes()),
                 Is.EqualTo(2),
-                "and the Attack Total carries the +2 - four consumers widened by one declaration " +
+                "and the Attack Total carries the +2 - three consumers widened by one declaration " +
                 "none of them names.");
         }
 
@@ -802,9 +770,12 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(5));
             Assert.That(
                 highGround.Progression.NextTierCandidateIds,
-                Contains.Item(BrynnCardContent.ElevatedAmbush),
-                "p.15 forks the Red ladder, and this block states the half it composes; Split Attack " +
-                "is 8.69b's face and 8.69f states both.");
+                Is.EquivalentTo(new[]
+                {
+                    BrynnCardContent.ElevatedAmbush, BrynnCardContent.SplitAttack
+                }),
+                "p.15 forks the Red ladder; while 8.69b was being written on another branch this row " +
+                "named only Elevated Ambush, and milestone 8.69f completed it.");
 
             var overTheTop = Face(BrynnCardContent.OverTheTop);
             Assert.That(overTheTop.Progression.Classification,
@@ -832,10 +803,12 @@ namespace GuardsDigital.Tests.EditMode
                 deferred.Select(reference => reference.CapabilityId.Value).ToArray(),
                 Is.EqualTo(new[]
                 {
-                    BrynnComponentContent.EnemyHeroInRadiusAdjacentToObstacles.Value,
-                    BrynnComponentContent.HeroAdjacentToObstacles.Value
+                    BrynnComponentContent.EnemyHeroInRadiusAdjacentToObstacles.Value
                 }),
-                "The two predicates this block declares, in declaration order.");
+                "The ONE predicate this block still declares. It minted a second - " +
+                "'brynn-hero-adjacent-to-obstacles' - which 8.69b superseded and 8.69f dropped, " +
+                "because no printed sentence of his asks about a named hero and a capability nothing " +
+                "can start is not a registration a dealing should make.");
             Assert.That(BrynnComponentContent.ObstacleRegisteredHandlers(), Is.Empty,
                 "and nothing of his is registered, because 8.69g is the block that deals him.");
 
@@ -849,10 +822,11 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(
-                BrynnCardContent.DealtDefinitions, Is.Empty,
-                "and he deals nothing, which is what keeps the dealt-corpus validator - which " +
-                "validates every dealt face against the capabilities this build REGISTERS - green " +
-                "while his set is being composed.");
+                BrynnCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "and milestone 8.69f states his set: the eighteen p.6 deals, with the boxed Handicap " +
+                "the nineteenth. The dealt-corpus validator stays green because it validates against " +
+                "what the build registers PLUS the declarations it deliberately withholds - 8.57f's " +
+                "precedent - and the registration debt is asserted by name in BrynnPrintedSetTests.");
             Assert.That(BrynnCardContent.ObstacleDefinitions, Has.Count.EqualTo(4),
                 "while the four faces this block composes are still exactly four.");
             Assert.That(
@@ -1124,26 +1098,6 @@ namespace GuardsDigital.Tests.EditMode
             return result.Outcomes
                 .Single(fact => fact.OutputName == BrynnComponentContent.PresentOutputName)
                 .Value.BooleanValue;
-        }
-
-        private static EffectExecutionResult RunSubjectPredicate(
-            AdjacentMoveAuthority board, HeroId subject, RuleModificationSet modifications)
-        {
-            var handler = BrynnComponentContent.ObstacleDeferredHandlers().Single(candidate =>
-                candidate.Reference.Equals(BrynnComponentContent.HeroAdjacentToObstaclesV1));
-            var action = RadiusSkillAction(3);
-            var definition = ProbeDefinition(action);
-            var card = CardInstance.CreateInHand(
-                new CardInstanceId("brynn-subject-probe-instance"), definition.Reference, Brynn);
-
-            return handler.Execute(Context(
-                board, definition, card, action,
-                new Dictionary<string, EffectValue>
-                {
-                    [BrynnComponentContent.SubjectParameterName] = EffectValue.Hero(subject)
-                },
-                ThreeHeroes(),
-                modifications));
         }
 
         // -------------------------------------------------------------------------------------------
