@@ -1086,6 +1086,53 @@ namespace GuardsDigital.Tests.EditMode
                 "a colour, a Basic), for one that retrieves from somewhere other than a pile the " +
                 "existing kinds name, or for a face that asks the question about ANOTHER hero's " +
                 "cards, which p.10 currently forbids outright.")
+            ,
+
+            // Merged after 8.69e: 8.69b's claim appended whole.
+            new SharedFoundationClaim(
+                "card-state.resolving-source-card-retrieval",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Cards.CardLifecycleAuthority),
+                    nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority.TryRetrieveResolvingCard),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnSplitAttackTests),
+                            nameof(BrynnSplitAttackTests
+                                .PeakPrecision_RaisesTheTotal_ThenOffersTheRetrieval_AndTheActionStillCompletes),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the whole sentence driven through a turn: the card ends in hand, the action " +
+                        "completes, and Initiative acknowledges the finished action"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnSplitAttackTests),
+                            nameof(BrynnSplitAttackTests
+                                .TheRetrievalPool_IsAThirdPool_AndNeitherOfTheOtherTwoReachesTheResolvingCard),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "p.8's end-of-round retrieval does not reach the card being resolved, and " +
+                        "this transition does not reach a card at rest"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnSplitAttackTests),
+                            nameof(BrynnSplitAttackTests
+                                .PeakPrecision_DeclinedRetrieval_LeavesTheCardWhereAPlayedCardEnds),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "declining leaves the card exactly where a played card ends, so the seam is " +
+                        "reached only by a text that asked for it")
+                },
+                new[] { "card state", "owner", "action completion", "Initiative acknowledgement" },
+                "One card, played face up in its owner's turn area and not yet resolved - the card " +
+                "whose own text is running - returned to that owner's hand as an ordinary " +
+                "uncommitted card, while the action it was played for still completes. It is reached " +
+                "only through retrieve-card@1's third declared pool, and the two turn seams that " +
+                "would otherwise fault recognise exactly the one state it leaves behind.",
+                "Reassess for a text that retrieves ANOTHER hero's card mid-action, for one that " +
+                "retrieves a card whose action is a Movement or a Skill, for a face that retrieves " +
+                "and then expects to play the same card again in the same round, or for a second " +
+                "producer of the retrieved-in-hand shape.")
         };
     }
 

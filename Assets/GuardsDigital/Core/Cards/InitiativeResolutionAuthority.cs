@@ -317,10 +317,21 @@ namespace GuardsDigital.Core.Cards
                     InitiativeResolutionRejectionReason.SelectedCardStateChanged);
             }
 
-            if (card.State.Location != CardLocation.TurnArea ||
-                !card.State.HasBeenPlayed ||
-                card.State.ResolutionStatus != CardResolutionStatus.Resolved ||
-                card.State.FaceOrientation != CardFaceOrientation.FaceUp)
+            // Milestone 8.69b. The second shape a finished action can leave its own card in: back in
+            // its owner's hand, because the card's printed text said so. Brynn the Seeker's Peak
+            // Precision prints "After the attack: You may retrieve this card", which rulebook p.14
+            // applies at step 7 - inside the action, before this acknowledgement. The action still
+            // finished, and this is the acknowledgement that it did, so refusing it would leave the
+            // Initiative order holding a turn nothing could ever close.
+            //
+            // The widening is exactly one named shape, asked only of the card this method was already
+            // given by identity - the selected actor's own - so every other cause of a
+            // not-resolved card still reaches the refusal.
+            if (!CardLifecycleAuthority.WasRetrievedDuringItsOwnAction(card) &&
+                (card.State.Location != CardLocation.TurnArea ||
+                    !card.State.HasBeenPlayed ||
+                    card.State.ResolutionStatus != CardResolutionStatus.Resolved ||
+                    card.State.FaceOrientation != CardFaceOrientation.FaceUp))
             {
                 return InitiativeResolutionResult.Reject(
                     InitiativeResolutionRejectionReason.SelectedCardNotResolved);

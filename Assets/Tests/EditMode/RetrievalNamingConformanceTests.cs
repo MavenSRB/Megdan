@@ -130,15 +130,35 @@ namespace GuardsDigital.Tests.EditMode
             var retrieval = typeof(CardLifecycleAuthority)
                 .GetMethods(BindingFlags.Public | BindingFlags.Static)
                 .Where(method => method.Name.IndexOf("Retriev", StringComparison.Ordinal) >= 0)
+                .Select(method => method.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
                 .ToArray();
 
-            Assert.That(retrieval.Length, Is.EqualTo(1),
-                "The audit forbids a second eligibility query, so exactly one retrieval entry point may exist.");
+            // Milestone 8.69b. Milestone 6.13's audit is about ONE question having one owner - "is
+            // this card one the ROUND returns to its owner's hand" - and this was stated as a count
+            // because for thirteen milestones that question was the only reason to write the word.
+            // Brynn the Seeker's Peak Precision prints "After the attack: You may retrieve this
+            // card", which rulebook p.14 applies at step 7 with the action still resolving, and no
+            // card at rest is ever in that state. So the set is enumerated rather than counted: the
+            // audit's own entry point, the printed-card-text transition beside it, and the shape
+            // predicate that names what the second one leaves behind. A fourth name still fails here,
+            // and widening the FIRST one - which is what the audit actually forbids - would have to
+            // change TryRetrieveEligibleCard itself.
+            Assert.That(retrieval, Is.EqualTo(new[]
+            {
+                nameof(CardLifecycleAuthority.TryRetrieveEligibleCard),
+                nameof(CardLifecycleAuthority.TryRetrieveResolvingCard),
+                nameof(CardLifecycleAuthority.WasRetrievedDuringItsOwnAction)
+            }),
+                "The audit forbids a second eligibility query for p.8's end-of-round stage, so any " +
+                "name added here must be a different question stated for a printed sentence.");
 
-            var offender = Qualifier(retrieval[0].Name);
-            Assert.That(offender, Is.Null,
-                "The end-of-round stage a configured match runs calls " + retrieval[0].Name +
-                ", so its '" + offender + "' qualifier is false.");
+            foreach (var name in retrieval)
+            {
+                Assert.That(Qualifier(name), Is.Null,
+                    "A configured production match reaches " + name + ", so a '" + Qualifier(name) +
+                    "' qualifier on it would be false.");
+            }
         }
 
         [Test]

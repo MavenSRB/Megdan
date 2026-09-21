@@ -354,9 +354,14 @@ namespace GuardsDigital.Core.Effects
                     // thing and narrows what is left, so it names no selection node either.
                     // Milestone 8.35z46. A repeat narrowed to a minion excludes the same
                     // thing and narrows what is left, so it names no selection node either.
+                    // Milestone 8.69b. A repeat narrowed to a different unit adjacent to the actor
+                    // excludes the same thing and narrows how far what is left may stand, so it names
+                    // no selection node either.
                     if ((RepeatTargetBinding == RepeatTargetBinding.DifferentTarget ||
                             RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyHero ||
-                            RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyMinion) &&
+                            RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyMinion ||
+                            RepeatTargetBinding ==
+                                RepeatTargetBinding.DifferentUnitAdjacentToActor) &&
                         BoundSelectionNodeId.IsDefined)
                         throw new ArgumentException(
                             "A different-target repeat excludes the action's own target, so it names " +

@@ -2885,6 +2885,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 {
                     legal = legal.Where(target => target.Kind == admitted.Value).ToArray();
                 }
+
+                // Milestone 8.69b. "on a different unit adjacent to you" - Brynn the Seeker's Split
+                // Attack. It is the SAME derivation the kind narrowing above makes, of the same
+                // trusted definition, and it narrows the other half of what a target is: p.19's
+                // innermost ring around the attacker, in place of the printed Range 2 every other
+                // instance of that action reaches. Applied here rather than inside
+                // FindLegalAttackTargets for milestone 8.35z45's reason - the query answers p.13's
+                // question and this is one card's own extra word narrowing the answer - and applied to
+                // the one set both the offer and the answer read, so CanStartRepeatedAttack refuses a
+                // repeat with an empty ring rather than offering one and discovering it after.
+                if (RepeatReachesOnlyUnitsAdjacentToTheActor(resolution, definitions))
+                {
+                    var actorAt = ActorSpaceOf(resolution.ActorId);
+                    legal = actorAt.HasValue
+                        ? legal.Where(target =>
+                            {
+                                var at = TargetSpaceOf(target);
+                                return at.HasValue &&
+                                    HexDistanceQuery.Calculate(actorAt.Value, at.Value) == 1;
+                            })
+                            .ToArray()
+                        // An attacker standing nowhere has no ring, so the clause admits nobody. It
+                        // is unreachable through a started Attack, whose actor occupancy is checked
+                        // before the instance is planned, and is answered rather than left to a
+                        // distance measured from nothing.
+                        : Array.Empty<AttackTarget>();
+                }
             }
 
             return new PendingAttackTargetChoice(
@@ -2962,6 +2989,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ? AttackTargetKind.Hero
                 : (AttackTargetKind?)null;
         }
+
+        /// <summary>
+        /// Milestone 8.69b. Whether the clause that produced this repeated instance narrowed it to
+        /// p.19's ring around the attacker - Split Attack's "on a different unit adjacent to you".
+        ///
+        /// <para>It is <see cref="RepeatAdmitsOnly"/>'s twin and asks the definition the same two ways
+        /// for the same two reasons: a card printing a CHAIN of clauses is answered by the instance's
+        /// own position in it, and a card printing one is answered by the card. What it narrows is the
+        /// reach rather than the unit kind, so the two compose - a face declaring both would get both,
+        /// and no face in the corpus declares either twice.</para>
+        /// </summary>
+        private static bool RepeatReachesOnlyUnitsAdjacentToTheActor(
+            PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)
+        {
+            var action = RepeatedActionDefinition(resolution, definitions);
+            var producing = CardTextRepeatChain.ProducingClause(action, resolution.ResolutionId);
+            if (producing != null)
+            {
+                return producing.RepeatTargetBinding ==
+                    RepeatTargetBinding.DifferentUnitAdjacentToActor;
+            }
+
+            return action != null &&
+                (DeclaresAdjacentUnitRepeat(action.EffectRoot) ||
+                    DeclaresAdjacentUnitRepeat(action.SecondCardTextRoot));
+        }
+
+        private static bool DeclaresAdjacentUnitRepeat(EffectDefinition effect) =>
+            effect != null &&
+            effect.Nodes.Any(node =>
+                node.Kind == EffectNodeKind.RepeatAction &&
+                node.RepeatTargetBinding == RepeatTargetBinding.DifferentUnitAdjacentToActor);
 
         private static ActionDefinition RepeatedActionDefinition(
             PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)

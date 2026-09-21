@@ -157,7 +157,8 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>The blocks' own lists; a sibling adds one <c>.Concat(...)</c> line here.</summary>
         private static IEnumerable<CardDefinition> ComposedFaces() =>
             ObstacleDefinitions.Concat(SwapDefinitions)
-                .Concat(TrapAndGritDefinitions);
+                .Concat(TrapAndGritDefinitions)
+                .Concat(SplitAttackFaces());
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =
             new Lazy<IReadOnlyList<CardDefinition>>(

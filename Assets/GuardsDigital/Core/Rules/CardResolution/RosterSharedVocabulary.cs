@@ -62,12 +62,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
         EnclosingTargetBeforeConsequences = 2
     }
 
-    /// <summary>The two card-text retrieval shapes in the verified roster.</summary>
+    /// <summary>The card-text retrieval shapes in the verified roster.</summary>
     public enum RosterCardRetrievalKind
     {
         None = 0,
         OwnedDiscardedCard = 1,
-        OwnedResolvedOrDiscardedBasicSkill = 2
+        OwnedResolvedOrDiscardedBasicSkill = 2,
+
+        /// <summary>
+        /// Milestone 8.69b. The card whose own text is running - Brynn the Seeker's Peak Precision,
+        /// "After the attack: You may retrieve <b>this card</b>", which rulebook p.14 applies at step 7
+        /// while the action that played it is still resolving.
+        ///
+        /// <para><b>It is a third pool rather than a flag on the first two</b>, because the card it
+        /// admits is in a state neither of them can reach: p.8's Retrieve Cards is about cards at rest,
+        /// and this one is about a card taken out from under its own action. A Boolean widening either
+        /// pool would have let a face that says "a discarded card" quietly pick up the card in play
+        /// whenever a binding failed to arrive, which is the silent widening this project refuses -
+        /// milestone 8.37's own reasoning for splitting <c>restrictToCard</c> out rather than defaulting
+        /// it.</para>
+        ///
+        /// <para>The pool is exactly one card and the face names it, so the composition binds
+        /// <c>restrictToCard</c> from <c>EffectRoleKind.SourceCard</c> beside this and nobody is asked
+        /// which card - milestone 6.5a's reading of "yourself" applied to a card.</para>
+        /// </summary>
+        OwnedResolvingSourceCard = 3
     }
 
     /// <summary>The derived board/history predicate that scales one printed value.</summary>

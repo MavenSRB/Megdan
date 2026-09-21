@@ -247,5 +247,71 @@ namespace GuardsDigital.Core.Cards
             card.ApplyState(CardStateFacts.InitialInHand());
             return true;
         }
+
+        /// <summary>
+        /// Milestone 8.69b. The card a hero is resolving RIGHT NOW: played, face up in the turn area,
+        /// and not yet resolved, which is the one played shape
+        /// <see cref="IsResolvedCardInTurnArea"/> deliberately excludes.
+        ///
+        /// <para>It exists because Brynn the Seeker's Peak Precision names it - "After the attack: You
+        /// may retrieve <b>this card</b>" - and rulebook p.14 puts that sentence at step 7, with the
+        /// action still under way. Nothing before this milestone had a reason to name the state, and
+        /// naming it here rather than inside the retrieval is what keeps every other reader of the
+        /// lifecycle from having to know that a card can be taken out from under its own action.</para>
+        /// </summary>
+        public static bool IsResolvingCardInTurnArea(CardInstance card) =>
+            card != null && card.State.Location == CardLocation.TurnArea &&
+            card.State.HasBeenPlayed &&
+            card.State.ResolutionStatus == CardResolutionStatus.Unresolved &&
+            card.State.FaceOrientation == CardFaceOrientation.FaceUp;
+
+        /// <summary>
+        /// Milestone 8.69b. Peak Precision's own sentence: the card being resolved goes back to its
+        /// owner's hand while the action that played it is still running.
+        ///
+        /// <para><b>It is a separate transition from <see cref="TryRetrieveEligibleCard"/> and not a
+        /// widened one</b>, because the two answer different questions. That one is p.8's end-of-round
+        /// Retrieve Cards asked of a card at rest, and milestone 6.13's audit forbids a second
+        /// eligibility question beside it; this one is a printed card text taking a card out of a state
+        /// no resting card is ever in. Both end in the same place - a fresh card in hand - because p.10
+        /// knows one hand and one kind of card in it, so the retrieved card may be committed again in a
+        /// later round exactly as any other.</para>
+        ///
+        /// <para><b>What it deliberately does not do is finish the action.</b> The action is still
+        /// resolving and still completes; what the turn authority then finds is a selected card that is
+        /// no longer in the turn area, which <see cref="WasRetrievedDuringItsOwnAction"/> names so that
+        /// the completion and Initiative's acknowledgement can tell a printed retrieval apart from a
+        /// step that was skipped.</para>
+        /// </summary>
+        public static bool TryRetrieveResolvingCard(CardInstance card)
+        {
+            if (card == null)
+            {
+                throw new ArgumentNullException(nameof(card));
+            }
+
+            if (!IsResolvingCardInTurnArea(card))
+            {
+                return false;
+            }
+
+            card.ApplyState(CardStateFacts.InitialInHand());
+            return true;
+        }
+
+        /// <summary>
+        /// Milestone 8.69b. Whether a card the turn is completing an action for is sitting in its
+        /// owner's hand as a fresh, uncommitted card - the state
+        /// <see cref="TryRetrieveResolvingCard"/> leaves it in and the state no card an action started
+        /// on could otherwise be in.
+        ///
+        /// <para>It is asked only of the SELECTED actor's own card, by identity, at the two places that
+        /// would otherwise fault on it: nothing here decides that a retrieval happened, it names the
+        /// one shape that means one did.</para>
+        /// </summary>
+        public static bool WasRetrievedDuringItsOwnAction(CardInstance card) =>
+            card != null && card.State.Location == CardLocation.Hand &&
+            !card.State.HasBeenPlayed &&
+            card.State.ResolutionStatus == CardResolutionStatus.None;
     }
 }

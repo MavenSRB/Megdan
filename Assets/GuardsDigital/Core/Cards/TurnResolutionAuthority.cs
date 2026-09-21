@@ -3122,7 +3122,15 @@ namespace GuardsDigital.Core.Cards
             // where it would have handed one back, so this is where its grant stops running.
             ClearRunningGrant();
 
-            if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+            // Milestone 8.69b. Brynn the Seeker's Peak Precision prints "After the attack: You may
+            // retrieve this card", and rulebook p.14 applies that at step 7 - so an Attack can reach
+            // its own end with its source card already back in its owner's hand. The action still
+            // completed, which is the whole of BR-Q7: what changed is where the card is, not whether
+            // the page finished. The shape is named once in CardLifecycleAuthority and is one no card
+            // an action started on could otherwise be in, so the fault below still fires for every
+            // cause it was written for.
+            if (!CardLifecycleAuthority.TryResolveAfterAction(card) &&
+                !CardLifecycleAuthority.WasRetrievedDuringItsOwnAction(card))
             {
                 throw new InvalidOperationException(
                     "A completed turn Attack could not resolve its prevalidated source card.");

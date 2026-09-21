@@ -132,7 +132,34 @@ namespace GuardsDigital.Core.Effects
         /// the same restorable frame state <see cref="SameTarget"/> has used since milestone 8.6. So
         /// this member moves no snapshot field and no schema version either.</para>
         /// </summary>
-        DifferentSelectionSubject = 5
+        DifferentSelectionSubject = 5,
+
+        /// <summary>
+        /// Milestone 8.69b. `on a different unit adjacent to you` - Brynn the Seeker's Split Attack,
+        /// "Target a unit in range. If you target a hero who is adjacent to 3 or more obstacles, may
+        /// repeat once on a <b>different unit adjacent to you</b>."
+        ///
+        /// <para><b>It is <see cref="DifferentTarget"/>'s exclusion with a REACH narrowing beside it,
+        /// which is a third thing this enum has not carried.</b> <see cref="DifferentEnemyHero"/> and
+        /// <see cref="DifferentEnemyMinion"/> narrow the repeated instance by p.19's unit KIND, and
+        /// this one leaves the kinds exactly as the printed instance had them - "a unit" is the same
+        /// word the first sentence uses - while shrinking how far the repeat may reach. Split Attack
+        /// prints Range 2 with the Ranged band, so the repeated instance reaches p.19's innermost ring
+        /// alone: the card's own words override p.10's "the entire action again", which is the only
+        /// reading that leaves "adjacent to you" doing anything at all.</para>
+        ///
+        /// <para><b>It is measured from where the attacker is standing when the repeat builds its
+        /// candidates</b>, because that is the space p.19's adjacency is about and no earlier moment is
+        /// named by the sentence. Nothing in either split face moves him between the two instances; a
+        /// face that did would be asking a question this member does not answer, and would be a
+        /// different member here.</para>
+        ///
+        /// <para><b>The narrowing is derived, never stored</b>, exactly as
+        /// <see cref="DifferentEnemyHero"/>'s remarks record: a repeated instance reads this member off
+        /// the trusted definition when it builds its candidates, so it moves no snapshot field and no
+        /// schema version, and a tampered payload cannot widen the ring back.</para>
+        /// </summary>
+        DifferentUnitAdjacentToActor = 6
     }
 
     /// <summary>

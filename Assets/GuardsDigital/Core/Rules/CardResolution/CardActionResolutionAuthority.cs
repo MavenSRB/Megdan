@@ -625,7 +625,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RepeatTargetBinding binding, PendingAfterActionRepeat subject) =>
             (binding == RepeatTargetBinding.DifferentTarget ||
                 binding == RepeatTargetBinding.DifferentEnemyHero ||
-                binding == RepeatTargetBinding.DifferentEnemyMinion) &&
+                binding == RepeatTargetBinding.DifferentEnemyMinion ||
+                // Milestone 8.69b. "a different unit adjacent to you" excludes what its asking
+                // instance took exactly as the three above do; the ring it adds is applied where the
+                // repeated instance builds its candidates.
+                binding == RepeatTargetBinding.DifferentUnitAdjacentToActor) &&
             subject.Kind == ActionKind.Attack
                 ? subject.CompletedAttackTarget
                 : default;
@@ -2817,7 +2821,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // clause excludes what its asking instance took exactly as the two above do. In the one
             // chain that reaches it the exclusion is vacuous - the instance before it took a hero -
             // and it is carried because the ruling says so rather than because a board makes it show.
-            binding == RepeatTargetBinding.DifferentEnemyMinion
+            binding == RepeatTargetBinding.DifferentEnemyMinion ||
+            // Milestone 8.69b. Split Attack's "on a different unit adjacent to you" says "different"
+            // in the same breath as "adjacent", so the exclusion is the same one the three above make
+            // and the ring is narrowed beside it rather than instead of it.
+            binding == RepeatTargetBinding.DifferentUnitAdjacentToActor
                 ? attack.Target
                 : default;
 

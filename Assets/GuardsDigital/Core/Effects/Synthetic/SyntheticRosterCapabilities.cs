@@ -3843,7 +3843,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? Candidates(context).SingleOrDefault(value => value.Id.Equals(
                         selected[0].CardInstanceId))
                     : null;
-                if (card == null || !CardLifecycleAuthority.TryRetrieveEligibleCard(card))
+                // Milestone 8.69b. The card being resolved is not a card at rest, so it is moved by
+                // the transition that names that state rather than by p.8's end-of-round one - which
+                // milestone 6.13's audit forbids widening. Which of the two runs is decided by the
+                // declared pool and never by trying one and falling back to the other.
+                var retrieved = card != null &&
+                    ((RosterCardRetrievalKind)context.Input("kind").IntegerValue ==
+                        RosterCardRetrievalKind.OwnedResolvingSourceCard
+                        ? CardLifecycleAuthority.TryRetrieveResolvingCard(card)
+                        : CardLifecycleAuthority.TryRetrieveEligibleCard(card));
+                if (!retrieved)
                     return EffectExecutionResult.ImpossibleMandatory();
                 var facts = new List<EffectOutcomeFact>
                 {
@@ -3887,6 +3896,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var isRetrievableDiscard = CardLifecycleAuthority.IsDiscardedRestingCard(card);
                 if (kind == RosterCardRetrievalKind.OwnedDiscardedCard)
                     return isRetrievableDiscard;
+
+                // Milestone 8.69b. Peak Precision's "this card" - the one card in the owner's pile
+                // that is neither at rest nor resolved, because its own action is what is running.
+                // The pool is stated rather than added to either of the two above: a face printing
+                // "a discarded card" must not pick this card up, and this face must not pick up a
+                // discarded one.
+                if (kind == RosterCardRetrievalKind.OwnedResolvingSourceCard)
+                    return CardLifecycleAuthority.IsResolvingCardInTurnArea(card);
 
                 var definition = definitions.SingleOrDefault(value =>
                     value.Reference.Equals(card.DefinitionReference));
