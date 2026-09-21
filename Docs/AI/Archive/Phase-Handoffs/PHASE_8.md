@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71f Hanu Greens completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71f | Monkey Trick, Monkey Twist, Monkey Business, Hear Nothing and See Nothing as deferred content: the friendly pair from the deferred NEW handler type `hanu-friendly-unit-pair@1` (units of either kind at the printed Radius with items, Hanu excluded, immunity asked in both activities - HA-Q13f, because `choose-target-pair@1` names minions at a literal distance) into `synthetic-swap@2`; the enemy swap on `synthetic-radius-hero-target@1` + `synthetic-swap-actor@1`; the Tier III trailing moves as `synthetic-direct-move@3` UpTo 1 from the post-swap space. Schema/wire unmoved; labels derived empty. `HanuGreensTests` 25; harness 4162/4162; focused Edit Mode 45/45. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871f-support-the-greens). | `26272213` |
+
 ## Milestone 8.71c Hanu Reds and Fight and Flight completion evidence
 
 | Milestone | Outcome and definition | Commit |

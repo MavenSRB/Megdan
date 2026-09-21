@@ -72,13 +72,17 @@ Completed 2026-09-21 (`25e2630e`, squash-merged from `cb7c4b3e` on `8.71e-co-mov
 
 Historical evidence: [8.71e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-871e-hanu-co-moves-completion-evidence).
 
-### [ ] 8.71f Support the Greens
+### [x] 8.71f Support the Greens
 
 Outcome: Monkey Trick, Monkey Twist and Monkey Business swap two friendly units in radius; Hear Nothing and See Nothing swap Hanu with an enemy hero in radius; the two Tier III faces then move Hanu up to one space.
 
 Acceptance: the unordered friendly pair excluding Hanu, hero or minion, immunity asked of both (HA-Q10); the enemy-hero swap with immunity honoured; the trailing moves as Hanu's own card-text moves from his post-swap space with zero allowed; Undo and restore across the pauses. Compose Monkey Trick, Monkey Twist, Hear Nothing, Monkey Business and See Nothing. T2 minimum.
 
 Non-goals: Hurry up!, the Ultimate, the Reds, the Blues, dealing.
+
+Completed 2026-09-21 (`26272213`, squash-merged from `7b77b938` on `8.71f-greens`, after 8.71c). Reused unchanged: `synthetic-radius-hero-target@1` (Skill, OpposingSource, the exchange as consumer) -> `synthetic-swap-actor@1` for Hear Nothing and See Nothing; `synthetic-swap@2` over the pair's two spaces (eligible piece Unit); `synthetic-actor-space@1`; `synthetic-direct-move@3` (Unrestricted, UpTo 1) - See Nothing's mover bound to the exchange's `actorAt` (BR-Q20d), Monkey Business's to the actor-space bridge after the exchange. ONE delta, against the map's "expected none": `choose-target-pair@1` cannot carry "two friendly units in radius" - measured, its `Candidates` writes `RosterUnitKind.Minion` and its schema has no unit-kind parameter (Sabina's three faces print minions), and its reach is a required literal `distance` where his Greens print Radius 1/2/3 with a Radius item in his set - so the block minted the deferred NEW handler type `hanu-friendly-unit-pair@1` (`HanuComponentContent.FriendlyUnitPairV1`, Brynn's tracking-swap-subject shape: no parameters, `RadiusValueQuery` with items, `FindUnitsWithin(Unit, AlliedWithSource, actor excluded)`, per-candidate immunity in the enclosing activity and Swap plus p.19's restriction, floor and ceiling 2, canonicalised, outputs `firstSpace`/`secondSpace` + four identities) - HA-Q13f; bridging the icon through `synthetic-card-radius@1` was rejected because that publisher does not anticipate and `EffectOptionFeasibilityQuery` would then offer every Green on a board with no legal pair (8.35l/8.70). `GreenDeferredHandlers()` = that one id (8.71h owes a registration and a showcase consumer, and `SyntheticShowcaseHand` the `ContentAwareSites` permission); `GreenDecisionLabels()` derived empty; schema v44 and wire `/20` unmoved. `HanuGreensTests` 25 cases; harness on the branch 4162/4162 (= 4137 + 25); focused Edit Mode 45/45 (`tmp/871f-edit-results.xml`). At the merge: the block's MERGE BLOCK dropped for 8.71e's, `GreenDefinitions()` made public; its fixture already asserted the aggregate by containment. 8.71g folds `GreenSkillEffectId` with the other blocks' effect-id helpers.
+
+Historical evidence: [8.71f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-871f-hanu-greens-completion-evidence).
 
 ### [ ] 8.71g Compose Hanu's printed set
 
