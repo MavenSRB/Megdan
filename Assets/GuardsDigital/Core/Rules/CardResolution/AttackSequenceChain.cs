@@ -130,7 +130,63 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// <para>Its value is 4 and the four members above keep theirs, so no payload written before
         /// this milestone decodes as a different predicate.</para>
         /// </summary>
-        IsAdjacentToThreeOrMoreObstacles = 4
+        IsAdjacentToThreeOrMoreObstacles = 4,
+
+        /// <summary>
+        /// "Target a hero (minion) in range, <b>adjacent to your friendly hero</b>" - the second bullet
+        /// of Hanu the Trickster's four graded Reds, milestone 8.71c. Helping Hand and Even the Odds
+        /// print it of a hero, Outnumber and Pile On of a minion.
+        ///
+        /// <para><b>The first member of this vocabulary that says nothing about WHICH KIND of unit it
+        /// is about</b>, and that is the reading rather than an economy. "Adjacent to your friendly
+        /// hero" is a fact about the candidate's neighbourhood; the NOUN the bullet targets is already
+        /// carried by <see cref="GuardsDigital.Core.Cards.AttackTargetableUnits"/> on the bullet's own
+        /// printed policy - <c>HeroesOnly</c> on the two hero bullets, <c>MinionsOnly</c> on the two
+        /// minion ones. So one member serves both nouns, and the four members above it - each of which
+        /// drops a minion because a pile, a marker and "a hero in range" are hero clauses - keep doing
+        /// exactly what their own sentences say.</para>
+        ///
+        /// <para><b>"Your friendly hero" is rulebook p.17's Friendly read literally</b>: "another unit
+        /// on your team. It never includes you". So the neighbour that satisfies this is a hero on the
+        /// ACTOR's team other than the actor, which is HA-Q5 - a candidate standing beside Hanu alone
+        /// satisfies the bullet that prints "adjacent to you" and not this one. It is asked of
+        /// <see cref="GuardsDigital.Core.Rules.CardResolution.RosterPresenceQuery.FindUnitsWithin"/>,
+        /// which is this build's one owner of "units within a disk standing in a team relation to the
+        /// source", so the team question here and the team question every allied selection asks cannot
+        /// come to disagree.</para>
+        ///
+        /// <para><b>Like member 4 it reads the board</b>, so its answer changes when anybody moves and
+        /// this type's own timing remark is load-bearing: it is evaluated per candidate at the bullet's
+        /// own sequence start, and a "choose one, or both" whose first bullet defeated the teammate's
+        /// neighbour has changed the answer for its second.</para>
+        ///
+        /// <para>Its value is 5 and the five members above keep theirs, so no payload written before
+        /// this milestone decodes as a different predicate.</para>
+        /// </summary>
+        AdjacentToAFriendlyHeroOfTheActor = 5,
+
+        /// <summary>
+        /// "Target a hero in range, <b>adjacent to your friendly hero and not adjacent to you</b>" -
+        /// the second bullet of Hanu's Trusted Sidekick, milestone 8.71c.
+        ///
+        /// <para>It is <see cref="AdjacentToAFriendlyHeroOfTheActor"/> with the printed second half,
+        /// and a SEPARATE member rather than a flag beside it for the reason
+        /// <see cref="HasAnEmptyDiscard"/> is separate from its own complement: a closed enum names each
+        /// printed reading whole, so a reader that recognises only the shorter clause is never handed
+        /// the wider candidate set. Trusted Sidekick is the only face in the build that prints the
+        /// exclusion, and it prints it because "or both" would otherwise let its two bullets name one
+        /// unit - the bullets are disjoint by their own words (HA-Q6), which is why the face needs no
+        /// "(on different targets)" to keep them apart.</para>
+        ///
+        /// <para>"Not adjacent to you" is measured from the ACTOR's own space, which is who "you" is on
+        /// every face that prints the clause - the same reading
+        /// <c>SyntheticRosterCapabilities.ExcludeAdjacentParameter</c> takes of the identical words
+        /// (milestone 8.39h), and p.19's innermost ring removed from under the printed Range rather
+        /// than a second distance of its own.</para>
+        ///
+        /// <para>Its value is 6 and the six members above keep theirs.</para>
+        /// </summary>
+        AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor = 6
     }
 
     /// <summary>

@@ -47,7 +47,27 @@ namespace GuardsDigital.Core.Cards
         /// <see cref="AttackRangeKind.Ranged"/> and the policy only says which units it reaches.
         /// A "Block a ranged attack" therefore answers a point-blank Snap Shot by construction.</para>
         /// </summary>
-        IsolatedUnitsOrUnitsAdjacentToYou = 2
+        IsolatedUnitsOrUnitsAdjacentToYou = 2,
+
+        /// <summary>
+        /// Milestone 8.71c. The complement of <see cref="HeroesOnly"/>, and the noun two of Hanu the
+        /// Trickster's Reds print: Outnumber and Pile On say "Target a <b>minion</b> in range, adjacent
+        /// to your friendly hero", and an enemy hero standing in exactly that position is not a legal
+        /// target of that bullet.
+        ///
+        /// <para><b>Why the noun and not a predicate.</b> The other half of those two sentences -
+        /// "adjacent to your friendly hero" - is an
+        /// <c>AttackSequenceSubjectNarrowing</c> member that says nothing about which kind of unit it
+        /// is about, precisely so that the two hero bullets and the two minion bullets share one
+        /// reading of one printed phrase. What separates them is which units the sentence reaches,
+        /// which is this enum's whole job and has been since p.13's narrowing was first stated as
+        /// content at milestone 8.5.</para>
+        ///
+        /// <para><b>It costs no schema move and no shipped digest.</b> Its value is 3 and the three
+        /// members above keep theirs, so no persisted bullet and no shipped action definition decodes
+        /// as a different policy; nothing in the roster names it.</para>
+        /// </summary>
+        MinionsOnly = 3
     }
 
     /// <summary>How far a printed Attack reaches, and what says so.</summary>

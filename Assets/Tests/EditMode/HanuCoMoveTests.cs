@@ -552,7 +552,8 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheDeclaredLabels_AreExactlyTheControlsTheseTwoFacesRaise()
         {
-            var required = HanuCardContent.AllDefinitions
+            // MERGE NOTE (8.71 wave): derived over THIS block's two faces, not the aggregate.
+            var required = HanuCardContent.CoMoveDefinitions()
                 .SelectMany(card => DecisionLabelRequirementQuery.For(
                     card, MatchContentCatalogs.ForThisBuild()))
                 .Select(requirement => requirement.CardId.Value + "/" + requirement.NodeId.Value +

@@ -172,7 +172,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications);
 
             return NarrowedToTheBulletsSubject(
-                admitted, bullet, cardInstances, attackerId, markers, spaces, modifications);
+                admitted, bullet, cardInstances, attackerId, participants, board, markers, spaces,
+                modifications);
         }
 
         /// <summary>
@@ -212,6 +213,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     return spaces != null;
                 case AttackSequenceSubjectNarrowing.HoldsTheActorsMarker:
                     return markers != null;
+
+                // Milestone 8.71c. "Adjacent to your friendly hero", with and without "and not
+                // adjacent to you": both read the board and the roster, and this method already
+                // refused a call holding neither. So there is nothing further to ask for, and the
+                // predicate is always answerable here.
+                case AttackSequenceSubjectNarrowing.AdjacentToAFriendlyHeroOfTheActor:
+                case AttackSequenceSubjectNarrowing
+                    .AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor:
+                    return true;
                 default:
                     return cardInstances != null;
             }
@@ -307,6 +317,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackSequenceBullet bullet,
             IEnumerable<CardInstance> cardInstances,
             HeroId attackerId,
+            MatchParticipants participants,
+            IBoardDisplacementAuthority board,
             MarkerAttachmentRegister markers,
             ITokenPlacementAuthority spaces,
             RuleModificationSet modifications)
@@ -314,6 +326,35 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (!bullet.NarrowsItsSubject)
             {
                 return admitted;
+            }
+
+            // Milestone 8.71c. "Target a hero (minion) in range, adjacent to your friendly hero
+            // [and not adjacent to you]" - Hanu's four graded Reds. Both members say the same thing
+            // about the candidate's neighbourhood and nothing about which kind of unit it is: the noun
+            // is the bullet's own `AttackTargetableUnits`, which is why one reading serves "a hero in
+            // range" and "a minion in range" (HA-Q5).
+            if (bullet.SubjectNarrowing ==
+                    AttackSequenceSubjectNarrowing.AdjacentToAFriendlyHeroOfTheActor ||
+                bullet.SubjectNarrowing == AttackSequenceSubjectNarrowing
+                    .AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor)
+            {
+                if (board == null || participants == null || modifications == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The modal Attack bullet '{bullet.BulletId}' prints " +
+                        $"'{bullet.SubjectNarrowing}', which is a predicate about who stands beside " +
+                        "the candidate, and this target derivation was given no board, no roster or " +
+                        "no live rules to read. Supply all three at the call site rather than letting " +
+                        "the narrowing silently admit or silently exclude every candidate.");
+                }
+
+                var excludesTheActorsOwnRing = bullet.SubjectNarrowing == AttackSequenceSubjectNarrowing
+                    .AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor;
+                return admitted
+                    .Where(target => StandsBesideAFriendlyHeroOfTheActor(
+                        target, attackerId, participants, board, modifications,
+                        excludesTheActorsOwnRing))
+                    .ToArray();
             }
 
             // Milestone 8.69a. Brynn's Familiar Ground, bullet 2: "Target a hero in range who is
@@ -374,6 +415,83 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return admitted
                 .Where(target => AdmitsTheSubject(target, bullet.SubjectNarrowing, instances))
                 .ToArray();
+        }
+
+        /// <summary>
+        /// Milestone 8.71c. Rulebook p.17's Friendly, asked of the candidate's own ring: is one of the
+        /// six spaces around this unit held by a hero on the ACTOR's team who is not the actor?
+        ///
+        /// <para><b>p.17 is read literally and that is HA-Q5.</b> "Friendly: another unit on your team.
+        /// It never includes you." So Hanu is excluded from the neighbourhood explicitly - a candidate
+        /// standing beside him alone satisfies the bullet printing "adjacent to you" and not this one -
+        /// and only a hero counts, because "your friendly hero" is the noun the four Reds print beside
+        /// a teammate's minion doing nothing for the clause.</para>
+        ///
+        /// <para><b>It composes on the one owner rather than walking the board again.</b>
+        /// <see cref="RosterPresenceQuery.FindUnitsWithin"/> is where "the units within a disk standing
+        /// in this relation to the source" already lives - Sabina's "adjacent to your friendly minion"
+        /// asks it with <see cref="RosterUnitKind.Minion"/>, Brynn's radius predicates ask it with
+        /// <see cref="SourceTeamRelation.OpposingSource"/> - so this clause's team question and every
+        /// other card's cannot come to disagree, which is the discipline the discard members keep with
+        /// <c>HeroDiscardPileQuery</c>. p.9 measures a disk inclusively, so a radius of one contains
+        /// the candidate's own space; the candidate is excluded as well as the actor, which costs
+        /// nothing today (an Attack's candidates are enemies, never the actor's teammates) and keeps
+        /// the sentence true of a board where a counts-as overlay made one of them a hero.</para>
+        ///
+        /// <para><b>The exclusion half is measured from the ACTOR's space</b>, which is who "you" is on
+        /// Trusted Sidekick, and it is p.19's innermost ring removed from under the printed Range -
+        /// never a second distance of its own. An actor standing nowhere satisfies nothing here,
+        /// because a reach measured from no space is not a shorter reach.</para>
+        /// </summary>
+        private static bool StandsBesideAFriendlyHeroOfTheActor(
+            AttackTarget target,
+            HeroId attackerId,
+            MatchParticipants participants,
+            IBoardDisplacementAuthority board,
+            RuleModificationSet modifications,
+            bool excludesTheActorsOwnRing)
+        {
+            var candidate = AsBoardObject(target);
+            if (!candidate.IsDefined ||
+                !attackerId.IsDefined ||
+                !board.TryGetObjectCoordinate(candidate, out var candidateAt) ||
+                !board.TryGetObjectCoordinate(
+                    BoardObjectReference.ForHero(attackerId), out var attackerAt))
+            {
+                return false;
+            }
+
+            if (excludesTheActorsOwnRing &&
+                GuardsDigital.Core.Board.HexDistanceQuery.Calculate(attackerAt, candidateAt) <= 1)
+            {
+                return false;
+            }
+
+            return RosterPresenceQuery.FindUnitsWithin(
+                candidateAt,
+                1,
+                RosterUnitKind.Hero,
+                SourceTeamRelation.AlliedWithSource,
+                attackerId,
+                board,
+                participants,
+                modifications,
+                excludedFirst: BoardObjectReference.ForHero(attackerId),
+                excludedSecond: candidate).Count > 0;
+        }
+
+        /// <summary>The board identity of a bound Attack candidate, of either of p.19's unit kinds.</summary>
+        private static BoardObjectReference AsBoardObject(AttackTarget target)
+        {
+            switch (target.Kind)
+            {
+                case AttackTargetKind.Hero:
+                    return BoardObjectReference.ForHero(target.HeroId);
+                case AttackTargetKind.Minion:
+                    return BoardObjectReference.ForMinion(target.MinionId);
+                default:
+                    return default;
+            }
         }
 
         private static bool AdmitsTheSubject(

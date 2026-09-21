@@ -147,7 +147,8 @@ namespace GuardsDigital.Core.Cards.Verified
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(ComposedFaces().ToArray()));
         private static IEnumerable<CardDefinition> ComposedFaces() =>
             CoMoveDefinitions()
-                .Concat(HurryUpDefinitions());
+                .Concat(HurryUpDefinitions())
+                .Concat(RedDefinitions());
         public static IReadOnlyList<CardDefinition> DealtDefinitions { get; } = Array.Empty<CardDefinition>();
         // ===== END MERGE BLOCK =====
     }

@@ -525,9 +525,26 @@ namespace GuardsDigital.Tests.EditMode
                 !ClearLineBoard.EveryPieceIncludingTheActor().Any(other =>
                     !other.Equals(at) && HexDistanceQuery.Calculate(other, at) == 1);
 
+            // p.13's unit narrowing, re-derived rather than asked of the query. Milestone 8.71c added
+            // the mirror of `HeroesOnly` for Hanu's Outnumber and Pile On - "Target a MINION in range"
+            // - and this oracle is the reason that member could not be added silently: a noun the
+            // pages know and this derivation did not would have read as the page's own default.
+            bool AdmittedByTheNoun(bool isHero)
+            {
+                switch (policy.TargetableUnits)
+                {
+                    case AttackTargetableUnits.HeroesOnly:
+                        return isHero;
+                    case AttackTargetableUnits.MinionsOnly:
+                        return !isHero;
+                    default:
+                        return true;
+                }
+            }
+
             return pieces
                 .Where(piece =>
-                    (policy.TargetableUnits != AttackTargetableUnits.HeroesOnly || piece.IsHero) &&
+                    AdmittedByTheNoun(piece.IsHero) &&
                     WithinTheReach(piece.At) &&
                     OnAnAdmittedFile(piece.At) &&
                     IsolatedOrBesideTheActor(piece.At))

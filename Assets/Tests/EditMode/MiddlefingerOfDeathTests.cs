@@ -219,9 +219,12 @@ namespace GuardsDigital.Tests.EditMode
                     (int)AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard,
                     (int)AttackSequenceSubjectNarrowing.HasAnEmptyDiscard,
                     (int)AttackSequenceSubjectNarrowing.HoldsTheActorsMarker,
-                    (int)AttackSequenceSubjectNarrowing.IsAdjacentToThreeOrMoreObstacles
+                    (int)AttackSequenceSubjectNarrowing.IsAdjacentToThreeOrMoreObstacles,
+                    (int)AttackSequenceSubjectNarrowing.AdjacentToAFriendlyHeroOfTheActor,
+                    (int)AttackSequenceSubjectNarrowing
+                        .AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor
                 }.OrderBy(value => value).ToArray()),
-                "FIVE members as of milestone 8.69a. The second printed clause - " +
+                "SEVEN members as of milestone 8.71c. The second printed clause - " +
                 "Whisper's Swift Justice prints the COMPLEMENT, \"a hero in range with an EMPTY " +
                 "discard\" - arrived as exactly the member and nothing more this comment predicted, " +
                 "which is the whole reason this is an enum rather than a capability reference: the " +
@@ -231,7 +234,14 @@ namespace GuardsDigital.Tests.EditMode
                 "earlier decodes as a different predicate. The FIFTH is Brynn the Seeker's Familiar " +
                 "Ground, \"a hero in range who is adjacent to 3 or more obstacles\" (milestone " +
                 "8.69a), and it is the first member about the BOARD rather than about something the " +
-                "candidate owns - which cost no schema move either. Because `EffectIntegerDomain" +
+                "candidate owns - which cost no schema move either. The SIXTH and SEVENTH are Hanu " +
+                "the Trickster's four graded Reds (milestone 8.71c), \"adjacent to your friendly " +
+                "hero\" with and without \"and not adjacent to you\" - the first members that say " +
+                "nothing about which KIND of unit they are about, because the noun is carried by the " +
+                "bullet's own `AttackTargetableUnits` and one reading therefore serves \"a hero in " +
+                "range\" and \"a minion in range\" alike. Two members at once rather than one with a " +
+                "flag, on the rule `HasAnEmptyDiscard` set: a closed enum names each printed reading " +
+                "whole. Neither cost a schema move. Because `EffectIntegerDomain" +
                 ".All<T>()` " +
                 "reads the enum TYPE, the parameter's own domain admitted each new member " +
                 "automatically; this assertion is the one place that has to be told by hand, and " +

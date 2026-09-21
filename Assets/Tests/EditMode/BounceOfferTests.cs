@@ -137,10 +137,16 @@ namespace GuardsDigital.Tests.EditMode
                     .Select(offer => offer.Owner)
                     .Distinct()
                     .OrderBy(value => value, StringComparer.Ordinal),
-                Is.EqualTo(new[] { "silverarrow-wild-hunt-effect", "swift-bounce" }),
-                "Only the two faces printing an exact distance whose floor is above one declare a " +
-                "floor. A third name here is a face whose printed text somebody read as exact: check " +
-                "it against its Docs/AI/Rules shard before pinning it.");
+                Is.EqualTo(new[]
+                {
+                    "hanu-fight-and-flight", "silverarrow-wild-hunt-effect", "swift-bounce"
+                }),
+                "Only the faces printing an exact distance whose floor is above one declare a " +
+                "floor. A further name here is a face whose printed text somebody read as exact: " +
+                "check it against its Docs/AI/Rules shard before pinning it. Hanu the Trickster's " +
+                "Gold basic joined them at milestone 8.71c - \"If able, move 3 spaces in a straight " +
+                "line\" is the same count Bounce prints at a different number, and it prints no " +
+                "\"ignoring obstacles\", so it binds the floor and not the crossing.");
         }
 
         // -------------------------------------------------------------------------------------------

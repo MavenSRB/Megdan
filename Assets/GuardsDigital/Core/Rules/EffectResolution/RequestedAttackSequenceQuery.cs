@@ -17,13 +17,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
     /// definition before they are believed. That transport is what makes the plan survive the pause
     /// the modal itself opens, a snapshot restore taken while it stands, and a replay.</para>
     ///
-    /// <para><b>The order is the definition's printed order, not the actor's.</b>
-    /// <see cref="EffectNodeKind.Choose"/> pushes its selected options so they execute in the
-    /// definition's own order, so that is the order the outcomes arrive in and the order the sequences
-    /// run in. Rulebook p.10 says "unless the card text says otherwise you can choose the bullet
-    /// points in any order", so the actor's freedom to order them is a rule this build does not yet
-    /// give any modal - a property of the shared Choose node rather than of this contract, and
-    /// recorded as such rather than papered over here.</para>
+    /// <para><b>The order is the ACTOR's, and this remark is milestone 8.71c's correction of its own
+    /// earlier text.</b> Milestone 8.35z27 wrote here that "the order is the definition's printed
+    /// order, not the actor's", and that the actor's freedom to order the bullets was "a rule this
+    /// build does not yet give any modal". Milestone 8.35z29 then gave it to every modal, for Misa's
+    /// Power Overwhelming and for p.10's own general sentence - "Unless the card text says otherwise
+    /// you can choose the bullet points in any order" -
+    /// by pushing a <see cref="EffectNodeKind.Choose"/>'s selected options in reverse of
+    /// <c>PendingEffectChoice.SelectedCandidates</c>, which is appended to as each Select command
+    /// arrives and therefore already IS the chooser's order. The outcomes arrive in the order the
+    /// options execute, so the plan this query builds is the order the actor named. The paragraph
+    /// above was never re-read after that change; HA-Q6 measured it against Hanu's "Choose one, or
+    /// both, in any order", found the engine already correct and the comment wrong, and
+    /// <c>HanuRedsTests</c> holds the reading with a test rather than with a sentence.</para>
     /// </summary>
     public static class RequestedAttackSequenceQuery
     {

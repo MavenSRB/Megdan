@@ -230,11 +230,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 StandsAtAnAdmittedDistance(candidate) &&
                 IsIsolatedOrAdjacentToTheAttacker(candidate);
 
-            var heroes = FindLegalEnemyHeroes(
-                attackerId, attackRange, rangeTotal, participants, board, modifications)
-                .Where(heroId => IsAdmitted(
-                    occupancies.Single(value => value.HeroId.Equals(heroId)).Coordinate))
-                .Select(AttackTarget.Hero);
+            // Milestone 8.71c. The mirror narrowing: Hanu's Outnumber and Pile On print "Target a
+            // minion in range", so an enemy HERO in exactly that position is not a legal target of the
+            // bullet. The hero half is skipped rather than derived and then discarded, because
+            // FindLegalEnemyHeroes refuses an attacker standing nowhere by returning nothing and this
+            // arm must answer the same way for a reason of its own - see the guard below it.
+            var minionsOnly = policy.TargetableUnits == AttackTargetableUnits.MinionsOnly;
+            var heroes = minionsOnly
+                ? Enumerable.Empty<AttackTarget>()
+                : FindLegalEnemyHeroes(
+                        attackerId, attackRange, rangeTotal, participants, board, modifications)
+                    .Where(heroId => IsAdmitted(
+                        occupancies.Single(value => value.HeroId.Equals(heroId)).Coordinate))
+                    .Select(AttackTarget.Hero);
 
             // p.13's narrowing, and the only place it is applied: Crackling Dagger prints "Target a
             // hero adjacent to you", so a minion standing beside her is not a legal target of it even
@@ -247,6 +255,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             }
             if (!attackerOccupancy.HeroId.IsDefined)
             {
+                // An attacker who is not on the board reaches nothing, which for every policy above is
+                // what the empty hero set already says. A minions-only policy has no hero set to say it
+                // with, so it is said here: the minion walk below measures from `attackerOccupancy`,
+                // and a default occupancy would measure every distance from (0,0).
                 return Array.AsReadOnly(heroes.ToArray());
             }
 
