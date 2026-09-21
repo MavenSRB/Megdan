@@ -235,6 +235,16 @@ Completed 2026-09-21 (`1687b595`, squash-merged from `61d77b70` on `8.70-empty-m
 
 Historical evidence: [8.70 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-870-greyed-modal-bullet-completion-evidence).
 
+### [~] 8.72 Draw a delegated action's controls on the deciding seat
+
+Authorized 2026-09-21 by the user as a correction to the twenty-first hero, on HA-Q15i in Hanu's shard: "Q15i means that currently that card wont work". The Ultimate Trick (8.71b) authorizes Hanu's seat to choose and perform the next action of a hero he targeted with Hurry up!, and refuses that hero's own seat; `RoundActionPresenter` and `AwaitedInputQuery` already name Hanu as the decider. But the printed-action controls are drawn as an overlay on the resolving card in the VIEWED hero's own tray (`DirectorHandsUnityView`), and the delegated hero's card is not in Hanu's hand - so on a seat-scoped HUD Hanu's player has nothing to press while the targeted player sees a dark tray. The authority is right and the screen is wrong; in real play the Ultimate cannot be used.
+
+Outcome: while a delegated action stands, the deciding seat's HUD draws the delegated hero's revealed resolving card with every control the host authorizes that seat (the card's primary and secondary, Hold, and the Fast Travel and Clear replacements where offered, with 8.35l's greyed-and-named unavailability), the targeted seat's HUD draws that card dark with no control and its END TURN withheld, the narration names both heroes ("Hanu chooses for X"), and every prompt inside the action (targets, destinations, card-text choices) opens on the deciding seat exactly as 8.71b's ownership already routes it; when the action completes the card leaves the deciding seat's tray and the targeted seat's controls return.
+
+Acceptance: the deciding seat's drawn controls equal its `AuthorizedCommands` for the delegated actor and the targeted seat draws none (measured on a seat-scoped scene, both seats, at both desktop viewports); a delegated ENEMY action and a delegated FRIENDLY action driven from Hanu's seat through the drawn control on a seat-scoped HUD, including a Hold and a primary with a board prompt; the Director sandbox unchanged for undelegated turns (every earlier hero's journey byte-identical); 8.71i's delegated-action journeys re-stated to press the deciding seat's control; `HanuPlayerPathGateTests` re-derived (a new shape only if the matrix names one); snapshot, replay and both seats' Undo across the drawn state; no wire or schema move (the delegation is derived from the frame every seat already receives - 8.71b); the harness, the complete Edit Mode suite and the complete Play Mode suite green with zero skips. T3 (a Presentation change over a seat-scoped scene).
+
+Non-goals: widening `nameableCardIds` for the deciding seat (no dealt face makes an actor choose among their own hidden hand inside an action - 8.71b); bot policy for delegated actions; a package.
+
 ### [x] 8.68 Package the playtest build with the Silverarrow corrections
 
 Authorized 2026-09-20 by the user ("Cut a new build with the silverarrow fixes"), the same evening 8.66 and 8.67 landed after the 8.65 package was cut.
