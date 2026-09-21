@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71a Hanu Hurry up! completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71a | Hurry up! as deferred content: `synthetic-range-hero-target@1` (AnyTeam, Skill, new optional Boolean `holdsAnUnresolvedCard` on the Range hero arm) into the deferred new handler type `hanu-hurry-up-initiative@1`, which writes `PrintedInitiativeOverride` on the card instance (read by `PrintedValueQuery.CalculatePrintedInitiative` as the printed icon, items and hero modifiers composing on top; cleared in `CardInstance.ApplyState` on any real state change - HA-Q13a) and publishes the hook 8.71b rides (`targetedHero`, `rewrittenCard`); 8.42e's fingerprint gains the rewritten Initiative (a shipped gap). Schema v43 -> v44 (+4 bytes on all sixteen captures, reject not migrate, sixteen fixtures + nine digests + ten bare assertions moved), wire /19 -> /20 (`NetworkCardRow.RewrittenInitiative`/`Source`, five tripwires swept). `HanuHurryUpTests` 29; harness 4166/4166; focused Edit Mode 247/247. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871a-support-hurry-up). | `f8ae4ed5` |
+
 ## Milestone 8.71e Hanu co-moves completion evidence
 
 | Milestone | Outcome and definition | Commit |
