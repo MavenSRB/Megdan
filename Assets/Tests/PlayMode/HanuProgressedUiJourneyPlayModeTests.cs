@@ -837,16 +837,36 @@ namespace GuardsDigital.Tests.PlayMode
                 "change milestone 8.71h had to make. " + Remaining(runtime));
             SeatsAgree(runtime, "the delegated enemy turn");
 
-            // HA-Q15i, MEASURED BY THIS JOURNEY AND NOT FIXED HERE. The printed-action controls are
-            // drawn as an overlay on the RESOLVING CARD inside the viewed hero's own tray
-            // (`DirectorHandsUnityView`), and a delegated hero's card is not in Hanu's hand - so the
-            // seat the host authorizes is shown no control of its own, and the press has to be made
-            // where the HUD draws it. Milestone 8.71h moved the two VIEWER predicates
-            // (`RoundActionPresenter.IsViewerTheActingHero` and `AwaitedInputQuery`) and did not move
-            // the tray, which is a Presentation gap a later milestone owes rather than a rule this
-            // gate can settle. Every authorization assertion around this press is the real one: the
-            // command is refused to the targeted seat and offered to his.
+            // HA-Q15i, MEASURED BY THIS JOURNEY AT 8.71i AND FIXED AT 8.72. The printed-action
+            // controls are drawn as an overlay on the RESOLVING CARD inside the viewed hero's own
+            // tray (`DirectorHandsUnityView`), and a delegated hero's card is not in Hanu's hand -
+            // so until 8.72 the seat the host authorizes was shown no control of its own and this
+            // journey had to press where the HUD happened to draw it, on the TARGETED hero's tray.
+            // It now presses where the host would accept it: the delegated hero's revealed card is
+            // drawn in a "deciding for X" slot beside HIS hand, and the targeted tray draws nothing
+            // at all. Both halves are asserted below and on their own seats by
+            // `TheDelegatedActionIsDrawnAndPressedOnHisOwnSeatAtBothDesktopViewports`.
             yield return PointTrayAt(root, enemy);
+            Assert.That(
+                UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+                    element.name == "gd-deciding-for-slot" && UiPlayer.IsShown(element)),
+                Is.False,
+                "Pointed at the targeted hero, nothing claims to be deciding for anybody. " +
+                Remaining(runtime));
+            Assert.That(
+                UiPlayer.Descendants(root.Hud.RootElement).Any(element =>
+                    element.name == "gd-printed-action-region" && UiPlayer.IsShown(element)),
+                Is.False,
+                "and the targeted hero's own tray draws no control - milestone 8.72's dark half, " +
+                "read on the tray that used to carry them. " + Remaining(runtime));
+
+            yield return PointTrayAt(root, his);
+            Assert.That(
+                UiPlayer.Descendants(root.Hud.RootElement).Count(element =>
+                    element.name == "gd-deciding-for-slot" && UiPlayer.IsShown(element)),
+                Is.EqualTo(1),
+                "One slot, on the seat the host is waiting on, naming whose card it holds. " +
+                Remaining(runtime));
             yield return StartActionThroughControl(root, ActionKind.Attack);
             var target = runtime.PendingAttackTargetChoice;
             Assert.That(target, Is.Not.Null,
@@ -874,7 +894,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "rewrite, which the rewind did not touch. " + Remaining(runtime));
             Assert.That(StartCommandsOf(runtime, enemy), Is.Empty, Remaining(runtime));
 
-            yield return PointTrayAt(root, enemy);
+            // Milestone 8.72: the slot comes back with the delegation, because it IS the delegation
+            // drawn - the rewind put the offer back and the derivation follows it.
+            yield return PointTrayAt(root, his);
             yield return StartActionThroughControl(root, ActionKind.Attack);
             Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null,
                 "Replaying the retained prefix reproduces the same question. " + Remaining(runtime));
@@ -1003,7 +1025,9 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(lastRuntime));
             Assert.That(StartCommandsOf(lastRuntime, lastHanu), Is.Not.Empty, Remaining(lastRuntime));
 
-            yield return PointTrayAt(lastRoot, lastEnemy);
+            // Milestone 8.72: started from HIS tray's "deciding for X" slot, which is where the host
+            // accepts it.
+            yield return PointTrayAt(lastRoot, lastHanu);
             yield return StartActionThroughControl(lastRoot, ActionKind.Attack);
             Assert.That(
                 lastRuntime.PendingAttackTargetChoice.LegalTargetHeroIds, Contains.Item(lastHanu),
@@ -1047,6 +1071,500 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
             Healthy(lastRuntime);
+        }
+
+        /// <summary>
+        /// Milestone 8.72, the user's correction: "Q15i means that currently that card wont work."
+        ///
+        /// <para><b>Two seats, two HUDs, one frame.</b> The journey above drives the delegation on the
+        /// Director's sandbox, which composes ONE seatless view that answers for everybody - so it can
+        /// prove the authority and the narration but not what two real players are looking at. This one
+        /// composes a live HUD PER SEAT off each seat's own published projection, at both desktop
+        /// viewports, and reads the answer off the drawn elements: the deciding player's tray carries
+        /// the delegated hero's card in a slot that names whose it is, with exactly the controls the
+        /// host authorizes that seat, and the targeted player's tray carries the same card with no
+        /// control on it and no way to end the turn. The press is then made on that drawn control and
+        /// travels through Hanu's own seat client, which is the whole of what HA-Q15i said could not be
+        /// done.</para>
+        ///
+        /// <para>An ENEMY's action and a FRIENDLY hero's action, because HA-Q3 says "friend or enemy";
+        /// the friendly half is taken as p.12's Hold, which is the other shape of offer a delegation
+        /// carries. The drawn state is put through the seat's own Undo and a snapshot restore on the
+        /// way, because a slot that only exists on the way forward is a slot that disappears the first
+        /// time a real table steps back.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator TheDelegatedActionIsDrawnAndPressedOnHisOwnSeatAtBothDesktopViewports()
+        {
+            var restoreWidth = (uint)Screen.width;
+            var restoreHeight = (uint)Screen.height;
+            try
+            {
+                // -----------------------------------------------------------------------------
+                // (1) A delegated ENEMY action, drawn on both seats and pressed on his
+                // -----------------------------------------------------------------------------
+                yield return StageHanu(
+                    SceneCardContent.VerifiedTierThreeEngagedStagedHanu,
+                    hand: new[] { HanuCardContent.HurryUp, HanuCardContent.MonkeyBusiness },
+                    enemyHand: new[] { WaspCardContent.Electrocute, WaspCardContent.KineticRepulse },
+                    enemySpace: AdjacentEnemy);
+                var root = Root();
+                var runtime = root.Runtime;
+                var his = Hanu(runtime);
+                var enemy = Enemies(runtime)[0];
+
+                yield return BeginHanu(
+                    root, HanuCardContent.HurryUp, ActionKind.Skill, WaspCardContent.Electrocute);
+                yield return Pick(
+                    root,
+                    runtime.PendingEffectChoice.Candidates.Single(candidate =>
+                        candidate.Value.HeroId.Equals(enemy)));
+                yield return EndHisTurn(root, his);
+                for (var frame = 0; frame < 8 && !runtime.SelectedActor.IsDefined; frame++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(enemy),
+                    "Arrange: the hurried enemy acts next, at the eleven. " + Remaining(runtime));
+
+                // The seat's own bounded rewind, taken while the delegation stands, and a snapshot
+                // captured across it - the drawn state has to survive both.
+                var captured = runtime.CaptureSnapshot();
+                Assert.That(captured, Is.Not.Null.And.Not.Empty);
+
+                foreach (var viewport in new[]
+                         {
+                             (Width: 2560u, Height: 1440u, Label: "reference"),
+                             (Width: 2048u, Height: 1152u, Label: "validated desktop")
+                         })
+                {
+                    UiPlayer.SetPlayerViewport(
+                        viewport.Width, viewport.Height, "8.72 delegated enemy " + viewport.Label);
+                    yield return null;
+                    yield return null;
+
+                    var deciding = SeatHud.Compose(runtime, his, "deciding-" + viewport.Label);
+                    var targeted = SeatHud.Compose(runtime, enemy, "targeted-" + viewport.Label);
+                    yield return null;
+                    yield return null;
+                    deciding.Refresh();
+                    targeted.Refresh();
+                    yield return null;
+
+                    AssertTheDecidingSeatDrawsTheDelegatedCard(
+                        deciding, runtime, enemy, viewport.Label);
+                    AssertTheTargetedSeatDrawsNothing(targeted, runtime, viewport.Label);
+
+                    deciding.Dispose();
+                    targeted.Dispose();
+                    yield return null;
+                }
+
+                // THE PRESS, at the validated desktop viewport, on the control his own HUD drew.
+                UiPlayer.SetPlayerViewport(2048u, 1152u, "8.72 delegated enemy press");
+                yield return null;
+                yield return null;
+                var press = SeatHud.Compose(runtime, his, "press");
+                yield return null;
+                yield return null;
+                press.Refresh();
+                yield return null;
+                var attack = press.Round.Model.PrintedActionRegions.Single(region =>
+                    region.ActionKind == ActionKind.Attack && region.Invocation != null);
+                UiPlayer.Click(UiPlayer.Button(press.Hud, attack.ActionLabel));
+                yield return null;
+                yield return null;
+                Assert.That(runtime.Host.Projection.PendingAttackTargetChoice, Is.Not.Null,
+                    "HA-Q15i CLOSED: a press on the control HIS HUD drew starts the delegated " +
+                    "hero's own printed Attack, through his own seat client. " + Remaining(runtime));
+                Assert.That(
+                    runtime.Host.ProjectionForSeat(SeatOf(runtime, his)).DecisionContract,
+                    Is.Not.Null,
+                    "and the question it opened is his to answer. " + Remaining(runtime));
+                Assert.That(
+                    runtime.Host.ProjectionForSeat(SeatOf(runtime, enemy)).DecisionContract,
+                    Is.Null,
+                    "while the hero whose Attack it is is handed nothing. " + Remaining(runtime));
+                press.Dispose();
+                yield return null;
+
+                // BOTH SEATS' UNDO, ACROSS THE DRAWN STATE. Milestone 8.71b put the watermark on the
+                // DECIDING seat, so the rewind belongs to the player who made the choice and not to
+                // the piece that made it - and the square is drawn on exactly that seat.
+                var undoDeciding = SeatHud.Compose(runtime, his, "undo-deciding");
+                var undoTargeted = SeatHud.Compose(runtime, enemy, "undo-targeted");
+                yield return null;
+                yield return null;
+                undoDeciding.Refresh();
+                undoTargeted.Refresh();
+                yield return null;
+                Assert.That(undoDeciding.Round.Model.SeatUndoAvailable, Is.True,
+                    "His seat may step back out of the choice his own press opened. " +
+                    Remaining(runtime));
+                Assert.That(
+                    runtime.Host.ProjectionForSeat(SeatOf(runtime, enemy)).AuthorizedCommands,
+                    Is.Empty,
+                    "while the targeted player may submit nothing at all inside the delegated " +
+                    "action - so there is no press of theirs to rewind, and their HUD offers " +
+                    "none. " + Remaining(runtime));
+                Assert.That(Regions(undoTargeted), Is.Empty, Remaining(runtime));
+                var square = UiPlayer.Descendants(undoDeciding.Hud.RootElement).OfType<Button>()
+                    .Where(element => element.name == "gd-seat-undo-control" &&
+                        UiPlayer.IsShown(element))
+                    .ToArray();
+                Assert.That(square, Has.Length.EqualTo(1),
+                    "and the square is drawn on his HUD. " + Remaining(runtime));
+                var accepted = runtime.Host.Projection.AcceptedCommands.Count;
+                UiPlayer.Click(square[0]);
+                yield return null;
+                yield return null;
+                Assert.That(runtime.Host.Projection.AcceptedCommands.Count, Is.LessThan(accepted),
+                    "The press reaches the host's rewind. " + Remaining(runtime));
+                undoDeciding.Dispose();
+                undoTargeted.Dispose();
+                yield return null;
+
+                var rewound = SeatHud.Compose(runtime, his, "rewound");
+                var rewoundTarget = SeatHud.Compose(runtime, enemy, "rewound-target");
+                yield return null;
+                yield return null;
+                rewound.Refresh();
+                rewoundTarget.Refresh();
+                yield return null;
+                AssertTheDecidingSeatDrawsTheDelegatedCard(rewound, runtime, enemy, "after the undo");
+                AssertTheTargetedSeatDrawsNothing(rewoundTarget, runtime, "after the undo");
+                rewound.Dispose();
+                rewoundTarget.Dispose();
+                yield return null;
+
+                // The drawn state across a snapshot restore: the slot comes back because the
+                // delegation does, both derived from the same rewrite.
+                Assert.That(runtime.RestoreSnapshot(captured), Is.True, Remaining(runtime));
+                yield return null;
+                yield return null;
+                var restored = SeatHud.Compose(runtime, his, "restored");
+                var restoredTarget = SeatHud.Compose(runtime, enemy, "restored-target");
+                yield return null;
+                yield return null;
+                restored.Refresh();
+                restoredTarget.Refresh();
+                yield return null;
+                AssertTheDecidingSeatDrawsTheDelegatedCard(restored, runtime, enemy, "restored");
+                AssertTheTargetedSeatDrawsNothing(restoredTarget, runtime, "restored");
+                restored.Dispose();
+                restoredTarget.Dispose();
+                yield return null;
+                SeatsAgree(runtime, "the restored delegated action");
+
+                // -----------------------------------------------------------------------------
+                // (2) A delegated FRIENDLY action, taken as p.12's Hold from his own seat's HUD
+                // -----------------------------------------------------------------------------
+                yield return StageHanu(
+                    SceneCardContent.VerifiedStagedHanuWithAllyAtTierThree,
+                    hand: new[] { HanuCardContent.HurryUp, HanuCardContent.MonkeyTrick },
+                    enemyHand: new[] { WaspCardContent.Shock, WaspCardContent.Electrocute },
+                    allyHand: new[]
+                    {
+                        ArienCardContent.DangerousCurrent, ArienCardContent.NobleBlade
+                    });
+                var allyRoot = Root();
+                var allyRuntime = allyRoot.Runtime;
+                var allyHanu = Hanu(allyRuntime);
+                var ally = Ally(allyRuntime);
+
+                yield return BeginHanu(
+                    allyRoot, HanuCardContent.HurryUp, ActionKind.Skill,
+                    WaspCardContent.Shock, ArienCardContent.DangerousCurrent);
+                yield return Pick(
+                    allyRoot,
+                    allyRuntime.PendingEffectChoice.Candidates.Single(candidate =>
+                        candidate.Value.HeroId.Equals(ally)));
+                yield return EndHisTurn(allyRoot, allyHanu);
+                for (var frame = 0; frame < 8 && !allyRuntime.SelectedActor.IsDefined; frame++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(allyRuntime.SelectedActor.ActorId, Is.EqualTo(ally),
+                    "Arrange: HA-Q3 - friend or enemy. " + Remaining(allyRuntime));
+
+                foreach (var viewport in new[]
+                         {
+                             (Width: 2560u, Height: 1440u, Label: "reference"),
+                             (Width: 2048u, Height: 1152u, Label: "validated desktop")
+                         })
+                {
+                    UiPlayer.SetPlayerViewport(
+                        viewport.Width, viewport.Height, "8.72 delegated friend " + viewport.Label);
+                    yield return null;
+                    yield return null;
+
+                    var deciding = SeatHud.Compose(allyRuntime, allyHanu, "friend-" + viewport.Label);
+                    var targeted = SeatHud.Compose(allyRuntime, ally, "friend-target-" + viewport.Label);
+                    yield return null;
+                    yield return null;
+                    deciding.Refresh();
+                    targeted.Refresh();
+                    yield return null;
+
+                    AssertTheDecidingSeatDrawsTheDelegatedCard(
+                        deciding, allyRuntime, ally, viewport.Label);
+                    AssertTheTargetedSeatDrawsNothing(targeted, allyRuntime, viewport.Label);
+
+                    var hold = deciding.Round.Model.EndTurnInvocation;
+                    Assert.That(hold, Is.Not.Null, Remaining(allyRuntime));
+                    Assert.That(hold.Command.Kind, Is.EqualTo(DirectorCommandKind.PerformHold),
+                        "p.12's Hold is one of the offers that hero's own seat would have had, " +
+                        "drawn on his. " + Remaining(allyRuntime));
+
+                    if (viewport.Width == 2048u)
+                    {
+                        UiPlayer.Click(UiPlayer.Button(deciding.Hud, hold.Label));
+                        yield return null;
+                        yield return null;
+                        Assert.That(
+                            RewriteStandsOn(
+                                allyRuntime, ally, ArienCardContent.DangerousCurrent),
+                            Is.False,
+                            "HA-Q4: the Hold he pressed on his own HUD resolved the delegated " +
+                            "hero's card, so the delegation is spent. " + Remaining(allyRuntime));
+                    }
+
+                    deciding.Dispose();
+                    targeted.Dispose();
+                    yield return null;
+                }
+
+                // -----------------------------------------------------------------------------
+                // (3) The card leaves his tray, and the targeted seat is a seat again
+                // -----------------------------------------------------------------------------
+                var afterwards = SeatHud.Compose(allyRuntime, allyHanu, "afterwards");
+                var released = SeatHud.Compose(allyRuntime, ally, "released");
+                yield return null;
+                yield return null;
+                afterwards.Refresh();
+                released.Refresh();
+                yield return null;
+                Assert.That(afterwards.Hands.Model.DecidedForHand, Is.Null,
+                    "The borrowed card leaves his tray the moment the action is over. " +
+                    Remaining(allyRuntime));
+                Assert.That(Slots(afterwards), Is.Empty,
+                    "and so does the slot that named it. " + Remaining(allyRuntime));
+                Assert.That(released.Hands.Model.DecidedForHand, Is.Null,
+                    "Nobody is deciding for the targeted player any more. " +
+                    Remaining(allyRuntime));
+                Assert.That(Slots(released), Is.Empty,
+                    "and no slot is left behind on either side of the table. " +
+                    Remaining(allyRuntime));
+                afterwards.Dispose();
+                released.Dispose();
+                yield return null;
+                SeatsAgree(allyRuntime, "the delegation spent");
+                Healthy(allyRuntime);
+            }
+            finally
+            {
+                UiPlayer.SetPlayerViewport(
+                    restoreWidth, restoreHeight, "8.72 restore prior viewport");
+            }
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.72: reading one seat's own HUD
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>Every "deciding for X" slot actually drawn on this seat's HUD.</summary>
+        private static VisualElement[] Slots(SeatHud seat) =>
+            UiPlayer.Descendants(seat.Hud.RootElement)
+                .Where(element => element.name == "gd-deciding-for-slot" && UiPlayer.IsShown(element))
+                .ToArray();
+
+        /// <summary>Every printed-action control actually drawn on this seat's HUD.</summary>
+        private static Button[] Regions(SeatHud seat) =>
+            UiPlayer.Descendants(seat.Hud.RootElement).OfType<Button>()
+                .Where(element => element.name == "gd-printed-action-region" &&
+                    UiPlayer.IsShown(element))
+                .ToArray();
+
+        /// <summary>
+        /// The deciding seat: one slot, naming the delegated hero, carrying that hero's revealed card
+        /// and exactly the start commands the host authorizes this seat.
+        /// </summary>
+        private static void AssertTheDecidingSeatDrawsTheDelegatedCard(
+            SeatHud seat,
+            ConfiguredMatchSceneRuntime runtime,
+            HeroId delegatedHeroId,
+            string viewport)
+        {
+            var where = " at the " + viewport + " viewport. " + Remaining(runtime);
+            var hero = runtime.Setup.Heroes
+                .Single(candidate => candidate.HeroId.Equals(delegatedHeroId));
+            var delegatedCardId = runtime.Host.Projection.SelectedActor.CardInstanceId;
+
+            Assert.That(seat.Hands.Model.DecidedForHand, Is.Not.Null,
+                "The deciding seat is given the delegated hero's card to press" + where);
+            Assert.That(seat.Hands.Model.DecidedForHand.HeroId, Is.EqualTo(delegatedHeroId));
+            Assert.That(
+                seat.Hands.Model.DecidedForHand.TrayCards.Select(card => card.CardInstanceId),
+                Is.EqualTo(new[] { delegatedCardId }).AsCollection,
+                "and exactly that hero's one revealed resolving card" + where);
+
+            var slots = Slots(seat);
+            Assert.That(slots, Has.Length.EqualTo(1),
+                "One slot is drawn, and it is on screen" + where);
+            var ribbon = slots[0].Q<Label>("gd-deciding-for-label");
+            Assert.That(ribbon, Is.Not.Null, "The slot names whose card it is" + where);
+            Assert.That(ribbon.text,
+                Is.EqualTo(DelegatedActionPresentation.DecidingForLabel(hero.DisplayName)),
+                "so the card can never read as one of his own" + where);
+
+            // The slot stands BESIDE the hand, past the compact hand's own stated footprint, so the
+            // HUD has to block the board pointer across the box it was actually laid out in - or the
+            // click that starts the delegated action also reaches the hex beneath it.
+            var box = slots[0].worldBound;
+            Assert.That(box.width, Is.GreaterThan(0f),
+                "The slot is laid out before its footprint can be asked about" + where);
+            Assert.That(
+                seat.Hud.BlocksPointerAt(MatchHudPanelScaling.PanelPointToScreen(
+                    box.center, Screen.width, Screen.height)),
+                Is.True,
+                "and the HUD consumes the pointer over it, so no press is counted twice" + where);
+
+            var authorized = runtime.Host.ProjectionForSeat(seat.SeatId).AuthorizedCommands
+                .Where(command => command.Kind == DirectorCommandKind.StartAction)
+                .Select(command =>
+                    command.CardInstanceId.Value + "/" + command.ActionDefinitionId.Value)
+                .ToArray();
+            var drawn = Regions(seat)
+                .Select(button => (PrintedActionRegionViewModel)button.userData)
+                .Where(region => region.Invocation != null)
+                .Select(region => region.Invocation.Command.CardInstanceId.Value + "/" +
+                    region.Invocation.Command.ActionDefinitionId.Value)
+                .ToArray();
+            Assert.That(drawn, Is.EquivalentTo(authorized).And.Not.Empty,
+                "THE EQUALITY: what he can press is what the host accepts from him" + where);
+            Assert.That(
+                drawn.All(value => value.StartsWith(
+                    delegatedCardId.Value + "/", StringComparison.Ordinal)),
+                Is.True,
+                "and every one of them is taken off the DELEGATED hero's own card" + where);
+
+            Assert.That(
+                seat.Round.Model.Status,
+                Does.Contain(DelegatedActionPresentation.DecidingActivity),
+                "His own narration tells him what to press" + where);
+            Assert.That(
+                seat.Round.Model.Status, Does.Contain(hero.DisplayName.ToUpperInvariant()),
+                "and names whose action it is - in the narration lane's own upper-case voice" +
+                where);
+        }
+
+        /// <summary>
+        /// The targeted seat: its own card, drawn dark, with no control on it and no way to end the
+        /// turn its piece is taking.
+        /// </summary>
+        private static void AssertTheTargetedSeatDrawsNothing(
+            SeatHud seat, ConfiguredMatchSceneRuntime runtime, string viewport)
+        {
+            var where = " at the " + viewport + " viewport. " + Remaining(runtime);
+            Assert.That(seat.Hands.Model.DecidedForHand, Is.Null,
+                "The targeted seat decides nothing for anybody" + where);
+            Assert.That(Slots(seat), Is.Empty, "and draws no slot" + where);
+            Assert.That(Regions(seat), Is.Empty,
+                "THE DARK HALF: not one control on the tray that holds the card" + where);
+            Assert.That(seat.Round.Model.EndTurnInvocation, Is.Null,
+                "and no way to end the turn its own piece is taking" + where);
+            Assert.That(seat.Hands.Model.ViewedHandDrawsActionControls, Is.False);
+
+            var own = seat.Hands.Model.ViewedHand.TrayCards
+                .SingleOrDefault(card => card.IsResolving);
+            Assert.That(own, Is.Not.Null,
+                "Arrange: the card is still in play on its owner's own tray" + where);
+            Assert.That(own.IsAwaitedAnswer, Is.False,
+                "and it wears no gold, because the gold means \"this is yours to answer\"" + where);
+        }
+
+        /// <summary>
+        /// Milestone 8.72. One seat's own live HUD, composed beside the scene's Director surface off
+        /// that seat's own published projection - the same composition
+        /// <c>SeatScopedMatchHudPlayModeTests</c> uses, and the only way two players' screens can be
+        /// read on ONE frame of one match.
+        /// </summary>
+        private sealed class SeatHud : IDisposable
+        {
+            private readonly GameObject host;
+            private readonly DirectorHandsPresenter handsPresenter;
+            private readonly RoundActionPresenter roundPresenter;
+
+            private SeatHud(
+                GameObject host,
+                SeatId seatId,
+                ConfiguredMatchHudRenderer hud,
+                DirectorHandsUnityView hands,
+                RoundActionUnityView round,
+                DirectorHandsPresenter handsPresenter,
+                RoundActionPresenter roundPresenter)
+            {
+                this.host = host;
+                this.handsPresenter = handsPresenter;
+                this.roundPresenter = roundPresenter;
+                SeatId = seatId;
+                Hud = hud;
+                Hands = hands;
+                Round = round;
+            }
+
+            internal SeatId SeatId { get; }
+            internal ConfiguredMatchHudRenderer Hud { get; }
+            internal DirectorHandsUnityView Hands { get; }
+            internal RoundActionUnityView Round { get; }
+
+            internal static SeatHud Compose(
+                ConfiguredMatchSceneRuntime runtime, HeroId heroId, string label)
+            {
+                var seatId = SeatOf(runtime, heroId);
+                var client = new SeatMatchClient(runtime.Host.ClientForSeat(seatId));
+                var hands = new DirectorHandsUnityView();
+                var round = new RoundActionUnityView();
+                var host = new GameObject("8.72-seat-" + label);
+                var hud = host.AddComponent<ConfiguredMatchHudRenderer>();
+                hud.Configure(
+                    hands,
+                    round,
+                    new UndoRestartUnityView(),
+                    new DiagnosticLogUnityView(),
+                    new MinionChoiceUnityView(),
+                    new HeroOverviewsUnityView());
+                var roundPresenter = new RoundActionPresenter(client, round, heroId);
+                var handsPresenter = new DirectorHandsPresenter(client, hands, heroId);
+
+                // The same two wires the configured runtime makes, so a press on a drawn control
+                // travels this seat's own client and nobody else's.
+                hands.PrintedActionSubmitted += invocation => roundPresenter.Submit(invocation);
+                hands.FastTravelSelected += selection =>
+                    roundPresenter.SelectFastTravel(selection);
+                round.InvocationSubmitted += invocation => roundPresenter.Submit(invocation);
+                round.EndTurnRequested += () => roundPresenter.SubmitEndTurn();
+                round.SeatUndoRequested += () => roundPresenter.SubmitSeatUndo();
+                var composed = new SeatHud(
+                    host, seatId, hud, hands, round, handsPresenter, roundPresenter);
+                composed.Refresh();
+                return composed;
+            }
+
+            /// <summary>Redraws this seat's whole HUD from its own current projection.</summary>
+            internal void Refresh()
+            {
+                roundPresenter.Refresh();
+                handsPresenter.Refresh();
+                Hud.ApplyExclusiveContext();
+            }
+
+            public void Dispose()
+            {
+                Object.Destroy(host);
+            }
         }
 
         // -------------------------------------------------------------------------------------------

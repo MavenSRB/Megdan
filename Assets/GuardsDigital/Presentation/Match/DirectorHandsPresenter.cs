@@ -140,13 +140,17 @@ namespace GuardsDigital.Presentation.Match
         public DirectorHandsViewModel(
             long version,
             IEnumerable<DirectorHandViewModel> hands,
-            HeroId viewedHeroId = default)
+            HeroId viewedHeroId = default,
+            DirectorHandViewModel decidedForHand = null,
+            bool viewedHandDrawsActionControls = true)
         {
             Version = version;
             Hands = Array.AsReadOnly((hands ?? throw new ArgumentNullException(nameof(hands))).ToArray());
             ViewedHeroId = viewedHeroId;
             ViewedHand = Hands.FirstOrDefault(hand => hand.HeroId.Equals(viewedHeroId)) ??
                 Hands.FirstOrDefault();
+            DecidedForHand = decidedForHand;
+            ViewedHandDrawsActionControls = viewedHandDrawsActionControls;
         }
 
         public long Version { get; }
@@ -163,6 +167,27 @@ namespace GuardsDigital.Presentation.Match
         /// a stack of every hand at once.
         /// </summary>
         public DirectorHandViewModel ViewedHand { get; }
+
+        /// <summary>
+        /// Milestone 8.72. The hand of a hero whose action THIS viewer is deciding - Hanu the
+        /// Trickster's The Ultimate Trick - carrying exactly one card: that hero's revealed,
+        /// resolving card, the one the host authorizes this seat to act off. <c>null</c> whenever no
+        /// delegation stands over this viewer, which is every board in every earlier milestone.
+        ///
+        /// <para>It is a hand OF THE OTHER HERO and is deliberately not merged into
+        /// <see cref="ViewedHand"/>: the card is not the viewer's, was never in their hand, and is
+        /// drawn in a slot of its own that names whose it is. Only the one revealed card is here -
+        /// the delegated hero's own hand stays private, exactly as a seat projection already keeps
+        /// it, and nothing in this model could name a card the viewer's projection does not carry.</para>
+        /// </summary>
+        public DirectorHandViewModel DecidedForHand { get; }
+
+        /// <summary>
+        /// Milestone 8.72. Whether the VIEWED hand's resolving card draws its printed-action
+        /// controls - true unless somebody else is deciding this turn's action, in which case the
+        /// card is this player's and the controls are not.
+        /// </summary>
+        public bool ViewedHandDrawsActionControls { get; }
     }
 
     public interface IDirectorHandsView
@@ -380,10 +405,75 @@ namespace GuardsDigital.Presentation.Match
                 lastProjection = projection;
                 lastSelectedCardInstanceId = selectedCardInstanceId;
                 lastViewedHeroId = viewedHeroId;
-                lastViewModel = new DirectorHandsViewModel(projection.Version, hands, viewedHeroId);
+                lastViewModel = new DirectorHandsViewModel(
+                    projection.Version,
+                    hands,
+                    viewedHeroId,
+                    BuildDecidedForHand(projection, viewedHeroId),
+                    DelegatedActionPresentation.DrawsTheActionControls(projection, viewedHeroId));
             }
 
             view.Render(lastViewModel);
+        }
+
+        /// <summary>
+        /// Milestone 8.72. The delegated hero's one revealed resolving card, as a hand of its own, for
+        /// the viewer whose seat is deciding that hero's action - or <c>null</c>, which is every board
+        /// no delegation stands on.
+        ///
+        /// <para><b>Why the card is composed here rather than found in the viewer's own tray.</b> A
+        /// printed action is drawn on the card it is printed on, and the deciding seat does not own
+        /// that card - <see cref="DelegatedActionPresentation"/>'s own remarks name this as the whole
+        /// of HA-Q15i. So the seat is given the card, once, in a slot that says whose it is.</para>
+        ///
+        /// <para>Everything about the card is read through the SAME per-hero derivation the ordinary
+        /// tray uses, narrowed to the one delegated instance: nothing here invents a second reading of
+        /// a card's lifecycle, and a card the viewer's own projection does not carry (a projection
+        /// that somehow withholds the revealed card) yields no slot rather than an empty one.</para>
+        /// </summary>
+        private static DirectorHandViewModel BuildDecidedForHand(
+            IMatchReadModel projection, HeroId viewedHeroId)
+        {
+            var delegation = DelegatedActionPresentation.DecidedBy(projection, viewedHeroId);
+            if (!delegation.IsDefined)
+            {
+                return null;
+            }
+
+            var hero = projection.Setup.Heroes.FirstOrDefault(candidate =>
+                candidate.HeroId.Equals(delegation.DelegatedHeroId));
+            var card = projection.Cards.FirstOrDefault(candidate =>
+                candidate.Id.Equals(delegation.DelegatedCardInstanceId));
+            if (hero == null || card == null)
+            {
+                return null;
+            }
+
+            // The resolving card is answered HERE - by this viewer - which is the one fact the
+            // per-hero derivation cannot know on its own, because it is asked about a hero and the
+            // answer belongs to a seat.
+            var tray = BuildTray(projection, delegation.DelegatedHeroId, null, true)
+                .Where(entry => entry.CardInstanceId.Equals(delegation.DelegatedCardInstanceId))
+                .ToArray();
+            if (tray.Length != 1)
+            {
+                return null;
+            }
+
+            var commitment = projection.GetCommitment(delegation.DelegatedHeroId);
+            return new DirectorHandViewModel(
+                hero.TeamSide,
+                delegation.DelegatedHeroId,
+                hero.DisplayName,
+                commitment.Status,
+                // Never a commitment surface: this hero's turn is running and the card is revealed.
+                false,
+                commitment.RevealedCardInstanceId,
+                card,
+                Array.Empty<CardInstance>(),
+                projection.Definitions,
+                null,
+                tray);
         }
 
         /// <summary>
@@ -401,10 +491,18 @@ namespace GuardsDigital.Presentation.Match
         /// level-up hand preview rather than deriving a second one - one seat's hand is one
         /// computation, read by both consumers.</para>
         /// </summary>
+        /// <param name="resolvingCardIsAnsweredHere">
+        /// Milestone 8.72. Whether the resolving card in this tray is the one THIS surface is being
+        /// asked to answer. <c>null</c> - every caller before 8.72, and every ordinary tray since -
+        /// means "ask the delegation": a hero's own resolving card is theirs to answer unless
+        /// somebody else is deciding that action. The "deciding for X" slot passes <c>true</c>,
+        /// because there the card belongs to one hero and the answer belongs to another.
+        /// </param>
         internal static IReadOnlyList<TrayCardViewModel> BuildTray(
             IMatchReadModel projection,
             HeroId heroId,
-            CardInstanceId? selectedCardInstanceId)
+            CardInstanceId? selectedCardInstanceId,
+            bool? resolvingCardIsAnsweredHere = null)
         {
             var commitment = projection.GetCommitment(heroId);
             var canSelect = projection.IsInputEnabled &&
@@ -468,9 +566,20 @@ namespace GuardsDigital.Presentation.Match
                 // so a card only keeps it while the turn it belongs to is actually under way and this
                 // hero is the one acting. Both facts are public and unscoped, so this reads the same
                 // for a seat and for the Director.
+                //
+                // Milestone 8.72 adds the second half of the same sentence, and it is the targeted
+                // player's half of Hanu's The Ultimate Trick. The gold's whole grammar is "THIS IS
+                // YOURS TO ANSWER", and while a delegation stands the hero whose piece is acting is
+                // precisely the one player who may answer nothing: the host refuses that seat's every
+                // command. So "the turn is under way and this hero is the actor" is no longer enough -
+                // the answer has to be this surface's to give. With no delegation the added clause is
+                // the actor comparison restated (DecidingHeroFor answers the actor itself), so every
+                // hero and every earlier milestone reads exactly as before.
                 var resolutionIsUnderWayForThisHero = projection.IsTurnActive &&
                     projection.SelectedActor.IsDefined &&
-                    projection.SelectedActor.ActorId.Equals(heroId);
+                    projection.SelectedActor.ActorId.Equals(heroId) &&
+                    (resolvingCardIsAnsweredHere ??
+                        DelegatedActionPresentation.DecidingHeroFor(projection).Equals(heroId));
                 entries.Add(CurrentRoundCards.TrayCard(
                     projection,
                     card,

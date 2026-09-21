@@ -1800,13 +1800,15 @@ namespace GuardsDigital.Presentation.Match
         /// <summary>
         /// Milestone 8.71h. Whose seat is choosing the selected actor's action - the actor themselves
         /// on every turn no delegation stands over, and Hanu while one does.
+        ///
+        /// <para><b>Milestone 8.72</b> moved the derivation itself into
+        /// <see cref="DelegatedActionPresentation"/>, which is the one owner of "which card's
+        /// controls does this seat draw, and why" - this presenter, <see cref="AwaitedInputQuery"/>
+        /// and <see cref="DirectorHandsPresenter"/> all read the same answer rather than three
+        /// copies of one call.</para>
         /// </summary>
         private static HeroId DecidingHeroFor(IMatchReadModel projection) =>
-            GuardsDigital.Core.Rules.CardResolution.DelegatedActionQuery.DecidingHeroFor(
-                projection.Definitions,
-                projection.Cards,
-                projection.Heroes,
-                projection.SelectedActor.ActorId);
+            DelegatedActionPresentation.DecidingHeroFor(projection);
 
         /// <summary>
         /// Milestone 8.35v. Reached only once <see cref="CreateEndTurnInvocation"/> found no direct
@@ -2383,6 +2385,27 @@ namespace GuardsDigital.Presentation.Match
             if (projection.SelectedActor.IsDefined)
             {
                 var initiative = projection.SelectedActor.InitiativeTotal;
+
+                // Milestone 8.72. A delegated turn is the one turn in this build whose acting piece
+                // and whose deciding player are two different heroes, so neither of the two sentences
+                // below can tell the truth about it on its own: "YOUR TURN" is said to a player whose
+                // turn it is not, and "X - ACTING" names the piece while withholding the only fact
+                // that explains why that player has nothing to press. The line names BOTH heroes on
+                // every seat at the table, and differs only in what it then tells this viewer to do.
+                // Both halves are derived from p.4 open zones, so no seat is told anything it could
+                // not already read off its own frame (milestone 8.71b).
+                var delegation = DelegatedActionPresentation.Standing(projection);
+                if (delegation.IsDefined)
+                {
+                    statusDetail = $"INITIATIVE {initiative}";
+                    return NarrationLabels.HeroDecidingFor(
+                        HeroDisplayName(projection.Setup.Heroes, delegation.DecidingHeroId),
+                        HeroDisplayName(projection.Setup.Heroes, delegation.DelegatedHeroId),
+                        !viewerHeroId.IsDefined || delegation.DecidingHeroId.Equals(viewerHeroId)
+                            ? DelegatedActionPresentation.DecidingActivity
+                            : DelegatedActionPresentation.WaitingActivity);
+                }
+
                 if (AwaitedInputQuery.MayTakeATurnAction(projection))
                 {
                     statusDetail = $"INITIATIVE {initiative}";

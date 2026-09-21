@@ -111,6 +111,16 @@ namespace GuardsDigital.Tests.PlayMode
             .SeeNothingSwapsWithTheEnemyAndMovesFromTheExchangedSpace);
         private const string Ultimate = nameof(HanuProgressedUiJourneyPlayModeTests
             .TheUltimateTrickTakesTheNextActionOfAnEnemyAndOfAFriendFromHisOwnSeat);
+
+        /// <summary>
+        /// Milestone 8.72, the user's correction on HA-Q15i. The same row, proved a second way: what
+        /// the delegation DRAWS, on two real seats' own HUDs at both desktop viewports. It introduces
+        /// no shape of its own - a control drawn for another hero's card is still the Ultimate's own
+        /// rail-and-seat reading - so it is named beside the journey above rather than through a new
+        /// one, which is this gate's rule for a second route to one shape.
+        /// </summary>
+        private const string DelegatedControls = nameof(HanuProgressedUiJourneyPlayModeTests
+            .TheDelegatedActionIsDrawnAndPressedOnHisOwnSeatAtBothDesktopViewports);
         private const string Lifecycle = nameof(HanuProgressedUiJourneyPlayModeTests
             .HisDefeatedPieceRespawnsAndRestartRebuildsTheSession);
         private const string Continuity = nameof(HanuProgressedUiJourneyPlayModeTests
@@ -329,10 +339,16 @@ namespace GuardsDigital.Tests.PlayMode
                 // reveals nothing, and its permanent ability runs no effect to pause on. What it
                 // introduces is the rail a player reads it on; what it DOES is read on the seat that
                 // answers the next action of the hero his Silver rewrote, and the Ultimate journey
-                // drives that on both sides of the table.
+                // drives that on both sides of the table. Milestone 8.72 adds the second journey on
+                // the same row: the deciding seat's HUD draws the delegated hero's card with every
+                // control the host authorizes it, and the targeted seat's draws none.
                 Face(
                     HanuCardContent.TheUltimateTrick, "The Ultimate Trick",
-                    new[] { Prove(UltimateRailVisibility, Ultimate) },
+                    new[]
+                    {
+                        Prove(UltimateRailVisibility, Ultimate),
+                        Prove(UltimateRailVisibility, DelegatedControls)
+                    },
                     UltimateScenarios),
 
                 UnreachableFace(

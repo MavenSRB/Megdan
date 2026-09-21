@@ -135,6 +135,9 @@ namespace GuardsDigital.Presentation.Match
         private IReadOnlyList<PrintedActionRegionViewModel> printedActionRegions =
             Array.Empty<PrintedActionRegionViewModel>();
 
+        /// <summary>Milestone 8.72. The drawn "deciding for X" slot, kept by the rebuild that made it.</summary>
+        private VisualElement decidingForSlot;
+
         public DirectorHandsUnityView()
         {
             Root = new VisualElement { name = "gd-card-tray" };
@@ -321,6 +324,18 @@ namespace GuardsDigital.Presentation.Match
 
         public IReadOnlyList<PrintedActionRegionViewModel> PrintedActionRegions => printedActionRegions;
 
+        /// <summary>
+        /// Milestone 8.72. The drawn "deciding for X" slot, or <c>null</c> when this viewer is
+        /// deciding nobody else's action - which is every board no delegation stands on.
+        ///
+        /// <para>It is exposed because the slot is the one tray card that reaches PAST the compact
+        /// hand's own stated footprint, and the HUD blocks the board pointer across that footprint
+        /// rather than across whatever the tray happens to have drawn. Without this the click that
+        /// started a delegated Attack would also reach the hex underneath it, which is the exact
+        /// duplicate-input defect milestone 8.30b recorded for End Turn's corner.</para>
+        /// </summary>
+        public VisualElement DecidingForSlotRoot => decidingForSlot;
+
         /// <summary>Supplies the HUD-owned L-shaped live map boundary for drag release.</summary>
         public void SetMapDropPredicate(Func<Vector2, bool> predicate)
         {
@@ -425,6 +440,7 @@ namespace GuardsDigital.Presentation.Match
             ClearPeekPreview();
             header.Clear();
             cards.Clear();
+            decidingForSlot = null;
             unavailableCards.Clear();
             unavailableGroup.style.display = DisplayStyle.None;
             var hand = Model.ViewedHand;
@@ -440,9 +456,21 @@ namespace GuardsDigital.Presentation.Match
             var drawnCards = compactPeekMode
                 ? hand.PlayableTrayCards.OrderBy(card => card.IsResolving ? 1 : 0).ToArray()
                 : hand.PlayableTrayCards.ToArray();
+
+            // Milestone 8.72. The one card this viewer is deciding FOR somebody else, if any: it sits
+            // beside the hand in a slot of its own rather than inside it, because it is not a card
+            // this player holds and a hand is what a player commits from.
+            var decidedFor = Model.DecidedForHand?.PlayableTrayCards.FirstOrDefault(
+                card => card.IsResolving);
             var rowWidth = compactPeekMode
                 ? CompactCardRowWidth(drawnCards.Length)
                 : drawnCards.Length * CardSlotFootprint;
+            if (decidedFor != null)
+            {
+                rowWidth += DecidingForSlotGap +
+                    (compactPeekMode ? PeekCardOuterWidth : CardSlotFootprint);
+            }
+
             cards.style.width = rowWidth;
             cards.style.minWidth = rowWidth;
             cards.style.maxWidth = rowWidth;
@@ -507,7 +535,15 @@ namespace GuardsDigital.Presentation.Match
                 cards.Add(BuildCard(
                     drawnCards[index],
                     compactPeekMode && index == drawnCards.Length - 1,
-                    false));
+                    false,
+                    Model.ViewedHandDrawsActionControls));
+            }
+
+            if (decidedFor != null)
+            {
+                decidingForSlot = BuildDecidedForSlot(
+                    decidedFor, Model.DecidedForHand.HeroDisplayName);
+                cards.Add(decidingForSlot);
             }
 
             var unavailable = hand.UnavailableTrayCards.ToArray();
@@ -535,6 +571,58 @@ namespace GuardsDigital.Presentation.Match
                 : DisplayStyle.None;
         }
 
+        /// <summary>
+        /// Milestone 8.72. The gap that separates the "deciding for X" slot from the viewer's own
+        /// hand. It is wider than <see cref="CardGap"/> on purpose: the hand's own cards overlap like
+        /// a physical hand, and this card must read as standing apart from them rather than as the
+        /// sixth one in the fan.
+        /// </summary>
+        public const float DecidingForSlotGap = 24f;
+
+        /// <summary>The "DECIDING FOR X" ribbon's height, drawn inside the card's own footprint.</summary>
+        public const float DecidingForLabelHeight = 24f;
+
+        /// <summary>
+        /// Milestone 8.72. Another hero's revealed resolving card, drawn on the seat that decides it.
+        ///
+        /// <para>The card itself is built by the SAME builder every tray card goes through, so its
+        /// face, its printed-action overlay, its hit targets, its tooltips and its assistive reading
+        /// are the ordinary ones - what would be a different card here is a different card, and this
+        /// is not one. What the slot adds is the two things that keep it from reading as a hand card:
+        /// a ribbon naming whose card it is, and an accent border of its own. It carries no
+        /// commitment command, which is the card's own <c>IsSelectable</c> and not a rule stated
+        /// here.</para>
+        /// </summary>
+        private VisualElement BuildDecidedForSlot(TrayCardViewModel card, string heroDisplayName)
+        {
+            var slot = BuildCard(card, true, false, true);
+            slot.name = "gd-deciding-for-slot";
+            slot.style.marginLeft = DecidingForSlotGap;
+            slot.style.marginRight = 0f;
+            HudElements.Border(slot, MatchHudTheme.ActiveEffectAccent, ActiveOutlineWidth, 11f);
+
+            var ribbon = new Label(DelegatedActionPresentation.DecidingForLabel(heroDisplayName))
+            {
+                name = "gd-deciding-for-label",
+                pickingMode = PickingMode.Ignore
+            };
+            // Inside the card's own footprint, over the top strip no printed region reaches (the
+            // secondary badges start a hundred units down), so the ribbon costs the tray no height
+            // and can cover no control.
+            ribbon.style.position = Position.Absolute;
+            ribbon.style.left = 0f;
+            ribbon.style.right = 0f;
+            ribbon.style.top = 0f;
+            ribbon.style.height = DecidingForLabelHeight;
+            ribbon.style.unityTextAlign = TextAnchor.MiddleCenter;
+            ribbon.style.unityFontStyleAndWeight = FontStyle.Bold;
+            ribbon.style.fontSize = 13f;
+            ribbon.style.color = MatchHudTheme.ActiveEffectAccent;
+            ribbon.style.backgroundColor = new Color(0f, 0f, 0f, 0.82f);
+            slot.Add(ribbon);
+            return slot;
+        }
+
         private static float CompactCardRowWidth(int cardCount) => cardCount <= 0
             ? 0f
             : PeekCardOuterWidth + ((cardCount - 1) * PeekCardSlotFootprint);
@@ -546,7 +634,8 @@ namespace GuardsDigital.Presentation.Match
         private VisualElement BuildCard(
             TrayCardViewModel card,
             bool isLastPeekCard = false,
-            bool isUnavailableGroup = false)
+            bool isUnavailableGroup = false,
+            bool drawsPrintedActions = true)
         {
             var button = new Button(() =>
             {
@@ -572,7 +661,11 @@ namespace GuardsDigital.Presentation.Match
                 ApplyPeekFootprint(button);
             }
 
-            if (card.IsResolving)
+            // Milestone 8.72: a resolving card draws its printed controls only where the answer
+            // belongs. While Hanu's The Ultimate Trick stands, the targeted player's own tray holds
+            // the card and his seat holds the commands, so the overlay is built on his slot and not
+            // on theirs - a control drawn where the host refuses it is worse than no control.
+            if (card.IsResolving && drawsPrintedActions)
             {
                 AddPrintedActionOverlay(button, card);
             }

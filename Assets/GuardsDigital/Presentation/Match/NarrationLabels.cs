@@ -102,6 +102,26 @@ namespace GuardsDigital.Presentation.Match
                 : $"{RequireName(heroDisplayName)} — {family}";
 
         /// <summary>
+        /// Milestone 8.72. A turn whose acting piece and whose deciding player are two different
+        /// heroes - Hanu the Trickster's The Ultimate Trick, rulebook p.16, the only sentence in this
+        /// build that moves an action's choices to another player's seat.
+        ///
+        /// <para>It names both heroes for every viewer, because both halves are public: the acting
+        /// piece is <see cref="IMatchReadModel.SelectedActor"/>, and the delegation is derived from
+        /// the rewritten card and the faceup Ultimate, which are both rulebook p.4 open zones
+        /// (milestone 8.71b). <paramref name="activity"/> is the only part that differs by seat - the
+        /// deciding player is told what to press, everybody else is told what is being waited
+        /// on.</para>
+        /// </summary>
+        public static string HeroDecidingFor(
+            string decidingHeroDisplayName, string delegatedHeroDisplayName, string activity) =>
+            string.IsNullOrWhiteSpace(activity)
+                ? throw new ArgumentException(
+                    "A delegated-turn line names its activity.", nameof(activity))
+                : $"{RequireName(decidingHeroDisplayName)} CHOOSES FOR " +
+                    $"{RequireName(delegatedHeroDisplayName)} — {activity}";
+
+        /// <summary>
         /// The heroes still owed a public answer - a commitment, or an unanswered team-agreement
         /// participant. Every entry is a fact <see cref="IMatchReadModel"/> already publishes to
         /// every seat (<c>Commitments</c> and <c>TeamAgreement.Participants</c> are both stated public

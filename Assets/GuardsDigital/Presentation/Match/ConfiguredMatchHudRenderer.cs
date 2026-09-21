@@ -800,6 +800,11 @@ namespace GuardsDigital.Presentation.Match
                     liveDecisionWindow.Contains(panelPosition)) ||
                 CalculateStatusBarRect(viewport.x, viewport.y).Contains(panelPosition) ||
                 UnavailableCardsBlockPointerAt(panelPosition) ||
+                // Milestone 8.72. The "deciding for X" slot is the one tray card that reaches past
+                // the compact hand's stated footprint - it stands BESIDE the hand rather than in it -
+                // and the clause above blocks the pointer across that footprint. Asked only while
+                // the slot is actually drawn, because the space is genuinely board when it is not.
+                DecidingForSlotBlocksPointerAt(panelPosition) ||
                 // Milestone 8.30b. End Turn's corner sits inside the tray band, and the band blocks
                 // the pointer only across the compact hand's own footprint at the opposite edge - so
                 // without this the board would act on the same click the control consumed. It is asked
@@ -869,6 +874,19 @@ namespace GuardsDigital.Presentation.Match
             var viewport = PanelViewport;
             yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Red);
             yield return CalculateHeroRailRect(viewport.x, viewport.y, TeamSide.Blue);
+        }
+
+        /// <summary>
+        /// Milestone 8.72. Whether the delegated hero's card, drawn beside this viewer's own hand,
+        /// consumes the pointer here - the live box it was laid out in, and nothing when no
+        /// delegation stands. There is no stated rectangle to fall back to on purpose: the slot's
+        /// place depends on how many cards the viewer is still holding, so a stated one could only
+        /// be a second, wrong answer.
+        /// </summary>
+        private bool DecidingForSlotBlocksPointerAt(Vector2 panelPosition)
+        {
+            var slot = hands?.DecidingForSlotRoot;
+            return slot != null && TryLiveRect(slot, out var live) && live.Contains(panelPosition);
         }
 
         private bool UnavailableCardsBlockPointerAt(Vector2 panelPosition)

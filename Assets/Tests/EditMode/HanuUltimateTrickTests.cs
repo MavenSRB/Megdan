@@ -875,8 +875,13 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// A real six-seat match driven to the moment a rewritten hero is the selected actor, with
         /// The Ultimate Trick itself beside its controller's dashboard.
+        ///
+        /// <para><b>Milestone 8.72</b> widened this from <c>private</c> to <c>internal</c>:
+        /// <c>DelegatedActionPresentationTests</c> measures what the two seats DRAW on exactly this
+        /// board, and a second staging of its own would be a second opinion about when a delegation
+        /// stands. Nothing about it changed.</para>
         /// </summary>
-        private sealed class DelegatedMatch
+        internal sealed class DelegatedMatch
         {
             private readonly MatchSession session;
 
@@ -1025,6 +1030,30 @@ namespace GuardsDigital.Tests.EditMode
                 OwnerScopedProjectionTests.DriveThroughSeats(
                     Host, 40,
                     projection => !projection.SelectedActor.ActorId.Equals(Delegated));
+            }
+
+            /// <summary>
+            /// Milestone 8.72. Plays on until some hero is taking an ORDINARY turn - one no
+            /// delegation stands over - and answers whose it is. The one board the "nothing about an
+            /// undelegated turn changed" case needs, reached on the same match rather than staged a
+            /// second time.
+            /// </summary>
+            internal HeroId DriveToAnUndelegatedTurn()
+            {
+                DriveTheDelegatedActionToItsEnd();
+                OwnerScopedProjectionTests.DriveThroughSeats(
+                    Host, 400,
+                    projection => projection.IsTurnActive &&
+                        projection.SelectedActor.IsDefined &&
+                        projection.DecisionContract == null &&
+                        !DelegatedActionQuery.ForActor(
+                            projection.Definitions,
+                            projection.Cards,
+                            projection.Heroes,
+                            projection.SelectedActor.ActorId).IsDefined);
+                return Host.Projection.IsTurnActive
+                    ? Host.Projection.SelectedActor.ActorId
+                    : default;
             }
         }
     }

@@ -225,12 +225,10 @@ namespace GuardsDigital.Presentation.Match
         /// </remarks>
         private static bool IsActingWithNoDecisionStandingOnTop(IMatchReadModel projection, HeroId heroId)
         {
+            // Milestone 8.72: the derivation itself is DelegatedActionPresentation's, the one owner
+            // of "which card's controls does this seat draw, and why". The answer is identical.
             if (!projection.IsTurnActive || !projection.SelectedActor.IsDefined ||
-                !GuardsDigital.Core.Rules.CardResolution.DelegatedActionQuery.DecidingHeroFor(
-                    projection.Definitions,
-                    projection.Cards,
-                    projection.Heroes,
-                    projection.SelectedActor.ActorId).Equals(heroId))
+                !DelegatedActionPresentation.DecidingHeroFor(projection).Equals(heroId))
             {
                 return false;
             }
