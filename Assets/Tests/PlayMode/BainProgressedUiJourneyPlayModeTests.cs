@@ -200,6 +200,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(distance, Is.GreaterThan(1),
                 "The enemy hero is NOT adjacent, so the second bullet cannot reach him and the " +
                 "first bullet is the only thing that can. " + Remaining(runtime));
+            // MILESTONE 8.70. The bullet this journey drives is the one with a subject, so the
+            // greying must not have touched it - and asserting that here is what keeps the journey
+            // honest if a later staging moves the bounty or the geometry.
+            Assert.That(
+                modal.UnavailableCandidates.Select(candidate => candidate.OptionNodeId.Value),
+                Does.Not.Contain("crossbow-marker-bullet"),
+                "\"a hero in range with a bounty marker\" names the hero wearing it, so this bullet " +
+                "is offered rather than greyed. " + Remaining(runtime));
 
             yield return PressEffectControl(root, BulletLabelFor(runtime, "crossbow-marker-bullet"));
 

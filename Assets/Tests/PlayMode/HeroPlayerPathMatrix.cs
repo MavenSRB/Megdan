@@ -650,6 +650,12 @@ namespace GuardsDigital.Tests.PlayMode
                 // milestone 8.24 made for `around-primary-action` and milestone 8.20b for a push
                 // distance. The subject narrowing milestone 8.35z45 added changes WHICH candidates
                 // that prompt offers, never who is asked or how.
+                // MILESTONE 8.70 leaves this classification exactly as it stands, and the reason is
+                // worth writing down because the leaf now answers a board question. What it answers is
+                // whether its own bullet may be CHOSEN, and the choosing is the enclosing `Choose`'s
+                // `ModalBulletChoice` - so what moved is which candidates that one control offers,
+                // which is the same kind of movement the narrowing above made. A leaf that greys
+                // itself is still a leaf that asks nobody anything.
                 ["attack-sequence"] = Array.Empty<PlayerInteractionShape>(),
 
                 // Milestone 8.22. Sabina's contracts. The two multi-piece selections are the same

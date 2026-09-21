@@ -172,8 +172,18 @@ namespace GuardsDigital.Tests.EditMode
             // Attack's "choose one, or both" publishes each chosen bullet's printed targeting sentence
             // through. It is a new handler TYPE rather than another ActiveEffectCreationHandler
             // registration, so unlike 8.24's five it moves this count - and it joins these rules like
-            // any other: it performs nothing, its Anticipate mirrors its Execute, and both read the
-            // same declared inputs.
+            // any other: it performs nothing, and its Anticipate and its Execute read the same
+            // declared inputs through one shared reading.
+            // MILESTONE 8.70 gave that handler's probe a question its execution does not ask - whether
+            // this bullet's own printed sentence names a unit on the board right now - and it joins
+            // these rules unchanged, which is worth stating because it is the first probe in the build
+            // to read MORE than its execution does. Rule one is satisfied because the two still share
+            // the declaration reading they always shared, and that rule is about a probe re-deriving
+            // the SAME answer through unrelated code rather than about one asking a further question:
+            // the further question belongs to the CHOICE, and the execution deliberately does not
+            // re-ask it, because a bullet chosen while legal resolves against the board its own
+            // sequence reaches. Rule two is satisfied because the board reading is a query - it
+            // commits nothing, mints nothing, and reaches none of the members named below.
             // THE SIX-HERO CONTENT WAVE (milestones 8.35z28 through 8.35z33) adds NOTHING here, and
             // for the reason milestone 8.24 added nothing: the count is of what the build REGISTERS.
             // Every contract the six new heroes declare is DEFERRED until the milestone that deals its

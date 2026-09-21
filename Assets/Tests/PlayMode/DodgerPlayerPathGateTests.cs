@@ -92,9 +92,16 @@ namespace GuardsDigital.Tests.PlayMode
         /// ended by a Confirm, and each chosen bullet then opens p.14's OWN target prompt. A row that
         /// pointed at the journey above would be claiming those controls are proved when the journey
         /// never meets them.</para>
+        ///
+        /// <para><b>Milestone 8.70 renamed it for what it now shows.</b> On this staging the second
+        /// bullet's pile clause names nobody when the modal is answered, and from that milestone a
+        /// bullet naming nobody is GREYED at the choice on the user's ruling - so the journey drives
+        /// one live bullet, a greyed one drawn beside it, the printed ceiling of two unmoved, the
+        /// Confirm that ends a modal below its ceiling, and p.14's own target prompt behind it. Every
+        /// control this row claims is still met; what changed is which of them the board supports.</para>
         /// </summary>
         private const string ChooseBothJourney =
-            "MiddlefingerOfDeath_TakesBothBulletsAndOpensACompletePageFourteenForEach";
+            "MiddlefingerOfDeath_GreysTheBulletWithNoSubjectAndOpensACompletePageFourteenForTheOther";
 
         private const string DeathTrapJourney =
             "DeathTrap_NamesAnEnemyBesideAnEmptySpawnPointAndTakesACardFromTheirHand";
@@ -288,7 +295,7 @@ namespace GuardsDigital.Tests.PlayMode
                     new[]
                     {
                         "MiddlefingerOfDeathTests" +
-                            ".TheSecondBullet_OffersNobodyWithAnEmptyDiscard_WhereTheFirstOffersThatSameHero",
+                            ".TheSecondBullet_IsGreyedWithAnEmptyDiscard_WhereTheFirstOffersThatSameHero",
                         "MiddlefingerOfDeathTests.ChoosingBoth_RunsACompletePageFourteenPerBullet",
                         "MiddlefingerOfDeathTests" +
                             ".APauseMidChain_RestoresByteIdenticallyAndStillOwesItsSecondSequence",

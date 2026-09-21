@@ -256,45 +256,67 @@ namespace GuardsDigital.Tests.EditMode
         /// for Brogan and 8.22 for Sabina: "who has" NARROWS who may be picked, so a hero who does not
         /// qualify is never offered rather than being offered and then refused.</para>
         ///
-        /// <para><b>An Attack with nothing to take stops, and the card is spent.</b> That is p.10's
-        /// mandatory-step rule and not a special case of this clause. The half worth stating is which
-        /// tier of the two-tier modal rule applies: the BULLET is still offered at the modal, because
-        /// whether a bullet's sequence will find a subject is a question about a board that does not
-        /// exist yet - the FIRST sequence's own Defense window puts cards into exactly the pile the
-        /// second bullet reads, so a bullet greyed on the present tense would be refused on a reading
-        /// the rules have not reached. What IS judged up front is the ACTION: an Attack whose every
-        /// declared bullet reaches nobody is greyed before it is offered, which is where this
-        /// milestone's narrowing joins the offer-feasibility gate.</para>
+        /// <para><b>MILESTONE 8.70 MOVED WHERE THAT DIFFERENCE IS PAID.</b> Until it, the bullet with
+        /// nobody to name was still OFFERED at the modal and the emptiness was measured one step later,
+        /// as a sequence that opened no targeting and spent the action - milestone 8.35z27's reading,
+        /// on the grounds that "a board that does not exist yet" decides a sequence's subject. The user
+        /// settled BR-Q19h the other way ("I think we should gray it out if no legal targets"), so the
+        /// CHOICE now reads the board and a bullet naming nobody is greyed at the modal. Nothing after
+        /// the choice moved: a bullet chosen while legal still binds against the board its own p.14
+        /// reaches, which is the case two below.</para>
         /// </summary>
         [Test]
-        public void TheSecondBullet_OffersNobodyWithAnEmptyDiscard_WhereTheFirstOffersThatSameHero()
+        public void TheSecondBullet_IsGreyedWithAnEmptyDiscard_WhereTheFirstOffersThatSameHero()
         {
-            var withFirstBullet = StartMiddlefinger();
-            ChooseOnlyTheBullet(withFirstBullet, 1);
+            var session = StartMiddlefinger();
+            var modal = session.Projection.PendingEffectChoice;
 
-            var firstChoice = withFirstBullet.Projection.PendingAttackTargetChoice;
+            Assert.That(
+                session.Projection.Cards.Any(card =>
+                    card.State.Location == CardLocation.DiscardPile),
+                Is.False,
+                "NOBODY has discarded anything yet, which is what makes the contrast below about the " +
+                "pile and about nothing else.");
+            Assert.That(
+                modal.UnavailableCandidates.Select(candidate => candidate.OptionNodeId.Value),
+                Is.EqualTo(new[] { "middlefinger-discard" }),
+                "\"Target a hero in range WHO HAS one or more cards in the discard\". The same hero " +
+                "the other bullet offers is adjacent and inside the printed Range, so reach, p.18's " +
+                "immunities and the target policy all admit them - their discard is empty, so this " +
+                "bullet names nobody and is greyed rather than offered, taken and spent on nothing.");
+            Assert.That(
+                modal.SelectInvocations.Select(invocation =>
+                    invocation.Candidate.OptionNodeId.Value),
+                Is.EqualTo(new[] { "middlefinger-adjacent" }),
+                "and the bullet whose sentence DOES name that hero is the answer left to give - the " +
+                "clause isolated to a single degree of freedom, now read at the choice.");
+
+            ChooseOnlyTheBullet(session, 1);
+            var firstChoice = session.Projection.PendingAttackTargetChoice;
             Assert.That(firstChoice, Is.Not.Null,
                 "\"Target a unit adjacent to you\" - and the enemy hero is standing beside her.");
             Assert.That(firstChoice.LegalTargetHeroIds, Is.Not.Empty);
+        }
+
+        /// <summary>
+        /// Milestone 8.70. The greyed bullet is not merely undrawn: naming it is an answer the
+        /// resolution refuses, so the offer and the answer cannot come apart.
+        /// </summary>
+        [Test]
+        public void AnAnswerNamingTheGreyedBullet_IsRefusedAndLeavesTheModalStanding()
+        {
+            var session = StartMiddlefinger();
+            var modal = session.Projection.PendingEffectChoice;
+            var greyed = modal.UnavailableCandidates.Single();
+
             Assert.That(
-                withFirstBullet.Projection.Cards.Any(card =>
-                    card.State.Location == CardLocation.DiscardPile),
+                modal.SelectInvocations.Any(invocation => invocation.Candidate.Equals(greyed)),
                 Is.False,
-                "and NOBODY has discarded anything yet, which is what makes the contrast below about " +
-                "the pile and about nothing else.");
-
-            var withSecondBullet = StartMiddlefinger();
-            ChooseOnlyTheBullet(withSecondBullet, 2);
-
-            Assert.That(withSecondBullet.Projection.PendingAttackTargetChoice, Is.Null,
-                "\"Target a hero in range WHO HAS one or more cards in the discard\". The same hero " +
-                "the first bullet just offered is still adjacent and still inside the printed Range, " +
-                "so reach, p.18's immunities and the target policy all admit them exactly as they did " +
-                "a moment ago. Their discard is empty, so this bullet admits nobody - which is the " +
-                "clause, isolated to a single degree of freedom.");
-            Assert.That(withSecondBullet.Projection.HasPendingAttackResolution, Is.False,
-                "and the Attack stops rather than standing open on an empty list, which is p.10's " +
-                "mandatory step and not this clause's doing.");
+                "A greyed bullet carries no Select invocation at all, which is what a seat's UI reads " +
+                "and what the wire projects.");
+            Assert.That(session.Projection.PendingEffectChoice.UnavailableCandidates,
+                Has.Count.EqualTo(1),
+                "and the decision is still standing with exactly that one bullet greyed.");
         }
 
         /// <summary>
@@ -303,7 +325,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ChoosingBoth_RunsACompletePageFourteenPerBullet()
         {
-            var session = StartMiddlefinger();
+            var session = StartMiddlefinger(withADiscardInRange: true);
             ChooseBothBullets(session);
 
             var first = session.Projection.PendingAttackTargetChoice;
@@ -324,11 +346,18 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// Ruling 19's rider, from the side the card is on: Middlefinger PRINTS "(on different
         /// targets)", so the unit the first sequence bound is gone from the second's set.
+        ///
+        /// <para><b>MILESTONE 8.70'S OTHER HALF, AND THE REASON THAT MILESTONE IS NOT A REVERSAL OF
+        /// 8.35z27.</b> Both bullets are live at the modal on this board, so both are legally chosen -
+        /// and the SECOND one then finds nobody anyway, because the first sequence's own p.14 took its
+        /// only candidate away in between. A bullet chosen while legal is not re-judged: it resolves
+        /// against the board it reaches and p.10's impossible step covers the rest. Only the choice
+        /// reads the board, and it reads it once.</para>
         /// </summary>
         [Test]
         public void TheDifferentTargetsClause_TakesTheFirstSequencesUnitOutOfTheSeconds()
         {
-            var session = StartMiddlefinger();
+            var session = StartMiddlefinger(withADiscardInRange: true);
             ChooseBothBullets(session);
             RunOneSequence(session);
 
@@ -364,7 +393,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APauseMidChain_RestoresByteIdenticallyAndStillOwesItsSecondSequence()
         {
-            var session = StartMiddlefinger();
+            var session = StartMiddlefinger(withADiscardInRange: true);
             ChooseBothBullets(session);
 
             var standing = session.Projection.PendingAttackTargetChoice;
@@ -403,7 +432,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APauseInsideASequencesDefenseWindow_RestoresByteIdentically()
         {
-            var session = StartMiddlefinger();
+            var session = StartMiddlefinger(withADiscardInRange: true);
             ChooseBothBullets(session);
             var choice = session.Projection.PendingAttackTargetChoice;
             Accept(session, DirectorCommand.ChooseAttackTarget(choice.LegalTargetHeroIds[0]));
@@ -429,7 +458,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void APauseMidChain_IsUndoneBackToTheModalThatOpenedIt()
         {
-            var session = StartMiddlefinger();
+            var session = StartMiddlefinger(withADiscardInRange: true);
             ChooseBothBullets(session);
 
             var before = session.CaptureSnapshot();
@@ -443,6 +472,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(session.Projection.PendingEffectChoice, Is.Not.Null,
                 "and what stands in its place is the modal itself, still asking which bullets - which " +
                 "is the command the rewind landed on rather than a chain left half-built.");
+            // MILESTONE 8.70. The rewind REPLAYS the retained command prefix, so the modal it lands on
+            // is a freshly derived pause rather than a remembered one - and its greyed set is derived
+            // with it. On this board both bullets have a subject, so nothing is greyed; a rewind that
+            // had carried a stale refusal, or invented one, would say otherwise here.
+            Assert.That(session.Projection.PendingEffectChoice.UnavailableCandidates, Is.Empty,
+                "and the re-derived modal greys what this board greys, which is nothing.");
             Assert.That(session.CaptureSnapshot(), Is.Not.EqualTo(before),
                 "and the rewind really moved the state, so this case is not passing on a no-op.");
         }
@@ -484,7 +519,7 @@ namespace GuardsDigital.Tests.EditMode
                 "multi-sequence contract runs WITHOUT labelling it a repeat - the implementation is " +
                 "shared with p.14 wholesale and the LABEL deliberately is not.");
 
-            var session = StartMiddlefinger();
+            var session = StartMiddlefinger(withADiscardInRange: true);
             ChooseBothBullets(session);
             RunOneSequence(session);
 
@@ -508,9 +543,20 @@ namespace GuardsDigital.Tests.EditMode
         /// Dodger at Tier III on the first upgrade branch with Middlefinger of Death committed and its
         /// Attack started, standing at rulebook p.14's step 1 with the modal asking which bullets.
         /// </summary>
-        private static MatchSession StartMiddlefinger()
+        /// <param name="withADiscardInRange">
+        /// Milestone 8.70. Whether the hero standing in Dodger's printed Range already has a card in
+        /// their discard, which is what the second bullet's clause is about. The default board leaves
+        /// every pile empty - that is the board the clause is MEASURED on, because the two bullets
+        /// then offer different sets at one instant - and a case about "one, or both" needs the other
+        /// one, since a bullet naming nobody is greyed at the modal from this milestone onwards and
+        /// cannot be part of a both-bullet answer at all.
+        /// </param>
+        private static MatchSession StartMiddlefinger(bool withADiscardInRange = false)
         {
-            var session = ConfiguredMatchFixtures.CreateEngagedStagedDodgerTierThreeSession();
+            var session = withADiscardInRange
+                ? ConfiguredMatchFixtures
+                    .CreateEngagedStagedDodgerTierThreeSessionWithADiscardInRange()
+                : ConfiguredMatchFixtures.CreateEngagedStagedDodgerTierThreeSession();
             var middlefinger = session.Projection.Cards.Single(card =>
                 card.DefinitionReference.DefinitionId.Equals(
                     DodgerCardContent.MiddlefingerOfDeath) &&
@@ -550,6 +596,9 @@ namespace GuardsDigital.Tests.EditMode
         private static void ChooseBothBullets(MatchSession session)
         {
             var modal = session.Projection.PendingEffectChoice;
+            Assert.That(modal.UnavailableCandidates, Is.Empty,
+                "Milestone 8.70: a both-bullet answer needs both bullets live at the modal, because a " +
+                "bullet naming nobody is greyed there rather than taken and spent on nothing.");
             Accept(session, DirectorCommand.AnswerEffectChoice(modal.SelectInvocations[0]));
             var afterFirst = session.Projection.PendingEffectChoice;
             // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
@@ -557,15 +606,24 @@ namespace GuardsDigital.Tests.EditMode
             ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, afterFirst.SelectInvocations[0]);
         }
 
-        /// <summary>Answers the modal with one bullet: 1 for the adjacent unit, 2 for the pile clause.</summary>
+        /// <summary>
+        /// Answers the modal with one bullet: 1 for the adjacent unit, 2 for the pile clause.
+        ///
+        /// <para>Milestone 8.70 names the bullet rather than counting to it. The offered set is a
+        /// board reading from this milestone onwards, so an ordinal into <c>SelectInvocations</c> would
+        /// quietly mean a different bullet on a board where one of them is greyed.</para>
+        /// </summary>
         private static void ChooseOnlyTheBullet(MatchSession session, int ordinal)
         {
+            var node = ordinal == 1 ? "middlefinger-adjacent" : "middlefinger-discard";
             var modal = session.Projection.PendingEffectChoice;
-            Assert.That(modal.SelectInvocations, Has.Count.EqualTo(2));
+            var invocation = modal.SelectInvocations.SingleOrDefault(candidate =>
+                candidate.Candidate.OptionNodeId.Value == node);
+            Assert.That(invocation, Is.Not.Null,
+                $"'{node}' is offered on this board, so it is an answer the player may give.");
             // Milestone 8.46b: the completion is asked for rather than assumed, and aimed at the choice
             // this answer went into - one admitting exactly one selection is closed by the select itself.
-            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, 
-                modal.SelectInvocations[ordinal - 1]);
+            ConfiguredMatchFixtures.AnswerEffectChoiceSelection(session, invocation);
         }
 
         /// <summary>Runs the whole of the standing sequence's p.14 against its first legal hero.</summary>

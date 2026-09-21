@@ -3108,26 +3108,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MatchParticipants participants,
             RuleModificationSet modifications)
         {
-            var composed = RangeValueQuery.Calculate(offer, definitions, heroItems, modifications);
-            var action = ActionOfferQuery.FindActionDefinition(offer, definitions);
-            var roster = RosterDynamicValueQuery.Contributions(
-                action,
+            // Milestone 8.70. The derivation moved to `AttackSequenceBulletSubjectQuery` when a second
+            // caller appeared - a modal Attack's bullet asking "in range" at the modal choice, one
+            // whole action before its own sequence asks it - and this method delegates rather than
+            // keeping a copy, so the two moments cannot come to disagree about one Range Total.
+            return AttackSequenceBulletSubjectQuery.RangeValue(
                 offer,
-                default,
-                PrintedValueChannel.Range,
                 definitions,
-                Array.Empty<CardInstance>(),
                 participants,
                 adjacentMoveAuthority,
-                modifications,
+                heroItems,
                 rosterState,
-                0,
-                0);
-            return roster.Count == 0
-                ? composed
-                : new ValueResult(
-                    PrintedValueChannel.Range,
-                    composed.Contributions.Concat(roster));
+                modifications);
         }
 
         private RoundTurnSlot FindCurrentTurnSlot(ActionOffer offer)
@@ -3279,16 +3271,47 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // 8.35z15's rule applied one level in - judge the offer against what the answer would
             // actually be able to perform.
             //
-            // The judgement stops at the ACTION and deliberately does not reach the individual bullet
-            // at the modal. Whether a given bullet's sequence will find a subject is a question about
-            // a board that does not exist yet: the first sequence's own Defense window puts cards into
-            // exactly the pile a discard-narrowed bullet reads, so greying one on a present-tense
-            // reading would be milestone 8.35p's measured mistake inverted. That is the same reasoning
-            // milestone 8.35z27 wrote into the capability's own Anticipate.
-            return bullets.Any(bullet => FindLegalAttackTargets(
-                offer.ActorId, offer, definitions, participants, modifications,
-                bullet, cardInstances).Count > 0);
+            // Milestone 8.70 made the per-bullet half of this a named question of its own, because the
+            // modal choice now asks it too: "any" is exactly "each, and at least one", so the whole
+            // primary and the individual bullet are one reading counted twice rather than two rules
+            // that could drift apart.
+            return bullets.Any(bullet => CanThisDeclaredBulletFindATarget(
+                offer, bullet, definitions, participants, modifications, cardInstances));
         }
+
+        /// <summary>
+        /// Milestone 8.70. Whether ONE declared bullet of a modal Attack has a unit its own printed
+        /// sentence admits, on the board as it stands right now - the question the modal choice asks of
+        /// each bullet before it offers one, settling BR-Q19h at the user's direction ("I think we
+        /// should gray it out if no legal targets").
+        ///
+        /// <para>It is the same derivation <see cref="CanAnyDeclaredBulletFindATarget"/> counts over
+        /// and the same one the chosen bullet's own p.14 sequence runs, asked of
+        /// <see cref="AttackSequenceBulletSubjectQuery"/>, which owns it. The capability handler that
+        /// stands on the bullet's node while the modal is being offered asks that owner directly rather
+        /// than reaching this backend, because the offer walk has no authority in scope - what makes
+        /// the two agree is that neither of them holds a derivation of its own.</para>
+        /// </summary>
+        internal bool CanThisDeclaredBulletFindATarget(
+            ActionOffer offer,
+            AttackSequenceBullet bullet,
+            IReadOnlyList<CardDefinition> definitions,
+            MatchParticipants participants,
+            RuleModificationSet modifications,
+            IEnumerable<CardInstance> cardInstances) =>
+            AttackSequenceBulletSubjectQuery.HasALegalSubject(
+                offer.ActorId,
+                offer,
+                bullet,
+                definitions,
+                cardInstances,
+                participants,
+                adjacentMoveAuthority,
+                adjacentMoveAuthority,
+                markers,
+                heroItems,
+                rosterState,
+                modifications);
 
         private IReadOnlyList<AttackTarget> FindLegalAttackTargets(
             HeroId attackerId,
@@ -3299,6 +3322,36 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackSequenceBullet sequenceBullet = default,
             IEnumerable<CardInstance> cardInstances = null)
         {
+            // Milestone 8.35z27. A modal Attack's bullets each print their own targeting
+            // sentence - Middlefinger of Death's are "a unit adjacent to you" and "a hero in range
+            // who has one or more cards in the discard" - so the sequence running this bullet reaches
+            // what that bullet says and not what the action's own icons would say. Everything else
+            // about the set is unchanged: the same Range Total, the same p.18 immunities, the same
+            // query. Only the printed sentence differs, which is exactly the division milestone 8.5
+            // drew between the classification and the card's own words.
+            //
+            // Milestone 8.70 moved that derivation to `AttackSequenceBulletSubjectQuery`, unchanged,
+            // when the modal choice became a second caller: the bullet the sequence runs and the
+            // bullet the choice offers are now proved legal by one method rather than by two copies
+            // of it. The reach and the Range Total below are that query's as well, so nothing about
+            // the number this branch would have used moves - it is simply asked one call further in.
+            if (sequenceBullet.IsDefined)
+            {
+                return AttackSequenceBulletSubjectQuery.FindLegalSubjects(
+                    attackerId,
+                    offer,
+                    sequenceBullet,
+                    definitions,
+                    cardInstances,
+                    participants,
+                    adjacentMoveAuthority,
+                    adjacentMoveAuthority,
+                    markers,
+                    heroItems,
+                    rosterState,
+                    modifications);
+            }
+
             // Milestone 7.2a. A Ranged Attack's Range Total decides which enemies it may target, so a
             // +1 Range item reaches one space further - the page's own example of an item that matters
             // only to a card printing that icon. A non-Ranged Attack has no Range icon and is adjacency
@@ -3316,29 +3369,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var rangeTotal = attackRange == AttackRangeKind.Ranged
                 ? RangeValue(offer, definitions, participants, modifications).Total
                 : 1;
-
-            // Milestone 8.35z27. A modal Attack's bullets each print their own targeting
-            // sentence - Middlefinger of Death's are "a unit adjacent to you" and "a hero in range
-            // who has one or more cards in the discard" - so the sequence running this bullet reaches
-            // what that bullet says and not what the action's own icons would say. Everything else
-            // about the set is unchanged: the same Range Total, the same p.18 immunities, the same
-            // query. Only the printed sentence differs, which is exactly the division milestone 8.5
-            // drew between the classification and the card's own words.
-            if (sequenceBullet.IsDefined)
-            {
-                var admitted = AttackTargetQuery.FindLegalEnemyTargets(
-                    attackerId,
-                    RangedAttackOverlayQuery.Overlay(
-                        sequenceBullet.TargetPolicy, offer.AttackRange, offer.ActorId, modifications),
-                    rangeTotal,
-                    participants,
-                    adjacentMoveAuthority,
-                    modifications);
-
-                return NarrowedToTheBulletsSubject(
-                    admitted, sequenceBullet, cardInstances, attackerId, markers,
-                    adjacentMoveAuthority, modifications);
-            }
 
             // Milestone 8.5. The policy is the card's own, not the classification's: p.13 states what
             // an Attack may target as a rule about the card, and a card that narrows it - a hero-only
@@ -3361,137 +3391,6 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 participants,
                 adjacentMoveAuthority,
                 modifications);
-        }
-
-        /// <summary>
-        /// Milestone 8.35z45. The bullet's own predicate about the candidate, applied to the
-        /// set its printed sentence already admitted.
-        ///
-        /// <para><b>Applied here rather than inside the target query, and that is the whole design.</b>
-        /// <see cref="AttackTargetQuery.FindLegalEnemyTargets"/> answers rulebook p.13's question -
-        /// which enemy units this reach and this policy admit, under p.18's immunities - and it is asked
-        /// by every Attack in the build. The predicate is one bullet of one card's own extra sentence,
-        /// so it narrows the answer rather than changing the question. That also makes the two orders
-        /// commute: nothing the predicate removes could have changed an immunity or a distance.</para>
-        ///
-        /// <para><b>Heroes only, and by the sentence rather than by convenience.</b> "a hero in range
-        /// who has one or more cards in the discard" is a hero clause; a minion owns no cards and has no
-        /// pile for it to be about. The bullet that prints it also prints
-        /// <see cref="AttackTargetableUnits.HeroesOnly"/>, so no minion reaches here in practice - but a
-        /// minion IS dropped rather than admitted, because a bullet that narrowed by a hero fact and
-        /// then let every minion through would be reading the clause as if it were not there.</para>
-        ///
-        /// <para><b>The absence of the state a predicate reads is loud.</b> A bullet declaring a
-        /// predicate that reaches this without cards has been asked a question it cannot answer, and the
-        /// two silent answers - admit everybody, or admit nobody - are a widened offer and a card greyed
-        /// for nothing. Both look exactly like a board position, which is the failure
-        /// <c>EffectCardState.Absent</c> exists to refuse; it is refused the same way here. Milestone
-        /// 8.40c's marker predicate is refused on the same terms when the register is absent, which is
-        /// every composition outside a live match.</para>
-        ///
-        /// <para><b>The marker register is a field this backend already held</b>, bound at construction
-        /// since milestone 6.12 so that p.13's "any markers they had are returned" happens where the
-        /// Defeat is recorded. Reading it here needed no widened signature and no component port: the
-        /// evaluation site simply asks the register the round authority owns, which is the same one the
-        /// give and the return mutate.</para>
-        /// </summary>
-        private static IReadOnlyList<AttackTarget> NarrowedToTheBulletsSubject(
-            IReadOnlyList<AttackTarget> admitted,
-            AttackSequenceBullet bullet,
-            IEnumerable<CardInstance> cardInstances,
-            HeroId attackerId,
-            MarkerAttachmentRegister markers,
-            GuardsDigital.Core.Components.ITokenPlacementAuthority spaces,
-            RuleModificationSet modifications)
-        {
-            if (!bullet.NarrowsItsSubject)
-            {
-                return admitted;
-            }
-
-            // Milestone 8.69a. Brynn's Familiar Ground, bullet 2: "Target a hero in range who is
-            // adjacent to 3 or more obstacles." It is asked of the one owner of that phrase, so the
-            // offer, the target choice and the resolution all see the same candidate set - and so does
-            // his Ultimate, whose counts-as overlay that owner consults before it counts anything.
-            //
-            // The board is the same authority this whole derivation already ran against, handed on as
-            // p.18's classification port; a null one is the loud absence the two predicates below also
-            // refuse, on the same terms.
-            if (bullet.SubjectNarrowing ==
-                AttackSequenceSubjectNarrowing.IsAdjacentToThreeOrMoreObstacles)
-            {
-                if (spaces == null || modifications == null)
-                {
-                    throw new InvalidOperationException(
-                        $"The modal Attack bullet '{bullet.BulletId}' prints " +
-                        $"'{bullet.SubjectNarrowing}', which is a predicate about the board around the " +
-                        "candidate, and this target derivation was given no board or no live rules to " +
-                        "read. Supply both at the call site rather than letting the narrowing " +
-                        "silently admit or silently exclude every candidate.");
-                }
-
-                return admitted
-                    .Where(target => target.Kind == AttackTargetKind.Hero &&
-                        ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
-                            spaces, target.HeroId, modifications))
-                    .ToArray();
-            }
-
-            if (bullet.SubjectNarrowing == AttackSequenceSubjectNarrowing.HoldsTheActorsMarker)
-            {
-                if (markers == null)
-                {
-                    throw new InvalidOperationException(
-                        $"The modal Attack bullet '{bullet.BulletId}' prints " +
-                        $"'{bullet.SubjectNarrowing}', which is a predicate about a component the " +
-                        "candidate is wearing, and this target derivation was given no marker " +
-                        "register to read. Supply the match's register at the call site rather than " +
-                        "letting the narrowing silently admit or silently exclude every candidate.");
-                }
-
-                var holders = HeldMarkerQuery.HoldersOfAMarkerDeclaredBy(
-                    markers.Attachments, attackerId);
-                return admitted
-                    .Where(target => target.Kind == AttackTargetKind.Hero &&
-                        holders.Any(holder => holder.Equals(target.HeroId)))
-                    .ToArray();
-            }
-
-            if (cardInstances == null)
-            {
-                throw new InvalidOperationException(
-                    $"The modal Attack bullet '{bullet.BulletId}' prints " +
-                    $"'{bullet.SubjectNarrowing}', which is a predicate about the candidate's own " +
-                    "cards, and this target derivation was given no card state to read. Supply the " +
-                    "match's card instances at the call site rather than letting the narrowing " +
-                    "silently admit or silently exclude every candidate.");
-            }
-
-            var instances = cardInstances as IReadOnlyList<CardInstance> ?? cardInstances.ToArray();
-            return admitted
-                .Where(target => AdmitsTheSubject(target, bullet.SubjectNarrowing, instances))
-                .ToArray();
-        }
-
-        private static bool AdmitsTheSubject(
-            AttackTarget target,
-            AttackSequenceSubjectNarrowing narrowing,
-            IReadOnlyList<CardInstance> instances)
-        {
-            switch (narrowing)
-            {
-                case AttackSequenceSubjectNarrowing.HasOneOrMoreCardsInTheDiscard:
-                    return target.Kind == AttackTargetKind.Hero &&
-                        HeroDiscardPileQuery.HasAnyCard(instances, target.HeroId);
-                // Milestone 8.35z53. Whisper's Swift Justice, bullet 1: "Target a
-                // hero in range with an empty discard" - the exact negation of the case above,
-                // reading the same query so the two cannot come to disagree about one pile.
-                case AttackSequenceSubjectNarrowing.HasAnEmptyDiscard:
-                    return target.Kind == AttackTargetKind.Hero &&
-                        !HeroDiscardPileQuery.HasAnyCard(instances, target.HeroId);
-                default:
-                    return true;
-            }
         }
 
         private static ActionOffer? FindPendingAttackOffer(

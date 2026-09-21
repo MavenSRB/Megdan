@@ -284,12 +284,29 @@ namespace GuardsDigital.Tests.PlayMode
             var bulletCandidates = runtime.RoundView.Model.EffectChoices
                 .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
-            Assert.That(bulletCandidates, Has.Length.EqualTo(2),
-                "Both bullets stand: the card is fresh from hand, so the gated \"in range\" bullet is " +
-                "not withheld. " + Remaining(runtime));
+            var gated = bulletCandidates.SingleOrDefault(value =>
+                value.Command.EffectChoice.Candidate.OptionNodeId.Value ==
+                    "spirit-not-in-discard-gate");
+            Assert.That(gated, Is.Not.Null,
+                "The gated \"in range\" arm stands: the card is fresh from hand, so nothing withholds " +
+                "it. " + Remaining(runtime));
 
-            Assert.That(runtime.SubmitProjectedCommand(bulletCandidates[0].Command), Is.True,
-                "The first offered bullet is the gated \"target a unit in range\" reading.");
+            // MILESTONE 8.70. The OTHER arm - "Target a hero adjacent to you" - is a bare bullet, so
+            // the modal now reads the board for it: it stands only while somebody is actually in her
+            // ring, and is greyed otherwise. The gated arm is never judged that way, because the walk
+            // that decides which options are offered has never let a Conditional report Blocked - an
+            // unevaluated predicate could have taken the harmless path - which is the shared rule
+            // `ModalBulletGreyingTests` states in full. So the two arms are counted together rather
+            // than assumed, and the one this journey drives is named rather than indexed.
+            Assert.That(
+                bulletCandidates.Length +
+                    runtime.RoundView.Model.UnavailableEffectChoices.Count,
+                Is.EqualTo(2),
+                "Both printed arms reach the window, whether as an answer or as a grey. " +
+                Remaining(runtime));
+
+            Assert.That(runtime.SubmitProjectedCommand(gated.Command), Is.True,
+                "and the gated \"target a unit in range\" reading is the one taken.");
             yield return null;
 
             for (var budget = 0; budget < 4 && runtime.PendingDefenseChoice != null; budget++)

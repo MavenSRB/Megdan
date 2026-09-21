@@ -376,6 +376,21 @@ namespace GuardsDigital.Tests.PlayMode
             Healthy(root.Runtime);
         }
 
+        /// <summary>
+        /// Milestone 8.70. Every bullet a standing modal has GREYED, as the node ids they stand for -
+        /// the set the decision window draws with a label, a place and no command behind it.
+        /// </summary>
+        internal static string[] GreyedBullets(ConfiguredMatchSceneRuntime runtime)
+        {
+            var choice = runtime.PendingEffectChoice;
+            Assert.That(choice, Is.Not.Null, "No modal stands. " + Remaining(runtime));
+            return choice.UnavailableCandidates
+                .Where(candidate => candidate.OptionNodeId.IsDefined)
+                .Select(candidate => candidate.OptionNodeId.Value)
+                .OrderBy(value => value, StringComparer.Ordinal)
+                .ToArray();
+        }
+
         /// <summary>Every bullet a standing modal is offering, as the node ids they stand for.</summary>
         internal static string[] OfferedBullets(ConfiguredMatchSceneRuntime runtime)
         {
@@ -674,12 +689,12 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(greyRuntime));
             Healthy(greyRuntime);
 
-            // MEASURED at 8.69h, and pinned rather than asserted around. A unit stands beside him, so
-            // the FIRST bullet has a subject; the second names nobody and is offered all the same,
-            // because `attack-sequence@1` answers `Anticipate` from its own declaration rather than
-            // from the board. Taking it spends the action and applies nothing. The day that reading
-            // changes - and this milestone's report argues it should - this is the assertion that
-            // fails first.
+            // MEASURED at 8.69h as a FINDING - the narrowed bullet was offered although its own
+            // sentence named nobody, and taking it spent the action and applied nothing - and FLIPPED
+            // at milestone 8.70, which is the user settling BR-Q19h on that finding: "I think we
+            // should gray it out if no legal targets". A unit stands beside him, so the first bullet
+            // has a subject and the primary is offered; the second names nobody and is now greyed at
+            // the choice, on the rendered tier as well as in the authority.
             yield return StageBrynn(
                 SceneCardContent.VerifiedEngagedStagedBrynn,
                 hand: new[] { BrynnCardContent.FamiliarGround, BrynnCardContent.Decoy },
@@ -690,15 +705,24 @@ namespace GuardsDigital.Tests.PlayMode
                 "Arrange: the enemy hero stands in the open. " + Remaining(emptyRuntime));
             yield return BeginBrynn(
                 emptyRoot, BrynnCardContent.FamiliarGround, ActionKind.Attack);
+            Assert.That(GreyedBullets(emptyRuntime),
+                Is.EqualTo(new[] { "familiar-ground-obstacle-bullet" }).AsCollection,
+                "The narrowed bullet names nobody on this board, so it is greyed rather than offered, " +
+                "taken and spent on nothing. " + Remaining(emptyRuntime));
             Assert.That(OfferedBullets(emptyRuntime),
-                Contains.Item("familiar-ground-obstacle-bullet"),
-                "FINDING: the narrowed bullet is offered although its own sentence names nobody. " +
+                Is.EqualTo(new[] { "familiar-ground-adjacent-bullet" }).AsCollection,
+                "and the bullet whose sentence does name a unit is the answer left to give. " +
                 Remaining(emptyRuntime));
-            yield return Bullet(emptyRoot, "familiar-ground-obstacle-bullet");
-            Assert.That(emptyRuntime.PendingAttackTargetChoice, Is.Null,
-                "and p.14 never opens a target question, because the narrowing admits no hero. " +
+            Assert.That(
+                emptyRuntime.RoundView.Model.UnavailableEffectChoices, Has.Count.EqualTo(1),
+                "THE RENDERED TIER AGREES WITH THE AUTHORITY, which is the half a headless case " +
+                "cannot see: the window draws the greyed bullet with its label and its place and no " +
+                "command behind it. " + Remaining(emptyRuntime));
+            yield return Bullet(emptyRoot, "familiar-ground-adjacent-bullet");
+            Assert.That(emptyRuntime.PendingAttackTargetChoice, Is.Not.Null,
+                "and the answer the board supports reaches p.14's own target question. " +
                 Remaining(emptyRuntime));
-            SeatsAgree(emptyRuntime, "the empty bullet");
+            SeatsAgree(emptyRuntime, "the greyed bullet");
             Healthy(emptyRuntime);
         }
 
@@ -742,6 +766,12 @@ namespace GuardsDigital.Tests.PlayMode
                 root, BrynnCardContent.FamiliarGround, ActionKind.Attack, WaspCardContent.Shock);
             Assert.That(OfferedBullets(runtime),
                 Contains.Item("familiar-ground-obstacle-bullet"), Remaining(runtime));
+            Assert.That(GreyedBullets(runtime),
+                Does.Not.Contain("familiar-ground-obstacle-bullet"),
+                "Milestone 8.70: the water ring is what gives this bullet a subject, so the bullet " +
+                "the greying reads the board for is offered rather than greyed - the same phrase, " +
+                "asked by the same owner, at the choice instead of at the target question. " +
+                Remaining(runtime));
             yield return Bullet(root, "familiar-ground-obstacle-bullet");
             Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null, Remaining(runtime));
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds.ToArray(),

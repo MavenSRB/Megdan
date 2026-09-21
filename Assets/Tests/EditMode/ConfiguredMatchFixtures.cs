@@ -277,6 +277,42 @@ namespace GuardsDigital.Tests.EditMode
                     TeamSide.Blue, DodgerUpgradeBranch.FirstSibling));
 
         /// <summary>
+        /// Milestone 8.70. The same board with ONE card already in the enemy hero's discard, so
+        /// Middlefinger of Death's second bullet - "a hero in range who has one or more cards in the
+        /// discard" - has a subject at the moment the modal is answered.
+        ///
+        /// <para><b>Why it is needed and what changed under it.</b> The fixture above deliberately
+        /// leaves every pile empty, which was the right board while a bullet with nobody to name was
+        /// still OFFERED at the modal (milestone 8.35z27's reading). Milestone 8.70 greys that bullet
+        /// at the choice on the user's ruling, so "choose one, OR BOTH" can no longer be answered both
+        /// ways there - and the cases that are about the choose-both contract rather than about the
+        /// pile clause need a board that supports both answers. This is the smallest such board: one
+        /// discard, moved by <see cref="CardLifecycleAuthority"/>'s own transition exactly as
+        /// <c>SandboxStagingAuthority</c> moves one when a staged hand is trimmed, and nothing else
+        /// about the staged match touched.</para>
+        /// </summary>
+        public static MatchSession CreateEngagedStagedDodgerTierThreeSessionWithADiscardInRange()
+        {
+            var configuration = MatchConfiguration.CreateStagedDodgerTierThreeForInternalTest(
+                TeamSide.Blue, DodgerUpgradeBranch.FirstSibling);
+            var dodger = configuration.CardInstances
+                .First(card => card.DefinitionReference.DefinitionId.Equals(
+                    DodgerCardContent.MiddlefingerOfDeath))
+                .OwnerId;
+            var enemy = configuration.CardInstances
+                .Where(card =>
+                    card.State.Location == CardLocation.Hand && !card.OwnerId.Equals(dodger))
+                .OrderBy(card => card.Id.Value, StringComparer.Ordinal)
+                .First();
+            NUnit.Framework.Assert.That(
+                CardLifecycleAuthority.TryDiscardFromHand(enemy),
+                Is.True,
+                "Fixture precondition: the hero standing in Dodger's printed Range really does have a " +
+                "pile for the second bullet's clause to be about.");
+            return CreateEngagedFixtureSession(configuration);
+        }
+
+        /// <summary>
         /// Milestone 8.54. Swift at rulebook p.15's Tier III stage with p.16's Bullet Time standing
         /// unlocked on her rail, on the board the two heroes are engaged on.
         ///

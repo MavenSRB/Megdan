@@ -278,21 +278,23 @@ namespace GuardsDigital.Tests.PlayMode
         /// <c>:seq-N</c>. A journey that asserted the effect-selection shape here would be asserting
         /// the wrong card.</para>
         ///
-        /// <para><b>What this journey deliberately does NOT try to show.</b> The second bullet's pile
-        /// clause admits nobody on this board - nothing has been discarded when the modal is answered -
-        /// and the card's own "(on different targets)" would exclude the hero the first sequence takes
-        /// in any case. Both readings are measured offline against a real match in
-        /// <c>MiddlefingerOfDeathTests</c>, where the two bullets can be contrasted on one board at one
-        /// instant; asking a UI journey to separate two clauses that agree here would be a fixture
-        /// watching the wrong thing. What the journey is for is the CONTROLS: two bullets, a modal that
-        /// stays open across the first, a Confirm, and p.14's own target prompt behind it.</para>
+        /// <para><b>What this journey shows since milestone 8.70, and what it deliberately does
+        /// NOT.</b> The second bullet's pile clause admits nobody on this board - nothing has been
+        /// discarded when the modal is answered - so from that milestone it is GREYED at the choice
+        /// rather than offered, and the journey's subject is the CONTROLS that reach a player: one
+        /// live bullet, one greyed one drawn with its label and no command, the printed ceiling of two
+        /// unmoved, a modal that stays open until the player ends it, and p.14's own target prompt
+        /// behind it. What it does not try to show is the two clauses contrasted on one board at one
+        /// instant, or a both-bullet answer: both are measured offline against a real match in
+        /// <c>MiddlefingerOfDeathTests</c> and <c>ModalBulletGreyingTests</c>, the first of which
+        /// stands a board with a discard in range precisely so "one, OR BOTH" is answerable at all.</para>
         ///
         /// <para><b>NOT YET EXECUTED.</b> Written and compile-checked at milestone
         /// 8.35z45; the Unity launcher was held for the whole session, so its first run is
         /// owed at integration alongside the rest of the tier.</para>
         /// </summary>
         [UnityTest]
-        public IEnumerator MiddlefingerOfDeath_TakesBothBulletsAndOpensACompletePageFourteenForEach()
+        public IEnumerator MiddlefingerOfDeath_GreysTheBulletWithNoSubjectAndOpensACompletePageFourteenForTheOther()
         {
             yield return LoadStagedScene(SceneCardContent.VerifiedTierThreeEngagedStagedDodger);
             var root = Root();
@@ -311,47 +313,47 @@ namespace GuardsDigital.Tests.PlayMode
                 "p.10's modal asks which bullets before p.14 asks anything. " + Remaining(runtime));
             // The same query `TypeControls` below makes for the Respawn's type choice: the Select-kind
             // controls a paused choice is currently offering, as opposed to its Confirm.
+            // MILESTONE 8.70. Exactly one bullet is a live control here, and the other is drawn
+            // GREYED - "Target a hero in range who has one or more cards in the discard" names nobody
+            // on this staging, where nothing has been discarded when the modal is answered. Until this
+            // milestone both were live controls and taking the empty one spent the action applying
+            // nothing; the user settled BR-Q19h the other way, so the choice reads the board.
             var bullets = TypeControls(runtime);
-            Assert.That(bullets, Has.Length.EqualTo(2),
-                "Both printed bullets are drawn as their own controls. " + Remaining(runtime));
+            Assert.That(bullets, Has.Length.EqualTo(1),
+                "Only the bullet that names a unit is an answer a player may give. " +
+                Remaining(runtime));
+            Assert.That(runtime.RoundView.Model.UnavailableEffectChoices, Has.Count.EqualTo(1),
+                "and the other keeps its label and its place with no command behind it, which is " +
+                "what a greyed bullet IS on the rendered tier. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.MaximumSelections, Is.EqualTo(2),
+                "The printed ceiling is untouched: \"one, or both\" is what the card says, and the " +
+                "grey is a reading of the board rather than a change to the card. " +
+                Remaining(runtime));
 
             UiPlayer.Click(UiPlayer.Button(hud, bullets[0].Label));
             yield return null;
             yield return null;
 
-            // THE "OR BOTH" HALF, and it is the whole reason this face needed a contract of its own.
-            // On her three "Choose one" faces the modal is finished by this point.
-            var stillOffered = TypeControls(runtime);
-            Assert.That(stillOffered, Has.Length.EqualTo(1),
-                "\"one OR BOTH\" leaves the other bullet standing after the first is taken, where " +
-                "\"Choose one\" would have closed the question. " + Remaining(runtime));
-
-            // AND IT IS ENDED BY THE PLAYER, which is asserted HERE rather than after the second
-            // bullet - below the ceiling, stopping at one is a real choice and the Confirm is the
-            // control that offers it. This is the observable difference from "Choose one", whose
-            // modal is already finished at this point.
-            Assert.That(
-                runtime.RoundView.Model.EffectChoices.Any(value =>
-                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm),
-                Is.True,
+            // AND THE MODAL IS ENDED BY THE PLAYER, which is the "or both" half seen from the other
+            // side. Below the ceiling, stopping is a real choice and the Confirm is the control that
+            // offers it - and here there is nothing left to add, because the only other bullet is
+            // greyed. Her three "Choose one" faces are already finished at this point; this one is
+            // not, and that difference is what the face needed a contract of its own for.
+            Assert.That(TypeControls(runtime), Is.Empty,
+                "Nothing is left to select: the one live bullet is taken and the other is greyed. " +
+                Remaining(runtime));
+            var confirm = runtime.RoundView.Model.EffectChoices.SingleOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            Assert.That(confirm, Is.Not.Null,
                 "A modal that may take more than one option has to be endable by the player while " +
                 "an option remains untaken. " + Remaining(runtime));
 
-            UiPlayer.Click(UiPlayer.Button(hud, stillOffered[0].Label));
+            UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
             yield return null;
             yield return null;
 
-            // THE CEILING CONFIRMS ITSELF, and this is a UI fact the model does not show.
-            // `MatchFeaturePresenters` issues the Confirm automatically when an accepted Select takes
-            // `SelectedCandidates.Count` to `MaximumSelections` and a ConfirmInvocation exists, so
-            // taking the LAST option ends the modal without a second press - there is nothing left to
-            // decide and a player is not made to say so. The Edit Mode contract presses that Confirm
-            // itself because it drives commands rather than controls, and the first complete Play Mode
-            // run of this journey is what showed the two paths differ. A journey written from the
-            // command shape alone would look for a control the UI has already consumed.
             Assert.That(runtime.PendingEffectChoice, Is.Null,
-                "Taking the last option of a modal at its ceiling ends it, because the presenter " +
-                "confirms what cannot be added to. " + Remaining(runtime));
+                "and confirming closes it. " + Remaining(runtime));
 
             var pending = runtime.PendingAttackTargetChoice;
             Assert.That(pending, Is.Not.Null,
@@ -411,12 +413,13 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
-                "The second sequence has no subject on this board - the card prints \"(on different " +
-                "targets)\", and its second bullet admits only a hero in range holding a card in the " +
-                "discard, which this staging does not put there - so the whole action is finished " +
-                "rather than standing open. That the modal still took BOTH bullets is what this " +
-                "journey is for: the ceiling is two, and a bullet with no subject is not a bullet " +
-                "that was refused. " + Remaining(runtime));
+                "One bullet was chosen, its complete p.14 ran, and the action is finished rather " +
+                "than standing open. MILESTONE 8.70 is what makes that the whole of it: the second " +
+                "bullet admits only a hero in range holding a card in the discard, which this staging " +
+                "does not put there, so it was greyed at the modal instead of being taken and spent " +
+                "on nothing. The ceiling of two is still the card's, and this journey now shows what " +
+                "a board that supports only one of the two answers looks like to a player. " +
+                Remaining(runtime));
         }
 
         /// <summary>

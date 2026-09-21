@@ -13,6 +13,22 @@ using GuardsDigital.Core.Units.Minions;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
+    /// <summary>
+    /// Milestone 8.70 widened this file's <c>board</c> parameter from
+    /// <see cref="GuardsDigital.Core.Rules.AdjacentMove.AdjacentMoveAuthority"/> to the declared port
+    /// <see cref="IBoardDisplacementAuthority"/>, and nothing else about it moved.
+    ///
+    /// <para>The three members this query reads - the hero register, the minion register and what
+    /// stands on one space - are all on that port, and the two rules queries it hands the board to
+    /// (<see cref="Modifications.TerrainPresenceQuery"/> and <see cref="Modifications.TargetQuery"/>)
+    /// already take it. What made the widening necessary is that a modal Attack's bullet is now judged
+    /// where the modal is OFFERED, and the capability standing on that bullet's node holds
+    /// <c>MatchComponents.Board</c> - the port - rather than the movement authority. Widening the
+    /// parameter is how that caller reaches the ONE target derivation instead of a second one written
+    /// against what it happens to hold, which is the rule <see cref="Modifications.ObstacleQuery"/>
+    /// records for the same situation at milestone 8.69a. Every caller passes the concrete authority
+    /// exactly as before.</para>
+    /// </summary>
     public static class AttackTargetQuery
     {
         /// <summary>
@@ -35,7 +51,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackRangeKind attackRange,
             int rangeTotal,
             MatchParticipants participants,
-            AdjacentMoveAuthority board,
+            IBoardDisplacementAuthority board,
             RuleModificationSet modifications) =>
             FindLegalEnemyTargets(
                 attackerId,
@@ -65,7 +81,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PrintedAttackTargetPolicy policy,
             int rangeTotal,
             MatchParticipants participants,
-            AdjacentMoveAuthority board,
+            IBoardDisplacementAuthority board,
             RuleModificationSet modifications)
         {
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -260,7 +276,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             AttackRangeKind attackRange,
             int rangeTotal,
             MatchParticipants participants,
-            AdjacentMoveAuthority board,
+            IBoardDisplacementAuthority board,
             RuleModificationSet modifications)
         {
             if (!attackerId.IsDefined)

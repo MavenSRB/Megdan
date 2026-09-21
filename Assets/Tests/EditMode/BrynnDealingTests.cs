@@ -564,6 +564,18 @@ namespace GuardsDigital.Tests.EditMode
                 string.Join(", ", bullets));
             Assert.That(bullets, Has.Member("familiar-ground-obstacle-bullet"),
                 "and the bullet that names a boxed-in hero in range is one of them.");
+            // MILESTONE 8.70. The OTHER bullet - "Target a unit adjacent to you" - names nobody on
+            // this board, because nothing at all stands in p.19's ring around him. From this milestone
+            // that is greyed at the choice rather than offered, taken and spent on nothing, which is
+            // the user's ruling on BR-Q19h - and measuring it here is what makes the positive
+            // assertion above about the obstacle bullet rather than about the modal having two
+            // controls.
+            Assert.That(
+                choice.UnavailableCandidates
+                    .Select(candidate => candidate.OptionNodeId.Value)
+                    .ToArray(),
+                Is.EqualTo(new[] { "familiar-ground-adjacent-bullet" }),
+                "and the bullet whose own sentence names nobody is greyed beside it.");
 
             TakeTheObstacleBullet(board);
 
@@ -620,8 +632,27 @@ namespace GuardsDigital.Tests.EditMode
                 "very board now has a subject - and it is the DEALT card's overlay doing it, derived " +
                 "from the unlocked Purple and the participants rather than from anything a fixture " +
                 "built.");
+            // MILESTONE 8.70, and this is the case that proves the greying reads the overlay rather
+            // than the geometry: the enemy hero stands in the open, so WITHOUT Over the Top this
+            // bullet would be greyed at the choice - and with it unlocked the bullet is offered. The
+            // adjacent bullet is greyed either way, because nothing stands in his ring.
+            Assert.That(
+                board.Choice.UnavailableCandidates
+                    .Select(candidate => candidate.OptionNodeId.Value)
+                    .ToArray(),
+                Is.EqualTo(new[] { "familiar-ground-adjacent-bullet" }));
 
             board.RoundTripThroughASnapshot();
+
+            // AND THE GREYED SET SURVIVES THE SNAPSHOT BOUNDARY WITHOUT BEING WRITTEN TO IT. Nothing
+            // about a refusal is persisted - it is re-derived beside the candidate set at every pause,
+            // on restore, on replay and on retained-prefix Undo - so a restored modal greys what the
+            // restored board greys rather than what the payload remembered.
+            Assert.That(
+                board.Choice.UnavailableCandidates
+                    .Select(candidate => candidate.OptionNodeId.Value)
+                    .ToArray(),
+                Is.EqualTo(new[] { "familiar-ground-adjacent-bullet" }));
 
             TakeTheObstacleBullet(board);
 

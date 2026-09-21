@@ -493,14 +493,38 @@ namespace GuardsDigital.Tests.EditMode
 
             // Range is asked through either of its two forms - the offer overload or the identity one -
             // and both compose the same total, so the link is satisfied by whichever the caller took.
+            //
+            // MILESTONE 8.70 MADE IT TWO LINKS RATHER THAN ONE, and the rule follows the member the
+            // engine actually uses - which is what it already did at 8.11, when p.14's Defense offer
+            // moved out of this backend, and at 8.35l, when two consumers moved to the explaining form
+            // of the restriction query. The reach a Ranged attack composes is now asked by a SECOND
+            // moment as well: a modal Attack's bullet prints "in range" and the modal choice reads it
+            // one whole action before that bullet's own sequence does. Both moments go through
+            // `AttackSequenceBulletSubjectQuery`, which is the one place the Range Total for an attack
+            // is composed, and this backend delegates to it. Asserting the backend still named
+            // `RangeValueQuery` directly would have been asserting which file the composition lives
+            // in; asserting the chain is what keeps the guarantee - that a source's declared Range
+            // reaches the attack rather than only the query.
             var rangeTotals = ILConformanceScanner
                 .Methods(typeof(RangeValueQuery), nameof(RangeValueQuery.Calculate))
                 .Cast<MemberInfo>()
                 .ToArray();
             Assert.That(rangeTotals, Is.Not.Empty,
                 "The Range total no longer resolves; correct the rule rather than deleting it.");
-            AssertReachesAny(
+            var attackRangeComposition = ILConformanceScanner.Method(
+                typeof(AttackSequenceBulletSubjectQuery),
+                nameof(AttackSequenceBulletSubjectQuery.RangeValue));
+            Assert.That(attackRangeComposition, Is.Not.Null,
+                "The attack's Range composition no longer resolves; correct the rule rather than " +
+                "deleting it.");
+            AssertReaches(
                 attackBackend,
+                attackRangeComposition,
+                "p.14's attack must compose its reach through the one place an attack's Range Total " +
+                "is composed, or its own reach and the reach its modal bullets are judged by become " +
+                "two numbers.");
+            AssertReachesAny(
+                typeof(AttackSequenceBulletSubjectQuery),
                 rangeTotals,
                 "A Ranged attack's reach must come from the one Range query.");
 

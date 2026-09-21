@@ -209,15 +209,115 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 EffectExecutionResult.ImpossibleMandatory();
 
             /// <summary>
-            /// Choosing a bullet is always possible; whether that bullet's sequence will find a unit
-            /// is p.14's question, asked when the sequence starts and answered against the board it
-            /// starts on. Anticipating otherwise would be milestone 8.35z15's mistake inverted -
-            /// refusing a mode on a board reading that the sequence has not reached yet.
+            /// Milestone 8.70, settling BR-Q19h at the user's direction ("I think we should gray it
+            /// out if no legal targets"): a bullet whose own printed sentence names no legal unit on
+            /// the board as it stands is not a choice a player may make, so it is refused here and the
+            /// <see cref="EffectNodeKind.Choose"/> over the bullets carries it as an unavailable
+            /// candidate - greyed, keeping its label and its place, with no way to select it.
+            ///
+            /// <para><b>What milestone 8.35z27 wrote here, and what of it still holds.</b> That
+            /// milestone answered <see cref="EffectExecutionResultKind.Applied"/> for every readable
+            /// bullet, because "whether that bullet's sequence will find a unit is p.14's question,
+            /// asked when the sequence starts and answered against the board it starts on". The
+            /// concern was real and is kept whole, one step later: NOTHING about the sequence changes.
+            /// A bullet chosen while it had a unit still derives its target against the board its own
+            /// p.14 reaches - the first bullet's Defense window may have filled the pile the second
+            /// one reads - and p.10's impossible step is what covers a board that moved in between.
+            /// Only the CHOICE reads the board, because the choice is a decision the player is making
+            /// now, and offering a mode that provably names nobody is what spends a card for
+            /// nothing.</para>
+            ///
+            /// <para><b>It holds no derivation of its own.</b> The question goes to
+            /// <see cref="AttackSequenceBulletSubjectQuery"/>, which is the same method the chosen
+            /// bullet's own sequence derives its target set with and the same one the whole-primary
+            /// greying counts over - so the greyed set at the modal, the answer the resolver will
+            /// refuse and the candidates the decision window draws are one reading, and cannot come
+            /// apart.</para>
+            ///
+            /// <para><b>Two positions are left alone, both by milestone 6.5ac's rule that a step this
+            /// walk cannot judge stays performable.</b> A composition holding no board, no cards or no
+            /// marker register cannot be asked at all (<see cref="AttackSequenceBulletSubjectQuery.CanBeAsked"/>),
+            /// and a probe carrying milestone 8.35z42's hypothetical actor space is asking about a
+            /// square the attacker has not reached - p.13's reach is measured from where he stands, so
+            /// answering it from where he stands now would answer a different question. Both report
+            /// the bullet offered, which is the direction to err in: this refuses a bullet it can
+            /// prove empty and never one it merely cannot read.</para>
             /// </summary>
-            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                IsAReadableBullet(context)
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context)
+            {
+                if (!IsAReadableBullet(context))
+                {
+                    return EffectExecutionResultKind.ImpossibleMandatory;
+                }
+
+                return HasALegalSubject(context)
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
+            }
+
+            /// <summary>
+            /// Whether this bullet names a unit right now, or the conservative <c>true</c> where the
+            /// question cannot be put at all. See <see cref="Anticipate"/> for the whole reading.
+            /// </summary>
+            private static bool HasALegalSubject(EffectCapabilityContext context)
+            {
+                if (context.ProspectiveActorSpace.HasValue ||
+                    context.EnclosingActionKind != ActionKind.Attack ||
+                    context.Components == null ||
+                    context.Participants == null ||
+                    !context.CardState.IsAvailable ||
+                    !context.SourceDefinitionReference.IsDefined ||
+                    !context.ActionDefinitionId.IsDefined ||
+                    !context.SourceCardInstanceId.IsDefined)
+                {
+                    return true;
+                }
+
+                var bullet = DeclaredBullet(context);
+                if (!AttackSequenceBulletSubjectQuery.CanBeAsked(
+                        bullet,
+                        context.Participants,
+                        context.Components.Board,
+                        context.Components.Tokens,
+                        context.Components.Markers,
+                        context.CardState.Instances,
+                        context.Modifications))
+                {
+                    return true;
+                }
+
+                return AttackSequenceBulletSubjectQuery.HasALegalSubject(
+                    context.ActorId,
+                    context.SourceCardInstanceId,
+                    context.SourceDefinitionReference,
+                    context.ActionDefinitionId,
+                    context.InvocationContext,
+                    bullet,
+                    context.CardState.Definitions,
+                    context.CardState.Instances,
+                    context.Participants,
+                    context.Components.Board,
+                    context.Components.Tokens,
+                    context.Components.Markers,
+                    context.HeroItems,
+                    context.RosterState,
+                    context.Modifications);
+            }
+
+            /// <summary>
+            /// The bullet this node IS, read off the inputs it publishes. It is built from the same
+            /// four readings <see cref="Execute"/> publishes and
+            /// <c>RequestedAttackSequenceQuery</c> reads back, so the bullet the offer judges and the
+            /// bullet the sequence runs are one sentence rather than two transcriptions of it.
+            /// </summary>
+            private static AttackSequenceBullet DeclaredBullet(EffectCapabilityContext context) =>
+                new AttackSequenceBullet(
+                    BulletIdFor(context.NodeId),
+                    new PrintedAttackTargetPolicy(
+                        (AttackTargetableUnits)context.Input(TargetableUnitsParameter).IntegerValue,
+                        (AttackTargetReach)context.Input(ReachParameter).IntegerValue,
+                        (AttackTargetLine)context.Input(LineParameter).IntegerValue),
+                    DeclaredNarrowing(context));
 
             private static bool IsAReadableBullet(EffectCapabilityContext context)
             {
