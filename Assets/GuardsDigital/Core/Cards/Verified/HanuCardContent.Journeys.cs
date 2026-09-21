@@ -18,7 +18,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Tier II, 11/4/3, Radius <b>3</b>, <b>Attack</b> item; Safe Travels (<c>hanu11__7635522</c>)
     /// Blue Tier III, 11/5/3, Radius <b>3</b>, <b>Attack</b> item.</para>
     ///
-    /// <para><b>Each row names only the successor this block composes.</b> p.15 forks Blue twice -
+    /// <para><b>Both Blue forks are stated here since 8.71g.</b> p.15 forks Blue twice -
     /// Unexpected Journey climbs to There and Back Again or This Way!, and either of those to Safe
     /// Travels or That Way! - and This Way! and That Way! are milestone 8.71e's faces, being written
     /// on another branch as this one is. <see cref="CardProgressionProfile.NonBasicCard"/> takes the
@@ -26,25 +26,18 @@ namespace GuardsDigital.Core.Cards.Verified
     /// would be naming something that does not compile here. 8.71g completes both pairs, exactly as
     /// Brynn's 8.69f folded four such halves together.</para>
     ///
-    /// <para><b>The revision is a placeholder and is deliberately not a well-formed one.</b>
-    /// <see cref="JourneyPrepRevision"/> reads <c>hanu-8-71d-prep</c> rather than the
-    /// <c>hanu-8-71g-rev-1</c> spelling a real revision takes, on the project's rule that a
-    /// placeholder must not be a value that could be mistaken for a real one.</para>
+    /// <para><b>The revision is real since 8.71g.</b> This block carried the placeholder
+    /// <c>hanu-8-71d-prep</c> - deliberately not the <c>hanu-8-71g-rev-1</c> spelling a real revision
+    /// takes - and 8.71g deleted it. The three faces and the three end-of-turn bodies in
+    /// <see cref="HanuEffectContent.JourneyTriggeredEffects"/> carry
+    /// <see cref="ContentRevision"/>, which they must share: a triggered body and the card that arms it
+    /// have to name one revision or the catalog cannot resolve the reference.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's gate:
     /// <see cref="MatchContentCatalogs"/> names no Hanu content until 8.71h.</para>
     /// </summary>
     public static partial class HanuCardContent
     {
-        /// <summary>
-        /// This block's placeholder revision, which 8.71g replaces with his set's one real string. It
-        /// is also the revision the three end-of-turn bodies in
-        /// <see cref="HanuEffectContent.JourneyTriggeredEffects"/> are composed under, because a
-        /// triggered body and the card that arms it have to name one revision or the catalog cannot
-        /// resolve the reference.
-        /// </summary>
-        public const string JourneyPrepRevision = "hanu-8-71d-prep";
-
         /// <summary>His Blue Tier I: Radius 2, no item.</summary>
         public static CardDefinitionId UnexpectedJourney { get; } =
             new CardDefinitionId("hanu-unexpected-journey");
@@ -78,16 +71,19 @@ namespace GuardsDigital.Core.Cards.Verified
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyJourneys =
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]
             {
+                // MILESTONE 8.71g COMPLETED BOTH OF THESE ROWS. 8.71d could name only the successors
+                // it composed itself, because This Way! and That Way! are 8.71e's faces and were being
+                // written on another branch; p.15 forks Blue twice and each row reaches BOTH.
                 BuildJourney(
                     UnexpectedJourney, "Unexpected Journey", CardTier.I, 10, 4, 3, 2,
                     PrintedValueChannel.None, UnexpectedJourneyText,
                     HanuActiveEffectContent.UnexpectedJourneyEffectV1,
-                    new[] { ThereAndBackAgain }),
+                    new[] { ThereAndBackAgain, ThisWay }),
                 BuildJourney(
                     ThereAndBackAgain, "There and Back Again", CardTier.II, 11, 4, 3, 3,
                     PrintedValueChannel.Attack, ThereAndBackAgainText,
                     HanuActiveEffectContent.ThereAndBackAgainEffectV1,
-                    new[] { SafeTravels }),
+                    new[] { SafeTravels, ThatWay }),
                 BuildJourney(
                     SafeTravels, "Safe Travels", CardTier.III, 11, 5, 3, 3,
                     PrintedValueChannel.Attack, SafeTravelsText,
@@ -119,7 +115,7 @@ namespace GuardsDigital.Core.Cards.Verified
             EffectCapabilityReference journeyEffect,
             IReadOnlyList<CardDefinitionId> nextTierCandidates) => new CardDefinition(
             id,
-            JourneyPrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(initiative),
             CardContentAuthority.VerifiedOfficial,
@@ -135,7 +131,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                     AttackRangeKind.None,
                     default,
-                    HanuEffectContent.Journey(id, JourneyPrepRevision, journeyEffect),
+                    HanuEffectContent.Journey(id, ContentRevision, journeyEffect),
                     PrintedTextComposition.None),
 
                 new ActionDefinition(

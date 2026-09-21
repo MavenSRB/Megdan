@@ -144,8 +144,8 @@ namespace GuardsDigital.Core.Cards.Verified
                     })
             };
 
-            return new EffectDefinition(
-                new EffectDefinitionId(cardId.Value + "-skill"), contentRevision, root, nodes);
+            // MILESTONE 8.71g: the id was this literal until his set had one place to spell it.
+            return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);
         }
 
         /// <summary>

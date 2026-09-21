@@ -184,7 +184,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 nodes.Add(Move(move, actorSpace, ActorSpaceOutput, moveDistance));
             }
 
-            return new EffectDefinition(GreenSkillEffectId(cardId), contentRevision, root, nodes);
+            return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);
         }
 
         /// <summary>
@@ -283,7 +283,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 nodes.Add(Move(move, exchange, SwapActorAtOutput, moveDistance));
             }
 
-            return new EffectDefinition(GreenSkillEffectId(cardId), contentRevision, root, nodes);
+            return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);
         }
 
         /// <summary>
@@ -325,12 +325,8 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IEnumerable<DecisionLabelDeclaration> GreenDecisionLabels() =>
             System.Array.Empty<DecisionLabelDeclaration>();
 
-        /// <summary>
-        /// The effect id a Skill body of his carries. Spelled inside this block rather than shared,
-        /// because five partials of one class were being written at once and a member declared twice is
-        /// a compile error rather than a merge; 8.71g folds the blocks' spellings into one.
-        /// </summary>
-        private static EffectDefinitionId GreenSkillEffectId(CardDefinitionId cardId) =>
-            new EffectDefinitionId(cardId.Value + "-skill");
+        // MILESTONE 8.71g FOLDED `GreenSkillEffectId` AWAY, exactly as this block's own remark asked:
+        // it minted `<card>-skill` and so did three sibling blocks' spellings of the same string.
+        // `HanuEffectContent.SkillEffectId` is the single one now.
     }
 }

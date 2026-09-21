@@ -673,8 +673,9 @@ namespace GuardsDigital.Tests.EditMode
                 Is.False,
                 "'hanu-friendly-unit-pair@1' is reachable from no dealt card in this build.");
 
-            Assert.That(HanuCardContent.DealtDefinitions, Is.Empty,
-                "and no face of his is dealt until 8.71g states his set.");
+            // MILESTONE 8.71g STATED HIS SET: eighteen dealt faces, and still nothing registered.
+            Assert.That(HanuCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "his set is stated; what 8.71h still owes is the registration above.");
             foreach (var id in GreenFaces)
             {
                 Assert.That(

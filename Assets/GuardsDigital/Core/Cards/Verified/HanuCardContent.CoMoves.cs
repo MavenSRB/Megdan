@@ -16,22 +16,23 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Radius <b>3</b>, <b>Initiative</b> item; That Way! (<c>hanu12__7635524</c>) Blue Tier III,
     /// 11/5/3, Radius <b>3</b>, <b>Initiative</b> item.</para>
     ///
-    /// <para><b>Only one progression row is stated here.</b> This Way! is a Tier II face of the Blue
-    /// ladder whose Tier I is Unexpected Journey and whose other Tier II is There and Back Again -
-    /// 8.71d's faces - so this block names only the successor it can see, That Way!. 8.71g states both
-    /// forks whole, exactly as 8.69f did for Brynn's Blue pair.</para>
+    /// <para><b>Both Blue forks are stated here since 8.71g.</b> This Way! is a Tier II face of the
+    /// Blue ladder whose Tier I is Unexpected Journey and whose other Tier II is There and Back Again -
+    /// 8.71d's faces - so 8.71e could name only the successor it could see, That Way!. 8.71g completed
+    /// the row with Safe Travels beside it, exactly as 8.69f did for Brynn's Blue pair.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's gate:
-    /// the revision is this block's placeholder, and it is not a valid content revision by
-    /// construction.</para>
+    /// <see cref="MatchContentCatalogs"/> names no Hanu content until 8.71h. The revision is the set's
+    /// own <see cref="ContentRevision"/> since 8.71g - this block's placeholder is gone.</para>
     /// </summary>
     public static partial class HanuCardContent
     {
-        /// <summary>
-        /// This block's placeholder revision. 8.71g replaces it with the one real string his whole set
-        /// is stated under; until then it is deliberately not a revision any dealt content could carry.
-        /// </summary>
-        private const string CoMovePrepRevision = "hanu-8-71e-prep";
+        // MILESTONE 8.71g DELETED this block's placeholder revision. It read "hanu-8-71e-prep" - not a
+        // string a real definition could carry - and existed only so these two faces compiled on their
+        // own branch while five siblings were being written at once. The set is stated now, so both
+        // rows carry `ContentRevision` and the placeholder is gone from the tree rather than left
+        // behind: the project's rule is that a placeholder must not be mistakable for a real value, and
+        // a dead one beside a live one is exactly that.
 
         /// <summary>His Blue Tier II: a friendly hero picks 1 or 2, and both of them travel it.</summary>
         public static CardDefinitionId ThisWay { get; } = new CardDefinitionId("hanu-this-way");
@@ -63,9 +64,12 @@ namespace GuardsDigital.Core.Cards.Verified
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyCoMoves =
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]
             {
+                // MILESTONE 8.71g COMPLETED THIS ROW. 8.71e could name only That Way!, because Safe
+                // Travels is 8.71d's face and was being written on another branch; p.15 forks Blue
+                // twice and This Way! climbs to EITHER Tier III.
                 BuildCoMove(
                     ThisWay, "This Way!", CardTier.II, 11, 4, 3, 2, ThisWayText,
-                    new[] { ThatWay }),
+                    new[] { SafeTravels, ThatWay }),
                 BuildCoMove(
                     ThatWay, "That Way!", CardTier.III, 11, 5, 3, 3, ThatWayText,
                     Array.Empty<CardDefinitionId>())
@@ -92,7 +96,7 @@ namespace GuardsDigital.Core.Cards.Verified
             string printedText,
             IReadOnlyList<CardDefinitionId> nextTierCandidates) => new CardDefinition(
             id,
-            CoMovePrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(initiative),
             CardContentAuthority.VerifiedOfficial,
@@ -108,7 +112,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                     AttackRangeKind.None,
                     default,
-                    HanuEffectContent.CoMove(id, CoMovePrepRevision, greatestDistance),
+                    HanuEffectContent.CoMove(id, ContentRevision, greatestDistance),
                     PrintedTextComposition.None),
 
                 new ActionDefinition(
@@ -130,29 +134,12 @@ namespace GuardsDigital.Core.Cards.Verified
             null,
             CardSourceContent.Transcribed(printedText));
 
-        // NO `Definition(CardDefinitionId)` helper here, deliberately: every 8.71 wave partial would
-        // declare the same member and a partial class cannot declare one twice. 8.71g mints it once
-        // over the whole set, exactly as `BrynnCardContent.cs` does; until then a fixture reads
-        // `AllDefinitions` itself.
-
-        // ===== MERGE BLOCK (identical in every 8.71 wave partial; the coordinator keeps one) =====
-        public static ActionDefinitionId PrimaryBasicAttack { get; } = new ActionDefinitionId("primary-basic-attack");
-        public static ActionDefinitionId PrimaryBasicSkill { get; } = new ActionDefinitionId("primary-basic-skill");
-        public static ActionDefinitionId PrimaryRangedAttack { get; } = new ActionDefinitionId("primary-ranged-attack");
-        public static ActionDefinitionId PrimarySkill { get; } = new ActionDefinitionId("primary-skill");
-        public static ActionDefinitionId SecondaryMovement { get; } = new ActionDefinitionId("secondary-movement");
-        public static ActionDefinitionId SecondaryDefense { get; } = new ActionDefinitionId("secondary-defense");
-        public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAllDefinitions.Value;
-        private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =
-            new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(ComposedFaces().ToArray()));
-        private static IEnumerable<CardDefinition> ComposedFaces() =>
-            CoMoveDefinitions()
-                .Concat(HurryUpDefinitions())
-                .Concat(RedDefinitions())
-                .Concat(GreenDefinitions())
-                .Concat(JourneyDefinitions())
-                .Concat(UltimateDefinitions());
-        public static IReadOnlyList<CardDefinition> DealtDefinitions { get; } = Array.Empty<CardDefinition>();
-        // ===== END MERGE BLOCK =====
+        // MILESTONE 8.71g took this partial's MERGE BLOCK away. It was the wave's surviving copy of
+        // the six shared action identities, `AllDefinitions` and an empty `DealtDefinitions` - the
+        // shape every parallel block needed so that each one compiled alone on its own branch. All of
+        // it now lives in `HanuCardContent.cs`, beside the set facts it was standing in for: the real
+        // revision, the inventory order it is composed into, p.6's hand and deck, and the eighteen
+        // faces a match deals. `Definition(CardDefinitionId)` is there too, public and over the whole
+        // set, where 8.71c's internal one over this block's six used to be.
     }
 }

@@ -692,10 +692,15 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePrintedValuesAreHisShardsOwnTable()
         {
+            // MILESTONE 8.71g COMPLETED BOTH BLUE FORKS. 8.71d could name only the successors it
+            // composed itself; p.15 forks Blue twice and 8.71e's This Way! and That Way! are the other
+            // half of each pair, which is what the set-level fixture states whole.
             AssertFace(HanuCardContent.UnexpectedJourney, "Unexpected Journey", CardTier.I, 10, 4, 3,
-                2, PrintedValueChannel.None, new[] { HanuCardContent.ThereAndBackAgain });
+                2, PrintedValueChannel.None,
+                new[] { HanuCardContent.ThereAndBackAgain, HanuCardContent.ThisWay });
             AssertFace(HanuCardContent.ThereAndBackAgain, "There and Back Again", CardTier.II, 11, 4,
-                3, 3, PrintedValueChannel.Attack, new[] { HanuCardContent.SafeTravels });
+                3, 3, PrintedValueChannel.Attack,
+                new[] { HanuCardContent.SafeTravels, HanuCardContent.ThatWay });
             AssertFace(HanuCardContent.SafeTravels, "Safe Travels", CardTier.III, 11, 5, 3, 3,
                 PrintedValueChannel.Attack, Array.Empty<CardDefinitionId>());
 
@@ -705,10 +710,10 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(HanuCardContent.JourneySentence));
             Assert.That(HanuCardContent.SafeTravelsText,
                 Is.EqualTo(HanuCardContent.JourneySentence + " Move up to 1 space."));
-            // MERGE NOTE (8.71 wave): this block's own faces carry its placeholder; the aggregate
-            // carries every landed block's.
+            // MILESTONE 8.71g: this block's placeholder is gone and its three faces carry the set's
+            // one real revision, which `HanuPrintedSetTests` asserts over all nineteen at once.
             Assert.That(HanuCardContent.JourneyDefinitions().All(face =>
-                    face.Reference.ContentRevision == HanuCardContent.JourneyPrepRevision),
+                    face.Reference.ContentRevision == HanuCardContent.ContentRevision),
                 Is.True);
             Assert.That(HanuCardContent.AllDefinitions.Select(face => face.Id.Value),
                 Is.SupersetOf(HanuCardContent.JourneyDefinitions().Select(face => face.Id.Value)));

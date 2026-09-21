@@ -19,17 +19,13 @@ namespace GuardsDigital.Core.Cards.Verified
     /// other dealt Ultimate makes.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's
-    /// gate: the revision is this block's placeholder, and it is not a valid content revision by
-    /// construction.</para>
+    /// gate: <see cref="MatchContentCatalogs"/> names no Hanu content until 8.71h.</para>
     /// </summary>
     public static partial class HanuCardContent
     {
-        /// <summary>
-        /// This block's placeholder revision. 8.71g replaces it with the one real string his whole
-        /// set is stated under; until then it is deliberately not a revision any dealt content
-        /// could carry.
-        /// </summary>
-        private const string UltimatePrepRevision = "hanu-8-71b-prep";
+        // MILESTONE 8.71g DELETED this block's placeholder revision. It read "hanu-8-71b-prep" and was
+        // deliberately not a revision any dealt content could carry; the face carries the set's own
+        // `ContentRevision` now.
 
         /// <summary>His Purple Tier IV: the hero he hurried acts, and he decides how.</summary>
         public static CardDefinitionId TheUltimateTrick { get; } =
@@ -66,7 +62,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static CardDefinition BuildTheUltimateTrick() => new CardDefinition(
             TheUltimateTrick,
-            UltimatePrepRevision,
+            ContentRevision,
             "The Ultimate Trick",
             default,
             CardContentAuthority.VerifiedOfficial,

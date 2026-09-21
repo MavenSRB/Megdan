@@ -873,23 +873,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The one face this block composes carries the block's PLACEHOLDER revision and no other, so
-        /// nothing can deal it and 8.71g's real revision has one place to replace.
+        /// The one face this block composes is one of his nineteen, under the set's one real revision
+        /// since milestone 8.71g replaced this block's placeholder "hanu-8-71a-prep".
         /// </summary>
         [Test]
-        public void TheComposedSet_IsOneFaceUnderThePlaceholderRevision()
+        public void TheComposedSet_IsOneFaceUnderTheSetsRevision()
         {
             // MERGE NOTE (8.71 wave): the integrated aggregate holds every landed block's faces, so
             // this block's one face is asserted on its own list and by containment in the aggregate.
             Assert.That(HanuCardContent.HurryUpDefinitions().Count(), Is.EqualTo(1));
             Assert.That(HanuCardContent.AllDefinitions.Select(face => face.Id.Value),
                 Does.Contain("hanu-hurry-up"));
-            Assert.That(HanuCardContent.DealtDefinitions, Is.Empty);
+            Assert.That(HanuCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "8.71g stated his set; 8.71h is still the block that registers it.");
             Assert.That(
                 HanuCardContent.HurryUpDefinitions().Select(face => face.Reference.ContentRevision)
                     .Distinct().ToArray(),
-                Is.EqualTo(new[] { "hanu-8-71a-prep" }),
-                "A placeholder that is not a valid content revision - the wave-one id rule.");
+                Is.EqualTo(new[] { HanuCardContent.ContentRevision }),
+                "one string across his whole set, which `HanuPrintedSetTests` asserts from both ends.");
         }
 
         /// <summary>

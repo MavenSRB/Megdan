@@ -698,8 +698,8 @@ namespace GuardsDigital.Tests.EditMode
                 "The Ultimate composes no effect body, so there is no handler to defer.");
             Assert.That(HanuComponentContent.UltimateRegisteredHandlers(), Is.Empty);
             Assert.That(
-                HanuCardContent.DealtDefinitions, Is.Empty,
-                "Nothing of Hanu's is dealt or registered until 8.71h deals him.");
+                HanuCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "8.71g stated his set; nothing of Hanu's is REGISTERED until 8.71h deals him.");
             Assert.That(
                 MatchContentCatalogs.ForThisBuild().Capabilities, Is.Not.Null,
                 "and the build's own catalog is composed without this block contributing to it.");
@@ -725,23 +725,24 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The one face this block composes carries the block's PLACEHOLDER revision and no other, so
-        /// nothing can deal it and 8.71g's real revision has one place to replace.
+        /// The one face this block composes is one of his nineteen, under the set's one real revision
+        /// since milestone 8.71g replaced this block's placeholder "hanu-8-71b-prep".
         /// </summary>
         [Test]
-        public void TheComposedSet_IsOneFaceUnderThePlaceholderRevision()
+        public void TheComposedSet_IsOneFaceUnderTheSetsRevision()
         {
             // MERGE NOTE (8.71 wave): the integrated aggregate holds every landed block's faces, so
             // this block's one face is asserted on its own list and by containment in the aggregate.
             Assert.That(HanuCardContent.UltimateDefinitions().Count(), Is.EqualTo(1));
             Assert.That(HanuCardContent.AllDefinitions.Select(face => face.Id.Value),
                 Does.Contain("hanu-the-ultimate-trick"));
-            Assert.That(HanuCardContent.DealtDefinitions, Is.Empty);
+            Assert.That(HanuCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "and the Ultimate is one of the eighteen: p.16 puts it in his DECK.");
             Assert.That(
                 HanuCardContent.UltimateDefinitions()
                     .Select(face => face.Reference.ContentRevision).Distinct().ToArray(),
-                Is.EqualTo(new[] { "hanu-8-71b-prep" }),
-                "A placeholder that is not a valid content revision - the wave-one id rule.");
+                Is.EqualTo(new[] { HanuCardContent.ContentRevision }),
+                "one string across his whole set, which `HanuPrintedSetTests` asserts from both ends.");
         }
 
         // -------------------------------------------------------------------------------------------
@@ -920,7 +921,7 @@ namespace GuardsDigital.Tests.EditMode
                     .Concat(new[]
                     {
                         new CardInstance(
-                            new CardInstanceId("hanu-8-71b-staged-ultimate"),
+                            new CardInstanceId("hanu-ultimate-staged-card"),
                             ultimate.Reference,
                             decider,
                             CardStateFacts.InitialInDeck())
@@ -960,7 +961,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 var live = session.aggregate.Configuration.CardInstances;
                 var ultimateCard = live.Single(card =>
-                    card.Id.Value == "hanu-8-71b-staged-ultimate");
+                    card.Id.Value == "hanu-ultimate-staged-card");
                 Assert.That(CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimateCard), Is.True,
                     "p.16 puts the card faceup beside its owner's dashboard, from the deck.");
 

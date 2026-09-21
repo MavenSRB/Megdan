@@ -26,9 +26,8 @@ namespace GuardsDigital.Core.Cards.Verified
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's
     /// gate - see <see cref="HanuComponentContent"/>'s own remarks for why that is the point rather
-    /// than an oversight. The revision is the block's placeholder
-    /// <see cref="HurryUpPrepRevision"/>, which 8.71g replaces with the one real string his whole set
-    /// is stated under.</para>
+    /// than an oversight. The revision is the set's own <see cref="ContentRevision"/> since 8.71g;
+    /// this block's placeholder is gone.</para>
     /// </summary>
     public static partial class HanuCardContent
     {
@@ -48,17 +47,15 @@ namespace GuardsDigital.Core.Cards.Verified
             "to 11, until it is resolved or otherwise changes state. ( This may change the " +
             "initiative order and tie breakers ).";
 
-        /// <summary>
-        /// This block's placeholder revision, and deliberately not a valid content revision: the
-        /// wave-one id-collision rule (8.35z11-8.35z14) is that a placeholder must not be a string a
-        /// real definition could ever carry. 8.71g mints the real one.
-        /// </summary>
-        private const string HurryUpPrepRevision = "hanu-8-71a-prep";
+        // MILESTONE 8.71g DELETED this block's placeholder revision. It read "hanu-8-71a-prep", on the
+        // wave-one id-collision rule (8.35z11-8.35z14) that a placeholder must not be a string a real
+        // definition could ever carry. The face carries `ContentRevision` now, and so does the body it
+        // names.
 
         private static readonly Lazy<CardDefinition> LazyHurryUp = new Lazy<CardDefinition>(
             () => new CardDefinition(
                 HurryUp,
-                HurryUpPrepRevision,
+                ContentRevision,
                 "Hurry up!",
                 new InitiativeValue(12),
                 CardContentAuthority.VerifiedOfficial,
@@ -73,7 +70,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                         AttackRangeKind.None,
                         default,
-                        HanuEffectContent.HurryUp(HurryUp, HurryUpPrepRevision)),
+                        HanuEffectContent.HurryUp(HurryUp, ContentRevision)),
 
                     // p.14's Defense action: the ribbon icon, suppressed card text, and the discard
                     // every reaction performs. His Movement ribbon is ABSENT on this face (HA-06), so

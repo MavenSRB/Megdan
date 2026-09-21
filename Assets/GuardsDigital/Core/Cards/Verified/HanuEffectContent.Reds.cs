@@ -475,8 +475,9 @@ namespace GuardsDigital.Core.Cards.Verified
                 outputs: outputs);
         }
 
-        /// <summary>The conventional effect identity for one face's Attack card text.</summary>
-        public static EffectDefinitionId AttackTextEffectId(CardDefinitionId cardId) =>
-            new EffectDefinitionId(cardId.Value + "-attack-text");
+        // MILESTONE 8.71g MOVED `AttackTextEffectId` to `HanuEffectContent.cs`, beside the
+        // `SkillEffectId` it folded four block spellings into. It is the same member with the same
+        // string: what moved is where his set's conventional identities are declared, which is now one
+        // place rather than whichever partial happened to need one first.
     }
 }

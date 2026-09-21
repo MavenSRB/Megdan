@@ -201,7 +201,7 @@ namespace GuardsDigital.Core.Cards.Verified
             };
 
             nodes.AddRange(bullets.Select((bullet, index) => Bullet(bullet, actorSpace, friend, index + 1)));
-            return new EffectDefinition(CoMoveEffectId(cardId), contentRevision, root, nodes);
+            return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);
         }
 
         /// <summary>
@@ -241,9 +241,10 @@ namespace GuardsDigital.Core.Cards.Verified
                     new EffectOutputBinding(CoMoveDistanceOutput, EffectValueKind.Integer)
                 });
 
-        /// <summary>The conventional effect identity for one of this block's Skill card texts.</summary>
-        public static EffectDefinitionId CoMoveEffectId(CardDefinitionId cardId) =>
-            new EffectDefinitionId(cardId.Value + "-skill");
+        // MILESTONE 8.71g FOLDED `CoMoveEffectId` AWAY. It minted `<card>-skill`, and so did 8.71d's
+        // `JourneySkillEffectId`, 8.71f's `GreenSkillEffectId` and the literal 8.71a inlined for Hurry
+        // up! - four spellings of one string, which is what five partials of one class being written at
+        // once forces. `HanuEffectContent.SkillEffectId` is the single one now.
 
         /// <summary>
         /// The five controls this block's two faces raise, in printed order: one per printed distance,

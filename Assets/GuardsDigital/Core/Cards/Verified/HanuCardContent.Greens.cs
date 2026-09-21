@@ -28,17 +28,14 @@ namespace GuardsDigital.Core.Cards.Verified
     /// is one his Reds spend.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's gate.
-    /// The revision is the deliberately malformed <see cref="GreenPrepRevision"/>: a placeholder must
-    /// not be a value that could be mistaken for a real one, and 8.71g replaces it with the one string
-    /// his whole set is composed under.</para>
+    /// The revision is the set's own <see cref="ContentRevision"/> since 8.71g.</para>
     /// </summary>
     public static partial class HanuCardContent
     {
-        /// <summary>
-        /// The placeholder this block's five faces are composed under until 8.71g states the set. It is
-        /// not a well-formed content revision and is not meant to be.
-        /// </summary>
-        private const string GreenPrepRevision = "hanu-8-71f-prep";
+        // MILESTONE 8.71g DELETED this block's placeholder revision. It read "hanu-8-71f-prep" and was
+        // deliberately not a well-formed one, on the rule that a placeholder must not be a value that
+        // could be mistaken for a real one; the five faces and both Green bodies carry the set's own
+        // `ContentRevision` now.
 
         /// <summary>His Green Tier I: the friendly pair swap, and nothing after it.</summary>
         public static CardDefinitionId MonkeyTrick { get; } =
@@ -146,7 +143,7 @@ namespace GuardsDigital.Core.Cards.Verified
             int moveDistance,
             IReadOnlyList<CardDefinitionId> nextTierCandidates) => new CardDefinition(
             id,
-            GreenPrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(initiative),
             CardContentAuthority.VerifiedOfficial,
@@ -163,8 +160,8 @@ namespace GuardsDigital.Core.Cards.Verified
                     AttackRangeKind.None,
                     default,
                     clause == GreenClause.FriendlyPair
-                        ? HanuEffectContent.FriendlySwap(id, GreenPrepRevision, moveDistance)
-                        : HanuEffectContent.EnemySwap(id, GreenPrepRevision, moveDistance),
+                        ? HanuEffectContent.FriendlySwap(id, ContentRevision, moveDistance)
+                        : HanuEffectContent.EnemySwap(id, ContentRevision, moveDistance),
                     PrintedTextComposition.None),
 
                 new ActionDefinition(

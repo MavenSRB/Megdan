@@ -130,9 +130,13 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(thisWay.Progression.Tier, Is.EqualTo(CardTier.II));
             Assert.That(thatWay.Progression.Tier, Is.EqualTo(CardTier.III));
-            Assert.That(thisWay.Progression.NextTierCandidateIds.Select(id => id.Value).ToArray(),
-                Is.EqualTo(new[] { "hanu-that-way" }),
-                "This block states only the half of the Blue ladder it owns; 8.71g states it whole.");
+            Assert.That(
+                thisWay.Progression.NextTierCandidateIds.Select(id => id.Value)
+                    .OrderBy(value => value, StringComparer.Ordinal).ToArray(),
+                Is.EqualTo(new[] { "hanu-safe-travels", "hanu-that-way" }),
+                "MILESTONE 8.71g COMPLETED THIS ROW. 8.71e could name only the half of the Blue " +
+                "ladder it owned, because Safe Travels is 8.71d's face and was being written on " +
+                "another branch; p.15 forks Blue twice and This Way! climbs to EITHER Tier III.");
             Assert.That(thatWay.Progression.NextTierCandidateIds, Is.Empty);
 
             Assert.That(thisWay.SourceContent.PrintedText, Is.EqualTo(HanuCardContent.ThisWayText));
@@ -589,8 +593,12 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(HanuComponentContent.CoMoveDeferredHandlers(), Is.Empty,
                 "The two faces compose entirely on shipped contracts - the block's headline result.");
             Assert.That(HanuComponentContent.CoMoveRegisteredHandlers(), Is.Empty);
-            Assert.That(HanuCardContent.DealtDefinitions, Is.Empty,
-                "8.71h is the block that deals him.");
+            // MILESTONE 8.71g STATED HIS SET, so the eighteen playable faces are dealt content and
+            // the claim that matters here is the one below it: no capability of his is REGISTERED.
+            // 8.57f's precedent is what separates the two - a composed face inside `DealtDefinitions`
+            // is not a face a configured match can start.
+            Assert.That(HanuCardContent.DealtDefinitions, Has.Count.EqualTo(18),
+                "and 8.71h is still the block that registers him.");
 
             var registered = MatchContentCatalogs.ForThisBuild().Capabilities.Registered
                 .Select(reference => reference.CapabilityId.Value)
@@ -659,7 +667,10 @@ namespace GuardsDigital.Tests.EditMode
             var node = new EffectNodeId(HanuEffectContent.CoMoveFriendNode);
             return new EffectDefinition(
                 new EffectDefinitionId("hanu-friend-probe"),
-                "hanu-8-71e-prep",
+                // MILESTONE 8.71g: this probe is the FIXTURE's own body and carries a revision of its
+                // own, so that a grep for his set's revision finds only content. It read
+                // "hanu-8-71e-prep" - this block's deleted placeholder - until the set was stated.
+                "hanu-co-move-probe-rev",
                 node,
                 new[]
                 {

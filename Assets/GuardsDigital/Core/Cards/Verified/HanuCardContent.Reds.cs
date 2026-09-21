@@ -36,19 +36,16 @@ namespace GuardsDigital.Core.Cards.Verified
     /// Greens'.</para>
     ///
     /// <para><b>Nothing here is registered and nothing can deal it</b>, which is milestone 7.9's gate
-    /// rather than an oversight - see <see cref="HanuComponentContent"/>. The revision is
-    /// <see cref="RedPrepRevision"/>, a placeholder that is deliberately not a valid content-revision
-    /// id: 8.71g replaces it with the one real string his whole set is stated under.</para>
+    /// rather than an oversight - see <see cref="HanuComponentContent"/>. The revision is the set's own
+    /// <see cref="ContentRevision"/> since 8.71g; this block's placeholder is gone.</para>
     /// </summary>
     public static partial class HanuCardContent
     {
-        /// <summary>
-        /// This block's placeholder revision. It is not a valid real id, on the wave-one rule a
-        /// placeholder that could be mistaken for one broke: 8.71g states his set under
-        /// <c>hanu-8-71g-rev-1</c> and this string exists only so the six definitions below compile and
-        /// can be measured on their own branch.
-        /// </summary>
-        private const string RedPrepRevision = "hanu-8-71c-prep";
+        // MILESTONE 8.71g DELETED this block's placeholder revision. It read "hanu-8-71c-prep" - not a
+        // string a real definition could carry, on the wave-one rule a placeholder that COULD be
+        // mistaken for one broke - and existed only so these six faces compiled and could be measured
+        // on their own branch. His set is stated now, so all six rows and both modal bodies carry
+        // `ContentRevision` and the placeholder is gone from the tree rather than left beside it.
 
         // -----------------------------------------------------------------------------------------
         // Identities
@@ -121,31 +118,31 @@ namespace GuardsDigital.Core.Cards.Verified
                     printedMovement: 5, printedAttack: 3, printedRange: 3,
                     itemIcon: PrintedValueChannel.None, printedText: HelpingHandText,
                     nextTierCandidates: new[] { EvenTheOdds, Outnumber },
-                    body: HanuEffectContent.HeroModalChoosingOne(HelpingHand, RedPrepRevision)),
+                    body: HanuEffectContent.HeroModalChoosingOne(HelpingHand, ContentRevision)),
                 BuildRangedModal(
                     EvenTheOdds, "Even the Odds", CardTier.II, initiative: 9, printedDefense: 4,
                     printedMovement: 5, printedAttack: 4, printedRange: 4,
                     itemIcon: PrintedValueChannel.Initiative, printedText: EvenTheOddsText,
                     nextTierCandidates: new[] { TrustedSidekick, PileOn },
-                    body: HanuEffectContent.HeroModalChoosingOne(EvenTheOdds, RedPrepRevision)),
+                    body: HanuEffectContent.HeroModalChoosingOne(EvenTheOdds, ContentRevision)),
                 BuildRangedModal(
                     Outnumber, "Outnumber", CardTier.II, initiative: 9, printedDefense: 5,
                     printedMovement: 5, printedAttack: 5, printedRange: 4,
                     itemIcon: PrintedValueChannel.Defense, printedText: OutnumberText,
                     nextTierCandidates: new[] { TrustedSidekick, PileOn },
-                    body: HanuEffectContent.MinionModalChoosingOne(Outnumber, RedPrepRevision)),
+                    body: HanuEffectContent.MinionModalChoosingOne(Outnumber, ContentRevision)),
                 BuildRangedModal(
                     TrustedSidekick, "Trusted Sidekick", CardTier.III, initiative: 10,
                     printedDefense: 5, printedMovement: 5, printedAttack: 4, printedRange: 4,
                     itemIcon: PrintedValueChannel.Movement, printedText: TrustedSidekickText,
                     nextTierCandidates: Array.Empty<CardDefinitionId>(),
-                    body: HanuEffectContent.HeroModalChoosingBoth(TrustedSidekick, RedPrepRevision)),
+                    body: HanuEffectContent.HeroModalChoosingBoth(TrustedSidekick, ContentRevision)),
                 BuildRangedModal(
                     PileOn, "Pile On", CardTier.III, initiative: 10, printedDefense: 6,
                     printedMovement: 5, printedAttack: 5, printedRange: 4,
                     itemIcon: PrintedValueChannel.Radius, printedText: PileOnText,
                     nextTierCandidates: Array.Empty<CardDefinitionId>(),
-                    body: HanuEffectContent.MinionModalChoosingBoth(PileOn, RedPrepRevision))
+                    body: HanuEffectContent.MinionModalChoosingBoth(PileOn, ContentRevision))
             }));
 
         /// <summary>
@@ -161,7 +158,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// </summary>
         private static CardDefinition BuildFightAndFlight() => new CardDefinition(
             FightAndFlight,
-            RedPrepRevision,
+            ContentRevision,
             "Fight and Flight",
             new InitiativeValue(13),
             CardContentAuthority.VerifiedOfficial,
@@ -176,7 +173,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
                     AttackRangeKind.NonRanged,
                     default,
-                    HanuEffectContent.FightAndFlight(FightAndFlight, RedPrepRevision),
+                    HanuEffectContent.FightAndFlight(FightAndFlight, ContentRevision),
                     PrintedTextComposition.None,
                     PrintedDefenseResolution.None,
                     CardTextTiming.AfterTheAttack),
@@ -224,7 +221,7 @@ namespace GuardsDigital.Core.Cards.Verified
             IReadOnlyList<CardDefinitionId> nextTierCandidates,
             Effects.EffectDefinition body) => new CardDefinition(
             id,
-            RedPrepRevision,
+            ContentRevision,
             displayName,
             new InitiativeValue(initiative),
             CardContentAuthority.VerifiedOfficial,
@@ -271,9 +268,10 @@ namespace GuardsDigital.Core.Cards.Verified
             null,
             CardSourceContent.Transcribed(printedText));
 
-        /// <summary>One of this block's six faces by id, for the fixtures that name a card.</summary>
-        internal static CardDefinition Definition(CardDefinitionId id) =>
-            RedDefinitions().Single(definition => definition.Id.Equals(id));
+        // MILESTONE 8.71g WIDENED THIS BLOCK'S `Definition(CardDefinitionId)`. 8.71c declared it
+        // `internal` over its own six faces because it was the only wave partial that needed one and a
+        // partial class cannot declare a member twice; `HanuCardContent.cs` now declares it PUBLIC over
+        // all nineteen, the way `BrynnCardContent` does, and this copy is gone.
 
         // MERGE NOTE: this partial's MERGE BLOCK was dropped at the squash-merge; the surviving
         // aggregate and the shared action identities live in HanuCardContent.CoMoves.cs.

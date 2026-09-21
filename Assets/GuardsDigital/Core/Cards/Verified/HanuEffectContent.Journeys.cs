@@ -122,7 +122,7 @@ namespace GuardsDigital.Core.Cards.Verified
             var effect = new EffectNodeId(JourneyEffectNode);
 
             return new EffectDefinition(
-                JourneySkillEffectId(cardId),
+                SkillEffectId(cardId),
                 contentRevision,
                 root,
                 new[]
@@ -331,7 +331,7 @@ namespace GuardsDigital.Core.Cards.Verified
             public static EffectDefinition Definition { get; } =
                 JourneyBack(
                     new EffectDefinitionId("hanu-unexpected-journey-triggered"),
-                    HanuCardContent.JourneyPrepRevision,
+                    HanuCardContent.ContentRevision,
                     trailingMove: false);
 
             public static EffectDefinitionReference Reference => Definition.Reference;
@@ -343,7 +343,7 @@ namespace GuardsDigital.Core.Cards.Verified
             public static EffectDefinition Definition { get; } =
                 JourneyBack(
                     new EffectDefinitionId("hanu-there-and-back-again-triggered"),
-                    HanuCardContent.JourneyPrepRevision,
+                    HanuCardContent.ContentRevision,
                     trailingMove: false);
 
             public static EffectDefinitionReference Reference => Definition.Reference;
@@ -355,7 +355,7 @@ namespace GuardsDigital.Core.Cards.Verified
             public static EffectDefinition Definition { get; } =
                 JourneyBack(
                     new EffectDefinitionId("hanu-safe-travels-triggered"),
-                    HanuCardContent.JourneyPrepRevision,
+                    HanuCardContent.ContentRevision,
                     trailingMove: true);
 
             public static EffectDefinitionReference Reference => Definition.Reference;
@@ -387,7 +387,7 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IEnumerable<DecisionLabelDeclaration> JourneyDecisionLabels() =>
             Array.Empty<DecisionLabelDeclaration>();
 
-        private static EffectDefinitionId JourneySkillEffectId(CardDefinitionId cardId) =>
-            new EffectDefinitionId(cardId.Value + "-skill");
+        // MILESTONE 8.71g FOLDED `JourneySkillEffectId` AWAY into `HanuEffectContent.SkillEffectId`,
+        // which mints the same `<card>-skill` string his other Skill bodies always carried.
     }
 }
