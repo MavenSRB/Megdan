@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69c Brynn Decoy and guides completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69c | Decoy, Mountain Guide and Expedition Leader as deferred content on the existing radius selections and `synthetic-direct-move@3`, with two optional exclusion parameters (`excludeHero`, `excludeMinion`) on the printed-icon Radius arms so "on different targets" and "a different friendly unit" bind the first selection's published unit; Decoy's second performance composed per arm because the validator refuses a binding across a `Choose` (BR-Q17c); the guides' "You may" on the selection and "up to N" on the move (BR-Q18c). No handler type, no enum ordinal, no registration, no pin moved, schema v43 and wire /19 unmoved. `BrynnDecoyAndGuidesTests` 33; harness 4004/4004 on its base, 4077/4077 on the merged main; focused Edit Mode 55/55. Landed as `5625664d` (squash of `6c53bcc5` on `8.69c-decoy-guides`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869c-support-decoy-and-the-guides). | `milestone/8.69c` |
+
 ## Milestone 8.69b Brynn split attacks completion evidence
 
 | Milestone | Outcome and definition | Commit |
