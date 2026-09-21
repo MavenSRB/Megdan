@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71i Hanu player-path gate completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71i | `HanuPlayerPathGateTests` (25 rows derived exactly, no new shape) bound to 26 real-input journeys over the engaged and ally boards: Hurry up! on an enemy and a friend with both Undo behaviours, every Red bullet in both orders, Fight and Flight's file and its nothing, the journeys' swap/immunity/swap back, the cross-seat co-move distance with a greyed bullet, the Greens' pairs and trailing moves, the delegated enemy and friendly actions (a Hold, the delegation's end, HA-Q13c), defeat/respawn, Undo/replay/restore. HA-Q15i escalated to the user (the delegated action is authorized to Hanu's seat but its controls are not drawn there). Complete Play Mode 782/782 zero skips; complete Edit Mode 5310/5274/0/36; harness 4328/4328; schema v44 / wire /20 unmoved. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871i-complete-hanus-permanent-player-path-gate). | `b2d8cba4` |
+
 ## Milestone 8.71h Hanu dealing completion evidence
 
 | Milestone | Outcome and definition | Commit |
