@@ -302,6 +302,48 @@ namespace GuardsDigital.Tests.EditMode
                 "and while somebody else is the acting hero the overlay is not derived at all.");
         }
 
+        /// <summary>
+        /// MILESTONE 8.69H'S CORRECTION, and the case a Play Mode journey of his found. The overlay's
+        /// answer has to survive rulebook p.14's step 6 exactly as the captured space does, or Peak
+        /// Precision applies its printed +2 at step 4 and refuses its printed retrieval at step 7 - on
+        /// the same printed condition, and precisely when the attack succeeded.
+        ///
+        /// <para>The board is the one the case above uses: nothing stands beside the target, so the
+        /// clause holds for one reason only. Removing him is p.14's step 6, and the fallback this block
+        /// built reads the captured SPACE - whose geometry never carried the hero-scoped counts-as and
+        /// never could. So the loss was in the overlay's own derivation, which until this milestone
+        /// expanded "all enemy heroes in play" over the BOARD's standing pieces; it now expands over
+        /// the match's enemy heroes, and no other consumer can reach a hero standing nowhere.</para>
+        /// </summary>
+        [Test]
+        public void OverTheTopsAnswer_SurvivesPage14RemovingTheTargetItWasReadAbout()
+        {
+            var open = new HexCoordinate(2, 0);
+            var participants = ThreeHeroes();
+            var standing = Board(heroes: new[] { At(Brynn, Origin), At(BoxedIn, open) });
+
+            Assert.That(
+                Gate(standing, AttackOn(BoxedIn, open),
+                    WhileActing(Brynn, standing, participants), participants),
+                Is.True,
+                "Arrange: the target satisfies the clause through the Ultimate and nothing else.");
+
+            var removed = Board(heroes: new[] { At(Brynn, Origin) });
+            Assert.That(
+                Gate(removed, AttackOn(BoxedIn, open),
+                    WhileActing(Brynn, removed, participants), participants),
+                Is.True,
+                "and the same question asked at step 7, about the same targeting, still answers " +
+                "true - which is what BR-Q14b requires and what this block's fallback could not " +
+                "supply on its own.");
+
+            Assert.That(
+                Gate(removed, AttackOn(BoxedIn, open)),
+                Is.False,
+                "without the Ultimate the removed target's captured space is open ground, so the " +
+                "clause fails for the reason it always did.");
+        }
+
         // -------------------------------------------------------------------------------------------
         // Split Attack, driven
         // -------------------------------------------------------------------------------------------

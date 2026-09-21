@@ -98,10 +98,17 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// "counts as" is an answer rather than an addition to the count: a hero it reaches satisfies
         /// the clause wherever it is standing. Only then is the hero's space looked up.</para>
         ///
-        /// <para><b>A hero who is not on the board answers false rather than throwing.</b> Every
-        /// consumer asks this of a candidate it is deciding whether to offer, and a defeated hero is
-        /// not a candidate at all; reporting "adjacent to three obstacles" about somebody who is
-        /// standing nowhere would make an absent hero the most eligible target on the board.</para>
+        /// <para><b>A hero who is not on the board answers false rather than throwing</b>, on the
+        /// geometry branch: a hero standing nowhere has no six neighbours to count, and every consumer
+        /// that asks this of a candidate derives that candidate from the board.</para>
+        ///
+        /// <para><b>The overlay branch is deliberately not board-scoped, and milestone 8.69h says so
+        /// where it is read.</b> Over the Top's counts-as is derived per enemy hero of the MATCH while
+        /// its controller acts (<see cref="RuleModificationQuery"/>), so a hero rulebook p.14's step 6
+        /// has just removed still carries it - which is what lets
+        /// <c>brynn-attack-target-was-adjacent-to-obstacles@1</c> answer at step 7 about a targeting
+        /// that happened at step 3. It cannot make an absent hero "the most eligible target on the
+        /// board", because no selection in this build offers a hero who is standing nowhere.</para>
         /// </summary>
         public static bool HeroIsAdjacentToThreeOrMoreObstacles(
             ITokenPlacementAuthority spaces,

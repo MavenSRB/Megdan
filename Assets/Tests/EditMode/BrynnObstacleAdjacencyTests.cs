@@ -587,6 +587,56 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
+        /// MILESTONE 8.69H. "All enemy heroes in play" is the MATCH's enemy heroes rather than the
+        /// board's standing pieces, and the difference is one that only rulebook p.13's Defeat can
+        /// show: an enemy hero the page has removed still counts while Brynn acts.
+        ///
+        /// <para><b>It is a correction rather than a widening for its own sake.</b> The one consumer
+        /// that can ask about a hero the board no longer holds is the split faces' targeting gate,
+        /// whose whole contract is to answer about the target as the Attack bound it (BR-Q5, BR-Q14b) -
+        /// and whose fallback reads the captured SPACE, which cannot carry a hero-scoped counts-as. Read
+        /// off the board, Peak Precision applied its printed +2 at p.14's step 4 and refused its
+        /// printed retrieval at step 7 on the same printed condition, exactly when the attack
+        /// succeeded. Every other consumer derives its candidates from the board, so a hero standing
+        /// nowhere is not among them to be widened.</para>
+        /// </summary>
+        [Test]
+        public void OverTheTop_StillCountsAnEnemyHeroPage13HasTakenOffTheBoard()
+        {
+            var standing = OpenBoard();
+            Assert.That(
+                ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
+                    standing, Enemy, Rules(standing, RuleObject.ForHero(Brynn))),
+                Is.True,
+                "Arrange: he satisfies the clause through the Ultimate and nothing else.");
+
+            var defeated = Board(
+                heroes: new[] { At(Brynn, Subject), At(SecondEnemy, new HexCoordinate(0, 2)) },
+                radius: 4);
+            Assert.That(
+                ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
+                    defeated, Enemy, Rules(defeated, RuleObject.ForHero(Brynn))),
+                Is.True,
+                "and the same hero, now removed from the board, still carries the overlay while " +
+                "Brynn acts - which is what lets a clause read at targeting be answered after " +
+                "p.14's step 6.");
+
+            Assert.That(
+                ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
+                    defeated, Enemy, Rules(defeated, RuleObject.ForHero(SecondEnemy))),
+                Is.False,
+                "\"While YOU are performing actions\" is untouched: with somebody else acting the " +
+                "overlay is not derived at all, for a removed hero as for a standing one.");
+
+            Assert.That(
+                ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
+                    defeated, Enemy, RuleModificationSet.Empty),
+                Is.False,
+                "and without the overlay a hero standing nowhere answers false exactly as before - " +
+                "the geometry branch still reads the board.");
+        }
+
+        /// <summary>
         /// The overlay is addressed to heroes, so minions are untouched - p.17's Counts As changes
         /// nothing else about anybody, and the sentence names heroes.
         /// </summary>

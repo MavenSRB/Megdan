@@ -811,7 +811,6 @@ namespace GuardsDigital.Core.Rules.Modifications
                             resolved,
                             ultimate.OwnerId,
                             ultimate.Source,
-                            board,
                             participants,
                             actingObject,
                             index))
@@ -844,15 +843,34 @@ namespace GuardsDigital.Core.Rules.Modifications
         /// while nobody is acting, or while somebody else is, carries none of these at all, which is
         /// the printed condition failing rather than an omission.</para>
         ///
-        /// <para>"In play" is the board, which is the same question p.16 asks of the Ultimate's own
-        /// hero two lines above. The controller is never among them - he is not his own enemy - and
-        /// minions are not heroes, so neither needs a second sentence.</para>
+        /// <para>"In play" is the MATCH's enemy heroes rather than the board's standing pieces, and
+        /// milestone 8.69h corrected it there after a Play Mode journey measured the difference. The
+        /// controller is never among them - he is not his own enemy - and minions are not heroes, so
+        /// neither needs a second sentence.</para>
+        ///
+        /// <para><b>Why the board reading was wrong, measured rather than argued.</b> Until 8.69h this
+        /// walked <c>board.Occupancies</c>, so a hero rulebook p.14's step 6 had just removed carried
+        /// none of it. The one consumer that can ask about a hero the board no longer holds is
+        /// <c>brynn-attack-target-was-adjacent-to-obstacles@1</c>, whose whole contract is to answer
+        /// about the target AS THE ATTACK BOUND IT (BR-Q5, BR-Q14b) - and its fallback re-derives the
+        /// answer from the captured SPACE's geometry, which cannot carry a hero-scoped counts-as. So
+        /// Peak Precision against a hero who qualified only through Over the Top applied its printed
+        /// +2 at step 4 and then refused its printed retrieval at step 7, on the same printed
+        /// condition, exactly when the attack succeeded: measured at 8.69h as attack total 7 followed
+        /// by no retrieval pause, against the identical board where three real obstacles produce the
+        /// pause. That is the failure BR-Q14b was written to prevent, arriving by the other route.
+        /// Reading "in play" as the match's heroes fixes it where the loss happens.</para>
+        ///
+        /// <para><b>The widening reaches nothing else, which is why it is safe.</b> Every other
+        /// consumer of the predicate derives its candidates from the board - the attack-target
+        /// narrowing, the Radius hero and unit selections, the presence predicates, the swap subject -
+        /// so a hero standing nowhere is not among them to be widened. What changes is one answer to
+        /// one question about a hero who was standing somewhere when the question was decided.</para>
         /// </summary>
         private static IEnumerable<AppliedRuleModification> ForEveryEnemyHeroWhileTheControllerActs(
             RuleModification declaration,
             HeroId controllerHeroId,
             ContinuousRuleSource source,
-            AdjacentMoveAuthority board,
             MatchParticipants participants,
             RuleObject actingObject,
             long orderingSequence)
@@ -865,10 +883,10 @@ namespace GuardsDigital.Core.Rules.Modifications
             }
 
             var controllerSide = participants.GetTeamForHero(controllerHeroId).Side;
-            var occupancies = board.Occupancies;
-            for (var index = 0; index < occupancies.Count; index++)
+            var heroes = participants.Heroes;
+            for (var index = 0; index < heroes.Count; index++)
             {
-                var heroId = occupancies[index].HeroId;
+                var heroId = heroes[index].Id;
                 if (!heroId.IsDefined || heroId.Equals(controllerHeroId) ||
                     participants.GetTeamForHero(heroId).Side == controllerSide)
                 {

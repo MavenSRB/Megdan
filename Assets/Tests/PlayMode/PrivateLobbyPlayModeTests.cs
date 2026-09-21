@@ -1346,6 +1346,20 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(BrynnIsVisible(), Is.False,
                 "and a role he does NOT carry removes him, which is what says the filter is reading " +
                 "his row rather than showing every hero whatever is selected.");
+
+            // Milestone 8.69h. CLEAR is the other end of the same claim and his player-path gate
+            // names this journey for it: a hero the filters can hide has to be a hero the filters
+            // give back, or the picker's own escape hatch is a control that leaves the twentieth
+            // pick unreachable for the rest of the lobby.
+            UiPlayer.Click(Element(driver, PrivateLobbyUnityView.HeroFilterClearName));
+            yield return null;
+            Assert.That(driver.View.SelectedComplexityFilter, Is.Null);
+            Assert.That(driver.View.SelectedRoleFilters, Is.Empty);
+            Assert.That(BrynnIsVisible(), Is.True,
+                "CLEAR restores him to the unfiltered list, where he is one of the registered " +
+                "roster's own options.");
+            Assert.That(HeroOptions(driver).Count,
+                Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count));
         }
 
         [UnityTest]
