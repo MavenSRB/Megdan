@@ -1992,13 +1992,22 @@ namespace GuardsDigital.Core.Participants
         /// <para>It is Rowenna's 8.57g board with the hero swapped, and it is deliberately NOT
         /// restaged: what the co-moves need is a friendly hero in RADIUS, and the two Blue spawns
         /// already are.</para>
+        ///
+        /// <para><b>Milestone 8.71i unlocks the Ultimate on the Tier III arm</b>, exactly as
+        /// <see cref="CreateStagedHanuTierThreeForInternalTest"/> does on the one-versus-one board,
+        /// and the gate is what needed it: The Ultimate Trick hands Hanu's seat "the next action ...
+        /// for a hero you target with the 'Hurry Up!'", and a hero Hurry up! may target on a FRIENDLY
+        /// side exists on this board and on no other. Without the unlock the delegated friendly action
+        /// is unreachable through a player's own input at every tier, which is the one half of HA-Q3
+        /// the 1v1 arm cannot show. The Tier I and Tier II arms are untouched, so
+        /// <c>HanuDealingTests</c>' own ally measurement reads exactly what it read before.</para>
         /// </summary>
         public static MatchConfiguration CreateStagedHanuWithAllyForInternalTest(
             TeamSide initialTieBreakerSide,
             HanuAllyStage stage = HanuAllyStage.StartingHand)
         {
             var allyId = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
-            return new MatchConfiguration(
+            var configuration = new MatchConfiguration(
                 StagedBoardParticipants.CreateWithBlueAlly(),
                 CreateVerifiedWaspHand(TeamSide.Red)(
                     new HeroId(StagedBoardParticipants.RedHeroIdValue)),
@@ -2008,6 +2017,26 @@ namespace GuardsDigital.Core.Participants
                 SetupRandomnessSeed.Unrecorded,
                 allyHand: GuardsDigital.Core.Cards.Verified.ArienCardContent.CreateHand(
                     allyId, "blue-ally"));
+
+            if (stage != HanuAllyStage.TierThree)
+            {
+                return configuration;
+            }
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.HanuCardContent.TheUltimateTrick)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III ally match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
         }
 
         private static Func<HeroId, ConfiguredHand> CreateStagedHanuSeatHand(HanuAllyStage stage)
