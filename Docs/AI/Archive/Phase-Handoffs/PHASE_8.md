@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69h Brynn player-path gate completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69h | Brynn's permanent player-path gate: 25 content-derived rows with no new shape, 26 real-input journeys across three fixtures over four measured stagings (a boxed-in enemy, one in the open, one at range, one qualified by the water ring alone), every face and clause driven through the live HUD with Over the Top's widening proved against a hero in the open, the filtered pick screen with CLEAR, cross-seat discards, defeat and respawn, Undo, replay and snapshot restore. One shipped defect fixed in its cause (Over the Top's expansion read the board and lost a target p.14 had removed, refusing Peak Precision's retrieval exactly when the attack succeeded); one shared modal behaviour measured and escalated as BR-Q19h. Complete Play Mode 744/744 with zero skips; complete Edit Mode 5094/5058/0/36; harness 4113/4113; schema v43 and wire /19 unmoved. Landed as `3b733fc8` (squash of `c1b204d2` on `8.69h-gate`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869h-complete-brynns-permanent-player-path-gate). | `milestone/8.69h` |
+
 ## Milestone 8.69g Brynn dealing completion evidence
 
 | Milestone | Outcome and definition | Commit |
