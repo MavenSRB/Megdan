@@ -359,6 +359,16 @@ Completed 2026-09-20 (`3fd22c10`, squash-merged from `fe86a06a` on `8.66-silvera
 
 Historical evidence: [8.67 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-867-triggered-checkpoint-continuation-completion-evidence).
 
+### [ ] 8.70 Grey a modal bullet that has no legal target
+
+Authorized 2026-09-21 by the user, settling BR-Q19h in Brynn's shard: "Q19 i think we should gray it out if no legal targets." This reverses milestone 8.35z27's reading that choosing a bullet is always possible, for the four heroes whose modal Attacks share `attack-sequence@1`: Brynn's Familiar Ground, Bain's Hand Crossbow, Hunter-Seeker and Bounty Hunter, Dodger's Middlefinger of Death and Whisper's Swift Justice (Home Turf is parked).
+
+Outcome: at the modal choice, a bullet whose own sentence names no legal unit on the current board is greyed with its reason, a bullet with a legal unit stays offered, and the whole primary stays greyed when every bullet is empty; a bullet chosen while legal still resolves on the board it reaches (p.10's impossible step when that board has changed), so 8.35z27's own concern - refusing a mode on a board reading the sequence has not reached yet - is honoured after the choice and only the choice itself reads the board.
+
+Acceptance: the offer, the resolution and the rendered decision window agree on the greyed set; each of the six faces measured with one arm empty, both arms empty and both live, immunity and the printed narrowings (marker, discard, obstacle adjacency) counted as "no legal unit"; "Choose one, or both, on different targets" with only one live arm; Brynn's 8.69h journey that pinned the old behaviour flipped to the new; every fixture of the four heroes that asserted the old offer re-stated; snapshot, replay and Undo across the choice; the harness, the complete Edit Mode suite and the complete Play Mode suite green with zero skips. T2 minimum; T3 if a projection or the wire moves (neither is expected).
+
+Non-goals: greying inside a sequence after its first arm has resolved; other modal shapes (Skill modals already grey their empty arms); a package.
+
 ### [x] 8.68 Package the playtest build with the Silverarrow corrections
 
 Authorized 2026-09-20 by the user ("Cut a new build with the silverarrow fixes"), the same evening 8.66 and 8.67 landed after the 8.65 package was cut.

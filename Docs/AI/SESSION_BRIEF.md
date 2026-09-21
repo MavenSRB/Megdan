@@ -15,7 +15,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **8.69h**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **8.70**.
 - Next proposed milestone: **8.35z71**.
 
 On 2026-09-20 the user explicitly authorized and completed
@@ -48,7 +48,7 @@ The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57
 
 The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`, the current playtest package).
 
-The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21: "ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen"), is COMPLETE the same day: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** ([his shard](Rules/HERO_BRYNN.md)) - inventoried, built on one predicate ("adjacent to 3 or more obstacles", which Over the Top makes true of every enemy while he acts), composed, dealt with his picker row (three stars; Tactician, Damager, Durable) proven on the rendered lobby, and gated (Play Mode 744 with zero skips, gate landed as `3b733fc8`). BR-Q4 and BR-Q13 were settled by the user as built; BR-Q19h (an empty modal arm offered beside a live sibling arm, shared by four heroes) waits on the user. No other hero or package is authorized.
+The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21: "ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen"), is COMPLETE the same day: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** ([his shard](Rules/HERO_BRYNN.md)) - inventoried, built on one predicate ("adjacent to 3 or more obstacles", which Over the Top makes true of every enemy while he acts), composed, dealt with his picker row (three stars; Tactician, Damager, Durable) proven on the rendered lobby, and gated (Play Mode 744 with zero skips, gate landed as `3b733fc8`). BR-Q4 and BR-Q13 were settled by the user as built; BR-Q19h was settled the same day as "grey it out if no legal targets" and is authorized as **[8.70](Roadmap/PHASE_8.md)** for the four heroes sharing the modal Attack contract. No other hero or package is authorized.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 
