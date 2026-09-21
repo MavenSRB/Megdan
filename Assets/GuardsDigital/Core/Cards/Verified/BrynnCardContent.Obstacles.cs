@@ -158,7 +158,8 @@ namespace GuardsDigital.Core.Cards.Verified
         private static IEnumerable<CardDefinition> ComposedFaces() =>
             ObstacleDefinitions.Concat(SwapDefinitions)
                 .Concat(TrapAndGritDefinitions)
-                .Concat(SplitAttackFaces());
+                .Concat(SplitAttackFaces())
+                .Concat(GuidesDefinitions);
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =
             new Lazy<IReadOnlyList<CardDefinition>>(

@@ -521,6 +521,54 @@ namespace GuardsDigital.Core.Effects.Synthetic
             "adjacentToThreeOrMoreObstacles";
 
         /// <summary>
+        /// Milestone 8.69c. The hero a SECOND pass of one printed sentence must not name again -
+        /// Brynn the Seeker's Decoy, "Choose up to two times, <b>on different targets</b>", and his
+        /// two guides, "move a <b>different</b> friendly unit in radius".
+        ///
+        /// <para><b>It is spelled with the anchored family's own constant rather than a second literal
+        /// that happens to match</b>, by the rule milestone 8.39h stated for "not adjacent to you" and
+        /// milestone 8.57c restated for "with no cards in hand": one printed clause has one name in
+        /// this catalog, so a card author who declares the exclusion for an anchored selection cannot
+        /// mistype it for a printed-icon one. The reading is
+        /// <see cref="SyntheticAnchoredTargetCapabilities.ExcludedHeroParameterName"/>'s, unchanged -
+        /// a narrowing of who may be NAMED, bound to a node output because the card names the hero one
+        /// node earlier rather than in its own words.</para>
+        ///
+        /// <para><b>Optional, and an unbound binding is the whole of what "the first pass named
+        /// nobody" means.</b> Decoy's first performance may be declined and Mountain Guide's first
+        /// sentence prints "You may", so the producing selection can finish without publishing a hero;
+        /// the binding then resolves to nothing and this narrows nothing, which is exactly the printed
+        /// answer - a sentence that named nobody excludes nobody. That is 8.61f's own note, restated
+        /// here because the two families now read one clause.</para>
+        ///
+        /// <para><b>Declared on the Radius hero and Radius unit arms alone</b>, which are the two his
+        /// faces print: Decoy's second bullet names "an enemy hero in radius" and the guides' second
+        /// sentence names "a friendly unit in radius". No arm that no face pairs it with declares it,
+        /// and a parameter added to a registered capability moves no pinned byte - see
+        /// <see cref="BothDiscardPilesEmptyParameterName"/>'s own note for why.</para>
+        /// </summary>
+        public const string ExcludedHeroParameterName =
+            SyntheticAnchoredTargetCapabilities.ExcludedHeroParameterName;
+
+        /// <summary>
+        /// Milestone 8.69c. The minion half of the same clause - Decoy's first bullet, "Move an enemy
+        /// minion in radius 1 space", read a second time "on different targets", and the guides'
+        /// second sentence where the first sentence moved a friendly minion.
+        ///
+        /// <para><b>Two parameters rather than one, because
+        /// <see cref="EffectValueKind"/> has no "unit".</b> p.19's unit is a hero or a minion and this
+        /// vocabulary names each by its own kind, which is the same reason a unit selection publishes
+        /// <see cref="ChosenHeroOutputName"/> and <see cref="ChosenMinionOutputName"/> as two outputs
+        /// and fills in whichever was named. A declaration excluding a unit therefore binds both and
+        /// exactly one of them resolves - which is what makes "a different friendly unit" one clause
+        /// even though it is written twice.</para>
+        ///
+        /// <para>Optional, on the Radius minion and Radius unit arms alone, on the terms the hero half
+        /// above records.</para>
+        /// </summary>
+        public const string ExcludedMinionParameterName = "excludeMinion";
+
+        /// <summary>
         /// Milestone 8.40f. The fewest cards a printed-Radius hero selection's candidate must be
         /// holding - Bain's three guessing Skills, "An enemy hero in radius <b>with two or more cards
         /// in hand</b> chooses one of those cards".
@@ -1247,6 +1295,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             AdjacentToThreeOrMoreObstaclesParameterName,
                             EffectValueKind.Boolean,
                             isRequired: false));
+
+                        // Milestone 8.69c. Decoy's "on different targets", read by the second
+                        // performance of his Silver basic. Optional, so an unbound binding - a first
+                        // performance that named nobody - excludes nobody, and every hero selection
+                        // written before him is untouched.
+                        parameters.Add(new EffectCapabilityParameter(
+                            ExcludedHeroParameterName,
+                            EffectValueKind.Hero,
+                            isRequired: false));
                     }
                 }
                 else
@@ -1302,6 +1359,28 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             AdjacentToAnEnemyHeroOrHoldingADiscardParameterName,
                             EffectValueKind.Boolean,
                             isRequired: false));
+                    }
+
+                    // Milestone 8.69c. "a DIFFERENT friendly unit in radius" - Brynn's Mountain Guide
+                    // and Expedition Leader, whose second sentence must not name the unit their first
+                    // sentence named, and Decoy's second performance where the first took the minion
+                    // bullet. Declared on the Radius arms his faces print and nowhere else; both are
+                    // optional, so an unbound binding excludes nobody and every minion and unit
+                    // selection written before him keeps its exact candidate set.
+                    if (channel == PrintedValueChannel.Radius)
+                    {
+                        parameters.Add(new EffectCapabilityParameter(
+                            ExcludedMinionParameterName,
+                            EffectValueKind.Minion,
+                            isRequired: false));
+
+                        if (subject == PrintedIconSelectionSubject.Unit)
+                        {
+                            parameters.Add(new EffectCapabilityParameter(
+                                ExcludedHeroParameterName,
+                                EffectValueKind.Hero,
+                                isRequired: false));
+                        }
                     }
                 }
 
@@ -1595,8 +1674,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Input(ExcludeAdjacentParameterName).BooleanValue;
                 var onSpawnPoint = RequiresSpawnPoint(context);
 
+                // Milestone 8.69c. The minion an earlier pass of the same printed sentence already
+                // named, where this arm declares the clause and the pass that would have named one
+                // ran. An unbound binding carries no minion at all, which is a sentence that named
+                // nobody - see ExcludedMinionParameterName.
+                var excludedMinion = channel == PrintedValueChannel.Radius
+                    ? context.Input(ExcludedMinionParameterName)
+                    : default;
+
                 return targets
                     .Where(target => target.Kind == BoardObjectKind.Minion &&
+                        !(excludedMinion.Kind == EffectValueKind.Minion &&
+                            target.MinionId.Equals(excludedMinion.MinionId)) &&
                         TargetQuery.StandsInRelationTo(
                             relation, target, context.ActorId, context.Participants, board) &&
                         AdmitsClass(admittedClass, target.MinionId, board) &&
@@ -1724,6 +1813,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var requiresThreeObstaclesBeside = channel == PrintedValueChannel.Radius &&
                     context.Input(AdjacentToThreeOrMoreObstaclesParameterName).BooleanValue;
 
+                // Milestone 8.69c. The hero an earlier pass of the same printed sentence already
+                // named - Decoy's "on different targets" and the guides' "a different friendly unit".
+                // An unbound binding carries no hero at all, which is a pass that named nobody, and
+                // narrows nothing. See ExcludedHeroParameterName.
+                var excludedHero = channel == PrintedValueChannel.Radius &&
+                    (subject == PrintedIconSelectionSubject.Hero ||
+                        subject == PrintedIconSelectionSubject.Unit)
+                    ? context.Input(ExcludedHeroParameterName)
+                    : default;
+
                 var requiresBothDiscardsEmpty = channel == PrintedValueChannel.Radius &&
                     context.Input(BothDiscardPilesEmptyParameterName).BooleanValue;
                 if (requiresBothDiscardsEmpty &&
@@ -1764,6 +1863,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
 
                     if (excludedAttacker.IsDefined && target.HeroId.Equals(excludedAttacker))
+                    {
+                        continue;
+                    }
+
+                    // "on different targets" / "a DIFFERENT friendly unit" - the hero an earlier pass
+                    // of this same printed sentence named. Milestone 8.69c.
+                    if (excludedHero.Kind == EffectValueKind.Hero &&
+                        target.HeroId.Equals(excludedHero.HeroId))
                     {
                         continue;
                     }

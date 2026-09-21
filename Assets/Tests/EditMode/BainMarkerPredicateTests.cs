@@ -356,7 +356,10 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(69),
+            Assert.That(nodes.Length, Is.EqualTo(71),
+                "RE-MEASURED at the 8.69 wave merge: 8.69e's 69 plus 8.69c's two - Mountain Guide's " +
+                "and Expedition Leader's first sentences (a friendly unit adjacent to you), none on " +
+                "Decoy, whose bullets read a printed Radius icon. " +
                 "RE-MEASURED at 8.69e: 8.61c's 66 plus Brynn's three trap faces, whose first bullet " +
                 "is 'An enemy hero adjacent to you' - one each on Bear Trap, Log Trap and Deadfall " +
                 "Trap, and none on True Grit or Die Hard, which name no unit at all. His second " +

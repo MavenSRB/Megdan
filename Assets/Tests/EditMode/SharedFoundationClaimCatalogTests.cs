@@ -1133,6 +1133,95 @@ namespace GuardsDigital.Tests.EditMode
                 "retrieves a card whose action is a Movement or a Skill, for a face that retrieves " +
                 "and then expects to play the same card again in the same round, or for a second " +
                 "producer of the retrieved-in-hand shape.")
+            ,
+
+            // Merged last of the wave: 8.69c's two claims appended whole.
+            new SharedFoundationClaim(
+                "targeting.exclude-the-named-hero",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .ExcludedHeroParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnDecoyAndGuidesTests),
+                            nameof(BrynnDecoyAndGuidesTests
+                                .Decoy_SecondPerformance_NeverOffersTheHeroTheFirstOneNamed),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "two qualifying enemy heroes in one printed disk, and the hero the first " +
+                        "performance named is the only one missing from the second offer"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnDecoyAndGuidesTests),
+                            nameof(BrynnDecoyAndGuidesTests
+                                .MountainGuide_SecondSentence_ExcludesNobodyWhenTheFirstSentenceWasDeclined),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a declined first sentence publishes no hero, so the binding resolves to " +
+                        "nothing and the second sentence excludes nobody"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnDecoyAndGuidesTests),
+                            nameof(BrynnDecoyAndGuidesTests
+                                .TheExclusions_AreOptionalAndDeclaredOnTheRadiusArmsAlone),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "optional, spelled with the anchored family's own constant, and absent from " +
+                        "every Range arm")
+                },
+                new[] { "selection arm", "binding", "optionality", "candidate kind", "reach" },
+                "One optional hero-valued narrowing on the printed-Radius hero and unit selections: " +
+                "the hero a previous pass of the SAME printed sentence published, dropped from this " +
+                "pass's candidates. It is bound from a node output, it narrows who may be named and " +
+                "nothing else, an unbound binding narrows nothing, and it is unbound on every other " +
+                "arm.",
+                "Reassess for a face pairing the clause with a Range icon, for an exclusion of more " +
+                "than one hero, for one naming a hero the card's own words pick out rather than an " +
+                "earlier pass, or for one that must survive the excluded hero leaving the board."),
+            new SharedFoundationClaim(
+                "targeting.exclude-the-named-minion",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .ExcludedMinionParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnDecoyAndGuidesTests),
+                            nameof(BrynnDecoyAndGuidesTests
+                                .Decoy_SecondPerformance_NeverOffersTheMinionTheFirstOneNamed),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "two enemy minions in one printed disk, and the one the first performance " +
+                        "moved is the only one missing from the second offer"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnDecoyAndGuidesTests),
+                            nameof(BrynnDecoyAndGuidesTests
+                                .Decoy_MayTakeTheMinionBulletThenTheHeroBullet_WhichExcludesNobody),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a performance that named a MINION excludes no hero, so the other bullet's " +
+                        "offer is untouched"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnDecoyAndGuidesTests),
+                            nameof(BrynnDecoyAndGuidesTests
+                                .MountainGuide_SecondSentence_ExcludesTheFirstUnitEvenWhereItMovedNoSpaces),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "the exclusion reads the SELECTION rather than the walk, so a unit named and " +
+                        "left standing is still excluded")
+                },
+                new[] { "selection arm", "binding", "optionality", "candidate kind", "reach" },
+                "The minion half of the same clause, on the printed-Radius minion and unit " +
+                "selections, on identical terms: one minion published by an earlier pass of one " +
+                "printed sentence, dropped from this pass's candidates, unbound everywhere else.",
+                "Reassess for a face pairing the clause with a Range icon, for an exclusion of more " +
+                "than one minion, or for a clause excluding a CLASS of minion rather than a named " +
+                "one.")
         };
     }
 
