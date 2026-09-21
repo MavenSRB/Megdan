@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.71f**.
+- Current completed milestone: **8.71d**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **8.71b**.
 

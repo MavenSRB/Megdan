@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71d Hanu journeys completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71d | Unexpected Journey, There and Back Again and Safe Travels as deferred content: `synthetic-radius-hero-target@1` + `synthetic-swap-actor@1`, then one Hero-scoped `EndOfTurn` active effect per face carrying whole immunity against every hero's actions (`RestrictedActorScope.Of(HeroesOpposingSource, HeroesAlliedWithSource)` - HA-Q14d) whose triggered body swaps Hanu with the deferred NEW handler type `hanu-journey-partner@1`'s re-derived hero under the shipped `PrintedUnqualifiedImmunity` override (HA-Q13d), Safe Travels' trailing move after the swap back (HA-Q8 as settled). One widened foundation: `ActiveEffectCreationHandler` takes a required `affectedHero` for Hero-scoped definitions. Schema/wire unmoved. `HanuJourneyTests` 24; harness 4161/4161; focused Edit Mode 113/113. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871d-support-the-journeys). | `b36d8303` |
+
 ## Milestone 8.71f Hanu Greens completion evidence
 
 | Milestone | Outcome and definition | Commit |
