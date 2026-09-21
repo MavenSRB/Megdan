@@ -40,13 +40,17 @@ Acceptance: the delegation created by the Ultimate riding Hurry up!'s resolution
 
 Non-goals: the Reds, the Blues, the Greens, dealing.
 
-### [ ] 8.71c Support the Reds and Fight and Flight
+### [x] 8.71c Support the Reds and Fight and Flight
 
 Outcome: the five Reds target an adjacent unit or a hero (minion) in range adjacent to a friendly hero, Trusted Sidekick and Pile On taking one or both bullets in the order chosen; Fight and Flight moves Hanu exactly three spaces in a straight line after an attack whose target survived, if able.
 
 Acceptance: the two new narrowing members read against each bullet's targetable units with "your friendly hero" excluding Hanu (HA-Q5); the 1..2 modal performing the chosen bullets in the chosen order with each bullet targeting afresh, Pile On admitting one minion twice and Trusted Sidekick's bullets disjoint (HA-Q6); an empty bullet greyed at the choice (8.70); the rider gated on the target's survival, exactly three spaces under p.11, nothing when no line is legal (HA-Q7); Undo and restore across the pauses. Compose Helping Hand, Even the Odds, Outnumber, Trusted Sidekick, Pile On and Fight and Flight. T2 minimum.
 
 Non-goals: Hurry up!, the Ultimate, the Blues, the Greens, dealing.
+
+Completed 2026-09-21 (`bc77b44b`, squash-merged from `e8d4a8e2` on `8.71c-reds-flight`, after 8.71a). Reused unchanged: `attack-sequence@1` under an ordinary `Choose` (Bain's `CreateMarkerModal` at 1..1 and 1..2), `attack-target-survived@1` over `synthetic-is-flagged@1`, `actor-space@1` -> `choose-line-destination@1` -> `direct-move@3` (Swift's Bounce with the obstacle clause omitted), `RosterPresenceQuery.FindUnitsWithin` for the team question. Deltas: `AttackSequenceSubjectNarrowing.AdjacentToAFriendlyHeroOfTheActor` (5) and `AdjacentToAFriendlyHeroOfTheActorAndNotAdjacentToTheActor` (6), answered in `CanBeAsked` and `NarrowedToTheBulletsSubject` (now taking `participants` and `board`) - the single owner the modal offer, 8.70's greying, the whole-primary gate and the chosen bullet's p.14 all reach; `AttackTargetableUnits.MinionsOnly` (3) with its arm in `AttackTargetQuery.FindLegalEnemyTargets`, carrying the NOUN of Outnumber's and Pile On's bullet so one narrowing member serves both; `RequestedAttackSequenceQuery`'s stale class remark corrected. No new HA-Q: the engine already performs two chosen bullets in the order the actor named them (8.35z29, `EffectResolutionSession` ~859-881), now held by a test. No deferred id, no new handler type, schema and wire unmoved (a persisted bullet writes both vocabularies as plain integers). Guards that reddened and were taught rather than suppressed: the sweep's `hanu` line; `ClearLineAttackTargetTests`' re-derived p.13 oracle learning the minion noun; `BounceOfferTests` naming Fight and Flight as the third face binding a straight-line floor above one; `MiddlefingerOfDeathTests`' narrowing domain now seven. `HanuRedsTests` 26 cases; harness on the branch 4163/4163 (= 4137 + 26); focused Edit Mode 141/141 (`tmp/871c-edit-results.xml`), whole-suite 5118 -> 5144. At the merge: the block's MERGE BLOCK dropped for 8.71e's, `RedDefinitions()` made public, its label derivation pointed at its own list, and its bare schema pin moved to 8.71a's v44. 8.71g inherits `HanuCardContent.Definition(CardDefinitionId)` (this block's) and `HanuEffectContent.AttackTextEffectId` as the single copies.
+
+Historical evidence: [8.71c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-871c-hanu-reds-and-fight-and-flight-completion-evidence).
 
 ### [ ] 8.71d Support the journeys
 

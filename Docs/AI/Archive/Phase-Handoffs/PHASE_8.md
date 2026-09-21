@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71c Hanu Reds and Fight and Flight completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71c | Helping Hand, Even the Odds, Outnumber, Trusted Sidekick, Pile On and Fight and Flight as deferred content on Bain's `attack-sequence@1` modal (1..1 / 1..2, the actor's bullet order honoured by the engine already), two new `AttackSequenceSubjectNarrowing` members (5, 6) answered in the one owner every arm reaches, `AttackTargetableUnits.MinionsOnly` (3), and the target-survived rider into `choose-line-destination@1` at exactly three with obstacles honoured. No deferred id, no new handler type, schema/wire unmoved; four content-oracle guards taught. `HanuRedsTests` 26; harness 4163/4163; focused Edit Mode 141/141. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871c-support-the-reds-and-fight-and-flight). | `bc77b44b` |
+
 ## Milestone 8.71a Hanu Hurry up! completion evidence
 
 | Milestone | Outcome and definition | Commit |
