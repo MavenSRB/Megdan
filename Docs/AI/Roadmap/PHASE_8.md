@@ -249,7 +249,7 @@ Completed 2026-09-21 (`69f0bd3d`, squash-merged from `aa3ac093` on `8.72-delegat
 
 Historical evidence: [8.72 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-872-delegated-action-controls-completion-evidence).
 
-### [ ] 8.73 Package the twenty-one-hero playtest build
+### [x] 8.73 Package the twenty-one-hero playtest build
 
 Authorized 2026-09-21 by the user ("cut out the build"), after 8.72 closed the Hanu series and nothing further was queued for it.
 
@@ -258,6 +258,10 @@ Outcome: `Builds/Playtest-8.71-hanu` and its zip, built from main at the 8.72 ce
 Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness green on the packaged tree; the packaged exe launches and reaches the lobby; the identity stamp names the commit; Brynn (8.69-8.69h), Hanu (8.71-8.71i; schema v44 and wire `/20`), the greyed empty modal bullet (8.70), the delegated action's controls on the deciding seat (8.72), the hero-pick filters (8.35z86) and the coin-award narration (8.35z73) are what the package ships.
 
 Non-goals: new gameplay beyond what main carries at the cut.
+
+Completed 2026-09-21, the evening 8.72 closed the Hanu series - the user's order ("cut out the build"). `Builds/Playtest-8.71-hanu` and `Builds/Playtest-8.71-hanu.zip` (183 entries, no logs, no debug folder, 74 MB), built from main at `22fdef2f` (the 8.72 ceremony plus the version stamp) with bundleVersion `1.0-8.71-hanu`, stamp `1.0-8.71-hanu+20260921205040-5475f9c5`; protocol `guards-private-online/20` and schema 44 (both moved at 8.71a, so no earlier package can join); the configured content digest re-measured at this commit is `4c4869e1...`, moved from the 8.68 package's `c9dd1b66...` by Brynn's and Hanu's registrations (108 configured definitions, 21 playable heroes). The gate: the complete Edit Mode suite 5322 / 5286 / 0 / 36 established skips and the complete Play Mode suite 783/783 with zero skips ran on the 8.72 tree, which this commit changes only by the version string no test pins (`HudButtonTreatmentTests` reads `BuildIdentityStamp.Current` dynamically); the harness 4328/4328 ran on this commit; the build-and-launch smoke (GATE PASSED); the packaged exe launched once from its own folder with `-guardsPrivateLobby` to `LOBBY_BEGIN`. Manifest (Brynn, Hanu, 8.70, 8.72, 8.35z86, 8.35z73), READ ME FIRST (what is new: the two heroes with what to try on each, the greyed bullet, the picker filters, the coin narration; known problems: both heroes brand new with the delegated slot named as the first one-player-acts-for-another surface, the slot's board-covering placement stated as an open design call, Min's hidden mines and the designer-confirmed Smoke bomb rule carried) and BUILD IDENTITY written by hand per the 8.44 recipe.
+
+Historical evidence: [8.73 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-873-twenty-one-hero-package-completion-evidence).
 
 ### [x] 8.68 Package the playtest build with the Silverarrow corrections
 

@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-09-20
+Last updated: 2026-09-21
 
 ## Purpose and authority
 
@@ -8,15 +8,15 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; all twenty-one heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v44 persists the current state; wire protocol is `guards-private-online/20`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the seventeen p.20 Handicap cards p.6 returns to the box at setup. All twenty are registered and pass the permanent player-path gate; the [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; all twenty-one heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v44 persists the current state; wire protocol is `guards-private-online/20`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the seventeen p.20 Handicap cards p.6 returns to the box at setup. All twenty-one are registered and pass the permanent player-path gate; the [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.72**.
+- Current completed milestone: **8.73**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.73**.
+- Next proposed milestone: **8.35z71**.
 
 On 2026-09-20 the user explicitly authorized and completed
 **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: two unlabeled, client-local hero-pick filter rows provide
@@ -42,11 +42,11 @@ The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57
 
 - 2026-09-19 (later): the user authorized two HUD corrections from playtest screenshots as roadmap amendments - **[8.62](Roadmap/PHASE_8.md)** (targeting cues read as blood-red light) and **[8.63](Roadmap/PHASE_8.md)** (the decision window above every other panel) and **[8.64](Roadmap/PHASE_8.md)** (the victory screen drops its column legend); all three COMPLETE 2026-09-20 on the user's approval of their photographs (`c9c615ec`, `4feec1c4`, `de886e51`; the 8.62 cue settled as solid corner marks by side with a full hex on hover, not a ring).
 
-The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`, the current playtest package).
+The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`).
 
 The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21), is COMPLETE the same day: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** ([his shard](Rules/HERO_BRYNN.md)) - dealt with his picker row (three stars; Tactician, Damager, Durable) proven on the rendered lobby and gated at Play Mode 744 with zero skips; BR-Q4, BR-Q13 and BR-Q19h were settled by the user, the last built as **[8.70](Roadmap/PHASE_8.md)** (an empty modal bullet greyed at the choice for every face sharing the contract).
 
-On 2026-09-21 the user opened the TWENTY-FIRST hero ("Lets go for a new hero", "Make sure pick screen is correctly imeplented") and chose **Hanu the Trickster**: **[8.71](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** (inventory; [his shard](Rules/HERO_HANU.md)) **is complete**; **8.71a-8.71i** are COMPLETE the same day: dealt with his picker row (three stars; Tactician, Sniper, Pusher) proven on the rendered lobby and gated at Play Mode 782 with zero skips (schema v44 and wire `/20` since 8.71a). HA-Q15i ("Q15i means that currently that card wont work") was built as **[8.72](Roadmap/PHASE_8.md)**: the deciding seat's HUD draws the delegated card's controls in a "deciding for" slot, the targeted seat's goes dark, proven on a seat-scoped scene at both viewports (Play Mode 783 with zero skips). His set carries four mechanisms no earlier hero had: a rewritten Initiative on another hero's unresolved card, a delegated next action, an end-of-turn swap-back behind a turn of immunity, and a coupled move whose distance a teammate chooses; HA-Q3 and HA-Q8 were settled by the user as read. The twenty-one-hero package is authorized as **[8.73](Roadmap/PHASE_8.md)**; no other hero is.
+On 2026-09-21 the user opened the TWENTY-FIRST hero ("Lets go for a new hero", "Make sure pick screen is correctly imeplented") and chose **Hanu the Trickster**: **[8.71](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** (inventory; [his shard](Rules/HERO_HANU.md)) **is complete**; **8.71a-8.71i** are COMPLETE the same day: dealt with his picker row (three stars; Tactician, Sniper, Pusher) proven on the rendered lobby and gated at Play Mode 782 with zero skips (schema v44 and wire `/20` since 8.71a). HA-Q15i ("Q15i means that currently that card wont work") was built as **[8.72](Roadmap/PHASE_8.md)**: the deciding seat's HUD draws the delegated card's controls in a "deciding for" slot, the targeted seat's goes dark, proven on a seat-scoped scene at both viewports (Play Mode 783 with zero skips). His set carries four mechanisms no earlier hero had: a rewritten Initiative on another hero's unresolved card, a delegated next action, an end-of-turn swap-back behind a turn of immunity, and a coupled move whose distance a teammate chooses; HA-Q3 and HA-Q8 were settled by the user as read. **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu` (stamp `...5040-5475f9c5`, at `22fdef2f`), the current playtest package; no other hero or package is authorized.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 
@@ -60,7 +60,7 @@ On 2026-09-10 the user asked for documentation only of future four-round lobby-b
 
 The cleanup and 8.35z83-8.35z85 fixes are complete; the user-accepted 8.36 gate remains closed; the independent 8.36a review is integrated; **8.36b-8.36d** (authenticated departure, bounded transport, attributable diagnostics) are complete under [private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md). [Product](Project/PRODUCT.md) limits the project to the user and friends: production presentation and publisher-pitch work are parked; no repeat internet playtest, remote publication or unrelated refactor is authorized.
 
-Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Lobby bots use the measured owner-scoped tactical policy while hidden hands/decks remain absent. `Builds/Playtest-8.44-seventeen-hero.zip` is the current completed local package; the user confirmed the outstanding ordinary-window package check worked on 2026-09-10. Additional heroes remain on hold.
+Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Lobby bots use the measured owner-scoped tactical policy while hidden hands/decks remain absent. The user confirmed the outstanding ordinary-window package check worked on 2026-09-10. Additional heroes remain on hold.
 
 On 2026-09-11 the user also named **Cutter the Sky Pirate**; [fourteenth-hero dealing](Roadmap/PHASE_8_FOURTEENTH_HERO.md) owns that COMPLETE thirteen-block series and [her shard](Rules/HERO_CUTTER.md) its inventory. Her printed "you alone win the game" was implemented FAITHFULLY on the user's 2026-09-11 answer, moving the snapshot schema to **v42** and the wire to **/14**.
 

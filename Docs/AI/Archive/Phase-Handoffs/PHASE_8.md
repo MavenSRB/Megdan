@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.73 twenty-one-hero package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.73 | `Builds/Playtest-8.71-hanu` (+ zip: 183 entries, 74 MB, no logs) cut from main at `22fdef2f` the evening 8.72 closed the Hanu series, on the user's "cut out the build"; bundleVersion `1.0-8.71-hanu`, stamp `...5040-5475f9c5`; protocol /20 and schema 44 (no earlier package can join); configured content digest `4c4869e1...`, moved from 8.68's by Brynn's and Hanu's registrations. Carries 8.35z73, 8.35z86, 8.69-8.69h, 8.70, 8.71-8.71i and 8.72. Gate: Edit Mode 5322 / 5286 / 0 / 36 established skips and Play Mode 783/783 zero skips on the 8.72 tree (this commit changes only the unpinned version string), harness 4328/4328 on this commit, build-and-launch smoke passed, packaged exe launched from its own folder to `LOBBY_BEGIN`. Manifest, README and BUILD IDENTITY by hand per the 8.44 recipe. | `milestone/8.73` |
+
 ## Milestone 8.72 delegated action controls completion evidence
 
 | Milestone | Outcome and definition | Commit |
