@@ -4,7 +4,7 @@ Canonical active shard. Return to [RULES_LEDGER.md](../RULES_LEDGER.md).
 
 ## Hanu content ledger
 
-Hanu is the twenty-first playable hero. [The implementation series](../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md) owns acceptance. This shard records his nineteen printed definitions, the general rules they lean on, the four printed mechanisms none of the twenty heroes before him carried, the capability map and the open readings. Nothing of his is composed, registered or artworked yet; each later block updates the relevant row here.
+Hanu is the twenty-first playable hero. [The implementation series](../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md) owns acceptance. This shard records his nineteen printed definitions, the general rules they lean on, the four printed mechanisms none of the twenty heroes before him carried, the capability map and the open readings. He is composed (8.71g), registered, dealt and artworked (8.71h); the gate (8.71i) owns the remaining live proofs.
 
 ## Source authority
 
@@ -103,7 +103,7 @@ These routes identify the composed contracts. Registration at the dealing block 
 
 ## Integration identity and private artwork
 
-To be recorded at 8.71h: schema (v43 at 8.71, expected to move at 8.71a for the Initiative override and again or once at 8.71b for the delegation - each block measures) and wire (`/19` at 8.71; the delegation is a fact every seat must see); content revision `hanu-8-71g-rev-1`; the pick card at HA-02's SHA-256 as `Assets/Resources/Private/HeroSelection/hero-hanu.png`; the standee pair `Heroes/hanu-red.png` / `hanu-blue.png` from element 8597492 (NOT 8597495); eighteen prepared fronts under `Cards/hanu/`; no token art. The roster row: `HeroComplexity.VeryComplex`, `HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher`, display name "Hanu the Trickster".
+Recorded at 8.71h: schema v44 (moved at 8.71a for the card-instance Initiative override) and wire `/20` (moved at 8.71a for `NetworkCardRow.RewrittenInitiative`), both unmoved since; content revision `hanu-8-71g-rev-1`, identity pin #21 `b5251764a41fb9c1b70358471e03819d3dc749ed64adfbaa86bceededee59fcc`; the pick card at HA-02's SHA-256 as `Assets/Resources/Private/HeroSelection/hero-hanu.png`; the standee pair `Heroes/hanu-red.png` / `hanu-blue.png` from element 8597492 (NOT 8597495); eighteen prepared fronts and 67 shine slots under `Cards/hanu/`; no token art. Six registered ids of his (three new handler types: `hanu-hurry-up-initiative@1`, `hanu-journey-partner@1`, `hanu-friendly-unit-pair@1`, plus the three journey effect creations), handler types 94 -> 97; the roster row `HeroComplexity.VeryComplex`, `HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher`, display name "Hanu the Trickster", proven on the rendered lobby.
 
 ## Open verification points
 

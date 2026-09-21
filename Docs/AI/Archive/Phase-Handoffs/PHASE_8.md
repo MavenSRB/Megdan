@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71h Hanu dealing completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71h | Hanu dealt as the twenty-first legal pick: six ids registered with three showcase consumers (handler types 94 -> 97), the roster row `VeryComplex` + `Tactician | Sniper | Pusher` pinned and proven on the rendered lobby with an inspected capture, identity pin #21 with twenty prior pins byte-identical, sixteen captures and nine digests re-pinned at +221 bytes attributed to the registered ids, artwork bijection 378, schema v44 / wire /20 unmoved; two reds found and fixed (hero-scoped active effects rendered nothing; a lobby fixture clicking before layout settled). Harness 4328/4328; complete Edit Mode 5310/5274/0/36; complete Play Mode 745/745 zero skips; smoke passed. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871h-deal-register-and-artwork-hanu). | `35ff4752` |
+
 ## Milestone 8.71g Hanu printed set completion evidence
 
 | Milestone | Outcome and definition | Commit |
