@@ -8,19 +8,19 @@ Read once at startup. `AGENTS.md` owns process; [governance](DOCUMENTATION_GOVER
 
 ## Current implementation
 
-Unity 6000.5.9f1 / URP 17.5; all nineteen heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v43 persists the current state; wire protocol is `guards-private-online/19`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the seventeen p.20 Handicap cards p.6 returns to the box at setup. All nineteen are registered and pass the permanent player-path gate; the [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
+Unity 6000.5.9f1 / URP 17.5; all twenty heroes dealt; default six-player Quick Game, with 2v2/3v3 and Quick/Long formats selectable. Rules, typed choices, replay, Undo, snapshots, and private host-authoritative TCP play are implemented. Snapshot schema v43 persists the current state; wire protocol is `guards-private-online/19`. Cleanup, corrections and packaging through 8.36h are complete, and 8.37/8.37b/8.37a deal Tali the Spiritcaller, give her runtime-integer decisions controls a player can answer, and compose her last deferred face. **No dealt hero now carries an engine deferral**: every printed text in the build runs, and the only parked faces are the seventeen p.20 Handicap cards p.6 returns to the box at setup. All twenty are registered; nineteen pass the permanent player-path gate and Brynn's gate is 8.69h; the [implementation inventory](Project/CURRENT_IMPLEMENTATION.md) names each dealing and its milestone. Explicitly parked coverage is not passing coverage.
 
 FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus-bot paths, END TURN/UNDO, and new-hero card faces have been checked. Whisper's prepared neutral portrait now appears on both the board and hero rail. The current 8.36h candidate has one `PLAY - Host or Join.bat` launcher; older Play/Host packages remain preserved. Private logs and extracted art remain private evidence/resources.
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.69f**.
+- Current completed milestone: **8.69g**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.69g**.
+- Next proposed milestone: **8.69h**.
 
 On 2026-09-20 the user explicitly authorized and completed
 **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: two unlabeled, client-local hero-pick filter rows provide
-one optional star value and AND-combined roles, with same-family CLEAR. All nineteen profiles carry
+one optional star value and AND-combined roles, with same-family CLEAR. All twenty profiles carry
 verified metadata; selection authority, bot assignment, schema v43, replay and wire `/19` are
 unchanged.
 
@@ -48,7 +48,7 @@ The EIGHTEENTH hero, **Rowenna the Vanguard**, is complete and gated: [8.57-8.57
 
 The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap/PHASE_8_NINETEENTH_HERO.md)** ([her shard](Rules/HERO_MIN.md); wire `/18` at 8.61e; four MI questions settled by the user), the Silverarrow follow-ups **[8.66](Roadmap/PHASE_8.md)** and **[8.67](Roadmap/PHASE_8.md)**, and the packages **[8.65](Roadmap/PHASE_8.md)** and **[8.68](Roadmap/PHASE_8.md)** (`Builds/Playtest-8.66-silverarrow`, the current playtest package).
 
-On 2026-09-21 the user opened the TWENTIETH hero ("ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen") and chose **Brynn the Seeker**: **[8.69](Roadmap/PHASE_8_TWENTIETH_HERO.md)** (inventory; [his shard](Rules/HERO_BRYNN.md)) **8.69a-8.69e** (the obstacle-adjacency query and Over the Top; the split attacks; Decoy and the guides; the tracking swaps; the traps and grit - every vocabulary block, the wave landed as `2b246051`, `ebd62b5a`, `9c772092`, `5625664d`) and **8.69f** (`13223e5f`, the set composed under one revision) **are complete**; **8.69g** deals him and **8.69h** gates him through a fully selectable, artworked hero whose picker row carries three stars and Tactician/Damager/Durable for the 8.35z86 filters. His set is built on one predicate, "adjacent to 3 or more obstacles", which his Ultimate makes true of every enemy hero while he acts; BR-Q13 was settled by the user 2026-09-21 (the water ring counts); BR-Q4 waits on the user. No other hero or package is authorized.
+On 2026-09-21 the user opened the TWENTIETH hero ("ok go for Byrnn, keep in mind he needs to be correctly implemented in new hero pick screen") and chose **Brynn the Seeker**: **[8.69](Roadmap/PHASE_8_TWENTIETH_HERO.md)** (inventory; [his shard](Rules/HERO_BRYNN.md)) **8.69a-8.69e** (the obstacle-adjacency query and Over the Top; the split attacks; Decoy and the guides; the tracking swaps; the traps and grit - every vocabulary block, the wave landed as `2b246051`, `ebd62b5a`, `9c772092`, `5625664d`) **8.69f** (`13223e5f`, the set composed under one revision) and **8.69g** (`d8c6f5a0`, dealt, registered and artworked, his picker row proven on the rendered screen) **are complete**; **8.69h** gates him through a fully selectable, artworked hero whose picker row carries three stars and Tactician/Damager/Durable for the 8.35z86 filters. His set is built on one predicate, "adjacent to 3 or more obstacles", which his Ultimate makes true of every enemy hero while he acts; BR-Q13 was settled by the user 2026-09-21 (the water ring counts); BR-Q4 waits on the user. No other hero or package is authorized.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 

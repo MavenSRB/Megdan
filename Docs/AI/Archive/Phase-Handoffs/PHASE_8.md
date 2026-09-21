@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.69g Brynn dealing completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.69g | Brynn the Seeker dealt, registered and artworked as the twentieth legal pick, with the roster row the user asked for (three stars; Tactician, Damager, Durable) pinned by the metadata test and proven on the rendered picker with an inspected capture. Three ids registered, all new handler types with showcase consumers (handler types 91 -> 94); identity pin #20 with nineteen prior pins byte-identical; corpus and scenario digests re-pinned with the +135-byte delta attributed to the three ids; bijection 342 -> 360; two guards moved with isolated causes; four reds fixed; the measured staged board recorded. Schema v43 and wire /19 unmoved. Harness 4111/4111; complete Edit Mode 5092/5056/0/36; complete Play Mode 707/707 with zero skips; build-and-launch smoke passed. Landed as `d8c6f5a0` (squash of `af7e9558` on `8.69g-dealing`). [Definition](../../Roadmap/PHASE_8_TWENTIETH_HERO.md#x-869g-deal-register-and-artwork-brynn). | `milestone/8.69g` |
+
 ## Milestone 8.69f Brynn printed set completion evidence
 
 | Milestone | Outcome and definition | Commit |
