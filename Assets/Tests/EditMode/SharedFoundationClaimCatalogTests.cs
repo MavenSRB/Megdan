@@ -1042,7 +1042,50 @@ namespace GuardsDigital.Tests.EditMode
                 "nothing else, and it is unbound on every other arm.",
                 "Reassess for a face pairing the clause with a Range icon, for a clause about a " +
                 "number of obstacles other than three, or for one measured from the ACTOR's space " +
-                "rather than from each candidate's.")
+                "rather than from each candidate's."),
+
+            // Milestone 8.69e. ONE optional parameter on the one retrieval capability, and nothing
+            // else: the block's five printed faces compose entirely on contracts this build already
+            // carries plus 8.69a's deferred predicate, so this is the whole of its widening.
+            new SharedFoundationClaim(
+                "retrieval.attack-cards-only",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities
+                        .AttackCardsOnlyParameter),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnTrapAndGritTests),
+                            nameof(BrynnTrapAndGritTests
+                                .TheRetrieval_OffersOnlyHisOwnDiscardedAttackCards),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "one discard pile holding two printed Attack primaries, two printed Skill " +
+                        "primaries, an Attack card still in hand and another hero's discarded " +
+                        "Attack card - and only the two the clause names are offered"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(BrynnTrapAndGritTests),
+                            nameof(BrynnTrapAndGritTests
+                                .TheAttackCardFilter_IsAnOptionalBooleanAndChangesNoRetrievalThatOmitsIt),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a Boolean rather than the action-kind Integer it looks like, unbound on " +
+                        "every retrieval composed before it, and no new retrieval-kind member")
+                },
+                new[] { "card noun", "resting place", "owner", "optionality" },
+                "One optional flag on `retrieve-card@1`: the candidate's PRINTED PRIMARY action is " +
+                "an Attack, which is p.9's own definition of \"Attack card\" and includes the Ranged " +
+                "subtype. It narrows whichever place the node's `kind` named rather than replacing " +
+                "that question, it is asked of the card's definition and never of its band or " +
+                "colour, and a candidate whose definition this composition does not hold is refused " +
+                "rather than admitted.",
+                "Reassess for a printed clause naming a different card noun (a Skill card, a card of " +
+                "a colour, a Basic), for one that retrieves from somewhere other than a pile the " +
+                "existing kinds name, or for a face that asks the question about ANOTHER hero's " +
+                "cards, which p.10 currently forbids outright.")
         };
     }
 

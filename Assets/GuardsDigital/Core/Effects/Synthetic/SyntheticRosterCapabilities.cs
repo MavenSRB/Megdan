@@ -361,6 +361,35 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string RestrictToCardParameter = "restrictToCard";
 
+        /// <summary>
+        /// Milestone 8.69e. Whether a retrieval admits only p.9's ATTACK CARDS - Brynn the Seeker's
+        /// True Grit and Die Hard, "You may retrieve a <b>discarded attack card</b>".
+        ///
+        /// <para><b>p.9 defines the noun and this reads that definition rather than a second one:</b>
+        /// "a card with an Attack primary action is referred to as an Attack card". So the question is
+        /// asked of the candidate's printed primary action and of nothing else - a Ranged Attack is an
+        /// Attack, a Skill primary is not, and the band printed above the icon decides nothing. For
+        /// Brynn that admits Familiar Ground and his five Reds and refuses his twelve Blues and
+        /// Greens, his Decoy and his Ultimate (BR-Q8).</para>
+        ///
+        /// <para><b>It is a parameter and not a fourth <see cref="RosterCardRetrievalKind"/>.</b> That
+        /// enum answers WHERE a retrievable card may rest - the discard pile, or the played-and-
+        /// resolved Basic Skill milestone 6.5a's faces reach - and this answers WHAT is printed on it.
+        /// A member combining the two would need one per pairing the moment a second face printed a
+        /// different place, which is the multiplication this catalog's rule 1 refuses; a filter that
+        /// narrows whatever place the kind named costs one declaration for every kind at once.</para>
+        ///
+        /// <para><b>A Boolean rather than an action-kind Integer</b>, on the rule milestone 8.57c
+        /// settled: an unbound optional Integer reads as ZERO, and zero is
+        /// <see cref="ActionKind.None"/> - a retrieval that forgot to bind it would ask for a card
+        /// whose primary is nothing at all and admit none. Optional and false where nothing sets it, so
+        /// Silverarrow's Blessing, Rowenna's four retrievals, Widget's and Garrus's keep their exact
+        /// candidate sets without naming it, and an added parameter moves no pinned byte because the
+        /// identity walker digests a capability's reference and its Active-effect definitions and never
+        /// its parameter schema.</para>
+        /// </summary>
+        public const string AttackCardsOnlyParameter = "attackCardsOnly";
+
         public static EffectCapabilityReference RetrieveCardV1 => Reference("retrieve-card", 1);
         public static EffectCapabilityReference GainResourceV1 => Reference("gain-resource", 1);
         public static EffectCapabilityReference TransferResourceV1 => Reference("transfer-resource", 1);
@@ -3733,7 +3762,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             integerDomain: EffectIntegerDomain.AllExcept(
                                 RosterCardRetrievalKind.None)),
                         new EffectCapabilityParameter(
-                            RestrictToCardParameter, EffectValueKind.CardInstance, isRequired: false)
+                            RestrictToCardParameter, EffectValueKind.CardInstance, isRequired: false),
+
+                        // Milestone 8.69e. Brynn's "a discarded ATTACK card" - see
+                        // AttackCardsOnlyParameter. Optional, so every retrieval composed before him
+                        // keeps its exact candidate set without naming it.
+                        new EffectCapabilityParameter(
+                            AttackCardsOnlyParameter, EffectValueKind.Boolean, isRequired: false)
                     },
                     new[]
                     {
@@ -3763,8 +3798,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     !Enum.IsDefined(typeof(RosterCardRetrievalKind), kind))
                     return Array.Empty<CardInstance>();
                 var definitions = context.CardState.Definitions;
+                var attackCardsOnly = context.Input(AttackCardsOnlyParameter).BooleanValue;
                 var eligible = context.CardState.Instances
-                    .Where(card => card.OwnerId.Equals(owner) && Eligible(card, kind, definitions));
+                    .Where(card => card.OwnerId.Equals(owner) &&
+                        Eligible(card, kind, definitions, attackCardsOnly));
 
                 // Milestone 8.37. Guardian Spirit and Warrior Spirit name a specific
                 // card - themselves - rather than asking which one; see RestrictToCardParameter.
@@ -3836,8 +3873,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private static bool Eligible(
                 CardInstance card,
                 RosterCardRetrievalKind kind,
-                IReadOnlyList<CardDefinition> definitions)
+                IReadOnlyList<CardDefinition> definitions,
+                bool attackCardsOnly)
             {
+                // Milestone 8.69e. p.9's noun, asked once and ahead of the place the kind names, so
+                // that a face printing "a discarded attack card" narrows whichever pile its kind
+                // opens rather than needing a member per pairing. See AttackCardsOnlyParameter.
+                if (attackCardsOnly && !PrintsAnAttackPrimary(card, definitions))
+                {
+                    return false;
+                }
+
                 var isRetrievableDiscard = CardLifecycleAuthority.IsDiscardedRestingCard(card);
                 if (kind == RosterCardRetrievalKind.OwnedDiscardedCard)
                     return isRetrievableDiscard;
@@ -3851,6 +3897,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 return isRetrievableDiscard ||
                     (card.State.Location == CardLocation.TurnArea && card.State.HasBeenPlayed &&
                      card.State.ResolutionStatus == CardResolutionStatus.Resolved);
+            }
+
+            /// <summary>
+            /// p.9's "Attack card": a card whose PRINTED PRIMARY action is an Attack. The Ranged
+            /// subtype is still an Attack (p.13 classifies the reach, not the action), and a card this
+            /// composition holds no definition for is refused rather than admitted - the same answer
+            /// every other reader of an unknown definition gives.
+            /// </summary>
+            private static bool PrintsAnAttackPrimary(
+                CardInstance card, IReadOnlyList<CardDefinition> definitions)
+            {
+                var definition = definitions.SingleOrDefault(value =>
+                    value.Reference.Equals(card.DefinitionReference));
+                var primary = definition?.ActionDefinitions.SingleOrDefault(value =>
+                    value.Origin == ActionDefinitionOrigin.PrintedPrimary);
+                return primary?.Kind == ActionKind.Attack;
             }
         }
 

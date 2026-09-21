@@ -356,7 +356,11 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(66),
+            Assert.That(nodes.Length, Is.EqualTo(69),
+                "RE-MEASURED at 8.69e: 8.61c's 66 plus Brynn's three trap faces, whose first bullet " +
+                "is 'An enemy hero adjacent to you' - one each on Bear Trap, Log Trap and Deadfall " +
+                "Trap, and none on True Grit or Die Hard, which name no unit at all. His second " +
+                "bullet is the printed-Radius selection and is counted nowhere here. " +
                 "RE-MEASURED at 8.61c: 8.57d's 63 plus Min's three 'Push an enemy unit adjacent to " +
                 "you' subject selections - one each on Crane, Tiger and Dragon Stance, and none on " +
                 "Viper or Cobra, whose riders name no unit at all. (8.57d's own count was 8.57c's 59 " +
