@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71g Hanu printed set completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71g | Hanu's nineteen definitions composed as one set under `hanu-8-71g-rev-1`: inventory order, starting hand, deck, three whole ladders with printed items, the boxed Handicap Fight or Flight, `DealtDefinitions` eighteen; handlers, triggered effects and decision labels folded over the six blocks (derived requirement set exactly the fifteen declared); the six deferred ids and three new handler types stated as exact sets; the build refusing seven composed bodies until 8.71h registers them. No contract minted; schema v44 / wire /20 unmoved; no pin moved. `HanuPrintedSetTests` 18; full harness 4309/4309; focused Edit Mode 220/220. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871g-compose-hanus-printed-set). | `286af789` |
+
 ## Milestone 8.71b Hanu Ultimate Trick completion evidence
 
 | Milestone | Outcome and definition | Commit |
