@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.71e Hanu co-moves completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.71e | This Way! and That Way! as deferred content: the friend chosen by `synthetic-radius-hero-target@1` (AlliedWithSource, Hanu excluded by the arm), the printed distances as a `Choose` under `EffectChooserRole.BoundHero` bound to that friend with one `coupled-direct-move@1` bullet per distance at equal bounds (obstacles not ignored), a blocked distance greyed by 6.5ac and an all-blocked modal closed by 6.5ae, Hanu's direction the capability's actor-asked destination. No contract minted or widened (the planned distance handler could not grey and was not built - HA-Q13e); no deferred ids; schema v43 / wire `/19` unmoved; HA-Q14e (the friend's answer raises the undo floor through the other-seat wall). `HanuCoMoveTests` 20 cases; harness 4157/4157; focused Edit Mode 23/23. [Definition](../../Roadmap/PHASE_8_TWENTY_FIRST_HERO.md#x-871e-support-the-co-moves). | `25e2630e` |
+
 ## Milestone 8.71 Hanu inventory completion evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -52,13 +52,17 @@ Acceptance: the swap over the enemy heroes in printed Radius with immunity honou
 
 Non-goals: Hurry up!, the Ultimate, the Reds, the co-moves, the Greens, dealing.
 
-### [ ] 8.71e Support the co-moves
+### [x] 8.71e Support the co-moves
 
 Outcome: This Way! and That Way! let a friendly hero in radius choose the distance and Hanu the direction, moving both the full distance or neither.
 
 Acceptance: the friendly hero chosen in printed Radius, Hanu excluded, immunity honoured; the distance asked of that hero's seat over the printed values with a distance no direction satisfies greyed (HA-Q9); the coupled move bound to that output with Hanu choosing among the legal directions; both move or neither, under p.11 for both units; a lobby bot answering the friend's choice; Undo and restore across the two seats' pauses. Compose This Way! and That Way!. T2 minimum.
 
 Non-goals: Hurry up!, the Ultimate, the Reds, the journeys, the Greens, dealing.
+
+Completed 2026-09-21 (`25e2630e`, squash-merged from `cb7c4b3e` on `8.71e-co-moves`, the first wave block to land). NO contract minted and none widened: the planned `hanu-friend-chooses-distance@1` could not grey anything (`PendingEffectChoice` refuses an unavailable candidate that is not an Option and `EffectChoiceRequest` carries no unavailable set, so a value handler could only have DROPPED an impossible distance), so "chooses a distance of 1 or 2" is composed as what it says - a `Choose` under `EffectChooserRole.BoundHero` bound to the friend (Whisper's and Cutter's 8.35z33 shape) with one `coupled-direct-move@1` bullet per printed distance at equal bounds and obstacles not ignored, 6.5ac greying a distance no direction admits and 6.5ae closing a modal whose every distance is blocked; the friend from `synthetic-radius-hero-target@1` (Skill, AlliedWithSource, includeSelf false - p.17 carried by the arm, proven by flipping it), Hanu's own square from `actor-space@1`, Hanu's direction the capability's own actor-asked destination. `HanuComponentContent.CoMoveDeferredHandlers()` / `CoMoveRegisteredHandlers()` both empty; schema v43 and wire `/19` unmoved. HA-Q13e: the distances are options, not a handler's values, and the friend selection declares no feasibility consumer because a pair blocked at 1 in every direction can still be legal at 2. HA-Q14e: 8.42e's fingerprint is opponent-scoped, so the friend's answer raises Hanu's undo floor through the other-seat wall, not the interaction wall (live proof at 8.71i). `HanuCoMoveTests` 20 cases; harness 4157/4157 (= 4137 + 20), focused Edit Mode 23/23 (`tmp/871e-edit-results.xml`). 8.71g must mint `HanuCardContent.Definition(CardDefinitionId)` once, fold `CoMoveDecisionLabels()`, and state both Blue forks whole.
+
+Historical evidence: [8.71e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-871e-hanu-co-moves-completion-evidence).
 
 ### [ ] 8.71f Support the Greens
 
