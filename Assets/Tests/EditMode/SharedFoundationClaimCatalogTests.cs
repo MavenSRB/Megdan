@@ -173,7 +173,9 @@ namespace GuardsDigital.Tests.EditMode
                     nameof(WidgetCoupledMoveTests.PairFollowsVacatedSpacesInEveryDirectionAtBothPrintedDistances), MemberTypes.Method),
                     SharedFoundationEvidenceKind.BoundaryFixture, "two objects follow a common exact distance and direction") },
                 new[] { "direction", "distance", "occupancy", "immunity", "atomicity", "continuation" },
-                "One simultaneous two-object direct Move, both complete or neither, permitting partner-vacated transit and retaining ordinary obstacle endpoints. Widget selects exactly 2 or 3.",
+                // Milestone 8.71e added the second consumer and no code at all: Hanu's This Way! and That Way! bind one printed
+                // distance per modal bullet, so the shape is unchanged and only the exact distances a card selects are widened.
+                "One simultaneous two-object direct Move, both complete or neither, permitting partner-vacated transit and retaining ordinary obstacle endpoints. Widget selects exactly 2 or 3; Hanu's co-moves select exactly 1, 2 or 3.",
                 "Reassess for larger batches, unequal routes/distances, partial success or a new traversal-trigger token. Tali's one-space batch is unchanged."),
             new SharedFoundationClaim(
                 "targeting.hero-space-output",

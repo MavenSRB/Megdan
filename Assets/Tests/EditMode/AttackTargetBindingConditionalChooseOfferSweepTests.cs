@@ -206,6 +206,12 @@ namespace GuardsDigital.Tests.EditMode
             // binding and are the `Choose`'s own children - the shape this sweep's own remarks name as
             // correctly read and deliberately not flagged - so he adds no at-risk gate.
             foreach (var card in BrynnCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("brynn", d);
+            // Milestone 8.71e. The twenty-first hero's first composed faces - two of nineteen at this
+            // block, which is once more the point of the case below reading the content CLASSES rather
+            // than a list: his line is owed the moment a `HanuCardContent` exists, dealt or not. Both
+            // of his co-moves are Skills whose modal bullets are coupled Moves, so nothing in them
+            // binds an Attack target at all and he adds no at-risk gate.
+            foreach (var card in HanuCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("hanu", d);
         }
 
         /// <summary>
