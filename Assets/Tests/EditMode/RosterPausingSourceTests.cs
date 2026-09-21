@@ -523,7 +523,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaVersionMovesForThreeDecisionsV26CannotHold()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
                 "Milestone 8.19c1 adds a trigger frame standing inside the effect it interrupted, a " +
                 "Defeat waiting at its removal stage with the coin operations that paid it, and a " +
                 "round-scoped record that p.8's pre-battle moment has already run. None of the three " +
@@ -577,7 +577,11 @@ namespace GuardsDigital.Tests.EditMode
                 "the only reading available for its absence is that nothing has happened to anybody, " +
                 "which is right for every v42 payload and wrong for the first v43 one. This " +
                 "case pins the current version rather than its own, so a later move has to be " +
-                "accounted for here rather than passing unread.");
+                "accounted for here rather than passing unread." +
+                "Milestone 8.71a moved it once more, to v44, for Hanu the "
+                + "Trickster's rewritten printed Initiative: a sparse card-keyed list in "
+                + "the card section, which is the first authoritative fact this build "
+                + "records about a CARD rather than about a hero, a minion or a token.");
         }
 
         // -----------------------------------------------------------------------------------------

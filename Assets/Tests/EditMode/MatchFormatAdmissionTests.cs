@@ -149,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheProtocolVersion_MovedBecauseTheHelloPayloadGrewAField()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(19),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(20),
                 "8.35z73 carries COIN-AWARD ROWS: the seat-public match log now names each " +
                 "authoritative reward recipient and amount. No bytes grew, but the closed enum " +
                 "vocabulary widened, so an /18 peer refuses rather than going dark. " +
@@ -194,13 +194,18 @@ namespace GuardsDigital.Tests.EditMode
                 "refuse it as an unexpected message, which is a protocol surface change and is " +
                 "taken as one. This case pins the CURRENT version rather than the one the format " +
                 "element moved to, so a later move is accounted for here rather than passing " +
-                "unread.");
+                "unread." +
+                "Milestone 8.71a carries the REWRITTEN PRINTED INITIATIVE at /20: each "
+                + "seat projection's card sections end in a sparse block naming the cards "
+                + "Hanu's Hurry up! has set to 11, which a /19 peer would read as whatever "
+                + "field follows the last card row. SCHEMA MOVES WITH IT to v44, because "
+                + "the rewrite is authoritative state no live state remembers.");
         }
 
         [Test]
         public void TheSnapshotSchema_DidNotMoveBecauseAFormatIsValuesAndNotShape()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
                 "The Wave total, each team's Life counters and the participant list have all been " +
                 "counted values in the payload for many versions, so a 2v2 payload is a v38 payload " +
                 "of different numbers rather than of a different shape. The version itself has moved " +
@@ -209,7 +214,10 @@ namespace GuardsDigital.Tests.EditMode
                 "8.35z45 added the predicate each of that plan's bullets prints about its " +
                 "candidate (taking 40 rather than 39, because v39 is claimed), and milestone 8.53 " +
                 "added the match scoreboard - all shape changes " +
-                "belonging to those milestones and not to this format.");
+                "belonging to those milestones and not to this format." +
+                "Milestone 8.71a moved it again, to v44, for Hanu the Trickster's " +
+                "rewritten printed Initiative - a sparse card-keyed list in the card " +
+                "section, which is authoritative state no live state remembers.");
         }
 
         [Test]

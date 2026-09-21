@@ -353,7 +353,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSnapshotSchema_DoesNotMoveForAHiddenAnswer()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
                 "The version has since moved once, at milestone 8.53, for the match scoreboard - " +
                 "accumulated per-hero totals that have no source to be re-derived from, which is the " +
                 "opposite of this case rather than a change to it. " +
@@ -362,7 +362,10 @@ namespace GuardsDigital.Tests.EditMode
                 "values since the effect frame existed, and the candidate SET is deliberately not " +
                 "written at all - restore re-derives it. The reveal adds nothing persisted either, " +
                 "because its memory is the derived seat-public log, itself re-derived from the " +
-                "retained rule-event log. Nothing here is a new field, so nothing here is a version.");
+                "retained rule-event log. Nothing here is a new field, so nothing here is a version." +
+                "Milestone 8.71a moved it again, to v44, for Hanu the Trickster's " +
+                "rewritten printed Initiative - a sparse card-keyed list in the card " +
+                "section, which is authoritative state no live state remembers.");
         }
 
         // -------------------------------------------------------------------------------------------

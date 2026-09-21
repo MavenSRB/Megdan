@@ -596,10 +596,15 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(19),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(20),
                 "8.35z73 added CoinAwarded after this fixture added MoveThroughTrapSprung. " +
                 "A new member of a closed wire vocabulary is a breaking change even when no byte " +
-                "of the frame moves: an older peer's Enum.IsDefined refuses the whole frame.");
+                "of the frame moves: an older peer's Enum.IsDefined refuses the whole frame." +
+                "Milestone 8.71a carries the REWRITTEN PRINTED INITIATIVE at /20: each "
+                + "seat projection's card sections end in a sparse block naming the cards "
+                + "Hanu's Hurry up! has set to 11, which a /19 peer would read as whatever "
+                + "field follows the last card row. SCHEMA MOVES WITH IT to v44, because "
+                + "the rewrite is authoritative state no live state remembers.");
         }
 
         [Test]
@@ -638,9 +643,12 @@ namespace GuardsDigital.Tests.EditMode
                     Is.EqualTo(EffectInterruptKind.AfterMoveThroughTrapTrigger));
             }
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
                 "A fourth reason an effect frame can be standing costs no schema version: the " +
-                "card-action payload has written the kind as an int since milestone 8.19c1.");
+                "card-action payload has written the kind as an int since milestone 8.19c1." +
+                "Milestone 8.71a moved it again, to v44, for Hanu the Trickster's " +
+                "rewritten printed Initiative - a sparse card-keyed list in the card " +
+                "section, which is authoritative state no live state remembers.");
         }
 
         [Test]

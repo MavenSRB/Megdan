@@ -364,7 +364,7 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(19),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(20),
                 "8.35z73 carries COIN-AWARD ROWS: the seat-public match log now names each " +
                 "authoritative reward recipient and amount. No bytes grew, but the closed enum " +
                 "vocabulary widened, so an /18 peer refuses rather than going dark. " +
@@ -398,7 +398,12 @@ namespace GuardsDigital.Tests.EditMode
                 "carried since 8.35r - so what moved is the VOCABULARY, and that is exactly what " +
                 "the decoder validates: a version 14 peer meeting kind 31 refuses the whole frame " +
                 "rather than mis-reading one row, which is why this is a version rather than a " +
-                "silent widening.");
+                "silent widening." +
+                "Milestone 8.71a carries the REWRITTEN PRINTED INITIATIVE at /20: each "
+                + "seat projection's card sections end in a sparse block naming the cards "
+                + "Hanu's Hurry up! has set to 11, which a /19 peer would read as whatever "
+                + "field follows the last card row. SCHEMA MOVES WITH IT to v44, because "
+                + "the rewrite is authoritative state no live state remembers.");
         }
 
         [Test]

@@ -1224,6 +1224,143 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess for a face pairing the clause with a Range icon, for an exclusion of more " +
                 "than one minion, or for a clause excluding a CLASS of minion rather than a named " +
                 "one.")
+            ,
+
+            // Milestone 8.71a. THREE claims: one new production owner for the rewrite itself, one
+            // for the reading of p.10's unresolved card it and the turn order now share, and one
+            // parameter on the printed-Range hero selection. The milestone's other deltas - the
+            // persisted card field, the snapshot section and the wire block - are payload shapes
+            // rather than shared readings, and are argued in their own decision records.
+            new SharedFoundationClaim(
+                "initiative.printed-value-override",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Cards.CardLifecycleAuthority),
+                    nameof(GuardsDigital.Core.Cards.CardLifecycleAuthority
+                        .TrySetPrintedInitiativeOverride),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests
+                                .TheRewrittenValue_IsThePrintedIconAndNotASecondContribution),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "one card's printed Initiative before and after the rewrite: ONE " +
+                        "PrintedIcon contribution either way, naming the same card, with a " +
+                        "different number in it"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests
+                                .TheRewriteLapsesAtEveryStateChangeOfItsOwnCard),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "one case per exit p.10 knows - resolved, retrieved mid-action, " +
+                        "discarded, retrieved at the end of the round - and the card reads its " +
+                        "printed number again after each"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests
+                                .ARewriteSurvivesEveryOtherCardsStateChange),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "it follows the CARD and not the hero or the round, so nothing another " +
+                        "card does reaches it"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests
+                                .TheTransition_AdmitsOnlyAnUnresolvedPlayedCard),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a resolved card, a facedown card and a card in hand are each refused " +
+                        "rather than quietly rewritten")
+                },
+                new[] { "card state", "value channel", "composition", "lifetime", "persistence" },
+                "One card instance's printed Initiative icon SET to a number a card text names, " +
+                "replacing the definition's own icon where PrintedValueQuery reads it, so that " +
+                "p.16's items and hero-scoped modifiers still compose on top and the turn order " +
+                "and the hero rail read one number. It is written only onto a played, face-up, " +
+                "unresolved card; it is carried by the card instance, so it follows that card and " +
+                "not its owner; it is cleared by that card's own next state change and by nothing " +
+                "else; and it survives snapshot and replay on schema v44.",
+                "Reassess for a printed text that rewrites a channel other than Initiative, for " +
+                "one that rewrites a value on a card at rest or in a hand, for one whose rewrite " +
+                "ends on a condition other than that card's state changing, or for a second " +
+                "producer of a replaced printed value."),
+
+            new SharedFoundationClaim(
+                "card-state.hero-unresolved-card",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Cards.HeroUnresolvedCardQuery),
+                    nameof(GuardsDigital.Core.Cards.HeroUnresolvedCardQuery.TryFind),
+                    MemberTypes.Method),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests.AHeroWithNoUnresolvedCard_IsNeverOffered),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the three shapes p.10 separates on one board - a resolved card, a " +
+                        "facedown card and a hero who has played nothing - and none of them is the " +
+                        "one the clause names"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests
+                                .TheRewriteNode_RefusesAHeroWhoseCardIsNoLongerUnresolved),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "the same reading asked LIVE by the consuming node, so a hero whose card " +
+                        "resolved between the offer and the answer is refused rather than having " +
+                        "some other card of theirs rewritten")
+                },
+                new[] { "card state", "owner", "arity", "ordering" },
+                "One hero's played, face-up, not-yet-resolved card, asked of a card collection " +
+                "through CardLifecycleAuthority's own naming of that shape - the shape " +
+                "InitiativeResolutionAuthority orders the round by. A hero holds at most one under " +
+                "p.10; the answer is taken in card-instance-id order so two derivations of one " +
+                "collection agree, which restore, replay and rewind each require.",
+                "Reassess for a rule that asks it about a MINION, for a composition in which one " +
+                "hero can hold two unresolved cards at once, or for a clause that needs the cards " +
+                "a hero has already resolved this round."),
+
+            new SharedFoundationClaim(
+                "targeting.holds-an-unresolved-card",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticTargetingCapabilities
+                        .HoldsAnUnresolvedCardParameterName),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests
+                                .TheOffer_IsEveryHeroInRangeOnEitherTeam_AndNeverHanuHimself),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "four heroes on one board - both teams, inside and outside the printed " +
+                        "disk, the actor among them - and exactly the two the whole clause admits"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(HanuHurryUpTests),
+                            nameof(HanuHurryUpTests
+                                .TheNarrowing_IsAnOptionalBooleanOnTheRangeArmAlone),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a Boolean rather than the count it could have been, optional, and absent " +
+                        "from every arm no verified face pairs it with")
+                },
+                new[] { "selection arm", "candidate kind", "optionality", "offer feasibility" },
+                "One optional flag on the printed-Range hero selection: a candidate who currently " +
+                "holds p.10's unresolved card, read through HeroUnresolvedCardQuery so the greying " +
+                "and the turn order cannot come to disagree. It narrows who may be picked and " +
+                "nothing else, it discloses nothing p.4 does not already make an open zone, and it " +
+                "is unbound on every other arm.",
+                "Reassess for a face pairing the clause with a Radius icon, for one that names a " +
+                "MINION's card, or for one that asks about a card in a place p.4 keeps hidden.")
         };
     }
 

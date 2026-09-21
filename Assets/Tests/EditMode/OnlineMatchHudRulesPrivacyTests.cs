@@ -265,7 +265,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SeatWireMeaning_UsesProtocolTwelve_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(19),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(20),
                 "8.35z73 carries COIN-AWARD ROWS: the seat-public match log now names each " +
                 "authoritative reward recipient and amount. No bytes grew, but the closed enum " +
                 "vocabulary widened, so an /18 peer refuses rather than going dark. " +
@@ -342,7 +342,12 @@ namespace GuardsDigital.Tests.EditMode
                 "record. Protocol four carried the eleventh pending family, " +
                 "PendingTurnRelease, plus the ReleaseTurn command kind; protocol three carried " +
                 "IsSeatUndoAvailable plus SubmitUndo and UndoResult, which protocol two peers could " +
-                "not decode safely.");
+                "not decode safely." +
+                "Milestone 8.71a carries the REWRITTEN PRINTED INITIATIVE at /20: each "
+                + "seat projection's card sections end in a sparse block naming the cards "
+                + "Hanu's Hurry up! has set to 11, which a /19 peer would read as whatever "
+                + "field follows the last card row. SCHEMA MOVES WITH IT to v44, because "
+                + "the rewrite is authoritative state no live state remembers.");
 
             for (var older = 1; older < PrivateSessionProtocol.Version; older++)
             {

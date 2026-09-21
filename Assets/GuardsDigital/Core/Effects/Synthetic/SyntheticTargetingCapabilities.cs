@@ -444,6 +444,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string HasCardInDiscardParameterName = "hasCardInDiscard";
 
         /// <summary>
+        /// Milestone 8.71a. Whether a printed-Range hero selection admits only heroes who currently
+        /// hold rulebook p.10's UNRESOLVED card - Hanu the Trickster's Hurry up!, "Set the printed
+        /// [Initiative] Initiative value of an <b>unresolved card of a hero in range</b> to 11".
+        ///
+        /// <para><b>It narrows who may be picked and nothing else</b>, which is the grammar every
+        /// flag above records: "of a hero" makes the card a property of the candidate, so a hero whose
+        /// card is already resolved - or who has not played one, or whose card is still face down - is
+        /// not one to offer and then refuse. It matters more here than for any earlier narrowing,
+        /// because the step that follows the selection is MANDATORY and has nothing else to do: an
+        /// offer made to a hero with no such card would be p.10's impossible mandatory step arriving
+        /// one node too late, after the player had already chosen.</para>
+        ///
+        /// <para><b>A Boolean, and unbound is the absence of the clause</b> - the shape 8.57c settled
+        /// and 8.69a restated. There is no count to take and no threshold to name: a hero has an
+        /// unresolved card or has not.</para>
+        ///
+        /// <para><b>The reading is <see cref="HeroUnresolvedCardQuery"/>'s</b>, which is the same
+        /// reading <c>InitiativeResolutionAuthority</c> orders the round by and the same one the
+        /// rewrite's own lifecycle transition admits. One phrase, one owner - so a hero this greys out
+        /// cannot be a hero whose card the turn order is counting.</para>
+        ///
+        /// <para><b>It discloses nothing.</b> The turn area is one of p.4's OPEN zones
+        /// (<see cref="PublicCardZoneQuery"/>) and this asks only about face-up cards in it, so every
+        /// seat can already see exactly which heroes qualify.</para>
+        ///
+        /// <para><b>Declared on the Range arm alone</b>, by this file's standing rule: Hurry up! is
+        /// the one face in the corpus printing the clause and it prints a Range 4 icon. A parameter
+        /// added to a registered capability moves no pinned byte - see
+        /// <see cref="BothDiscardPilesEmptyParameterName"/>'s own note for why.</para>
+        /// </summary>
+        public const string HoldsAnUnresolvedCardParameterName = "holdsAnUnresolvedCard";
+
+        /// <summary>
         /// Milestone 8.57d. Whether a printed-Radius hero selection admits only candidates for whom
         /// BOTH discard piles - the acting hero's and the candidate's own - hold nothing at all:
         /// Rowenna's Opening Shots and Opening Volley, "If <b>both you and an enemy hero in radius have
@@ -1261,6 +1294,18 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             EffectValueKind.Boolean,
                             isRequired: false));
 
+                    // Milestone 8.71a. Hanu's Hurry up!, "an unresolved card of a hero in range", on
+                    // the Range arm alone because that is the icon the one face printing it carries.
+                    // Optional and unbound everywhere else, so every hero selection composed before
+                    // him keeps its exact candidate set.
+                    if (channel == PrintedValueChannel.Range)
+                    {
+                        parameters.Add(new EffectCapabilityParameter(
+                            HoldsAnUnresolvedCardParameterName,
+                            EffectValueKind.Boolean,
+                            isRequired: false));
+                    }
+
                     // Milestone 8.35z30. Optional, and false where nothing sets it, which is
                     // every hero selection written before Silverarrow: see RULING 8 and
                     // <see cref="HeroCandidates"/> for why hers is the first face that can be its own
@@ -1791,6 +1836,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // both default to false and every earlier hero selection is untouched.
                 var requiresACardInDiscard = channel == PrintedValueChannel.Range &&
                     context.Input(HasCardInDiscardParameterName).BooleanValue;
+
+                // Milestone 8.71a. Hurry up!'s "an unresolved card of a hero in range", read only on
+                // the arm that declares it and through the one owner of the phrase. An unbound
+                // optional parameter is the absence of the clause, so every hero selection written
+                // before Hanu keeps its exact candidate set.
+                var requiresAnUnresolvedCard = channel == PrintedValueChannel.Range &&
+                    context.Input(HoldsAnUnresolvedCardParameterName).BooleanValue;
                 var requiresAnEmptySpawnPointBeside = channel == PrintedValueChannel.Radius &&
                     context.Input(AdjacentToEmptyMinionSpawnPointParameterName).BooleanValue;
 
@@ -1896,6 +1948,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     if (requiresACardInDiscard &&
                         (!context.CardState.IsAvailable ||
                             !HeroDiscardPileQuery.HasAnyCard(
+                                context.CardState.Instances, target.HeroId)))
+                    {
+                        continue;
+                    }
+
+                    // "an unresolved card of a hero in range" - p.10's played-and-not-yet-acted-on
+                    // card, asked through the query the turn order itself reads. Milestone 8.71a.
+                    if (requiresAnUnresolvedCard &&
+                        (!context.CardState.IsAvailable ||
+                            !GuardsDigital.Core.Cards.HeroUnresolvedCardQuery.Holds(
                                 context.CardState.Instances, target.HeroId)))
                     {
                         continue;

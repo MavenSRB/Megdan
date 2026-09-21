@@ -467,7 +467,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
                 "Nothing about the removal decision is stored, so it carried no schema move of its " +
                 "own. The version has since moved twenty-seven times, none of them for it: " +
                 "milestone 8.53 for the victory screen's accumulated per-hero scoreboard, and before " +
@@ -515,7 +515,11 @@ namespace GuardsDigital.Tests.EditMode
                 "Attack a \"choose one, or both\" opened and has not finished, which no v37 payload " +
                 "records because no v37 build could run more than one complete p.14 order inside one " +
                 "action. " +
-                "The decision is still re-derived from the state as it then stands.");
+                "The decision is still re-derived from the state as it then stands." +
+                "Milestone 8.71a moved it once more, to v44, for Hanu the "
+                + "Trickster's rewritten printed Initiative: a sparse card-keyed list in "
+                + "the card section, which is the first authoritative fact this build "
+                + "records about a CARD rather than about a hero, a minion or a token.");
             Assert.That(
                 AuthoritativeSnapshotSerializer.Serialize(restored.Round, restored.Board),
                 Is.EqualTo(payload),

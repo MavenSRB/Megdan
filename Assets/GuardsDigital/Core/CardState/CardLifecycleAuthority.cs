@@ -309,6 +309,50 @@ namespace GuardsDigital.Core.Cards
         /// would otherwise fault on it: nothing here decides that a retrieval happened, it names the
         /// one shape that means one did.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.71a. Hanu the Trickster's Hurry up!: "Set the printed [Initiative] Initiative
+        /// value of an unresolved card of a hero in range to 11, until it is resolved or otherwise
+        /// changes state."
+        ///
+        /// <para><b>What it decides is one thing, and it states what it refuses to decide.</b> The
+        /// only question it asks is whether this card is in the lifecycle shape the sentence names -
+        /// an UNRESOLVED card, which p.10 makes a played, face-up, not-yet-resolved card in the turn
+        /// area, and which <see cref="IsResolvingCardInTurnArea"/> already names for Brynn's Peak
+        /// Precision. It does not ask whose card it is, whether that hero is in the rewriting card's
+        /// printed Range, whether they are immune, or whether the rewriting hero is allowed to name
+        /// them: those belong to the selection that reached this point, exactly as
+        /// <see cref="TryDiscardFromHand"/>'s remarks say of the colour-restricted discard. A mutation
+        /// that re-derived eligibility would give the rewrite two candidate sets - the selection's
+        /// and its own - that nothing keeps in agreement.</para>
+        ///
+        /// <para><b>A facedown card is refused, and that is the sentence rather than caution.</b> p.10
+        /// suppresses a facedown card's printed characteristics, so there is no printed Initiative
+        /// there to set; the shape this admits is the same one
+        /// <c>InitiativeResolutionAuthority</c> reads the turn order from, which is what makes a
+        /// rewrite that succeeds a rewrite the order sees.</para>
+        ///
+        /// <para><b>A second rewrite of the same card simply sets the value again</b> (HA-Q1): the
+        /// printed sentence sets rather than adds, so nothing here stacks and the newest source is the
+        /// one recorded.</para>
+        /// </summary>
+        public static bool TrySetPrintedInitiativeOverride(
+            CardInstance card, int printedInitiative, CardInstanceId sourceCardInstanceId)
+        {
+            if (card == null)
+            {
+                throw new ArgumentNullException(nameof(card));
+            }
+
+            if (!IsResolvingCardInTurnArea(card))
+            {
+                return false;
+            }
+
+            card.ApplyInitiativeOverride(
+                new PrintedInitiativeOverride(printedInitiative, sourceCardInstanceId));
+            return true;
+        }
+
         public static bool WasRetrievedDuringItsOwnAction(CardInstance card) =>
             card != null && card.State.Location == CardLocation.Hand &&
             !card.State.HasBeenPlayed &&

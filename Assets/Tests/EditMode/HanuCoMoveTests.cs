@@ -88,9 +88,13 @@ namespace GuardsDigital.Tests.EditMode
             var thisWay = Face(HanuCardContent.ThisWay);
             var thatWay = Face(HanuCardContent.ThatWay);
 
-            Assert.That(HanuCardContent.AllDefinitions.Select(card => card.Id.Value).ToArray(),
+            // MERGE NOTE (8.71 wave): the integrated aggregate holds every landed block's faces, so
+            // this block's two are asserted by containment and its own list by equality.
+            Assert.That(HanuCardContent.CoMoveDefinitions().Select(card => card.Id.Value).ToArray(),
                 Is.EqualTo(new[] { "hanu-this-way", "hanu-that-way" }),
                 "This block composes two of his nineteen faces and no others.");
+            Assert.That(HanuCardContent.AllDefinitions.Select(card => card.Id.Value).ToArray(),
+                Is.SupersetOf(new[] { "hanu-this-way", "hanu-that-way" }));
 
             Assert.That(thisWay.DisplayName, Is.EqualTo("This Way!"));
             Assert.That(thatWay.DisplayName, Is.EqualTo("That Way!"));

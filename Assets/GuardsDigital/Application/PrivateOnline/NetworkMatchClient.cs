@@ -1057,12 +1057,22 @@ namespace GuardsDigital.Application
                 ? Enumerable.Empty<EffectChoiceCommand>()
                 : new[] { invocation };
 
+        /// <summary>
+        /// Milestone 8.71a. The rewritten printed Initiative is carried into the reconstructed
+        /// instance rather than applied afterwards, so this seat's rail reads the same number the
+        /// host ordered the round by through the same one query
+        /// (<c>PrintedValueQuery.CalculatePrintedInitiative</c>) - never a second client-side rule.
+        /// </summary>
         private CardInstance ToCard(NetworkCardRow row) => new CardInstance(
             new CardInstanceId(row.InstanceId),
             new CardDefinitionReference(new CardDefinitionId(row.DefinitionId), row.ContentRevision),
             new HeroId(row.OwnerHeroId),
             new CardStateFacts((CardLocation)row.Location, row.HasBeenPlayed,
-                (CardResolutionStatus)row.ResolutionStatus, (CardFaceOrientation)row.FaceOrientation));
+                (CardResolutionStatus)row.ResolutionStatus, (CardFaceOrientation)row.FaceOrientation),
+            row.RewrittenInitiative >= 0 && !string.IsNullOrWhiteSpace(row.RewrittenInitiativeSource)
+                ? new PrintedInitiativeOverride(
+                    row.RewrittenInitiative, new CardInstanceId(row.RewrittenInitiativeSource))
+                : PrintedInitiativeOverride.None);
 
         private RoundTurnSlot ToTurnSlot(NetworkTurnSlotRow row)
         {

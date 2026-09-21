@@ -491,13 +491,18 @@ namespace GuardsDigital.Core.Cards
             return cards;
         }
 
-        private static bool IsFaceupUnresolved(CardInstance card)
-        {
-            return card.State.Location == CardLocation.TurnArea &&
-                card.State.HasBeenPlayed &&
-                card.State.ResolutionStatus == CardResolutionStatus.Unresolved &&
-                card.State.FaceOrientation == CardFaceOrientation.FaceUp;
-        }
+        /// <summary>
+        /// p.7's "the player with the highest Initiative on their UNRESOLVED card is next to act",
+        /// asked of one card.
+        ///
+        /// <para>Milestone 8.71a made this the lifecycle authority's own reading rather than a fourth
+        /// copy of the four field comparisons. Hanu's Hurry up! names the same shape - "an unresolved
+        /// card of a hero in range" - and it is asked in three places at once: here, by the selection
+        /// that offers the hero, and by the transition that writes the rewrite. Three spellings of one
+        /// phrase are three chances for a card to be rewritten and then not counted.</para>
+        /// </summary>
+        private static bool IsFaceupUnresolved(CardInstance card) =>
+            CardLifecycleAuthority.IsResolvingCardInTurnArea(card);
 
         private sealed class InitiativeCandidate
         {

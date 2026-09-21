@@ -536,9 +536,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheBorrowedPause_MovesNoSnapshotSchemaVersion()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
                 "8.61g adds no persisted field: the borrowed frame is an ordinary paused card text " +
-                "whose card happens to be another of hers.");
+                "whose card happens to be another of hers." +
+                "Milestone 8.71a moved it again, to v44, for Hanu the Trickster's " +
+                "rewritten printed Initiative - a sparse card-keyed list in the card " +
+                "section, which is authoritative state no live state remembers.");
         }
 
         /// <summary>

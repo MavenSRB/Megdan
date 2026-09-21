@@ -310,7 +310,29 @@ namespace GuardsDigital.Application
         // frame field or authoritative snapshot state is added. As with version 18, the closed enum
         // vocabulary makes the otherwise layout-neutral addition breaking, so version 18 peers are
         // refused before they can encounter a kind they do not declare. Schema therefore remains v43.
-        public const int Version = 19;
+        //
+        // Version 20 (milestone 8.71a) carries the REWRITTEN PRINTED INITIATIVE. Hanu the Trickster's
+        // Hurry up! prints "Set the printed [Initiative] Initiative value of an unresolved card of a
+        // hero in range to 11, until it is resolved or otherwise changes state", and each seat
+        // projection's two card sections now end in a SPARSE block - a count, then one card instance
+        // id, the number its printed icon reads, and the card instance whose text wrote it, per
+        // rewritten card. A version 19 peer's reader stops after the last card row and then takes this
+        // count as whatever field follows, so it does not silently drop a fact - it mis-decodes the
+        // rest of the frame, which is exactly why the version moves and version 19 is refused from the
+        // bounded header before either side interprets a payload.
+        //
+        // It rides the card rows rather than opening a message kind, because it is a fact ABOUT those
+        // cards and is table-public for the same reason their states are: the rewritten card sits face
+        // up in the turn area where every player can read it, and p.7 orders the round by the number
+        // on it. It is carried rather than derived because no client holds anything that says a
+        // sentence was spoken - deriving it would be a second reading of the host's rules, free to
+        // disagree with the one the round is being ordered by.
+        //
+        // SCHEMA MOVES WITH IT, to v44, and that is the honest half: the rewrite is authoritative
+        // state that no live state remembers, so the snapshot grew the same sparse block. See
+        // `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` for the measured cost and for why a
+        // v43 payload is rejected rather than migrated.
+        public const int Version = 20;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

@@ -6,6 +6,25 @@ namespace GuardsDigital.Core.Cards
 {
     public static class PrintedValueQuery
     {
+        /// <summary>
+        /// One card's printed Initiative icon, as the turn order and the hero rail both read it.
+        ///
+        /// <para><b>Milestone 8.71a: the icon a sentence has REWRITTEN is what this returns.</b> Hanu
+        /// the Trickster's Hurry up! prints "Set the PRINTED [Initiative] Initiative value of an
+        /// unresolved card of a hero in range to 11", so the rewritten number is the printed number -
+        /// which is why it comes back as the same single
+        /// <see cref="ValueContributionKind.PrintedIcon"/> contribution the definition's own icon
+        /// comes back as, with the same card named, rather than as a second contribution beside it.
+        /// p.16's Initiative items and any hero-scoped modifier still compose ON TOP, because they
+        /// compose on top of a printed icon and this is one (HA-Q1).</para>
+        ///
+        /// <para><b>It is read here rather than in the Initiative selection</b>, although that is
+        /// where the order is decided, and the reason is that the order is not the only reader:
+        /// <c>HeroOverviewPresentation</c> builds the rail's Initiative badge from this same call.
+        /// A rewrite applied at the selection would have ordered the round by 11 while every seat's
+        /// rail still drew 12, and the two readings could not be brought back together without
+        /// presentation re-deriving the rule for itself.</para>
+        /// </summary>
         public static ValueResult CalculatePrintedInitiative(
             CardInstance card,
             IEnumerable<CardDefinition> definitions)
@@ -31,7 +50,9 @@ namespace GuardsDigital.Core.Cards
                         ValueContributionKind.PrintedIcon,
                         card.Id,
                         PrintedValueChannel.Initiative,
-                        definition.Initiative.Value)
+                        card.InitiativeOverride.IsDefined
+                            ? card.InitiativeOverride.Value
+                            : definition.Initiative.Value)
                 });
         }
 

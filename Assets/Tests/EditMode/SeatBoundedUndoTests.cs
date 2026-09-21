@@ -904,7 +904,17 @@ namespace GuardsDigital.Tests.EditMode
                     hero.HeroId.IsDefined ? hero.Coordinate.ToString() : "absent";
                 foreach (var card in projection.Cards.Where(value => value.OwnerId.Equals(seat.HeroId)))
                 {
-                    state["card:" + card.Id.Value] = card.State.Location.ToString();
+                    // Milestone 8.71a. Where the card is, AND the printed Initiative some card text
+                    // has rewritten on it - Hanu the Trickster's Hurry up! changes the second
+                    // without changing the first, and an observer that watched only the location
+                    // would agree with the host by construction about a state neither of them could
+                    // see. No seeded walk reaches one yet, because nothing of his is dealt until
+                    // 8.71h; the term is here so that the day one is, this observer is already
+                    // independent of the wall it is checking.
+                    state["card:" + card.Id.Value] = card.State.Location +
+                        (card.InitiativeOverride.IsDefined
+                            ? "!" + card.InitiativeOverride.Value
+                            : string.Empty);
                 }
             }
 

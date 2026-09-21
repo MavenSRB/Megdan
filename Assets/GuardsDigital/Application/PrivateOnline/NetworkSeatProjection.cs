@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using GuardsDigital.Core.Replay;
 
@@ -463,7 +464,9 @@ namespace GuardsDigital.Application
             int location,
             bool hasBeenPlayed,
             int resolutionStatus,
-            int faceOrientation)
+            int faceOrientation,
+            int rewrittenInitiative = -1,
+            string rewrittenInitiativeSource = null)
         {
             InstanceId = instanceId;
             DefinitionId = definitionId;
@@ -473,6 +476,8 @@ namespace GuardsDigital.Application
             HasBeenPlayed = hasBeenPlayed;
             ResolutionStatus = resolutionStatus;
             FaceOrientation = faceOrientation;
+            RewrittenInitiative = rewrittenInitiative;
+            RewrittenInitiativeSource = rewrittenInitiativeSource;
         }
 
         public string InstanceId { get; }
@@ -483,6 +488,22 @@ namespace GuardsDigital.Application
         public bool HasBeenPlayed { get; }
         public int ResolutionStatus { get; }
         public int FaceOrientation { get; }
+
+        /// <summary>
+        /// Milestone 8.71a, wire <c>guards-private-online/20</c>. The printed Initiative Hanu's Hurry
+        /// up! has rewritten on this card, or <c>-1</c> where none has - which is every card in every
+        /// match no Hurry up! has touched.
+        ///
+        /// <para>It crosses the wire rather than being derived on each client because it CANNOT be
+        /// derived: nothing a client holds says a sentence was spoken about a card. Rulebook p.7
+        /// re-checks the Initiative after every resolution, so a seat that did not know would draw
+        /// the printed icon on the rail while the host ordered the round by the rewritten one - the
+        /// projection disagreement the wire exists to make impossible.</para>
+        /// </summary>
+        public int RewrittenInitiative { get; }
+
+        /// <summary>The card instance whose text rewrote it, or <c>null</c> where none has.</summary>
+        public string RewrittenInitiativeSource { get; }
     }
 
     public sealed class NetworkProgressionRow
@@ -1255,6 +1276,20 @@ namespace GuardsDigital.Application
                 writer.Write((int)card.State.ResolutionStatus);
                 writer.Write((int)card.State.FaceOrientation);
             }
+
+            // Milestone 8.71a, wire `guards-private-online/20`. The rewritten printed Initiative
+            // values among these cards, SPARSE and trailing, exactly as schema v44 writes them into
+            // the snapshot's card section - one shape, stated twice because the two payloads are two
+            // payloads, and never two different shapes to keep in agreement. A count of zero is what
+            // every frame of every match carries until a Hurry up! resolves.
+            var rewritten = cards.Where(card => card.InitiativeOverride.IsDefined).ToArray();
+            writer.Write(rewritten.Length);
+            foreach (var card in rewritten)
+            {
+                writer.Write(card.Id.Value);
+                writer.Write(card.InitiativeOverride.Value);
+                writer.Write(card.InitiativeOverride.SourceCardInstanceId.Value);
+            }
         }
 
         private static bool TryReadCards(BinaryReader reader, out IReadOnlyList<NetworkCardRow> cards)
@@ -1285,6 +1320,34 @@ namespace GuardsDigital.Application
                 rows.Add(new NetworkCardRow(
                     instanceId, definitionId, contentRevision, ownerId, location,
                     hasBeenPlayed, resolutionStatus, faceOrientation));
+            }
+
+            // Milestone 8.71a, wire `guards-private-online/20`. The sparse rewritten-Initiative block
+            // WriteCards states, applied to the rows it was written beside. A block naming a card
+            // these rows do not contain is a frame this seat refuses rather than one it half-reads -
+            // the same refusal every other bounded read in this codec makes.
+            if (!TryReadCount(reader, out var rewrittenCount))
+            {
+                return false;
+            }
+
+            for (var index = 0; index < rewrittenCount; index++)
+            {
+                var instanceId = reader.ReadString();
+                var value = reader.ReadInt32();
+                var source = reader.ReadString();
+                var position = rows.FindIndex(row =>
+                    string.Equals(row.InstanceId, instanceId, StringComparison.Ordinal));
+                if (position < 0 || value < 0 || string.IsNullOrWhiteSpace(source))
+                {
+                    return false;
+                }
+
+                var row = rows[position];
+                rows[position] = new NetworkCardRow(
+                    row.InstanceId, row.DefinitionId, row.ContentRevision, row.OwnerHeroId,
+                    row.Location, row.HasBeenPlayed, row.ResolutionStatus, row.FaceOrientation,
+                    value, source);
             }
 
             cards = Array.AsReadOnly(rows.ToArray());

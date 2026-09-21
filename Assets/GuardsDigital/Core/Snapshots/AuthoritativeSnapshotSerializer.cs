@@ -364,7 +364,31 @@ namespace GuardsDigital.Core.Snapshots
         // which is worth saying because the balances are right there: a balance is what a hero HOLDS
         // after every p.15 purchase has spent it back down, and the column is what they COLLECTED.
         // No persisted state exists outside the version-controlled corpus to strand.
-        public const int CurrentSchemaVersion = 43;
+        //
+        // v44: milestone 8.71a puts Hanu the Trickster's rewritten printed Initiative values in the
+        // card section - a SPARSE list immediately after the card rows, each entry a card instance id,
+        // the number its printed icon now reads, and the card instance whose text wrote it. Hurry up!
+        // prints "Set the printed [Initiative] Initiative value of an unresolved card of a hero in
+        // range to 11, until it is resolved or otherwise changes state", and nothing in this build
+        // before it replaced a printed value: the three sources the Initiative selection composes are
+        // all additive and the two that are not the icon are keyed on the HERO, so there was no shape
+        // here that could carry a fact about one CARD.
+        //
+        // It is a bump of exactly four bytes in every payload that carries no rewrite - one Int32
+        // count reading zero - and thirty-odd more for each card that carries one. The sparse shape is
+        // why: a flag on each card row would have spent a byte per card, in every payload ever
+        // written, to say "no" about a fact true of at most one card at a time.
+        //
+        // v43 IS REJECTED RATHER THAN MIGRATED, on this series' standing argument. A v43 payload
+        // records no rewrites, and "no rewrites" is the right reading for every payload a v43 BUILD
+        // could produce - no v43 rule can write one - which is exactly why it must not be written into
+        // the reader: the first payload it would be wrong about is the first one this milestone
+        // writes. A match restored mid-round from a migrated v43 payload would come back with the
+        // rewritten card reading its printed icon again, and the ROUND ORDER would silently differ
+        // from the one the match was playing - p.7 re-checks the Initiative after every resolution, so
+        // the wrong number is consulted at the very next selection and nothing in the match could
+        // detect it. No persisted state exists outside the version-controlled corpus to strand.
+        public const int CurrentSchemaVersion = 44;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

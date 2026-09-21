@@ -260,14 +260,17 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void TheSchemaMovedBecauseThisEndingHasNoOtherSource()
         {
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(43),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
                 "v42 carries the solo winner. The three team causes are re-derived on restore from " +
                 "the Lane-Push transition and p.13's counters; this one has no such source, because " +
                 "holding thirteen coins is not the same fact as having resolved the branch while " +
                 "holding them. v43 is milestone 8.53's match scoreboard, written for the same reason " +
                 "one version later: accumulated per-hero totals that nothing else in the payload " +
                 "remembers - and notably NOT the coins column, which cannot be read off the balances " +
-                "beside it, because a balance is what a hero holds after p.15 has spent it down.");
+                "beside it, because a balance is what a hero holds after p.15 has spent it down." +
+                "Milestone 8.71a moved it again, to v44, for Hanu the Trickster's " +
+                "rewritten printed Initiative - a sparse card-keyed list in the card " +
+                "section, which is authoritative state no live state remembers.");
         }
 
         // -------------------------------------------------------------------------------------------

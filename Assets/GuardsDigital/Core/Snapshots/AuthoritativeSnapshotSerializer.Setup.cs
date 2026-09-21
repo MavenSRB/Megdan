@@ -464,6 +464,25 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write((int)card.State.ResolutionStatus);
                 writer.Write((int)card.State.FaceOrientation);
             }
+
+            // Milestone 8.71a, SCHEMA v44. The printed Initiative icons some card text has rewritten,
+            // as a SPARSE section rather than a field on every card row above.
+            //
+            // A flag per card would have cost one byte per card in every payload ever written to say
+            // "no" - a hundred and fourteen of them in a six-hero match - for a fact that is true of at
+            // most one card at a time. This says only what is true: a count, which is zero in every
+            // payload no Hurry up! has touched, and then the rewritten cards. It is written here rather
+            // than in its own section of the stream because it is a fact about these cards and this is
+            // where they are; ReadCards below applies it to the instances it just built, so the
+            // override has exactly one home on the read side too.
+            var rewritten = cards.Where(card => card.InitiativeOverride.IsDefined).ToArray();
+            writer.Write(rewritten.Length);
+            foreach (var card in rewritten)
+            {
+                writer.Write(card.Id.Value);
+                writer.Write(card.InitiativeOverride.Value);
+                writer.Write(card.InitiativeOverride.SourceCardInstanceId.Value);
+            }
         }
 
         private static CardInstance[] ReadCards(
@@ -495,6 +514,39 @@ namespace GuardsDigital.Core.Snapshots
                         SnapshotEnumReader.Read<CardResolutionStatus>(reader, "card resolution status"),
                         SnapshotEnumReader.Read<CardFaceOrientation>(reader, "card face orientation")));
             });
+
+            // Milestone 8.71a, schema v44. The sparse rewritten-Initiative section WriteCards above
+            // states. It is applied to the instances that method's own rows just built, by identity:
+            // a row naming a card this payload does not contain, or naming a card the payload does not
+            // leave in the one lifecycle shape the rewrite can stand on, is a payload describing a
+            // match this build cannot accept rather than one to silently drop.
+            var byId = cards.ToDictionary(card => card.Id);
+            var rewritten = ReadMany(reader, "rewritten card Initiative values", () =>
+            {
+                var id = new CardInstanceId(reader.ReadString());
+                var value = reader.ReadInt32();
+                var source = new CardInstanceId(reader.ReadString());
+                return (id, value, source);
+            });
+            foreach (var (id, value, source) in rewritten)
+            {
+                if (!byId.TryGetValue(id, out var card))
+                {
+                    throw new SnapshotLoadException(
+                        SnapshotLoadRejectionReason.MalformedPayload,
+                        $"Snapshot rewrites the printed Initiative of card '{id.Value}', which it " +
+                        "does not contain.");
+                }
+
+                if (value < 0 || !source.IsDefined ||
+                    !CardLifecycleAuthority.TrySetPrintedInitiativeOverride(card, value, source))
+                {
+                    throw new SnapshotLoadException(
+                        SnapshotLoadRejectionReason.MalformedPayload,
+                        $"Snapshot rewrites the printed Initiative of card '{id.Value}', which it " +
+                        "does not leave as an unresolved played card (rulebook p.10).");
+                }
+            }
 
             ValidateUnlockedUltimates(cards, definitions);
             return cards;

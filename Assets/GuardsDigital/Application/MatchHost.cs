@@ -1295,7 +1295,27 @@ namespace GuardsDigital.Application
                 .OrderBy(card => card.Id.Value, StringComparer.Ordinal))
             {
                 builder.Append("c:").Append(card.Id.Value).Append('@')
-                    .Append(card.State.Location).Append(';');
+                    .Append(card.State.Location);
+
+                // Milestone 8.71a. A REWRITTEN printed Initiative on an opponent's card is an
+                // interaction, and before this line the fingerprint could not see one. Hanu the
+                // Trickster's Hurry up! sets an enemy card's printed icon to 11 and moves nothing
+                // else: no hero, no minion, no card location, no marker, no token, no life counter -
+                // so every term above it compares equal and the turn stayed rewindable through a
+                // change that had already reordered the round in front of the seat that owns the
+                // card. That is precisely the "compare rather than deduce" promise of 8.42e's own
+                // remarks failing at a state it had no term for, rather than a card declaring itself
+                // wrongly.
+                //
+                // Appended only when a rewrite stands, so every board no Hurry up! has touched
+                // produces the byte-identical string it produced before this milestone and no
+                // shipped card's rewind moves.
+                if (card.InitiativeOverride.IsDefined)
+                {
+                    builder.Append('!').Append(card.InitiativeOverride.Value);
+                }
+
+                builder.Append(';');
             }
 
             foreach (var marker in projection.HeldMarkers

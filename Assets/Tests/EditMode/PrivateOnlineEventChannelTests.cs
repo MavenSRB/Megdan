@@ -596,7 +596,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void AVersionFivePeer_IsRefused_BeforeAnyPayloadInterpretation()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(19),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(20),
                 "8.35z73 carries COIN-AWARD ROWS: the seat-public match log now names each " +
                 "authoritative reward recipient and amount. No bytes grew, but the closed enum " +
                 "vocabulary widened, so an /18 peer refuses rather than going dark. " +
@@ -638,7 +638,12 @@ namespace GuardsDigital.Tests.EditMode
                 "identity fields, the ELEVENTH amendment's match formats to 9 for the format " +
                 "element the admission tuple's Hello now carries, and milestone 8.35z37 to " +
                 "10 for the ChooseHero kind a seat's hero pick travels on; a version 5 peer is " +
-                "still refused, and so is a version 6, 7, 8 or 9 one.");
+                "still refused, and so is a version 6, 7, 8 or 9 one." +
+                "Milestone 8.71a carries the REWRITTEN PRINTED INITIATIVE at /20: each "
+                + "seat projection's card sections end in a sparse block naming the cards "
+                + "Hanu's Hurry up! has set to 11, which a /19 peer would read as whatever "
+                + "field follows the last card row. SCHEMA MOVES WITH IT to v44, because "
+                + "the rewrite is authoritative state no live state remembers.");
 
             var harness = PrivateOnlineWireHarness.Compose();
             var seat = harness.Session.Roster[0].Seat.Value;

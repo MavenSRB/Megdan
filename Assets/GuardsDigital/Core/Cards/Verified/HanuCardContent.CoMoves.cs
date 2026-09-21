@@ -58,7 +58,7 @@ namespace GuardsDigital.Core.Cards.Verified
             "number of spaces in the same direction of your choice.";
 
         /// <summary>The two faces this block composes, in his shard's inventory order.</summary>
-        internal static IEnumerable<CardDefinition> CoMoveDefinitions() => LazyCoMoves.Value;
+        public static IEnumerable<CardDefinition> CoMoveDefinitions() => LazyCoMoves.Value;
 
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyCoMoves =
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(new[]
@@ -145,7 +145,9 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IReadOnlyList<CardDefinition> AllDefinitions => LazyAllDefinitions.Value;
         private static readonly Lazy<IReadOnlyList<CardDefinition>> LazyAllDefinitions =
             new Lazy<IReadOnlyList<CardDefinition>>(() => Array.AsReadOnly(ComposedFaces().ToArray()));
-        private static IEnumerable<CardDefinition> ComposedFaces() => CoMoveDefinitions();
+        private static IEnumerable<CardDefinition> ComposedFaces() =>
+            CoMoveDefinitions()
+                .Concat(HurryUpDefinitions());
         public static IReadOnlyList<CardDefinition> DealtDefinitions { get; } = Array.Empty<CardDefinition>();
         // ===== END MERGE BLOCK =====
     }
