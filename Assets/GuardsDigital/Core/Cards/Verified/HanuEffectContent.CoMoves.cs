@@ -94,8 +94,8 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>How far they both went, which is the number the friend named.</summary>
         public const string CoMoveDistanceOutput = "distance";
 
-        /// <summary>The space <c>actor-space@1</c> publishes.</summary>
-        private const string ActorSpaceOutput = "space";
+        // MERGE NOTE (8.71 wave): `ActorSpaceOutput` ("space") is declared once, publicly, in
+        // HanuEffectContent.Greens.cs; this partial's private copy was dropped at the squash-merge.
 
         /// <summary>
         /// The printed distances, per face: This Way! prints 1 and 2, That Way! prints 1, 2 and 3.

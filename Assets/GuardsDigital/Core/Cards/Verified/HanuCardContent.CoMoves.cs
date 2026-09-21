@@ -148,7 +148,8 @@ namespace GuardsDigital.Core.Cards.Verified
         private static IEnumerable<CardDefinition> ComposedFaces() =>
             CoMoveDefinitions()
                 .Concat(HurryUpDefinitions())
-                .Concat(RedDefinitions());
+                .Concat(RedDefinitions())
+                .Concat(GreenDefinitions());
         public static IReadOnlyList<CardDefinition> DealtDefinitions { get; } = Array.Empty<CardDefinition>();
         // ===== END MERGE BLOCK =====
     }
