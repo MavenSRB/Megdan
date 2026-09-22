@@ -1653,6 +1653,101 @@ namespace GuardsDigital.Tests.PlayMode
                 "her row rather than showing every hero whatever is selected.");
         }
 
+        /// <summary>
+        /// Milestone 8.75c, and the half of her identity her match journeys cannot reach: the twenty-
+        /// second hero is PICKED, on the real selection screen, out of a filtered list.
+        ///
+        /// <para>The sibling case above proves the filter READS her row. This one closes the loop a
+        /// player actually walks: narrow the list to four stars and one of her roles, watch a role she
+        /// does not carry hide her IN PLACE - milestone 8.76 hides a filtered-out hero by visibility
+        /// rather than by display, so the assertion has to walk visibility too - press CLEAR to bring
+        /// the whole roster back, hover her button to draw her own pick card, select her and press PICK
+        /// HERO. The seat's chosen hero is then hers, which is the fact a composed match is dealt
+        /// from.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator IgnatiaIsPickedThroughTheFilteredPickerAndClearRestoresHer()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            wire.Session.Composition = Root();
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            var client = wire.Client(ordinal);
+            driver.Presenter.AttachClient(client);
+            yield return null;
+
+            var starButtons = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roleButtons = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => starButtons.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roleButtons.Single(button =>
+                button.userData is HeroRole role && role == value);
+
+            bool IgnatiaIsVisible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-ignatia");
+
+            UiPlayer.Click(Star(HeroComplexity.Wizard));
+            yield return null;
+            UiPlayer.Click(Role(HeroRole.Tokens));
+            yield return null;
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(1),
+                "FOUR STARS and TOKENS narrows the twenty-two-hero roster to her alone.");
+            Assert.That(IgnatiaIsVisible(), Is.True);
+
+            UiPlayer.Click(Role(HeroRole.Healer));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.False,
+                "A role she does not carry hides her - in place, by visibility, so the tile she " +
+                "occupies stays where it was and nothing else moves.");
+            Assert.That(
+                AllHeroOptions(driver).Any(button =>
+                    ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-ignatia"),
+                Is.True,
+                "and her button is still in the flow rather than removed from it.");
+
+            UiPlayer.Click(Element(driver, PrivateLobbyUnityView.HeroFilterClearName));
+            yield return null;
+            Assert.That(HeroOptions(driver).Count,
+                Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count),
+                "CLEAR puts the whole roster back.");
+            Assert.That(IgnatiaIsVisible(), Is.True);
+
+            UiPlayer.Click(Star(HeroComplexity.Wizard));
+            yield return null;
+            var hers = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-ignatia");
+            if (hers.parent != null)
+            {
+                UiPlayer.PointAt(hers.parent);
+            }
+
+            UiPlayer.PointAt(hers);
+            yield return null;
+            Assert.That(
+                UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroOverviewName)), Is.True,
+                "Hovering her button draws HER pick card.");
+
+            UiPlayer.Click(hers);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-ignatia"),
+                "and pressing it names the hero PICK HERO will confirm.");
+
+            UiPlayer.Click(Control(driver, "PICK HERO"));
+            wire.Pump();
+            driver.Presenter.Refresh();
+            yield return null;
+            Assert.That(
+                PrivateLobbyModel.ForClient(client).Selection.Heroes
+                    .Single(option => option.HeroIdValue == "hero-ignatia").IsAvailable,
+                Is.False,
+                "THE PICK IS TAKEN: the twenty-second hero is no longer on offer to anybody, which " +
+                "is what a completed pick looks like from every seat.");
+        }
+
         [UnityTest]
         public IEnumerator PickerRemainsReadableAtNormalAndShortViewports()
         {
