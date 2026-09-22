@@ -1744,6 +1744,180 @@ namespace GuardsDigital.Core.Cards.Synthetic
                 ownerId, RedProfiles, RedUltimateProfile, null,
                 journeyPartnerSkillProfile: RedWayfarerSkillProfile);
 
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.75b: the SIX handler types Ignatia the Mad's dealing registers, proved here on
+        // cards that are nobody's, on the division every dealing since 8.35z34 has drawn - two
+        // contracts share a card exactly when one printed SENTENCE carries both.
+        //
+        // FIVE cards for six types, and the one pairing is hers: Abrupt Combustion prints the hero
+        // narrowing on its sun line and the minion narrowing on its moon line, which is ONE face, so
+        // the Red Inquisitor carries both. The other four stand alone because her own faces put them
+        // on different cards - the coin predicate on every card, the flip on the Ultimate alone, the
+        // Attack subject on the seven Reds and the wake on the three Paths.
+        //
+        // FOUR ARE SKILLS AND ONE IS AN ATTACK, and the split is the same one Brynn's dealing drew:
+        // the Attack subject is bound at rulebook p.14's step 1 through `set-attack-target@1`, so a
+        // Skill naming it would have no Attack to bind and would prove only the refusal. Two of the
+        // Skills PRINT A VALUE, which is load-bearing rather than decoration - both discard narrowings
+        // measure their disk off the performing card's own printed Radius with p.16's items composed
+        // on, so a card printing none would name the contract, find a disk of nought and answer
+        // "nobody" for a reason that is about the fixture rather than about the board - and the Red
+        // Longshot prints a Range for the identical reason.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Milestone 8.75b's coin-predicate Skill, sitting outside its team's ordinary Initiative band
+        /// for the reason every earlier fixture Skill pair does.
+        /// </summary>
+        private static SyntheticSkillProfile RedCoinreaderSkillProfile { get; } =
+            new SyntheticSkillProfile("red-coinreader", "Red Coinreader", 47);
+
+        /// <summary>Milestone 8.75b's coin-flip Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedCoinflipperSkillProfile { get; } =
+            new SyntheticSkillProfile("red-coinflipper", "Red Coinflipper", 48);
+
+        /// <summary>Milestone 8.75b's two discard narrowings on one Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedInquisitorSkillProfile { get; } =
+            new SyntheticSkillProfile("red-inquisitor", "Red Inquisitor", 49);
+
+        /// <summary>Milestone 8.75b's magma-wake Skill, on the same terms.</summary>
+        private static SyntheticSkillProfile RedTrailblazerSkillProfile { get; } =
+            new SyntheticSkillProfile("red-trailblazer", "Red Trailblazer", 50);
+
+        /// <summary>
+        /// Milestone 8.75b's card-text Attack subject as showcase content: an Attack that reaches
+        /// rulebook p.14's step 1 with no target and names one - a unit in its printed Range standing
+        /// on one of p.19's six files - through `set-attack-target@1`.
+        /// </summary>
+        private static SyntheticAttackTextProfile RedLongshotProfile { get; } =
+            new SyntheticAttackTextProfile(
+                "red-longshot", "Red Longshot", 15, 4, 2, 2, CardTextTiming.BeforeTheAttack,
+                false, false,
+                continuation: SyntheticContinuationShape.BeforeAttackBindRangeLineTarget);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.75b's coin-predicate Skill, which is how
+        /// <c>ignatia-coin-sun@1</c> becomes reachable from showcase content rather than arriving for
+        /// the first time inside Ignatia's own slice.
+        ///
+        /// <para>The node is hers verbatim: a <see cref="EffectNodeKind.Conditional"/> whose predicate
+        /// is the coin reading, with a sun arm and a moon arm - which is the shape
+        /// <c>IgnatiaEffectContent.CoinBranched</c> gives every one of her eighteen dealt faces. The
+        /// predicate takes no parameters at all, so there is nothing here that could be a widened copy
+        /// of it: the coin face, p.7's two sides and Equilibrium's round-long override all live inside
+        /// the handler.</para>
+        ///
+        /// <para><b>What the two arms govern is deliberately the most inert node this build has</b> -
+        /// the actor's own space, published and consumed by nobody - on Brynn's showcase's stated
+        /// terms: <see cref="EffectNodeDefinition"/> refuses an empty Sequence, so a Conditional must
+        /// govern SOMETHING, and what her printed arms govern is seven different families of attack,
+        /// push, discard, swap and placement. A fixture that performed one of them would drag that
+        /// whole family into the showcase-reachable set as a side effect of proving a PREDICATE. Both
+        /// arms are present and identical, which is the one property this card is for: the branch is
+        /// reached whichever face the coin shows.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithCoinSelectedTextSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                coinSelectedTextSkillProfile: RedCoinreaderSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.75b's coin-flip Skill, which is how
+        /// <c>ignatia-flip-tie-breaker@1</c> becomes reachable on the same terms.
+        ///
+        /// <para>The node is Chaos Incarnate's own first step: a <see cref="EffectFailurePolicy.May"/>
+        /// confirm-or-decline over one mandatory capability that publishes
+        /// <c>TieBreakerFlipQuery.FlippedOutput</c> and does nothing else. What it does NOT carry is
+        /// the repeat that follows it on her card, and that is the grouping rule rather than a
+        /// shortcut: "you may perform that action again" is <see cref="EffectNodeKind.RepeatAction"/>,
+        /// a node kind this build has showcased since milestone 8.25a, and a showcase Skill that
+        /// repeated itself would prove a shape no face has.</para>
+        ///
+        /// <para><b>A Skill's flip is published and not settled, which is the contract rather than a
+        /// gap.</b> The handler cannot turn the coin over itself - a capability context carries no
+        /// continuation - so it says a flip is owed and the authority holding the coin performs it,
+        /// and the only authority that settles one today is the triggered path her Ultimate fires
+        /// down (<c>TriggeredEffectResolutionAuthority.SettleTieBreakerFlips</c>). That is exactly as
+        /// wide as the printed rule: one card in the game flips the coin from inside an action. What
+        /// milestone 7.9's gate asks of a new TYPE is that a showcase card REACH it, and this one
+        /// reaches it with the node hers declares.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithTieBreakerFlipSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                tieBreakerFlipSkillProfile: RedCoinflipperSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.75b's two discard narrowings on ONE Skill, which
+        /// is how <c>ignatia-enemy-hero-adjacent-to-magma-or-minion@1</c> and
+        /// <c>ignatia-enemy-minion-adjacent-to-enemy-hero@1</c> become reachable on the same terms.
+        ///
+        /// <para><b>They share a card because one printed face carries both.</b> Abrupt Combustion
+        /// prints "An enemy hero in radius, adjacent to a token, or a minion, discards a card, if
+        /// able" on its sun line and "Remove an enemy minion in radius adjacent to an enemy hero" on
+        /// its moon line, and the two lines are the same card - which is the only condition under
+        /// which this file joins two contracts.</para>
+        ///
+        /// <para>The card prints Radius 3, which is the disk both selections measure. <b>Nothing
+        /// consumes either subject</b>, on milestone 8.69g's own stated terms: the natural consumers
+        /// are a discard and p.19's Remove, and a fixture that performed them would take a card out of
+        /// somebody's hand and a minion off the board as a side effect of proving two SELECTIONS. Both
+        /// publish every fact her faces declare, so the schema is proved whole.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithTokenAdjacencyDiscardSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                tokenAdjacencyDiscardSkillProfile: RedInquisitorSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.75b's magma-wake Skill, which is how
+        /// <c>ignatia-place-magma-wake@1</c> becomes reachable on the same terms - and the reason her
+        /// magma TOKEN DEFINITION is registered with the component catalog in the same change, because
+        /// a showcase that named an unregistered definition would prove only the refusal.
+        ///
+        /// <para>The body is Path of Ashes' sun arm verbatim, and it has to be four nodes rather than
+        /// one: the wake reads the two ENDPOINTS of a Move that already happened, so a card that
+        /// merely named the contract would hand it no origin and no destination and place nothing.
+        /// <c>synthetic-actor-space@1</c> publishes where she stands, <c>choose-line-destination@1</c>
+        /// offers where a straight-line move of up to two spaces can end, <c>synthetic-direct-move@3</c>
+        /// walks her to that one space, and the wake drops a magma token in every empty space from the
+        /// origin up to but not including where she now stands.</para>
+        ///
+        /// <para>Both travel nodes are declinable, so a board with no open file leaves the card doing
+        /// nothing and spending nothing - which is the printed "up to" rather than a fixture
+        /// limitation. What the wake does when the Move DID happen is measured on her own faces by
+        /// <c>IgnatiaMagmaTests</c>.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithMagmaWakeSkill(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                magmaWakeSkillProfile: RedTrailblazerSkillProfile);
+
+        /// <summary>
+        /// The five ordinary cards plus milestone 8.75b's card-text Attack subject, which is how
+        /// <c>IgnatiaRangeAttackTargetHandler</c>'s four declarations become reachable from showcase
+        /// content - one card reaches the TYPE, and the gate's second half is asked of the type.
+        ///
+        /// <para>It has to be an Attack. All four declarations are chosen at rulebook p.14's step 1
+        /// and handed to <c>set-attack-target@1</c>, so what they select FOR is the Attack that is
+        /// running - a Skill naming one would bind nothing and prove only the refusal. The card
+        /// therefore declares <c>PrintedAttackTargetPolicy.BoundByCardText</c> and prints a Range,
+        /// which is the disk the selection measures through <c>RangeValueQuery</c> with p.16's items
+        /// composed on.</para>
+        ///
+        /// <para>It is COIN-BRANCHED like every Red of hers, and it names TWO of the four subjects
+        /// for a reason the gate measured: "a hero in range, not adjacent to you" is printed on
+        /// Unreliable Jolt alone, and p.6 returns that Handicap to the box - so it is the one
+        /// contract of her eleven that no card a match deals can reach, and the showcase is where
+        /// milestone 7.9's gate asks its reachability to live. The other two, the complement reading
+        /// and the maximum-range equality, are reachable from her seven dealt Reds, which is what
+        /// <c>ConfiguredCardMatrixTests</c>' hero concat admits.</para>
+        /// </summary>
+        public static ConfiguredHand CreateRedWithCoinNarrowedAttackTargetText(HeroId ownerId) =>
+            Create(
+                ownerId, RedProfiles, RedUltimateProfile, null,
+                attackTextProfiles: new[] { RedLongshotProfile });
+
         /// <summary>
         /// Milestone 8.23. Tigerclaw's Combat Reflexes shape: one Attack printing card text at both of
         /// rulebook p.14's attacker moments, where step 7 asks about what step 1 did.
@@ -1914,6 +2088,10 @@ namespace GuardsDigital.Core.Cards.Synthetic
             SyntheticSkillProfile printedInitiativeRewriteSkillProfile = null,
             SyntheticSkillProfile friendlyUnitPairSkillProfile = null,
             SyntheticSkillProfile journeyPartnerSkillProfile = null,
+            SyntheticSkillProfile coinSelectedTextSkillProfile = null,
+            SyntheticSkillProfile tieBreakerFlipSkillProfile = null,
+            SyntheticSkillProfile tokenAdjacencyDiscardSkillProfile = null,
+            SyntheticSkillProfile magmaWakeSkillProfile = null,
             IReadOnlyList<SyntheticAttackTextProfile> attackTextProfiles = null)
         {
             if (!ownerId.IsDefined)
@@ -2280,6 +2458,40 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     definitions, instances,
                     CreateJourneyPartnerSkillDefinition(journeyPartnerSkillProfile),
                     journeyPartnerSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            // Milestone 8.75b. Ignatia's four showcase Skills, appended after every earlier one so no
+            // existing hand position moves.
+            if (coinSelectedTextSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateCoinSelectedTextSkillDefinition(coinSelectedTextSkillProfile),
+                    coinSelectedTextSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (tieBreakerFlipSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateTieBreakerFlipSkillDefinition(tieBreakerFlipSkillProfile),
+                    tieBreakerFlipSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (tokenAdjacencyDiscardSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateTokenAdjacencyDiscardSkillDefinition(tokenAdjacencyDiscardSkillProfile),
+                    tokenAdjacencyDiscardSkillProfile.Id, instancePrefix, ownerId);
+            }
+
+            if (magmaWakeSkillProfile != null)
+            {
+                AddCard(
+                    definitions, instances,
+                    CreateMagmaWakeSkillDefinition(magmaWakeSkillProfile),
+                    magmaWakeSkillProfile.Id, instancePrefix, ownerId);
             }
 
             // Milestone 8.5. Dealt like every other fixture card, so a match can play one, and appended
@@ -5024,6 +5236,392 @@ namespace GuardsDigital.Core.Cards.Synthetic
         }
 
         /// <summary>
+        /// Milestone 8.75b. "Apply the text matching the symbol on the Tie Breaker coin" - Ignatia's
+        /// one predicate, on a card that is nobody's. See <see cref="RedCoinreaderSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateCoinSelectedTextSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var gate = new EffectNodeId("coin-selected-text-gate");
+            var sun = new EffectNodeId("coin-selected-text-sun");
+            var moon = new EffectNodeId("coin-selected-text-moon");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-75b-rev-1",
+                gate,
+                new[]
+                {
+                    // Her root verbatim: the Conditional IS the card, then-child the sun text and
+                    // else-child the moon text. `IgnatiaEffectContent.CoinBranched` builds exactly
+                    // this for all eighteen of her dealt faces.
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        Verified.IgnatiaComponentContent.CoinSunV1,
+                        childNodeIds: new[] { sun, moon },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.IgnatiaComponentContent.SunOutput, EffectValueKind.Boolean)
+                        }),
+                    // Two arms, deliberately identical and deliberately inert - see the factory's
+                    // own remarks for why neither performs anything.
+                    new EffectNodeDefinition(
+                        sun, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        moon, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                        })
+                });
+
+            return SkillCard(profile, "primary-coin-selected-text-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.75b. "You may flip the Tie Breaker coin" - Chaos Incarnate's first step, on a
+        /// card that is nobody's. See <see cref="RedCoinflipperSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateTieBreakerFlipSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("tie-breaker-flip-root");
+            var offer = new EffectNodeId("tie-breaker-flip-offer");
+            var flip = new EffectNodeId("tie-breaker-flip");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-75b-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { offer }),
+                    // p.10's confirm-or-decline: "you MAY flip" is a question with two answers, and
+                    // the Optional is what puts a Decline on the pause. Her card asks it the same way.
+                    new EffectNodeDefinition(
+                        offer, EffectNodeKind.Optional, EffectFailurePolicy.May,
+                        chooser: EffectChooserRole.Actor,
+                        childNodeIds: new[] { flip }),
+                    // The flip itself is never impossible - p.5 gives the coin two faces and a match
+                    // always has one showing - so it is mandatory inside the offer it was accepted on.
+                    new EffectNodeDefinition(
+                        flip, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        Verified.IgnatiaComponentContent.FlipTieBreakerV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                GuardsDigital.Core.Rules.EffectResolution.TieBreakerFlipQuery
+                                    .FlippedOutput,
+                                EffectValueKind.Boolean)
+                        })
+                });
+
+            return SkillCard(profile, "primary-tie-breaker-flip-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.75b. "An enemy hero in radius, adjacent to a token, or a minion" and "an enemy
+        /// minion in radius adjacent to an enemy hero" - Abrupt Combustion's two coin lines, on a card
+        /// that is nobody's. See <see cref="RedInquisitorSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateTokenAdjacencyDiscardSkillDefinition(
+            SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("token-adjacency-root");
+            var hero = new EffectNodeId("token-adjacency-hero");
+            var minion = new EffectNodeId("token-adjacency-minion");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-75b-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { hero, minion }),
+                    // IfAble rather than Mandatory on both, which is the one difference from the
+                    // printed nodes: a fixture hand is dealt onto boards where no enemy hero stands
+                    // beside a token or a minion and no enemy minion stands beside an enemy hero, and
+                    // a card that refused to be played there would prove nothing. What each contract
+                    // offers when there IS a candidate is measured on her own faces by
+                    // `IgnatiaDiscardTests`.
+                    new EffectNodeDefinition(
+                        hero, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        Verified.IgnatiaDiscardTargetingContent.EnemyHeroAdjacentToMagmaOrMinionV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity",
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill),
+                            EffectInputBinding.FromClosedVocabulary(
+                                Verified.IgnatiaDiscardTargetingContent.TargetRelationParameterName,
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation
+                                    .OpposingSource)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.IgnatiaDiscardTargetingContent.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        minion, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                        Verified.IgnatiaDiscardTargetingContent.EnemyMinionAdjacentToEnemyHeroV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromClosedVocabulary(
+                                "activity",
+                                GuardsDigital.Core.Rules.Modifications.RuleActivity.Skill),
+                            EffectInputBinding.FromClosedVocabulary(
+                                Verified.IgnatiaDiscardTargetingContent.TargetRelationParameterName,
+                                GuardsDigital.Core.Rules.Modifications.SourceTeamRelation
+                                    .OpposingSource)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.IgnatiaDiscardTargetingContent.ChosenMinionOutputName,
+                                EffectValueKind.Minion),
+                            new EffectOutputBinding(
+                                Verified.IgnatiaDiscardTargetingContent.ChosenMinionSpaceOutputName,
+                                EffectValueKind.Coordinate)
+                        })
+                });
+
+            return SkillCard(
+                profile, "primary-token-adjacency-skill", effect,
+                new[] { new PrintedValueDefinition(PrintedValueChannel.Radius, 3) });
+        }
+
+        /// <summary>
+        /// Milestone 8.75b. "Move up to 2 spaces in a straight line. Place a magma token in each empty
+        /// space you moved through, or out of." - Path of Ashes' sun arm, on a card that is nobody's.
+        /// See <see cref="RedTrailblazerSkillProfile"/>.
+        /// </summary>
+        private static CardDefinition CreateMagmaWakeSkillDefinition(SyntheticSkillProfile profile)
+        {
+            var root = new EffectNodeId("magma-wake-root");
+            var actorSpace = new EffectNodeId("magma-wake-actor-space");
+            var line = new EffectNodeId("magma-wake-line");
+            var move = new EffectNodeId("magma-wake-move");
+            var wake = new EffectNodeId("magma-wake");
+
+            var effect = new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{profile.Id}-skill"),
+                "phase-8-75b-rev-1",
+                root,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { actorSpace, line, move, wake }),
+                    new EffectNodeDefinition(
+                        actorSpace, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticPlacementCapabilities.ActorSpaceV1,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("space", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        line, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        SyntheticRosterCapabilities.ChooseLineDestinationV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromLiteral(
+                                "maximumDistance", EffectValue.Integer(2))
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("destination", EffectValueKind.Coordinate)
+                        }),
+                    new EffectNodeDefinition(
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                        SyntheticDisplacementCapabilities.DirectMoveV3,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                "mover", actorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromLiteral("distance", EffectValue.Integer(2)),
+                            EffectInputBinding.FromClosedVocabulary(
+                                SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                                GuardsDigital.Core.Rules.Displacement
+                                    .DirectMoveDestinationPolicy.NamedSpace),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticDisplacementCapabilities.NamedDestinationParameterName,
+                                line, "destination", EffectValueKind.Coordinate)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                        }),
+                    // The contract under test, reading the two endpoints the three nodes above
+                    // published. A Move that never happened leaves it no pair and it places nothing,
+                    // which is a discharged step rather than a refusal - see the handler's remarks.
+                    new EffectNodeDefinition(
+                        wake, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        Verified.IgnatiaMagmaContent.PlaceMagmaWakeV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                Verified.IgnatiaMagmaContent.WakeOriginParameterName,
+                                actorSpace, "space", EffectValueKind.Coordinate),
+                            EffectInputBinding.FromNodeOutput(
+                                Verified.IgnatiaMagmaContent.WakeDestinationParameterName,
+                                move, "moved", EffectValueKind.Coordinate)
+                        },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.IgnatiaMagmaContent.WakePlacedCountOutput,
+                                EffectValueKind.Integer)
+                        })
+                });
+
+            return SkillCard(profile, "primary-magma-wake-skill", effect);
+        }
+
+        /// <summary>
+        /// Milestone 8.75b. "☀ Target a unit in range in a straight line. ☾ Target a hero in range,
+        /// not adjacent to you." - Ignatia's Red shape whole, bound at rulebook p.14's step 1 on a
+        /// card that is nobody's. See <see cref="RedLongshotProfile"/>.
+        ///
+        /// <para><b>It is coin-branched, and that is the shape rather than a flourish.</b> Every one
+        /// of her seven Attacks is ONE <see cref="EffectNodeKind.Conditional"/> on
+        /// <c>ignatia-coin-sun@1</c> whose two arms select different subjects and bind whichever they
+        /// named, so a showcase Attack with a single arm would prove the binding and not the shape
+        /// the binding lives in - and <c>EffectOptionFeasibilityQuery.WalkToAttackTargetBinding</c>
+        /// has to walk exactly this to decide whether such an Attack is offered at all.</para>
+        ///
+        /// <para><b>Which two of the four subjects it names, and why those.</b> The sun arm takes the
+        /// IN-a-straight-line declaration, whose narrowing is a requirement rather than a complement
+        /// and is therefore the one a fixture can read off a board without counting what is absent.
+        /// The moon arm takes "a hero in range, not adjacent to you", which is the ONLY one of her
+        /// eleven contracts that no card a match deals can reach: it is printed on Unreliable Jolt
+        /// alone, and p.6 returns that Handicap to the box. Registering it is still right - p.20
+        /// brings the card back for an odd player count and the build must be able to load it whole -
+        /// so the showcase is where its reachability lives, which is precisely what milestone 7.9's
+        /// gate asks of a contract no dealt card starts. The other two, the complement reading and
+        /// the maximum-range equality, are reached from her dealt Reds.</para>
+        /// </summary>
+        private static EffectDefinition RangeLineTargetEffect(string id)
+        {
+            var gate = new EffectNodeId("range-line-gate");
+            var sunArm = new EffectNodeId("range-line-sun");
+            var sunSelect = new EffectNodeId("range-line-sun-select");
+            var sunBind = new EffectNodeId("range-line-sun-bind");
+            var moonArm = new EffectNodeId("range-line-moon");
+            var moonSelect = new EffectNodeId("range-line-moon-select");
+            var moonBind = new EffectNodeId("range-line-moon-bind");
+
+            var enemyAttackInputs = new[]
+            {
+                EffectInputBinding.FromClosedVocabulary(
+                    "activity", GuardsDigital.Core.Rules.Modifications.RuleActivity.Attack),
+                EffectInputBinding.FromClosedVocabulary(
+                    Verified.IgnatiaAttackTargetingContent.TargetRelationParameterName,
+                    GuardsDigital.Core.Rules.Modifications.SourceTeamRelation.OpposingSource)
+            };
+
+            var boundTargetOutputs = new[]
+            {
+                new EffectOutputBinding(
+                    SyntheticContinuationCapabilities.BoundHeroTargetOutput, EffectValueKind.Hero),
+                new EffectOutputBinding(
+                    SyntheticContinuationCapabilities.BoundMinionTargetOutput,
+                    EffectValueKind.Minion)
+            };
+
+            return new EffectDefinition(
+                new EffectDefinitionId($"placeholder-{id}-text"),
+                "phase-8-75b-rev-1",
+                gate,
+                new[]
+                {
+                    new EffectNodeDefinition(
+                        gate, EffectNodeKind.Conditional, EffectFailurePolicy.Mandatory,
+                        Verified.IgnatiaComponentContent.CoinSunV1,
+                        childNodeIds: new[] { sunArm, moonArm },
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.IgnatiaComponentContent.SunOutput, EffectValueKind.Boolean)
+                        }),
+
+                    new EffectNodeDefinition(
+                        sunArm, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { sunSelect, sunBind }),
+                    // Mandatory, which is the one thing a bind-target Attack cannot soften: an Attack
+                    // whose text names no target has no target at all, so p.10 stops the action at
+                    // this step and the offer is greyed before it is ever taken. That is the contract
+                    // her seven Reds are composed on and the shape milestone 8.35z15 asks for.
+                    new EffectNodeDefinition(
+                        sunSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        Verified.IgnatiaAttackTargetingContent.UnitInStraightLineV1,
+                        inputs: enemyAttackInputs,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.IgnatiaAttackTargetingContent.ChosenHeroOutputName,
+                                EffectValueKind.Hero),
+                            new EffectOutputBinding(
+                                Verified.IgnatiaAttackTargetingContent.ChosenMinionOutputName,
+                                EffectValueKind.Minion)
+                        }),
+                    new EffectNodeDefinition(
+                        sunBind, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticContinuationCapabilities.SetAttackTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticContinuationCapabilities.HeroParameter, sunSelect,
+                                Verified.IgnatiaAttackTargetingContent.ChosenHeroOutputName,
+                                EffectValueKind.Hero),
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticContinuationCapabilities.MinionParameter, sunSelect,
+                                Verified.IgnatiaAttackTargetingContent.ChosenMinionOutputName,
+                                EffectValueKind.Minion)
+                        },
+                        outputs: boundTargetOutputs),
+
+                    new EffectNodeDefinition(
+                        moonArm, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: new[] { moonSelect, moonBind }),
+                    // A HERO selection, so it publishes one identity and the binding takes that one.
+                    new EffectNodeDefinition(
+                        moonSelect, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        Verified.IgnatiaAttackTargetingContent.HeroInRangeNotAdjacentV1,
+                        inputs: enemyAttackInputs,
+                        outputs: new[]
+                        {
+                            new EffectOutputBinding(
+                                Verified.IgnatiaAttackTargetingContent.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        }),
+                    new EffectNodeDefinition(
+                        moonBind, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        SyntheticContinuationCapabilities.SetAttackTargetV1,
+                        inputs: new[]
+                        {
+                            EffectInputBinding.FromNodeOutput(
+                                SyntheticContinuationCapabilities.HeroParameter, moonSelect,
+                                Verified.IgnatiaAttackTargetingContent.ChosenHeroOutputName,
+                                EffectValueKind.Hero)
+                        },
+                        outputs: boundTargetOutputs)
+                });
+        }
+
+        /// <summary>
         /// Milestone 8.71h. "Set the printed Initiative value of an unresolved card of a hero in range
         /// to 11" - Hanu's Hurry up!, on a card that is nobody's. See
         /// <see cref="RedHastenerSkillProfile"/>.
@@ -6012,7 +6610,28 @@ namespace GuardsDigital.Core.Cards.Synthetic
             /// because what this card exists to prove is the READING and not the consequence - his own
             /// faces gate a p.10 repeat and a retrieval on it, and both are measured on them.</para>
             /// </summary>
-            AfterAttackTargetWasAdjacentToObstaclesRider = 18
+            AfterAttackTargetWasAdjacentToObstaclesRider = 18,
+
+            /// <summary>
+            /// Milestone 8.75b. Ignatia the Mad's Red shape: an Attack that reaches rulebook p.14's
+            /// step 1 with NO target, selects a unit inside its own printed Range that stands on one
+            /// of p.19's six files from the attacker, and binds it through
+            /// <c>set-attack-target@1</c>.
+            ///
+            /// <para>It is a fourth bind-target shape and not a variation on the three before it,
+            /// because what it chooses is different again: the charge names where to stop and then
+            /// asks who is beside it, the blink names the crossed unit and the destination in one
+            /// answer, the modal names a plan, and this one names a unit by a GEOMETRIC PROPERTY of
+            /// where it is standing without moving anybody at all. It exists so
+            /// <c>IgnatiaRangeAttackTargetHandler</c>'s four declarations are proved on content that
+            /// is nobody's before her seven printed Reds name them.</para>
+            ///
+            /// <para>The card prints a Range beside its Attack value, which is what the selection
+            /// measures through <c>RangeValueQuery</c> - p.13 contemplates exactly that pairing, and
+            /// the icon narrows the text's selection without changing what the Attack itself may
+            /// reach.</para>
+            /// </summary>
+            BeforeAttackBindRangeLineTarget = 19
         }
 
         private sealed class SyntheticAttackTextProfile
@@ -6422,6 +7041,9 @@ namespace GuardsDigital.Core.Cards.Synthetic
 
                 case SyntheticContinuationShape.BeforeAttackMoveThrough:
                     return MoveThroughEffect(id);
+
+                case SyntheticContinuationShape.BeforeAttackBindRangeLineTarget:
+                    return RangeLineTargetEffect(id);
 
                 case SyntheticContinuationShape.AfterAttackUnmovedStep:
                     return UnmovedFollowUpEffect(id);
@@ -7381,13 +8003,35 @@ namespace GuardsDigital.Core.Cards.Synthetic
                                 PrintedValueChannel.Attack, profile.AttackValue),
                             new PrintedValueDefinition(PrintedValueChannel.Radius, 1)
                         }
+                        // Milestone 8.75b. The line-narrowed subject measures its disk off the
+                        // card's printed RANGE rather than its Radius, so the icon this shape
+                        // prints is p.9's other one - a card printing neither would name the
+                        // contract, find a disk of nought and answer "nobody" for a reason that is
+                        // about the fixture rather than about the board.
+                        : profile.Continuation ==
+                            SyntheticContinuationShape.BeforeAttackBindRangeLineTarget
+                        ? new[]
+                        {
+                            new PrintedValueDefinition(
+                                PrintedValueChannel.Attack, profile.AttackValue),
+                            new PrintedValueDefinition(PrintedValueChannel.Range, 3)
+                        }
                         : new[]
                         {
                             new PrintedValueDefinition(
                                 PrintedValueChannel.Attack, profile.AttackValue)
                         },
                     new ActionDefinitionPolicy(CardTextApplicationPolicy.Applies, false, true),
-                    AttackRangeKind.NonRanged,
+                    // Milestone 8.75b. Ignatia's line-narrowed subject is a RANGED Attack's, and it
+                    // has to be: p.13 gives a non-Ranged Attack the adjacent ring and nothing else,
+                    // and `ActionDefinition` refuses a non-Ranged action that prints a Range at all.
+                    // Every earlier shape in this factory prints an Attack value alone or beside
+                    // p.9's Radius, which is what p.13's own "even if the card has a radius icon"
+                    // contemplates.
+                    profile.Continuation ==
+                        SyntheticContinuationShape.BeforeAttackBindRangeLineTarget
+                        ? AttackRangeKind.Ranged
+                        : AttackRangeKind.NonRanged,
                     default,
                     profile.PrimaryTiming == CardTextTiming.None
                         ? null
@@ -7407,7 +8051,14 @@ namespace GuardsDigital.Core.Cards.Synthetic
                     // what its text names is not a unit but a plan. What differs is what the text
                     // hands back: a charge hands back one unit and the page runs once, a modal hands
                     // back its chosen bullets and the page runs once per bullet.
-                    profile.Continuation == SyntheticContinuationShape.BeforeAttackBindTarget ||
+                    // Milestone 8.75b. Ignatia's Reds reach p.14's step 1 with no target and bind one
+                    // from their own text, which is the same declaration a charge and a modal make -
+                    // classified as RANGED, because her subject is measured in the card's own Range.
+                    profile.Continuation ==
+                        SyntheticContinuationShape.BeforeAttackBindRangeLineTarget
+                        ? PrintedAttackTargetPolicy
+                            .ForClassification(AttackRangeKind.Ranged).BoundByCardText()
+                        : profile.Continuation == SyntheticContinuationShape.BeforeAttackBindTarget ||
                     profile.Continuation == SyntheticContinuationShape.BeforeAttackModalSequences ||
                     profile.Continuation ==
                         SyntheticContinuationShape.BeforeAttackModalSequencesOnDifferentTargets

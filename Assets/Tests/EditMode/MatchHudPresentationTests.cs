@@ -4443,7 +4443,13 @@ namespace GuardsDigital.Tests.EditMode
                 // Milestone 8.71h. The twenty-first, on the terms the lines above state: the claim
                 // that has to keep being true is that this list and the artwork bijection it is
                 // asserted against cover every hero the build can deal.
-                .Concat(HanuCardContent.DealtDefinitions).ToArray();
+                .Concat(HanuCardContent.DealtDefinitions)
+                // Milestone 8.75b prep. The twenty-second, on the terms the lines above state, and
+                // the first added by the ARTWORK half of a dealing rather than by the dealing: the
+                // claim that has to keep being true is that this list and the artwork bijection it
+                // is asserted against cover every hero the build can deal, and her eighteen rows
+                // joined that bijection here.
+                .Concat(IgnatiaCardContent.DealtDefinitions).ToArray();
             Assert.That(all.Select(card => card.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences),
                 "Shine coverage must follow every configured hero, not a historical six-hero list.");

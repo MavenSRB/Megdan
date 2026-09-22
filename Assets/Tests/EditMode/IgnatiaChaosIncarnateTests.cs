@@ -148,20 +148,28 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void TheFlipCapabilityIsDeferredAndNotRegistered()
+        public void TheFlipCapabilityIsRegisteredByTheDealing()
         {
             Assert.That(
-                IgnatiaComponentContent.DeferredHandlers()
+                IgnatiaComponentContent.RegisteredHandlers()
                     .Any(handler => handler.Reference.Equals(
                         IgnatiaComponentContent.FlipTieBreakerV1)),
                 Is.True);
-            Assert.That(IgnatiaComponentContent.RegisteredHandlers().Any(), Is.False,
-                "milestone 7.9's gate: the registered-capability list is serialized into every " +
-                "snapshot, so nothing of hers is registered before she is dealt.");
             Assert.That(
                 MatchContentCatalogs.ForThisBuild().Capabilities.IsRegistered(
                     IgnatiaComponentContent.FlipTieBreakerV1),
-                Is.False);
+                Is.True,
+                "MILESTONE 8.75b FLIPPED MILESTONE 7.9's GATE. The registered-capability list is " +
+                "serialized into every snapshot, which is why nothing of hers was registered until " +
+                "the milestone that deals her - and why the corpus digests moved in that same edit.");
+            Assert.That(
+                MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
+                    .Any(definition => definition.Id.Equals(
+                        IgnatiaEffectContent.ChaosIncarnateTriggeredEffect(Revision).Id)),
+                Is.True,
+                "and the body her p.16 permanent ability names BY REFERENCE joins the one triggered " +
+                "catalog in the same edit - an unregistered one would be a definition the rule can " +
+                "name and the build cannot load.");
         }
 
         // -------------------------------------------------------------------------------------
@@ -396,7 +404,7 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------
 
         private static EffectCapabilityCatalog Catalog() =>
-            SyntheticEffectCapabilities.CreateCatalog(IgnatiaComponentContent.DeferredHandlers());
+            SyntheticEffectCapabilities.CreateCatalog(IgnatiaComponentContent.RegisteredHandlers());
 
         private static MatchParticipants StagedParticipants() =>
             MatchConfiguration.CreateStagedBroganWithAllyForInternalTest(TeamSide.Red).Participants;

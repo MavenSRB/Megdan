@@ -19,7 +19,12 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void BoardAndRail_UseTheAvailableFaceAndItsTeamRing(
             [Values("wasp", "arien", "brogan", "sabina", "tigerclaw", "xargatha",
-                "dodger", "misa", "silverarrow", "ursafar", "whisper", "no-such-hero")] string hero,
+                "dodger", "misa", "silverarrow", "ursafar", "whisper",
+                // Milestone 8.75b. The twenty-second hero's standee, on the same terms every value
+                // above it is on: her two team faces are prepared as ignored private resources, and
+                // a source-only checkout proves the explicit fallback instead of skipping.
+                "ignatia",
+                "no-such-hero")] string hero,
             [Values(TeamSide.Red, TeamSide.Blue)] TeamSide team)
         {
             var content = new HeroContentId(hero);

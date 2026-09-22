@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -247,6 +247,18 @@ $declaredHeroes = @{
     # earned being declared rather than derived. He takes the calibrated 2% field floor unless the
     # tool's own measurement says otherwise; Swift's per-hero zero stays hers alone.
     hanu = @{ ElementId = 8597492; ElementName = 'Hanu'; DisplayName = 'Hanu' }
+
+    # Milestone 8.75b prep. THE TWENTY-SECOND HERO, and the cleanest entry since Swift's: the
+    # manifest holds exactly ONE `VerticalTokens` element called `Ignatia` (8597496, publicElementId
+    # 714734, two 302x302 faces in `Image_1_Atlas` at (2463,3501) and (2159,3501)), so neither the
+    # epithet trap Ursafar, Whisper, Tali, Cutter and Bain sprang nor the duplicate-name trap Hanu's
+    # line above records applies to her. The crop still decided rather than the name - both faces
+    # were cut and LOOKED AT on 2026-09-22 and both draw the dark-skinned sorceress with the blazing
+    # yellow-orange hair, glowing eyes and red-trimmed black armour that
+    # `_selection-cards/Ignatia__front.png` and `_dashboards/Ignatia__front.png` print, one ringed
+    # light-blue and one ringed orange. She takes the calibrated 2% field floor unless the tool's own
+    # measurement says otherwise; Swift's per-hero zero stays hers alone.
+    ignatia = @{ ElementId = 8597496; ElementName = 'Ignatia'; DisplayName = 'Ignatia' }
 }
 
 $declared = $declaredHeroes[$Hero]

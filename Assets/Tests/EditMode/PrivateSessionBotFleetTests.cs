@@ -652,6 +652,98 @@ namespace GuardsDigital.Tests.EditMode
                 fleet.LastFailure);
         }
 
+        /// <summary>
+        /// Milestone 8.75b, the milestone that deals Ignatia the Mad. A LOBBY BOT actually holding her
+        /// printed set, playing it against three other bots until the host has accepted a hundred
+        /// commands, with nothing refused.
+        ///
+        /// <para><b>Why this tier and not another.</b> Milestone 8.38e's dealing found an
+        /// <c>AtomicityViolation</c> here that no other tier can see: a bot answered an effect choice,
+        /// that answer started a borrowed Attack with nobody in reach, and the command was refused as
+        /// <c>AttackActionRejected: TargetUnavailable</c> AFTER mutating state. A bot answers every
+        /// prompt a hero's content can raise, in orders a written journey never chooses.</para>
+        ///
+        /// <para><b>What a bot has to be able to answer for HER, and her list is unlike any set before
+        /// it in one way that matters here.</b> EVERY primary of hers opens on a
+        /// <see cref="GuardsDigital.Core.Effects.EffectNodeKind.Conditional"/> the MATCH decides
+        /// rather than the player - the Tie Breaker coin picks which of the card's two printed texts
+        /// runs - so the prompts a bot is handed change from turn to turn on a card it has already
+        /// played, and an offer derived from the wrong half would be refused at the very next
+        /// command. Beside that: seven card-text ATTACK TARGET bindings, four of them on subjects no
+        /// other hero names (in and out of a straight line, at exactly maximum range, in range but
+        /// not adjacent); two "may repeat once" confirm-or-declines; a straight-line PUSH of somebody
+        /// else's hero at exactly 2 or at 2-or-3; two discard subjects with a Remove and a Defeat
+        /// behind them; two Swaps with trailing one-space moves that admit zero; three magma Paths
+        /// that place from a supply of THREE and can drain it mid-node; and Equilibrium's own pause,
+        /// which is an INTEGER under a value vocabulary (8.40j's scoring arm) asking which face to
+        /// apply. Any of those disagreeing with the host's authorization fails here first.</para>
+        ///
+        /// <para><b>She puts a real token on the board</b>, so unlike Hanu's fleet case the component
+        /// catalog is exercised too - though unlike Min's there is nothing facedown, because magma is
+        /// a plain p.19 obstacle every seat may see.</para>
+        ///
+        /// <para><b>The seed is searched rather than written down, and the search is the
+        /// assertion.</b> A lobby bot drafts its own hero, so no caller can put her in a seat: what a
+        /// fixture can do is walk seeds until a draft seats her and then play THAT one. The walk is
+        /// deterministic and bounded, and a build in which no seed in the range seats her fails here -
+        /// which would mean she had fallen out of the offerable roster, the very thing milestone
+        /// 8.35z41 exists to catch.</para>
+        /// </summary>
+        [Test]
+        public void ALobbyBotDealtIgnatia_PlaysHerWithoutTheHostRefusingAnything()
+        {
+            const string ignatia = QuickGameSetupConfiguration.IgnatiaHeroIdValue;
+
+            var seed = 0;
+            for (var candidate = 1; candidate <= 64 && seed == 0; candidate++)
+            {
+                if (Draft(candidate).Contains(ignatia))
+                {
+                    seed = candidate;
+                }
+            }
+
+            Assert.That(seed, Is.Not.Zero,
+                "No seed in 1..64 drafted Ignatia, which means she is not offerable in a lobby at " +
+                "all - the exact defect milestone 8.35z41 was written to catch.");
+            TestContext.WriteLine("Ignatia is drafted by lobby seed " + seed + ".");
+
+            var composer = new Composer(MatchFormat.TwoVersusTwoQuick);
+            using var fleet = new PrivateSessionBotFleet(composer.Match, composer.Identity, "", new HumanWire(),
+                new CountingNonceSource(97), () => composer.Match.Projection,
+                composer.Configuration.ContentCatalogs, seed);
+            fleet.Host.Composition = composer;
+            fleet.FillOpenSeats(0, 0);
+            long tick = 0;
+            while (!fleet.Host.HasMatchStarted && tick < 200) fleet.Tick(++tick);
+            Assert.That(fleet.Host.HasMatchStarted, Is.True, fleet.LastFailure);
+
+            var hers = fleet.Host.Roster.Where(row => row.Hero.Value == ignatia).ToArray();
+            Assert.That(hers, Is.Not.Empty, "The measured seed must still seat her.");
+
+            var accepted = 0;
+            var cursor = composer.Match.ReadResults(0).NextSequence;
+            while (!fleet.Host.HasEnded && accepted < 100 && tick < 3000)
+            {
+                fleet.Tick(++tick);
+                var batch = composer.Match.ReadResults(cursor);
+                cursor = batch.NextSequence;
+                accepted += batch.Records.Count;
+            }
+
+            var refusals = fleet.Host.DrainEvents()
+                .Where(record => record.Kind == PrivateSessionEventKind.SubmissionRefused)
+                .Select(record => record.Seat + "@" + record.Version + ": " + record.SubmissionRejection)
+                .ToArray();
+            Assert.That(refusals, Is.Empty,
+                "A bot offered something the host refused: " + string.Join(" | ", refusals) +
+                " ;; lastRefusal=" + fleet.LastRefusal);
+            Assert.That(fleet.LastFailure, Is.Empty);
+            Assert.That(accepted, Is.GreaterThanOrEqualTo(100),
+                "The fleet must play well past the first commitments with her in a seat. " +
+                fleet.LastFailure);
+        }
+
         [Test]
         public void InvalidPacingIsRefusedBeforeAnySeatIsClaimed()
         {

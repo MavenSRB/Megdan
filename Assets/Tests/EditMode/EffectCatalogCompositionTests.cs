@@ -204,6 +204,18 @@ namespace GuardsDigital.Tests.EditMode
                 // mirrored BY HAND here for the reason Dodger's pair records: a mirror that called
                 // the production composer would agree with it by construction and prove nothing.
                 .Concat(HanuComponentContent.RegisteredHandlers())
+                // Milestone 8.75b. Ignatia's ELEVEN - the coin predicate every one of her dealt
+                // faces branches on, Equilibrium's round-long marker, Chaos Incarnate's flip, the
+                // FOUR card-text Attack subjects her Reds name, her Blue line's two discard
+                // subjects and her two magma placements - joining the moment her dealing milestone
+                // put them into MatchContentCatalogs, and mirrored BY HAND here for the reason
+                // Dodger's pair records: a mirror that called the production composer would agree
+                // with it by construction and prove nothing. She is the fourth hero whose
+                // contribution here is not ONLY an Active-effect list, on Tali's terms, Bain's and
+                // Min's: her magma placements are content of HERS, bound to her own token
+                // definition. Nothing of hers registers from a `Synthetic*Capabilities` file at all,
+                // which makes her the first dealing since Brynn's with nothing to exclude here.
+                .Concat(IgnatiaComponentContent.RegisteredHandlers())
                 // and the ONE creation the SHOWCASE owns rather than a hero: the Hero-scoped
                 // end-of-turn effect the Red Wayfarer stands so `hanu-journey-partner@1` has an
                 // occurrence to read. It registers beside the verified declarations rather than with

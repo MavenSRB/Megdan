@@ -135,6 +135,29 @@ namespace GuardsDigital.Core.Cards
                 // seat - the first rows in this catalog that name a control another seat answers.
                 // Derived at 8.71g from `DecisionLabelRequirementQuery` over his dealt faces and the
                 // three end-of-turn bodies, rather than counted by hand.
-                .Concat(HanuEffectContent.DecisionLabels());
+                .Concat(HanuEffectContent.DecisionLabels())
+                // Milestone 8.75b, the milestone that deals Ignatia the Mad as the TWENTY-SECOND
+                // hero. FOUR declarations, which is the narrowest contribution any dealing has made
+                // since Garrus, and the reason is the mechanism her whole set is built on: every one
+                // of her eighteen dealt faces is a `Conditional` on the Tie Breaker coin rather than
+                // a p.10 `Choose`, so the CARD picks which of its two printed texts applies and the
+                // player is never handed a modal arm to pick it with.
+                //
+                // What is left is four confirm-or-declines. Two are the printed "may repeat once"
+                // clauses - Loosely-Aimed Firebolts' on its MOON face, Imminent Eruption's on its SUN
+                // face - derived at 8.75 from `DecisionLabelRequirementQuery` over her dealt faces
+                // rather than counted by hand. The other two are Chaos Incarnate's, and they live on
+                // the triggered body a p.16 permanent ability names by reference rather than on any
+                // dealt face, which is why they arrive as a second member: "Flip the Tie Breaker
+                // coin" and then "Perform that action again".
+                //
+                // Equilibrium's own question is deliberately NOT here. Its round-long free choice
+                // makes `ignatia-coin-sun@1` stop reading the coin and ask the actor which face to
+                // apply, and that pause is raised by a CAPABILITY whose candidates carry their own
+                // words (milestone 8.75b's `EffectChoiceValueVocabulary.PrintedTextFace`, drawn as
+                // "APPLY THE SUN TEXT" / "APPLY THE MOON TEXT") - so `OptionalStepQuery` names no row
+                // for it and none is declared.
+                .Concat(IgnatiaEffectContent.DecisionLabels())
+                .Concat(IgnatiaEffectContent.UltimateDecisionLabels());
     }
 }

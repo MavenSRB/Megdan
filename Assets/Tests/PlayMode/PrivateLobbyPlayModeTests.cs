@@ -1527,6 +1527,132 @@ namespace GuardsDigital.Tests.PlayMode
                 "his row rather than showing every hero whatever is selected.");
         }
 
+        /// <summary>
+        /// Milestone 8.75b. Ignatia the Mad's roster row carries FOUR stars and five roles - Sniper,
+        /// Damager, Tokens, Tactician, Pusher - and this case drives the RENDERED star and role
+        /// buttons over her button to prove the picker reads them.
+        ///
+        /// <para><b>She is the first hero this picker's FOURTH star can find.</b> The star row has
+        /// drawn four buttons since milestone 8.35z86 and twenty-one dealings left the last one
+        /// filtering to an empty list, because no dealt hero printed p.21's Wizard band. Selecting it
+        /// and finding exactly one hero is a claim nothing before this milestone could make.</para>
+        ///
+        /// <para>It is the rendered tier rather than <c>HeroSelectionStageTests</c>'s because a row
+        /// with the right facts and a filter that cannot see them looks identical offline. Each of
+        /// her FIVE roles is selected in turn and her button has to survive all five - role filters
+        /// combine with AND, so a row missing one of them drops out at that click, and five is two
+        /// more than any hero before her carried - and then Healer, a role she does not carry, has to
+        /// remove her. The capture is taken with the four-star filter and Tokens selected and is
+        /// INSPECTED, not merely written.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator IgnatiaIsFoundByHerFourStarsAndEachOfHerFiveRoles()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var starButtons = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roleButtons = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => starButtons.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roleButtons.Single(button =>
+                button.userData is HeroRole role && role == value);
+
+            bool IgnatiaIsVisible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-ignatia");
+
+            Assert.That(IgnatiaIsVisible(), Is.True,
+                "She is the twenty-second pick and the unfiltered list has to offer her at all.");
+
+            UiPlayer.Click(Star(HeroComplexity.Wizard));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.True,
+                "FOUR STARS: her selection card prints four filled stars, which p.21 calls Wizard, " +
+                "and the star filter reads the roster row this dealing wrote. Twenty-one dealings " +
+                "left this button filtering to nothing.");
+            Assert.That(HeroOptions(driver).Select(button =>
+                    ((PrivateLobbyHeroOption)button.userData).Complexity),
+                Is.All.EqualTo(HeroComplexity.Wizard));
+            Assert.That(HeroOptions(driver).Count, Is.EqualTo(1),
+                "and she is the only one behind it, which is what makes this a single-button proof.");
+
+            UiPlayer.Click(Role(HeroRole.Sniper));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.True, "and she is a SNIPER.");
+
+            UiPlayer.Click(Role(HeroRole.Damager));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.True,
+                "and a DAMAGER - role filters combine with AND, so surviving the second click is a " +
+                "claim about the row carrying both.");
+
+            UiPlayer.Click(Role(HeroRole.Tokens));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.True,
+                "and TOKENS, which her three magma Paths are the reason for.");
+
+            UiPlayer.Click(Role(HeroRole.Tactician));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.True, "and a TACTICIAN.");
+
+            UiPlayer.Click(Role(HeroRole.Pusher));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.True,
+                "and a PUSHER, which is her fifth and last role - two more than any hero before her " +
+                "prints, and all five have to be on the row for her button to be here.");
+
+            var ignatia = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-ignatia");
+            UiPlayer.Click(ignatia);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-ignatia"),
+                "and her button is pickable where it stands, with her own pick card shown beside it.");
+
+            UiPlayer.Click(Role(HeroRole.Sniper));
+            yield return null;
+            UiPlayer.Click(Role(HeroRole.Damager));
+            yield return null;
+            UiPlayer.Click(Role(HeroRole.Tactician));
+            yield return null;
+            UiPlayer.Click(Role(HeroRole.Pusher));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.True,
+                "Four stars and TOKENS alone is the state the capture below is taken in.");
+
+            // The hover half, which is what the capture has to show: the picker draws the hovered
+            // hero's own selection front out of `Private/HeroSelection/<heroId>`, so an overview that
+            // stays hidden for her is a prepared front the dealing never wrote. The pointer is rested
+            // on the button and on its tile, because the view registers the enter on the tile and the
+            // focus on the button and a fixture must not depend on which of the two it gets.
+            var hovered = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-ignatia");
+            if (hovered.parent != null)
+            {
+                UiPlayer.PointAt(hovered.parent);
+            }
+
+            UiPlayer.PointAt(hovered);
+            yield return null;
+            Assert.That(
+                UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroOverviewName)), Is.True,
+                "Hovering her button draws HER pick card - the extraction's own selection front, " +
+                "prepared as an ignored private resource by this dealing's artwork half.");
+            yield return UiPlayer.CaptureScreen("tmp/875b-ignatia-filters-1920x1080.png");
+
+            UiPlayer.Click(Role(HeroRole.Healer));
+            yield return null;
+            Assert.That(IgnatiaIsVisible(), Is.False,
+                "and a role she does NOT carry removes her, which is what says the filter is reading " +
+                "her row rather than showing every hero whatever is selected.");
+        }
+
         [UnityTest]
         public IEnumerator PickerRemainsReadableAtNormalAndShortViewports()
         {

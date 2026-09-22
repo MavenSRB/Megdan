@@ -260,7 +260,7 @@ namespace GuardsDigital.Tests.EditMode
                 cardActions = new CardActionResolutionAuthority(
                     new MatchContentCatalogs(
                         SyntheticEffectCapabilities.CreateCatalog(
-                            IgnatiaComponentContent.DeferredHandlers()
+                            IgnatiaComponentContent.RegisteredHandlers()
                                 .Concat(new IEffectCapabilityHandler[] { Witness })),
                         SyntheticComponentDefinitions.CreateCatalog(),
                         new TriggeredEffectCatalog(

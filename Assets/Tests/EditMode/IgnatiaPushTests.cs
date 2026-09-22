@@ -147,7 +147,9 @@ namespace GuardsDigital.Tests.EditMode
             var frame = new IgnatiaFrame(IgnatiaCardContent.SearingHeat, IgnatiaBoard.Sun, Board());
             frame.Pick(IgnatiaBoard.Ally);
 
-            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-push-sun-move"));
+            Assert.That(frame.Choice.NodeId.Value, Is.EqualTo("ignatia-push-sun-line"),
+                "Milestone 8.75b: the destination question is the straight-line OFFER's, and the " +
+                "Move behind it is pinned to the one space that offer named.");
             Assert.That(
                 frame.Spaces().Select(space => HexDistanceQuery.Calculate(AllyAt, space)).Distinct(),
                 Is.EqualTo(new[] { 2 }),
@@ -242,13 +244,12 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(
                 blocked.Spaces(),
-                Is.EquivalentTo(new[]
-                {
-                    new HexCoordinate(0, 4), new HexCoordinate(-1, 4), new HexCoordinate(1, 3)
-                }),
-                "Only the one open neighbour can be stepped into, so the two-space move ends on one " +
-                "of the three spaces beyond it - an obstacle closes a route rather than shortening " +
-                "the count.");
+                Is.EquivalentTo(new[] { new HexCoordinate(0, 4) }),
+                "Only the one open neighbour can be stepped into, and the printed \"straight line\" " +
+                "then leaves exactly ONE destination: the space beyond it on the same file. An " +
+                "obstacle closes a route rather than shortening the count, and the two corner-turning " +
+                "spaces beyond the same opening - (-1,4) and (1,3) - are not offered at all, which " +
+                "is milestone 8.75b carrying the clause the composition used to drop.");
         }
 
         /// <summary>
@@ -315,31 +316,31 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
-        // The printed straight line - RECORDED, NOT YET ENFORCED
+        // The printed straight line
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// DEFECT RECORD, milestone 8.75c. Both faces print "in a straight line" and the composition
-        /// does not carry it: the move is <c>synthetic-direct-move@3</c> under
+        /// "In a straight line" - CARRIED at milestone 8.75b, and this is the case the 8.75 fixtures
+        /// left behind to say so.
+        ///
+        /// <para><b>What it replaces.</b> The composition landed at 8.75 on
+        /// <c>synthetic-direct-move@3</c> under
         /// <see cref="GuardsDigital.Core.Rules.Displacement.DirectMoveDestinationPolicy.Unrestricted"/>,
-        /// which is p.11's ordinary Movement reachability and turns corners.
+        /// which is p.11's ordinary Movement reachability and turns corners: on this very board it
+        /// offered TEN spaces where the six files reach four. The defect was recorded rather than
+        /// fixed because the build had no SUBJECT-anchored straight-line displacement -
+        /// <c>choose-line-destination@1</c> walked the files from <c>context.ActorId</c>, which is
+        /// right for a hero moving HERSELF and wrong for a hero moving somebody else - and the
+        /// recorded case was written to FAIL the day the clause was carried, which is the signal this
+        /// case is the other side of.</para>
         ///
-        /// <para><b>Why it is recorded here rather than fixed here.</b> The build has no
-        /// SUBJECT-anchored straight-line displacement. <c>choose-line-destination@1</c> - the
-        /// capability whose own remarks read "move up to that number of spaces in a straight line", and
-        /// which milestone 8.75c used to correct the identical defect on her magma line - walks the
-        /// files from <c>context.ActorId</c>, which is right for a hero moving HERSELF and wrong for a
-        /// hero moving somebody else. p.18's Push is a straight line but away from the pusher, and
-        /// these two faces name no direction at all. So the correction needs vocabulary that does not
-        /// exist, which is a composition block's mint rather than this block's.</para>
-        ///
-        /// <para>This case measures the gap exactly, so that the correction is visible the day it
-        /// lands: it asserts that the offer is the whole two-space reachability rather than the six
-        /// files, and it FAILS once the straight line is carried - which is the signal, and which is
-        /// why the expected set below is written out rather than derived.</para>
+        /// <para>The correction is that contract's own <c>subjectSpace</c> anchor, bound from the
+        /// hero the selection named. The offer is now exactly p.19's six files from the SUBJECT, so
+        /// the two sets below are the same set - and the four that survive are four rather than six
+        /// because the acting hero and the enemy are standing on two of them.</para>
         /// </summary>
         [Test]
-        public void ThePrintedStraightLineIsNotYetCarried_AndTheOfferIsRecordedAsItStands()
+        public void ThePrintedStraightLineIsCarried_AndOnlyTheSixFilesAreOffered()
         {
             var frame = new IgnatiaFrame(IgnatiaCardContent.SearingHeat, IgnatiaBoard.Sun, Board());
             frame.Pick(IgnatiaBoard.Ally);
@@ -349,21 +350,47 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(space => StraightLineQuery.AreInStraightLine(AllyAt, space))
                 .ToArray();
 
+            Assert.That(offered, Is.EquivalentTo(onAFile),
+                "Every offered destination lies on one of p.19's six files FROM THE HERO BEING " +
+                "MOVED, which is what the printed \"in a straight line\" names - and the ten-space " +
+                "reachability disk the 8.75 composition offered is gone.");
+            Assert.That(offered.Length, Is.EqualTo(4),
+                "Four rather than six: the six files reach six spaces at distance two, and the " +
+                "acting hero and the enemy hero are standing on two of them.");
             Assert.That(
-                offered.Length, Is.EqualTo(10),
-                "Every empty space exactly two steps away is offered - the twelve at distance two, " +
-                "less the two the acting hero and the enemy stand on.");
-            Assert.That(onAFile.Length, Is.EqualTo(4),
-                "Only four of them lie on one of p.19's six files from the hero - the six files " +
-                "reach six spaces at distance two, and the acting hero and the enemy are standing " +
-                "on two of them - which is what the printed \"in a straight line\" names.");
+                offered.All(space => HexDistanceQuery.Calculate(AllyAt, space) == 2), Is.True,
+                "and the count is still exactly two, because the line carries the printed distance " +
+                "rather than replacing it.");
+        }
+
+        /// <summary>
+        /// The anchor is the SUBJECT's and nobody else's - the half of milestone 8.75b's widening that
+        /// a fixture has to state out loud, because an offer measured from the wrong hero would still
+        /// look like six files.
+        ///
+        /// <para>Ignatia stands at the origin and her teammate two spaces away on the (0,+1) file. The
+        /// spaces on HER files are not the spaces on HIS, and the offer contains only his: the space
+        /// two steps past her own shoulder is on a file of hers and on none of his, so it is absent,
+        /// and the space two steps past him is on a file of his that continues one of hers, so it is
+        /// present. That pair is the whole claim.</para>
+        /// </summary>
+        [Test]
+        public void TheLineIsWalkedFromTheChosenHero_AndNotFromTheActor()
+        {
+            var frame = new IgnatiaFrame(IgnatiaCardContent.SearingHeat, IgnatiaBoard.Sun, Board());
+            frame.Pick(IgnatiaBoard.Ally);
+
+            var offered = frame.Spaces();
+
+            Assert.That(offered, Has.Member(new HexCoordinate(0, 4)),
+                "Two steps on from where HE stands, on his own (0,+1) file.");
+            Assert.That(offered, Has.No.Member(new HexCoordinate(0, -2)),
+                "and two steps out on a file of HERS is not a destination at all: it is four spaces " +
+                "from him, which no reading of \"2 spaces\" admits.");
             Assert.That(
-                offered.Length, Is.GreaterThan(onAFile.Length),
-                "SO THE PRINTED CLAUSE IS NOT BEING APPLIED. Searing Heat and Scorching Blaze both " +
-                "print \"in a straight line\" and both currently offer the four corner-turning " +
-                "spaces as well. The correction is owed by whichever block mints a subject-anchored " +
-                "line offer; when it lands, this case fails and is replaced by one asserting " +
-                "`offered` and `onAFile` are the same set.");
+                offered.All(space => StraightLineQuery.AreInStraightLine(AllyAt, space)), Is.True,
+                "Every offer is on one of his files. Anchoring at the actor would have kept the " +
+                "spaces on hers, which is the bug this parameter exists to make impossible.");
         }
     }
 

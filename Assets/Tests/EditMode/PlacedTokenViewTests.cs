@@ -53,6 +53,46 @@ namespace GuardsDigital.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// Milestone 8.75b. Ignatia the Mad's magma, on Pyro's terms and Min's: the prepared face is
+        /// a pool of molten rock on a hex and says what the piece is without a word over it, and a
+        /// clean checkout with no private artwork keeps the readable fallback disc. Hers is the first
+        /// real token face a dealing has added since Min's, and the caption matters more on her board
+        /// than on any before it - her three Paths can leave three magma tokens on ONE file, and
+        /// three stacked captions is a board a player reads slower than the art.
+        /// </summary>
+        [Test]
+        public void MagmasPreparedArtworkHasNoNameOverlayAndTheCleanCheckoutKeepsItsName()
+        {
+            Assert.That(
+                PlacedTokenArtwork.Caption(IgnatiaMagmaContent.MagmaTokenDefinition, false),
+                Is.EqualTo("MAGMA"),
+                "The absence-tolerant contract: with no prepared face the disc keeps its name.");
+            Assert.That(
+                PlacedTokenArtwork.ResourcePath(IgnatiaMagmaContent.Magma),
+                Is.EqualTo("Private/Tokens/ignatia-magma"),
+                "addressed by definition id and nothing else.");
+            Assert.That(
+                PlacedTokenArtwork.Caption(IgnatiaMagmaContent.MagmaTokenDefinition, true),
+                Is.Empty,
+                "and with one prepared, the art speaks for itself.");
+
+            Assert.That(
+                PlacedTokenArtwork.TryLoadTexture(IgnatiaMagmaContent.Magma, out var face), Is.True,
+                "The artwork block prepared it under `Resources/Private/Tokens/`; a worktree " +
+                "without the private corpus is the one state this case cannot run in.");
+            using (var board = new TokenBoard(new HexCoordinate(1, 0)))
+            {
+                board.Render(1, Token(
+                    "magma", IgnatiaMagmaContent.MagmaTokenDefinition, new HexCoordinate(1, 0)));
+                var view = board.View.TokenViews.Single();
+                Assert.That(view.NameText, Is.Empty,
+                    "Magma's artwork must not be covered by a MAGMA caption.");
+                Assert.That(
+                    view.GetComponent<MeshRenderer>().sharedMaterial.mainTexture, Is.SameAs(face));
+            }
+        }
+
         [Test]
         public void APlacedToken_IsDrawnAtItsCoordinateAndNamedByItsDefinition()
         {

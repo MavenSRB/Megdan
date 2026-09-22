@@ -153,33 +153,17 @@ namespace GuardsDigital.Tests.EditMode
         };
 
         /// <summary>
-        /// The faces this build REFUSES, because each reaches a contract her dealing has yet to
-        /// register. ALL EIGHTEEN of her composed bodies, which is unlike every hero before her: her
-        /// seventeen coin-branched faces each name <c>ignatia-coin-sun@1</c> at their very root, and the
-        /// eighteenth is Equilibrium, which names the marker that frees it. Not one of her composed
-        /// faces is built from registered vocabulary alone.
+        /// The faces this build REFUSES - NONE, since milestone 8.75b dealt her.
+        ///
+        /// <para>Before the dealing this table held ALL EIGHTEEN of her composed bodies, which was
+        /// unlike every hero before her: her seventeen coin-branched faces each name
+        /// <c>ignatia-coin-sun@1</c> at their very root and the eighteenth is Equilibrium, which
+        /// names the marker that frees it, so not one of her composed faces was built from registered
+        /// vocabulary alone. The list is kept as an empty table rather than deleted, because what it
+        /// asserts is still the load-bearing claim: an emptiness this build can LOSE the day a later
+        /// slice composes a face on a contract nobody registered.</para>
         /// </summary>
-        private static readonly string[] FacesThisBuildRefuses =
-        {
-            "ignatia-abrupt-combustion",
-            "ignatia-chaos-bolt",
-            "ignatia-chaos-gate",
-            "ignatia-crack-of-doom",
-            "ignatia-equilibrium",
-            "ignatia-erratic-fireblast",
-            "ignatia-imminent-eruption",
-            "ignatia-loosely-aimed-firebolts",
-            "ignatia-path-of-ashes",
-            "ignatia-path-of-cinders",
-            "ignatia-path-of-flames",
-            "ignatia-playing-with-fire",
-            "ignatia-scorching-blaze",
-            "ignatia-searing-heat",
-            "ignatia-spontaneous-immolation",
-            "ignatia-unreliable-jolt",
-            "ignatia-unstable-portal",
-            "ignatia-violent-conflagration"
-        };
+        private static readonly string[] FacesThisBuildRefuses = { };
 
         // -------------------------------------------------------------------------------------------
         // The printed inventory
@@ -843,17 +827,17 @@ namespace GuardsDigital.Tests.EditMode
                 "each reference ONCE - 8.40j's BA-18, which is what a second concat would break.");
 
             Assert.That(
-                IgnatiaComponentContent.RegisteredHandlers(), Is.Empty,
-                "NOTHING of hers is registered by this build: milestone 7.9's gate, which her dealing " +
-                "block flips and this one deliberately does not.");
+                IgnatiaComponentContent.RegisteredHandlers().Count(), Is.EqualTo(11),
+                "MILESTONE 8.75b FLIPPED MILESTONE 7.9's GATE. All eleven are registered, which is " +
+                "the one edit that turns her printed set into a hero a configured match can deal.");
             Assert.That(
-                named.Any(capability => registered.IsRegistered(capability)) &&
                 named.Where(capability =>
                         capability.ToString().StartsWith("ignatia-", StringComparison.Ordinal))
-                    .Any(capability => registered.IsRegistered(capability)),
-                Is.False,
-                "and not one of her ten reaches production registration - read from the build's own " +
-                "catalog rather than from her declaration lists.");
+                    .All(capability => registered.IsRegistered(capability)),
+                Is.True,
+                "and every one of the eleven reaches production registration - read from the build's " +
+                "own catalog rather than from her declaration list, so a registration that names a " +
+                "contract no body reaches and a body that names an unregistered contract both fail.");
 
             var refusedFaces = new List<string>();
             foreach (var definition in IgnatiaCardContent.AllDefinitions)
@@ -875,11 +859,11 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(
                 refusedFaces.OrderBy(value => value, StringComparer.Ordinal),
                 Is.EqualTo(FacesThisBuildRefuses),
-                "ALL EIGHTEEN of her composed bodies are refused by this build, which is unlike " +
-                "every hero before her: seventeen name the coin predicate at their very ROOT and the " +
-                "eighteenth is the Silver that frees it, so not one of her faces is built from " +
-                "registered vocabulary alone. What her dealing buys is exactly this list becoming " +
-                "empty. Refused now: " +
+                "NOT ONE of her composed bodies is refused by this build any more, which is exactly " +
+                "what her dealing bought: before milestone 8.75b all eighteen were refused, because " +
+                "seventeen name the coin predicate at their very ROOT and the eighteenth is the " +
+                "Silver that frees it. The boxed Handicap is in this walk too, so p.20's face is " +
+                "loadable the day an odd player count asks for it. Refused now: " +
                 string.Join(", ", refusedFaces.OrderBy(value => value, StringComparer.Ordinal)));
         }
 
@@ -1019,11 +1003,26 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(
                     DecisionLabelCatalog.TryGetLabel(
+                        declaration.CardId, declaration.NodeId, out var label),
+                    Is.True,
+                    declaration.NodeId.Value + " IS in the catalog: every hero's table joins it at " +
+                    "the milestone that DEALS them, and milestone 8.75b is hers.");
+                Assert.That(label.Chosen, Is.EqualTo(declaration.Label.Chosen));
+                Assert.That(label.Declined, Is.EqualTo(declaration.Label.Declined));
+            }
+
+            // Chaos Incarnate's two controls live on the TRIGGERED body a p.16 permanent ability
+            // names by reference rather than on any dealt face, so the requirement walk above cannot
+            // see them and they arrive as a second declaration list. The catalog holds both, which is
+            // what the dealing's one line into `DecisionLabelCatalog` is for.
+            foreach (var declaration in IgnatiaEffectContent.UltimateDecisionLabels())
+            {
+                Assert.That(
+                    DecisionLabelCatalog.TryGetLabel(
                         declaration.CardId, declaration.NodeId, out _),
-                    Is.False,
-                    declaration.NodeId.Value + " is NOT in the catalog yet: every hero's table joins " +
-                    "it at the milestone that DEALS them, which is the one line her dealing owes and " +
-                    "which this case will then invert.");
+                    Is.True,
+                    declaration.NodeId.Value + " is the Ultimate's own control and joins the catalog " +
+                    "in the same edit.");
             }
         }
 
@@ -1036,10 +1035,7 @@ namespace GuardsDigital.Tests.EditMode
         /// dealing moves exactly this list into the registered-capability catalog.
         /// </summary>
         private static IEnumerable<IEffectCapabilityHandler> HerDeclaredHandlers() =>
-            IgnatiaComponentContent.DeferredHandlers()
-                .Concat(IgnatiaAttackTargetingContent.Handlers())
-                .Concat(IgnatiaDiscardTargetingContent.Handlers())
-                .Concat(IgnatiaMagmaContent.Handlers());
+            IgnatiaComponentContent.RegisteredHandlers();
 
         private static MatchContentCatalogs Catalogs() =>
             new MatchContentCatalogs(

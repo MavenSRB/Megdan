@@ -1510,6 +1510,54 @@ namespace GuardsDigital.Tests.EditMode
                 "Reassess the day the affected hero reaches a projection - a wire revision would " +
                 "let the ring sit on the piece the rules are actually on - and for a Hero-scoped " +
                 "definition that declares a radius, which nothing does today.")
+            ,
+
+            // Milestone 8.75b
+            new SharedFoundationClaim(
+                "targeting.straight-line-destination-anchored-at-a-named-subject",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities),
+                    nameof(GuardsDigital.Core.Effects.Synthetic.SyntheticRosterCapabilities
+                        .LineSubjectSpaceParameter),
+                    MemberTypes.Field),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(IgnatiaPushTests),
+                            nameof(IgnatiaPushTests
+                                .ThePrintedStraightLineIsCarried_AndOnlyTheSixFilesAreOffered),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "a bound anchor offers exactly p.19's six files from the subject, where the " +
+                        "same board offered the whole ten-space reachability disk before it"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(IgnatiaPushTests),
+                            nameof(IgnatiaPushTests.TheLineIsWalkedFromTheChosenHero_AndNotFromTheActor),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "the spaces on the ACTOR's files are absent and the spaces on the subject's " +
+                        "are present, so an anchor read from the wrong hero cannot pass"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(IgnatiaMagmaTests),
+                            nameof(IgnatiaMagmaTests.TheSunFaceOffersOnlyStraightLines_AtThePrintedDistance),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "an UNBOUND anchor still walks the acting hero's own files at the printed " +
+                        "distance, which is what every consumer written before this milestone does")
+                },
+                new[] { "anchor", "distance bounds", "obstacles", "heading" },
+                "One optional Coordinate on an offer that already owned p.19's Straight Line, " +
+                "naming the space the file is walked from. Unbound is the acting hero, so the five " +
+                "consumers written before it keep their exact candidate sets; bound, it names the " +
+                "piece standing on that space and offers nothing where no piece stands there. The " +
+                "distance bounds, the first-obstacle stop and the continued-heading narrowing are " +
+                "untouched, and no capability revision, schema version or wire field moves - a " +
+                "parameter schema is not digested.",
+                "Reassess for a sentence that moves somebody else along a line whose HEADING the " +
+                "card also names (p.18's Push is away from the pusher; Ignatia's two faces name no " +
+                "direction at all), and for a subject that is not a board piece - both would need " +
+                "more than an anchor.")
         };
     }
 

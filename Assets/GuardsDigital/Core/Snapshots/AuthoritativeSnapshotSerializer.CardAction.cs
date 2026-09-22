@@ -442,7 +442,8 @@ namespace GuardsDigital.Core.Snapshots
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             int roundIndex,
             int turnIndex,
-            EffectRosterState rosterState)
+            EffectRosterState rosterState,
+            TeamSide tieBreakerRevealedSide)
         {
             if (!reader.ReadBoolean())
             {
@@ -460,7 +461,8 @@ namespace GuardsDigital.Core.Snapshots
                 ? ReadSkillResolution(
                     reader, definitions, cards, catalogs.Capabilities, participants, components,
                     timing, modifications, heroItems, catalogs.TriggeredEffects,
-                    roundIndex, turnIndex, rosterState)
+                    roundIndex, turnIndex, rosterState,
+                    tieBreakerRevealedSide: tieBreakerRevealedSide)
                 : null;
 
             // Every disagreement the shape admits is refused here rather than thrown by the type's own
@@ -532,7 +534,8 @@ namespace GuardsDigital.Core.Snapshots
                 GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
                 int roundIndex,
                 int turnIndex,
-                EffectRosterState rosterState)
+                EffectRosterState rosterState,
+                TeamSide tieBreakerRevealedSide)
         {
             if (!reader.ReadBoolean())
             {
@@ -551,7 +554,8 @@ namespace GuardsDigital.Core.Snapshots
                 reader, definitions, cards, catalogs.Capabilities, participants, components,
                 timing, modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex,
                 rosterState,
-                IntrinsicKindQuery.Of(subject) == RuleObjectKind.Hero ? subject.HeroId : default);
+                IntrinsicKindQuery.Of(subject) == RuleObjectKind.Hero ? subject.HeroId : default,
+                tieBreakerRevealedSide: tieBreakerRevealedSide);
 
             // Every disagreement the shape admits is refused here rather than thrown by the type's own
             // guard, so a tampered payload is a rejected snapshot instead of an exception.
@@ -885,11 +889,13 @@ namespace GuardsDigital.Core.Snapshots
             var preAction = ReadPreAction(
                 reader, definitions, cards, participants, catalogs,
                 CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                timing, modifications, heroItems, roundIndex, turnIndex, rosterState);
+                timing, modifications, heroItems, roundIndex, turnIndex, rosterState,
+                tieBreaker.RevealedSide);
             var effectInterrupt = ReadEffectInterrupt(
                 reader, definitions, cards, participants, catalogs,
                 CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                timing, modifications, heroItems, roundIndex, turnIndex, rosterState);
+                timing, modifications, heroItems, roundIndex, turnIndex, rosterState,
+                tieBreaker.RevealedSide);
             var removalPrevention = ReadRemovalPrevention(reader);
             var cardTextRemainder = ReadCardTextRemainder(reader);
             var afterActionRepeatSubject = ReadAfterActionRepeatSubject(reader);
@@ -907,7 +913,8 @@ namespace GuardsDigital.Core.Snapshots
             for (var index = 0; index < borrowedParentCount; index++)
                 borrowedParents.Add(ReadSkillResolution(reader, definitions, cards, catalogs.Capabilities,
                     participants, CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
-                    timing, modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex, rosterState));
+                    timing, modifications, heroItems, catalogs.TriggeredEffects, roundIndex, turnIndex, rosterState,
+                    tieBreakerRevealedSide: tieBreaker.RevealedSide));
 
             CardActionResolutionRestoreState state;
             switch ((CardActionContinuationKind)kind)
@@ -929,7 +936,8 @@ namespace GuardsDigital.Core.Snapshots
                             reader, definitions, cards, catalogs.Capabilities, participants,
                             CardActionResolutionAuthority.CreateRestoredComponents(catalogs, board, markers),
                             timing, modifications, heroItems, catalogs.TriggeredEffects,
-                            roundIndex, turnIndex, rosterState),
+                            roundIndex, turnIndex, rosterState,
+                            tieBreakerRevealedSide: tieBreaker.RevealedSide),
                         coinLedger,
                         lanePush);
                     break;
@@ -958,7 +966,8 @@ namespace GuardsDigital.Core.Snapshots
                         roundIndex, turnIndex, rosterState,
                         opposingHeroFor: actor => selectedActorId.IsDefined && !actor.Equals(selectedActorId)
                             ? selectedActorId
-                            : default);
+                            : default,
+                        tieBreakerRevealedSide: tieBreaker.RevealedSide);
                     var pausedAttack = ReadAttackResolution(reader);
                     var frame = frameAwaitingItsAttack(
                         CardActionResolutionAuthority.EnclosingAttackOf(pausedAttack, definitions, board));
@@ -1195,11 +1204,13 @@ namespace GuardsDigital.Core.Snapshots
             int turnIndex,
             EffectRosterState rosterState,
             HeroId opposingHeroId = default,
-            Func<HeroId, HeroId> opposingHeroFor = null) =>
+            Func<HeroId, HeroId> opposingHeroFor = null,
+            TeamSide tieBreakerRevealedSide = TeamSide.None) =>
             ReadSkillResolutionAwaitingItsAttack(
                 reader, definitions, cards, capabilities, participants, components, timing,
                 modifications, heroItems, triggeredEffects, roundIndex, turnIndex, rosterState,
-                opposingHeroId, opposingHeroFor)(EnclosingAttackFacts.None);
+                opposingHeroId, opposingHeroFor,
+                tieBreakerRevealedSide)(EnclosingAttackFacts.None);
 
         /// <summary>
         /// Milestone 8.35i. Reads every byte of a skill frame, and returns the frame as a function of
@@ -1230,7 +1241,8 @@ namespace GuardsDigital.Core.Snapshots
             int turnIndex,
             EffectRosterState rosterState,
             HeroId opposingHeroId = default,
-            Func<HeroId, HeroId> opposingHeroFor = null)
+            Func<HeroId, HeroId> opposingHeroFor = null,
+            TeamSide tieBreakerRevealedSide = TeamSide.None)
         {
             var common = ReadCommonResolution(reader);
 
@@ -1349,7 +1361,8 @@ namespace GuardsDigital.Core.Snapshots
                 enclosingAttack, restored, trusted, node, definitions, cards, capabilities,
                 participants, components, timing, modifications, heroItems, rosterState,
                 roundIndex, turnIndex, opposing, common,
-                choiceId, nodeId, chooserId, choiceKind, minimum, maximum, selected);
+                choiceId, nodeId, chooserId, choiceKind, minimum, maximum, selected,
+                tieBreakerRevealedSide);
         }
 
         /// <summary>
@@ -1387,7 +1400,8 @@ namespace GuardsDigital.Core.Snapshots
             EffectChoiceKind choiceKind,
             int minimum,
             int maximum,
-            IReadOnlyList<EffectChoiceCandidate> selected)
+            IReadOnlyList<EffectChoiceCandidate> selected,
+            TeamSide tieBreakerRevealedSide)
         {
             var resolution = new EffectResolutionContext(
                 trusted, capabilities, participants, timing, roundIndex, turnIndex, modifications,
@@ -1400,7 +1414,17 @@ namespace GuardsDigital.Core.Snapshots
                 opposingHeroId: opposing,
                 components: components, heroItems: heroItems,
                 enclosingAttack: enclosingAttack,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                // Milestone 8.75b. THE RESTORED PAUSE IS RE-ASKED WITH THE COIN THE PAYLOAD ALREADY
+                // CARRIES. A capability's candidates are never written - they are re-derived from the
+                // trusted handler - so a handler that reads the Tie Breaker's revealed face was being
+                // re-asked with `TeamSide.None`, and Ignatia the Mad is the first content in this
+                // build for which that is a different question. `ignatia-coin-sun@1` refuses an
+                // unrevealed coin, so a snapshot taken at one of her pauses came back describing a
+                // pause the content "no longer" requested - milestone 8.35i's failure exactly, with
+                // the coin in place of the enclosing Attack. The face is the turn's own restored
+                // `TieBreakerState`, which is read before any pending action is decoded.
+                tieBreakerRevealedSide: tieBreakerRevealedSide);
 
             // Candidates are never written. A control node's options come from the trusted
             // definition; a capability's come from asking the trusted handler again. Either way a

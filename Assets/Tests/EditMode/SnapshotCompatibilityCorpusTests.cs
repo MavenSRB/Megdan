@@ -1572,24 +1572,62 @@ namespace GuardsDigital.Tests.EditMode
         // at the same revision, and nothing a restored match reads changes meaning. A registration
         // list that GREW is the one shape this corpus has always migrated across, because the
         // question it answers - "can this build load everything that payload named" - is still yes.
+        // MILESTONE 8.75b RE-PINS ALL SIXTEEN AGAIN, AND THE CAUSE IS REGISTRATION AND NOTHING ELSE.
+        // The schema does not move: v44 is what 8.71a left and no field is added here. What moves is
+        // the REGISTERED CONTENT LIST every payload records - the id and revision of every capability
+        // this build can load, and the id and revision of every component definition it can put on a
+        // board - because the milestone that deals Ignatia the Mad is the milestone that registers
+        // her eleven contracts and her one token, and milestone 7.9's gate is what had kept them out.
+        //
+        // THE BYTE DELTA IS ATTRIBUTED BY ARITHMETIC RATHER THAN ASSERTED. It is **+414 bytes on all
+        // sixteen**, measured against the two captures whose byte counts this list writes down:
+        // `setup` 13,271 -> 13,685 and `verified-hand-setup` 12,370 -> 12,784. It is two terms, and
+        // she is the first dealing since Min's to have a second one:
+        //
+        //   * ELEVEN capability ids join the list and their names are 341 characters in total -
+        //     `ignatia-coin-sun` (16), `ignatia-equilibrium` (19), `ignatia-flip-tie-breaker` (24),
+        //     `ignatia-range-unit-in-straight-line` (35),
+        //     `ignatia-range-unit-not-in-straight-line` (39),
+        //     `ignatia-range-unit-at-maximum-range` (35),
+        //     `ignatia-range-hero-not-adjacent` (31),
+        //     `ignatia-enemy-hero-adjacent-to-magma-or-minion` (46),
+        //     `ignatia-enemy-minion-adjacent-to-enemy-hero` (43),
+        //     `ignatia-place-magma-in-radius` (29) and `ignatia-place-magma-wake` (24) - plus eleven
+        //     one-byte length prefixes and eleven four-byte revisions: 341 + 11 + 44 = 396.
+        //   * ONE token definition joins the component list: `ignatia-magma` is 13 characters, plus
+        //     one length prefix and one four-byte revision: 13 + 1 + 4 = 18.
+        //
+        // 396 + 18 = 414 exactly. Both captures agreeing on 414 while carrying completely different
+        // content is what says the growth is the recorded registration lists and not anything a
+        // capture plays: NO capture in this corpus deals Ignatia or plays a face of hers, no capture
+        // places a magma token, and Chaos Incarnate's body is a TRIGGERED effect, which this payload
+        // does not enumerate.
+        //
+        // MIGRATE rather than reject, on this list's own standing argument and for the thirteenth
+        // dealing running: a v44 payload written before this milestone records registration lists
+        // that are strict subsets of this build's, every id in them still resolves to the same
+        // handler and the same definition at the same revision, and nothing a restored match reads
+        // changes meaning. A registration list that GREW is the one shape this corpus has always
+        // migrated across, because the question it answers - "can this build load everything that
+        // payload named" - is still yes.
         private static readonly CompatibilityFixture[] SupportedFixtures =
         {
-            new CompatibilityFixture("setup-v44", "514ff27e2688d1f05ba938b32ccb09bba0adfa3188e2db11acf8ce21a8399c7b"),
-            new CompatibilityFixture("active-turn-v44", "b7b611e9d9fe3f21c8e425b9f2b02fab5afdeb519ac5d682681f4c2bf42d6542"),
-            new CompatibilityFixture("pending-choice-v44", "4e62593553afa99a17d8f52966ebbc7044c896e1e8e4043379166db38c26e95f"),
-            new CompatibilityFixture("end-of-round-v44", "bc8c540ce007a56670120e201de8ec46f2d782b97de11b65ca4f24c8994cf128"),
-            new CompatibilityFixture("pending-minion-battle-v44", "b4c886d24a862573c6b4154800bb9e5f021136b4c764425835188ceea5382983"),
-            new CompatibilityFixture("placed-token-v44", "a81df2822a577c4e13b730f2458b6d2f171d629a74f40a86b967462ed9b15dec"),
-            new CompatibilityFixture("attached-marker-v44", "fc725d778021e7ab4a76b07388a07512e3e2caa587c23670b1575d126c1d355d"),
-            new CompatibilityFixture("pending-correction-v44", "acdafc0988f65c1b46bd874667928849d3fd0138a7ad97d449a36e1005f032ca"),
-            new CompatibilityFixture("paused-level-up-v44", "08c26c7f6217e0c954364dab16dd8cde46e12f17db69ba557e940eae2bc2d727"),
-            new CompatibilityFixture("ended-match-v44", "ab06b79072981c09910680e000b5b73d86ba6db520753273ff4992b3d97a15b2"),
-            new CompatibilityFixture("verified-hand-setup-v44", "f0700bd4a96a7e1d2685a64d9b1a626cdb846e3e84925f02156416860813d8ac"),
-            new CompatibilityFixture("paused-orbit-repeat-v44", "0c4ddcb19af684f245eecd87ff4ab7ccd6f28cdf60129e11472a3373dcef7460"),
-            new CompatibilityFixture("paused-card-text-v44", "ef76062e2315360194097c5ea5aa88c4addcccd9bd79d58660bd62307ec9c3e0"),
-            new CompatibilityFixture("paused-block-rider-v44", "87ae12eb48c421bb8a29737e17846463fdd634afd483e157f97baa510c5f0261"),
-            new CompatibilityFixture("paused-repeated-attack-v44", "3cc7d366b30ffaa27eb780a8f162495afa9a706272df789fa7666f54b0aa03b6"),
-            new CompatibilityFixture("parked-pre-action-v44", "ee0ad20704ca1f6f143aa49cfb00b21ebc2a85773efe8f354527eedd1705f4e0")
+            new CompatibilityFixture("setup-v44", "f937d1bf48d4068671a7fd0c0df40ab7fc33a2e18e815fae6cbea25b9880eadc"),
+            new CompatibilityFixture("active-turn-v44", "6e2a946160bc6ef7f26c38c885e5be3b195a2a334d39ae1e48f559680a47b120"),
+            new CompatibilityFixture("pending-choice-v44", "69ab6902872fbfd053305416f389eea978924915a5d89380c56a79c0139ee092"),
+            new CompatibilityFixture("end-of-round-v44", "92c066e8b7a0771cd501c8eb602c7acdab4edb6e5a57f7d83e1cdc80ee549ca6"),
+            new CompatibilityFixture("pending-minion-battle-v44", "f370b6df80eede1cb1cf6543fd14e3b0624b8d5af0a9b32544096e22c7a498de"),
+            new CompatibilityFixture("placed-token-v44", "a72f70763da3a834bd609be59980df6a900e09d82e079e9a03f391ef6d340439"),
+            new CompatibilityFixture("attached-marker-v44", "5b91e10641999a0270f58f3a098c54ef01551e603b42501522598e7de63b8152"),
+            new CompatibilityFixture("pending-correction-v44", "e947b3e48af59fd66493fa34608876711a033b7da01b86ad60585405141a7307"),
+            new CompatibilityFixture("paused-level-up-v44", "acc5b5c3098b8f617e981d2731cd97dc2e5117cc8e2ed2f98340cea0cc94f510"),
+            new CompatibilityFixture("ended-match-v44", "76d22b9e26f062d92d5bd72298ec97e9a017a1dded9230c3c7f814f679306cc2"),
+            new CompatibilityFixture("verified-hand-setup-v44", "fb28d00c62730a11c504e95bc7b4abde4d4a18d3e81dd066943b242cf25043ea"),
+            new CompatibilityFixture("paused-orbit-repeat-v44", "108d7bfacff2ab704e4d756f755948ba947f7890b5247509f3011ef56be534c9"),
+            new CompatibilityFixture("paused-card-text-v44", "ec9fa8b4d02432041cda2a6dde71fb4f49c9fa106be9f401eb538b923a2e1b5c"),
+            new CompatibilityFixture("paused-block-rider-v44", "a9f848d1275a1fbde18d448779d583ea38d6ed153c228be16773d834efd6339f"),
+            new CompatibilityFixture("paused-repeated-attack-v44", "2913db9ca2023a662cb6c6cf78b793d3edddb1bac0b11e41a563b0b388c727ba"),
+            new CompatibilityFixture("parked-pre-action-v44", "c8171e05e21254cee8b1b4bef4f256f6fa83d7ab5d219b2009ada653aca27dfa")
         };
 
         [Test]

@@ -139,14 +139,21 @@ namespace GuardsDigital.Tests.EditMode
                     .OrderBy(value => value, StringComparer.Ordinal),
                 Is.EqualTo(new[]
                 {
-                    "hanu-fight-and-flight", "silverarrow-wild-hunt-effect", "swift-bounce"
+                    "hanu-fight-and-flight", "ignatia-scorching-blaze", "ignatia-searing-heat",
+                    "silverarrow-wild-hunt-effect", "swift-bounce"
                 }),
                 "Only the faces printing an exact distance whose floor is above one declare a " +
                 "floor. A further name here is a face whose printed text somebody read as exact: " +
                 "check it against its Docs/AI/Rules shard before pinning it. Hanu the Trickster's " +
                 "Gold basic joined them at milestone 8.71c - \"If able, move 3 spaces in a straight " +
                 "line\" is the same count Bounce prints at a different number, and it prints no " +
-                "\"ignoring obstacles\", so it binds the floor and not the crossing.");
+                "\"ignoring obstacles\", so it binds the floor and not the crossing. Ignatia the " +
+                "Mad's two pushes joined them at milestone 8.75b, and they are the first faces in " +
+                "this list whose line is NOT the actor's: Searing Heat prints \"Move a " +
+                "friendly/enemy hero in radius 2 spaces in a straight line\" and Scorching Blaze " +
+                "the same at \"2 or 3\", so one binds a floor equal to its ceiling and the other a " +
+                "floor below it - which is the same declaration this sweep has always counted, made " +
+                "about somebody else's feet through the new `subjectSpace` anchor.");
         }
 
         // -------------------------------------------------------------------------------------------

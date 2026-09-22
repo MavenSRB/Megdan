@@ -960,7 +960,80 @@ namespace GuardsDigital.Presentation.Interaction
         /// That Way! is the face this arm exists for: its three printed distances are the widest
         /// cross-seat choice in his set, and the friendly hero it asks is the ally.
         /// </summary>
-        VerifiedStagedHanuWithAllyAtTierThree = 116
+        VerifiedStagedHanuWithAllyAtTierThree = 116,
+
+        /// <summary>
+        /// Milestone 8.75b. The engaged staging with Ignatia the Mad on the Blue seat, holding
+        /// rulebook p.6's five starting cards and the Tie Breaker coin showing her SUN face. The
+        /// TWENTY-SECOND hero.
+        ///
+        /// <para>The coin face is part of the content for her and for no hero before her: every one
+        /// of her eighteen dealt faces prints TWO texts and the coin picks which one runs, so a
+        /// staging that fixed only one face would leave half her set unreachable. The sun and moon
+        /// members below are the same hand on the same board with the coin turned over.</para>
+        /// </summary>
+        VerifiedEngagedStagedIgnatia = 117,
+
+        /// <summary>
+        /// The engaged staging with Ignatia holding p.6's five and the coin showing her MOON face -
+        /// Chaos Bolt targeting a hero in range where the sun member targets a minion adjacent, and
+        /// Path of Ashes scattering magma in radius where the sun member lays a wake.
+        /// </summary>
+        VerifiedEngagedStagedIgnatiaOnTheMoon = 118,
+
+        /// <summary>
+        /// The engaged staging at rulebook p.15's Tier II stage, with Ignatia holding the first
+        /// sibling of each colour: Erratic Fireblast, Spontaneous Immolation and Path of Cinders.
+        /// </summary>
+        VerifiedTierTwoEngagedStagedIgnatia = 119,
+
+        /// <summary>
+        /// The Tier II staging with Ignatia holding the second sibling of each colour: Crack of Doom,
+        /// Searing Heat and Unstable Portal - the only Tier II arm that reaches the adjacent /
+        /// at-maximum-range attack pair, either push or either swap.
+        /// </summary>
+        VerifiedTierTwoAlternateEngagedStagedIgnatia = 120,
+
+        /// <summary>
+        /// The Tier III staging with Ignatia holding the first sibling of each colour - Loosely-Aimed
+        /// Firebolts, Violent Conflagration and Path of Flames - and Chaos Incarnate unlocked beside
+        /// her dashboard. This is the only arm that reaches the moon repeat on a different hero,
+        /// Violent Conflagration's "discards a card, or is defeated" escalation and the up-to-four
+        /// magma wake.
+        /// </summary>
+        VerifiedTierThreeEngagedStagedIgnatia = 121,
+
+        /// <summary>
+        /// The Tier III staging with Ignatia holding the second sibling of each colour - Imminent
+        /// Eruption, Scorching Blaze and Chaos Gate - and Chaos Incarnate unlocked. This is the only
+        /// arm that reaches the sun repeat on a minion, the "2 or 3 spaces" push and Chaos Gate's
+        /// trailing one-space move after a swap.
+        /// </summary>
+        VerifiedTierThreeAlternateEngagedStagedIgnatia = 122,
+
+        /// <summary>
+        /// Milestone 8.75b. The staged board that gives Ignatia an ALLY - the one configuration on
+        /// which Searing Heat's and Scorching Blaze's SUN faces have a candidate, because p.17's
+        /// Friendly never includes you. Ignatia holds p.6's five and Arien stands beside her; it is
+        /// deliberately NOT restaged, exactly as Brogan's, Tali's, Rowenna's and Hanu's ally arms are
+        /// not.
+        /// </summary>
+        VerifiedStagedIgnatiaWithAlly = 123,
+
+        /// <summary>
+        /// The ally staging with Ignatia's own seat at rulebook p.15's Tier II stage on the second
+        /// sibling of each colour, which is where Searing Heat lives - the first of her two pushes,
+        /// and the shorter one ("2 spaces", exactly).
+        /// </summary>
+        VerifiedStagedIgnatiaWithAllyAtTierTwo = 124,
+
+        /// <summary>
+        /// The ally staging with Ignatia's own seat at Tier III on the second sibling of each colour,
+        /// with Chaos Incarnate unlocked. Scorching Blaze is the face this arm exists for: "2 or 3
+        /// spaces" is the widest straight-line push in her set, and the flip her Ultimate offers turns
+        /// the same card from shoving an enemy into carrying a friend.
+        /// </summary>
+        VerifiedStagedIgnatiaWithAllyAtTierThree = 125
     }
 
     [ExecuteAlways]
@@ -1616,6 +1689,39 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedStagedHanuWithAllyAtTierThree =>
                     MatchConfiguration.CreateStagedHanuWithAllyForInternalTest(
                         TeamSide.Red, HanuAllyStage.TierThree),
+                // Milestone 8.75b. Ignatia's eight. The `TeamSide` argument is the Tie Breaker coin's
+                // revealed face, and for her it decides WHICH PRINTED TEXT her cards run - so the
+                // first two members are one hand on one board under the two faces, and every arm
+                // below them stages the sun. 8.75c's journeys flip the coin from either.
+                SceneCardContent.VerifiedEngagedStagedIgnatia =>
+                    MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedEngagedStagedIgnatiaOnTheMoon =>
+                    MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Blue),
+                SceneCardContent.VerifiedTierTwoEngagedStagedIgnatia =>
+                    MatchConfiguration.CreateStagedIgnatiaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedIgnatia =>
+                    MatchConfiguration.CreateStagedIgnatiaTierTwoForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedTierThreeEngagedStagedIgnatia =>
+                    MatchConfiguration.CreateStagedIgnatiaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.FirstSibling),
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedIgnatia =>
+                    MatchConfiguration.CreateStagedIgnatiaTierThreeForInternalTest(
+                        TeamSide.Red,
+                        GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.SecondSibling),
+                SceneCardContent.VerifiedStagedIgnatiaWithAlly =>
+                    MatchConfiguration.CreateStagedIgnatiaWithAllyForInternalTest(
+                        TeamSide.Red, IgnatiaAllyStage.StartingHand),
+                SceneCardContent.VerifiedStagedIgnatiaWithAllyAtTierTwo =>
+                    MatchConfiguration.CreateStagedIgnatiaWithAllyForInternalTest(
+                        TeamSide.Red, IgnatiaAllyStage.TierTwo),
+                SceneCardContent.VerifiedStagedIgnatiaWithAllyAtTierThree =>
+                    MatchConfiguration.CreateStagedIgnatiaWithAllyForInternalTest(
+                        TeamSide.Red, IgnatiaAllyStage.TierThree),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1692,7 +1798,13 @@ namespace GuardsDigital.Presentation.Interaction
                 // as Rowenna's three are: what This Way! and That Way! need is a friendly hero in
                 // RADIUS, and the two Blue spawns already are - restaging them would move the ally out
                 // of the disk the co-moves measure.
-                IsStagedHanu(content))
+                IsStagedHanu(content) ||
+                // Milestone 8.75b. Written in the SAME change as her six engaged members above, on
+                // the same terms. Her THREE ALLY arms are deliberately absent from this list, exactly
+                // as Rowenna's and Hanu's are: what Searing Heat's and Scorching Blaze's sun faces
+                // need is a friendly hero in RADIUS, and the two Blue spawns already are - restaging
+                // them would move the ally out of the disk those pushes measure.
+                IsStagedIgnatia(content))
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2218,6 +2330,24 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusHanuOneVsOne();
                     }
 
+                    // Milestone 8.75b. The ALLY arms are asked first, for the reason 8.57g's and
+                    // 8.71h's lines above give: they are a different BOARD rather than a different
+                    // hand, and a three-seat configuration composed onto the one-versus-one setup
+                    // would leave Arien's cards with no seat to stand on.
+                    if (IsIgnatiaWithAlly(content))
+                    {
+                        return QuickGameSetupConfiguration
+                            .CreateStagedWaspVersusIgnatiaWithAllyOneVsTwo();
+                    }
+
+                    // The twenty-second hero's arm, written in the SAME change as her nine members
+                    // and her restaging line - the three arms milestone 8.38f had to add for Swift
+                    // after the fact, and which every dealing since has shipped together.
+                    if (IsStagedIgnatia(content))
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusIgnatiaOneVsOne();
+                    }
+
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();
             }
         }
@@ -2473,6 +2603,37 @@ namespace GuardsDigital.Presentation.Interaction
             content == SceneCardContent.VerifiedStagedHanuWithAlly ||
             content == SceneCardContent.VerifiedStagedHanuWithAllyAtTierTwo ||
             content == SceneCardContent.VerifiedStagedHanuWithAllyAtTierThree;
+
+        /// <summary>
+        /// Whether this content is one of milestone 8.75b's six staged Ignatia scenes. Written in the
+        /// same change as those six members, the setup configuration they name and the restaging list
+        /// above - the three arms milestone 8.38f had to add for Swift after the fact, and which every
+        /// dealing since has therefore shipped together.
+        ///
+        /// <para>SIX rather than five, because the Tie Breaker coin's face is content for her: the
+        /// first two members are the same starting hand on the same board under her sun and under her
+        /// moon, and a build that staged only one of them could never draw half her printed text.
+        /// </para>
+        /// </summary>
+        private static bool IsStagedIgnatia(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedEngagedStagedIgnatia ||
+            content == SceneCardContent.VerifiedEngagedStagedIgnatiaOnTheMoon ||
+            content == SceneCardContent.VerifiedTierTwoEngagedStagedIgnatia ||
+            content == SceneCardContent.VerifiedTierTwoAlternateEngagedStagedIgnatia ||
+            content == SceneCardContent.VerifiedTierThreeEngagedStagedIgnatia ||
+            content == SceneCardContent.VerifiedTierThreeAlternateEngagedStagedIgnatia;
+
+        /// <summary>
+        /// Whether this content deals two heroes to the Blue team with Ignatia beside an ally.
+        /// Milestone 8.75b's three-hero arms, which take the two-Blue-hero setup and are deliberately
+        /// <em>not</em> restaged, exactly as milestone 8.57g's Rowenna arms and 8.71h's Hanu arms are
+        /// not: what Searing Heat and Scorching Blaze need is a friendly hero in RADIUS, and the two
+        /// Blue spawns already are.
+        /// </summary>
+        private static bool IsIgnatiaWithAlly(SceneCardContent content) =>
+            content == SceneCardContent.VerifiedStagedIgnatiaWithAlly ||
+            content == SceneCardContent.VerifiedStagedIgnatiaWithAllyAtTierTwo ||
+            content == SceneCardContent.VerifiedStagedIgnatiaWithAllyAtTierThree;
 
         private static bool IsStagedTali(SceneCardContent content) =>
             content == SceneCardContent.VerifiedEngagedStagedTali ||

@@ -56,15 +56,16 @@ namespace GuardsDigital.Tests.EditMode
             yield return new DealtHero("min", MinCardContent.ContentRevision, MinCardContent.DealtDefinitions);
             yield return new DealtHero("brynn", BrynnCardContent.ContentRevision, BrynnCardContent.DealtDefinitions);
             yield return new DealtHero("hanu", HanuCardContent.ContentRevision, HanuCardContent.DealtDefinitions);
+            yield return new DealtHero("ignatia", IgnatiaCardContent.ContentRevision, IgnatiaCardContent.DealtDefinitions);
         }
 
         /// <summary>
         /// The seventeen heroes milestone 8.44 packaged, plus Rowenna the Vanguard (milestone 8.57g),
-        /// Min the Dragonmonk (milestone 8.61j), Brynn the Seeker (milestone 8.69g) and Hanu the
-        /// Trickster (milestone 8.71h) - the four dealings since, each of which is what makes that
-        /// hero one a match configuration deals.
+        /// Min the Dragonmonk (milestone 8.61j), Brynn the Seeker (milestone 8.69g), Hanu the
+        /// Trickster (milestone 8.71h) and Ignatia the Mad (milestone 8.75b) - the five dealings
+        /// since, each of which is what makes that hero one a match configuration deals.
         /// </summary>
-        private const int MatchConfigurationRosterSize = 21;
+        private const int MatchConfigurationRosterSize = 22;
 
         /// <summary>
         /// The longest label in the content as milestone 8.46a shipped it is 58 characters. The bound

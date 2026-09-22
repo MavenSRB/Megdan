@@ -494,6 +494,24 @@ namespace GuardsDigital.Tests.EditMode
                     SyntheticShowcaseHand.CreateRedWithPrintedInitiativeRewriteSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithFriendlyUnitPairSkill(owner),
                     SyntheticShowcaseHand.CreateRedWithJourneyPartnerSkill(owner),
+                    // Milestone 8.75b's SIX handler types on FIVE cards, and the one pairing is the
+                    // grouping rule doing its work: two contracts share a card exactly when one
+                    // printed SENTENCE carries both, and Abrupt Combustion prints the hero narrowing
+                    // on its sun line and the minion narrowing on its moon line - one face, so the
+                    // Inquisitor carries both. The Coinreader is the predicate every one of her
+                    // eighteen dealt faces branches on, drawn as the Conditional her own composition
+                    // gives them with two inert arms; the Coinflipper is Chaos Incarnate's first
+                    // step and carries no repeat, because a showcase Skill that repeated itself
+                    // would prove a shape no face has; the Trailblazer moves in a straight line and
+                    // lays the wake, which cannot be one node because the wake reads the ENDPOINTS
+                    // of a Move that already happened; and the Longshot is the only Attack in the
+                    // group, because all four of her card-text subjects are bound at p.14's step 1
+                    // and a Skill naming one would have no Attack to bind.
+                    SyntheticShowcaseHand.CreateRedWithCoinSelectedTextSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithTieBreakerFlipSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithTokenAdjacencyDiscardSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithMagmaWakeSkill(owner),
+                    SyntheticShowcaseHand.CreateRedWithCoinNarrowedAttackTargetText(owner),
                     SyntheticResolvedRepriseHand.Create(owner),
                     SyntheticCoupledEscortHand.Create(owner)
                 }
@@ -673,6 +691,23 @@ namespace GuardsDigital.Tests.EditMode
                 // three end-of-turn bodies - so the walk has to include the triggered effects, which
                 // is what that concat is there for.
                 .Concat(HanuCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                // Milestone 8.75b, the twenty-second dealing: her ELEVEN own contracts are reachable
+                // from this concat and from the triggered-effect concat below, and from nowhere else.
+                // SIX of the eleven are new handler TYPES, each proved on one of the five showcase
+                // cards above before this concat admits the eighteen faces that name them. The other
+                // five owe no showcase consumer: `ignatia-equilibrium@1` runs on
+                // `ActiveEffectCreationHandler`, the type Arien's five persistent texts proved at
+                // milestone 6.8; `ignatia-place-magma-in-radius@1` runs on `PlaceHandler`, the type
+                // milestone 6.6 proved and Tali's and Min's token lines have reached ever since; and
+                // the three remaining attack-subject declarations share
+                // `IgnatiaRangeAttackTargetHandler` with the one the Red Longshot names, which is
+                // exactly the "one implementation, many declarations" shape `PrintedIconTargetHandler`
+                // has had since 8.19b and which the gate's second half is asked of.
+                //
+                // `ignatia-flip-tie-breaker@1` is named by her Ultimate's TRIGGERED body rather than
+                // by any card node, so the walk has to include the triggered effects - which is what
+                // that concat is there for - and by the showcase card above.
+                .Concat(IgnatiaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)

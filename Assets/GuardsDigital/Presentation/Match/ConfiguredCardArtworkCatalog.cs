@@ -145,7 +145,22 @@ namespace GuardsDigital.Presentation.Match
                 // dealing prepared is 8597492, chosen by crop rather than by the name - Min's MI-Q6
                 // lesson, and the reason this comment does not claim the two corpora agree about the
                 // PICTURE.
-                { "hanu", "Hanu" }
+                { "hanu", "Hanu" },
+                // Milestone 8.75b prep, the FIFTEENTH consecutive dealing told by the comment above
+                // rather than by a check, and the second running where every source agrees at once:
+                // her extraction directory spells the name plainly, the bundled manifest carries her
+                // standee under `Ignatia` - exactly ONE element of that name, where Hanu's line above
+                // had to disown a second - and the dashboard prints "Ignatia the Mad". Written here
+                // at the same moment as the eighteen rows, for the reason those paragraphs give: the
+                // rows alone are what every offline tier can see, and this map is what turns them
+                // into a front on a card.
+                //
+                // This row is written by the ARTWORK half of her dealing, ahead of the dealing
+                // itself, which is the first time this map has moved before its hero had a roster
+                // row. Nothing here depends on registration - the catalog names DEALT definitions,
+                // and `IgnatiaCardContent.DealtDefinitions` is a printed set whether or not
+                // `MatchContentCatalogs` knows about it.
+                { "ignatia", "Ignatia" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -473,6 +488,14 @@ namespace GuardsDigital.Presentation.Match
                 // Backup, Cutter's Few More Steps, Bain's Side Quest, Rowenna's Earn the Spurs, Min's
                 // Chop Down and Brynn's Home Turf are not among theirs.
                 .Concat(HanuCardContent.DealtDefinitions)
+                // Milestone 8.75b prep. Ignatia's eighteen, on exactly the terms the rows above
+                // state. Unreliable Jolt is p.20's Handicap card and is not among her
+                // DealtDefinitions, exactly as Dodger's Rusty Razor, Misa's Leaf on the Wind,
+                // Silverarrow's Keep the Distance, Ursafar's Jaws That Bite, Whisper's Vile
+                // Accusation, Tali's Ice Shard, Swift's Backup, Cutter's Few More Steps, Bain's Side
+                // Quest, Rowenna's Earn the Spurs, Min's Chop Down, Brynn's Home Turf and Hanu's
+                // Fight or Flight are not among theirs.
+                .Concat(IgnatiaCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

@@ -52,7 +52,15 @@ namespace GuardsDigital.Presentation.Board
                 [new TokenDefinitionId("min-grenade")] = string.Empty,
                 [new TokenDefinitionId("min-mine-facedown")] = string.Empty,
                 [new TokenDefinitionId("min-mine-blast")] = string.Empty,
-                [new TokenDefinitionId("min-mine-dud")] = string.Empty
+                [new TokenDefinitionId("min-mine-dud")] = string.Empty,
+
+                // Milestone 8.75b. Ignatia the Mad's magma, on Min's terms exactly: the prepared face
+                // is a pool of molten rock on a hex, which says what the piece is without a word over
+                // it. The caption this entry removes would have been "MAGMA", which is legible and
+                // redundant - and redundant matters here, because her three Paths can leave three of
+                // them on one file and three stacked captions is a board a player reads slower than
+                // the art.
+                [new TokenDefinitionId("ignatia-magma")] = string.Empty
             };
 
         /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>

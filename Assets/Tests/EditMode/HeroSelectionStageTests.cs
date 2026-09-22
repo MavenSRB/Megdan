@@ -139,7 +139,17 @@ namespace GuardsDigital.Tests.EditMode
                 // inferred from his kit. `PrivateLobbyPlayModeTests` drives the star and the three
                 // role buttons over his rendered button; this row is what those filters read.
                 ["hero-hanu"] = (HeroComplexity.VeryComplex,
-                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher)
+                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher),
+                // Milestone 8.75b. The TWENTY-SECOND row, and the first in this table to carry FOUR
+                // stars - p.21's `Wizard` band, which twenty-one dealings left unused - and FIVE
+                // roles, where no hero before her printed more than three. Read off her selection
+                // card and dashboard at the 8.75 inventory pass: Sniper, Damager and Tokens on the
+                // top row, Tactician and Pusher below, in that printed order.
+                // `PrivateLobbyPlayModeTests` drives the four-star filter and all five role buttons
+                // over her rendered button; this row is what those filters read.
+                ["hero-ignatia"] = (HeroComplexity.Wizard,
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Tokens | HeroRole.Tactician |
+                        HeroRole.Pusher)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

@@ -69,6 +69,28 @@ namespace GuardsDigital.Core.Participants
     }
 
     /// <summary>
+    /// Milestone 8.75b. Which of rulebook p.15's stages IGNATIA'S OWN seat is dealt at on the staged
+    /// board that gives her an ally - <see cref="HanuAllyStage"/>'s shape exactly, with her in the
+    /// seat under test and the ally as the friendly hero her sun lines name.
+    ///
+    /// <para>It exists because the two faces that seat is there to prove sit on different Tiers:
+    /// Searing Heat is a Tier II fork of the Blue ladder and Scorching Blaze its Tier III one, and
+    /// both live on the SAME branch - so, as with Hanu's co-moves, each arm takes
+    /// <see cref="Cards.Verified.IgnatiaUpgradeBranch.SecondSibling"/> and an arm on the other branch
+    /// would deal a hand with no friendly-hero question in it at all. The starting-hand arm holds
+    /// p.6's five, where her Blue is Abrupt Combustion and the friendly hero is reached by no card -
+    /// which is the useful negative: the selection is empty for a reason about the HAND rather than
+    /// about the board.</para>
+    /// </summary>
+    public enum IgnatiaAllyStage
+    {
+        /// <summary>p.6's own five, which is what a match deals before any Level Up.</summary>
+        StartingHand = 0,
+        TierTwo = 1,
+        TierThree = 2
+    }
+
+    /// <summary>
     /// A composed match: who is playing, what each seat holds, and the content that match runs on.
     ///
     /// <para><b>Milestone 8.25b named this type after what it composes.</b> It was
@@ -593,6 +615,11 @@ namespace GuardsDigital.Core.Participants
                 // covering the same heroes - is what this arm keeps true rather than establishes.
                 case Setup.QuickGameSetupConfiguration.HanuHeroIdValue:
                     return Cards.Verified.HanuCardContent.CreateHand(heroId, instancePrefix);
+                // Milestone 8.75b. The TWENTY-SECOND hero this build deals, on exactly the terms the
+                // rows above are on. The agreement Tali's arm records - switch and offerable roster
+                // covering the same heroes - is what this arm keeps true rather than establishes.
+                case Setup.QuickGameSetupConfiguration.IgnatiaHeroIdValue:
+                    return Cards.Verified.IgnatiaCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2056,6 +2083,162 @@ namespace GuardsDigital.Core.Participants
             }
         }
 
+        /// <summary>
+        /// Milestone 8.75b. The staged Wasp-versus-Ignatia match, on the same `DEV-005` terms the
+        /// twenty-one staged matches before it are on. This is the configuration that makes Ignatia
+        /// playable in a fixture, and the twenty-second of its shape.
+        ///
+        /// <para><b>The coin face is an argument, and for her it is the card text.</b> Every other
+        /// hero's staging passes <paramref name="initialTieBreakerSide"/> to settle p.7's Initiative
+        /// ties; hers settles WHICH OF EACH CARD'S TWO PRINTED LINES RUNS. A fixture that wants her
+        /// sun text stages <see cref="TeamSide.Red"/> and one that wants her moon text stages
+        /// <see cref="TeamSide.Blue"/> (ID-Q5, user-settled: "Moon is blue team, sun is read team"),
+        /// and both are reachable on every board below.</para>
+        ///
+        /// <para><b>She needs an ally seat too, and this is not it.</b> Searing Heat and Scorching
+        /// Blaze print "Move a FRIENDLY hero in radius ..." on their sun faces, and p.17's Friendly
+        /// never includes you, so on this board those two sun arms find nobody.
+        /// <see cref="CreateStagedIgnatiaWithAllyForInternalTest"/> is where they live. Everything
+        /// else of hers is reachable here, and both swaps' sun arms are reachable from BOTH boards,
+        /// because p.17's Friendly covers the melee MINION the engaged restaging leaves in her
+        /// ring.</para>
+        ///
+        /// <para><b>What this staging reaches.</b> The enemy HERO stands two spaces away - inside
+        /// every printed Radius her Blues and Greens carry and inside every printed Range her Reds
+        /// carry, and outside p.19's ring - so her ranged attacks, her discard line and her pushes
+        /// reach him while every "adjacent to you" bullet needs a minion first. A friendly melee
+        /// MINION and an enemy ranged minion stand beside her, which is what Chaos Bolt's sun face
+        /// ("a minion adjacent to you") and the moon discard line ("an enemy minion adjacent to an
+        /// enemy hero") both need. <c>IgnatiaDealingTests</c> measures all of it, writes the
+        /// coordinates into the run output, and is where 8.75c's journeys start from.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedIgnatiaForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                CreateVerifiedIgnatiaHand(TeamSide.Blue));
+
+        /// <summary>
+        /// Milestone 8.75b. The staged Wasp-versus-Ignatia match at rulebook p.15's Tier II stage,
+        /// with Ignatia holding one Tier II card of each colour on the branch the caller names - see
+        /// <see cref="Cards.Verified.IgnatiaUpgradeBranch"/>'s own remarks for what each branch
+        /// reaches.
+        /// </summary>
+        public static MatchConfiguration CreateStagedIgnatiaTierTwoForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.IgnatiaUpgradeBranch branch) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: false),
+                CreateProgressedIgnatiaHand(tierThree: false, branch));
+
+        /// <summary>
+        /// Milestone 8.75b. The staged Wasp-versus-Ignatia match at rulebook p.15's Tier III stage
+        /// with p.16's Ultimate unlocked on both seats: High Voltage faceup in Red's Ultimate area and
+        /// Chaos Incarnate in Ignatia's.
+        ///
+        /// <para>Hers is a p.16 permanent ability whose triggered body FLIPS THE MATCH'S COIN and then
+        /// repeats the primary action it fired for, so unlocking it here is what makes the flip
+        /// reachable from a configured match at all rather than only from a frame a fixture builds by
+        /// hand - and it is the only shape in this build where a card's own text changes which text
+        /// every other card of that seat would apply. Both basics stay in hand on both branches, so
+        /// the coin-read primary the Ultimate rides is available whichever branch the caller
+        /// names.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedIgnatiaTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide, Cards.Verified.IgnatiaUpgradeBranch branch)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                CreateProgressedIgnatiaHand(tierThree: true, branch));
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.IgnatiaCardContent.ChaosIncarnate)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        /// <summary>
+        /// Milestone 8.75b. Wasp on Red against Ignatia <em>and</em> an ally on Blue - the
+        /// configuration Searing Heat's and Scorching Blaze's SUN faces need, because p.17's Friendly
+        /// never includes you and the one-versus-one board leaves that selection empty.
+        ///
+        /// <para>It is Rowenna's 8.57g board and Hanu's 8.71h board with the hero swapped, and it is
+        /// deliberately NOT restaged: what the sun pushes need is a friendly hero in RADIUS, and the
+        /// two Blue spawns already are.</para>
+        ///
+        /// <para>The Tier III arm unlocks the Ultimate on both seats, exactly as
+        /// <see cref="CreateStagedIgnatiaTierThreeForInternalTest"/> does on the one-versus-one board,
+        /// so a journey can flip the coin and watch the SAME card's other line run against a friendly
+        /// subject - which is the one reading of Chaos Incarnate the 1v1 arm cannot show, because a
+        /// flip from moon to sun on Scorching Blaze turns an enemy push into a friendly one and there
+        /// is no friend on that board.</para>
+        /// </summary>
+        public static MatchConfiguration CreateStagedIgnatiaWithAllyForInternalTest(
+            TeamSide initialTieBreakerSide,
+            IgnatiaAllyStage stage = IgnatiaAllyStage.StartingHand)
+        {
+            var allyId = new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue);
+            var configuration = new MatchConfiguration(
+                StagedBoardParticipants.CreateWithBlueAlly(),
+                CreateVerifiedWaspHand(TeamSide.Red)(
+                    new HeroId(StagedBoardParticipants.RedHeroIdValue)),
+                CreateStagedIgnatiaSeatHand(stage)(
+                    new HeroId(StagedBoardParticipants.BlueHeroIdValue)),
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                SetupRandomnessSeed.Unrecorded,
+                allyHand: GuardsDigital.Core.Cards.Verified.ArienCardContent.CreateHand(
+                    allyId, "blue-ally"));
+
+            if (stage != IgnatiaAllyStage.TierThree)
+            {
+                return configuration;
+            }
+
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    GuardsDigital.Core.Cards.Verified.IgnatiaCardContent.ChaosIncarnate)))
+            {
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                {
+                    throw new InvalidOperationException(
+                        "The staged Tier III ally match could not unlock a seat's dealt Ultimate.");
+                }
+            }
+
+            return configuration;
+        }
+
+        private static Func<HeroId, ConfiguredHand> CreateStagedIgnatiaSeatHand(IgnatiaAllyStage stage)
+        {
+            switch (stage)
+            {
+                case IgnatiaAllyStage.TierTwo:
+                    return CreateProgressedIgnatiaHand(
+                        tierThree: false,
+                        GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.SecondSibling);
+                case IgnatiaAllyStage.TierThree:
+                    return CreateProgressedIgnatiaHand(
+                        tierThree: true,
+                        GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.SecondSibling);
+                default:
+                    return CreateVerifiedIgnatiaHand(TeamSide.Blue);
+            }
+        }
+
         public static MatchConfiguration CreateStagedGarrusForInternalTest(TeamSide initialTieBreakerSide) =>
             Create(TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red), owner => Cards.Verified.GarrusCardContent.CreateHand(owner, "blue"));
@@ -2648,6 +2831,22 @@ namespace GuardsDigital.Core.Participants
                 ? GuardsDigital.Core.Cards.Verified.HanuProgressedHands.CreateTierThreeHand(
                     ownerId, "blue", branch)
                 : GuardsDigital.Core.Cards.Verified.HanuProgressedHands.CreateTierTwoHand(
+                    ownerId, "blue", branch);
+
+        /// <summary>
+        /// Milestone 8.75b. One seat's verified Ignatia hand, prefixed by the seat's team side for
+        /// the reason the twenty-one earlier sets are.
+        /// </summary>
+        private static Func<HeroId, ConfiguredHand> CreateVerifiedIgnatiaHand(TeamSide side) =>
+            ownerId => GuardsDigital.Core.Cards.Verified.IgnatiaCardContent.CreateHand(
+                ownerId, side == TeamSide.Red ? "red" : "blue");
+
+        private static Func<HeroId, ConfiguredHand> CreateProgressedIgnatiaHand(
+            bool tierThree, Cards.Verified.IgnatiaUpgradeBranch branch) =>
+            ownerId => tierThree
+                ? GuardsDigital.Core.Cards.Verified.IgnatiaProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue", branch)
+                : GuardsDigital.Core.Cards.Verified.IgnatiaProgressedHands.CreateTierTwoHand(
                     ownerId, "blue", branch);
 
         private static Func<HeroId, ConfiguredHand> CreateVerifiedSabinaHand(TeamSide side) =>

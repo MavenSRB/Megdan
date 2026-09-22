@@ -1367,6 +1367,38 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// </summary>
         public const string ContinuedLineFromParameter = "continuedLineFrom";
 
+        /// <summary>
+        /// Milestone 8.75b. WHOSE straight line <c>choose-line-destination@1</c> walks, when it is not
+        /// the acting hero's - the space the subject is standing on, bound from the node that named
+        /// them.
+        ///
+        /// <para><b>Why the declaration had to widen rather than a card compose around it.</b> Ignatia
+        /// the Mad's Searing Heat and Scorching Blaze print "Move a friendly/enemy hero in radius 2 (2
+        /// or 3) spaces <b>in a straight line</b>" - the only sentences in this build that put a
+        /// straight line under somebody ELSE'S feet. Every earlier consumer of this offer moves the
+        /// actor themselves (Swift's Bounce, Cutter's retreats, Misa's Blues, Silverarrow's travels,
+        /// Hanu's Flight), so the walk read <c>context.ActorId</c> and was right to. Composed on
+        /// <c>synthetic-direct-move@3</c> alone, her two faces offered p.11's whole reachability disk
+        /// and the corner-turning spaces with it, which is a clause the card prints and the offer did
+        /// not carry (<c>IgnatiaPushTests</c> measured ten offered against four on a file).</para>
+        ///
+        /// <para><b>It is this contract's business and not a new one.</b> This capability's whole
+        /// subject is "where a straight-line movement written in card text ends", and p.19's Straight
+        /// Line is one geometry whoever is walking it: the same six files, the same first-obstacle
+        /// stop, the same floor and ceiling. What the parameter changes is the anchor, exactly as
+        /// <see cref="ContinuedLineFromParameter"/> changes the heading and
+        /// <see cref="IgnoresObstaclesParameter"/> changes what stops it - a fourth optional narrowing
+        /// on the same discipline. A sibling capability would have been the identical walk with one
+        /// coordinate read from another field.</para>
+        ///
+        /// <para><b>Unbound is the actor, so nothing composed before this milestone moves.</b> An
+        /// unbound optional Coordinate arrives as no value at all, and the walk then asks where the
+        /// acting hero is standing, which is what it always did. A bound space with no piece standing
+        /// on it offers nothing rather than falling back to the actor - the subject is a referent the
+        /// binding names, and reading its absence as "the actor" would silently move the wrong hero.
+        /// </para>
+        /// </summary>
+        public const string LineSubjectSpaceParameter = "subjectSpace";
 
         /// <summary>
         /// The hero a <c>retrieve-card@1</c> node actually retrieved for, published only on success -
@@ -1480,6 +1512,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         // by the Attack rather than chosen again.
                         new EffectCapabilityParameter(
                             ContinuedLineFromParameter, EffectValueKind.Coordinate,
+                            isRequired: false),
+
+                        // Milestone 8.75b. Whose line this is, when it is not the actor's - see
+                        // LineSubjectSpaceParameter for why Ignatia's two pushes needed the anchor
+                        // rather than a second capability.
+                        new EffectCapabilityParameter(
+                            LineSubjectSpaceParameter, EffectValueKind.Coordinate,
                             isRequired: false)
                     },
                     new[]
@@ -1550,31 +1589,57 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var continuesFrom = context.Inputs.ContainsKey(ContinuedLineFromParameter)
                     ? context.Input(ContinuedLineFromParameter).Coordinate
                     : (HexCoordinate?)null;
-                if (board == null || maximum < 1 || minimum > maximum ||
-                    !board.TryGetObjectCoordinate(
-                        BoardObjectReference.ForHero(context.ActorId), out var actorAt))
+
+                // Milestone 8.75b. Whose feet the line runs from. An unbound anchor is the acting
+                // hero - every consumer written before Ignatia - and a bound one names the piece
+                // standing on that space, which is the hero her two pushes are moving. A bound space
+                // with nothing on it names a referent that is not there and keeps nothing.
+                var subjectSpaceInput = context.Input(LineSubjectSpaceParameter);
+                var subjectSpace = subjectSpaceInput.Kind == EffectValueKind.Coordinate
+                    ? subjectSpaceInput.Coordinate
+                    : (HexCoordinate?)null;
+                if (board == null || maximum < 1 || minimum > maximum)
                 {
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var actor = BoardObjectReference.ForHero(context.ActorId);
+                BoardObjectReference mover;
+                HexCoordinate moverAt;
+                if (subjectSpace.HasValue)
+                {
+                    if (!board.TryGetObjectAt(subjectSpace.Value, out mover) || !mover.IsDefined)
+                    {
+                        return Array.Empty<HexCoordinate>();
+                    }
+
+                    moverAt = subjectSpace.Value;
+                }
+                else
+                {
+                    mover = BoardObjectReference.ForHero(context.ActorId);
+                    if (!board.TryGetObjectCoordinate(mover, out moverAt))
+                    {
+                        return Array.Empty<HexCoordinate>();
+                    }
+                }
+
                 var found = new List<HexCoordinate>();
                 foreach (var route in board.FindDirectMoveDestinations(
-                    actor, maximum, context.Modifications, moveIgnoresObstacles: crosses))
+                    mover, maximum, context.Modifications, moveIgnoresObstacles: crosses))
                 {
                     if (route.Cost < minimum || route.Cost > maximum ||
                         !StraightLineQuery.TryGetDirection(
-                            actorAt, route.Destination, out var direction, out var distance) ||
-                        distance != route.Cost || !IsStraightRoute(actorAt, direction, route.Route))
+                            moverAt, route.Destination, out var direction, out var distance) ||
+                        distance != route.Cost || !IsStraightRoute(moverAt, direction, route.Route))
                     {
                         continue;
                     }
 
                     // The narrowing is applied to the walked route rather than to the six headings,
                     // so a retreat still stops at the first thing p.19 stops it at - and a bound
-                    // space the actor is standing on names no heading and keeps nothing.
+                    // space the mover is standing on names no heading and keeps nothing.
                     if (continuesFrom.HasValue && !ContinuedLineQuery.ContinuesTheLine(
-                            continuesFrom.Value, actorAt, route.Destination))
+                            continuesFrom.Value, moverAt, route.Destination))
                     {
                         continue;
                     }

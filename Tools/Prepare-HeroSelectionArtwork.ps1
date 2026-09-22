@@ -66,6 +66,21 @@ $sources = [ordered]@{
     # extraction's own naming and not by a reading of the picture. It is the front the three stars
     # and the Tactician/Sniper/Pusher icons were read off for his roster row.
     hanu = 'randomizers-tt10__7723692__front.png'
+    # Milestone 8.75b prep. SHA-256 matched rather than eyeballed, on the measurement Cutter's,
+    # Bain's, Rowenna's, Min's, Brynn's and Hanu's lines above record: this front is byte-identical
+    # to the corpus's own `active-hero-cards/_selection-cards/Ignatia__front.png`
+    # (1D4C0B4B694F19A79101EA19E7F28C2B7DB6E02BD935BDCFF3363F54C699FC57), so the face is hers by the
+    # extraction's own naming and not by a reading of the picture. It is the front the FOUR stars -
+    # the first four-star hero this build prepares - and the Sniper/Damager/Tokens/Tactician/Pusher
+    # icons were read off for her roster row.
+    #
+    # THIS ROW LANDS BEFORE HER ROSTER ROW DOES, which is a first for this file: her artwork is
+    # prepared by its own block ahead of the dealing. Until that dealing,
+    # `ConfiguredCardArtworkCatalogTests
+    # .EveryHeroTheSelectorOffers_HasAPreparedHoverFrontUnderTheKeyTheRuntimeComposes` reports this
+    # row as one declared hero the selector does not offer, which is the guard working rather than
+    # failing.
+    ignatia = 'randomizers-tt12__7729913__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

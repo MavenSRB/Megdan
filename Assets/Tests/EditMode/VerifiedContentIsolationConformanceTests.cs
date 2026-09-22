@@ -101,6 +101,16 @@ namespace GuardsDigital.Tests.EditMode
             // does one thing no earlier showcase card did, and it still needs no new permission: it
             // declares an Active-effect definition and a triggered body of the SHOWCASE's own, whose
             // only reference to his content is the capability the body's single node names.
+            //
+            // Milestone 8.75b names no new site either. Ignatia the Mad's SIX new handler types are
+            // declared across four of her own content files - `IgnatiaComponentContent`,
+            // `IgnatiaAttackTargetingContent`, `IgnatiaDiscardTargetingContent` and
+            // `IgnatiaMagmaContent` - which is the widest spread any dealing has had, and the
+            // permission granted to `SyntheticShowcaseHand` above covers all five showcase cards that
+            // name them for exactly the reason it was granted to the TYPE. Her `PlacedTokenArtwork`
+            // caption and `PlacedTokenView` are not on this list and do not belong on it: a token
+            // definition ID is a COMPONENT identity rather than verified hero content, which is why
+            // Min's five faces needed no entry either.
         };
 
         /// <summary>

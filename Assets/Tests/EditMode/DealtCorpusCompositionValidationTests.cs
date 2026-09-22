@@ -138,25 +138,21 @@ namespace GuardsDigital.Tests.EditMode
                     // reach this case through no concat at all, because nothing here resolves one.
                     .Concat(HanuComponentContent.DeferredHandlers())
 
-                    // Milestone 8.75a widens it again, for the TWENTY-SECOND hero and for exactly
-                    // the reason every line above it was added. Ignatia the Mad's printed set went
-                    // into `DealtDefinitions` at the 8.75 inventory commit - which never ran this
-                    // suite - while milestone 7.9's gate holds her contracts out of the registration
-                    // list until 8.75b deals her. Validating her against the registered list alone
-                    // reports seventeen of her eighteen playable faces as naming unregistered
-                    // capabilities and says NOTHING about the parameter and output names this case
-                    // exists to check, which is what 8.57f's precedent settled.
+                    // Milestone 8.75a widened it for the TWENTY-SECOND hero while milestone 7.9's
+                    // gate still held her contracts out of the registration list: her printed set
+                    // went into `DealtDefinitions` at the 8.75 inventory commit, and validating her
+                    // against the registered list alone reported seventeen of her eighteen playable
+                    // faces as naming unregistered capabilities.
                     //
-                    // Hers arrive through FOUR entry points rather than one, because her content is
-                    // sharded by mechanism: the coin predicate, Equilibrium's marker and 8.75a's
-                    // flip in `IgnatiaComponentContent`, her four card-text attack subjects in
-                    // `IgnatiaAttackTargetingContent`, her two discard subjects in
-                    // `IgnatiaDiscardTargetingContent`, and the two magma placements in
-                    // `IgnatiaMagmaContent`.
-                    .Concat(IgnatiaComponentContent.DeferredHandlers())
-                    .Concat(IgnatiaAttackTargetingContent.Handlers())
-                    .Concat(IgnatiaDiscardTargetingContent.Handlers())
-                    .Concat(IgnatiaMagmaContent.Handlers())
+                    // MILESTONE 8.75b DEALT HER, so all eleven arrive through the registered catalog
+                    // above and this concat is discharged - the shape the ten lines before it keep
+                    // for the same reason. It still names her own entry point rather than nothing,
+                    // because her four content shards gather into ONE list
+                    // (`IgnatiaComponentContent.RegisteredHandlers`) and that is the list the
+                    // registration itself concatenates: a line that named the four separately could
+                    // drift from what the build actually registers, which is precisely what this case
+                    // exists to refuse.
+                    .Concat(IgnatiaComponentContent.RegisteredHandlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();

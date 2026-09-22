@@ -54,7 +54,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('tali', 'widget', 'min')]
+    [ValidateSet('tali', 'widget', 'min', 'ignatia')]
     [string] $Hero = 'tali',
     [switch] $Check,
     [switch] $Force
@@ -170,6 +170,157 @@ if ($Hero -eq 'min') {
         $sprites = @($atlas.sprites)
         if ($sprites.Count -lt ($token.Sprite + 1)) {
             throw "Element $($token.Element) declares $($sprites.Count) sprites; index $($token.Sprite) was expected."
+        }
+
+        $rect = $sprites[$token.Sprite]
+        if ([int] $rect.x -ne $token.X -or [int] $rect.y -ne $token.Y) {
+            throw ("Element $($token.Element) sprite $($token.Sprite) is at ($($rect.x),$($rect.y)), " +
+                "not the measured ($($token.X),$($token.Y)). Nothing was written.")
+        }
+
+        $atlasIndexMatch = [regex]::Match($atlas.resource.id, '^Image_(?<index>\d+)_Atlas$')
+        if (-not $atlasIndexMatch.Success) {
+            throw "The declared atlas resource id '$($atlas.resource.id)' is not in the expected form."
+        }
+
+        $atlasIndex = $atlasIndexMatch.Groups['index'].Value
+        $candidates = @(Get-ChildItem -LiteralPath $corpusRoot -Filter "*.sprite$atlasIndex`__*.jpg" -File)
+        if ($candidates.Count -ne 1) {
+            throw "Expected exactly one extracted image for atlas '$($atlas.resource.id)'; found $($candidates.Count)."
+        }
+
+        $x = [int] $rect.x
+        $y = [int] $rect.y
+        $w = [int] $rect.width
+        $h = [int] $rect.height
+        $target = [System.IO.Path]::Combine($targetRoot, "$($token.TokenId).png")
+        if ((Test-Path -LiteralPath $target) -and -not $Force) {
+            $existing = [System.Drawing.Image]::FromFile($target)
+            try { $same = $existing.Width -eq $w -and $existing.Height -eq $h }
+            finally { $existing.Dispose() }
+            if ($same) {
+                $matched++
+                Write-Output "OK: $($token.Label) already prepared at ${w}x${h}: $target"
+                continue
+            }
+        }
+
+        if ($Check) { throw "Missing or stale prepared token face: $target" }
+
+        $source = [System.Drawing.Image]::FromFile($candidates[0].FullName)
+        try {
+            if ($source.Width -ne [int] $atlas.width -or $source.Height -ne [int] $atlas.height) {
+                throw ("Atlas '$($candidates[0].Name)' is $($source.Width)x$($source.Height), but the " +
+                    "manifest declares $($atlas.width)x$($atlas.height). Nothing was written.")
+            }
+
+            if ($x -lt 0 -or $y -lt 0 -or ($x + $w) -gt $source.Width -or ($y + $h) -gt $source.Height) {
+                throw 'A declared face rectangle falls outside the atlas. Nothing was written.'
+            }
+
+            $bitmap = New-Object System.Drawing.Bitmap $w, $h
+            try {
+                $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+                try {
+                    $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::Half
+                    $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
+                    $graphics.DrawImage(
+                        $source,
+                        (New-Object System.Drawing.Rectangle 0, 0, $w, $h),
+                        (New-Object System.Drawing.Rectangle $x, $y, $w, $h),
+                        [System.Drawing.GraphicsUnit]::Pixel)
+                } finally { $graphics.Dispose() }
+
+                $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+                $written++
+                Write-Output "WROTE: $($token.Label) -> $target (${w}x${h}, from ($x,$y) of $($atlas.resource.id))."
+            } finally { $bitmap.Dispose() }
+        } finally { $source.Dispose() }
+    }
+
+    Write-Output ("Prepared token faces: $written written, $matched already present. The source atlas " +
+        'and the extracted corpus were read only. The written resources are ignored by Git and are ' +
+        'never distributed.')
+    exit 0
+}
+
+# -------------------------------------------------------------------------------------------------
+# Milestone 8.75b prep. Ignatia the Mad's ONE prepared face, in its own arm for the reason Min's is:
+# her piece is not a family. She prints exactly one token, `ignatia-magma`, and the corpus draws it
+# with exactly one picture.
+#
+# WHAT THE ELEMENT IS, read from the manifest and LOOKED AT rather than inferred from its name:
+# `Magma` 1401024 (publicElementId 737031, `"elementType":"Tokens"`), `Image_3_Atlas` 4096x4096, and
+# it declares THREE rectangles like every other token element - but its first TWO are the SAME
+# rectangle, (2250,562,413x357), and only the third (2665,562,10x357) is the thin edge strip. So this
+# piece is SINGLE-SIDED: both printed faces are one picture, where Tali's family is one piece with
+# two different faces and Min's mines are two pieces sharing a back. The assertion below states that
+# outright, so a corpus that starts drawing a second magma face stops here rather than having its
+# back silently written as its front.
+#
+# THE PICTURE IS THE RULE. It is a lava hex - molten red with yellow cracks - overprinted with a
+# white crossed-circle "no entry" sign, which is the corpus itself drawing ID-Q1's settled reading:
+# "All tokens are obstacles... unless specified units cannot enter them". Nothing about that reading
+# is taken FROM the picture - `IgnatiaMagmaContent` derives it from p.19 and the printed faces - but
+# it is worth recording that the two agree, because a magma token rendered as an unlabelled grey disc
+# would have hidden the one property that makes her Green line playable.
+#
+# Her piece is NOT 413x357 by accident either: Min's hexes are 320x278-ish and Tali's are their own
+# size again, so nothing here assumes a square or a shared token footprint. The width and height are
+# read from the manifest and only the ORIGIN is asserted, exactly as Min's arm does it.
+# -------------------------------------------------------------------------------------------------
+if ($Hero -eq 'ignatia') {
+    $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $corpusRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
+    $targetRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
+
+    if (-not (Test-Path -LiteralPath $corpusRoot -PathType Container)) {
+        Write-Output "The private Tabletopia corpus is absent: $corpusRoot. Nothing was written."
+        exit 0
+    }
+
+    $manifests = @(Get-ChildItem -LiteralPath $corpusRoot -Filter 'manifest-bundled__*.json' -File)
+    if ($manifests.Count -ne 1) {
+        throw "Expected exactly one bundled manifest under $corpusRoot; found $($manifests.Count)."
+    }
+
+    $manifest = Get-Content -Raw -LiteralPath $manifests[0].FullName | ConvertFrom-Json
+
+    $ignatiaTokens = @(
+        @{ Element = 1401024; Sprite = 0; X = 2250; Y = 562; TokenId = 'ignatia-magma'; Label = 'Magma' }
+    )
+
+    Add-Type -AssemblyName System.Drawing
+    if (-not $Check) { New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null }
+
+    $written = 0
+    $matched = 0
+    foreach ($token in $ignatiaTokens) {
+        $found = @($manifest | Where-Object { $_.elementId -eq $token.Element })
+        if ($found.Count -ne 1) {
+            throw "The manifest holds $($found.Count) elements with id $($token.Element); one was expected."
+        }
+
+        $element = $found[0]
+        if ($element.elementType -ne 'Tokens') {
+            throw "Element $($token.Element) is '$($element.elementType)', not 'Tokens'. Nothing was written."
+        }
+
+        $atlas = $element.atlases[0]
+        $sprites = @($atlas.sprites)
+        if ($sprites.Count -ne 3) {
+            throw ("Element $($token.Element) declares $($sprites.Count) sprites; three were " +
+                'expected (front, back, edge strip). Nothing was written.')
+        }
+
+        # The single-sided claim, proved rather than assumed: see the note above this arm.
+        if ([int] $sprites[0].x -ne [int] $sprites[1].x -or
+            [int] $sprites[0].y -ne [int] $sprites[1].y) {
+            throw ("Element $($token.Element) declares two DIFFERENT printed faces at " +
+                "($($sprites[0].x),$($sprites[0].y)) and ($($sprites[1].x),$($sprites[1].y)), so it " +
+                'is not the single-sided piece this mapping depends on. Nothing was written.')
         }
 
         $rect = $sprites[$token.Sprite]

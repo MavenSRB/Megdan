@@ -410,6 +410,14 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string HanuHeroIdValue = "hero-hanu";
 
+        /// <summary>
+        /// Milestone 8.75b. Ignatia's own hero id - the TWENTY-SECOND hero, on the 2026-09-22 user
+        /// direction that opened her by name ("implement Ignatia") and ordered the finish without
+        /// pauses ("keep going and dont stop until you need something from me, or when the hero is
+        /// done up to standard").
+        /// </summary>
+        public const string IgnatiaHeroIdValue = "hero-ignatia";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -509,7 +517,27 @@ namespace GuardsDigital.Core.Setup
                 // rows could not say. `HeroSelectionStageTests` pins both facts and
                 // `PrivateLobbyPlayModeTests` drives the star and role filters over his button.
                 (HanuHeroIdValue, "hanu", "Hanu the Trickster", HeroComplexity.VeryComplex,
-                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher)
+                    HeroRole.Tactician | HeroRole.Sniper | HeroRole.Pusher),
+                // Milestone 8.75b deals her and makes her pickable in the same commit, which is what
+                // the rule above asks for. She is the TWENTY-SECOND, and the FIRST FOUR-STAR hero
+                // this build has ever offered: p.21's top complexity band, `HeroComplexity.Wizard`,
+                // which twenty-one dealings left unused because no dealt hero printed four filled
+                // stars. The picker's star filter has always drawn four buttons; this row is the
+                // first thing that can be found behind the fourth.
+                //
+                // Her profile facts are read off the extracted selection front rather than guessed -
+                // `active-hero-cards/_selection-cards/` and the dashboard, inspected at the 8.75
+                // inventory pass and again by the artwork block: FOUR filled stars and the five role
+                // icons SNIPER, DAMAGER and TOKENS on the top row with TACTICIAN and PUSHER below, in
+                // that printed order. FIVE roles is also a first; no hero before her printed more
+                // than three, which is why the filter case her dealing owes drives five of them.
+                // The dashboard names her "Ignatia the Mad" where the selection card says only
+                // "Ignatia", and the dashboard is the authority every row here uses.
+                // `HeroSelectionStageTests` pins both facts and `PrivateLobbyPlayModeTests` drives
+                // the star and role filters over her button.
+                (IgnatiaHeroIdValue, "ignatia", "Ignatia the Mad", HeroComplexity.Wizard,
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Tokens | HeroRole.Tactician |
+                        HeroRole.Pusher)
             };
 
         /// <summary>
@@ -816,6 +844,67 @@ namespace GuardsDigital.Core.Setup
         {
             var mapId = new MapId("official-single-lane");
             var ordinary = CreateOneVsOne(new HeroContentId("hanu"), "Hanu");
+            return new QuickGameSetupConfiguration(
+                ordinary.RequiredMap,
+                ordinary.WaveCount,
+                ordinary.LifeCountPerTeam,
+                ordinary.Heroes.Concat(new[]
+                {
+                    new QuickGameHeroPlacementDefinition(
+                        new HeroId(StagedBoardParticipants.BlueAllyHeroIdValue),
+                        new HeroContentId("arien"),
+                        "Arien",
+                        new ConfiguredSpawnPointReference(mapId, new SpawnPointId("blue-hero-02")),
+                        new ConfiguredSpaceReference(mapId, new SpaceId("q-1_r10")))
+                }),
+                ordinary.Minions);
+        }
+
+        /// <summary>
+        /// Milestone 8.75b. The same board with Ignatia the Mad on the Blue seat, for the fixtures
+        /// whose subject is her printed set. The TWENTY-SECOND hero.
+        ///
+        /// <para>Written in the SAME change as her eight <c>SceneCardContent</c> members and her four
+        /// <c>MatchConfiguration</c> stagings, which is the whole of what milestone 8.38f's repair
+        /// teaches: without this arm every staged scene of hers falls through
+        /// <c>SelectSetupConfiguration</c>'s default to Arien's setup, and the hand factory - which
+        /// takes an owner id rather than naming a hero - then deals HER cards to a seat whose content
+        /// identity is <c>arien</c>. No offline tier can see that; only a loaded scene composes.</para>
+        ///
+        /// <para><b>She ALSO needs an ally board, and this is not it.</b> Two of her faces name a
+        /// FRIENDLY hero with herself excluded - Searing Heat's and Scorching Blaze's sun lines, "Move
+        /// a friendly hero in radius 2 (2 or 3) spaces in a straight line", and Unstable Portal's and
+        /// Chaos Gate's sun lines swap with a friendly UNIT, which p.17's Friendly lets the melee
+        /// minion satisfy - so <see cref="CreateStagedWaspVersusIgnatiaWithAllyOneVsTwo"/> is the
+        /// smallest board on which either push's sun arm has a candidate at all. Every other face of
+        /// hers lives here: all seven attacks under both coin faces, the whole discard line, both
+        /// swaps' moon arms and all three magma Paths.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusIgnatiaOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("ignatia"), "Ignatia");
+
+        /// <summary>
+        /// Milestone 8.75b. Wasp on Red against Ignatia and Arien on Blue - the shape
+        /// <see cref="CreateStagedWaspVersusHanuWithAllyOneVsTwo"/> and
+        /// <see cref="CreateStagedWaspVersusRowennaWithAllyOneVsTwo"/> already prove, with Ignatia in
+        /// the seat under test and an ally beside her.
+        ///
+        /// <para>Searing Heat and Scorching Blaze print "Move a friendly hero in radius ..." on their
+        /// SUN faces and the composed selection excludes her own seat (p.17: "Friendly" never includes
+        /// you), so this is the smallest board on which either sun arm has a candidate - and therefore
+        /// the only one on which a straight-line push under somebody else's feet can be raised at
+        /// all.</para>
+        ///
+        /// <para>Arien holds the ally seat at <c>blue-hero-02</c>, for the identical reason Brogan's,
+        /// Tali's, Rowenna's and Hanu's ally configurations give it to him: he is a hero this build
+        /// already deals, so a fixture proves the selection against real content rather than inventing
+        /// a printed set. The spawn is two spaces from the first, which is inside the Radius 3 Searing
+        /// Heat prints and inside the Radius 4 Unstable Portal and Chaos Gate print.</para>
+        /// </summary>
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusIgnatiaWithAllyOneVsTwo()
+        {
+            var mapId = new MapId("official-single-lane");
+            var ordinary = CreateOneVsOne(new HeroContentId("ignatia"), "Ignatia");
             return new QuickGameSetupConfiguration(
                 ordinary.RequiredMap,
                 ordinary.WaveCount,

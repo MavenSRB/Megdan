@@ -113,6 +113,52 @@ namespace GuardsDigital.Core.Cards.Verified
             AllDefinitions.FirstOrDefault(d => d.Id.Equals(id)) ??
             throw new ArgumentException($"Ignatia prints no card '{id}'.", nameof(id));
 
+        /// <summary>
+        /// Milestone 8.75b. One seat's dealt cards - p.6's five in hand and the thirteen its deck
+        /// keeps - with stable per-seat instance identities, exactly as the twenty-one sets before
+        /// hers are built. The boxed Handicap is not among them: p.6 returns it to the box and p.20
+        /// brings it back only for an odd player count.
+        /// </summary>
+        public static IReadOnlyList<CardInstance> CreateDealtCards(
+            HeroId ownerId, string instanceIdPrefix)
+        {
+            if (!ownerId.IsDefined)
+            {
+                throw new ArgumentException("Ignatia's cards require a defined owner.", nameof(ownerId));
+            }
+
+            if (string.IsNullOrWhiteSpace(instanceIdPrefix))
+            {
+                throw new ArgumentException(
+                    "Card instance identities are stable and per-seat, so the caller names the prefix " +
+                    "that distinguishes one seat's cards from another's.",
+                    nameof(instanceIdPrefix));
+            }
+
+            return Array.AsReadOnly(DealtDefinitions
+                .Select(definition =>
+                {
+                    var instanceId = new CardInstanceId($"{instanceIdPrefix}-{definition.Id.Value}");
+                    return StartingHand.Contains(definition.Id)
+                        ? CardInstance.CreateInHand(instanceId, definition.Reference, ownerId)
+                        : CardInstance.CreateInDeck(instanceId, definition.Reference, ownerId);
+                })
+                .ToArray());
+        }
+
+        /// <summary>
+        /// One seat's whole setup as a hand a configured match can be composed from: p.6's five in
+        /// hand, the thirteen its deck keeps, and the eighteen definitions both draw on.
+        /// </summary>
+        public static ConfiguredHand CreateHand(HeroId ownerId, string instanceIdPrefix)
+        {
+            var cards = CreateDealtCards(ownerId, instanceIdPrefix);
+            return new ConfiguredHand(
+                DealtDefinitions,
+                cards.Where(card => StartingHand.Contains(card.DefinitionReference.DefinitionId)),
+                cards.Where(card => !StartingHand.Contains(card.DefinitionReference.DefinitionId)));
+        }
+
         private static CardDefinitionId Id(string cardId) =>
             new CardDefinitionId($"{ContentSetId}-{cardId}");
 

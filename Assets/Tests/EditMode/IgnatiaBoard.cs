@@ -114,10 +114,7 @@ namespace GuardsDigital.Tests.EditMode
         /// </summary>
         internal static EffectCapabilityCatalog Capabilities() =>
             SyntheticEffectCapabilities.CreateCatalog(
-                IgnatiaComponentContent.DeferredHandlers()
-                    .Concat(IgnatiaAttackTargetingContent.Handlers())
-                    .Concat(IgnatiaDiscardTargetingContent.Handlers())
-                    .Concat(IgnatiaMagmaContent.Handlers()));
+                IgnatiaComponentContent.RegisteredHandlers());
 
         /// <summary>Her one token definition - the magma supply of three, and nothing else.</summary>
         internal static ComponentDefinitionCatalog Components() =>

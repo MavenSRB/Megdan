@@ -42,9 +42,9 @@ namespace GuardsDigital.Tests.EditMode
         {
             var brynn = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == BrynnCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(21),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(22),
                 "He was the twentieth hero this build could put on a board; milestone 8.71h deals " +
-                "Hanu as the twenty-first.");
+                "Hanu as the twenty-first and 8.75b Ignatia as the twenty-second.");
             Assert.That(brynn.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.BrynnHeroIdValue));
             Assert.That(brynn.DisplayName, Is.EqualTo("Brynn the Seeker"),
                 "Setup step 7's own name, which is a label on the seat rather than an identity - and " +
@@ -479,8 +479,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(dealt, Has.Member(BrynnCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(21));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(21),
+            Assert.That(dealt, Has.Count.EqualTo(22));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(22),
                 "and no two rows name one printed set.");
         }
 

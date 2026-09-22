@@ -355,7 +355,29 @@ namespace GuardsDigital.Tests.EditMode
             // build already had - the modal Attack, the printed-Radius and printed-Range selections,
             // the swap, the coupled move, the direct move and the straight line - and this rule
             // counts TYPES.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(97),
+            // Milestone 8.75b, the TWENTY-SECOND dealing, moves it 97 -> 103. Ignatia the Mad
+            // registers ELEVEN capability ids of which exactly SIX are new handler TYPES, which is
+            // the widest gap between the two counts any dealing has opened - and the reason is the
+            // one mechanism her whole set is built on rather than a new kind of exception.
+            // `CoinSunHandler` (8.75) reads the live Tie Breaker face and publishes one boolean, and
+            // every one of her eighteen dealt bodies is a single `Conditional` over it;
+            // `FlipTieBreakerHandler` (8.75a) asks the authority holding the coin to turn it over;
+            // `IgnatiaRangeAttackTargetHandler` (8.75) carries FOUR of the eleven ids on its own, on
+            // the "one implementation, many declarations" shape `PrintedIconTargetHandler` has had
+            // since 8.19b, which is exactly why eleven ids cost six types;
+            // `EnemyHeroAdjacentToMagmaOrMinionHandler` and
+            // `EnemyMinionAdjacentToEnemyHeroHandler` (8.75) are her Blue line's two subjects; and
+            // `PlaceMagmaWakeHandler` (8.75) drops a token in every empty space a straight-line Move
+            // passed through or left. Each took a showcase consumer in this same change - the Red
+            // Coinreader, the Red Coinflipper, the Red Longshot, the Red Inquisitor and the Red
+            // Trailblazer, five cards for six types because one printed face carries two of them.
+            // Her other two registrations move no type: Equilibrium's marker runs on
+            // `ActiveEffectCreationHandler` (Arien, 6.8) and her radius Place on `PlaceHandler`
+            // (6.6). Everything else her eighteen faces name runs on types this build already had -
+            // the adjacent roster reach, the printed-Range hero arm, the attack-target binding, both
+            // discards, the Defeats, the Remove, the Swap, the straight line and the direct Move -
+            // and this rule counts TYPES.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(103),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

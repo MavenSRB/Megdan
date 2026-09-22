@@ -368,7 +368,7 @@ namespace GuardsDigital.Tests.EditMode
                 "A ControllerHero-scoped occurrence names no affected hero at all - which is exactly " +
                 "why the predicate reads the controller.");
 
-            var handler = IgnatiaComponentContent.DeferredHandlers()
+            var handler = IgnatiaComponentContent.RegisteredHandlers()
                 .Single(candidate => candidate.Reference.Equals(IgnatiaComponentContent.CoinSunV1));
 
             Assert.That(
@@ -389,7 +389,7 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void ThePredicatePublishesOneBoolean_AndAsksNobodyWithoutTheMarker()
         {
-            var handler = IgnatiaComponentContent.DeferredHandlers()
+            var handler = IgnatiaComponentContent.RegisteredHandlers()
                 .Single(candidate => candidate.Reference.Equals(IgnatiaComponentContent.CoinSunV1));
 
             Assert.That(handler.Schema.Parameters, Is.Empty,

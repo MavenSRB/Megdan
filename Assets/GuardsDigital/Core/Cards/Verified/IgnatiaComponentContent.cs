@@ -110,20 +110,26 @@ namespace GuardsDigital.Core.Cards.Verified
                 Array.Empty<TimingCheckpoint>());
 
         /// <summary>
-        /// Empty until the dealing block. The gate keeps every Ignatia declaration out of the
-        /// registered-capability list that snapshots pin.
+        /// Milestone 8.75b, the milestone that DEALS her: the gate is flipped and her whole
+        /// contribution is registered. ELEVEN handlers behind SIX new types, gathered from the four
+        /// files that compose them so this build's one capability catalog has a single Ignatia entry
+        /// point and <c>DealtCorpusCompositionValidationTests</c> has a single list to hold it
+        /// against.
+        ///
+        /// <para>Nothing is dropped and nothing is left behind: every one of the eleven is named by a
+        /// composed sentence of hers, which is what milestone 7.9's gate asks of a registration and
+        /// what Min's dealing had to drop two contracts to be able to say.</para>
         /// </summary>
         public static IEnumerable<IEffectCapabilityHandler> RegisteredHandlers() =>
-            Array.Empty<IEffectCapabilityHandler>();
-
-        /// <summary>The real handlers, carried here until the dealing block registers them.</summary>
-        public static IEnumerable<IEffectCapabilityHandler> DeferredHandlers() =>
             new IEffectCapabilityHandler[]
             {
                 new CoinSunHandler(),
                 new ActiveEffectCreationHandler(EquilibriumV1, FreeCoinChoiceDefinition),
                 new FlipTieBreakerHandler()
-            };
+            }
+            .Concat(IgnatiaAttackTargetingContent.Handlers())
+            .Concat(IgnatiaDiscardTargetingContent.Handlers())
+            .Concat(IgnatiaMagmaContent.Handlers());
 
         // -----------------------------------------------------------------------------------------
         // Chaos Incarnate (Purple Ultimate): "The first time each turn after you perform a primary
@@ -175,25 +181,44 @@ namespace GuardsDigital.Core.Cards.Verified
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
 
-            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
-                context == null
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                var flip = OwedFlip(context);
+                return flip == null
                     ? EffectExecutionResult.ImpossibleMandatory()
-                    : EffectExecutionResult.Applied(new[]
-                    {
-                        new EffectOutcomeFact(
-                            GuardsDigital.Core.Rules.EffectResolution.TieBreakerFlipQuery
-                                .FlippedOutput,
-                            EffectValue.Boolean(true))
-                    });
+                    : EffectExecutionResult.Applied(flip);
+            }
 
             public EffectExecutionResult Resume(
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
                 EffectExecutionResult.ImpossibleMandatory();
 
             public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
-                context == null
+                OwedFlip(context) == null
                     ? EffectExecutionResultKind.ImpossibleMandatory
                     : EffectExecutionResultKind.Applied;
+
+            /// <summary>
+            /// The one fact this capability publishes, or nothing where it cannot run at all.
+            ///
+            /// <para><b>It is one routine because the probe and the execution have to answer from one
+            /// derivation</b> - <c>CapabilityFeasibilityConformanceTests</c>'s first rule, which this
+            /// handler broke the moment it was registered: the offer said "this applies" from a bare
+            /// constant while the execution said it from a built outcome, and two derivations of one
+            /// rule can come to disagree. There is nothing to derive that is interesting - p.5 gives
+            /// the coin two faces and a match always has one showing, so a flip is a step that can
+            /// always be taken - and saying that once is the whole point.</para>
+            /// </summary>
+            private static EffectOutcomeFact[] OwedFlip(EffectCapabilityContext context) =>
+                context == null
+                    ? null
+                    : new[]
+                    {
+                        new EffectOutcomeFact(
+                            GuardsDigital.Core.Rules.EffectResolution.TieBreakerFlipQuery
+                                .FlippedOutput,
+                            EffectValue.Boolean(true))
+                    };
         }
 
         /// <summary>
@@ -225,8 +250,27 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <summary>
         /// A pure predicate over the match's own Tie Breaker state: it mutates nothing, asks nobody, and
         /// publishes one boolean - whether the live coin face is her sun.
+        ///
+        /// <para><b>Milestone 8.75b declares the anticipated outcome, and the offer was wrong without
+        /// it.</b> Every one of her attacks binds its target through card text, so
+        /// <c>EffectOptionFeasibilityQuery.WalkToAttackTargetBinding</c> decides whether the Attack is
+        /// offerable by walking her body to its <c>set-attack-target@1</c>. That walk can take the ONE
+        /// live branch of a <see cref="EffectNodeKind.Conditional"/> only when the predicate says out
+        /// loud that it publishes without applying; otherwise it walks BOTH arms and answers "bound"
+        /// if either could find somebody. Chaos Bolt was therefore offered under the sun whenever a
+        /// hero stood in range - the MOON text's target set - which is 8.35z15's rule read backwards:
+        /// an offer is greyed exactly when the text that will actually run names nobody, and the text
+        /// that will actually run is the one the coin is showing.</para>
+        ///
+        /// <para><b>Under Equilibrium it deliberately stays undecidable.</b>
+        /// <see cref="Anticipate"/> answers <see cref="EffectExecutionResultKind.NeedsChoice"/> while
+        /// the marker stands, the walk's own guard admits only
+        /// <see cref="EffectExecutionResultKind.Applied"/>, and both arms are walked again - which is
+        /// the honest answer, because the actor has not yet said which face they are applying and
+        /// either one is theirs to take.</para>
         /// </summary>
-        private sealed class CoinSunHandler : IEffectCapabilityHandler
+        private sealed class CoinSunHandler
+            : IEffectCapabilityHandler, IEffectAnticipatedOutcomeCapabilityHandler
         {
             public EffectCapabilityReference Reference => CoinSunV1;
 
@@ -315,6 +359,37 @@ namespace GuardsDigital.Core.Cards.Verified
                 return IsRevealed(context.TieBreakerRevealedSide)
                     ? EffectExecutionResultKind.Applied
                     : EffectExecutionResultKind.ImpossibleMandatory;
+            }
+
+            /// <summary>
+            /// True, and it is the whole claim this interface exists to let a predicate make: reading
+            /// which face a coin is showing changes no board, card, effect, component, supply, timing
+            /// or identity state. Nothing here mints and nothing here mutates.
+            /// </summary>
+            public bool PublishesWithoutApplying => true;
+
+            /// <summary>
+            /// The one fact <see cref="Execute"/> would publish, derived the same way it derives it -
+            /// off the live coin - so the branch the feasibility walk takes and the branch the
+            /// resolution takes cannot disagree. Nothing while the coin is unrevealed, and nothing
+            /// while Equilibrium's marker stands: the face has not been decided by anybody yet, and a
+            /// guessed one would grey the wrong half of her set.
+            /// </summary>
+            public IReadOnlyList<EffectOutcomeFact> AnticipateOutcomes(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> chosen)
+            {
+                if (context == null || ActorMayChooseTheFace(context) ||
+                    !IsRevealed(context.TieBreakerRevealedSide))
+                {
+                    return Array.Empty<EffectOutcomeFact>();
+                }
+
+                return new[]
+                {
+                    new EffectOutcomeFact(
+                        SunOutput,
+                        EffectValue.Boolean(RevealedFaceIsSun(context.TieBreakerRevealedSide)))
+                };
             }
         }
     }

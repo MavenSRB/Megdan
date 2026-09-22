@@ -217,6 +217,23 @@ namespace GuardsDigital.Core.Cards
                     // Ursafar's Unbound Fury shape - so there is no fourth entry, and no arm of this
                     // catalog has to learn what "you choose the next action" means.
                     HanuComponentContent.TriggeredEffects)
+                .Concat(
+                    // Milestone 8.75b, the milestone that deals Ignatia the Mad as the TWENTY-SECOND
+                    // hero. ONE: Chaos Incarnate's own body, which p.16's permanent ability names BY
+                    // REFERENCE and the owner walk resolves against this catalog - so an unregistered
+                    // one would be a definition the rule can name and the build cannot load. It is
+                    // the first triggered effect in this build whose first step changes AUTHORITATIVE
+                    // ROUND STATE before the step after it runs: it flips the Tie Breaker coin
+                    // (`ignatia-flip-tie-breaker@1`, milestone 8.75a) and then repeats the primary
+                    // action, so the repeat's own `Conditional` reads the OPPOSITE face and the
+                    // repeated performance is the card's other printed text.
+                    //
+                    // Nothing else of hers is here. Not one of her nineteen faces prints "This turn:",
+                    // "Next turn:" or "End of turn:" except Equilibrium's "This round:", and that one
+                    // is an `ActiveEffectCreationHandler` in the capability list below rather than a
+                    // triggered body - it runs no effect at all, it stands a flag the coin predicate
+                    // reads.
+                    IgnatiaEffectContent.TriggeredEffects(IgnatiaCardContent.ContentRevision))
                 .Concat(new[]
                 {
                     // Milestone 8.71h. What the Red Wayfarer's Hero-scoped end-of-turn effect runs -
@@ -411,6 +428,50 @@ namespace GuardsDigital.Core.Cards
                 // catalog, and his Ultimate is a permanent declaration rather than content - see the
                 // triggered-effect list above.
                 .Concat(HanuComponentContent.RegisteredHandlers())
+                // Milestone 8.75b, the milestone that deals Ignatia the Mad as the TWENTY-SECOND
+                // hero. ELEVEN handlers behind SIX new types, which is the widest gap between the two
+                // counts any dealing has opened - and the reason is that her set is built on ONE
+                // predicate every card branches on rather than on many small ones:
+                //
+                //   * `ignatia-coin-sun@1` (8.75) is that predicate. It reads the live Tie Breaker
+                //     face off `EffectCapabilityContext.TieBreakerRevealedSide` and publishes one
+                //     boolean, and every one of her eighteen dealt bodies is a single `Conditional`
+                //     over it - sun text then, moon text else. No dealt hero before her reads the coin
+                //     from inside an action at all.
+                //   * `ignatia-equilibrium@1` (8.75) is an `ActiveEffectCreationHandler` over the
+                //     round-scoped marker her Silver stands. It owes no showcase consumer - Arien's
+                //     five persistent texts proved that type at 6.8 - but the PREDICATE above does,
+                //     because while the marker stands the predicate stops reading the coin and asks
+                //     the actor which face to apply.
+                //   * `ignatia-flip-tie-breaker@1` (8.75a) turns the match's coin over from inside a
+                //     card action. It publishes `TieBreakerFlipQuery.FlippedOutput` rather than acting,
+                //     because a capability context carries no continuation and the coin is the round
+                //     authority's; the authority applies the flip before the next node runs, which is
+                //     the whole of why the Ultimate's repeat reads the opposite text.
+                //   * `ignatia-range-unit-in-straight-line@1`, `...-not-in-straight-line@1`,
+                //     `...-at-maximum-range@1` and `ignatia-range-hero-not-adjacent@1` (8.75) are her
+                //     four card-text ATTACK subjects, all on one handler type: the coin picks the
+                //     target SET on every attack she owns, so p.14 reaches step 1 with no target and
+                //     the body binds one through `set-attack-target@1` at
+                //     `CardTextTiming.BeforeTheAttack`.
+                //   * `ignatia-enemy-hero-adjacent-to-magma-or-minion@1` and
+                //     `ignatia-enemy-minion-adjacent-to-enemy-hero@1` (8.75) are the two subjects her
+                //     Blue discard line names, and neither is a narrowing of a shared selection: one
+                //     asks about a hero's neighbours being EITHER a token or a minion, the other about
+                //     a minion's neighbours being an enemy HERO.
+                //   * `ignatia-place-magma-in-radius@1` is milestone 8.37's shared `PlaceHandler` bound
+                //     to her magma definition - Min's mines' shape exactly, adding a registration and
+                //     no type - and `ignatia-place-magma-wake@1` is the one placement this build had no
+                //     form of: a token dropped in every empty space a straight-line Move passed through
+                //     or left.
+                //
+                // SIX of the eleven are new handler TYPES and each took a showcase consumer in this
+                // same change - the Red Coinreader, the Red Coinflipper, the Red Longshot, the Red
+                // Inquisitor and the Red Trailblazer - which is milestone 7.9's gate's second half.
+                // Her magma TOKEN definition joins the component catalog in the same edit, because the
+                // wake showcase places it and a showcase that named an unregistered definition would
+                // prove only the refusal.
+                .Concat(IgnatiaComponentContent.RegisteredHandlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

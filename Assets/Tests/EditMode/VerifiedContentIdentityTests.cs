@@ -247,7 +247,23 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: his staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees his eighteen rather than measuring him as zero.
-            new IdentityPin("hanu", "hanu-8-71g-rev-1", "5637931ca485749e4343a2672beffe73a630d67932e51ab483335c7a93fc42d4")
+            new IdentityPin("hanu", "hanu-8-71g-rev-1", "5637931ca485749e4343a2672beffe73a630d67932e51ab483335c7a93fc42d4"),
+            // Milestone 8.75b. THE TWENTY-SECOND PIN, on exactly the terms every pin from the seventh
+            // on arrived on: a pin is a claim about content a configured match loads, and milestones
+            // 8.75, 8.75a and the two 8.75b preparations composed Ignatia's nineteen faces without
+            // dealing her.
+            //
+            // SHE IS THE FIRST HERO WHOSE PIN COVERS A CARD WITH TWO PRINTED TEXTS. Every one of her
+            // eighteen dealt faces is one `Conditional` on `ignatia-coin-sun@1` with the sun subtree
+            // then and the moon subtree else, so the canonical string this walker builds carries BOTH
+            // halves of every card - which is exactly what a pin should carry, because both halves
+            // are printed and either one can run.
+            //
+            // MEASURED, not predicted, on a COMPLETE unfiltered run, with the twenty-one pins above
+            // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
+            // did not recur: her staged configuration went into EveryDealtDefinition below in this
+            // same change, so the walk sees her eighteen rather than measuring her as zero.
+            new IdentityPin("ignatia", "ignatia-8-75-rev-1", "166986e315339edf015beb4eb6286ada58420819ee8d89df97f02a7bc86d5300")
         };
 
         [Test]
@@ -414,6 +430,12 @@ namespace GuardsDigital.Tests.EditMode
                 // twenty-first, so the union covering every hero this build deals is kept true by
                 // this row rather than by the one above it.
                 .Concat(MatchConfiguration.CreateStagedHanuForInternalTest(TeamSide.Red)
+                    .CardDefinitions)
+                // Milestone 8.75b. Ignatia's staged configuration, on the same terms and added in the
+                // SAME change as her pin - which is what the two warnings above ask for. She is the
+                // twenty-second, so the union covering every hero this build deals is kept true by
+                // this row rather than by the one above it.
+                .Concat(MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Red)
                     .CardDefinitions)
                 .GroupBy(definition => definition.Id.Value, StringComparer.Ordinal)
                 .Select(group => group.First())

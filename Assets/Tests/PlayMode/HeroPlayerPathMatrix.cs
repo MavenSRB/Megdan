@@ -374,7 +374,68 @@ namespace GuardsDigital.Tests.PlayMode
         /// milestone 8.40k's reveal: that one proves the other seats LEARN something, and this one
         /// proves they DO NOT.</para>
         /// </summary>
-        FacedownTokenReading
+        FacedownTokenReading,
+
+        /// <summary>
+        /// Milestone 8.75b. WHICH of a card's two printed texts is live, read off the card itself -
+        /// Ignatia the Mad's whole set, "( Apply the text matching the symbol on the Tie Breaker
+        /// coin )".
+        ///
+        /// <para><b>It is a reading rather than an input</b>, on exactly the terms
+        /// <see cref="FacedownTokenReading"/> and <see cref="PublicCardRevealReading"/> are: nobody
+        /// is asked anything, and the branch is taken by MATCH STATE rather than by the player. That
+        /// is what makes it a shape no hero before her introduced - every other Conditional in this
+        /// build reads something a player did, and this one reads a coin sitting on the HUD.</para>
+        ///
+        /// <para><b>Why it is its own shape and not folded into the card footprint beside it.</b> The
+        /// footprint reading proves a face draws whole; this proves that a face draws DIFFERENTLY as
+        /// the round goes on. A row claiming only the footprint would be satisfied by a journey that
+        /// never turned the coin over, which is precisely the journey that cannot tell a working
+        /// live-face marker from a constant one - so the shape exists to force a journey that reads
+        /// the same card under BOTH faces. Milestone 8.75b's `gd-card-live-text-face` marker and its
+        /// tooltip tail are what such a journey reads.</para>
+        /// </summary>
+        CoinSelectedTextReading,
+
+        /// <summary>
+        /// Milestone 8.75b. The player choosing WHICH of the two printed texts to apply, on its own
+        /// control - Ignatia's Equilibrium, "This round: Each time you perform or repeat a primary
+        /// action you may apply either ☀ or ☾ card text, regardless of the Tie Breaker coin".
+        ///
+        /// <para>It is the input half of <see cref="CoinSelectedTextReading"/> and a separate shape
+        /// for the reason <see cref="ColorNamingChoice"/> is separate from
+        /// <see cref="HandCardSelection"/>: what is named is a VALUE from a closed vocabulary rather
+        /// than a piece, a space or a card, so the control is a pair of named buttons ("APPLY THE SUN
+        /// TEXT" / "APPLY THE MOON TEXT") and the candidate set is the same two whatever the board
+        /// looks like. It is also not <see cref="ModalBulletChoice"/>: a modal picks which SENTENCE of
+        /// a card to perform and this picks which PRINTING of the card is the card, which is why it
+        /// is raised by a capability rather than by a p.10 Choose node.</para>
+        ///
+        /// <para>A journey that proves it has to reach it TWICE - on a primary action and on a repeat
+        /// of one - because "each time you perform OR REPEAT" is the clause the round-long marker
+        /// exists for.</para>
+        /// </summary>
+        PrintedTextFaceChoice,
+
+        /// <summary>
+        /// Milestone 8.75b. The match's Tie Breaker coin turning over because a card said so, read on
+        /// every seat - Ignatia's Chaos Incarnate, "you may flip the Tie Breaker coin".
+        ///
+        /// <para><b>It is a reading rather than an input.</b> The decision is an ordinary
+        /// <see cref="ConfirmOrDecline"/> and the flip itself asks nobody anything; what this shape
+        /// names is the consequence, which is authoritative ROUND state and therefore visible to
+        /// everybody - the rail banner, p.7's Initiative ordering, and the live face every other card
+        /// of hers is now read under. Milestone 8.75a's acceptance says so in as many words:
+        /// "visible on every seat's projection and rail banner".</para>
+        ///
+        /// <para><b>Why it is its own shape and not folded into the repeat that follows it.</b> The
+        /// repeat is a second performance of an action, which p.10's repeat control already covers;
+        /// this is the moment the whole match's reading of her printed text turns over. A row
+        /// claiming only the repeat would be satisfied by a journey that watched the action happen
+        /// twice under one text, which is precisely the journey that cannot tell a working flip from
+        /// no flip at all.</para>
+        /// </summary>
+        TieBreakerCoinFlipReading
     }
 
     /// <summary>
@@ -1214,7 +1275,82 @@ namespace GuardsDigital.Tests.PlayMode
                 // rather than a second shape: the player clicks a unit, then clicks another, and the
                 // pair is unordered so neither click is a different question from the other.
                 ["hanu-friendly-unit-pair"] =
-                    new[] { PlayerInteractionShape.BoardUnitSelection }
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // Milestone 8.75b. Ignatia the Mad's ELEVEN entries - the TWENTY-SECOND hero, and the
+                // first dealing since Min's to introduce a new SHAPE at all, let alone three. The
+                // rest of her set names only contracts already above: `attack-sequence@1`,
+                // `choose-target@2`, `choose-line-destination@1`, `synthetic-actor-space@1`,
+                // `synthetic-defeat-hero@1`, `synthetic-defeat-minion@1`,
+                // `synthetic-direct-move@3`, `synthetic-discard-chosen-card@1` and `@2`,
+                // `synthetic-is-flagged@1`, `synthetic-radius-hero-target@1`,
+                // `synthetic-range-hero-target@1`, `synthetic-remove@2`, `synthetic-swap@2` and
+                // `set-attack-target@1`.
+                //
+                // THE COIN PREDICATE CLASSIFIES TO NOTHING HERE, AND THE REASON IS MEASURED RATHER
+                // THAN CONVENIENT. This table is consulted for `EffectNodeKind.Capability` nodes
+                // alone - `AddNodeShapes` returns before reaching it for every other kind - and
+                // `ignatia-coin-sun@1` never sits on one: it is the PREDICATE of the root
+                // `Conditional` of all eighteen of her composed bodies, which is where
+                // `IgnatiaEffectContent.CoinBranched` puts it. A sweep of every dealt hero's nineteen
+                // faces at this milestone found fifteen distinct capabilities in that position and
+                // not one of them classified, because until her every Conditional predicate in this
+                // build asked nobody anything.
+                //
+                // HER TWO SHAPES ARE THEREFORE DERIVED FROM THE CARD rather than from the node, off
+                // `CardDefinition.PrintedTextSelection` - the typed declaration milestone 8.75b's
+                // coin-face preparation added for exactly this question and which every surface
+                // already reads. See `ShapesIntroducedBy`. That is the same answer milestone 8.57h
+                // gave for Rowenna's Fabled Lance, whose ranged reach no reading of an Attack face
+                // could see either, and it leaves every hero before her byte-identical because every
+                // card of theirs declares `PrintedTextSelection.None`.
+                //
+                // The row is kept rather than deleted so the id stays classified: a later slice that
+                // composed the predicate as an ordinary Capability node would otherwise trip the
+                // assert above and be told to decide, which is the right failure.
+                ["ignatia-coin-sun"] = Array.Empty<PlayerInteractionShape>(),
+
+                // THE FLIP ASKS NOBODY ANYTHING - the `may` above it is an ordinary confirm-or-decline
+                // the node kind already declares - but the coin turning over is authoritative round
+                // state every seat reads, which is the shape.
+                ["ignatia-flip-tie-breaker"] =
+                    new[] { PlayerInteractionShape.TieBreakerCoinFlipReading },
+
+                // HER FOUR CARD-TEXT ATTACK SUBJECTS are four narrowings of ONE control: the player
+                // clicks a unit where it stands. That the candidate set is narrowed by p.19's straight
+                // line, by an equality against the printed Range, or by p.19's ring is a bound on the
+                // same control rather than a second shape - the same classification
+                // `brynn-tracking-swap-subject` and `choose-target-pair@1` carry above, and the same
+                // reason milestone 8.20a's own sentence gives: two cards that both ask a player to
+                // click a unit introduce one shape between them.
+                ["ignatia-range-unit-in-straight-line"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["ignatia-range-unit-not-in-straight-line"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["ignatia-range-unit-at-maximum-range"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["ignatia-range-hero-not-adjacent"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // HER TWO DISCARD SUBJECTS are the same control again, narrowed by who is standing
+                // beside the candidate rather than by where the candidate is standing.
+                ["ignatia-enemy-hero-adjacent-to-magma-or-minion"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["ignatia-enemy-minion-adjacent-to-enemy-hero"] =
+                    new[] { PlayerInteractionShape.BoardUnitSelection },
+
+                // THE RADIUS PLACE is a space click, exactly as every `synthetic-place-in-radius`
+                // above it is - it IS that handler, bound to her magma definition.
+                ["ignatia-place-magma-in-radius"] =
+                    new[] { PlayerInteractionShape.BoardSpaceSelection },
+
+                // THE WAKE ASKS NOBODY ANYTHING. "Place a magma token in each empty space you moved
+                // through, or out of" is p.10's mandatory automatic step: the spaces are decided by
+                // the Move the player already made, and the node applies at once. A row claiming a
+                // space click would name a journey for an input no player is ever offered - the
+                // clicks that DO decide the trail are the straight-line offer's, which is
+                // `choose-line-destination@1` above.
+                ["ignatia-place-magma-wake"] = Array.Empty<PlayerInteractionShape>()
             };
 
         private readonly Dictionary<string, ActiveEffectDefinition> activeEffectsByCapability;
@@ -1312,6 +1448,42 @@ namespace GuardsDigital.Tests.PlayMode
                     shapes.Add(PlayerInteractionShape.UltimateTriggerPause);
                     AddTriggeredEffectShapes(definition, shapes);
                 }
+            }
+
+            // Milestone 8.75b. WHICH of a card's two printed texts is live is a shape the face
+            // declares rather than one a node can be asked for, and this is the one place the
+            // derivation can say so.
+            //
+            // <para><b>Why it has to be read here and not off the effect body.</b> Every one of
+            // Ignatia the Mad's composed bodies is a single <see cref="EffectNodeKind.Conditional"/>
+            // whose predicate is `ignatia-coin-sun@1`, and <c>AddNodeShapes</c> consults
+            // <see cref="CapabilityShapes"/> for <see cref="EffectNodeKind.Capability"/> nodes alone -
+            // a Conditional's own capability is a predicate the resolver reads rather than a control
+            // a player meets, which is true of all fifteen predicates in that position in this build
+            // and false only of hers. Left alone her whole set would declare nothing about the coin
+            // and NOTHING in the gate would require a journey that reads the same card under both
+            // faces.</para>
+            //
+            // <para><b>It is content-derived rather than declared</b>, on the same terms milestone
+            // 8.57h's ranged-reach reading is: the claim is read off
+            // <see cref="PrintedTextSelection"/>, the typed statement a face makes about its own
+            // printing, so a later hero printing two texts inherits the obligation and one printing
+            // any other thing does not. It leaves every hero before her byte-identical - every card
+            // of theirs declares <see cref="PrintedTextSelection.None"/>.</para>
+            switch (definition.PrintedTextSelection)
+            {
+                case PrintedTextSelection.TieBreakerCoin:
+                    shapes.Add(PlayerInteractionShape.CoinSelectedTextReading);
+                    break;
+
+                // The card that FREES the choice is the card that introduces it: while what
+                // Equilibrium creates stands, the coin predicate stops reading the coin and pauses,
+                // offering the two faces as named values. A journey proving it has to reach the pause
+                // on a primary action AND on a repeat of one, which is what "each time you perform or
+                // repeat" asks for.
+                case PrintedTextSelection.FreesTheCoinChoice:
+                    shapes.Add(PlayerInteractionShape.PrintedTextFaceChoice);
+                    break;
             }
 
             // A printed item icon is deliberately not a shape this face introduces. p.16 gains the item

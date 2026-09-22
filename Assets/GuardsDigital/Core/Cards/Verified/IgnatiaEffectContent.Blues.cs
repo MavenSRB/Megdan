@@ -302,32 +302,52 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>
         /// One coin-branched "Move a hero in radius N spaces in a straight line": the sun arm moves a
-        /// friendly hero, the moon arm an enemy hero. A direct Move is a straight line by rule (p.11),
-        /// so nothing else states the line; <paramref name="leastDistance"/> is the printed floor
-        /// ("2 or 3" is a floor of two beside a distance of three; "2 spaces" states two as both).
+        /// friendly hero, the moon arm an enemy hero. <paramref name="leastDistance"/> is the printed
+        /// floor ("2 or 3" is a floor of two beside a distance of three; "2 spaces" states two as
+        /// both).
+        ///
+        /// <para><b>The straight line is carried at milestone 8.75b, and it was not before.</b> A
+        /// direct Move is NOT a straight line - p.11's Movement reachability turns corners, and
+        /// <c>synthetic-direct-move@3</c> under
+        /// <see cref="DirectMoveDestinationPolicy.Unrestricted"/> offered the whole disk at the printed
+        /// distance: ten spaces where the six files reach four (<c>IgnatiaPushTests</c> measured
+        /// exactly that and recorded it as owed). The correction is
+        /// <c>choose-line-destination@1</c>'s new <c>subjectSpace</c> anchor - the one contract in this
+        /// build whose subject is p.19's Straight Line written in card text - walked from the CHOSEN
+        /// hero's space rather than from the actor's, with the Move behind it pinned to the one space
+        /// that offer named (<see cref="DirectMoveDestinationPolicy.NamedSpace"/>). It is Hanu's Fight
+        /// and Flight shape exactly, with somebody else's feet under it.</para>
         /// </summary>
         private static EffectDefinition PushAHero(
             CardDefinitionId cardId, string revision, int distance, int leastDistance)
         {
             var sunArm = new EffectNodeId("ignatia-push-sun");
             var sunSelect = new EffectNodeId("ignatia-push-sun-select");
+            var sunLine = new EffectNodeId("ignatia-push-sun-line");
             var sunMove = new EffectNodeId("ignatia-push-sun-move");
             var moonArm = new EffectNodeId("ignatia-push-moon");
             var moonSelect = new EffectNodeId("ignatia-push-moon-select");
+            var moonLine = new EffectNodeId("ignatia-push-moon-line");
             var moonMove = new EffectNodeId("ignatia-push-moon-move");
 
             var nodes = new List<EffectNodeDefinition>();
             nodes.AddRange(PushArm(
-                sunArm, sunSelect, sunMove, SourceTeamRelation.AlliedWithSource, distance, leastDistance));
+                sunArm, sunSelect, sunLine, sunMove, SourceTeamRelation.AlliedWithSource,
+                distance, leastDistance));
             nodes.AddRange(PushArm(
-                moonArm, moonSelect, moonMove, SourceTeamRelation.OpposingSource, distance, leastDistance));
+                moonArm, moonSelect, moonLine, moonMove, SourceTeamRelation.OpposingSource,
+                distance, leastDistance));
 
             return CoinBranched(cardId, revision, sunArm, moonArm, nodes);
         }
 
+        /// <summary>The space the straight-line offer publishes - where the pushed hero's file ends.</summary>
+        private const string PushLineDestinationOutput = "destination";
+
         private static IEnumerable<EffectNodeDefinition> PushArm(
             EffectNodeId arm,
             EffectNodeId select,
+            EffectNodeId line,
             EffectNodeId move,
             SourceTeamRelation relation,
             int distance,
@@ -336,7 +356,7 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 new EffectNodeDefinition(
                     arm, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                    childNodeIds: new[] { select, move }),
+                    childNodeIds: new[] { select, line, move }),
 
                 new EffectNodeDefinition(
                     select, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
@@ -352,8 +372,13 @@ namespace GuardsDigital.Core.Cards.Verified
                         EffectInputBinding.FromLiteral(
                             SyntheticTargetingCapabilities.IncludeSelfParameterName,
                             EffectValue.Boolean(false)),
+
+                        // Milestone 8.75b: the consumer is the LINE rather than the Move, because the
+                        // line is now the node that decides whether a named hero can be moved at all -
+                        // a teammate boxed in on every file has no destination, and the narrowing that
+                        // keeps him out of the offer has to ask the question that refuses him.
                         EffectInputBinding.FromLiteral(
-                            EffectSelectionDeclaration.ConsumerParameterName, EffectValue.Node(move))
+                            EffectSelectionDeclaration.ConsumerParameterName, EffectValue.Node(line))
                     },
                     outputs: new[]
                     {
@@ -364,20 +389,35 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectValueKind.Coordinate)
                     }),
 
-                // Milestone 8.75c. The policy is `up to` because that is the ONLY reading under which
-                // `leastDistance` is read at all: `AdmittedDistances.ForDeclared` admits
-                // [leastDistance, distance] under `up to` and exactly [distance, distance] under every
-                // other policy. Composed as mandatory, Scorching Blaze's printed "2 or 3 spaces"
-                // offered only the threes and its Tier II sibling's "2 spaces" was right by accident.
-                // The two printed shapes are then one declaration - a floor equal to the distance is
-                // "2 spaces", a floor below it is "2 or 3 spaces" - which is what Brogan's charges get
-                // from `NamedSpace` and what this arm has no named destination to get it from.
-                //
-                // Nothing about whether the step happens changes: the selection above declares this
-                // node as its consumer, so a hero who could not be moved is never offered, and the
-                // move that follows always has somewhere to go.
+                // "N spaces in a straight line", asked of the CHOSEN hero's six files. Both bounds are
+                // stated because the printed distance is a count rather than a ceiling - milestone
+                // 8.59's correction, which is that an offer carrying only a ceiling lights spaces the
+                // card cannot move to - and "2 or 3" states a floor below its distance.
                 new EffectNodeDefinition(
-                    move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                    line, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    SyntheticRosterCapabilities.ChooseLineDestinationV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromLiteral(
+                            "maximumDistance", EffectValue.Integer(distance)),
+                        EffectInputBinding.FromLiteral(
+                            "minimumDistance", EffectValue.Integer(leastDistance)),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticRosterCapabilities.LineSubjectSpaceParameter, select,
+                            SyntheticTargetingCapabilities.ChosenHeroSpaceOutputName,
+                            EffectValueKind.Coordinate)
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(
+                            PushLineDestinationOutput, EffectValueKind.Coordinate)
+                    }),
+
+                // The Move is pinned to the space the line named: p.11's walk still carries the piece,
+                // p.18's obstacles still stop it, and `NamedSpace` is what keeps the destination the
+                // one the straight-line offer admitted rather than anywhere else at that distance.
+                new EffectNodeDefinition(
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
                     SyntheticDisplacementCapabilities.DirectMoveV3,
                     inputs: new[]
                     {
@@ -391,7 +431,10 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectValue.Integer(leastDistance)),
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            DirectMoveDestinationPolicy.Unrestricted)
+                            DirectMoveDestinationPolicy.NamedSpace),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticDisplacementCapabilities.NamedDestinationParameterName,
+                            line, PushLineDestinationOutput, EffectValueKind.Coordinate)
                     },
                     outputs: new[]
                     {
