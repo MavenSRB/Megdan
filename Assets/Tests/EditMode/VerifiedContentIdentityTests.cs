@@ -188,7 +188,17 @@ namespace GuardsDigital.Tests.EditMode
             // not this space 1 away which is illegal." Both moves are one literal on one node of one
             // face, and on 8.59's complete unfiltered run every pin but Silverarrow's - whose own
             // Ultimate the same sweep corrected - measured byte-identical.
-            new IdentityPin("swift", "swift-8-66-rev-1", "c51c221b22299b84956508a8bf1e70c32df7a8ef198244879b72119a76ce6e0f"),
+            //
+            // MOVED AGAIN at milestone 8.82, and this one is a live playtest report: Mark for Death
+            // and Hunting Season print "Move [up to two] enemy minion[s] in radius up to 3 spaces to
+            // [a space / spaces] in radius", and the move declared 8.22's `WithinActorRadius` while
+            // binding it NO number - which `DirectMoveDestinations.Admit` reads as admitting nothing,
+            // so the face offered the player nobody at all. The leash is now
+            // `WithinActorPrintedRadius`, which reads the card's own icon with p.16's items composed
+            // onto it (a literal would have stopped following her Super-Shotgun's +1 Radius), and the
+            // same node's "up to 3 spaces" is now `UpTo` rather than `IfAble`. Two literals on one
+            // node of two faces; measured on the offline harness, not predicted.
+            new IdentityPin("swift", "swift-8-82-rev-1", "da09a40362dceb8f89f0ecc3479c2e703d982a0d4b06b1b0feaee9aeb41e11bb"),
             // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
             // composed Cutter's eighteen faces without dealing her.

@@ -162,7 +162,40 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// before step 7's rider runs, and a removed target is a referent the sentence no longer has.
         /// </para>
         /// </summary>
-        AdjacentToTheNamedSpace = 8
+        AdjacentToTheNamedSpace = 8,
+
+        /// <summary>
+        /// Milestone 8.82. `to a space in radius` where the radius IS the card's own Radius icon as
+        /// rulebook p.16 raises it - Swift's Mark for Death and Hunting Season, "Move [up to two] enemy
+        /// minion[s] in radius up to 3 spaces to [a space / spaces] in radius."
+        ///
+        /// <para><b>It is the ninth member because the disk it draws is not a number a definition can
+        /// write down.</b> <see cref="WithinActorRadius"/> takes a declared integer, which is right for
+        /// text that writes the number - Xargatha's Siren's Call ends "to a space adjacent to you", and
+        /// p.16's items never touch a value printed in the sentence. This one is for text that says
+        /// "in radius" and therefore points at the icon: p.9 states that "if the card text mentions
+        /// Range/Radius, it refers to this value", and p.16 raises that value wherever the hero prints
+        /// it. Swift's Super-Shotgun grants +1 Radius, so a literal 4 on Mark for Death would be the
+        /// wrong disk the moment she holds the item - which is the live playtest this member closes.</para>
+        ///
+        /// <para><b>The same icon read twice, by one query.</b> The sentence prints "in radius" twice:
+        /// the first picks the minion and is the selection's own reach, which already asks
+        /// <c>RadiusValueQuery</c> through the printed-icon selection, and the second bounds where that
+        /// minion may be put. Both halves therefore read one total in one place, and cannot come to
+        /// disagree about how wide her command is - the reason the Place's printed-Radius twin exists
+        /// beside its declared one.</para>
+        ///
+        /// <para><b>A card printing no Radius admits nothing</b>, which is the printed-icon
+        /// selection's own rule stated here: "an item raises a printed icon and never invents one", so
+        /// a face with no icon has no such bound at all rather than an adjacent-by-default one. That
+        /// joins the readings <see cref="NamedSpace"/>, <see cref="WithinActorRadius"/> and
+        /// <see cref="AdjacentToTheNamedSpace"/> already take of a bound they were handed none of.</para>
+        ///
+        /// <para>The disk is measured from where the hero stands when the node runs, exactly as
+        /// <see cref="WithinActorRadius"/>'s is, so a repeat that follows her own Movement measures
+        /// from the new space.</para>
+        /// </summary>
+        WithinActorPrintedRadius = 9
     }
 
     /// <summary>
@@ -180,11 +213,17 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// <see cref="DirectMoveDestinationPolicy.Unrestricted"/> does not, so a definition that
         /// declares it still resolves for an actor who is off the board - which is the case a hero
         /// awaiting respawn is in.
+        ///
+        /// <para>Milestone 8.82's <see cref="DirectMoveDestinationPolicy.WithinActorPrintedRadius"/>
+        /// is classified exactly as <see cref="DirectMoveDestinationPolicy.WithinActorRadius"/> is:
+        /// the two draw the same disk from the same centre and differ only in where the number comes
+        /// from, so every actor-relative question about them has one answer.</para>
         /// </summary>
         public static bool NeedsActorPosition(DirectMoveDestinationPolicy policy) =>
             policy == DirectMoveDestinationPolicy.TowardActor ||
             policy == DirectMoveDestinationPolicy.EquidistantFromActor ||
             policy == DirectMoveDestinationPolicy.WithinActorRadius ||
+            policy == DirectMoveDestinationPolicy.WithinActorPrintedRadius ||
             policy == DirectMoveDestinationPolicy.NotAdjacentToActor ||
             policy == DirectMoveDestinationPolicy.AwayFromActor;
 
@@ -202,6 +241,15 @@ namespace GuardsDigital.Core.Rules.Displacement
         /// than everything, for the same reason a named policy without a space does: an undeclared
         /// bound is not an absent bound, and reading it as "anywhere" would silently widen the only
         /// thing this policy exists to narrow.
+        ///
+        /// <para>Milestone 8.82. It is also the total
+        /// <see cref="DirectMoveDestinationPolicy.WithinActorPrintedRadius"/> keeps the destination
+        /// inside - one argument rather than two, because the two members draw the same disk and only
+        /// disagree about where its number comes from. WHERE it comes from is the caller's question
+        /// and not this filter's: a declared member is handed the definition's literal, and a printed
+        /// member is handed what the caller read off the card's own icon with p.16's items composed
+        /// onto it. A printed icon the card does not carry arrives here as no value at all and admits
+        /// nothing, which is the same reading as an undeclared literal.</para>
         /// </param>
         /// <param name="besideSpace">
         /// Milestone 8.61c. The space
@@ -244,7 +292,13 @@ namespace GuardsDigital.Core.Rules.Displacement
                         ? AsList(reachable, namedDestination.Value)
                         : Array.Empty<HexCoordinate>();
 
+                // Milestone 8.82. One disk, two ways of saying how wide it is: the declared member
+                // carries the definition's own literal and the printed one carries the total the
+                // caller read off the card's Radius icon. p.9 makes them the same geometry - a disk
+                // measured inclusively from where the hero stands - so they share the filter and
+                // never come to disagree about the shape of a command.
                 case DirectMoveDestinationPolicy.WithinActorRadius:
+                case DirectMoveDestinationPolicy.WithinActorPrintedRadius:
                     return actorRadius.HasValue && actorRadius.Value >= 0
                         ? WithinRadius(reachable, actorAt, actorRadius.Value)
                         : Array.Empty<HexCoordinate>();

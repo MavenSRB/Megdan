@@ -109,6 +109,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <c>distance</c> because the two bound different things and a card can print them
         /// differently: Sabina's Path to Victory moves a minion <em>one</em> space and keeps it within
         /// <em>three</em>, so one number would have to be both the step and the leash.</para>
+        ///
+        /// <para><b>Milestone 8.82. It is read by the DECLARED member alone.</b>
+        /// <see cref="DirectMoveDestinationPolicy.WithinActorPrintedRadius"/> draws the same disk from
+        /// the card's own Radius icon with p.16's items composed onto it, so it asks
+        /// <see cref="RadiusValueQuery"/> instead and this parameter means nothing to it - the reading
+        /// <see cref="NamedDestinationParameterName"/> and <see cref="BesideSpaceParameterName"/>
+        /// already have of a bound belonging to another member. A definition writes one or the other:
+        /// text that prints the number declares it here, and text that says "in radius" points at the
+        /// icon and declares nothing.</para>
         /// </summary>
         public const string ActorRadiusParameterName = "actorRadius";
 
@@ -853,6 +862,36 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 var namedDestination = context.Input(NamedDestinationParameterName);
                 var actorRadius = context.Input(ActorRadiusParameterName);
 
+                // Milestone 8.82. `to a space in radius` where the radius is the card's own icon
+                // rather than a number the sentence writes down - Swift's Mark for Death and Hunting
+                // Season. p.9: "if the card text mentions Range/Radius, it refers to this value", and
+                // p.16 raises that value wherever the hero prints it, so the leash is asked of
+                // `RadiusValueQuery` with the same arguments the printed-icon SELECTION asks it
+                // with. Both halves of "an enemy minion in radius ... to a space in radius" therefore
+                // read one total from one place: the offer and the leash cannot come apart, which is
+                // exactly what they had done - the offer widened with her Super-Shotgun and the move
+                // stayed where an unbound literal left it, which was nowhere.
+                //
+                // A card printing no icon has no such bound at all rather than a total of zero, so the
+                // radius arrives at `Admit` as no value and admits nothing. That is the printed-icon
+                // selection's own rule - an item raises a printed icon and never invents one - and it
+                // is the reading every unbound narrowing in `DirectMoveDestinations` already takes.
+                int? radiusBound = actorRadius.Kind == EffectValueKind.Integer
+                    ? actorRadius.IntegerValue
+                    : (int?)null;
+                if (destinationPolicy == DirectMoveDestinationPolicy.WithinActorPrintedRadius)
+                {
+                    var printedRadius = RadiusValueQuery.Calculate(
+                        context.SourceCardInstanceId,
+                        context.SourceDefinitionReference,
+                        context.ActionDefinitionId,
+                        context.CardState.Definitions,
+                        context.ActorId,
+                        context.HeroItems,
+                        context.Modifications);
+                    radiusBound = printedRadius.Total > 0 ? printedRadius.Total : (int?)null;
+                }
+
                 // Milestone 8.61c. The space a destination has to stand beside, read exactly as the
                 // two bounds above are: an unresolved binding arrives as no value at all, and the
                 // policy that reads it admits nothing rather than everything.
@@ -876,9 +915,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     namedDestination.Kind == EffectValueKind.Coordinate
                         ? namedDestination.Coordinate
                         : (HexCoordinate?)null,
-                    actorRadius.Kind == EffectValueKind.Integer
-                        ? actorRadius.IntegerValue
-                        : (int?)null,
+                    radiusBound,
                     besideSpace.Kind == EffectValueKind.Coordinate
                         ? besideSpace.Coordinate
                         : (HexCoordinate?)null);

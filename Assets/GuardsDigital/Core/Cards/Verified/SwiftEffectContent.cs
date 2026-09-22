@@ -814,9 +814,34 @@ namespace GuardsDigital.Core.Cards.Verified
         /// Next turn: the first [two] time[s] an enemy minion in radius is defeated, gain 1 coin." -
         /// Mark for Death and Hunting Season.
         ///
-        /// <para>The move keeps the minion inside her own printed Radius through
-        /// <see cref="DirectMoveDestinationPolicy.WithinActorRadius"/>, which milestone 8.22 minted for
-        /// Sabina's "to a space in radius" - the same printed clause.</para>
+        /// <para><b>The move keeps the minion inside her own printed Radius through milestone 8.82's
+        /// <see cref="DirectMoveDestinationPolicy.WithinActorPrintedRadius"/>.</b> The second "in
+        /// radius" is the SAME icon as the first, and p.9 says so - "if the card text mentions
+        /// Range/Radius, it refers to this value" - so both halves of the sentence read the card's own
+        /// Radius with p.16's items composed onto it. Her Super-Shotgun grants +1 Radius, and a
+        /// declared literal 4 would be the wrong disk the moment she holds it: the offer would widen
+        /// to 5 and the leash would not, which is the pair coming apart on a live board.</para>
+        ///
+        /// <para><b>It declared milestone 8.22's
+        /// <see cref="DirectMoveDestinationPolicy.WithinActorRadius"/> and bound it NO number at all,
+        /// and that is the defect milestone 8.82 closes.</b> An undeclared bound is not an absent
+        /// bound - <c>DirectMoveDestinations.Admit</c> reads a radius policy with no radius as
+        /// admitting nothing - so this move had no destination for any minion on any board, and the
+        /// selection above it declares this move as its CONSUMER. A consumer declaration narrows the
+        /// offer to candidates the consumer can act on, so the whole face offered the player NOBODY.
+        /// It was reported from a playtest in exactly those words - "Swift is not being offered blue
+        /// minion to move" - and the host log shows the Skill used with no minion Move row after
+        /// it.</para>
+        ///
+        /// <para><b>"up to 3 spaces" is p.11's optional distance</b>, so the move node declares
+        /// <see cref="EffectFailurePolicy.UpTo"/>. It declared <see cref="EffectFailurePolicy.IfAble"/>
+        /// until milestone 8.82, and p.11 separates the two in so many words: "unless the distance is
+        /// optional ('up to 2 spaces'), or the move itself is optional ('you may move'), you must move
+        /// the exact number of spaces". `if able` is the second of those and leaves the number exact,
+        /// so even with the leash bound this face would have offered the third ring alone - never a
+        /// step of one or two, and never the stand-still p.11 admits when it says a card's text
+        /// applies "even if you choose to move zero spaces". It is corrected in the same milestone
+        /// because it is the same clause of the same sentence on the same node.</para>
         ///
         /// <para><b>The promise is instance multiplicity</b>, which is milestone 8.38c1's whole design:
         /// Hunting Season stands TWO bounty effects and each is spent once, so "the first two times" is
@@ -865,7 +890,7 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectValueKind.Coordinate)
                     }),
                 new EffectNodeDefinition(
-                    move, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
                     SyntheticDisplacementCapabilities.DirectMoveV3,
                     inputs: new[]
                     {
@@ -876,7 +901,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            DirectMoveDestinationPolicy.WithinActorRadius)
+                            DirectMoveDestinationPolicy.WithinActorPrintedRadius)
                     },
                     outputs: new[]
                     {

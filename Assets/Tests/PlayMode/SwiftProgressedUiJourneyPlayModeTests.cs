@@ -906,13 +906,61 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The printed move: a subject, then where it goes. Both are answered through projected
             // commands rather than by reaching past the offer.
+            //
+            // MILESTONE 8.82. This loop used to answer `SelectInvocations[0]` blindly at every
+            // pause, and that is why it passed for four milestones while nothing moved an inch: the
+            // move's leash was declared and bound no number, `DirectMoveDestinations.Admit` read
+            // that as admitting nothing, and the selection that declares the move as its consumer
+            // was therefore narrowed to NOBODY - so neither printed question was ever asked and the
+            // loop simply found nothing to answer. A journey that takes whatever is first cannot
+            // tell a move from a stand-still, or from a step that never ran; this one names the
+            // subject, refuses its own space as the destination, and reads the board afterwards.
+            var chosenMinion = default(MinionId);
+            var movedFrom = default(HexCoordinate);
             for (var step = 0; step < 8 && runtime.PendingEffectChoice != null; step++)
             {
                 var pause = runtime.PendingEffectChoice;
-                if (pause.SelectInvocations.Count > 0)
+                var minionOffer = pause.SelectInvocations.FirstOrDefault(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.Minion);
+                if (minionOffer != null)
                 {
+                    chosenMinion = minionOffer.Candidate.Value.MinionId;
+                    movedFrom = runtime.ReadModel.Minions
+                        .Single(minion => minion.MinionId.Equals(chosenMinion)).Coordinate;
                     runtime.SubmitProjectedCommand(
-                        DirectorCommand.AnswerEffectChoice(pause.SelectInvocations[0]));
+                        DirectorCommand.AnswerEffectChoice(minionOffer));
+                }
+                else if (pause.SelectInvocations.Any(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.Coordinate))
+                {
+                    Assert.That(chosenMinion.IsDefined, Is.True,
+                        "A destination is offered only after the minion it is for has been named.");
+                    // A destination that really travels, preferring one beside her: the minion this
+                    // face moves is the minion the NEXT turn's Reload defeats, and a move that
+                    // walked it out of her reach would prove the leash by breaking the rest of the
+                    // journey. Her own space is where the disk is measured from, so "beside her" is
+                    // inside it by construction.
+                    var her = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+                    var travelling = pause.SelectInvocations
+                        .Where(invocation =>
+                            invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
+                            !invocation.Candidate.Value.Coordinate.Equals(movedFrom))
+                        .ToArray();
+                    var travels =
+                        travelling.FirstOrDefault(invocation =>
+                            HexDistanceQuery.Calculate(
+                                her, invocation.Candidate.Value.Coordinate) == 1)
+                        ?? travelling.FirstOrDefault();
+                    Assert.That(travels, Is.Not.Null,
+                        "\"Move an enemy minion in radius up to 3 spaces to a space in radius\" - " +
+                        "the only destination offered was the space it already stood on, so the " +
+                        "card could not move anything. Offer was: " + string.Join(", ",
+                            pause.SelectInvocations
+                                .Where(invocation =>
+                                    invocation.Candidate.Value.Kind == EffectValueKind.Coordinate)
+                                .Select(invocation =>
+                                    invocation.Candidate.Value.Coordinate.ToString())));
+                    runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(travels));
                 }
                 else if (pause.ConfirmInvocation != null)
                 {
@@ -926,6 +974,17 @@ namespace GuardsDigital.Tests.PlayMode
 
                 yield return null;
             }
+
+            Assert.That(chosenMinion.IsDefined, Is.True,
+                "\"Move an enemy minion in radius\" - the selection has to offer one. It offered " +
+                "nobody until milestone 8.82, because the move it declares as its consumer could " +
+                "act on nobody. " + Remaining(runtime));
+            Assert.That(
+                runtime.ReadModel.Minions
+                    .Single(minion => minion.MinionId.Equals(chosenMinion)).Coordinate,
+                Is.Not.EqualTo(movedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the minion really left the space it " +
+                "stood on. " + Remaining(runtime));
 
             // ActiveEffectReading: the bounty stands as a live Active effect on the card that made
             // it, and it has to still be standing when her NEXT turn opens - which is the whole of
