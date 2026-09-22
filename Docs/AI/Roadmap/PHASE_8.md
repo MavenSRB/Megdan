@@ -305,6 +305,16 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
+### [ ] 8.80 The Defense window shows the attacker's card on every seat
+
+Reported by the user from the live 8.79 playtest on 2026-09-22 ("Defense window does not show attacking card anymroe") with a screenshot from a joined seat defending against Whisper: the three defence candidates and the hover breakdown are drawn, the attacker's card and its `ATTACK N` chip are not. Cause, measured: the window builds that card from `IMatchReadModel.PendingAttackResolution`, which only the ACTING seat receives (`SeatProjection` hands the attack frame to the resolving seat alone) and which `NetworkMatchClient` returns as `null` in any case (its comment claims the frame "already crosses whole"; the wire carries a slim row and the client never materialises it). So the card has been absent on every network seat - the host's own loopback seat included - since 8.58 drew it; 8.58's captures and `DecisionWindowPresenterTests` ran on a Director session where the frame is whole. Authorized the same evening, after 8.75d, for the re-cut package.
+
+Outcome: a defending seat draws the attacking card beside the offer with its `ATTACK N [· RANGE R]` chip on the host, on a joined seat and on the loopback seat alike, from a fact the Defense choice itself carries.
+
+Acceptance: `PendingDefenseResponseChoice` carries the attack's source card instance, its definition reference and its action id (public facts: the card lies face up in the turn area and the attack is the table's own event), built where the backend builds the choice; the wire row and codec carry them (protocol `/20` -> `/21`, the `PrivateSessionProtocol.Version` tripwires and the four wire docs swept, a `/20` peer refused); `NetworkMatchClient.PendingDefenseChoice` materialises them and its `ResolvingSourceCardInstanceId` reads the attack row it already holds; `DecisionWindowPresenter`'s Defense window reads the choice, not the frame; `DecisionWindowPresenterTests` gains a case on a NETWORK client at a pending Defense (the `PrivateOnlineWireHarness` pattern) asserting the attacker's card and chip, `PrivateOnlineSynchronizationTests` compares the new fields host-to-client, `OnlineMatchHudRulesPrivacyTests` shows the defender learns nothing it could not already see; every Director-session journey byte-identical; no schema move (the choice is derived from the attack state, never persisted - say so either way); harness, focused Edit Mode and a seat-scoped Play Mode journey drawing the window on a joined seat. T3 (wire).
+
+Non-goals: the hover breakdown; the attack spotlight; the badge decision (8.81).
+
 ### [x] 8.79 Package the twenty-two-hero playtest build, for Windows and macOS
 
 Authorized 2026-09-22 by the user's standing order for the 21:00 playtest ("Will need a new mac and windows build"), cut the moment 8.75c completed - forty minutes after the no-hero fallback 8.78 - so the user can choose which package to play.
