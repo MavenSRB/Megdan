@@ -20,6 +20,16 @@ namespace GuardsDigital.EditorTools
         private const string ExecutableName = "GuardsDigitalSmoke.exe";
 
         /// <summary>
+        /// Milestone 8.77. The macOS player: a Mono, universal (x64 + arm64) `.app` built from this
+        /// Windows host with the Mac Build Support module, packaged beside the Windows folder for the
+        /// user's Mac players. It is BUILT here and can only be LAUNCHED on a Mac, so
+        /// <see cref="BuildMacPlayer"/> proves the build report and the bundle's layout and nothing
+        /// more - the project's docs declare macOS rather than validate it.
+        /// </summary>
+        private const string MacOutputFolder = "Builds/MacBuild";
+        private const string MacBundleName = "GuardsDigital.app";
+
+        /// <summary>
         /// Builds the enabled scenes for the active reference target, Windows 64-bit standalone.
         /// Exits non-zero on anything other than a succeeded report so a failure cannot be mistaken
         /// for a pass by a caller that only reads stdout.
@@ -29,7 +39,7 @@ namespace GuardsDigital.EditorTools
             var exitCode = 1;
             try
             {
-                exitCode = Build();
+                exitCode = Build(BuildTarget.StandaloneWindows64, OutputFolder, ExecutableName);
             }
             catch (Exception exception)
             {
@@ -41,7 +51,32 @@ namespace GuardsDigital.EditorTools
             }
         }
 
-        private static int Build()
+        /// <summary>
+        /// Builds the enabled scenes as a macOS universal player (Mono) into
+        /// <c>Builds/MacBuild/GuardsDigital.app</c>. Same contract as the Windows entry: non-zero on
+        /// anything but a succeeded report with the bundle present.
+        /// </summary>
+        public static void BuildMacPlayer()
+        {
+            var exitCode = 1;
+            try
+            {
+                // The string-keyed platform setting avoids referencing the OSX module's assembly from
+                // a script that must also compile on a host without it.
+                EditorUserBuildSettings.SetPlatformSettings("OSXUniversal", "Architecture", "x64ARM64");
+                exitCode = Build(BuildTarget.StandaloneOSX, MacOutputFolder, MacBundleName);
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError($"{MarkerPrefix} FAIL unhandled build exception: {exception}");
+            }
+            finally
+            {
+                EditorApplication.Exit(exitCode);
+            }
+        }
+
+        private static int Build(BuildTarget target, string outputFolder, string artifactName)
         {
             var scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled)
@@ -55,7 +90,7 @@ namespace GuardsDigital.EditorTools
             }
 
             var projectRoot = Directory.GetParent(UnityEngine.Application.dataPath)!.FullName;
-            var outputDirectory = Path.Combine(projectRoot, OutputFolder);
+            var outputDirectory = Path.Combine(projectRoot, outputFolder);
             if (Directory.Exists(outputDirectory))
             {
                 // A stale executable from an earlier run must never be able to satisfy the gate.
@@ -64,8 +99,8 @@ namespace GuardsDigital.EditorTools
                 // and can make the player's file copies fail partway.
                 foreach (var stale in new[]
                 {
-                    Path.Combine(outputDirectory, ExecutableName),
-                    Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(ExecutableName) + "_Data")
+                    Path.Combine(outputDirectory, artifactName),
+                    Path.Combine(outputDirectory, Path.GetFileNameWithoutExtension(artifactName) + "_Data")
                 })
                 {
                     if (File.Exists(stale)) { File.Delete(stale); }
@@ -74,9 +109,9 @@ namespace GuardsDigital.EditorTools
             }
 
             Directory.CreateDirectory(outputDirectory);
-            var executablePath = Path.Combine(outputDirectory, ExecutableName);
+            var executablePath = Path.Combine(outputDirectory, artifactName);
 
-            Debug.Log($"{MarkerPrefix} BUILDING scenes={scenes.Length} target=StandaloneWindows64");
+            Debug.Log($"{MarkerPrefix} BUILDING scenes={scenes.Length} target={target}");
             foreach (var scene in scenes)
             {
                 Debug.Log($"{MarkerPrefix} SCENE {scene}");
@@ -100,7 +135,7 @@ namespace GuardsDigital.EditorTools
                 {
                     scenes = scenes,
                     locationPathName = executablePath,
-                    target = BuildTarget.StandaloneWindows64,
+                    target = target,
                     targetGroup = BuildTargetGroup.Standalone,
                     options = BuildOptions.StrictMode
                 });
@@ -119,7 +154,8 @@ namespace GuardsDigital.EditorTools
                 return 1;
             }
 
-            if (!File.Exists(executablePath))
+            // A macOS player is a bundle DIRECTORY (`.app`); the Windows player is a file.
+            if (!File.Exists(executablePath) && !Directory.Exists(executablePath))
             {
                 Debug.LogError($"{MarkerPrefix} FAIL build reported success but produced no executable at {executablePath}");
                 return 1;

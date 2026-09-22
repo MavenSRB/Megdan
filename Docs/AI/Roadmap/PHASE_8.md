@@ -291,6 +291,20 @@ Completed 2026-09-22 on main. `PrivateLobbyViews.BuildHeroOption` sets the label
 
 Historical evidence: [8.76 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-876-pick-screen-size-and-labels-completion-evidence).
 
+### [x] 8.77 A macOS player build beside the Windows one
+
+Authorized 2026-09-22 by the user for tonight's playtest ("Will need a new mac and windows build"; "yes, install the mac module and go"). Until now every package was Windows-only: the Editor carried only the Windows build module and `PlayerBuildEntryPoint` targeted Windows 64-bit alone; the product's docs declare macOS rather than validate it.
+
+Outcome: the Mac Build Support (Mono) module is installed for Unity 6000.5.9f1, `PlayerBuildEntryPoint.BuildMacPlayer` builds the enabled scenes as a universal (x64 + arm64) Mono `GuardsDigital.app` into `Builds/MacBuild`, `Tools/Invoke-PlayerBuildMac.ps1` drives it with the same discovery and marker discipline as the Windows smoke and proves the report and the bundle layout, and the Windows entry keeps its contract through a shared `Build(target, folder, artifact)`.
+
+Acceptance: the Mac build script passes on main (build report Succeeded, `Contents/MacOS` binary a Mach-O universal binary, `Contents/Resources/Data/Managed` present); the Windows build-and-launch smoke still passes on the same tree; the package recipe gains the Mac folder with a Mac read-me stating the two Terminal lines a Windows-made zip needs (`chmod -R +x` on the binary folder, `xattr -cr` on the bundle) and the launch line. T3 for the build tooling (a build is the artefact; no Core, Application, Presentation, wire or schema change). Launch on a Mac is proven only by a Mac player tonight and is recorded as such.
+
+Non-goals: code signing or notarization; an IL2CPP Mac build (needs a Mac host); validating macOS beyond the first live launch.
+
+Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity Hub's headless CLI (`PlaybackEngines/MacStandaloneSupport` beside `windowsstandalonesupport`). `PlayerBuildEntryPoint.Build` now takes the target, the output folder and the artefact name; `BuildWindowsSmokePlayer` calls it exactly as before and `BuildMacPlayer` builds `Builds/MacBuild/GuardsDigital.app` as `StandaloneOSX` with the architecture set to `x64ARM64` through the string-keyed platform setting (so the script compiles on a host without the module), the existence check admitting a bundle directory. `Tools/Invoke-PlayerBuildMac.ps1` mirrors the smoke's discovery and refuses when the module is absent or an Editor is active, then checks the report, `Contents/MacOS` and `Contents/Resources/Data`. First Mac build on main: `GUARDS_BUILD: PASS`, stamp `1.0-8.71-hanu+20260922145601-df414267`, a 427 MB bundle whose binary `Guards 0.1` is a Mach-O universal binary (x86_64 + arm64) with 136 managed assemblies beside it. The Windows build-and-launch smoke on the same tree: GATE PASSED at 16:58 (build 0, player 0, the scripted interaction completed; `tmp/player-build-smoke-build.log`). The packaging recipe gains a `<package>-mac` folder holding the bundle, the same identity, manifest and read-me, and a `READ ME MAC.txt` with the two Terminal lines a Windows-made zip needs and the launch line (the binary is named after the product). No Core, Application, Presentation, wire or schema change; the Editor assembly alone moved. Launch on a Mac is unproven until a Mac player runs it tonight.
+
+Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
+
 ### [x] 8.68 Package the playtest build with the Silverarrow corrections
 
 Authorized 2026-09-20 by the user ("Cut a new build with the silverarrow fixes"), the same evening 8.66 and 8.67 landed after the 8.65 package was cut.

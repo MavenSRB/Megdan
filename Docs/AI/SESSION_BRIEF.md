@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.75b**.
+- Current completed milestone: **8.77**.
 - Active authorized milestone: **8.75c**.
 - Next proposed milestone: **8.75c**.
 
@@ -48,7 +48,7 @@ The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21), is COMPLETE the sa
 
 On 2026-09-21 the user opened the TWENTY-FIRST hero and chose **Hanu the Trickster**: **[8.71-8.71i](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** ([his shard](Rules/HERO_HANU.md)) are COMPLETE the same day (picker row three stars; Tactician, Sniper, Pusher; schema v44 and wire `/20` since 8.71a), and HA-Q15i was built as **[8.72](Roadmap/PHASE_8.md)** (the deciding seat's HUD draws the delegated card's controls). His set carries four mechanisms no earlier hero had: a rewritten Initiative, a delegated next action, an end-of-turn swap-back behind immunity, and a coupled move whose distance a teammate chooses. **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu` (stamp `...5040-5475f9c5`, at `22fdef2f`), the current playtest package.
 
-On 2026-09-22 the user's level-up and Defense screenshots became **[8.74](Roadmap/PHASE_8.md)**, complete: the hover peek rides above the decision window and item bonuses read as one `Items` row per side. **[8.76](Roadmap/PHASE_8.md)** (the same day, complete): hero buttons say the name alone and the pick panel keeps its full size under filters.
+On 2026-09-22 the user's level-up and Defense screenshots became **[8.74](Roadmap/PHASE_8.md)**, complete: the hover peek rides above the decision window and item bonuses read as one `Items` row per side. **[8.76](Roadmap/PHASE_8.md)** (the same day, complete): hero buttons say the name alone and the pick panel keeps its full size under filters. **[8.77](Roadmap/PHASE_8.md)** (complete): a universal macOS player builds beside the Windows one for tonight's playtest.
 
 On 2026-09-22 the user opened the TWENTY-SECOND hero ("implement Ignatia"; "keep going and dont stop until you need something from me, or when the hero is done up to standard") and settled her four inventory questions, the coin's faces (sun = Red, moon = Blue) and her magma supply (three): **[8.75 -> 8.75a -> 8.75b -> 8.75c](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md)** ([her shard](Rules/HERO_IGNATIA.md)) is AUTHORIZED, through a fully selectable, artworked hero whose picker row carries four stars and Sniper/Damager/Tokens/Tactician/Pusher and whose cards show which of their two printed texts the Tie Breaker coin makes live. **8.75** (inventory, the coin seam, seventeen composed bodies, Equilibrium, magma tokens, the live-face marker, all behind the gate) and **8.75a** (Chaos Incarnate: a flip settled before the repeat runs on the opposite face; the live coin bound into every card-text path) and **8.75b** (dealt, registered, artworked; the first four-star, five-role picker row proven on the rendered lobby; Play Mode 784 with zero skips) are COMPLETE; **8.75c** (the permanent player-path gate) is ACTIVE. No package is authorized.
 
