@@ -1083,21 +1083,16 @@ namespace GuardsDigital.Presentation.Match
                 projection?.PendingSystemTransitionDescription,
                 projection?.Definitions,
                 projection?.Setup?.Heroes,
-                projection?.DecisionContract,
-                projection?.TieBreakerState ?? TieBreakerState.Unrevealed);
+                projection?.DecisionContract);
 
-        /// <param name="tieBreaker">
-        /// Milestone 8.75b. The live coin, so a p.15 upgrade candidate that prints two texts is drawn
-        /// with the same live-text marker it will wear once it is in the hand. It defaults to
-        /// <see cref="TieBreakerState.Unrevealed"/> - the "this caller was told nothing" answer - and a
-        /// candidate under it simply carries no marker.
-        /// </param>
+        // Milestone 8.75e. The `tieBreaker` argument milestone 8.75b threaded to here is gone with the
+        // corner badge it fed: a p.15 upgrade candidate drew the live coin face so the card would read
+        // the same way in the prompt as in the hand, and neither draws one any more.
         public static SystemTransitionPromptViewModel CreateSystemTransitionPrompt(
             GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription description,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<QuickGameHeroSetupState> heroes,
-            PendingDecisionContract contract,
-            TieBreakerState tieBreaker = default)
+            PendingDecisionContract contract)
         {
             if (description == null || description.Options.Count == 0)
             {
@@ -1135,9 +1130,7 @@ namespace GuardsDigital.Presentation.Match
                         // take a mandatory decision off the screen.
                         CurrentRoundCards.DeckCard(
                             option.TakenCardInstanceId,
-                            Definition(definitions, option.TakenCard),
-                            CoinSelectedTextViewModel.ForCoinOnly(
-                                Definition(definitions, option.TakenCard), tieBreaker)),
+                            Definition(definitions, option.TakenCard)),
                         DefinitionName(definitions, option.UpgradedCard),
                         option.ItemIcon,
                         option.SetAsideCardInstanceId.IsDefined

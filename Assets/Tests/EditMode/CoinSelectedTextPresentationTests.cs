@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using GuardsDigital.Application.Bots;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -18,15 +20,25 @@ using UnityEngine.UIElements;
 namespace GuardsDigital.Tests.EditMode
 {
     /// <summary>
-    /// Milestone 8.75b. What a player actually SEES of which printed text is live: the corner marker
-    /// on every card surface, the card's hover reading, and the two controls the decision window draws
-    /// while the coin is not what decides.
+    /// Milestone 8.75b, RE-STATED at milestone 8.75e. What a player actually sees of which printed
+    /// text is live - which, since 8.75e, is the rail's tie-breaker banner and the decision window's
+    /// two controls, and NOTHING ON THE CARD.
     ///
-    /// <para><b>The defect these cases pin.</b> A card that prints a ☀ line and a ☾ line is half
-    /// unreadable without being told which half applies, and the fact selecting it - the Tie Breaker
-    /// coin - lives on the opposite side of the screen. Every tier below presentation can be green
-    /// while that is true, which is the same blind spot milestone 8.37b's own fixture records: none of
-    /// them reads a label or looks at a card.</para>
+    /// <para><b>The correction these cases now pin.</b> 8.75b put a `SUN` / `MOON` badge in the
+    /// top-right corner of every card whose printed text the Tie Breaker coin selects. The user met it
+    /// in the first live playtest of the twenty-two-hero build - "why do we have top right SUN symbol
+    /// ? Oo" - and settled it: "Drop the badge and rely on the coin strip alone." The coin is on
+    /// screen at all times already; the badge repeated that one fact in the corner of every card in
+    /// the hand. So the marker is gone, the reading it added to a card's hover is gone with it, and
+    /// what these cases hold down is the ABSENCE: every card of every hero - hers included - goes
+    /// through the one shared builder and comes out exactly as it did before 8.75b.</para>
+    ///
+    /// <para><b>What was deliberately kept.</b> The typed declaration
+    /// (<see cref="CardDefinition.PrintedTextSelection"/>) and the mapping underneath it
+    /// (<see cref="CoinSelectedTextQuery"/>): her content branches on the mapping, the decision
+    /// window's face choice is named from it, and milestone 7.9's player-path gate reads the
+    /// declaration to bind the <c>CoinSelectedTextReading</c> shape. What went was the one consumer
+    /// nobody wanted - the card surface.</para>
     ///
     /// <para>Unity-only (it builds real <c>VisualElement</c> faces), so it is named in
     /// <c>Tools/DotnetTests/UnityOnlyTests.props</c>. The declaration and the mapping underneath are
@@ -35,7 +47,8 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class CoinSelectedTextPresentationTests
     {
         // -------------------------------------------------------------------------------------------
-        // The controls. Two buttons naming the consequence, never the buttons "1" and "2".
+        // The controls. Two buttons naming the consequence, never the buttons "1" and "2". UNTOUCHED
+        // by 8.75e: the window is where a player is ASKED, and an asked question needs its words.
         // -------------------------------------------------------------------------------------------
 
         [Test]
@@ -144,65 +157,68 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
-        // The marker, on the one builder every card face in the HUD goes through.
+        // Milestone 8.75e. The card, on the one builder every card face in the HUD goes through: the
+        // declaration changes NOTHING a player sees, which is the whole of what the user asked for.
         // -------------------------------------------------------------------------------------------
 
-        [TestCase(TeamSide.Red, "SUN")]
-        [TestCase(TeamSide.Blue, "MOON")]
-        public void ACoinSelectedCard_WearsTheLiveFaceInItsCorner(TeamSide revealed, string expected)
-        {
-            var face = BuildFace(CoinSelectedCard(
-                CoinSelectedTextViewModel.ForCoinOnly(
-                    CoinSelectedDefinition(),
-                    TieBreakerSetupAuthority.CreateInternalTestSetupState(revealed))));
-
-            var label = Descendants(face).OfType<Label>().SingleOrDefault(element =>
-                element.name == ConfiguredCardFaceView.LiveTextFaceMarkerLabelName);
-
-            Assert.That(label, Is.Not.Null,
-                "a card whose printed text the coin selects says which half of itself is live.");
-            Assert.That(label.text, Is.EqualTo(expected));
-        }
-
         /// <summary>
-        /// While the controller may apply either text, naming one of them would be a lie - so the
-        /// marker names both, in the HUD's one Active-effect colour rather than the coin's.
+        /// The claim in its strongest form: two cards identical in every respect except that one
+        /// DECLARES its printed text is selected by the coin build the same tree, element for element,
+        /// name for name, word for word. A badge, a tooltip tail, a colour - any of them would show up
+        /// here as a difference, and the declaration is what used to produce all three.
         /// </summary>
         [Test]
-        public void UnderTheRoundLongFreeChoice_TheMarkerNamesBothFaces()
+        public void ACoinSelectedCard_IsRenderedExactlyAsAOneTextCardIs()
         {
-            var face = BuildFace(CoinSelectedCard(CoinSelectedTextViewModel.ControllerChooses()));
-
-            var marker = Descendants(face).Single(element =>
-                element.name == ConfiguredCardFaceView.LiveTextFaceMarkerName);
-            var label = Descendants(marker).OfType<Label>().Single();
-
-            Assert.That(label.text, Is.EqualTo("SUN / MOON"));
             Assert.That(
-                marker.style.backgroundColor.value,
-                Is.EqualTo(MatchHudTheme.ActiveEffectAccent));
+                Describe(BuildFace(CardDeclaring(PrintedTextSelection.TieBreakerCoin))),
+                Is.EqualTo(Describe(BuildFace(CardDeclaring(PrintedTextSelection.None)))),
+                "Since milestone 8.75e no card surface reads `PrintedTextSelection` at all, so the " +
+                "declaration cannot change one pixel of the card that carries it.");
         }
 
         /// <summary>
-        /// An unrevealed coin selects neither text, so there is nothing true to put in the corner and
-        /// nothing is put there. It is the one case a DECLARED card still draws no marker.
+        /// The same for the other declared member - Equilibrium's, the card that FREES the choice. It
+        /// wore the loudest badge of the three (the HUD's Active-effect violet, naming both faces), and
+        /// it is the one the user was looking at when the tray showed `ACTIVE` beside it anyway.
         /// </summary>
         [Test]
-        public void AnUnrevealedCoin_DrawsNoMarkerEvenOnADeclaredCard()
+        public void ACardThatFreesTheFaceChoice_IsRenderedExactlyAsAOneTextCardIs()
         {
-            var face = BuildFace(CoinSelectedCard(
-                CoinSelectedTextViewModel.ForCoinOnly(
-                    CoinSelectedDefinition(), TieBreakerState.Unrevealed)));
-
             Assert.That(
-                Descendants(face).Any(element =>
-                    element.name == ConfiguredCardFaceView.LiveTextFaceMarkerName),
-                Is.False);
+                Describe(BuildFace(CardDeclaring(PrintedTextSelection.FreesTheCoinChoice))),
+                Is.EqualTo(Describe(BuildFace(CardDeclaring(PrintedTextSelection.None)))));
         }
 
         /// <summary>
-        /// The negative control the whole feature rests on: a card of a hero who prints one text is
-        /// rendered exactly as it was, with no marker element anywhere in its subtree.
+        /// The sweep behind the two equalities: whichever of the three declarations a card carries, no
+        /// element of its tree is the retired marker and no reading of it names a printed face. Stated
+        /// over the words rather than over the element name alone, because the badge's tooltip said
+        /// `LIVE TEXT: SUN - THE TIE BREAKER COIN SHOWS RED` and a marker rebuilt under a different
+        /// name would still be that sentence on a card.
+        /// </summary>
+        [TestCase(PrintedTextSelection.None)]
+        [TestCase(PrintedTextSelection.TieBreakerCoin)]
+        [TestCase(PrintedTextSelection.FreesTheCoinChoice)]
+        public void NoCardSurface_CarriesAMarkerOrNamesAPrintedFace(PrintedTextSelection declared)
+        {
+            var card = CardDeclaring(declared);
+
+            foreach (var element in Descendants(BuildFace(card)))
+            {
+                Assert.That(element.name ?? string.Empty, Does.Not.Contain("live-text"),
+                    "The corner badge was `gd-card-live-text-face`, and it is gone.");
+                Assert.That(element.tooltip ?? string.Empty, Does.Not.Contain("LIVE TEXT"),
+                    "and so is the sentence it hovered.");
+            }
+
+            Assert.That(card.AssistiveLabel, Does.Not.Contain("LIVE TEXT"));
+            Assert.That(card.AssistiveLabel, Does.Not.Contain("TIE BREAKER"));
+        }
+
+        /// <summary>
+        /// The negative control the whole correction rests on: a card of a hero who prints one text is
+        /// rendered exactly as it always was, with nothing anywhere in its subtree about a coin.
         /// </summary>
         [Test]
         public void AOneTextCard_IsRenderedExactlyAsItWas()
@@ -219,49 +235,108 @@ namespace GuardsDigital.Tests.EditMode
                 true,
                 false);
 
-            Assert.That(card.LiveText, Is.SameAs(CoinSelectedTextViewModel.NotSelected));
+            Assert.That(definition.PrintedTextSelection, Is.EqualTo(PrintedTextSelection.None));
             Assert.That(card.AssistiveLabel, Does.Not.Contain("LIVE TEXT"));
             Assert.That(
                 Descendants(BuildFace(card)).Any(element =>
-                    element.name == ConfiguredCardFaceView.LiveTextFaceMarkerName),
+                    (element.name ?? string.Empty).Contains("live-text")),
                 Is.False);
         }
 
+        /// <summary>
+        /// HER OWN DEALT FACE, not a synthetic one. Chaos Bolt prints a ☀ line and a ☾ line and
+        /// declares <see cref="PrintedTextSelection.TieBreakerCoin"/>; it must now draw the way Wasp's
+        /// Shock draws, which is to say with nothing added. The synthetic cases above prove the
+        /// builder; this proves the hero the user was actually looking at.
+        /// </summary>
+        [Test]
+        public void HerOwnDealtFace_DrawsWithNothingAddedToIt()
+        {
+            var definition = IgnatiaCardContent.Definition(IgnatiaCardContent.ChaosBolt);
+            Assert.That(
+                definition.PrintedTextSelection,
+                Is.EqualTo(PrintedTextSelection.TieBreakerCoin),
+                "Arrange: the declaration is still made - it is what the gate matrix and her own " +
+                "content read. Only the badge went.");
+
+            var card = new TrayCardViewModel(
+                new CardInstanceId("ignatia-chaos-bolt"),
+                definition.Reference,
+                definition.DisplayName,
+                definition.Progression.Color,
+                CurrentRoundCards.ReadFace(definition),
+                TrayCardGroup.Available,
+                0,
+                true,
+                false);
+
+            Assert.That(card.AssistiveLabel, Does.Not.Contain("LIVE TEXT"));
+            Assert.That(card.AssistiveLabel, Does.EndWith("AVAILABLE"),
+                "Her card's reading ends where every other hero's ends.");
+            Assert.That(
+                Descendants(BuildFace(card)).Any(element =>
+                    (element.name ?? string.Empty).Contains("live-text")),
+                Is.False);
+        }
+
+        /// <summary>
+        /// The builder keeps no name for a marker it no longer draws, and a tray card keeps no reading
+        /// of the coin for a surface to find. A re-added badge would have to re-add both, which is the
+        /// point of asking: this is the case that reds if the corner the user cleared is refilled.
+        /// </summary>
+        [Test]
+        public void NeitherTheBuilderNorTheTrayCard_KeepsADeadLiveTextReading()
+        {
+            Assert.That(
+                typeof(ConfiguredCardFaceView)
+                    .GetFields(BindingFlags.Public | BindingFlags.Static)
+                    .Where(field => field.FieldType == typeof(string))
+                    .Select(field => (string)field.GetValue(null))
+                    .Any(value => (value ?? string.Empty).Contains("live-text")),
+                Is.False,
+                "`gd-card-live-text-face` is not a name this builder knows any more.");
+            Assert.That(
+                typeof(TrayCardViewModel).GetProperty(
+                    "LiveText", BindingFlags.Public | BindingFlags.Instance),
+                Is.Null,
+                "and no view model carries a live-text reading nothing reads.");
+        }
+
         // -------------------------------------------------------------------------------------------
-        // The hover and assistive reading.
+        // The hover reading.
         // -------------------------------------------------------------------------------------------
 
         [Test]
-        public void TheCardsHoverReading_NamesTheLiveTextAndTheSideTheCoinShows()
+        public void TheCardsHoverReading_SaysNothingAboutWhichPrintedTextIsLive()
         {
-            var card = CoinSelectedCard(
-                CoinSelectedTextViewModel.ForCoinOnly(
-                    CoinSelectedDefinition(),
-                    TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Blue)));
-
             Assert.That(
-                card.AssistiveLabel,
-                Does.EndWith("LIVE TEXT: MOON - THE TIE BREAKER COIN SHOWS BLUE"));
-            Assert.That(card.AssistiveLabel, Does.StartWith(card.DisplayName),
-                "the live text is said last, after the whole card has been read.");
+                CardDeclaring(PrintedTextSelection.TieBreakerCoin).AssistiveLabel,
+                Is.EqualTo(CardDeclaring(PrintedTextSelection.None).AssistiveLabel),
+                "Milestone 8.75b appended `- LIVE TEXT: SUN - THE TIE BREAKER COIN SHOWS RED` to a " +
+                "declared card's reading; 8.75e dropped that with the badge it explained.");
         }
 
         [Test]
-        public void UnderTheFreeChoice_TheHoverReadingSaysTheChoiceIsTheirs()
+        public void UnderTheFreeChoice_TheHoverReadingSaysNothingEither()
         {
-            var card = CoinSelectedCard(CoinSelectedTextViewModel.ControllerChooses());
-
             Assert.That(
-                card.AssistiveLabel,
-                Does.EndWith("LIVE TEXT: SUN / MOON - YOU CHOOSE ON EACH PRIMARY ACTION THIS ROUND"));
+                CardDeclaring(PrintedTextSelection.FreesTheCoinChoice).AssistiveLabel,
+                Is.EqualTo(CardDeclaring(PrintedTextSelection.None).AssistiveLabel));
         }
 
         // -------------------------------------------------------------------------------------------
-        // The composition, over the facts a seat holds.
+        // The query that survived, over the facts a seat holds. It is what the decision window, the
+        // gate matrix and her own content read - so it is pinned here as well as in the offline
+        // declaration fixture, which is where the milestone 8.75b composition cases went.
         // -------------------------------------------------------------------------------------------
 
+        /// <summary>
+        /// The live face is the coin's and the grant overrides it - the same three facts milestone
+        /// 8.75b composed a view model from, now read straight off the query by the two readers that
+        /// are left.
+        /// </summary>
         [Test]
-        public void TheReading_IsComposedFromTheDeclarationTheCoinAndTheLiveGrant()
+        public void TheLiveFace_IsStillTheCoinsUnlessAStandingGrantFreesIt()
         {
             var hero = new HeroId("hero-ignatia");
             var bolt = CardInstance.CreateInHand(
@@ -275,51 +350,43 @@ namespace GuardsDigital.Tests.EditMode
             var cards = new[] { bolt, equilibrium };
             var sun = TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Red);
 
-            var byCoin = CoinSelectedTextViewModel.For(
-                IgnatiaCardContent.Definition(IgnatiaCardContent.ChaosBolt),
-                hero,
-                sun,
-                Array.Empty<CardInstanceId>(),
-                cards,
-                IgnatiaCardContent.AllDefinitions);
-            var freed = CoinSelectedTextViewModel.For(
-                IgnatiaCardContent.Definition(IgnatiaCardContent.ChaosBolt),
-                hero,
-                sun,
-                new[] { equilibrium.Id },
-                cards,
-                IgnatiaCardContent.AllDefinitions);
-            var oneText = CoinSelectedTextViewModel.For(
-                IgnatiaCardContent.Definition(IgnatiaCardContent.Equilibrium),
-                hero,
-                sun,
-                new[] { equilibrium.Id },
-                cards,
-                IgnatiaCardContent.AllDefinitions);
-
-            Assert.That(byCoin.LiveFace, Is.EqualTo(PrintedTextFace.Sun));
-            Assert.That(byCoin.RevealedSide, Is.EqualTo(TeamSide.Red));
-            Assert.That(byCoin.ControllerChoosesTheFace, Is.False);
-            Assert.That(freed.ControllerChoosesTheFace, Is.True,
-                "the live grant overrides the coin while it stands.");
-            Assert.That(oneText, Is.SameAs(CoinSelectedTextViewModel.NotSelected),
-                "the card that frees the choice prints one text of its own.");
+            Assert.That(CoinSelectedTextQuery.LiveFace(sun), Is.EqualTo(PrintedTextFace.Sun));
+            Assert.That(
+                CoinSelectedTextQuery.SideShowing(PrintedTextFace.Sun), Is.EqualTo(TeamSide.Red),
+                "and the side it is showing is where the rail's banner puts it, which is now the " +
+                "only place that reading is drawn.");
+            Assert.That(
+                CoinSelectedTextQuery.MayChooseTheFace(
+                    hero, Array.Empty<CardInstanceId>(), cards, IgnatiaCardContent.AllDefinitions),
+                Is.False);
+            Assert.That(
+                CoinSelectedTextQuery.MayChooseTheFace(
+                    hero, new[] { equilibrium.Id }, cards, IgnatiaCardContent.AllDefinitions),
+                Is.True,
+                "the live grant overrides the coin while it stands - which is what raises the " +
+                "decision window's own face choice.");
         }
 
         /// <summary>
-        /// A caller with no projection - p.15's upgrade candidates built from definitions alone - reads
-        /// no live face rather than guessing one.
+        /// The window's words are the last place a face is named to a player, so they are pinned where
+        /// the badge's used to be.
         /// </summary>
         [Test]
-        public void NoProjection_ReadsNoLiveFace()
+        public void TheWindowsOwnWords_AreTheOnlyPlaceAFaceIsNamedOnTheHud()
         {
+            Assert.That(PrintedTextFaceLabels.ApplySunTextLabel, Is.EqualTo("APPLY THE SUN TEXT"));
+            Assert.That(PrintedTextFaceLabels.ApplyMoonTextLabel, Is.EqualTo("APPLY THE MOON TEXT"));
+            Assert.That(PrintedTextFaceLabels.SectionLabel, Is.EqualTo("CHOOSE THE FACE"));
             Assert.That(
-                CoinSelectedTextViewModel.For(CoinSelectedDefinition(), new HeroId("h"), null),
-                Is.SameAs(CoinSelectedTextViewModel.NotSelected));
+                PrintedTextFaceLabels.Word(PrintedTextFace.Sun), Is.EqualTo("SUN"));
+            Assert.That(
+                PrintedTextFaceLabels.SideWord(CoinSelectedTextQuery.SunSide), Is.EqualTo("RED"),
+                "and the word for the side the rail's banner is on, which is what a journey says " +
+                "while it proves which text is live.");
         }
 
         // -------------------------------------------------------------------------------------------
-        // The bot seat. Milestone 8.75b's correction of milestone 8.40j's reach.
+        // The bot seat. Milestone 8.75b's correction of milestone 8.40j's reach. UNTOUCHED.
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
@@ -398,11 +465,11 @@ namespace GuardsDigital.Tests.EditMode
             EffectChoiceCandidate.Value_(EffectValue.Integer(value));
 
         /// <summary>
-        /// A synthetic face that DECLARES its text is coin-selected. Ignatia is not dealt, so this is
-        /// the shape a surface meets rather than her own catalog - and it is the same declaration her
-        /// cards carry, which <c>CoinSelectedTextDeclarationTests</c> pins face by face.
+        /// A synthetic face carrying one of the three declarations and IDENTICAL in every other
+        /// respect - the same id, revision, name, Initiative and colour - so two of them differ by the
+        /// declaration alone and a tree comparison between them measures exactly that.
         /// </summary>
-        private static CardDefinition CoinSelectedDefinition() =>
+        private static CardDefinition DefinitionDeclaring(PrintedTextSelection declared) =>
             new CardDefinition(
                 new CardDefinitionId("coin-selected-showcase"),
                 "coin-selected-rev-1",
@@ -413,11 +480,11 @@ namespace GuardsDigital.Tests.EditMode
                 Array.Empty<ActionDefinition>(),
                 null,
                 null,
-                PrintedTextSelection.TieBreakerCoin);
+                declared);
 
-        private static TrayCardViewModel CoinSelectedCard(CoinSelectedTextViewModel liveText)
+        private static TrayCardViewModel CardDeclaring(PrintedTextSelection declared)
         {
-            var definition = CoinSelectedDefinition();
+            var definition = DefinitionDeclaring(declared);
             return new TrayCardViewModel(
                 new CardInstanceId("coin-selected-1"),
                 definition.Reference,
@@ -427,17 +494,46 @@ namespace GuardsDigital.Tests.EditMode
                 TrayCardGroup.Available,
                 0,
                 true,
-                false,
-                liveText: liveText);
+                false);
         }
 
         /// <summary>
         /// The card through the one builder every surface in the HUD uses. No artwork is prepared for a
-        /// synthetic definition, so this exercises the generated fallback - which is the harder case for
-        /// the marker, because the fallback fills the content box with its own frame.
+        /// synthetic definition, so this exercises the generated fallback - which is the harder case,
+        /// because the fallback fills the content box with its own frame and the badge used to sit on
+        /// top of it.
         /// </summary>
         private static VisualElement BuildFace(TrayCardViewModel card) =>
             DirectorHandsUnityView.BuildStandaloneCard(card);
+
+        /// <summary>
+        /// The whole built tree as one comparable string: every element's type, name, tooltip, drawn
+        /// text and background colour, in draw order and at its depth. Two faces that describe
+        /// identically are the same card on screen.
+        /// </summary>
+        private static string Describe(VisualElement root)
+        {
+            var builder = new StringBuilder();
+            Describe(root, 0, builder);
+            return builder.ToString();
+        }
+
+        private static void Describe(VisualElement element, int depth, StringBuilder builder)
+        {
+            builder
+                .Append(new string(' ', depth * 2))
+                .Append(element.GetType().Name)
+                .Append('|').Append(element.name ?? string.Empty)
+                .Append('|').Append(element.tooltip ?? string.Empty)
+                .Append('|').Append((element as TextElement)?.text ?? string.Empty)
+                .Append('|').Append(element.style.backgroundColor.value)
+                .Append('|').Append(element.style.color.value)
+                .Append('\n');
+            foreach (var child in element.Children())
+            {
+                Describe(child, depth + 1, builder);
+            }
+        }
 
         private static IEnumerable<VisualElement> Descendants(VisualElement root)
         {

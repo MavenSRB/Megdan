@@ -1,30 +1,36 @@
 using System;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Participants;
-using GuardsDigital.Core.Rules.CardResolution;
 
 namespace GuardsDigital.Presentation.Match
 {
     /// <summary>
-    /// Milestone 8.75b. The one place a surface puts WORDS to
-    /// <see cref="PrintedTextFace"/> - the corner marker on a card, the card's hover and assistive
-    /// reading, and the two controls the decision window draws when a card's controller is choosing the
-    /// face instead of reading the Tie Breaker coin.
+    /// Milestone 8.75b, narrowed at milestone 8.75e. The one place a surface puts WORDS to
+    /// <see cref="PrintedTextFace"/> - now only where a player is being ASKED which face to apply:
+    /// the two controls the decision window draws while the coin is not what decides, and its eyebrow.
+    ///
+    /// <para><b>What 8.75e took out.</b> This file also held the words for a corner badge on every
+    /// card whose printed text the Tie Breaker coin selects, and for the line that badge added to a
+    /// card's hover reading. The user dropped the badge from the first live playtest of the
+    /// twenty-two-hero build - "why do we have top right SUN symbol ? Oo", then "Drop the badge and
+    /// rely on the coin strip alone" - so the reading lives where it always did, on the rail's
+    /// tie-breaker banner, and no card surface repeats it. <see cref="Word"/> and
+    /// <see cref="SideWord"/> stay because they are what a reading of the coin SAYS, and the journeys
+    /// that prove which text is live before a card is pressed say it with them.</para>
     ///
     /// <para><b>Words rather than the printed symbols, and that is measured rather than preferred.</b>
-    /// The cards themselves print ☀ (U+2600) and ☾ (U+263E), and the obvious marker is those two
-    /// glyphs. The HUD's own runtime font is not guaranteed to carry them: the only Miscellaneous
+    /// The cards themselves print ☀ (U+2600) and ☾ (U+263E), and the obvious control would carry those
+    /// two glyphs. The HUD's own runtime font is not guaranteed to carry them: the only Miscellaneous
     /// Symbols character this build has ever drawn is ♥ (U+2665) on the life counter, and a glyph the
-    /// font lacks renders as an empty box - a marker that says NOTHING, on the one reading Ignatia's
-    /// whole hand depends on. `SUN` and `MOON` cannot fail that way, they read at the marker's size,
-    /// and they are what an assistive reading has to say anyway. The printed card behind the marker
-    /// still carries the symbols themselves, so nothing is lost: the marker's job is to say which of
-    /// the two lines already printed there is live. If a font carrying both glyphs is ever bundled,
-    /// this is the one file that changes.</para>
+    /// font lacks renders as an empty box - a control that says NOTHING, on the one decision
+    /// Ignatia's whole hand depends on. `SUN` and `MOON` cannot fail that way, and they are what an
+    /// assistive reading has to say anyway. The printed card behind the window still carries the
+    /// symbols themselves. If a font carrying both glyphs is ever bundled, this is the one file that
+    /// changes.</para>
     ///
     /// <para>Nothing here branches on a hero, a card or a capability: every member is a total function
-    /// of a typed <see cref="PrintedTextFace"/> and the one boolean saying whether the controller is
-    /// choosing, both of which the content declares and the projection supplies.</para>
+    /// of a typed <see cref="PrintedTextFace"/> or a <see cref="TeamSide"/>, both of which the content
+    /// declares and the projection supplies.</para>
     /// </summary>
     public static class PrintedTextFaceLabels
     {
@@ -33,12 +39,6 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>The word for the moon (☾) face.</summary>
         public const string MoonWord = "MOON";
-
-        /// <summary>
-        /// The marker a card wears while its controller may apply either text - both faces, because
-        /// neither is ruled out and the coin is not what decides.
-        /// </summary>
-        public const string EitherFaceWord = SunWord + " / " + MoonWord;
 
         /// <summary>
         /// The decision window's control for the sun line. It names the CONSEQUENCE, which is the rule
@@ -76,40 +76,10 @@ namespace GuardsDigital.Presentation.Match
         }
 
         /// <summary>
-        /// What the corner marker on a two-text card reads: the live face, or both faces while the
-        /// controller is free to pick either. An empty string is the one case a marker is not drawn at
-        /// all - a coin that has revealed nothing, so no text is live and none may be guessed.
-        /// </summary>
-        public static string MarkerLabel(PrintedTextFace liveFace, bool controllerChoosesTheFace) =>
-            controllerChoosesTheFace ? EitherFaceWord : Word(liveFace);
-
-        /// <summary>
-        /// The line the card's hover and assistive reading adds, naming the live text and why it is the
-        /// live one. It is appended to the card's existing reading rather than replacing any of it, so
-        /// a player hovering an Ignatia card hears the whole card and then which half of it applies.
-        /// </summary>
-        public static string AssistiveLine(PrintedTextFace liveFace, bool controllerChoosesTheFace)
-        {
-            if (controllerChoosesTheFace)
-            {
-                return "LIVE TEXT: " + EitherFaceWord +
-                    " - YOU CHOOSE ON EACH PRIMARY ACTION THIS ROUND";
-            }
-
-            var word = Word(liveFace);
-            if (word.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            return "LIVE TEXT: " + word + " - THE TIE BREAKER COIN SHOWS " +
-                SideWord(CoinSelectedTextQuery.SideShowing(liveFace));
-        }
-
-        /// <summary>
-        /// The team whose side the coin is showing, named the way the status bar names one. It is said
-        /// because the coin is already on screen at all times - the rail's tie-breaker banner - so the
-        /// card's reading ties the marker to the thing a player can go and look at.
+        /// The team whose side the coin is showing, named the way the status bar names one. Since
+        /// milestone 8.75e the rail's tie-breaker banner is the ONLY place the live face is read, so
+        /// this is the word for the thing a player goes and looks at to find out why one of a card's
+        /// two printed lines is the live one.
         /// </summary>
         public static string SideWord(TeamSide side)
         {

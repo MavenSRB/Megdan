@@ -202,14 +202,17 @@ namespace GuardsDigital.Presentation.Match
                 AddAwaitedShineOutline(surface);
             }
 
-            // Milestone 8.75b. Added here for exactly the reason the shine above is: this is the one
-            // builder every card face in the HUD goes through - the hand tray, the rail's reveal, a
-            // Defense or effect-choice offer, the decision window's card, the enlarged hover peek, a
-            // p.15 upgrade candidate - so a card cannot say one of its two printed texts is live on one
-            // surface and the other on another. It draws for a definition that DECLARES its text is
-            // coin-selected and for nothing else, so every card of the twenty-one dealt heroes is
-            // rendered byte for byte as it was.
-            AddLiveTextFaceMarker(surface, card);
+            // Milestone 8.75e. NOTHING is drawn here for a card whose printed text the Tie Breaker
+            // coin selects. Milestone 8.75b put a `SUN` / `MOON` corner badge on every such face; the
+            // user, reading her cards in the first live playtest of the twenty-two-hero build, asked
+            // what it was and then settled it - "Drop the badge and rely on the coin strip alone".
+            // The coin is on screen at all times in the rail's own tie-breaker banner, and that banner
+            // IS the reading: one thing saying which face is up, rather than the same fact repeated in
+            // the corner of every card in the hand. So every card of every hero goes through this
+            // builder and comes out exactly as it did before 8.75b - the declaration
+            // (`CardDefinition.PrintedTextSelection`) and the mapping (`CoinSelectedTextQuery`) stay,
+            // because the content branches on them and the decision window's face choice names them,
+            // but no card surface reads either one.
 
             // The rest of the hand while the viewer's own card resolves - never the resolving card
             // itself (excluded by construction, see `TrayCardViewModel.IsDimmedByResolution`) and never
@@ -223,95 +226,6 @@ namespace GuardsDigital.Presentation.Match
 
             return surface;
         }
-
-        /// <summary>The element a card's live-text marker keeps, for a journey that looks for one.</summary>
-        public const string LiveTextFaceMarkerName = "gd-card-live-text-face";
-
-        /// <summary>The label inside it, carrying `SUN`, `MOON` or `SUN / MOON`.</summary>
-        public const string LiveTextFaceMarkerLabelName = "gd-card-live-text-face-label";
-
-        /// <summary>
-        /// Milestone 8.75b. The small corner badge saying which of a two-text card's printed texts is
-        /// in force right now.
-        ///
-        /// <para><b>It wears the Tie Breaker coin's own colours</b> - <c>MatchHudTheme.CoinFace</c> over
-        /// <c>CoinEdge</c>, inked in <c>CoinInk</c> - because that is what it is a reading OF, and the
-        /// coin itself is already on screen at all times in the rail's tie-breaker banner. A player who
-        /// wants to know WHY the sun line is live looks up at the coin; the badge's job is only to
-        /// carry that answer down onto the card. While the controller may apply either text regardless
-        /// of the coin, the badge switches to the HUD's one Active-effect violet and names both faces,
-        /// which says the same thing the tray's `ACTIVE` already says about the card granting it.</para>
-        ///
-        /// <para>It sits at the card's top-right, inside the content rectangle and above the artwork,
-        /// clear of the exterior perimeter and of the awaited-answer ring outside it - so a card that is
-        /// selected, shining and coin-selected at once draws all three without one covering another.
-        /// It never takes a pointer: the whole subtree ignores picking, which is the rule milestone
-        /// 8.35z62 measured for every child of a card face.</para>
-        /// </summary>
-        private static void AddLiveTextFaceMarker(VisualElement surface, TrayCardViewModel card)
-        {
-            var live = card.LiveText;
-            if (live == null || !live.IsDeclared || live.MarkerLabel.Length == 0)
-            {
-                return;
-            }
-
-            var background = live.ControllerChoosesTheFace
-                ? MatchHudTheme.ActiveEffectAccent
-                : MatchHudTheme.CoinFace;
-            var ink = live.ControllerChoosesTheFace
-                ? MatchHudTheme.PrimaryText
-                : MatchHudTheme.CoinInk;
-
-            var marker = new VisualElement
-            {
-                name = LiveTextFaceMarkerName,
-                pickingMode = PickingMode.Ignore,
-                focusable = false,
-                tooltip = live.AssistiveLine
-            };
-            marker.style.position = Position.Absolute;
-            marker.style.top = LiveTextFaceMarkerInset;
-            marker.style.right = LiveTextFaceMarkerInset;
-            marker.style.flexDirection = FlexDirection.Row;
-            marker.style.alignItems = Align.Center;
-            marker.style.justifyContent = Justify.Center;
-            marker.style.backgroundColor = background;
-            marker.style.paddingLeft = LiveTextFaceMarkerPadding * 2f;
-            marker.style.paddingRight = LiveTextFaceMarkerPadding * 2f;
-            marker.style.paddingTop = LiveTextFaceMarkerPadding;
-            marker.style.paddingBottom = LiveTextFaceMarkerPadding;
-            HudElements.Border(
-                marker,
-                live.ControllerChoosesTheFace
-                    ? MatchHudTheme.Darken(MatchHudTheme.ActiveEffectAccent, 0.35f)
-                    : MatchHudTheme.CoinEdge,
-                2f,
-                LiveTextFaceMarkerCornerRadius);
-
-            var label = HudElements.Text(
-                live.MarkerLabel, LiveTextFaceMarkerFontSize, ink, FontStyle.Bold);
-            label.name = LiveTextFaceMarkerLabelName;
-            label.pickingMode = PickingMode.Ignore;
-            label.style.unityTextAlign = TextAnchor.MiddleCenter;
-            marker.Add(label);
-
-            surface.Add(marker);
-        }
-
-        /// <summary>How far the live-text badge stands in from the card's own content corner.</summary>
-        private const float LiveTextFaceMarkerInset = 6f;
-
-        private const float LiveTextFaceMarkerPadding = 3f;
-
-        private const float LiveTextFaceMarkerCornerRadius = 6f;
-
-        /// <summary>
-        /// Sized against <see cref="CardFootprint.Width"/> rather than stated in isolation: the badge
-        /// is a reading of the card it stands on, so it scales with the one declared card size instead
-        /// of becoming a second number that could drift from it.
-        /// </summary>
-        private const float LiveTextFaceMarkerFontSize = CardFootprint.Width * 0.062f;
 
         /// <summary>
         /// The SEVENTH amendment's gold "shine", the same warm family the top bar and every hero tray

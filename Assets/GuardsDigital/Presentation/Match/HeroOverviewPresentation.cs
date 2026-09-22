@@ -206,132 +206,6 @@ namespace GuardsDigital.Presentation.Match
     }
 
     /// <summary>
-    /// Milestone 8.75b. Which of a two-text card's printed texts is live, as every surface that draws
-    /// a card face reads it.
-    ///
-    /// <para><b>It is composed from three declared facts and nothing else</b> - the definition's own
-    /// <see cref="CardDefinition.PrintedTextSelection"/>, the projected
-    /// <see cref="IMatchReadModel.TieBreakerState"/>, and whether the card's owner controls a live
-    /// Active effect from a card declaring <see cref="PrintedTextSelection.FreesTheCoinChoice"/>. No
-    /// hero, card, capability or printed word is recognised anywhere in it, which is what lets one
-    /// marker serve a hero who is not dealt yet and stay invisible on every hero who is.</para>
-    ///
-    /// <para><see cref="NotSelected"/> is the answer for all twenty-one dealt heroes and is a
-    /// singleton, so the common case allocates nothing and a surface's "draw nothing" test is a
-    /// reference comparison.</para>
-    /// </summary>
-    public sealed class CoinSelectedTextViewModel
-    {
-        private CoinSelectedTextViewModel(
-            bool isDeclared, bool controllerChoosesTheFace, PrintedTextFace liveFace)
-        {
-            IsDeclared = isDeclared;
-            ControllerChoosesTheFace = controllerChoosesTheFace;
-            LiveFace = liveFace;
-            RevealedSide = CoinSelectedTextQuery.SideShowing(liveFace);
-            MarkerLabel = isDeclared
-                ? PrintedTextFaceLabels.MarkerLabel(liveFace, controllerChoosesTheFace)
-                : string.Empty;
-            AssistiveLine = isDeclared
-                ? PrintedTextFaceLabels.AssistiveLine(liveFace, controllerChoosesTheFace)
-                : string.Empty;
-        }
-
-        /// <summary>
-        /// The card prints one text, or prints two and nothing selects one right now - an unrevealed
-        /// coin. Either way no marker is drawn, because there is nothing true to say.
-        /// </summary>
-        public static CoinSelectedTextViewModel NotSelected { get; } =
-            new CoinSelectedTextViewModel(false, false, PrintedTextFace.None);
-
-        /// <summary>The coin is showing this face, so that text is the live one.</summary>
-        public static CoinSelectedTextViewModel ByCoin(PrintedTextFace liveFace) =>
-            liveFace == PrintedTextFace.None
-                ? NotSelected
-                : new CoinSelectedTextViewModel(true, false, liveFace);
-
-        /// <summary>
-        /// The controller may apply either text regardless of the coin, so the marker names both.
-        /// </summary>
-        public static CoinSelectedTextViewModel ControllerChooses() =>
-            new CoinSelectedTextViewModel(true, true, PrintedTextFace.None);
-
-        /// <summary>
-        /// The reading for one card, from the definition it names and the projection drawing it. A
-        /// null projection - the p.15 upgrade candidates a caller builds from definitions alone - reads
-        /// as <see cref="NotSelected"/> unless that caller supplies its own reading, which is the
-        /// honest answer rather than a guessed coin face.
-        /// </summary>
-        public static CoinSelectedTextViewModel For(
-            CardDefinition definition, HeroId ownerId, IMatchReadModel projection) =>
-            projection == null
-                ? NotSelected
-                : For(
-                    definition,
-                    ownerId,
-                    projection.TieBreakerState,
-                    projection.ActiveEffectSourceCardInstanceIds,
-                    projection.Cards,
-                    projection.Definitions);
-
-        /// <summary>
-        /// The derivation itself, over the four facts it actually uses - stated this way for the reason
-        /// <see cref="ActiveEffectVisibility.Derive"/> is, so a fixture can put one card and one coin in
-        /// front of it without standing up a whole match.
-        /// </summary>
-        public static CoinSelectedTextViewModel For(
-            CardDefinition definition,
-            HeroId ownerId,
-            TieBreakerState tieBreaker,
-            IReadOnlyList<CardInstanceId> activeEffectSourceCardInstanceIds,
-            IReadOnlyList<CardInstance> cards,
-            IReadOnlyList<CardDefinition> definitions)
-        {
-            if (definition == null ||
-                definition.PrintedTextSelection != PrintedTextSelection.TieBreakerCoin)
-            {
-                return NotSelected;
-            }
-
-            return CoinSelectedTextQuery.MayChooseTheFace(
-                    ownerId, activeEffectSourceCardInstanceIds, cards, definitions)
-                ? ControllerChooses()
-                : ByCoin(CoinSelectedTextQuery.LiveFace(tieBreaker));
-        }
-
-        /// <summary>
-        /// The reading for a card nobody controls yet - rulebook p.15's upgrade candidates, offered
-        /// from the deck between rounds. It reads the coin and nothing else, deliberately: a free
-        /// choice is a ROUND-scoped grant on a hero who is acting, and p.15 levels between rounds, so
-        /// there is no standing grant for a card still in the deck to be under.
-        /// </summary>
-        public static CoinSelectedTextViewModel ForCoinOnly(
-            CardDefinition definition, TieBreakerState tieBreaker) =>
-            definition == null ||
-            definition.PrintedTextSelection != PrintedTextSelection.TieBreakerCoin
-                ? NotSelected
-                : ByCoin(CoinSelectedTextQuery.LiveFace(tieBreaker));
-
-        /// <summary>Whether this card carries a live-text marker at all.</summary>
-        public bool IsDeclared { get; }
-
-        /// <summary>Whether both texts are available to the controller right now.</summary>
-        public bool ControllerChoosesTheFace { get; }
-
-        /// <summary>The live face, and <see cref="PrintedTextFace.None"/> under a free choice.</summary>
-        public PrintedTextFace LiveFace { get; }
-
-        /// <summary>The side the coin is showing to select that face, for a surface that says so.</summary>
-        public TeamSide RevealedSide { get; }
-
-        /// <summary>`SUN`, `MOON`, `SUN / MOON`, or empty when no marker is drawn.</summary>
-        public string MarkerLabel { get; }
-
-        /// <summary>The line the card's hover and assistive reading adds, or empty.</summary>
-        public string AssistiveLine { get; }
-    }
-
-    /// <summary>
     /// One card of the viewed hero's current round, as the tray draws it.
     ///
     /// It carries the card's authoritative colour rather than a swatch chosen here, and the colour's own
@@ -355,8 +229,7 @@ namespace GuardsDigital.Presentation.Match
             bool isActiveEffectSource = false,
             bool isResolving = false,
             bool isAwaitedAnswer = false,
-            bool isDimmedByResolution = false,
-            CoinSelectedTextViewModel liveText = null)
+            bool isDimmedByResolution = false)
         {
             if (!cardInstanceId.IsDefined)
             {
@@ -397,7 +270,6 @@ namespace GuardsDigital.Presentation.Match
             IsResolving = isResolving;
             IsAwaitedAnswer = isAwaitedAnswer;
             IsDimmedByResolution = isDimmedByResolution;
-            LiveText = liveText ?? CoinSelectedTextViewModel.NotSelected;
             ColorName = MatchHudTheme.ColorName(color);
             // Milestone 8.7a. A card the round is still resolving is not history yet, and the round's
             // assignment history names its turn from the moment that turn starts - so a card in play
@@ -418,11 +290,11 @@ namespace GuardsDigital.Presentation.Match
             ActiveLabel = isActiveEffectSource ? "ACTIVE" : string.Empty;
             AssistiveLabel = $"{DisplayName} - {ColorName} - {Face.ValueLine} - {HistoryLabel}" +
                 (isActiveEffectSource ? " - ACTIVE EFFECT IN EFFECT" : string.Empty) +
-                (isAwaitedAnswer ? " - AWAITING YOUR ANSWER" : string.Empty) +
-                // Milestone 8.75b. Last, and only on a face that prints two texts: a card whose text
-                // the Tie Breaker coin selects says which half of itself is live, after the whole card
-                // has been read. Every other card's reading is byte-identical to what it was.
-                (LiveText.AssistiveLine.Length == 0 ? string.Empty : " - " + LiveText.AssistiveLine);
+                // Milestone 8.75e. NOTHING follows about which of a two-text card's printed lines is
+                // live. Milestone 8.75b appended one; the user dropped that reading along with the
+                // corner badge it explained ("Drop the badge and rely on the coin strip alone"), so
+                // EVERY card of every hero reads exactly as it did before her.
+                (isAwaitedAnswer ? " - AWAITING YOUR ANSWER" : string.Empty);
         }
 
         public CardInstanceId CardInstanceId { get; }
@@ -516,13 +388,6 @@ namespace GuardsDigital.Presentation.Match
         /// view model on a different surface, not a member of this hand at all.
         /// </summary>
         public bool IsDimmedByResolution { get; }
-
-        /// <summary>
-        /// Milestone 8.75b. Which of this card's printed texts is live, for a face that prints two.
-        /// Never null: <see cref="CoinSelectedTextViewModel.NotSelected"/> is what every card of the
-        /// twenty-one dealt heroes carries, and it draws nothing.
-        /// </summary>
-        public CoinSelectedTextViewModel LiveText { get; }
 
         /// <summary>
         /// `RESOLVING`, `PLAYED · TURN n`, `AVAILABLE`, or `DISCARDED` - and never a round number.
@@ -1530,13 +1395,7 @@ namespace GuardsDigital.Presentation.Match
                 projection.IsActiveEffectSource(card.Id),
                 isResolving,
                 isAwaitedAnswer,
-                isDimmedByResolution,
-                // Milestone 8.75b. Asked of the projection for the same reason the Active flag above
-                // is: the live coin face and the round's free-choice grant are the authority's facts,
-                // and the reading is composed once here so every surface that draws this card - the
-                // hand, the rail's reveal, a Defense or effect-choice offer, the decision window, the
-                // hover peek - says the same thing about which of its texts applies.
-                CoinSelectedTextViewModel.For(definition, card.OwnerId, projection));
+                isDimmedByResolution);
         }
 
         /// <summary>
@@ -1549,16 +1408,9 @@ namespace GuardsDigital.Presentation.Match
         /// nothing sourced from it can be a live Active effect, because an effect's source is a card that
         /// was played, and it is not the card being resolved for the same reason.</para>
         /// </summary>
-        /// <param name="liveText">
-        /// Milestone 8.75b. The live-text reading, from a caller that holds the projection - p.15's
-        /// upgrade prompt does, and a candidate a player is about to put in their hand has to read the
-        /// same way the card will once it is there. A caller with no projection passes nothing and the
-        /// candidate carries no marker, which is the honest answer rather than a guessed coin face.
-        /// </param>
         public static TrayCardViewModel DeckCard(
             CardInstanceId cardInstanceId,
-            CardDefinition definition,
-            CoinSelectedTextViewModel liveText = null) =>
+            CardDefinition definition) =>
             new TrayCardViewModel(
                 cardInstanceId,
                 definition?.Reference ?? default,
@@ -1572,8 +1424,7 @@ namespace GuardsDigital.Presentation.Match
                 // Milestone 8.35m: this class's whole point is "a surface that offers it" - the doc
                 // comment above already says so - so every candidate it builds is card-scope's leveling
                 // upgrade case, unconditionally.
-                isAwaitedAnswer: true,
-                liveText: liveText);
+                isAwaitedAnswer: true);
 
         /// <summary>
         /// Milestone 8.5a: one card definition read into the four value homes and the printed words its

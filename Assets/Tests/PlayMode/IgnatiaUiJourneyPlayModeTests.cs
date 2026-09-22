@@ -233,38 +233,110 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// THE LIVE-FACE MARKER, read on the card itself before a player presses it - milestone 8.75b's
-        /// corner badge, which is the one surface that says WHICH of a two-text card's printed lines is
-        /// in force. It is asserted in every journey of hers that presses a card, because on this hero
-        /// the answer to "what will this card do" is not on the card alone.
+        /// THE TIE BREAKER BANNER the rail draws - since milestone 8.75e the ONE surface that says
+        /// which of a two-text card's printed lines is live.
+        /// </summary>
+        internal static VisualElement TieBreakerBanner(ConfiguredMatchHudRenderer hud)
+        {
+            var matches = UiPlayer.Descendants(hud.RootElement)
+                .Where(element => element.name == "gd-tie-breaker-rail-banner")
+                .ToArray();
+            Assert.That(matches, Has.Length.EqualTo(1),
+                "The rail draws exactly one tie-breaker banner. " + UiPlayer.Describe(hud));
+            return matches[0];
+        }
+
+        /// <summary>
+        /// The banner is on screen and its own geometry puts it on the side the coin is showing -
+        /// which is the whole of the reading, on the strip the user kept.
+        /// </summary>
+        internal static void AssertBannerShows(
+            MatchSceneCompositionRoot root, PrintedTextFace face)
+        {
+            var banner = TieBreakerBanner(root.Hud);
+            Assert.That(UiPlayer.IsShown(banner), Is.True,
+                "The coin strip is on screen. " + UiPlayer.Describe(root.Hud));
+            var expected = face == PrintedTextFace.Sun
+                ? root.Hud.RedTieBreakerRailBannerRect
+                : root.Hud.BlueTieBreakerRailBannerRect;
+            Assert.That(banner.style.left.value.value, Is.EqualTo(expected.x).Within(0.5f),
+                "The banner's own geometry names the side the coin is showing - " +
+                PrintedTextFaceLabels.SideWord(CoinSelectedTextQuery.SideShowing(face)) +
+                ", which is the " + PrintedTextFaceLabels.Word(face) +
+                " face - and that is where a player looks to find out why a card reads the way it " +
+                "does.");
+        }
+
+        /// <summary>
+        /// THE LIVE FACE, read before a player presses a card, because on this hero the answer to
+        /// "what will this card do" is not on the card alone.
+        ///
+        /// <para><b>Milestone 8.75e re-stated this.</b> Milestone 8.75c read it off a corner badge
+        /// milestone 8.75b drew on every two-text card; the user dropped that badge after the first
+        /// live playtest ("Drop the badge and rely on the coin strip alone"), so the reading is taken
+        /// where a player now takes it: the match's own coin, through
+        /// <see cref="CoinSelectedTextQuery.LiveFace"/> over the seat's projected
+        /// <c>TieBreakerState</c>, and the rail's tie-breaker banner, which is the coin ON SCREEN.
+        /// Both halves are asserted - the authority's fact and the pixels that carry it - so a journey
+        /// still proves which text is live before it presses, and cannot pass because something is
+        /// missing: the card itself is found first, and <see cref="HerTrayFace"/> fails unless exactly
+        /// one shown tray card is printing that name.</para>
         /// </summary>
         internal static void AssertLiveFace(
             MatchSceneCompositionRoot root, string printedName, PrintedTextFace face, bool chooses)
         {
-            var card = HerTrayFace(root.Hud, printedName);
-            var markers = UiPlayer.Descendants(card)
-                .Where(element => element.name == ConfiguredCardFaceView.LiveTextFaceMarkerName)
+            var runtime = root.Runtime;
+
+            // The card is found on screen first. A read that passed because the face was absent
+            // would prove nothing at all, and `HerTrayFace` itself fails unless exactly one SHOWN
+            // tray card is printing that name.
+            HerTrayFace(root.Hud, printedName);
+            Assert.That(face, Is.Not.EqualTo(PrintedTextFace.None),
+                "A revealed coin selects one of '" + printedName + "'s two printed texts; an " +
+                "unrevealed one selects neither, and no journey of hers is driven under one. " +
+                Remaining(runtime));
+
+            // The coin the seat is projected, and the strip that carries it. Comparing the two is the
+            // whole read: the authority says which face is up and the rail's banner has to be on that
+            // team's side of the screen, or a player is reading the wrong half of every card of hers.
+            Assert.That(
+                CoinSelectedTextQuery.LiveFace(runtime.Projection.TieBreakerState),
+                Is.EqualTo(face),
+                "The coin shows the " + PrintedTextFaceLabels.Word(face) + " face, which is the " +
+                "half of '" + printedName + "' that will run. " + Remaining(runtime));
+            AssertBannerShows(root, face);
+
+            if (!chooses)
+            {
+                return;
+            }
+
+            // Equilibrium's round-long grant is standing, so the coin above is NOT what decides this
+            // card: she is asked on each primary action, on the decision window's own two controls.
+            // What is asserted here is WHICH card freed the round - a strictly stronger statement than
+            // the query's "some card of hers declaring `FreesTheCoinChoice` is live", because exactly
+            // one face of her dealt set declares it and a second one appearing would be a defect this
+            // read would otherwise pass straight over.
+            var freeing = runtime.Projection.ActiveEffectSourceCardInstanceIds
+                .Select(id => runtime.Cards.FirstOrDefault(value => value.Id.Equals(id)))
+                .Where(value => value != null && value.OwnerId.Equals(Ignatia(runtime)))
+                .Select(value => value.DefinitionReference.DefinitionId)
                 .ToArray();
-            Assert.That(markers, Has.Length.EqualTo(1),
-                "'" + printedName + "' prints two texts, so it wears exactly one live-text marker.");
-            var labels = UiPlayer.Descendants(markers[0])
-                .OfType<TextElement>()
-                .Where(element => element.name == ConfiguredCardFaceView.LiveTextFaceMarkerLabelName)
-                .ToArray();
-            Assert.That(labels, Has.Length.EqualTo(1));
-            Assert.That(labels[0].text, Is.EqualTo(PrintedTextFaceLabels.MarkerLabel(face, chooses)),
-                "The marker on '" + printedName + "' names the live text.");
-            Assert.That(markers[0].tooltip,
-                Is.EqualTo(PrintedTextFaceLabels.AssistiveLine(face, chooses)),
-                "and its assistive reading says WHY that text is the live one.");
+            Assert.That(
+                freeing.Any(id => id.Equals(IgnatiaCardContent.Equilibrium)),
+                Is.True,
+                "A freed round is HER EQUILIBRIUM standing and nothing else - it is the one face of " +
+                "her set that frees the choice. Her live Active effect sources are: " +
+                string.Join(", ", freeing.Select(id => id.Value)) + ". " + Remaining(runtime));
         }
 
         /// <summary>
         /// The same reading, taken off the CARD's own declaration: a face whose printed text the coin
-        /// selects wears the marker, and a face that does not - her Silver, which FREES the choice
-        /// rather than being subject to it, and her Ultimate, which prints no action at all - wears
-        /// none. Asserting the absence is half the claim: a marker on Equilibrium would be saying the
-        /// coin picks which of its texts applies, and Equilibrium prints one.
+        /// selects is read under the coin, and a face that does not - her Silver, which FREES the
+        /// choice rather than being subject to it, and her Ultimate, which prints no action at all -
+        /// is read as a card the coin does not speak for. Asserting the second half is half the claim:
+        /// reading Equilibrium under the coin would be saying the coin picks which of its texts
+        /// applies, and Equilibrium prints one.
         /// </summary>
         internal static void AssertLiveFaceIfDeclared(
             MatchSceneCompositionRoot root, CardDefinitionId face)
@@ -272,16 +344,22 @@ namespace GuardsDigital.Tests.PlayMode
             var runtime = root.Runtime;
             var hers = Ignatia(runtime);
             var printedName = NameOf(runtime, face);
-            if (IgnatiaCardContent.Definition(face).PrintedTextSelection !=
-                PrintedTextSelection.TieBreakerCoin)
+            var declared = IgnatiaCardContent.Definition(face).PrintedTextSelection;
+            if (declared != PrintedTextSelection.TieBreakerCoin)
             {
+                // The card is still found on screen - the read must never pass by absence - and the
+                // claim made about it is the one its own declaration supports: the coin selects
+                // nothing on this face.
+                HerTrayFace(root.Hud, printedName);
                 Assert.That(
-                    UiPlayer.Descendants(HerTrayFace(root.Hud, printedName))
-                        .Any(element =>
-                            element.name == ConfiguredCardFaceView.LiveTextFaceMarkerName),
-                    Is.False,
-                    "'" + printedName + "' does not print two coin-selected texts, so it wears no " +
-                    "live-text marker at all.");
+                    new[] { IgnatiaCardContent.Equilibrium, IgnatiaCardContent.ChaosIncarnate }
+                        .Any(value => value.Equals(face)),
+                    Is.True,
+                    "'" + printedName + "' is read without the coin, and exactly two dealt faces of " +
+                    "hers may be: her Silver, which FREES the choice, and her Ultimate, which " +
+                    "prints no action at all. Every other face prints two texts the coin selects, " +
+                    "so meeting one here means a declaration drifted and a journey stopped reading " +
+                    "the coin without anybody saying so.");
                 return;
             }
 
@@ -338,8 +416,9 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Reads the live-face marker on the card about to be committed, commits every seat, drives the
-        /// turn to her and starts the printed action.
+        /// Reads the live face of the coin - on the seat's projection and on the rail's own strip -
+        /// before the card is committed, commits every seat, drives the turn to her and starts the
+        /// printed action.
         /// </summary>
         internal static IEnumerator BeginIgnatia(
             MatchSceneCompositionRoot root,
@@ -662,8 +741,8 @@ namespace GuardsDigital.Tests.PlayMode
 
         /// <summary>
         /// Her own token stands at the configured Blue spawn as Ignatia and only once, a camera ray on
-        /// it points the tray at her, her cards wear the live-text marker the coin decides, and her tray
-        /// commits a face through rulebook p.7's own reveal.
+        /// it points the tray at her, the coin strip says which half of her two-text cards is live, and
+        /// her tray commits a face through rulebook p.7's own reveal.
         ///
         /// <para>The other half of her identity - that the 8.35z86 picker finds her by her FOUR stars
         /// and each of her FIVE printed roles, draws her own pick card on hover, hides her for a role
@@ -998,10 +1077,11 @@ namespace GuardsDigital.Tests.PlayMode
         /// offline before it was written, over sixteen searched self-play runs of the staged Tier III
         /// board, where the coin-gate pause opens on exactly those turns and on no others.</para>
         ///
-        /// <para><b>The card is read on the tray before it is pressed.</b> While the marker stands, her
-        /// cards' corner markers switch from the coin's own face to <c>SUN / MOON</c> and their
-        /// assistive line says the choice is hers on each primary this round - which is the only
-        /// difference a player can see between a freed round and an ordinary one.</para>
+        /// <para><b>The card is read on the tray before it is pressed.</b> While the marker stands, the
+        /// card that raised it is lying faceup wearing <c>ACTIVE</c> - which, since milestone 8.75e
+        /// dropped the corner badge, is the difference a player sees on screen between a freed round
+        /// and an ordinary one. The face itself is then named in the decision window, on its own two
+        /// controls, each time she performs or repeats a primary action.</para>
         ///
         /// <para><b>And the face she picks is the one that runs, against the coin.</b> On the sun board
         /// she applies the MOON text and the in-a-straight-line subjects are what she is offered; on the

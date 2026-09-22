@@ -388,12 +388,19 @@ namespace GuardsDigital.Tests.PlayMode
         /// build reads something a player did, and this one reads a coin sitting on the HUD.</para>
         ///
         /// <para><b>Why it is its own shape and not folded into the card footprint beside it.</b> The
-        /// footprint reading proves a face draws whole; this proves that a face draws DIFFERENTLY as
+        /// footprint reading proves a face draws whole; this proves that a face RUNS DIFFERENTLY as
         /// the round goes on. A row claiming only the footprint would be satisfied by a journey that
-        /// never turned the coin over, which is precisely the journey that cannot tell a working
-        /// live-face marker from a constant one - so the shape exists to force a journey that reads
-        /// the same card under BOTH faces. Milestone 8.75b's `gd-card-live-text-face` marker and its
-        /// tooltip tail are what such a journey reads.</para>
+        /// never turned the coin over, which is precisely the journey that cannot tell a working coin
+        /// branch from a constant one - so the shape exists to force a journey that reads the same
+        /// card under BOTH faces.</para>
+        ///
+        /// <para><b>Where such a journey reads it, since milestone 8.75e.</b> The coin itself, in the
+        /// seat's own projection (<c>CoinSelectedTextQuery.LiveFace</c>), and the rail's tie-breaker
+        /// banner, which is the coin ON SCREEN. Milestone 8.75b also put a `SUN` / `MOON` badge in
+        /// every such card's corner and that is what 8.75c's journeys read; the user dropped the badge
+        /// after the first live playtest of the twenty-two-hero build - "Drop the badge and rely on
+        /// the coin strip alone" - so the reading moved to the strip and the journeys moved with
+        /// it.</para>
         /// </summary>
         CoinSelectedTextReading,
 

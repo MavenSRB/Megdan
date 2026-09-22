@@ -79,30 +79,10 @@ namespace GuardsDigital.Tests.PlayMode
                 "and what refusing it does.");
         }
 
-        /// <summary>The tie-breaker banner the rail draws, and the side its own geometry puts it on.</summary>
-        private static VisualElement TieBreakerBanner(ConfiguredMatchHudRenderer hud)
-        {
-            var matches = UiPlayer.Descendants(hud.RootElement)
-                .Where(element => element.name == "gd-tie-breaker-rail-banner")
-                .ToArray();
-            Assert.That(matches, Has.Length.EqualTo(1),
-                "The rail draws exactly one tie-breaker banner. " + UiPlayer.Describe(hud));
-            return matches[0];
-        }
-
-        private static void AssertBannerShows(
-            MatchSceneCompositionRoot root, PrintedTextFace face)
-        {
-            var banner = TieBreakerBanner(root.Hud);
-            Assert.That(UiPlayer.IsShown(banner), Is.True, "and it is on screen.");
-            var expected = face == PrintedTextFace.Sun
-                ? root.Hud.RedTieBreakerRailBannerRect
-                : root.Hud.BlueTieBreakerRailBannerRect;
-            Assert.That(banner.style.left.value.value, Is.EqualTo(expected.x).Within(0.5f),
-                "The banner's own geometry names the side the coin is showing - " +
-                PrintedTextFaceLabels.SideWord(CoinSelectedTextQuery.SideShowing(face)) +
-                " - which is where a player looks to find out why a card reads the way it does.");
-        }
+        // Milestone 8.75e. `TieBreakerBanner` and `AssertBannerShows` moved to
+        // `IgnatiaUiJourneyPlayModeTests` (reached here through its `using static`): with the corner
+        // badge dropped, the rail's banner is the ONE surface the live face is read on, so every
+        // journey of hers reads it and the helper belongs beside the rest of her shared reading.
 
         // -------------------------------------------------------------------------------------------
         // p.15 and p.16: the whole upgrade face, and the item the untaken sibling becomes
@@ -864,10 +844,11 @@ namespace GuardsDigital.Tests.PlayMode
         /// the first face could not have made at all, which is the clearest thing the flip can be shown
         /// to do.</para>
         ///
-        /// <para><b>The flip is read on three surfaces.</b> The match's own coin, the rail's tie-breaker
-        /// banner - which eases to the other team's side - and every card in her tray, whose corner
-        /// marker now reads the other word. All three are asserted, because the coin is the only reason
-        /// her hand means what it means.</para>
+        /// <para><b>The flip is read on both surfaces that carry it.</b> The match's own coin, in the
+        /// seat's projection, and the rail's tie-breaker banner - which eases to the other team's side
+        /// and is, since milestone 8.75e, the only place on screen that says which of a two-text card's
+        /// lines is live. Both are asserted on both sides of the flip, because the coin is the only
+        /// reason her hand means what it means.</para>
         ///
         /// <para>And the once-per-turn bound is the condition's own: "the FIRST time each turn". After
         /// the repeated instance has performed a primary action of its own, no second flip is
