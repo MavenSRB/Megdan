@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.80 Defense window attacker card completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.80 | The user's live report: the Defense window drew no attacker's card on any network seat since 8.58, because `NetworkMatchClient` returned a null attack frame beside a true `HasPendingAttackResolution` (the defending seat does receive the narrowed frame - the recording's other half corrected). The Defense choice now carries the attack's source card, definition and action; wire /20 -> /21 with the tripwires and docs moved; the client materialises them; the window reads the choice. Pre-fix red observed. Harness 4457/4457; complete Edit Mode 5480/5444/0/36; complete Play Mode 826/826 zero skips; no schema move. [Definition](../../Roadmap/PHASE_8.md#x-880-the-defense-window-shows-the-attackers-card-on-every-seat). | `568ad03b` |
+
 ## Milestone 8.75d repeat offer completion evidence
 
 | Milestone | Outcome and definition | Commit |
