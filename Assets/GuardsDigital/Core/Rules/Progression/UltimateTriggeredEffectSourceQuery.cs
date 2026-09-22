@@ -43,7 +43,8 @@ namespace GuardsDigital.Core.Rules.Progression
                             ultimate.Rule.TriggerCondition,
                             basicAction, primaryAction, movementAction, attackAction)))
                 .Select((ultimate, index) =>
-                    ultimate.TriggeredSource(participants, index, basicAction, attackAction))
+                    ultimate.TriggeredSource(
+                        participants, index, basicAction, attackAction, primaryAction))
                 .Where(source => source != null)
                 .ToArray();
         }

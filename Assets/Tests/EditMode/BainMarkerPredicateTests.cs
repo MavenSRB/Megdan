@@ -356,7 +356,17 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(71),
+            Assert.That(nodes.Length, Is.EqualTo(75),
+                "RE-MEASURED at 8.75a: the 8.69 wave's 71 plus Ignatia the Mad's four, which are " +
+                "her four SUN attack lines that name an adjacent unit - Chaos Bolt ('a minion " +
+                "adjacent to you'), Unreliable Jolt ('a hero adjacent to you'), Crack of Doom and " +
+                "Imminent Eruption ('a unit adjacent to you'). Her other thirteen composed faces " +
+                "reach their subject through the four card-text ranges minted in " +
+                "`IgnatiaAttackTargetingContent`, the two discard subjects in " +
+                "`IgnatiaDiscardTargetingContent` or a printed Radius, and none of them binds this " +
+                "capability. Her composition landed at the 8.75 inventory commit, which ran only " +
+                "`--filter Ignatia` and never this suite, so the number was already out of date on " +
+                "the branch this block was cut from; it is re-measured here rather than left red. " +
                 "RE-MEASURED at the 8.69 wave merge: 8.69e's 69 plus 8.69c's two - Mountain Guide's " +
                 "and Expedition Leader's first sentences (a friendly unit adjacent to you), none on " +
                 "Decoy, whose bullets read a printed Radius icon. " +

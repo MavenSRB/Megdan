@@ -212,6 +212,16 @@ namespace GuardsDigital.Tests.EditMode
             // of his co-moves are Skills whose modal bullets are coupled Moves, so nothing in them
             // binds an Attack target at all and he adds no at-risk gate.
             foreach (var card in HanuCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("hanu", d);
+            // Milestone 8.75a. The twenty-second hero, whose line is owed the moment an
+            // `IgnatiaCardContent` exists, dealt or not - and hers has existed since the 8.75
+            // inventory commit, which never ran this suite. Seventeen of her eighteen dealt faces
+            // compose a body, and every one of them binds its Attack target by card text: her whole
+            // set is ONE Conditional on `ignatia-coin-sun@1` whose two arms are the sun and moon
+            // lines, and each arm of an Attack ends in `set-attack-target@1`. That is the shape this
+            // sweep watches for - a gate hiding a binding - but it is not the shape it FLAGS: the
+            // binding stands INSIDE both arms rather than after the gate, so each branch the
+            // predicate can take reaches one, which is what `FindUnresolvedGates` asks.
+            foreach (var card in IgnatiaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ignatia", d);
         }
 
         /// <summary>

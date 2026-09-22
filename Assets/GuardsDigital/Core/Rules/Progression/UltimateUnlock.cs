@@ -76,7 +76,8 @@ namespace GuardsDigital.Core.Rules.Progression
             MatchParticipants participants,
             long orderingSequence = 0,
             GuardsDigital.Core.Cards.PerformedBasicAction triggeringBasicAction = default,
-            GuardsDigital.Core.Cards.PerformedAttackAction triggeringAttackAction = default)
+            GuardsDigital.Core.Cards.PerformedAttackAction triggeringAttackAction = default,
+            GuardsDigital.Core.Cards.PerformedPrimaryAction triggeringPrimaryAction = default)
         {
             if (!Rule.TriggeredEffect.HasValue) return null;
             if (participants == null) throw new ArgumentNullException(nameof(participants));
@@ -93,7 +94,8 @@ namespace GuardsDigital.Core.Rules.Progression
                 Rule.TriggerCheckpoints,
                 orderingSequence,
                 triggeringBasicAction,
-                triggeringAttackAction);
+                triggeringAttackAction,
+                triggeringPrimaryAction);
         }
 
         /// <summary>

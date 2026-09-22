@@ -24,7 +24,8 @@ namespace GuardsDigital.Core.Cards
     }
 
     public sealed class RoundResolutionAuthority
-        : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim
+        : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim,
+            GuardsDigital.Core.Setup.IMatchTieBreakerCoin
     {
         public const int TurnsPerRound = 4;
 
@@ -239,6 +240,11 @@ namespace GuardsDigital.Core.Cards
             // authority's own state and the interface is already the narrowing.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
                 turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this));
+
+            // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
+            // authority is what answers which face is showing at every moment a turn is not running,
+            // and the turn re-binds itself when one starts. Ignatia the Mad's every action reads it.
+            this.cardActions?.BindTieBreakerCoin(this);
             this.endOfRoundStageAvailability = endOfRoundStageAvailability ??
                 (board != null && GuardsDigital.Core.Rules.Modifications.BattleZoneQuery
                         .TryGetCurrentBattleZone(board, out _)
@@ -279,6 +285,24 @@ namespace GuardsDigital.Core.Cards
 
         public TieBreakerState TieBreakerState =>
             CurrentTurnAuthority?.TieBreakerState ?? tieBreakerState;
+
+        /// <summary>
+        /// Milestone 8.75a. Turns the match's coin over for a card that prints it, from whichever of
+        /// the two authorities is holding it: the turn's, while one is running, and the round's own
+        /// between turns. It is the same read the property above makes, written once more as a write.
+        /// </summary>
+        TeamSide GuardsDigital.Core.Setup.IMatchTieBreakerCoin.FlipTieBreaker()
+        {
+            if (CurrentTurnAuthority != null)
+            {
+                return ((GuardsDigital.Core.Setup.IMatchTieBreakerCoin)CurrentTurnAuthority)
+                    .FlipTieBreaker();
+            }
+
+            tieBreakerState = new TieBreakerState(
+                tieBreakerState.RevealedSide == TeamSide.Red ? TeamSide.Blue : TeamSide.Red);
+            return tieBreakerState.RevealedSide;
+        }
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots => turnSlots.AsReadOnly();
 
@@ -966,6 +990,12 @@ namespace GuardsDigital.Core.Cards
                 // Milestone 8.39g1. A restored round is as claimable as a composed one - the claim is
                 // refused on its own terms when the payload already carries a winner.
                 authority));
+
+            // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
+            // way it is re-bound to the restored roster state one line above and for the same reason:
+            // the binding is not part of the payload, so a restore that skipped it would walk every
+            // one of Ignatia the Mad's cards with no face showing.
+            cardActions?.BindTieBreakerCoin(authority);
             authority.completedRounds.Clear();
             authority.completedRounds.AddRange(state.History.CompletedRounds);
             authority.endOfRoundOutcomes.Clear();

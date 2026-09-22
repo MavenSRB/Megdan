@@ -117,6 +117,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// </summary>
         private PendingAfterActionRepeat repeatSubject;
 
+        /// <summary>
+        /// Milestone 8.75a. The match's one live Tie Breaker coin, bound by the authority that owns
+        /// it. Null in a dispatcher composed without one - content validation and the fixtures that
+        /// drive this type directly - which reads as the unrevealed face everywhere.
+        /// </summary>
+        private GuardsDigital.Core.Setup.IMatchTieBreakerCoin tieBreakerCoin;
+
         private PendingAfterActionRepeat owedAfterActionRepeat;
 
         /// <summary>
@@ -337,6 +344,33 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.75a. Binds the match's one live Tie Breaker coin, on the shape
+        /// <see cref="BindRosterState"/> and <c>BindHeroItems</c> already use and for the reason they
+        /// use it: the coin is authoritative state owned by an authority composed after this
+        /// dispatcher, and a copy of it would be a second answer to which face is showing.
+        ///
+        /// <para><b>Why every effect entry here needs it, and not only Ignatia's Ultimate.</b> Her
+        /// whole set is composed as a Conditional on <c>ignatia-coin-sun@1</c>, which reads the face
+        /// off the capability context. A path that walked her card text without one would report her
+        /// every attack and skill impossible, which greys them - so completeness here is what makes
+        /// her set playable, and <c>IgnatiaCoinThreadingTests</c> holds it structurally rather than
+        /// path by path.</para>
+        ///
+        /// <para>A dispatcher with no coin bound - content validation, and every fixture that drives
+        /// one directly - reads <see cref="TeamSide.None"/>, which is what every resolution in the
+        /// build did before this milestone and what keeps them byte-identical.</para>
+        /// </summary>
+        internal void BindTieBreakerCoin(GuardsDigital.Core.Setup.IMatchTieBreakerCoin coin)
+        {
+            tieBreakerCoin = coin ?? throw new ArgumentNullException(nameof(coin));
+            skillBackend.BindTieBreakerCoin(coin);
+        }
+
+        /// <summary>The face the match's coin is showing, or the named absence when none is bound.</summary>
+        private TeamSide LiveTieBreakerSide =>
+            tieBreakerCoin?.TieBreakerState.RevealedSide ?? TeamSide.None;
+
+        /// <summary>
         /// Forwards the match's Active-effect lifecycle to the backend that resolves p.13's Defeat, so
         /// a standing bounty can be spent by one. Milestone 8.38c1, on the shape
         /// <see cref="BindRosterState"/> and <c>BindHeroItems</c> already use.
@@ -484,7 +518,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null,
             PerformedBasicAction basicAction = default,
             AttackTarget completedAttackTarget = default,
-            PerformedAttackAction attackAction = default)
+            PerformedAttackAction attackAction = default,
+            PerformedPrimaryAction primaryAction = default)
         {
             // Milestone 8.23. The subject is held before the trigger runs, because the trigger may open
             // a decision and the action it is about has already finished by then. It is cleared again
@@ -497,18 +532,41 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // when both facts are defined they name one card, one action and one hero, so the two
             // subjects are identical and the order decides nothing; when only the attack fact is
             // defined it is the only subject there is.
+            //
+            // Milestone 8.75a. The third reading, LAST, and last for the reason the second is
+            // second: a basic action and a basic Attack both name the same card, action and hero, so
+            // an earlier reading that answered has already built the subject this one would. What it
+            // adds is the case neither of the two above can see - a PRIMARY action performed off a
+            // coloured card that is not an Attack, which is most of what Ignatia the Mad plays and
+            // exactly what Chaos Incarnate is about.
+            //
+            // IT IS CONDITIONED ON AN ABILITY THAT READ THAT SAME FACT STANDING AT THIS CHECKPOINT,
+            // and the two readings above are not. The difference is what an unconditional third
+            // reading would do to every other card in the box: a held subject holds the ACTION open
+            // across any decision at this checkpoint (milestone 8.25a), so building one for every
+            // primary action would hold every coloured card's Skill and Movement open across every
+            // trigger that asks anything - measured on `TurnResolutionAuthorityTests`'
+            // synthetic Active-effect trigger, where a Hold stopped being acknowledged. An
+            // occurrence carrying `TriggeringPrimaryAction` is exactly "an ability derived from the
+            // primary fact is standing here", which is the only ability that can ask to repeat it.
+            var sources = continuousSources?.ToArray() ??
+                Array.Empty<ContinuousTriggeredEffectSource>();
             repeatSubject =
                 PendingAfterActionRepeat.For(
                     basicAction, RepeatResolutionIdFor(basicAction), completedAttackTarget) ??
                 PendingAfterActionRepeat.For(
-                    attackAction, RepeatResolutionIdFor(attackAction), completedAttackTarget);
+                    attackAction, RepeatResolutionIdFor(attackAction), completedAttackTarget) ??
+                (sources.Any(source => source.TriggeringPrimaryAction.IsDefined)
+                    ? PendingAfterActionRepeat.For(
+                        primaryAction, RepeatResolutionIdFor(primaryAction), completedAttackTarget)
+                    : null);
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
             var materializedInstances = instances?.ToArray() ??
                 throw new ArgumentNullException(nameof(instances));
             var events = triggeredEffects.ApplyCheckpoint(
                 timing, checkpoint, tieBreaker, materializedDefinitions, materializedInstances,
-                participants, modifications, skillBackend.HeroItems, continuousSources,
+                participants, modifications, skillBackend.HeroItems, sources,
                 // Milestone 8.25e. The ability asks this before it offers, and asks it with the
                 // binding its own node declares - the exclusion Cloak and Daggers prints is part of
                 // what the instance it offers would have to satisfy. The board is the one this
@@ -516,7 +574,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // from.
                 binding => OwedRepeatCanBePerformed(
                     binding, materializedDefinitions, materializedInstances, participants,
-                    modifications, checkpoint.RoundIndex, checkpoint.TurnIndex, timing));
+                    modifications, checkpoint.RoundIndex, checkpoint.TurnIndex, timing),
+                // Milestone 8.75a. The live coin, so a body that prints "you may flip the Tie
+                // Breaker coin" can have it flipped before the node after the flip reads a face.
+                tieBreakerCoin);
             SettleAfterActionRepeat(triggeredEffects.LastRepeatRequested);
             SettleTriggeredBorrow();
             return events;
@@ -689,6 +750,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 : default;
 
         /// <summary>
+        /// The same identity minted from the completed PRIMARY fact. Milestone 8.75a, on exactly the
+        /// terms the overload above records: the id is a pure function of the card and the action, so
+        /// an action that defines two of the three facts gets one id whichever the standing ability
+        /// happened to read.
+        /// </summary>
+        private static ActionResolutionId RepeatResolutionIdFor(PerformedPrimaryAction primaryAction) =>
+            primaryAction.IsDefined
+                ? new ActionResolutionId(
+                    $"after-action-repeat:{primaryAction.SourceCardInstanceId.Value}:" +
+                    $"{primaryAction.ActionDefinitionId.Value}")
+                : default;
+
+        /// <summary>
         /// Milestone 8.23. Keeps the held subject exactly while the ability that may repeat it is
         /// standing, and turns it into an owed repeat when the ability asked for one.
         ///
@@ -787,7 +861,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var answered = CompleteTriggeredConsequences(
                 triggeredEffects.Answer(
                     command, timing, materializedDefinitions, materializedInstances, participants,
-                    modifications, roundIndex, turnIndex, skillBackend.HeroItems),
+                    modifications, roundIndex, turnIndex, skillBackend.HeroItems,
+                    // Milestone 8.75a. The answer that finishes one `may` can walk straight into a
+                    // repeat - Chaos Incarnate's flip is answered and the repeat is the node after
+                    // it - so 8.25e's live feasibility probe travels this path too, asked against the
+                    // board as it now stands and under the face the coin now shows.
+                    binding => OwedRepeatCanBePerformed(
+                        binding, materializedDefinitions, materializedInstances, participants,
+                        modifications, roundIndex, turnIndex, timing),
+                    tieBreakerCoin),
                 participants,
                 modifications,
                 materializedDefinitions,
@@ -850,7 +932,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // start from, exactly as milestone 8.25e requires.
                 binding => OwedRepeatCanBePerformed(
                     binding, boundary.Definitions, boundary.Instances, boundary.Participants,
-                    modifications, boundary.RoundIndex, boundary.TurnIndex, boundary.Timing));
+                    modifications, boundary.RoundIndex, boundary.TurnIndex, boundary.Timing),
+                tieBreakerCoin);
         }
 
         internal IReadOnlyList<ResolutionStep> ConsumeTriggeredResolutionSteps()
@@ -1208,7 +1291,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ActionKind.Attack,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             return EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId(
@@ -2314,7 +2398,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions,
                     materializedInstances,
                     participants,
-                    modifications));
+                    modifications),
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"card-text-{card.Id.Value}-{action.Id.Value}-{step.CardTextTiming}"),
@@ -3526,7 +3611,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions,
                     materializedInstances,
                     participants,
-                    modifications));
+                    modifications),
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
             if (!step.Accepted)
             {
@@ -3685,7 +3771,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 ActionKind.Skill,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"before-action-{source.SourceId}-{heldResolutionId.Value}"),
@@ -3956,7 +4043,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 action.Kind,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
                     $"around-action-{heldOffer.SourceCardInstanceId.Value}-{entryNodeId.Value}"),
@@ -4076,7 +4164,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 enclosingKind,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Answer(paused.Frame, command, context);
             if (!step.Accepted)
             {
@@ -4382,7 +4471,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     : default,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
 
         // -------------------------------------------------------------------------------------------
         // Milestone 8.61e. Rulebook p.18's "any special effects of tokens are still applied", read for
@@ -4652,7 +4742,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 opposingHeroId: mover,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
 
         /// <summary>
         /// Rebind the exact discarded card from the interrupted operation's persisted last outcome.
@@ -4685,7 +4776,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CurrentModificationsFor(boundary, source.OwnerId),
                 EffectCardState.Of(boundary.Definitions, boundary.Instances), ActionKind.Skill,
                 components: components, heroItems: skillBackend.HeroItems, rosterState: rosterState,
-                triggeredCardId: discarded);
+                triggeredCardId: discarded,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(interrupted.ResolutionId.Value + ":discard-trigger:" +
                     interrupted.CompletedOutcomes.Count + ":" + discarded.Value),
@@ -4828,7 +4920,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 opposingHeroId: source.RecipientId,
                 components: components,
                 heroItems: skillBackend.HeroItems,
-                rosterState: rosterState);
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
 
         /// <summary>
         /// The live rules for one acting hero, derived from a boundary context. The unlocked Ultimates
@@ -4886,7 +4979,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 heroItems: skillBackend.HeroItems,
                 rosterState: rosterState,
                 triggeredCardId: standing.Kind == EffectInterruptKind.AfterResolvedCardDiscardTrigger
-                    ? InterruptedDiscardedCard(standing, boundary.Definitions) : default);
+                    ? InterruptedDiscardedCard(standing, boundary.Definitions) : default,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Answer(standing.Frame, command, context);
             if (!step.Accepted)
             {

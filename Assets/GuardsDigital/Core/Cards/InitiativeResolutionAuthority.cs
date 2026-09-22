@@ -184,6 +184,35 @@ namespace GuardsDigital.Core.Cards
 
         public TieBreakerState TieBreakerState { get; private set; }
 
+        /// <summary>
+        /// Milestone 8.75a. Turns the coin over on a printed sentence's say-so, and reports the one
+        /// event that says so - Ignatia the Mad's Chaos Incarnate, "you may flip the Tie Breaker
+        /// coin".
+        ///
+        /// <para><b>It is the same two lines p.17's tied selection already runs, lifted out of it
+        /// rather than copied.</b> The deferred flip below - <c>FlipTieBreakerAfterResolution</c> -
+        /// turns the physical coin over after a tied card resolves, and a coin turned over mid-turn
+        /// by a card is turned over AGAIN by that clause: the two are independent, and neither knows
+        /// about the other, exactly as two hands on one coin at the table do not.</para>
+        ///
+        /// <para>The event is <see cref="InitiativeResolutionEventKind.TieBreakerFlipped"/>, the row
+        /// the tied-selection flip has raised since milestone 6.8, so the rule-event log and every
+        /// seat's projection carry a card's flip in the words they already carry the page's. No new
+        /// log vocabulary is minted for it, and the wire does not move.</para>
+        /// </summary>
+        public InitiativeResolutionResult FlipTieBreaker()
+        {
+            var nextSide = TieBreakerState.RevealedSide == TeamSide.Red
+                ? TeamSide.Blue
+                : TeamSide.Red;
+            TieBreakerState = new TieBreakerState(nextSide);
+            return InitiativeResolutionResult.Accept(new[]
+            {
+                new InitiativeResolutionEvent(
+                    InitiativeResolutionEventKind.TieBreakerFlipped, nextSide)
+            });
+        }
+
         public PendingInitiativeChoice PendingChoice { get; private set; }
 
         public SelectedInitiativeActor SelectedActor { get; private set; }

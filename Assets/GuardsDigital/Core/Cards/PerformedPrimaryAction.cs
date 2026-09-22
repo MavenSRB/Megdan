@@ -81,6 +81,28 @@ namespace GuardsDigital.Core.Cards
         /// </summary>
         public ActionKind Kind { get; }
 
+        /// <summary>
+        /// Whether rulebook p.10's repeat has anything to make a second instance of here - the
+        /// <see cref="PerformedBasicAction.CanBeRepeated"/> question asked of this fact. Milestone
+        /// 8.75a, for Ignatia the Mad's Chaos Incarnate: "you may perform that action again".
+        ///
+        /// <para><b>p.10's "You cannot repeat a repeated action!" is already enforced by
+        /// construction, which is why it is not repeated here.</b>
+        /// <see cref="PrimaryActionQuery.IsPerformingAPrimaryAction"/> answers false for
+        /// <see cref="ActionInvocationContext.Repeated"/> - and says in as many words why: a repeat
+        /// REPLACES the original context, so a completed repeat cannot say whether what it repeated
+        /// was the card's printed primary. So a repeated instance produces no primary fact at all,
+        /// and there is no <c>WasRepeatedInstance</c> on this type to ask about.</para>
+        ///
+        /// <para><see cref="PerformedBasicAction.KindCanBeRepeated"/> IS asked, unlike on
+        /// <see cref="PerformedAttackAction"/>, because this fact is recorded for every kind a card's
+        /// primary band can print and for every kind a grant can produce. p.11's Fast Travel and
+        /// p.13's Clear reach neither: both are <see cref="ActionInvocationContext.Replacement"/>,
+        /// which the query above already refuses.</para>
+        /// </summary>
+        public bool CanBeRepeated =>
+            IsDefined && PerformedBasicAction.KindCanBeRepeated(Kind);
+
         public bool Equals(PerformedPrimaryAction other) =>
             ActorId.Equals(other.ActorId) &&
             SourceCardInstanceId.Equals(other.SourceCardInstanceId) &&

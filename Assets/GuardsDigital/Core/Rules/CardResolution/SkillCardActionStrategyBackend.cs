@@ -54,6 +54,24 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
+        /// Milestone 8.75a. The match's live Tie Breaker coin, bound on the shape
+        /// <see cref="BindRosterState"/> uses and for the reason it uses it: Ignatia the Mad's every
+        /// Skill is a Conditional on the revealed face, and a Skill resolved or probed without one
+        /// reports itself impossible - which greys the action.
+        /// </summary>
+        internal void BindTieBreakerCoin(GuardsDigital.Core.Setup.IMatchTieBreakerCoin coin)
+        {
+            tieBreakerCoin = coin ?? throw new ArgumentNullException(nameof(coin));
+        }
+
+        private GuardsDigital.Core.Setup.IMatchTieBreakerCoin tieBreakerCoin;
+
+        /// <summary>The face the match's coin is showing, or the named absence when none is bound.</summary>
+        private GuardsDigital.Core.Participants.TeamSide LiveTieBreakerSide =>
+            tieBreakerCoin?.TieBreakerState.RevealedSide ??
+            GuardsDigital.Core.Participants.TeamSide.None;
+
+        /// <summary>
         /// The match items an effect this backend resolves composes p.16's bonus from. Milestone 8.5
         /// reads it from here rather than binding a second copy, because card text applied inside an
         /// Attack has to compose the identical bonus a Skill running the same capability would.
@@ -203,7 +221,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
-                    materializedDefinitions, materializedInstances));
+                    materializedDefinitions, materializedInstances),
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 offer.SourceCardInstanceId,
@@ -297,7 +316,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
-                    materializedDefinitions, materializedInstances));
+                    materializedDefinitions, materializedInstances),
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId(resolutionId.Value),
                 repeat.SourceCardInstanceId,
@@ -397,7 +417,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var context = new EffectResolutionContext(
                 action.EffectRoot, catalog, participants, timing, roundIndex, turnIndex, modifications,
                 EffectCardState.Of(materializedDefinitions, instances), ActionKind.Skill,
-                components: components, heroItems: heroItems, rosterState: rosterState);
+                components: components, heroItems: heroItems, rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             return EffectOptionFeasibilityQuery.CanApplyAnything(
                 EffectResolutionSession.BuildStartFrame(
                     new EffectResolutionId($"probe-{offer.SourceCardInstanceId.Value}-{offer.ActionDefinitionId.Value}"),
@@ -457,7 +478,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
-                    materializedDefinitions, materializedInstances));
+                    materializedDefinitions, materializedInstances),
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Answer(pendingResolution, command, context);
             if (!step.Accepted)
             {
@@ -545,7 +567,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 watchesAppliedPushes: WatchesAppliedPushes(
                     materializedDefinitions, materializedInstances),
                 watchesMarkerGives: WatchesMarkerGives(
-                    materializedDefinitions, materializedInstances));
+                    materializedDefinitions, materializedInstances),
+                tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Continue(pendingResolution, context);
             if (!step.Accepted)
             {

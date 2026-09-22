@@ -115,8 +115,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool placedActingHero = false,
             BorrowRequest borrowRequested = default,
             HeroId markerGivenTo = default,
-            CardInstanceId resolvedCardDiscarded = default)
+            CardInstanceId resolvedCardDiscarded = default,
+            bool tieBreakerFlipRequested = false)
         {
+            TieBreakerFlipRequested = tieBreakerFlipRequested;
             MarkerGivenTo = markerGivenTo;
             ResolvedCardDiscarded = resolvedCardDiscarded;
             BorrowRequested = borrowRequested;
@@ -256,6 +258,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         public CardInstanceId ResolvedCardDiscarded { get; }
 
         /// <summary>
+        /// Milestone 8.75a. Whether the node this step stopped on asked the match to flip its Tie
+        /// Breaker coin - Ignatia the Mad's Chaos Incarnate.
+        ///
+        /// <para>It is the exact counterpart of <see cref="AppliedPushes"/> and is true in exactly the
+        /// same one shape: a frame that stopped WITHOUT a pending choice, so that the authority
+        /// holding the coin can turn it over before the next node runs. The next node is her repeat,
+        /// and whether that repeat has a legal subject is a question about her card text under the
+        /// face the coin is NOW showing - so a flip settled one node later would be settled after the
+        /// question it answers. The resolver knows nothing about coins: it is told, through
+        /// <see cref="EffectResolutionContext.WatchesTieBreakerFlips"/>, that somebody can turn one
+        /// over, and stopping is all it does about it.</para>
+        /// </summary>
+        public bool TieBreakerFlipRequested { get; }
+
+        /// <summary>
         /// Milestone 8.35z27. The plan a completed modal Attack's step-1 frame named -
         /// which bullets of "choose one, or both" the actor chose and whether the card forbids
         /// pointing two of them at one unit - or <c>null</c> on every frame that named none, which is
@@ -285,6 +302,27 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public bool PlacedActingHero { get; }
 
+        /// <summary>
+        /// Milestone 8.75a. The same result with earlier events in front of its own.
+        ///
+        /// <para>A frame that stopped on a Tie Breaker flip and was continued produces TWO steps for
+        /// one command, and the facts the first one recorded belong to that command exactly as the
+        /// second one's do. This is how they arrive together, so no caller of a continued frame has
+        /// to learn that it was continued. Everything else is carried across untouched - it is the
+        /// LATER step's answer about the repeat, the borrow and the frame, because the later step is
+        /// the one that is standing.</para>
+        /// </summary>
+        internal EffectResolutionStepResult PrependingEvents(
+            IReadOnlyList<EffectResolutionEvent> earlier) =>
+            earlier == null || earlier.Count == 0
+                ? this
+                : new EffectResolutionStepResult(
+                    Accepted, RejectionReason, Frame, IsComplete, earlier.Concat(Events),
+                    RepeatRequested, LanePushCause, RequestedHeroDefeats, RequestedMinionDefeats,
+                    BoundAttackTarget, AroundActionPlacement, AppliedPushes,
+                    RequestedAttackSequences, PlacedActingHero, BorrowRequested, MarkerGivenTo,
+                    ResolvedCardDiscarded, TieBreakerFlipRequested);
+
         public static EffectResolutionStepResult Accept(
             PendingResolution frame,
             bool isComplete,
@@ -303,12 +341,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool placedActingHero = false,
             BorrowRequest borrowRequested = default,
             HeroId markerGivenTo = default,
-            CardInstanceId resolvedCardDiscarded = default) =>
+            CardInstanceId resolvedCardDiscarded = default,
+            bool tieBreakerFlipRequested = false) =>
             new EffectResolutionStepResult(
                 true, EffectResolutionRejectionReason.None, isComplete ? null : frame, isComplete, events,
                 repeatRequested, lanePushCause, requestedHeroDefeats, requestedMinionDefeats,
                 boundAttackTarget, aroundActionPlacement, appliedPushes, requestedAttackSequences,
-                placedActingHero, borrowRequested, markerGivenTo, resolvedCardDiscarded);
+                placedActingHero, borrowRequested, markerGivenTo, resolvedCardDiscarded,
+                tieBreakerFlipRequested);
 
         public static EffectResolutionStepResult Reject(
             EffectResolutionRejectionReason reason,
@@ -354,8 +394,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool watchesResolvedDiscards = false,
             CardInstanceId triggeredCardId = default,
             bool stagesHeroDefeats = false,
-            TeamSide tieBreakerRevealedSide = TeamSide.None)
+            TeamSide tieBreakerRevealedSide = TeamSide.None,
+            bool watchesTieBreakerFlips = false)
         {
+            WatchesTieBreakerFlips = watchesTieBreakerFlips;
             TieBreakerRevealedSide = tieBreakerRevealedSide;
             StagesHeroDefeats = stagesHeroDefeats;
             WatchesResolvedDiscards = watchesResolvedDiscards;
@@ -418,6 +460,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// before her.
         /// </summary>
         public TeamSide TieBreakerRevealedSide { get; }
+
+        /// <summary>
+        /// Milestone 8.75a. Whether an authority holding the match's coin is standing behind this
+        /// resolution and can turn it over.
+        ///
+        /// <para>A boolean rather than the coin itself, and false by default, for the reason
+        /// <see cref="WatchesAppliedPushes"/> is one: the resolver's whole part in the moment is to
+        /// stop at it, so the flip is applied before the node after it reads the face. A resolution
+        /// with nobody behind it walks exactly as it did before this milestone, which keeps every
+        /// frame in the build byte-identical - no content but Ignatia's Ultimate publishes the
+        /// fact.</para>
+        /// </summary>
+        public bool WatchesTieBreakerFlips { get; }
 
         public bool RepeatIsUnavailable { get; }
 
@@ -1459,6 +1514,22 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                         return EffectResolutionStepResult.Accept(
                             Rebuild(frame, continuation, outcomes, choices), false, events,
                             markerGivenTo: result.MarkerGivenTo);
+                    }
+
+                    // Milestone 8.75a. The same stop a third time, at the moment a node asked for the
+                    // Tie Breaker coin to be turned over: the node is finished and its facts are
+                    // recorded before the walk stops, so what the caller resumes is the effect
+                    // standing exactly after the flip. The node AFTER it is Chaos Incarnate's repeat,
+                    // and whether that repeat has a legal subject is a question about Ignatia's card
+                    // text under the face the coin is now showing - so settling the flip one node
+                    // later would settle it after the question it answers.
+                    if (context.WatchesTieBreakerFlips &&
+                        TieBreakerFlipQuery.Requested(
+                            context.Definition, outcomes[outcomes.Count - 1]))
+                    {
+                        return EffectResolutionStepResult.Accept(
+                            Rebuild(frame, continuation, outcomes, choices), false, events,
+                            tieBreakerFlipRequested: true);
                     }
 
                     if (context.WatchesResolvedDiscards)

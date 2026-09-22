@@ -145,6 +145,43 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     completedAttackTarget)
                 : null;
 
+        /// <summary>
+        /// The owed repeat for one completed PRIMARY action, or <c>null</c> when the fact names none.
+        /// Milestone 8.75a.
+        ///
+        /// <para><b>A third reading of the same page, for the actions the first two cannot see.</b>
+        /// p.9's basic supertype is a property of the CARD, so the basic fact is absent for every
+        /// action performed off a coloured one; milestone 8.61h added the ATTACK fact for the
+        /// Attacks among those, and a coloured card's SKILL or MOVEMENT primary is still invisible to
+        /// both. Ignatia the Mad's Chaos Incarnate - "after you perform a primary action ... you may
+        /// perform that action again" - is about every one of them, and her Tier IV is unlocked when
+        /// most of what she plays is not basic. This is the same widening for the same reason, read
+        /// off the fact Cutter's Legend of the Skies already made the engine record.</para>
+        ///
+        /// <para>The kind is the one the primary band printed, so
+        /// <see cref="PerformedBasicAction.KindCanBeRepeated"/> decides it exactly as it decides a
+        /// basic one's, and the subject this builds is indistinguishable from the subject a basic
+        /// action of the same kind builds - the same resolver starts the second instance.</para>
+        ///
+        /// <para>p.10's "You cannot repeat a repeated action!" is enforced before this is reached
+        /// rather than here: <c>PrimaryActionQuery</c> records no primary fact for a repeated
+        /// instance at all, which is the same bar the two overloads above state with
+        /// <c>WasRepeatedInstance</c>.</para>
+        /// </summary>
+        public static PendingAfterActionRepeat For(
+            PerformedPrimaryAction primaryAction,
+            ActionResolutionId resolutionId,
+            AttackTarget completedAttackTarget = default) =>
+            primaryAction.CanBeRepeated && resolutionId.IsDefined
+                ? new PendingAfterActionRepeat(
+                    resolutionId,
+                    primaryAction.SourceCardInstanceId,
+                    primaryAction.ActionDefinitionId,
+                    primaryAction.ActorId,
+                    primaryAction.Kind,
+                    completedAttackTarget)
+                : null;
+
         public override string ToString() =>
             $"repeat of {Kind} on {SourceCardInstanceId.Value} by {ActorId.Value}";
     }

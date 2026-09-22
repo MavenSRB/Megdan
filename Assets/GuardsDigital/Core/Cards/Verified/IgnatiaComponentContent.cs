@@ -121,8 +121,80 @@ namespace GuardsDigital.Core.Cards.Verified
             new IEffectCapabilityHandler[]
             {
                 new CoinSunHandler(),
-                new ActiveEffectCreationHandler(EquilibriumV1, FreeCoinChoiceDefinition)
+                new ActiveEffectCreationHandler(EquilibriumV1, FreeCoinChoiceDefinition),
+                new FlipTieBreakerHandler()
             };
+
+        // -----------------------------------------------------------------------------------------
+        // Chaos Incarnate (Purple Ultimate): "The first time each turn after you perform a primary
+        // action you may flip the Tie Breaker coin; if you do, you may perform that action again,
+        // choosing different targets." The flip is the one thing on that card no contract in the
+        // build could already do - milestone 8.75a.
+        // -----------------------------------------------------------------------------------------
+
+        public static EffectCapabilityId FlipTieBreaker { get; } =
+            new EffectCapabilityId("ignatia-flip-tie-breaker");
+
+        /// <summary><c>ignatia-flip-tie-breaker@1</c>: turn the match's Tie Breaker coin over.</summary>
+        public static EffectCapabilityReference FlipTieBreakerV1 =>
+            new EffectCapabilityReference(FlipTieBreaker, 1);
+
+        /// <summary>
+        /// Asks the match to turn its Tie Breaker coin over, and does nothing else.
+        ///
+        /// <para><b>It asks rather than acts, and the split is not this hero's choice.</b>
+        /// <see cref="EffectCapabilityContext"/> is "immutable, and carries no Unity object, delegate,
+        /// or continuation" in as many words - a handler decides what happens here and the frame owns
+        /// everything else - so the coin, which is authoritative round state
+        /// (<c>InitiativeResolutionAuthority</c>'s), cannot be reached from inside one. The handler
+        /// publishes <see cref="TieBreakerFlipQuery.FlippedOutput"/>, the resolver stops on it exactly
+        /// as it stops on an applied Push, and the authority holding the coin turns it over before the
+        /// next node runs. That ordering is the whole point: the next node is the repeat, and what her
+        /// repeat may target is decided by the face the coin is NOW showing.</para>
+        ///
+        /// <para><b>It is never impossible.</b> Rulebook p.5 gives the coin two faces and a match
+        /// always has one showing, so "flip the coin" is a step that can always be taken - which is
+        /// why this publishes rather than refusing, and why the `may` above it is the only question
+        /// the sentence asks.</para>
+        /// </summary>
+        private sealed class FlipTieBreakerHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => FlipTieBreakerV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    Array.Empty<EffectCapabilityParameter>(),
+                    new[]
+                    {
+                        new EffectOutputBinding(
+                            GuardsDigital.Core.Rules.EffectResolution.TieBreakerFlipQuery
+                                .FlippedOutput,
+                            EffectValueKind.Boolean)
+                    });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context) =>
+                context == null
+                    ? EffectExecutionResult.ImpossibleMandatory()
+                    : EffectExecutionResult.Applied(new[]
+                    {
+                        new EffectOutcomeFact(
+                            GuardsDigital.Core.Rules.EffectResolution.TieBreakerFlipQuery
+                                .FlippedOutput,
+                            EffectValue.Boolean(true))
+                    });
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                EffectExecutionResult.ImpossibleMandatory();
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                context == null
+                    ? EffectExecutionResultKind.ImpossibleMandatory
+                    : EffectExecutionResultKind.Applied;
+        }
 
         /// <summary>Whether the acting hero is under Equilibrium's round-long free-choice marker.</summary>
         private static bool ActorMayChooseTheFace(EffectCapabilityContext context) =>

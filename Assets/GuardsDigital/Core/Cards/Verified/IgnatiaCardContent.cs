@@ -13,10 +13,12 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <para><b>What this file is.</b> The inventory block. Every face's transcribed text, printed
     /// values, colour, Tier, item icon and level-up fork, with NO effect body attached: each primary
     /// carries <see cref="PrintedTextComposition.AwaitedAt"/> (or, for the boxed Handicap,
-    /// <see cref="PrintedTextComposition.DeferredUntil"/>) and the Ultimate carries
+    /// <see cref="PrintedTextComposition.DeferredUntil"/>) and the Ultimate carried
     /// <see cref="UltimateRuleDefinition.AwaitingComposition"/>, exactly as Wasp's and Dodger's own
     /// inventory milestones did. The composition lands in later 8.75x slices under a content-revision
-    /// advance, so no half-implemented text can run in between.</para>
+    /// advance, so no half-implemented text can run in between. Milestone 8.75a has composed the
+    /// Ultimate: it now declares <see cref="UltimateRuleDefinition.TriggeredAbility"/>, on Cutter's
+    /// own condition and checkpoint.</para>
     ///
     /// <para><b>Her identity is a mechanism no dealt hero has.</b> Every action card prints TWO texts -
     /// a sun (☀) line and a moon (☾) line - and the live face of the Tie Breaker coin
@@ -295,7 +297,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 "☾: Swap with an enemy unit in radius; you may move 1 space.",
                 PrintedTextComposition.AwaitedAt("8.75e")),
 
-            // Purple Ultimate. A triggered ability, awaiting composition.
+            // Purple Ultimate. A triggered ability, composed at milestone 8.75a.
             new IgnatiaCardProfile(
                 ChaosIncarnate, "Chaos Incarnate", 0, 0, 0,
                 IgnatiaPrimaryKind.None, 0, PrintedValueChannel.None, 0,
@@ -327,12 +329,18 @@ namespace GuardsDigital.Core.Cards.Verified
                 profile.Progression,
                 BuildActions(profile),
                 profile.Progression.IsUltimate
-                    // Chaos Incarnate's triggered flip-and-repeat is minted in a later 8.75 slice;
-                    // its rule kind is declared here as owed so the Ultimate ships whole as inventory.
-                    ? UltimateRuleDefinition.AwaitingComposition(
-                        "ignatia-chaos-incarnate",
-                        "IgnatiaChaosIncarnate",
-                        PrintedTextComposition.AwaitedAt("8.75f"),
+                    // Milestone 8.75a composes it. "The first time each turn after you perform a
+                    // primary action" is the condition Cutter's Legend of the Skies minted at 8.39f1,
+                    // with the same single checkpoint and the same turn-scoped key; the flip and the
+                    // repeat are the triggered body beside it. The face prints no Initiative, no
+                    // action and neither Range nor Radius, so it declares no printed values.
+                    ? UltimateRuleDefinition.TriggeredAbility(
+                        IgnatiaEffectContent.ChaosIncarnateRuleId,
+                        IgnatiaEffectContent.ChaosIncarnateRuleKind,
+                        IgnatiaEffectContent
+                            .ChaosIncarnateTriggeredEffect(ContentRevision).Reference,
+                        UltimateTriggerCondition.AfterControllerPerformsPrimaryAction,
+                        new[] { GuardsDigital.Core.Timing.TimingCheckpoint.ActionEnded },
                         Enumerable.Empty<PrintedValueDefinition>())
                     : null,
                 CardSourceContent.Transcribed(profile.PrintedText),

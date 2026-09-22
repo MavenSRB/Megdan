@@ -458,7 +458,7 @@ namespace GuardsDigital.Core.Cards
         }
     }
 
-    public sealed class TurnResolutionAuthority
+    public sealed class TurnResolutionAuthority : GuardsDigital.Core.Setup.IMatchTieBreakerCoin
     {
         private readonly IReadOnlyList<CardDefinition> definitions;
         private readonly IReadOnlyList<CardInstance> instances;
@@ -613,6 +613,12 @@ namespace GuardsDigital.Core.Cards
             initiative = new InitiativeResolutionAuthority(initialTieBreakerState);
             this.cardActions = cardActions;
             cardActions?.BindBorrowedTargetScopeKeys(consumedTurnScopedKeys);
+
+            // Milestone 8.75a. The dispatcher is handed the turn's live coin the way it is handed the
+            // turn's borrowed-target keys, one line above: this authority owns the Initiative state
+            // that holds it, so every card text the dispatcher walks reads the face this turn is
+            // actually showing - including after Ignatia the Mad's Ultimate has turned it over.
+            cardActions?.BindTieBreakerCoin(this);
             this.timing = timing ?? new ActiveEffectLifecycle();
             this.roundIndex = roundIndex;
             this.turnIndex = turnIndex;
@@ -653,6 +659,46 @@ namespace GuardsDigital.Core.Cards
         }
 
         public TieBreakerState TieBreakerState => initiative.TieBreakerState;
+
+        /// <summary>
+        /// Milestone 8.75a. The events raised by a coin a card turned over, held until the command
+        /// that caused it drains them.
+        ///
+        /// <para>A flip happens deep inside a triggered frame, where no list of this command's events
+        /// is in hand - so the flip records its row here and the two boundaries a flip can happen at
+        /// take it, exactly as milestone 8.23's held repeat subject survives the pause between the
+        /// action and the ability that asks about it. Nothing persists it: it is created and drained
+        /// inside one accepted command, so a replay produces it again in the same position and an
+        /// Undo removes it with everything else that command did.</para>
+        /// </summary>
+        private readonly List<InitiativeResolutionEvent> owedTieBreakerFlipEvents =
+            new List<InitiativeResolutionEvent>();
+
+        /// <summary>
+        /// Milestone 8.75a. Turns the match's coin over on a printed sentence's say-so - Ignatia the
+        /// Mad's Chaos Incarnate - and records the row that says so. The coin itself is
+        /// <c>InitiativeResolutionAuthority</c>'s, which is what the round's snapshot section already
+        /// serializes, so the flip survives a snapshot, a replay and a seat Undo with no field of its
+        /// own.
+        /// </summary>
+        TeamSide GuardsDigital.Core.Setup.IMatchTieBreakerCoin.FlipTieBreaker()
+        {
+            var flipped = initiative.FlipTieBreaker();
+            owedTieBreakerFlipEvents.AddRange(flipped.Events);
+            return initiative.TieBreakerState.RevealedSide;
+        }
+
+        /// <summary>Moves whatever a card's flip raised into the command's own event stream.</summary>
+        private void DrainTieBreakerFlipEvents(ICollection<TurnResolutionEvent> events)
+        {
+            if (owedTieBreakerFlipEvents.Count == 0 || events == null) return;
+            foreach (var flipped in owedTieBreakerFlipEvents)
+            {
+                events.Add(TurnResolutionEvent.FromInitiative(flipped));
+            }
+
+            owedTieBreakerFlipEvents.Clear();
+        }
 
         public PendingInitiativeChoice PendingChoice =>
             IsResolutionStoppedByGameEnd ? null : initiative.PendingChoice;
@@ -2196,6 +2242,11 @@ namespace GuardsDigital.Core.Cards
                 var triggerEvents = MaterializeSteps(
                     cardActions.ConsumeTriggeredResolutionSteps(),
                     TurnResolutionEvent.FromTriggeredEffect);
+
+                // Milestone 8.75a. The answer is the other boundary a card's coin flip can happen at,
+                // and it happens inside the answer above: Chaos Incarnate's `may flip` is what this
+                // command confirmed.
+                DrainTieBreakerFlipEvents(triggerEvents);
                 return FinishTriggerAnswer(heldAction, triggerEvents);
             }
 
@@ -3709,9 +3760,17 @@ namespace GuardsDigital.Core.Cards
                     ContinuousTriggersFor(basicAction, primaryAction, movementAction, attackAction),
                     basicAction,
                     completedAttackTarget,
-                    attackAction)
+                    attackAction,
+                    // Milestone 8.75a. The primary fact reaches the dispatcher as well as the
+                    // condition: milestone 8.39f1 recorded it so Cutter's Ultimate could FIRE on it,
+                    // and Ignatia the Mad's offers to REPEAT what it names - which needs the fact
+                    // itself, not only the condition it met.
+                    primaryAction)
                 : timing.ApplyCheckpoint(context, initiative.TieBreakerState);
             foreach (var timingEvent in timingEvents) events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+
+            // Milestone 8.75a. A trigger that turned the coin over did it inside the call above.
+            DrainTieBreakerFlipEvents(events);
         }
 
         /// <summary>

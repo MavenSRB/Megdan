@@ -159,7 +159,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
             IEnumerable<ContinuousTriggeredEffectSource> continuousSources = null,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null)
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            IMatchTieBreakerCoin coin = null)
         {
             if (PendingResolution != null)
                 throw new InvalidOperationException("A paused triggered effect must be answered before another checkpoint is visited.");
@@ -208,7 +209,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RunCandidates(
                 candidates, 0, checkpoint, tieBreaker, timing, definitions, instances, participants,
                 modifications ?? throw new ArgumentNullException(nameof(modifications)), heroItems,
-                repeatCanBePerformed);
+                repeatCanBePerformed, coin);
 
             return events;
         }
@@ -240,7 +241,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed)
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed,
+            IMatchTieBreakerCoin coin = null)
         {
             var materializedDefinitions = definitions as CardDefinition[] ?? definitions.ToArray();
             var materializedInstances = instances as CardInstance[] ?? instances.ToArray();
@@ -251,7 +253,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     throw new InvalidOperationException(
                         $"Triggered effect '{candidate.TriggeredEffect}' is not configured.");
 
-                var context = new EffectResolutionContext(
+                Func<EffectResolutionContext> build = () => new EffectResolutionContext(
                     effect,
                     capabilities,
                     participants,
@@ -270,7 +272,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     // candidate that has one rather than with the checkpoint.
                     repeatCanBePerformed: candidate.HasCompletedActionSubject
                         ? repeatCanBePerformed
-                        : null);
+                        : null,
+                    // Milestone 8.75a. The coin is read HERE rather than from the checkpoint's own
+                    // `tieBreaker`, and the difference is one flip: Chaos Incarnate turns the coin
+                    // over in the middle of this frame, and every context built after it must carry
+                    // the new face.
+                    tieBreakerRevealedSide: coin?.TieBreakerState.RevealedSide ?? TeamSide.None,
+                    watchesTieBreakerFlips: coin != null);
+                var context = build();
                 var step = EffectResolutionSession.Start(
                     new EffectResolutionId(
                         $"trigger-{candidate.SourceId}-{checkpoint.Checkpoint}-{checkpoint.RoundIndex}-{checkpoint.TurnIndex}"),
@@ -283,6 +292,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     context);
                 if (!step.Accepted)
                     throw new InvalidOperationException("A configured triggered effect was refused by its effect frame.");
+                step = SettleTieBreakerFlips(step, coin, build);
                 PendingResolution = step.Frame;
                 if (step.IsComplete && step.RepeatRequested.IsRequested)
                 {
@@ -309,6 +319,54 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             }
 
             continuation = null;
+        }
+
+        /// <summary>
+        /// Milestone 8.75a. Turns the Tie Breaker coin over for a frame that asked, and carries that
+        /// frame on with the new face in hand.
+        ///
+        /// <para><b>Why the frame stops and is continued rather than reading the coin later.</b>
+        /// Ignatia the Mad's Chaos Incarnate prints "you may flip the Tie Breaker coin; if you do,
+        /// you may perform that action again, choosing different targets", and the node AFTER the
+        /// flip is that repeat. Whether the repeat has a legal subject is a question about her card
+        /// text under the face the coin is NOW showing - every one of her actions branches on it - so
+        /// the flip has to be applied before the node that asks. The resolver stops on the published
+        /// fact (milestone 8.19c1's shape for an applied Push), this turns the coin over, and the
+        /// continuation is built from a fresh context carrying the new face.</para>
+        ///
+        /// <para>It is a loop rather than a single step because nothing in the shape forbids a body
+        /// that flips twice; no content does, and a loop costs one comparison for every frame that
+        /// never flips at all.</para>
+        /// </summary>
+        private static EffectResolutionStepResult SettleTieBreakerFlips(
+            EffectResolutionStepResult step,
+            IMatchTieBreakerCoin coin,
+            Func<EffectResolutionContext> buildContext)
+        {
+            List<EffectResolutionEvent> earlier = null;
+            while (step.Accepted && step.TieBreakerFlipRequested && step.Frame != null)
+            {
+                if (coin == null)
+                {
+                    throw new InvalidOperationException(
+                        "A frame asked for the Tie Breaker coin to be flipped with no coin bound; " +
+                        "the resolver only reports the request where one is.");
+                }
+
+                coin.FlipTieBreaker();
+                (earlier = earlier ?? new List<EffectResolutionEvent>()).AddRange(step.Events);
+                var continued = EffectResolutionSession.Continue(step.Frame, buildContext());
+                if (!continued.Accepted)
+                {
+                    throw new InvalidOperationException(
+                        "A triggered frame standing on a Tie Breaker flip was refused by its own " +
+                        "continuation.");
+                }
+
+                step = continued;
+            }
+
+            return step.PrependingEvents(earlier);
         }
 
         private static IReadOnlyList<TriggerCandidate> Skip(
@@ -347,7 +405,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MatchParticipants participants,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null)
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            IMatchTieBreakerCoin coin = null)
         {
             if (PendingResolution != null) return true;
 
@@ -368,7 +427,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RunCandidates(
                 owed.Remaining, 0, owed.Checkpoint, owed.TieBreaker, timing, definitions, instances,
                 participants, modifications ?? throw new ArgumentNullException(nameof(modifications)),
-                heroItems, repeatCanBePerformed);
+                heroItems, repeatCanBePerformed, coin);
             return PendingResolution != null;
         }
 
@@ -515,8 +574,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 EffectDefinitionReference triggeredEffect,
                 long orderingSequence,
                 PerformedBasicAction triggeringBasicAction,
-                PerformedAttackAction triggeringAttackAction)
+                PerformedAttackAction triggeringAttackAction,
+                PerformedPrimaryAction triggeringPrimaryAction)
             {
+                TriggeringPrimaryAction = triggeringPrimaryAction;
                 SourceId = sourceId;
                 ControllerHeroId = controllerHeroId;
                 ControllerTeamSide = controllerTeamSide;
@@ -555,6 +616,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             public PerformedAttackAction TriggeringAttackAction { get; }
 
             /// <summary>
+            /// The completed PRIMARY action this occurrence fired for, when it was derived from one.
+            /// Milestone 8.75a; <see cref="PerformedPrimaryAction.None"/> for every Active-effect
+            /// trigger and for every continuous source whose condition reads a different fact.
+            /// </summary>
+            public PerformedPrimaryAction TriggeringPrimaryAction { get; }
+
+            /// <summary>
             /// Whether a repeat node in this occurrence has something to repeat. Rulebook p.10 forbids
             /// repeating a repeated action, an occurrence derived from no completed action has no
             /// subject at all, and milestone 8.25e added the third case the page states: two of the
@@ -572,9 +640,15 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             /// <c>CanBeRepeated</c> answers the same two of p.10's three sentences. Either fact
             /// offering a repeat is enough, because an occurrence carries at most one of them and a
             /// basic Attack that carries both names one action through either.</para>
+            ///
+            /// <para>Milestone 8.75a adds the third fact, read on the same terms: Ignatia the Mad's
+            /// Chaos Incarnate fires off <see cref="PerformedPrimaryAction"/>, whose own
+            /// <c>CanBeRepeated</c> answers the same sentences for the coloured Skills and Movements
+            /// that neither of the two facts above records.</para>
             /// </summary>
             public bool RepeatIsUnavailable =>
-                !TriggeringBasicAction.CanBeRepeated && !TriggeringAttackAction.CanBeRepeated;
+                !TriggeringBasicAction.CanBeRepeated && !TriggeringAttackAction.CanBeRepeated &&
+                !TriggeringPrimaryAction.CanBeRepeated;
 
             /// <summary>
             /// Whether this occurrence came from a completed action at all, which is what decides
@@ -582,7 +656,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             /// both facts for the reason <see cref="RepeatIsUnavailable"/> does.
             /// </summary>
             public bool HasCompletedActionSubject =>
-                TriggeringBasicAction.IsDefined || TriggeringAttackAction.IsDefined;
+                TriggeringBasicAction.IsDefined || TriggeringAttackAction.IsDefined ||
+                TriggeringPrimaryAction.IsDefined;
 
             public static TriggerCandidate FromActive(
                 ActiveEffectInstance source,
@@ -599,7 +674,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     source.Definition.TriggeredEffect.Value,
                     source.CreationSequence,
                     PerformedBasicAction.None,
-                    PerformedAttackAction.None);
+                    PerformedAttackAction.None,
+                    PerformedPrimaryAction.None);
 
             public static TriggerCandidate FromContinuous(ContinuousTriggeredEffectSource source) =>
                 new TriggerCandidate(
@@ -613,7 +689,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     source.TriggeredEffect,
                     source.OrderingSequence,
                     source.TriggeringBasicAction,
-                    source.TriggeringAttackAction);
+                    source.TriggeringAttackAction,
+                    source.TriggeringPrimaryAction);
         }
 
         public EffectResolutionStepResult Answer(
@@ -625,7 +702,9 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             RuleModificationSet modifications,
             int roundIndex,
             int turnIndex,
-            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null)
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
+            Func<GuardsDigital.Core.Effects.RepeatTargetBinding, bool> repeatCanBePerformed = null,
+            IMatchTieBreakerCoin coin = null)
         {
             if (command == null) throw new ArgumentNullException(nameof(command));
             if (PendingResolution == null)
@@ -646,7 +725,7 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                     ? ActionKind.Skill
                     : throw new InvalidOperationException(
                         "A triggered continuation references neither an action nor its Ultimate ability."));
-            var context = new EffectResolutionContext(
+            Func<EffectResolutionContext> build = () => new EffectResolutionContext(
                 effect,
                 capabilities,
                 participants,
@@ -658,8 +737,18 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 enclosingActionKind,
                 components: components,
                 heroItems: heroItems,
-                rosterState: rosterState);
-            var step = EffectResolutionSession.Answer(PendingResolution, command, context);
+                rosterState: rosterState,
+                // Milestone 8.75a. The answer that finishes a `may` can itself walk into a
+                // RepeatAction node - Chaos Incarnate's flip is answered and the repeat is the node
+                // after it - so the live feasibility probe milestone 8.25e built for the checkpoint's
+                // first pass travels this path too. Before this milestone no shipped body could reach
+                // a repeat from an answer (Tigerclaw's and Min's are root-level lone repeats), so
+                // nothing in the build changes shape for it.
+                repeatCanBePerformed: repeatCanBePerformed,
+                tieBreakerRevealedSide: coin?.TieBreakerState.RevealedSide ?? TeamSide.None,
+                watchesTieBreakerFlips: coin != null);
+            var step = SettleTieBreakerFlips(
+                EffectResolutionSession.Answer(PendingResolution, command, build()), coin, build);
             if (step.Accepted)
             {
                 PendingResolution = step.Frame;

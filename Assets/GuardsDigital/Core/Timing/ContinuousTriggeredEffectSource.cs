@@ -28,7 +28,8 @@ namespace GuardsDigital.Core.Timing
             IEnumerable<TimingCheckpoint> triggerCheckpoints,
             long orderingSequence = 0,
             PerformedBasicAction triggeringBasicAction = default,
-            PerformedAttackAction triggeringAttackAction = default)
+            PerformedAttackAction triggeringAttackAction = default,
+            PerformedPrimaryAction triggeringPrimaryAction = default)
         {
             if (string.IsNullOrWhiteSpace(sourceId)) throw new ArgumentException("A continuous trigger requires stable identity.", nameof(sourceId));
             if (!controllerHeroId.IsDefined || !sourceCardInstanceId.IsDefined ||
@@ -60,6 +61,7 @@ namespace GuardsDigital.Core.Timing
             OrderingSequence = orderingSequence;
             TriggeringBasicAction = triggeringBasicAction;
             TriggeringAttackAction = triggeringAttackAction;
+            TriggeringPrimaryAction = triggeringPrimaryAction;
         }
 
         public string SourceId { get; }
@@ -95,5 +97,21 @@ namespace GuardsDigital.Core.Timing
         /// one.</para>
         /// </summary>
         public PerformedAttackAction TriggeringAttackAction { get; }
+
+        /// <summary>
+        /// The completed PRIMARY action this occurrence fired for, or
+        /// <see cref="PerformedPrimaryAction.None"/> for a source that is not derived from one.
+        /// Milestone 8.75a.
+        ///
+        /// <para>It travels beside the two facts above for the reason
+        /// <see cref="TriggeringAttackAction"/> travels beside the first: the three answer different
+        /// sentences, and an occurrence carries whichever ones its completion defined. Ignatia the
+        /// Mad's Chaos Incarnate fires on "a primary action", which every card in her deck can
+        /// answer and neither of the other two facts can see off a coloured Skill - the condition
+        /// <see cref="GuardsDigital.Core.Cards.UltimateTriggerCondition.AfterControllerPerformsPrimaryAction"/>
+        /// has read this fact since milestone 8.39f1, but the occurrence it derived carried no record
+        /// of it, so an ability firing on it had nothing it could offer to repeat.</para>
+        /// </summary>
+        public PerformedPrimaryAction TriggeringPrimaryAction { get; }
     }
 }

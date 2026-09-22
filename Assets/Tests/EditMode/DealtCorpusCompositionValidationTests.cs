@@ -137,6 +137,26 @@ namespace GuardsDigital.Tests.EditMode
                     // end-of-turn journey bodies are TRIGGERED effects rather than capabilities and
                     // reach this case through no concat at all, because nothing here resolves one.
                     .Concat(HanuComponentContent.DeferredHandlers())
+
+                    // Milestone 8.75a widens it again, for the TWENTY-SECOND hero and for exactly
+                    // the reason every line above it was added. Ignatia the Mad's printed set went
+                    // into `DealtDefinitions` at the 8.75 inventory commit - which never ran this
+                    // suite - while milestone 7.9's gate holds her contracts out of the registration
+                    // list until 8.75b deals her. Validating her against the registered list alone
+                    // reports seventeen of her eighteen playable faces as naming unregistered
+                    // capabilities and says NOTHING about the parameter and output names this case
+                    // exists to check, which is what 8.57f's precedent settled.
+                    //
+                    // Hers arrive through FOUR entry points rather than one, because her content is
+                    // sharded by mechanism: the coin predicate, Equilibrium's marker and 8.75a's
+                    // flip in `IgnatiaComponentContent`, her four card-text attack subjects in
+                    // `IgnatiaAttackTargetingContent`, her two discard subjects in
+                    // `IgnatiaDiscardTargetingContent`, and the two magma placements in
+                    // `IgnatiaMagmaContent`.
+                    .Concat(IgnatiaComponentContent.DeferredHandlers())
+                    .Concat(IgnatiaAttackTargetingContent.Handlers())
+                    .Concat(IgnatiaDiscardTargetingContent.Handlers())
+                    .Concat(IgnatiaMagmaContent.Handlers())
                     .GroupBy(handler => handler.Reference)
                     .Select(group => group.First()));
             var violations = new List<string>();
