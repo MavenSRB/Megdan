@@ -1089,6 +1089,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 defenseResolution.CurrentStepId,
                 defenseResolution.TargetHeroId,
                 defenseResolution.ActorId,
+                // Milestone 8.80. The attacking card travels WITH the question, because the frame
+                // it used to be read from reaches the acting seat alone.
+                defenseResolution.SourceCardInstanceId,
+                defenseResolution.SourceDefinitionReference,
+                defenseResolution.ActionDefinitionId,
                 defenseResolution.AttackTotal,
                 defenseOffers,
                 true);
@@ -2737,6 +2742,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         pendingResolution.CurrentStepId,
                         pendingResolution.TargetHeroId,
                         pendingResolution.ActorId,
+                        // Milestone 8.80, and the restore door says the same three as the live one.
+                        pendingResolution.SourceCardInstanceId,
+                        pendingResolution.SourceDefinitionReference,
+                        pendingResolution.ActionDefinitionId,
                         pendingResolution.AttackTotal,
                         expectedDefenseOffers,
                         true);
@@ -3669,6 +3678,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 actual.ChoiceId.Equals(resolution.CurrentStepId) &&
                 actual.ChooserId.Equals(resolution.TargetHeroId) &&
                 actual.AttackerId.Equals(resolution.ActorId) &&
+                // Milestone 8.80. A restored choice states the same attacking card as the frame it
+                // is being restored beside, or it is not this attack's question.
+                actual.SourceCardInstanceId.Equals(resolution.SourceCardInstanceId) &&
+                actual.SourceDefinitionReference.Equals(resolution.SourceDefinitionReference) &&
+                actual.ActionDefinitionId.Equals(resolution.ActionDefinitionId) &&
                 actual.AttackTotal == resolution.AttackTotal &&
                 actual.CanDecline &&
                 actual.LegalDefenseOffers.SequenceEqual(expectedOffers);

@@ -332,7 +332,30 @@ namespace GuardsDigital.Application
         // state that no live state remembers, so the snapshot grew the same sparse block. See
         // `AuthoritativeSnapshotSerializer.CurrentSchemaVersion` for the measured cost and for why a
         // v43 payload is rejected rather than migrated.
-        public const int Version = 20;
+        //
+        // Version 21 (milestone 8.80) carries the ATTACKING CARD ON THE DEFENSE QUESTION. The
+        // pending Defense row gained four strings between the attacker id and the attack total - the
+        // attacking card's instance id, its definition id, that definition's content revision, and
+        // the action definition id being performed off it. A version 20 peer's reader takes the
+        // first of them as the attack total's four bytes and then reads the offer count out of the
+        // middle of a string, so it does not lose a fact - it mis-decodes the rest of the detail
+        // record, which is why the version moves and version 20 is refused from the bounded header
+        // before either side interprets a payload.
+        //
+        // It rides the CHOICE rather than the Attack frame because the frame is withheld by design:
+        // `SeatProjection` hands `PendingAttackResolution` to the ACTING seat alone (8.40f's privacy
+        // arm), and the seat being asked to defend is by construction not that seat. So since 8.58
+        // drew the attacker's card beside the offer, every network seat - the host's own loopback
+        // seat included - has been shown the candidates and no attack. The three facts are TABLE
+        // PUBLIC: the attacking card was revealed at p.7's commitment and stands face up in the turn
+        // area, where each seat's own `Cards` already carries it, and the action being performed off
+        // it is the table's own event the match log already narrates. Nothing private of the
+        // attacker's rides with them.
+        //
+        // SCHEMA IS UNMOVED at v44: the choice is derived from the authoritative Attack state every
+        // time a projection is built and is never persisted, so no snapshot field, corpus digest or
+        // pinned constant moves with this bump.
+        public const int Version = 21;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

@@ -596,7 +596,20 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(20),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(21),
+                "8.80 carries the ATTACKING CARD ON THE DEFENSE QUESTION: the pending Defense "
+                + "row gained the attacking card's instance id, its definition id and that "
+                + "definition's content revision, and the action definition id, all written "
+                + "between the attacker id and the attack total - so a /20 peer reads the first "
+                + "of those strings where it expects the total's four bytes and mis-decodes the "
+                + "rest of the detail record. It rides the CHOICE rather than the Attack FRAME "
+                + "because SeatProjection hands that frame to the ACTING seat alone, and the seat "
+                + "being asked to defend is by construction not that seat - which is why the "
+                + "attacker's card had been missing from the Defense window on every network "
+                + "seat, the host's own loopback seat included, since 8.58 drew it. The three "
+                + "facts are table-public: the card stands face up in p.4's turn area, already in "
+                + "every seat's own card list. SCHEMA IS UNMOVED at v44 - the choice is derived "
+                + "from the authoritative Attack state at projection time and never persisted. " +
                 "8.35z73 added CoinAwarded after this fixture added MoveThroughTrapSprung. " +
                 "A new member of a closed wire vocabulary is a breaking change even when no byte " +
                 "of the frame moves: an older peer's Enum.IsDefined refuses the whole frame." +

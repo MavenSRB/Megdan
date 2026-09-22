@@ -4911,11 +4911,16 @@ namespace GuardsDigital.Tests.EditMode
             var attacker = session.Projection.SelectedActor.ActorId;
             var defender = session.Projection.Setup.Heroes
                 .Single(hero => hero.TeamSide == TeamSide.Blue).HeroId;
+            // Milestone 8.80. The choice names the attacking card as well as the attacker; this
+            // narration case reads neither, so the three are a defined probe identity.
             var choice = new PendingDefenseResponseChoice(
                 new ActionResolutionId("probe-resolution"),
                 new ActionResolutionStepId("probe-step"),
                 defender,
                 attacker,
+                new CardInstanceId("probe-attack-card"),
+                new CardDefinitionReference(new CardDefinitionId("probe-definition"), "probe-revision"),
+                new ActionDefinitionId("probe-action"),
                 7,
                 Array.Empty<ActionOffer>(),
                 true);

@@ -629,20 +629,25 @@ namespace GuardsDigital.Presentation.Match
                 return null;
             }
 
-            var attack = projection.HasPendingAttackResolution ? projection.PendingAttackResolution : null;
-            var attackCardName = attack == null
-                ? null
-                : CardName(projection, attack.SourceCardInstanceId);
+            // Milestone 8.80, the user from the 8.79 playtest: "Defense window does not show
+            // attacking card anymroe". The card is read off the CHOICE, which is the one thing about
+            // this attack the defending seat is actually handed: `SeatProjection` gives
+            // `PendingAttackResolution` to the ACTING seat alone, so on every joined seat - and on
+            // the host's own loopback seat, whose client is an ordinary network client - the frame
+            // this used to read was null and the window drew the candidates with nothing above them.
+            var attackCardName = CardName(projection, choice.SourceCardInstanceId);
             var contextCards = new List<DecisionWindowCardViewModel>();
-            if (attack != null)
+
+            // The block is kept so the attack's own `action` stays local to it; the candidate loop
+            // below names its own.
             {
-                var face = CardFace(projection, attack.SourceCardInstanceId);
+                var face = CardFace(projection, choice.SourceCardInstanceId);
                 if (face != null)
                 {
                     var action = projection.Definitions
-                        .Where(definition => definition.Reference.Equals(attack.SourceDefinitionReference))
+                        .Where(definition => definition.Reference.Equals(choice.SourceDefinitionReference))
                         .SelectMany(definition => definition.ActionDefinitions)
-                        .FirstOrDefault(value => value.Id.Equals(attack.ActionDefinitionId));
+                        .FirstOrDefault(value => value.Id.Equals(choice.ActionDefinitionId));
                     // Milestone 8.58. The attack's own total, and its Range where p.13 classifies it
                     // ranged, as ONE chip - the mockup's `Attack 5 · Range 4` - because the two facts
                     // are one sentence about the card the player is being asked to answer. The total is
@@ -659,7 +664,7 @@ namespace GuardsDigital.Presentation.Match
                     var unlockedUltimates = GuardsDigital.Core.Rules.Progression.UltimateUnlockQuery.Derive(
                         projection.Definitions, projection.Cards);
                     var classification = RangedAttackOverlayQuery.ClassifyFromUnlockedUltimates(
-                        printedClassification, attack.ActorId, unlockedUltimates);
+                        printedClassification, choice.AttackerId, unlockedUltimates);
                     var chip = "ATTACK " + choice.AttackTotal;
                     if (classification == AttackRangeKind.Ranged)
                     {
@@ -672,7 +677,7 @@ namespace GuardsDigital.Presentation.Match
                         if (!range.HasValue || range.Value <= 0)
                         {
                             var declared = RangedAttackOverlayQuery.DeclaredPrintedRangeFromUnlockedUltimates(
-                                attack.ActorId, unlockedUltimates);
+                                choice.AttackerId, unlockedUltimates);
                             if (declared > 0)
                             {
                                 range = declared;

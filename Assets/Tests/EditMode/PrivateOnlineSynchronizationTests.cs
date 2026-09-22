@@ -296,6 +296,16 @@ namespace GuardsDigital.Tests.EditMode
             {
                 Assert.That(detail.PendingDefenseChoice.AttackTotal,
                     Is.EqualTo(defenseChoice.AttackTotal), seat);
+                // Milestone 8.80, wire /21. The attacking card rides the question, because the
+                // Attack FRAME above reaches the acting seat alone and the defender is never it.
+                Assert.That(detail.PendingDefenseChoice.SourceCardInstanceId,
+                    Is.EqualTo(defenseChoice.SourceCardInstanceId.Value), seat);
+                Assert.That(detail.PendingDefenseChoice.SourceDefinitionId,
+                    Is.EqualTo(defenseChoice.SourceDefinitionReference.DefinitionId.Value), seat);
+                Assert.That(detail.PendingDefenseChoice.SourceContentRevision,
+                    Is.EqualTo(defenseChoice.SourceDefinitionReference.ContentRevision), seat);
+                Assert.That(detail.PendingDefenseChoice.ActionDefinitionId,
+                    Is.EqualTo(defenseChoice.ActionDefinitionId.Value), seat);
                 Assert.That(detail.PendingDefenseChoice.LegalDefenseOffers
                         .Select(row => row.SourceCardInstanceId),
                     Is.EqualTo(defenseChoice.LegalDefenseOffers

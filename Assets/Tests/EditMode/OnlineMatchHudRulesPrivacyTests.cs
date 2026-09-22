@@ -1,6 +1,8 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using GuardsDigital.Application;
+using GuardsDigital.Core.Cards;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -11,6 +13,96 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class OnlineMatchHudRulesPrivacyTests
     {
+        /// <summary>
+        /// Milestone 8.80. The Defense question now names the ATTACKING CARD, and this is the case
+        /// that says the defender learns nothing from it that its own projection did not already
+        /// hold.
+        /// </summary>
+        /// <remarks>
+        /// <para>The three facts are table-public by construction: the attacking card was played
+        /// from a hand, revealed at rulebook p.7's commitment and stands face up in the turn area,
+        /// so it is already in this seat's own card list with its own definition reference; the
+        /// action performed off it is the table's own event. This case proves that by IDENTITY -
+        /// every id the choice names is resolved against what the seat already carries, so the
+        /// question adds no readable card and no readable definition.</para>
+        /// <para>It also pins what is NOT widened: the attacker's hand, which stays unreadable, and
+        /// the Attack frame, which the CLIENT still refuses to materialise - 8.40f's arm, and the
+        /// reason the window had to be given a fact of its own instead.</para>
+        /// </remarks>
+        [Test]
+        public void TheDefenseQuestionsAttackingCard_NamesOnlyWhatTheDefenderCouldAlreadyRead()
+        {
+            var host = new MatchHost(
+                ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse());
+            var defenderSeat = host.Seats.Seats.Single(seat =>
+                host.ProjectionForSeat(seat.Id).PendingDefenseChoice != null);
+            var view = host.ProjectionForSeat(defenderSeat.Id);
+            var choice = view.PendingDefenseChoice;
+
+            var attackingCard = view.Cards.SingleOrDefault(card =>
+                card.Id.Equals(choice.SourceCardInstanceId));
+            Assert.That(attackingCard, Is.Not.Null,
+                "The card the question names is one this seat's own projection already carried - " +
+                "if it were not, the question would be disclosing a card, which is the one thing " +
+                "this fact may not do.");
+            Assert.That(attackingCard.State.Location, Is.Not.EqualTo(CardLocation.Hand),
+                "and it is not in anybody's hand: it is played, face up, in p.4's turn area.");
+            Assert.That(attackingCard.DefinitionReference,
+                Is.EqualTo(choice.SourceDefinitionReference),
+                "The definition reference is that same card's own, so no definition is named that " +
+                "the seat could not already read off the card.");
+
+            var definition = view.Definitions.SingleOrDefault(value =>
+                value.Reference.Equals(choice.SourceDefinitionReference));
+            Assert.That(definition, Is.Not.Null,
+                "and the definition is in the seat's own content catalog, which every seat shares.");
+            Assert.That(
+                definition.ActionDefinitions.Any(action =>
+                    action.Id.Equals(choice.ActionDefinitionId)),
+                Is.True,
+                "The action id is one printed on that same face, so it says WHICH printed action " +
+                "is being performed and nothing more.");
+
+            Assert.That(
+                view.Cards.Any(card =>
+                    card.State.Location == CardLocation.Hand &&
+                    !card.OwnerId.Equals(choice.ChooserId)),
+                Is.False,
+                "and no enemy hand became readable: the attacker's hand is still absent from the " +
+                "defender's projection, which is what the leak this fact could have been would " +
+                "have looked like.");
+
+            // The same three, through the wire and into the client that actually draws the window -
+            // and the frame beside them, still withheld as an object. THAT is the defect 8.80
+            // closes: the host narrows the frame and sends it, this client returns `null` for it
+            // regardless, and the window's old `HasPendingAttackResolution ? PendingAttackResolution
+            // : null` therefore read null on every network seat while the Director's own read whole.
+            Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                NetworkSeatProjectionCodec.Encode(view), out var record), Is.True);
+            var network = new NetworkMatchReadModel(
+                host.Projection, MatchContentCatalogs.ForThisBuild(), record, true);
+
+            Assert.That(network.HasPendingAttackResolution, Is.True,
+                "The frame's row does reach this seat - it owns the standing decision, so " +
+                "SeatProjection's `ownsDecision || isActor` hands it the narrowed frame.");
+            Assert.That(network.PendingAttackResolution, Is.Null,
+                "and this client materialises none of it, which is 8.40f's arm and is left alone.");
+
+            var crossed = network.PendingDefenseChoice;
+            Assert.That(crossed, Is.Not.Null);
+            Assert.That(crossed.SourceCardInstanceId, Is.EqualTo(choice.SourceCardInstanceId),
+                "The window's own fact crosses on the question instead, unchanged.");
+            Assert.That(crossed.SourceDefinitionReference,
+                Is.EqualTo(choice.SourceDefinitionReference));
+            Assert.That(crossed.ActionDefinitionId, Is.EqualTo(choice.ActionDefinitionId));
+            Assert.That(
+                network.Cards.Any(card =>
+                    card.State.Location == CardLocation.Hand &&
+                    !card.OwnerId.Equals(crossed.ChooserId)),
+                Is.False,
+                "and the bytes disclosed no enemy hand either.");
+        }
+
         [Test]
         public void AcceptedResult_KeepsInputWaiting_UntilItsCompleteProjectionArrives()
         {
@@ -265,7 +357,20 @@ namespace GuardsDigital.Tests.EditMode
         [Test]
         public void SeatWireMeaning_UsesProtocolTwelve_AndRejectsEveryOlderFrame()
         {
-            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(20),
+            Assert.That(PrivateSessionProtocol.Version, Is.EqualTo(21),
+                "8.80 carries the ATTACKING CARD ON THE DEFENSE QUESTION: the pending Defense "
+                + "row gained the attacking card's instance id, its definition id and that "
+                + "definition's content revision, and the action definition id, all written "
+                + "between the attacker id and the attack total - so a /20 peer reads the first "
+                + "of those strings where it expects the total's four bytes and mis-decodes the "
+                + "rest of the detail record. It rides the CHOICE rather than the Attack FRAME "
+                + "because SeatProjection hands that frame to the ACTING seat alone, and the seat "
+                + "being asked to defend is by construction not that seat - which is why the "
+                + "attacker's card had been missing from the Defense window on every network "
+                + "seat, the host's own loopback seat included, since 8.58 drew it. The three "
+                + "facts are table-public: the card stands face up in p.4's turn area, already in "
+                + "every seat's own card list. SCHEMA IS UNMOVED at v44 - the choice is derived "
+                + "from the authoritative Attack state at projection time and never persisted. " +
                 "8.35z73 carries COIN-AWARD ROWS: the seat-public match log now names each " +
                 "authoritative reward recipient and amount. No bytes grew, but the closed enum " +
                 "vocabulary widened, so an /18 peer refuses rather than going dark. " +

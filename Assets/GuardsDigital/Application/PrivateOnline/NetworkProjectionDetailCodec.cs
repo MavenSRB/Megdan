@@ -1038,6 +1038,13 @@ namespace GuardsDigital.Application
             writer.Write(choice.ChoiceId.Value);
             writer.Write(choice.ChooserId.Value);
             writer.Write(choice.AttackerId.Value);
+            // Milestone 8.80, wire `guards-private-online/21`. The attacking card, its definition
+            // reference as id + revision, and the action off it - the same three fields, in the same
+            // order, `WriteAttackResolution` writes for the frame the defender never receives.
+            writer.Write(choice.SourceCardInstanceId.Value);
+            writer.Write(choice.SourceDefinitionReference.DefinitionId.Value);
+            writer.Write(choice.SourceDefinitionReference.ContentRevision);
+            writer.Write(choice.ActionDefinitionId.Value);
             writer.Write(choice.AttackTotal);
             writer.Write(choice.CanDecline);
             writer.Write(choice.LegalDefenseOffers.Count);
@@ -1059,10 +1066,18 @@ namespace GuardsDigital.Application
             var choiceId = reader.ReadString();
             var chooserId = reader.ReadString();
             var attackerId = reader.ReadString();
+            var sourceCardInstanceId = reader.ReadString();
+            var sourceDefinitionId = reader.ReadString();
+            var sourceContentRevision = reader.ReadString();
+            var actionDefinitionId = reader.ReadString();
             var attackTotal = reader.ReadInt32();
             var canDecline = reader.ReadBoolean();
             if (string.IsNullOrWhiteSpace(resolutionId) || string.IsNullOrWhiteSpace(choiceId) ||
                 string.IsNullOrWhiteSpace(chooserId) || string.IsNullOrWhiteSpace(attackerId) ||
+                string.IsNullOrWhiteSpace(sourceCardInstanceId) ||
+                string.IsNullOrWhiteSpace(sourceDefinitionId) ||
+                string.IsNullOrWhiteSpace(sourceContentRevision) ||
+                string.IsNullOrWhiteSpace(actionDefinitionId) ||
                 attackTotal < 0 || !TryReadCount(reader, out var offerCount))
             {
                 return false;
@@ -1080,7 +1095,9 @@ namespace GuardsDigital.Application
             }
 
             row = new NetworkDefenseChoiceRow(
-                resolutionId, choiceId, chooserId, attackerId, attackTotal, canDecline,
+                resolutionId, choiceId, chooserId, attackerId,
+                sourceCardInstanceId, sourceDefinitionId, sourceContentRevision, actionDefinitionId,
+                attackTotal, canDecline,
                 Array.AsReadOnly(offers.ToArray()));
             return true;
         }

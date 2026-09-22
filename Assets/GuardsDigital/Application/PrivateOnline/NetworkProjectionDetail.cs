@@ -654,6 +654,10 @@ namespace GuardsDigital.Application
             string choiceId,
             string chooserId,
             string attackerId,
+            string sourceCardInstanceId,
+            string sourceDefinitionId,
+            string sourceContentRevision,
+            string actionDefinitionId,
             int attackTotal,
             bool canDecline,
             IReadOnlyList<NetworkActionOfferRow> legalDefenseOffers)
@@ -662,6 +666,10 @@ namespace GuardsDigital.Application
             ChoiceId = choiceId;
             ChooserId = chooserId;
             AttackerId = attackerId;
+            SourceCardInstanceId = sourceCardInstanceId;
+            SourceDefinitionId = sourceDefinitionId;
+            SourceContentRevision = sourceContentRevision;
+            ActionDefinitionId = actionDefinitionId;
             AttackTotal = attackTotal;
             CanDecline = canDecline;
             LegalDefenseOffers = legalDefenseOffers;
@@ -671,6 +679,19 @@ namespace GuardsDigital.Application
         public string ChoiceId { get; }
         public string ChooserId { get; }
         public string AttackerId { get; }
+
+        /// <summary>
+        /// Milestone 8.80, wire <c>guards-private-online/21</c>. The attacking card, its definition
+        /// reference as id plus content revision, and the action being performed off it - written
+        /// exactly as <c>WriteAttackResolution</c> writes the same three. The defending seat never
+        /// receives the Attack frame, so without these the window could not draw the card the
+        /// question is about.
+        /// </summary>
+        public string SourceCardInstanceId { get; }
+        public string SourceDefinitionId { get; }
+        public string SourceContentRevision { get; }
+        public string ActionDefinitionId { get; }
+
         public int AttackTotal { get; }
         public bool CanDecline { get; }
         public IReadOnlyList<NetworkActionOfferRow> LegalDefenseOffers { get; }

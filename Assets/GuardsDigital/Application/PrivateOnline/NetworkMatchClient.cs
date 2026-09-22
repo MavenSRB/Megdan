@@ -690,6 +690,12 @@ namespace GuardsDigital.Application
                     new ActionResolutionStepId(row.ChoiceId),
                     new HeroId(row.ChooserId),
                     new HeroId(row.AttackerId),
+                    // Milestone 8.80. The attacking card, materialised here rather than looked up
+                    // out of a frame this seat is never handed.
+                    new CardInstanceId(row.SourceCardInstanceId),
+                    new CardDefinitionReference(
+                        new CardDefinitionId(row.SourceDefinitionId), row.SourceContentRevision),
+                    new ActionDefinitionId(row.ActionDefinitionId),
                     row.AttackTotal,
                     row.LegalDefenseOffers.Select(ToOffer),
                     row.CanDecline);
@@ -735,16 +741,33 @@ namespace GuardsDigital.Application
             get
             {
                 // The same three frames, in the same order, the host reads - see
-                // `MatchSessionProjection.ResolvingSourceCardInstanceId`. Only the Skill frame is
-                // withheld here; the other two already cross whole.
+                // `MatchSessionProjection.ResolvingSourceCardInstanceId`.
+                //
+                // Milestone 8.80 corrects what 8.58's comment here claimed - "Only the Skill frame is
+                // withheld here; the other two already cross whole". NONE of the three crosses whole:
+                // this client returns `null` from `PendingSkillResolution`, `PendingAttackResolution`
+                // AND `PendingMovementResolution` alike, so the Attack slot below was asking a
+                // property that is null by construction and a seat standing inside an Attack named no
+                // card at all. It now reads the RECORD the wire delivered, exactly as the Skill slot
+                // above it already did - the resolving card id has ridden its own row since 8.32.
+                //
+                // The Movement slot is deliberately left on the (always null) property: its row
+                // carries the same id, but no surface of this build reads this member during a
+                // Movement, so correcting it is a change no test could see and this milestone does
+                // not make it.
                 var skill = Detail?.PendingSkillResolution?.SourceCardInstanceId;
                 if (!string.IsNullOrWhiteSpace(skill))
                 {
                     return new CardInstanceId(skill);
                 }
 
-                return PendingAttackResolution?.SourceCardInstanceId ??
-                    PendingMovementResolution?.SourceCardInstanceId ??
+                var attack = Detail?.PendingAttackResolution?.SourceCardInstanceId;
+                if (!string.IsNullOrWhiteSpace(attack))
+                {
+                    return new CardInstanceId(attack);
+                }
+
+                return PendingMovementResolution?.SourceCardInstanceId ??
                     (PendingEffectChoice != null && SelectedActor.IsDefined
                         ? SelectedActor.CardInstanceId
                         : default);

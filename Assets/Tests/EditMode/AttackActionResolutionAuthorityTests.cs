@@ -522,6 +522,9 @@ namespace GuardsDigital.Tests.EditMode
                 answer.PendingDefenseChoice.ChoiceId,
                 answer.PendingDefenseChoice.ChooserId,
                 answer.PendingDefenseChoice.AttackerId,
+                answer.PendingDefenseChoice.SourceCardInstanceId,
+                answer.PendingDefenseChoice.SourceDefinitionReference,
+                answer.PendingDefenseChoice.ActionDefinitionId,
                 answer.PendingDefenseChoice.AttackTotal + 1,
                 answer.PendingDefenseChoice.LegalDefenseOffers,
                 answer.PendingDefenseChoice.CanDecline);

@@ -129,6 +129,120 @@ namespace GuardsDigital.Tests.EditMode
                 Is.EqualTo(DirectorCommandKind.DeclineDefense));
         }
 
+        /// <summary>
+        /// THE SHIPPED DEFECT milestone 8.80 closes, reported by the user off the 8.79 playtest:
+        /// "Defense window does not show attacking card anymroe", from a JOINED seat.
+        /// </summary>
+        /// <remarks>
+        /// <para>The case above runs on a Director session, where <c>PendingAttackResolution</c> is
+        /// a whole object - which is exactly why it stayed green while every network seat drew the
+        /// candidates with nothing above them. The host does send the defender the frame (it owns the
+        /// standing decision, and <c>SeatProjection</c>'s <c>ownsDecision || isActor</c> hands the
+        /// 8.40f-narrowed frame to both), but <c>NetworkMatchClient</c> returns <c>null</c> for it
+        /// while <c>HasPendingAttackResolution</c> reads the row that arrived - so the window's old
+        /// <c>Has ? Pending : null</c> evaluated to null on every joined seat and on the hosting
+        /// player's own seat, which reads through the same client. This case composes the same staged
+        /// Defense, puts it on a REAL wire, and reads the window off the DEFENDER'S OWN network
+        /// projection.</para>
+        ///
+        /// <para>Observed red on main at <c>4139446f</c> before the fix, with the frame still
+        /// supplying the card: "The attacker's card is beside the offer on a joined seat too - this
+        /// is the whole of milestone 8.80. Expected: 1 But was: 0".</para>
+        /// </remarks>
+        [Test]
+        public void ADefenseResponseOnAJoinedSeat_DrawsTheAttackersCardFromTheChoiceItself()
+        {
+            var harness = PrivateOnlineWireHarness.Compose(
+                new MatchHost(ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse()));
+            harness.SeatAll();
+
+            var host = harness.MatchHost;
+            var defenderSeat = host.Seats.Seats.Single(seat =>
+                host.ProjectionForSeat(seat.Id).PendingDefenseChoice != null);
+            var adapter = new NetworkMatchClient(
+                harness.Client(harness.OrdinalOf(defenderSeat.Id.Value)),
+                host.Projection,
+                MatchContentCatalogs.ForThisBuild());
+            var seatProjection = adapter.Projection;
+
+            var choice = seatProjection.PendingDefenseChoice;
+            Assert.That(choice, Is.Not.Null,
+                "The question itself has always reached the defender; only the attack did not.");
+            Assert.That(seatProjection.HasPendingAttackResolution, Is.True,
+                "The frame's ROW does arrive - this seat owns the standing decision.");
+            Assert.That(seatProjection.PendingAttackResolution, Is.Null,
+                "THE CAUSE, pinned: and this client materialises none of it, so the window's old " +
+                "`HasPendingAttackResolution ? PendingAttackResolution : null` read null here " +
+                "while the Director's own read whole. 8.40f withholds the frame on purpose and " +
+                "this milestone does not widen it - the question carries the fact instead.");
+
+            var directorChoice = host.Projection.PendingDefenseChoice;
+            Assert.That(choice.SourceCardInstanceId, Is.EqualTo(directorChoice.SourceCardInstanceId),
+                "The attacking card crosses the wire on the CHOICE, unchanged.");
+            Assert.That(choice.SourceDefinitionReference,
+                Is.EqualTo(directorChoice.SourceDefinitionReference));
+            Assert.That(choice.ActionDefinitionId, Is.EqualTo(directorChoice.ActionDefinitionId));
+
+            var model = DecisionWindowPresenter.CreateViewModel(seatProjection, choice.ChooserId);
+            Assert.That(model, Is.Not.Null, "The defending seat owns the standing decision.");
+            Assert.That(model.Family, Is.EqualTo(DecisionWindowFamily.Defense));
+            Assert.That(model.ContextCards, Has.Count.EqualTo(1),
+                "The attacker's card is beside the offer on a joined seat too - this is the whole " +
+                "of milestone 8.80. " + Describe(model));
+            Assert.That(model.ContextCards[0].Card, Is.Not.Null,
+                "and it is the real printed face `gd-decision-attack-card` draws.");
+            Assert.That(model.ContextCards[0].Card.CardInstanceId,
+                Is.EqualTo(choice.SourceCardInstanceId),
+                "and it is THE ATTACKING card, not some other face this seat can see.");
+            Assert.That(model.ContextCards[0].Caption,
+                Does.StartWith("ATTACK " + choice.AttackTotal),
+                "with the same composed total the chip carries on the Director. " + Describe(model));
+            Assert.That(model.Title, Does.Not.EqualTo("DEFEND AGAINST THIS ATTACK?"),
+                "and the title names the card, which it can only do if the card arrived. " +
+                Describe(model));
+
+            var directorModel = DecisionWindowPresenter.CreateViewModel(
+                host.Projection, choice.ChooserId);
+            Assert.That(model.Title, Is.EqualTo(directorModel.Title),
+                "The joined seat and the Director ask the very same question.");
+            Assert.That(model.ContextCards[0].Caption,
+                Is.EqualTo(directorModel.ContextCards[0].Caption),
+                "and print the same chip, which is what 'on every seat' means.");
+        }
+
+        /// <summary>
+        /// Milestone 8.80. The resolving card id is read off the RECORD the wire delivered, which
+        /// has carried it since 8.32 - 8.58's comment claimed the Attack frame "already crosses
+        /// whole", and it does not.
+        /// </summary>
+        [Test]
+        public void AnAttackingSeatsResolvingCardId_IsReadOffTheWireRecordRatherThanAWithheldFrame()
+        {
+            var harness = PrivateOnlineWireHarness.Compose(
+                new MatchHost(ConfiguredMatchFixtures.CreateSessionAwaitingADefenseResponse()));
+            harness.SeatAll();
+
+            var host = harness.MatchHost;
+            var attackerId = host.Projection.PendingDefenseChoice.AttackerId;
+            var attackerSeat = host.Seats.Seats.Single(seat => seat.Owns(attackerId));
+            var attackerProjection = new NetworkMatchClient(
+                harness.Client(harness.OrdinalOf(attackerSeat.Id.Value)),
+                host.Projection,
+                MatchContentCatalogs.ForThisBuild()).Projection;
+
+            Assert.That(attackerProjection.HasPendingAttackResolution, Is.True,
+                "The acting seat is the one seat that does receive the frame.");
+            Assert.That(attackerProjection.PendingAttackResolution, Is.Null,
+                "and it is still withheld as an OBJECT - 8.40f's arm is untouched.");
+            Assert.That(attackerProjection.ResolvingSourceCardInstanceId,
+                Is.EqualTo(host.Projection.ResolvingSourceCardInstanceId),
+                "so the id has to come off the decoded record, which is what this milestone " +
+                "corrects. Before it, a network seat standing inside an Attack named no card at " +
+                "all and a surface asking for one got `default`.");
+            Assert.That(attackerProjection.ResolvingSourceCardInstanceId.IsDefined, Is.True);
+            Assert.That(host.Projection.PendingDefenseChoice.AttackerId, Is.EqualTo(attackerId));
+        }
+
         // -------------------------------------------------------------------------------------
         // Ownership: the one seat that answers, everybody else, and the Director
         // -------------------------------------------------------------------------------------

@@ -394,6 +394,30 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public IReadOnlyList<AttackTarget> LegalTargets { get; }
     }
 
+    /// <summary>
+    /// Rulebook p.14's step 3 put to the defender: the attack that is standing, and every card the
+    /// defender may answer it with.
+    /// </summary>
+    /// <remarks>
+    /// <para>Milestone 8.80. The choice names the ATTACKING CARD as well as the attacker - its card
+    /// instance, its definition reference and the action id off that definition - because the
+    /// question "defend against this?" cannot be drawn without the card it is about, and the frame
+    /// that used to supply it (<c>PendingAttackResolution</c>) reaches the ACTING seat alone. A
+    /// defender on a joined seat, and on the host's own loopback seat, was handed the candidates and
+    /// no attack.</para>
+    ///
+    /// <para>These three are PUBLIC FACTS and disclose nothing the defender could not already read:
+    /// the attacking card was played from a hand, revealed at p.7's commitment and stands face up in
+    /// the turn area, so every seat's own <c>Cards</c> already carries it with its definition; the
+    /// action being performed off it is the table's own event, which the seat-public match log and
+    /// the round-action strip already narrate. Nothing private of the attacker's - no hand, no
+    /// recorded answer, no pending choice of theirs - rides here, which is the whole reason the
+    /// choice carries the fact rather than the frame being widened. Proved in
+    /// <c>OnlineMatchHudRulesPrivacyTests</c>.</para>
+    ///
+    /// <para>Derived, never persisted: the choice is rebuilt from the authoritative Attack state at
+    /// projection time, so no snapshot schema moves with it.</para>
+    /// </remarks>
     public sealed class PendingDefenseResponseChoice
     {
         public PendingDefenseResponseChoice(
@@ -401,11 +425,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActionResolutionStepId choiceId,
             HeroId chooserId,
             HeroId attackerId,
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
             int attackTotal,
             IEnumerable<ActionOffer> legalDefenseOffers,
             bool canDecline)
         {
-            if (!resolutionId.IsDefined || !choiceId.IsDefined || !chooserId.IsDefined || !attackerId.IsDefined)
+            if (!resolutionId.IsDefined || !choiceId.IsDefined || !chooserId.IsDefined || !attackerId.IsDefined ||
+                !sourceCardInstanceId.IsDefined || !sourceDefinitionReference.IsDefined ||
+                !actionDefinitionId.IsDefined)
             {
                 throw new ArgumentException("Pending Defense response choice requires defined stable identities.");
             }
@@ -433,6 +462,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ChoiceId = choiceId;
             ChooserId = chooserId;
             AttackerId = attackerId;
+            SourceCardInstanceId = sourceCardInstanceId;
+            SourceDefinitionReference = sourceDefinitionReference;
+            ActionDefinitionId = actionDefinitionId;
             AttackTotal = attackTotal;
             LegalDefenseOffers = Array.AsReadOnly(offers);
             CanDecline = canDecline;
@@ -442,6 +474,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public ActionResolutionStepId ChoiceId { get; }
         public HeroId ChooserId { get; }
         public HeroId AttackerId { get; }
+
+        /// <summary>Milestone 8.80. The attacking card, face up in the turn area.</summary>
+        public CardInstanceId SourceCardInstanceId { get; }
+
+        /// <summary>Milestone 8.80. That card's definition, so a seat can find its printed face.</summary>
+        public CardDefinitionReference SourceDefinitionReference { get; }
+
+        /// <summary>Milestone 8.80. Which action off that definition is being performed.</summary>
+        public ActionDefinitionId ActionDefinitionId { get; }
+
         public int AttackTotal { get; }
         public IReadOnlyList<ActionOffer> LegalDefenseOffers { get; }
         public bool CanDecline { get; }
