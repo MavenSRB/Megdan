@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.75 Ignatia inventory and set completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.75 | The twenty-second hero's inventory, the Tie Breaker coin threaded through the resolver as `TieBreakerRevealedSide`, seventeen bodies composed as one coin Conditional each (eleven deferred ids, six new handler types, the magma token), Equilibrium's round-long marker with a sun/moon vocabulary, the typed `PrintedTextSelection` declaration with the live-face marker on every card surface (all twenty-one identity pins re-measured for the new property), and seven Edit Mode fixtures (78 cases, both faces) that found six content defects - all fixed - plus one gap (the pushes' straight line) owed to 8.75b. Nothing registered; schema v44 / wire /20 unmoved. Harness 4440/4440 (zero skips, = 4328 + 78 fixtures + 21 of 8.75a + 13 of the coin-face prep, the ten probes deleted, reconciled exactly); focused Edit Mode 174/174. [Definition](../../Roadmap/PHASE_8_TWENTY_SECOND_HERO.md#x-875-inventory-ignatia-thread-the-coin-and-compose-her-printed-set-behind-the-gate). | `7d8a639b` |
+
 ## Milestone 8.76 pick screen size and labels completion evidence
 
 | Milestone | Outcome and definition | Commit |
