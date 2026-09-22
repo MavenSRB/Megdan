@@ -15,7 +15,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **8.79**.
-- Active authorized milestone: **none**.
+- Active authorized milestone: **8.75d**.
 - Next proposed milestone: **8.75d**.
 
 On 2026-09-20 the user explicitly authorized and completed
@@ -44,7 +44,7 @@ On 2026-09-21 the user opened the TWENTY-FIRST hero and chose **Hanu the Trickst
 
 On 2026-09-22 the user's level-up and Defense screenshots became **[8.74](Roadmap/PHASE_8.md)**, complete: the hover peek rides above the decision window and item bonuses read as one `Items` row per side. **[8.76](Roadmap/PHASE_8.md)** (the same day, complete): hero buttons say the name alone and the pick panel keeps its full size under filters. **[8.77](Roadmap/PHASE_8.md)** (complete): a universal macOS player builds beside the Windows one. **[8.78](Roadmap/PHASE_8.md)** (complete): `Builds/Playtest-8.77-hud-lobby` and its `-mac` twin, cut without Ignatia for the 21:00 game; **[8.79](Roadmap/PHASE_8.md)** (complete, forty minutes later): `Builds/Playtest-8.75-ignatia` and its `-mac` twin WITH her - the current playtest packages; the user chooses which to play.
 
-On 2026-09-22 the user opened the TWENTY-SECOND hero ("implement Ignatia"; "keep going and dont stop until you need something from me, or when the hero is done up to standard") and settled her four inventory questions, the coin's faces (sun = Red, moon = Blue) and her magma supply (three): **[8.75 -> 8.75a -> 8.75b -> 8.75c](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md)** ([her shard](Rules/HERO_IGNATIA.md)) is AUTHORIZED, through a fully selectable, artworked hero whose picker row carries four stars and Sniper/Damager/Tokens/Tactician/Pusher and whose cards show which of their two printed texts the Tie Breaker coin makes live. **8.75-8.75c** are COMPLETE the same day: composed, the coin bound into every card-text path, Chaos Incarnate's flip-and-repeat, dealt with the first four-star, five-role picker row, and gated at Play Mode 825 with zero skips. **8.75d** (a repeat's offer excluding what its printed clause excludes - ID-Q10c) is the next proposed milestone. No package is authorized.
+On 2026-09-22 the user opened the TWENTY-SECOND hero ("implement Ignatia"; "keep going and dont stop until you need something from me, or when the hero is done up to standard") and settled her four inventory questions, the coin's faces (sun = Red, moon = Blue) and her magma supply (three): **[8.75 -> 8.75a -> 8.75b -> 8.75c](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md)** ([her shard](Rules/HERO_IGNATIA.md)) is AUTHORIZED, through a fully selectable, artworked hero whose picker row carries four stars and Sniper/Damager/Tokens/Tactician/Pusher and whose cards show which of their two printed texts the Tie Breaker coin makes live. **8.75-8.75c** are COMPLETE the same day: composed, the coin bound into every card-text path, Chaos Incarnate's flip-and-repeat, dealt with the first four-star, five-role picker row, and gated at Play Mode 825 with zero skips. **8.75d** (a repeat's offer excluding what its printed clause excludes - ID-Q10c) is ACTIVE, authorized 2026-09-22 ("ok, you go do the fix, we play with the bug"). No package is authorized.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them); 8.42a's disposable build-and-launch check included no package.
 

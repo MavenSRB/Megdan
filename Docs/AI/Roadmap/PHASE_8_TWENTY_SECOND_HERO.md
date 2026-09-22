@@ -56,9 +56,9 @@ Completed 2026-09-22 (`7b4bf996`, squash-merged from `b3f7b65d` on `8.75c-gate`;
 
 Historical evidence: [8.75c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-875c-ignatia-player-path-gate-completion-evidence).
 
-### [ ] 8.75d The repeat's offer excludes what its printed clause excludes
+### [~] 8.75d The repeat's offer excludes what its printed clause excludes
 
-Recorded by 8.75c (ID-Q10c). Loosely-Aimed Firebolts' "May repeat once on a different hero" and Imminent Eruption's "May repeat once on a minion" narrow the repeated instance's legal target in p.13's own question, but her Attacks bind their target by card text and the repeat re-runs the printed subject whole, so the repeat's OFFER still admits the hero the first instance attacked; pressing him stops the Attack without a target.
+Authorized 2026-09-22 at 20:05 by the user ("ok, you go do the fix, we play with the bug"), after the 8.79 package shipped with the gap stated as known. Recorded by 8.75c (ID-Q10c). Loosely-Aimed Firebolts' "May repeat once on a different hero" and Imminent Eruption's "May repeat once on a minion" narrow the repeated instance's legal target in p.13's own question, but her Attacks bind their target by card text and the repeat re-runs the printed subject whole, so the repeat's OFFER still admits the hero the first instance attacked; pressing him stops the Attack without a target.
 
 Outcome: the repeated instance's card-text subject offers exactly the units its printed clause admits, for every `ByCardText` attack that declares a repeat binding.
 
