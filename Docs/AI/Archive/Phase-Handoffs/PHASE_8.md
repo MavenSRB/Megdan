@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.74 | Two HUD corrections from the user's level-up and Defense screens: the enlarged hover peek is kept above the decision window as a sibling below the tooltip (8.63's top-most pass no longer drops it), and the Defense breakdown reads every item-card bonus on a side as one `Items` row carrying their sum, on both sides, every other typed source keeping its named row. Presentation only; no Core, Application, wire or schema change. `DefenseBreakdownItemRowsTests` 3/3, presenter and window fixtures 129/129, `DecisionWindowTopMostPlayModeTests` 1/1, compile probe 0 errors. [Definition](../../Roadmap/PHASE_8.md#x-874-the-hover-peek-rides-above-the-decision-window-and-item-bonuses-read-as-one-row). | `pending` |
+| 8.74 | Two HUD corrections from the user's level-up and Defense screens: the enlarged hover peek is kept above the decision window as a sibling below the tooltip (8.63's top-most pass no longer drops it), and the Defense breakdown reads every item-card bonus on a side as one `Items` row carrying their sum, on both sides, every other typed source keeping its named row. Presentation only; no Core, Application, wire or schema change. `DefenseBreakdownItemRowsTests` 3/3, presenter and window fixtures 129/129, `DecisionWindowTopMostPlayModeTests` 1/1, compile probe 0 errors. [Definition](../../Roadmap/PHASE_8.md#x-874-the-hover-peek-rides-above-the-decision-window-and-item-bonuses-read-as-one-row). | `e7e74c16` |
 
 ## Milestone 8.73 twenty-one-hero package completion evidence
 
