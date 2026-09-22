@@ -14,7 +14,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.73**.
+- Current completed milestone: **8.74**.
 - Active authorized milestone: **none**.
 - Next proposed milestone: **8.35z71**.
 
@@ -46,7 +46,9 @@ The NINETEENTH hero, **Min the Dragonmonk**, is complete: **[8.61-8.61k](Roadmap
 
 The TWENTIETH hero, **Brynn the Seeker** (opened 2026-09-21), is COMPLETE the same day: **[8.69-8.69h](Roadmap/PHASE_8_TWENTIETH_HERO.md)** ([his shard](Rules/HERO_BRYNN.md)) - dealt with his picker row (three stars; Tactician, Damager, Durable) proven on the rendered lobby and gated at Play Mode 744 with zero skips; BR-Q4, BR-Q13 and BR-Q19h were settled by the user, the last built as **[8.70](Roadmap/PHASE_8.md)** (an empty modal bullet greyed at the choice for every face sharing the contract).
 
-On 2026-09-21 the user opened the TWENTY-FIRST hero ("Lets go for a new hero", "Make sure pick screen is correctly imeplented") and chose **Hanu the Trickster**: **[8.71](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** (inventory; [his shard](Rules/HERO_HANU.md)) **is complete**; **8.71a-8.71i** are COMPLETE the same day: dealt with his picker row (three stars; Tactician, Sniper, Pusher) proven on the rendered lobby and gated at Play Mode 782 with zero skips (schema v44 and wire `/20` since 8.71a). HA-Q15i ("Q15i means that currently that card wont work") was built as **[8.72](Roadmap/PHASE_8.md)**: the deciding seat's HUD draws the delegated card's controls in a "deciding for" slot, the targeted seat's goes dark, proven on a seat-scoped scene at both viewports (Play Mode 783 with zero skips). His set carries four mechanisms no earlier hero had: a rewritten Initiative on another hero's unresolved card, a delegated next action, an end-of-turn swap-back behind a turn of immunity, and a coupled move whose distance a teammate chooses; HA-Q3 and HA-Q8 were settled by the user as read. **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu` (stamp `...5040-5475f9c5`, at `22fdef2f`), the current playtest package; no other hero or package is authorized.
+On 2026-09-21 the user opened the TWENTY-FIRST hero ("Lets go for a new hero", "Make sure pick screen is correctly imeplented") and chose **Hanu the Trickster**: **[8.71](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)** (inventory; [his shard](Rules/HERO_HANU.md)) **is complete**; **8.71a-8.71i** are COMPLETE the same day: dealt with his picker row (three stars; Tactician, Sniper, Pusher) proven on the rendered lobby and gated at Play Mode 782 with zero skips (schema v44 and wire `/20` since 8.71a). HA-Q15i ("Q15i means that currently that card wont work") was built as **[8.72](Roadmap/PHASE_8.md)**: the deciding seat's HUD draws the delegated card's controls in a "deciding for" slot, the targeted seat's goes dark, proven on a seat-scoped scene at both viewports (Play Mode 783 with zero skips). His set carries four mechanisms no earlier hero had: a rewritten Initiative on another hero's unresolved card, a delegated next action, an end-of-turn swap-back behind a turn of immunity, and a coupled move whose distance a teammate chooses; HA-Q3 and HA-Q8 were settled by the user as read. **[8.73](Roadmap/PHASE_8.md)** cut `Builds/Playtest-8.71-hanu` (stamp `...5040-5475f9c5`, at `22fdef2f`), the current playtest package.
+
+On 2026-09-22 the user's level-up and Defense screenshots became **[8.74](Roadmap/PHASE_8.md)**, complete: the hover peek rides above the decision window and item bonuses read as one `Items` row per side.
 
 The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
 
@@ -54,15 +56,13 @@ On 2026-09-17 the user selected **Garrus the Gladiator** as the SIXTEENTH hero. 
 
 On 2026-09-13 the user named the FIFTEENTH hero, Bain the Bounty Hunter; [fifteenth-hero dealing](Roadmap/PHASE_8_FIFTEENTH_HERO.md) owns that COMPLETE series (**8.40**-**8.40k**): the gate found no shipped defect but raised two player-facing gaps recorded there, and **8.40f** took the wire to `/15`. The 2026-09-07 brakes direction still governs the parked presentation program, the card-authoring workbench, tier-3 bots and every other parked item.
 
-On 2026-09-11 the user re-opened the throttle that brakes direction had closed and named **Swift** as the next hero; [thirteenth-hero dealing](Roadmap/PHASE_8_THIRTEENTH_HERO.md) owns that COMPLETE series and all of its detail, and the prior next-proposed entry, [8.35z74](Roadmap/PHASE_8_CLEANUP.md#x-835z74-repair-explicitly-parked-player-path-coverage), closed the same day as discharged by 8.36f3 and 8.37a rather than executed.
+On 2026-09-11 the user re-opened the throttle and named **Swift**; [thirteenth-hero dealing](Roadmap/PHASE_8_THIRTEENTH_HERO.md) owns that COMPLETE series; [8.35z74](Roadmap/PHASE_8_CLEANUP.md#x-835z74-repair-explicitly-parked-player-path-coverage) closed the same day as discharged by 8.36f3 and 8.37a.
 
-On 2026-09-10 the user asked for documentation only of future four-round lobby-bot planning: [8.36i-8.36k](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md#future-four-round-lobby-bot-planning-parked-not-authorized) are parked and must not be started; nothing there changes the route or authorizes a build.
+[8.36i-8.36k](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md#future-four-round-lobby-bot-planning-parked-not-authorized) (four-round lobby-bot planning) are parked and must not be started.
 
 The cleanup and 8.35z83-8.35z85 fixes are complete; the user-accepted 8.36 gate remains closed; the independent 8.36a review is integrated; **8.36b-8.36d** (authenticated departure, bounded transport, attributable diagnostics) are complete under [private-game corrections](Roadmap/PHASE_8_PRIVATE_GAME_CORRECTIONS.md). [Product](Project/PRODUCT.md) limits the project to the user and friends: production presentation and publisher-pitch work are parked; no repeat internet playtest, remote publication or unrelated refactor is authorized.
 
-Card highlights and CLEAR/FAST TRAVEL placement passed resource, Unity and eleven-hero visual checks. Lobby bots use the measured owner-scoped tactical policy while hidden hands/decks remain absent. The user confirmed the outstanding ordinary-window package check worked on 2026-09-10. Additional heroes remain on hold.
-
-On 2026-09-11 the user also named **Cutter the Sky Pirate**; [fourteenth-hero dealing](Roadmap/PHASE_8_FOURTEENTH_HERO.md) owns that COMPLETE thirteen-block series and [her shard](Rules/HERO_CUTTER.md) its inventory. Her printed "you alone win the game" was implemented FAITHFULLY on the user's 2026-09-11 answer, moving the snapshot schema to **v42** and the wire to **/14**.
+On 2026-09-11 the user also named **Cutter the Sky Pirate**; [fourteenth-hero dealing](Roadmap/PHASE_8_FOURTEENTH_HERO.md) owns that COMPLETE series and [her shard](Rules/HERO_CUTTER.md) its inventory, including her faithfully implemented solo victory (schema **v42**, wire **/14**).
 
 ## Durable boundaries
 

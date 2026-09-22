@@ -263,6 +263,20 @@ Completed 2026-09-21, the evening 8.72 closed the Hanu series - the user's order
 
 Historical evidence: [8.73 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-873-twenty-one-hero-package-completion-evidence).
 
+### [x] 8.74 The hover peek rides above the decision window and item bonuses read as one row
+
+Authorized 2026-09-22 by the user from two playtest observations on the level-up and Defense screens: "this stays behind when i mouse over a hand on lvl up screen" / "mouseover should always be on top", and, on a Defense preview naming "Outnumber" as a defence source, "It should not say card name, it shuld just be items and then the number they provide" and "if there are 2 cards that provide defense its just defense +2. Same goes for attack if total is being modified by items."
+
+Outcome: the enlarged card peek a hover raises over a level-up or Defense card is drawn above the decision window (below the one-line tooltip, which stays topmost), and the Defense breakdown collapses every item-card bonus on a side into one `Items` row carrying their sum, on the attack side and the defence side alike, while the printed value, each board minion and every other typed source keep their own named row.
+
+Acceptance: milestone 8.63's top-most guard admits exactly the peek and the tooltip above the window and nothing else; the peek is raised as a sibling (not re-parented) so it stays aligned with the card it enlarges; the collapse held on both sides, around a minion row, and absent on a side without items or a declined Defense, with totals unchanged; the presenter and decision-window fixtures green; the affected Play Mode guard green. T3 (Presentation only; no Core, Application, wire or schema change).
+
+Non-goals: the minimised hand bar's resting position (answered, unchanged); the card overlay alignment (measured correct).
+
+Completed 2026-09-22 on main. The peek: `ConfiguredMatchHudRenderer`'s per-frame top-most pass (8.63) reasserted the window over every sibling, and the enlarged card a level-up or Defense hover raises (`RoundActionUnityView.DefenseCardHoverPreviewRoot`) is a sibling composed BEFORE the window, so it was dropped behind the window the instant after its own PointerEnter raised it; the pass now keeps the tail `window, peek, tooltip` and raises the peek as a sibling (a re-parent would offset it from the card it enlarges); `DecisionWindowTopMostPlayModeTests` admits `gd-defense-card-hover-preview` beside `gd-runtime-tooltip` and nothing else. The rows: `RoundActionPresenter.CreateDefenseBreakdown` merges every `ValueContributionKind.ItemModifier` contribution on a side into one `Items` row carrying their sum where the first item stood, on the attack side and the defence side alike; the printed icon, each board minion and every other typed source keep their own named row, a declined Defense lists nothing, and the sums equal the authority's totals. `DefenseBreakdownItemRowsTests` (Unity-only, 3 cases: two attack items collapse; defence items collapse around a minion row that keeps its line; a side without items and a decline unchanged) 3/3 (`tmp/874-edit-3-results.xml`); the presenter and window fixtures `MatchFeaturePresenterTests` + `DecisionWindowPresenterTests` 129/129 (`tmp/874-edit-results.xml`, where the only three reds were the new fixture's own constructor misuse, corrected); `DecisionWindowTopMostPlayModeTests` 1/1 (`tmp/874-play-results.xml`); presentation compile probe 0 errors. No Core, Application, wire or schema change; the harness excludes both fixtures and its Presentation assembly built on this tree. The user's other two observations were answered without a change: the minimised hand bar's resting position is by design, and This Way!'s shine overlay measured aligned on the printed art.
+
+Historical evidence: [8.74 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-874-hover-peek-and-item-rows-completion-evidence).
+
 ### [x] 8.68 Package the playtest build with the Silverarrow corrections
 
 Authorized 2026-09-20 by the user ("Cut a new build with the silverarrow fixes"), the same evening 8.66 and 8.67 landed after the 8.65 package was cut.

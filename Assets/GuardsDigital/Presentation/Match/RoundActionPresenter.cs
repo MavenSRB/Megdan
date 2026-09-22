@@ -1976,15 +1976,27 @@ namespace GuardsDigital.Presentation.Match
             PendingDefensePreviewProjection preview,
             DefenseChoicePreviewProjection choice)
         {
+            // Milestone 8.74. Every item-card bonus on one side is ONE row. The user, on a Defense
+            // preview that named "Outnumber" as a defence source: "It should not say card name, it
+            // should just be items and then the number they provide", and "if there are 2 cards that
+            // provide defense its just defense +2. Same goes for attack if total is being modified by
+            // items." An item played for its bonus is not read as itself the way the defending card or
+            // a board minion is - it is spent into the total - so the several of them collapse into a
+            // single `Items` line carrying their sum, on the attack side and the defence side alike.
+            var attackRows = CollapseItemContributions(preview.AttackContributions);
+            var defenseRows = choice.IsDecline
+                ? new List<DefenseContributionRowViewModel>()
+                : CollapseItemContributions(choice.DefenseContributions);
+
             var lines = new List<string> { "ATTACK:" };
-            lines.AddRange(preview.AttackContributions.Select(FormatContribution));
+            lines.AddRange(attackRows.Select(FormatRow));
             lines.Add($"ATTACK TOTAL: {preview.AttackTotal}");
             lines.Add(string.Empty);
             lines.Add("DEFENSE:");
             if (!choice.IsDecline)
             {
                 lines.Add($"  CARD: {choice.ChoiceLabel.ToUpperInvariant()}");
-                lines.AddRange(choice.DefenseContributions.Select(FormatContribution));
+                lines.AddRange(defenseRows.Select(FormatRow));
             }
             if (choice.BlockResult == DefenseBlockResult.Blocked)
             {
@@ -2031,24 +2043,63 @@ namespace GuardsDigital.Presentation.Match
                     : $"DEFENSE PREVIEW: {choice.ChoiceLabel.ToUpperInvariant()}",
                 string.Join("\n", lines),
                 choice.Outcome,
-                preview.AttackContributions.Select(CreateBreakdownRow),
+                attackRows,
                 preview.AttackTotal,
-                choice.DefenseContributions.Select(CreateBreakdownRow),
+                defenseRows,
                 choice.DefenseTotal,
                 choice.BlockResult,
                 resultStatement);
         }
 
-        private static DefenseContributionRowViewModel CreateBreakdownRow(
-            ValueContributionProjection contribution) =>
-            new DefenseContributionRowViewModel(
-                contribution.Amount, contribution.SourceLabel);
+        /// <summary>
+        /// The label every collapsed item row carries. Milestone 8.74: an item played for its bonus is
+        /// spent into a value total, so the several of them read as one <c>Items</c> line rather than by
+        /// each card's own name.
+        /// </summary>
+        internal const string CollapsedItemsLabel = "Items";
 
-        private static string FormatContribution(ValueContributionProjection contribution)
+        /// <summary>
+        /// Milestone 8.74. Returns the breakdown rows for one side with every
+        /// <see cref="ValueContributionKind.ItemModifier"/> contribution merged into a single
+        /// <see cref="CollapsedItemsLabel"/> row carrying their sum, placed where the first item was.
+        /// Every other typed source - the printed icon, a board minion, a continuous source - keeps its
+        /// own named row, so the collapse only affects the sources the user named. The merged sum equals
+        /// the several amounts it replaces, so the caller's total is unchanged.
+        /// </summary>
+        private static List<DefenseContributionRowViewModel> CollapseItemContributions(
+            IEnumerable<ValueContributionProjection> contributions)
         {
-            var sign = contribution.Amount >= 0 ? "+" : string.Empty;
-            return $"  {sign}{contribution.Amount} — {contribution.SourceLabel}";
+            var rows = new List<DefenseContributionRowViewModel>();
+            var itemsIndex = -1;
+            var itemsTotal = 0;
+            foreach (var contribution in contributions)
+            {
+                if (contribution.Kind == ValueContributionKind.ItemModifier)
+                {
+                    if (itemsIndex < 0)
+                    {
+                        itemsIndex = rows.Count;
+                        rows.Add(null);
+                    }
+
+                    itemsTotal += contribution.Amount;
+                    continue;
+                }
+
+                rows.Add(new DefenseContributionRowViewModel(
+                    contribution.Amount, contribution.SourceLabel));
+            }
+
+            if (itemsIndex >= 0)
+            {
+                rows[itemsIndex] = new DefenseContributionRowViewModel(itemsTotal, CollapsedItemsLabel);
+            }
+
+            return rows;
         }
+
+        private static string FormatRow(DefenseContributionRowViewModel row) =>
+            $"  {row.SignedAmount} — {row.SourceLabel}";
 
         private static string FormatActionLabel(IMatchReadModel projection, ActionOffer offer)
         {

@@ -2456,26 +2456,59 @@ namespace GuardsDigital.Presentation.Match
 
             round.SetPreviewOrigin(new Vector2(laidOutDecisionRect.x, laidOutDecisionRect.y));
 
-            // The one-line popup that explains whatever is being pointed at rides above the window,
-            // because while the window is open the thing being pointed at is usually one of ITS
-            // controls and a tooltip drawn under the control it explains says nothing. It is the
-            // window's own reading rather than a panel beside it - and it is hidden on every frame a
-            // pointer is not resting on something, which is why the rule below can still say that
-            // nothing SHOWN is painted after the window.
+            // Two surfaces ride ABOVE the window, in this order from the window up: the enlarged card
+            // peek a hover over one of the window's own cards raises, then the one-line tooltip.
+            //
+            // <para>Milestone 8.74, the user on hovering a card in the level-up hand: "this stays
+            // behind when i mouse over a hand on lvl up screen". The peek that a level-up or Defense
+            // card hover opens (<see cref="RoundActionUnityView.DefenseCardHoverPreviewRoot"/>) is a
+            // sibling composed BEFORE the window, so this per-frame pass - which reasserts the window
+            // as topmost - dropped it behind the window the instant after its own PointerEnter raised
+            // it. It is the window's own reading of a card that is INSIDE the window, exactly as the
+            // tooltip below is, so it is allowed above the window for the same reason and is hidden on
+            // every frame nothing is being pointed at. Unlike the breakdown it is NOT re-parented into
+            // the window: it positions itself in the root's own world space, so raising it as a sibling
+            // keeps it aligned with the card it enlarges while a re-parent would offset it.</para>
+            //
+            // <para>The tooltip stays topmost of the two: it explains whatever the pointer rests on,
+            // the enlarged peek included.</para>
+            var peek = round.DefenseCardHoverPreviewRoot;
+            var peekIsSibling = peek != null && ReferenceEquals(peek.parent, root);
             var tip = tooltipLayer?.Root;
             var tipIsSibling = tip != null && ReferenceEquals(tip.parent, root);
-            var last = root.childCount - 1;
-            var ordered = tipIsSibling
-                ? root.childCount >= 2 &&
-                    ReferenceEquals(root.ElementAt(last), tip) &&
-                    ReferenceEquals(root.ElementAt(last - 1), host)
-                : root.childCount >= 1 && ReferenceEquals(root.ElementAt(last), host);
+
+            var desiredTail = new List<VisualElement> { host };
+            if (peekIsSibling)
+            {
+                desiredTail.Add(peek);
+            }
+
+            if (tipIsSibling)
+            {
+                desiredTail.Add(tip);
+            }
+
+            var ordered = root.childCount >= desiredTail.Count;
+            for (var i = 0; ordered && i < desiredTail.Count; i++)
+            {
+                if (!ReferenceEquals(
+                        root.ElementAt(root.childCount - desiredTail.Count + i), desiredTail[i]))
+                {
+                    ordered = false;
+                }
+            }
+
             if (ordered)
             {
                 return;
             }
 
             host.BringToFront();
+            if (peekIsSibling)
+            {
+                peek.BringToFront();
+            }
+
             if (tipIsSibling)
             {
                 tip.BringToFront();

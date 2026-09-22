@@ -20,6 +20,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ConfiguredPointerSelectionTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ConfiguredSceneSerializationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/DecisionWindowPresenterTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/DefenseBreakdownItemRowsTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/DelegatedActionPresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/DeclaredChoiceVocabularyTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/DefeatFadeGhostTests.cs" />

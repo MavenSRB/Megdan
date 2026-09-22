@@ -153,11 +153,14 @@ namespace GuardsDigital.Tests.PlayMode
                     continue;
                 }
 
-                // The one-line popup that explains the control under the pointer is the window's own
-                // reading while the window owns the decision, and is hidden on every frame nothing is
-                // being pointed at. It is allowed above the window for the same reason the window's
-                // hover breakdown is allowed inside it.
-                if (reached && UiPlayer.IsShown(child) && child.name != "gd-runtime-tooltip")
+                // The one-line tooltip and the enlarged card peek are BOTH the window's own reading of
+                // whatever the pointer rests on, and both are hidden on every frame nothing is being
+                // pointed at. They are allowed above the window for the same reason the window's own
+                // hover breakdown is allowed inside it (milestone 8.63), the peek added at milestone
+                // 8.74 after the user found it painting behind the window on the level-up hand.
+                if (reached && UiPlayer.IsShown(child) &&
+                    child.name != "gd-runtime-tooltip" &&
+                    child.name != "gd-defense-card-hover-preview")
                 {
                     shownAfter.Add(string.IsNullOrEmpty(child.name) ? "<unnamed>" : child.name);
                 }
