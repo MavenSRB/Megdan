@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.75b Ignatia dealing completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.75b | Ignatia dealt as the twenty-second legal pick: eleven ids registered over six new handler types (97 -> 103) with five showcase consumers, the magma token in the component catalog, the roster row `Wizard` + five roles pinned and proven on the rendered lobby with an inspected capture, identity pin #22 with twenty-one prior pins byte-identical, sixteen captures and nine digests re-pinned at +414 bytes attributed exactly, artwork bijection 396, schema v44 / wire /20 unmoved; the pushes' straight line carried through a subject-anchored `choose-line-destination@1`, the coin predicate anticipating its outcome, the snapshot's pending-choice coin threaded, a matrix defect (Conditional predicates unclassified) fixed. Harness 4456/4456; complete Edit Mode 5477/5441/0/36; complete Play Mode 784/784 zero skips; smoke passed. [Definition](../../Roadmap/PHASE_8_TWENTY_SECOND_HERO.md#x-875b-deal-register-and-artwork-ignatia). | `e9b2169c` |
+
 ## Milestone 8.75a Chaos Incarnate completion evidence
 
 | Milestone | Outcome and definition | Commit |
