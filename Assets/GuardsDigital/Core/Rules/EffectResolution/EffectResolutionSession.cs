@@ -353,8 +353,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             bool stagesBorrowedActions = false,
             bool watchesResolvedDiscards = false,
             CardInstanceId triggeredCardId = default,
-            bool stagesHeroDefeats = false)
+            bool stagesHeroDefeats = false,
+            TeamSide tieBreakerRevealedSide = TeamSide.None)
         {
+            TieBreakerRevealedSide = tieBreakerRevealedSide;
             StagesHeroDefeats = stagesHeroDefeats;
             WatchesResolvedDiscards = watchesResolvedDiscards;
             TriggeredCardId = triggeredCardId;
@@ -409,6 +411,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// owed and no decision is opened. The alternative - asking, and then doing nothing when the
         /// player confirms - is the one outcome a `may` must never produce.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.75. The revealed Tie Breaker coin face this resolution runs under, threaded to
+        /// every capability context it builds so Ignatia the Mad's coin-selected card text can read it.
+        /// <see cref="TeamSide.None"/> where the caller had none to give, which is every resolution
+        /// before her.
+        /// </summary>
+        public TeamSide TieBreakerRevealedSide { get; }
+
         public bool RepeatIsUnavailable { get; }
 
         /// <summary>
@@ -1719,7 +1729,10 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 // this is where it becomes readable by a capability, because Bounce's "if this card is
                 // already resolved as you perform this action" is a question about the performance and
                 // not only about the card.
-                invocationContext: frame.InvocationContext);
+                invocationContext: frame.InvocationContext,
+                // Milestone 8.75. Ignatia the Mad's coin-selected card text reads the revealed Tie
+                // Breaker face here; it is TeamSide.None for every resolution that did not carry one.
+                tieBreakerRevealedSide: context.TieBreakerRevealedSide);
         }
 
         /// <summary>

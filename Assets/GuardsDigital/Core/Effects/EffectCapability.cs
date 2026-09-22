@@ -247,8 +247,10 @@ namespace GuardsDigital.Core.Effects
             IReadOnlyList<EffectOutputBinding> declaredOutputs = null,
             EffectCapabilityCatalog capabilities = null,
             HexCoordinate? prospectiveActorSpace = null,
-            ActionInvocationContext invocationContext = ActionInvocationContext.None)
+            ActionInvocationContext invocationContext = ActionInvocationContext.None,
+            TeamSide tieBreakerRevealedSide = TeamSide.None)
         {
+            TieBreakerRevealedSide = tieBreakerRevealedSide;
             InvocationContext = invocationContext;
             ProspectiveActorSpace = prospectiveActorSpace;
             Capabilities = capabilities;
@@ -311,6 +313,16 @@ namespace GuardsDigital.Core.Effects
         /// <para>Optional because two of this type's callers are outside a content walk and neither
         /// needs it; a handler that requires it says so by refusing when it is absent.</para>
         /// </summary>
+        /// <summary>
+        /// Milestone 8.75. The revealed face of the Tie Breaker coin
+        /// (<see cref="GuardsDigital.Core.Setup.TieBreakerState.RevealedSide"/>), or
+        /// <see cref="TeamSide.None"/> where it is unrevealed or the caller had none to give. Ignatia
+        /// the Mad's whole set reads it: her cards print a sun (☀) and a moon (☾) text, and the coin's
+        /// live face selects which applies. No other hero consults it, so it defaults to the named
+        /// absence and every frame before her keeps the walk it had.
+        /// </summary>
+        public TeamSide TieBreakerRevealedSide { get; }
+
         public EffectCapabilityCatalog Capabilities { get; }
 
         /// <summary>
