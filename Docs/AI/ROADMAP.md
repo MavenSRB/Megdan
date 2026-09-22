@@ -81,6 +81,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Nineteenth-hero dealing: Min the Dragonmonk](Roadmap/PHASE_8_NINETEENTH_HERO.md)
 - [Phase 8 - Twentieth-hero dealing: Brynn the Seeker](Roadmap/PHASE_8_TWENTIETH_HERO.md)
 - [Phase 8 - Twenty-first-hero dealing: Hanu the Trickster](Roadmap/PHASE_8_TWENTY_FIRST_HERO.md)
+- [Phase 8 - Twenty-second-hero dealing: Ignatia the Mad](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md)
 - [Phase 8 - Playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md)
 - [Phase 8 - The decision window](Roadmap/PHASE_8_DECISION_WINDOW.md)
 - [Phase 8 - Six-hero roster re-baseline and shared foundations](Roadmap/PHASE_8_ROSTER_REBASE.md)

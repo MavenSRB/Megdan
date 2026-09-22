@@ -15,8 +15,8 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **8.74**.
-- Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z71**.
+- Active authorized milestone: **8.75**.
+- Next proposed milestone: **8.75**.
 
 On 2026-09-20 the user explicitly authorized and completed
 **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: two unlabeled, client-local hero-pick filter rows provide
@@ -50,9 +50,11 @@ On 2026-09-21 the user opened the TWENTY-FIRST hero ("Lets go for a new hero", "
 
 On 2026-09-22 the user's level-up and Defense screenshots became **[8.74](Roadmap/PHASE_8.md)**, complete: the hover peek rides above the decision window and item bonuses read as one `Items` row per side.
 
-The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them): Shotgun's discard excludes the attacked unit, the badge shows card-plus-item Initiative, trays stay on their own hero, and the seat UNDO square survives a standing prompt. The user's 2026-09-18 approval of 8.42a's disposable build-and-launch check included no package. Return to proposed cleanup 8.35z71.
+On 2026-09-22 the user opened the TWENTY-SECOND hero ("implement Ignatia"; "keep going and dont stop until you need something from me, or when the hero is done up to standard") and settled her four inventory questions, the coin's faces (sun = Red, moon = Blue) and her magma supply (three): **[8.75 -> 8.75a -> 8.75b -> 8.75c](Roadmap/PHASE_8_TWENTY_SECOND_HERO.md)** ([her shard](Rules/HERO_IGNATIA.md)) is AUTHORIZED, through a fully selectable, artworked hero whose picker row carries four stars and Sniper/Damager/Tokens/Tactician/Pusher and whose cards show which of their two printed texts the Tie Breaker coin makes live. **8.75** (inventory, the coin seam, seventeen composed bodies, Equilibrium, magma tokens, all behind the gate) is ACTIVE: its base is committed, its Edit Mode fixtures, the Ultimate (8.75a) and the two 8.75b preparations run as a parallel wave. No package is authorized.
 
-On 2026-09-17 the user selected **Garrus the Gladiator** as the SIXTEENTH hero. [Sixteenth-hero dealing](Roadmap/PHASE_8_SIXTEENTH_HERO.md) owns that COMPLETE sequence (**8.41**-**8.41f**) and [his rules shard](Rules/HERO_GARRUS.md) the nineteen-face inventory; both preserve the user's 2026-09-17 GA-Q1 answer ("I think yes, he can move 0") as a recorded user-approved interpretation, not a claimed official ruling. That authorization is exhausted.
+The 2026-09-17 refinements **8.42 -> 8.42a -> 8.42b -> 8.42d** are complete ([playtest refinements](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) owns them); 8.42a's disposable build-and-launch check included no package.
+
+On 2026-09-17 the user selected **Garrus the Gladiator** as the SIXTEENTH hero; [sixteenth-hero dealing](Roadmap/PHASE_8_SIXTEENTH_HERO.md) owns that COMPLETE sequence (**8.41**-**8.41f**) and [his rules shard](Rules/HERO_GARRUS.md) the inventory, both preserving the user's GA-Q1 answer ("I think yes, he can move 0") as a recorded user-approved interpretation.
 
 On 2026-09-13 the user named the FIFTEENTH hero, Bain the Bounty Hunter; [fifteenth-hero dealing](Roadmap/PHASE_8_FIFTEENTH_HERO.md) owns that COMPLETE series (**8.40**-**8.40k**): the gate found no shipped defect but raised two player-facing gaps recorded there, and **8.40f** took the wire to `/15`. The 2026-09-07 brakes direction still governs the parked presentation program, the card-authoring workbench, tier-3 bots and every other parked item.
 
