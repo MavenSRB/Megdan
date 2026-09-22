@@ -219,7 +219,7 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
-### [ ] 8.81 Re-cut the twenty-two-hero playtest packages with the evening's four fixes
+### [x] 8.81 Re-cut the twenty-two-hero playtest packages with the evening's four fixes
 
 Authorized 2026-09-22 by the user's standing playtest order and "ok, you go do the fix, we play with the bug": the packages the evening was played on (8.79) carried the repeat-offer gap (8.75d), the Defense window without the attacker's card on network seats (8.80), the live-face badge the user dropped (8.75e) and Swift's stand-still minion move (8.82); once all four landed the pair was cut again.
 
@@ -228,6 +228,10 @@ Outcome: `Builds/Playtest-8.80-ignatia` (+ zip) and `Builds/Playtest-8.80-ignati
 Acceptance: T3 - the complete Edit Mode and Play Mode suites and the harness on the merged main this cut is built from, whose player source it changes only by the version string no test pins; the Windows build-and-launch smoke and the Mac build on the packaged tree; the packaged Windows exe launched once from its own folder to `LOBBY_BEGIN`; the zips inspected for logs; the identity, manifest and read-mes per the 8.44 recipe plus the Mac read-me.
 
 Non-goals: code signing; any further correction.
+
+Completed 2026-09-22 at 00:57 on 2026-09-23. Stamp `1.0-8.80-ignatia+20260922220128-bd9b32fe` on both players; protocol `/21`, schema 44; configured content digest `48caa7f6...` re-measured by the offline probe (108 definitions, 22 playable heroes; identical to 8.79's, as 8.68 taught: the digest covers the default configuration's dealt definitions, and none of the four fixes moved them). Gate: complete Edit Mode 5498 / 5462 / 0 / 36 established skips and complete Play Mode 826/826 zero skips on the packaged tree (`tmp/881-edit-complete.xml`, `tmp/881-play-complete.xml`), harness 4472/4472 zero skips on it; on the packaged tree the Windows smoke GATE PASSED (00:02) and the Mac build PASSED under the Windows stamp (00:07); the packaged exe reached `GUARDS_ONLINE: LOBBY_BEGIN` from its own folder. Windows zip 183 entries / 79.6 MB, Mac zip 184 entries / 87.1 MB, no log or DoNotShip folder in either.
+
+Historical evidence: [8.81 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-881-re-cut-package-completion-evidence).
 
 ### [x] 8.82 Swift's minion move keeps the minion inside her Radius as her icon and items say it
 

@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.81 re-cut package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.81 | `Builds/Playtest-8.80-ignatia` and `Playtest-8.80-ignatia-mac` (+ zips: 183 / 184 entries, 79.6 / 87.1 MB, no logs) cut from main at `a6bfd51d` plus the stamp `1.0-8.80-ignatia+...220128-bd9b32fe` on both players, the same evening as 8.79, with 8.75d, 8.80, 8.75e and 8.82; protocol /21 (every player switches), schema 44, digest `48caa7f6...`. Gate: Edit Mode 5498 / 5462 / 0 / 36 established skips and Play Mode 826/826 on the packaged tree, harness 4472/4472 zero skips; Windows smoke and Mac build passed on the packaged tree; packaged exe reached the lobby. [Definition](../../Roadmap/PHASE_8.md#x-881-re-cut-the-twenty-two-hero-playtest-packages-with-the-evenings-four-fixes). | `milestone/8.81` |
+
 ## Milestone 8.82 Swift radius leash completion evidence
 
 | Milestone | Outcome and definition | Commit |
