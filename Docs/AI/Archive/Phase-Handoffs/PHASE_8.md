@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.75c Ignatia player-path gate completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.75c | Ignatia's permanent player-path gate: 25 rows derived and compared exactly, no new shape; 29 journeys over both coin faces reading the live-face marker before every press, including Chaos Incarnate's flip turning the coin, the banner and every marker over and the repeat on the opposite face, and the four-star/five-role pick through the filtered picker; four measured findings stated; ID-Q9c settled; ID-Q10c recorded as 8.75d (a repeat's offer admits the hero already attacked). Complete Play Mode 825/825 zero skips; complete Edit Mode 5477/5441/0/36; harness 4456/4456. [Definition](../../Roadmap/PHASE_8_TWENTY_SECOND_HERO.md#x-875c-complete-ignatias-permanent-player-path-gate). | `7b4bf996` |
+
 ## Milestone 8.78 no-hero Windows and Mac package completion evidence
 
 | Milestone | Outcome and definition | Commit |
