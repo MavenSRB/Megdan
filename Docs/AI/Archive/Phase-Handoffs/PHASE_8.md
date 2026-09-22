@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.79 twenty-two-hero package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.79 | `Builds/Playtest-8.75-ignatia` and `Playtest-8.75-ignatia-mac` (+ zips: 183 / 184 entries, 79.6 / 87.1 MB, no logs) cut from main at `7b4bf996` plus the stamp `1.0-8.75-ignatia+...173658-a394adc3` on both players the evening Ignatia completed; protocol /20, schema 44, digest `48caa7f6...` (22 heroes). Gate: Edit Mode 5477/5441/0/36 and Play Mode 825/825 on the 8.75c tree, harness 4456; Windows smoke and Mac build passed on the packaged tree; packaged exe reached the lobby. Carries 8.74, 8.75-8.75c, 8.76, 8.77; 8.75d stated as known. [Definition](../../Roadmap/PHASE_8.md#x-879-package-the-twenty-two-hero-playtest-build-for-windows-and-macos). | `milestone/8.79` |
+
 ## Milestone 8.75c Ignatia player-path gate completion evidence
 
 | Milestone | Outcome and definition | Commit |

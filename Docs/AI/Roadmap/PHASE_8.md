@@ -305,6 +305,20 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
+### [x] 8.79 Package the twenty-two-hero playtest build, for Windows and macOS
+
+Authorized 2026-09-22 by the user's standing order for the 21:00 playtest ("Will need a new mac and windows build"), cut the moment 8.75c completed - forty minutes after the no-hero fallback 8.78 - so the user can choose which package to play.
+
+Outcome: `Builds/Playtest-8.75-ignatia` (+ zip) and `Builds/Playtest-8.75-ignatia-mac` (+ zip), built from main at `7b4bf996` (the 8.75c landing) plus the version stamp `1.0-8.75-ignatia`, one stamp on both players; Ignatia the Mad pickable; 8.74, 8.76 and 8.77 carried; the queued 8.75d gap stated in the read-me's known problems.
+
+Acceptance: T3 - the complete Edit Mode and Play Mode suites and the harness on the 8.75c gate tree, whose player source this cut changes only by the version string no test pins; the Windows build-and-launch smoke and the Mac build on the packaged tree; the packaged Windows exe launched once from its own folder to `LOBBY_BEGIN`; the zips inspected for logs; the identity, manifest and read-mes per the 8.44 recipe plus the Mac read-me.
+
+Non-goals: 8.75d; code signing.
+
+Completed 2026-09-22 at 19:42. Stamp `1.0-8.75-ignatia+20260922173658-a394adc3` on both players; protocol `/20`, schema 44; configured content digest `48caa7f6...` re-measured by the offline probe (108 definitions, 22 playable heroes; moved from 8.73's `4c4869e1...` by Ignatia's registration). Gate: complete Edit Mode 5477 / 5441 / 0 / 36 established skips and complete Play Mode 825/825 zero skips on the 8.75c gate tree (`tmp/875c-edit-complete2.xml`, `tmp/875c-play-complete.xml` in `gracious-solomon-72115a`), harness 4456/4456 on that tree; on the packaged tree the Windows smoke GATE PASSED (19:37) and the Mac build PASSED under the Windows stamp (19:38); the packaged exe reached `GUARDS_ONLINE: LOBBY_BEGIN` from its own folder. Windows zip 183 entries / 79.6 MB, Mac zip 184 entries / 87.1 MB, no log or DoNotShip folder in either. The read-me asks one player to take her and names the two Tier III repeat cards whose repeat still offers the unit already attacked (8.75d).
+
+Historical evidence: [8.79 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-879-twenty-two-hero-package-completion-evidence).
+
 ### [x] 8.78 Package the playtest build without the twenty-second hero, for Windows and macOS
 
 Authorized 2026-09-22 by the user for a 21:00 playtest ("Will need a new mac and windows build. So at around 7 make a call if hero is gonna land in time or not and cut out the builds with all the changes but w/o new hero"). Ignatia's gate (8.75c) was still running when the package had to be gated, so the package is cut from the last main commit BEFORE her dealing landed - where her content is composed but gated out of the roster - plus 8.77's build tooling.
