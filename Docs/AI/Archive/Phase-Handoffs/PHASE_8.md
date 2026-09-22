@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.75d repeat offer completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.75d | A card-text-bound attack's repeat now offers and accepts exactly what its printed clause admits: `RepeatedAttackSubjectNarrowing` derived beside the enclosing-Attack facts and consulted where every selection's offer and answer are narrowed; two defects behind the report closed (the answer over-admitted; "on a minion" narrowed nothing on a single-clause card); Tigerclaw's Cloak and Daggers over Blink Strike found and closed by the same seam; the corpus measured before any change. Harness 4464/4464; complete Edit Mode 5485/5449/0/36; complete Play Mode 825/825 zero skips; schema v44 / wire /20 unmoved. [Definition](../../Roadmap/PHASE_8_TWENTY_SECOND_HERO.md#x-875d-the-repeats-offer-excludes-what-its-printed-clause-excludes). | `be1f9769` |
+
 ## Milestone 8.79 twenty-two-hero package completion evidence
 
 | Milestone | Outcome and definition | Commit |
