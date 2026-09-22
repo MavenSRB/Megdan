@@ -523,6 +523,23 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// every one of its repeats - which is measurably worse than the defect being closed. Only the
         /// named instance is excused; any other pending resolution still refuses.</para>
         /// </param>
+        /// <param name="cardTextCanBindATarget">
+        /// Milestone 8.75d. Whether the printed subject of an Attack whose target is bound by CARD
+        /// TEXT could name anybody in the instance this question is about, asked of the planned
+        /// instance so the probe reads the exclusions and the clause narrowing that instance carries.
+        ///
+        /// <para><b>Why it is a caller's delegate rather than a judgement made here.</b> Answering it
+        /// means walking the card's own typed effect body against the registered capability catalog,
+        /// which this backend holds none of; the card-action authority does, and already asks exactly
+        /// this question for a first instance in <c>CanAttackFindTarget</c>. Passing it in means one
+        /// statement of the walk, asked from both places.</para>
+        ///
+        /// <para><b>Null keeps the reading this method had</b>, which is what the after-action repeat
+        /// path deliberately passes: Ignatia's Chaos Incarnate FLIPS the Tie Breaker coin between the
+        /// offer and the instance, so her live printed line at the moment of the offer is not the one
+        /// the repeated instance will run, and probing the wrong line would refuse a repeat the card
+        /// grants. The card-text path has no such step between the two.</para>
+        /// </param>
         internal bool CanStartRepeatedAttack(
             PendingAttackResolution completed,
             ActionResolutionId repeatedResolutionId,
@@ -531,7 +548,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IEnumerable<CardInstance> instances,
             MatchParticipants participants,
             RuleModificationSet modifications,
-            bool theAskingInstanceIsStillUnderWay = false) =>
+            bool theAskingInstanceIsStillUnderWay = false,
+            Func<PendingAttackResolution, bool> cardTextCanBindATarget = null) =>
             completed != null &&
             repeatedResolutionId.IsDefined &&
             definitions != null &&
@@ -539,7 +557,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PlanRepeatedAttack(
                 completed, repeatedResolutionId, excludedTarget, definitions.ToArray(),
                 instances.ToArray(), participants, modifications,
-                out _, out _, out _, theAskingInstanceIsStillUnderWay) ==
+                out _, out _, out _, theAskingInstanceIsStillUnderWay, cardTextCanBindATarget) ==
                 CardActionResolutionRejectionReason.None;
 
         /// <summary>
@@ -580,7 +598,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             out PendingAttackResolution planned,
             out PendingAttackTargetChoice plannedChoice,
             out bool targetIsBoundByCardText,
-            bool theAskingInstanceIsStillUnderWay = false)
+            bool theAskingInstanceIsStillUnderWay = false,
+            Func<PendingAttackResolution, bool> cardTextCanBindATarget = null)
         {
             planned = null;
             plannedChoice = null;
@@ -630,7 +649,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
             if (repeatedPolicy.TargetIsBoundByCardText)
             {
                 targetIsBoundByCardText = true;
-                return CardActionResolutionRejectionReason.None;
+
+                // Milestone 8.75d. This method's own remarks said what it could not answer - "an
+                // Attack whose text names its own target starts at p.14's step 1 and the text names a
+                // unit there; deciding that here would mean running the card text speculatively at
+                // the checkpoint". Running it speculatively is exactly what
+                // `CanAttackFindTarget` has done for a FIRST instance since milestone 8.29d, so the
+                // question has an owner; what it needed was the planned instance, because the clause
+                // that produced it is half of what its printed subject may name. A caller that hands
+                // over no probe keeps the reading this method had.
+                return cardTextCanBindATarget == null || cardTextCanBindATarget(planned)
+                    ? CardActionResolutionRejectionReason.None
+                    : CardActionResolutionRejectionReason.TargetUnavailable;
             }
 
             plannedChoice = CreateAttackTargetChoice(
@@ -974,9 +1004,19 @@ namespace GuardsDigital.Core.Rules.CardResolution
             var resolution = pendingAttackResolution;
             if (boundTarget.IsDefined)
             {
-                var legal = FindLegalAttackTargets(
-                    resolution.ActorId, offer.Value, materializedDefinitions, participants,
-                    modifications);
+                // Milestone 8.75d. The clause that produced a REPEATED instance narrows what that
+                // instance may take, and until this milestone this validation asked only the
+                // unnarrowed legal set and the exclusion list beside it. So a card-text subject
+                // could hand over a unit of the kind the clause forbids - Imminent Eruption's "may
+                // repeat once on a minion" would have accepted a hero - and the Attack resolved
+                // against it. The narrowing is the same method rulebook p.13's own target question
+                // applies, asked here so the two answers stay one answer.
+                var legal = NarrowedByTheProducingClause(
+                    resolution,
+                    FindLegalAttackTargets(
+                        resolution.ActorId, offer.Value, materializedDefinitions, participants,
+                        modifications),
+                    materializedDefinitions);
                 if (!legal.Contains(boundTarget) ||
                     resolution.ExcludedTargets.Contains(boundTarget))
                 {
@@ -2868,51 +2908,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
             }
 
-            // Milestone 8.24. "on a different enemy hero" is the same repeat clause narrowing what is
-            // left of the set, and Xargatha's Cleave and Rapid Thrusts are what print it. It is read
-            // off the trusted definition here rather than carried on the resolution: a repeated
-            // instance already knows it is one and which action it repeats, so the card can be asked
-            // again - which is why the clause moves no snapshot field, and why a payload naming a
-            // minion cannot put one back into the set.
-            // Milestone 8.35z46 widens the derivation to a card that prints a CHAIN of
-            // clauses, where the card alone cannot say which one produced this instance. Nothing about
-            // a single-clause card changes: RepeatAdmitsOnly returns exactly what
-            // RepeatAdmitsEnemyHeroesOnly returned for every face in this build but Rain of Arrows.
-            if (resolution.InvocationContext == ActionInvocationContext.Repeated)
-            {
-                var admitted = RepeatAdmitsOnly(resolution, definitions);
-                if (admitted.HasValue)
-                {
-                    legal = legal.Where(target => target.Kind == admitted.Value).ToArray();
-                }
-
-                // Milestone 8.69b. "on a different unit adjacent to you" - Brynn the Seeker's Split
-                // Attack. It is the SAME derivation the kind narrowing above makes, of the same
-                // trusted definition, and it narrows the other half of what a target is: p.19's
-                // innermost ring around the attacker, in place of the printed Range 2 every other
-                // instance of that action reaches. Applied here rather than inside
-                // FindLegalAttackTargets for milestone 8.35z45's reason - the query answers p.13's
-                // question and this is one card's own extra word narrowing the answer - and applied to
-                // the one set both the offer and the answer read, so CanStartRepeatedAttack refuses a
-                // repeat with an empty ring rather than offering one and discovering it after.
-                if (RepeatReachesOnlyUnitsAdjacentToTheActor(resolution, definitions))
-                {
-                    var actorAt = ActorSpaceOf(resolution.ActorId);
-                    legal = actorAt.HasValue
-                        ? legal.Where(target =>
-                            {
-                                var at = TargetSpaceOf(target);
-                                return at.HasValue &&
-                                    HexDistanceQuery.Calculate(actorAt.Value, at.Value) == 1;
-                            })
-                            .ToArray()
-                        // An attacker standing nowhere has no ring, so the clause admits nobody. It
-                        // is unreachable through a started Attack, whose actor occupancy is checked
-                        // before the instance is planned, and is answered rather than left to a
-                        // distance measured from nothing.
-                        : Array.Empty<AttackTarget>();
-                }
-            }
+            legal = NarrowedByTheProducingClause(resolution, legal, definitions);
 
             return new PendingAttackTargetChoice(
                 resolution.ResolutionId,
@@ -2922,32 +2918,164 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         /// <summary>
-        /// Whether the card this repeated Attack came from declared its repeat as
-        /// <see cref="RepeatTargetBinding.DifferentEnemyHero"/>.
+        /// What the clause that produced a REPEATED instance lets it take, out of the legal set every
+        /// instance of this Attack chooses from. Every other instance passes through unchanged.
         ///
-        /// <para>It asks the definition rather than the resolution, and asks it for the action this
-        /// instance is actually performing - both of p.14's card-text moments, because a face may print
-        /// its repeat at either and the page does not care which one asked. A card that declares no
-        /// such repeat narrows nothing, which is every Attack in the build but two.</para>
+        /// <para>Milestone 8.24. "on a different enemy hero" is the repeat clause narrowing what is
+        /// left of the set, and Xargatha's Cleave and Rapid Thrusts are what print it. It is read off
+        /// the trusted definition rather than carried on the resolution: a repeated instance already
+        /// knows it is one and which action it repeats, so the card can be asked again - which is why
+        /// the clause moves no snapshot field, and why a payload naming a minion cannot put one back
+        /// into the set. Milestone 8.35z46 widened the derivation to a card that prints a CHAIN of
+        /// clauses, where the card alone cannot say which one produced this instance; nothing about a
+        /// single-clause card changed.</para>
+        ///
+        /// <para><b>Milestone 8.75d made it a method, because a second caller needed the identical
+        /// reading.</b> An Attack whose target is bound by card text reaches p.14's step 1 with
+        /// nothing bound and hands a unit over from its own printed subject, and
+        /// <see cref="ContinueAfterBeforeAttackText"/> validates that unit against the legal set -
+        /// which, until this milestone, was the UNNARROWED one. So Imminent Eruption's "may repeat
+        /// once on a minion" would have accepted a hero at the bind. One method, asked at both
+        /// sites, is what keeps p.13's answer and the card text's answer the same answer.</para>
         /// </summary>
-        private static bool RepeatAdmitsEnemyHeroesOnly(
+        private IReadOnlyList<AttackTarget> NarrowedByTheProducingClause(
+            PendingAttackResolution resolution,
+            IReadOnlyList<AttackTarget> legal,
+            IReadOnlyList<CardDefinition> definitions)
+        {
+            if (resolution.InvocationContext != ActionInvocationContext.Repeated)
+            {
+                return legal;
+            }
+
+            var admitted = RepeatAdmitsOnly(resolution, definitions);
+            if (admitted.HasValue)
+            {
+                legal = legal.Where(target => target.Kind == admitted.Value).ToArray();
+            }
+
+            // Milestone 8.69b. "on a different unit adjacent to you" - Brynn the Seeker's Split
+            // Attack. It is the SAME derivation the kind narrowing above makes, of the same
+            // trusted definition, and it narrows the other half of what a target is: p.19's
+            // innermost ring around the attacker, in place of the printed Range 2 every other
+            // instance of that action reaches. Applied here rather than inside
+            // FindLegalAttackTargets for milestone 8.35z45's reason - the query answers p.13's
+            // question and this is one card's own extra word narrowing the answer - and applied to
+            // the one set both the offer and the answer read, so CanStartRepeatedAttack refuses a
+            // repeat with an empty ring rather than offering one and discovering it after.
+            if (RepeatReachesOnlyUnitsAdjacentToTheActor(resolution, definitions))
+            {
+                var actorAt = ActorSpaceOf(resolution.ActorId);
+                legal = actorAt.HasValue
+                    ? legal.Where(target =>
+                        {
+                            var at = TargetSpaceOf(target);
+                            return at.HasValue &&
+                                HexDistanceQuery.Calculate(actorAt.Value, at.Value) == 1;
+                        })
+                        .ToArray()
+                    // An attacker standing nowhere has no ring, so the clause admits nobody. It
+                    // is unreachable through a started Attack, whose actor occupancy is checked
+                    // before the instance is planned, and is answered rather than left to a
+                    // distance measured from nothing.
+                    : Array.Empty<AttackTarget>();
+            }
+
+            return legal;
+        }
+
+        /// <summary>
+        /// Milestone 8.75d. The same clause, stated in the vocabulary a card-text target SELECTION can
+        /// read - see <see cref="GuardsDigital.Core.Rules.EffectResolution.RepeatedAttackSubjectNarrowing"/>.
+        ///
+        /// <para><b>One derivation, two readers.</b> The kind comes from
+        /// <see cref="RepeatAdmitsOnly"/>, which is the method p.13's own target question uses, so the
+        /// offer a printed subject makes and the set that question would accept cannot come to
+        /// disagree. The exclusions come off the resolution the instance is already carrying.</para>
+        ///
+        /// <para><b>What it deliberately leaves out is the REACH narrowing</b>
+        /// (<see cref="GuardsDigital.Core.Effects.RepeatTargetBinding.DifferentUnitAdjacentToActor"/>).
+        /// Measured over all twenty-two heroes' composed content at this milestone: the only action
+        /// definitions that both bind their target by card text and declare a repeat clause are
+        /// Ignatia's Loosely-Aimed Firebolts and Imminent Eruption, and neither declares that member -
+        /// Brynn's Split Attack, which does, binds its target through p.13's own question. A card-text
+        /// attack declaring it would be a new shape, and
+        /// <c>RepeatedSubjectNarrowingReachesEveryCardTextRepeatTests</c> is the guard that makes one
+        /// arrive as a red test rather than as a silently unnarrowed offer.</para>
+        /// </summary>
+        internal static GuardsDigital.Core.Rules.EffectResolution.RepeatedAttackSubjectNarrowing
+            RepeatedSubjectNarrowingOf(
+                PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)
+        {
+            if (resolution == null || definitions == null ||
+                resolution.InvocationContext != ActionInvocationContext.Repeated)
+            {
+                return GuardsDigital.Core.Rules.EffectResolution.RepeatedAttackSubjectNarrowing.None;
+            }
+
+            var admitted = RepeatAdmitsOnly(resolution, definitions);
+            return new GuardsDigital.Core.Rules.EffectResolution.RepeatedAttackSubjectNarrowing(
+                admitted.HasValue
+                    ? (admitted.Value == AttackTargetKind.Hero
+                        ? BoardObjectKind.Hero
+                        : BoardObjectKind.Minion)
+                    : BoardObjectKind.None,
+                resolution.ExcludedTargets.Select(AsBoardObject));
+        }
+
+        /// <summary>p.13's target as p.19's board object - the identity a selection offers.</summary>
+        private static BoardObjectReference AsBoardObject(AttackTarget target) =>
+            target.Kind == AttackTargetKind.Hero
+                ? BoardObjectReference.ForHero(target.HeroId)
+                : target.Kind == AttackTargetKind.Minion
+                    ? BoardObjectReference.ForMinion(target.MinionId)
+                    : default;
+
+        /// <summary>
+        /// The one repeat clause a single-clause card declares, read off the action this instance is
+        /// actually performing - both of p.14's card-text moments, because a face may print its repeat
+        /// at either and the page does not care which one asked. A card that declares no repeat
+        /// declares <see cref="RepeatTargetBinding.Unbound"/>, which narrows nothing.
+        /// </summary>
+        /// <remarks>
+        /// <para><b>Milestone 8.75d widened this from "is it DifferentEnemyHero" to "which binding is
+        /// it", and that closed a measured defect rather than tidying a name.</b> Its predecessor
+        /// asked one yes/no question, because when milestone 8.24 wrote it
+        /// <see cref="RepeatTargetBinding.DifferentEnemyHero"/> was the only member that narrowed a
+        /// KIND. Milestone 8.35z46 then added <see cref="RepeatTargetBinding.DifferentEnemyMinion"/>
+        /// for Silverarrow's Rain of Arrows - a card that prints a CHAIN, so it is answered by
+        /// <see cref="CardTextRepeatChain.ProducingClause"/> and never reaches here - and the
+        /// single-clause fallback was left asking about heroes alone. Ignatia the Mad's Imminent
+        /// Eruption is the first face in the corpus to print "may repeat once on a minion" as its
+        /// only clause, and it fell straight through: p.13's own target question narrowed the repeated
+        /// instance to nothing at all, so "on a MINION" admitted heroes. Reading the declared binding
+        /// answers both members from one place and leaves every other card in the corpus exactly where
+        /// it was (measured: every other single-clause Attack declares
+        /// <see cref="RepeatTargetBinding.DifferentTarget"/>,
+        /// <see cref="RepeatTargetBinding.DifferentUnitAdjacentToActor"/> or
+        /// <see cref="RepeatTargetBinding.DifferentEnemyHero"/>, and the first two narrow no kind
+        /// here either way).</para>
+        /// </remarks>
+        private static RepeatTargetBinding SingleDeclaredRepeatBinding(
             PendingAttackResolution resolution, IReadOnlyList<CardDefinition> definitions)
         {
             var action = RepeatedActionDefinition(resolution, definitions);
             if (action == null)
             {
-                return false;
+                return RepeatTargetBinding.Unbound;
             }
 
-            return DeclaresEnemyHeroRepeat(action.EffectRoot) ||
-                DeclaresEnemyHeroRepeat(action.SecondCardTextRoot);
+            var fromRoot = DeclaredRepeatBinding(action.EffectRoot);
+            return fromRoot != RepeatTargetBinding.Unbound
+                ? fromRoot
+                : DeclaredRepeatBinding(action.SecondCardTextRoot);
         }
 
         /// <summary>
         /// Milestone 8.35z46. The single unit kind a repeated instance may take, or
         /// <c>null</c> where its card narrows nothing and p.19's ordinary set stands.
         ///
-        /// <para><b>Why this is not <see cref="RepeatAdmitsEnemyHeroesOnly"/> with a second arm.</b>
+        /// <para><b>Why this is not <see cref="SingleDeclaredRepeatBinding"/> with a second arm.</b>
         /// That method asks the card, which is deliberate - the clause moves no snapshot field and a
         /// tampered payload cannot widen the set back - and it is exactly why it cannot tell two
         /// clauses on one card apart. Silverarrow's Rain of Arrows prints two, narrowed to different
@@ -2985,9 +3113,18 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
             }
 
-            return RepeatAdmitsEnemyHeroesOnly(resolution, definitions)
-                ? AttackTargetKind.Hero
-                : (AttackTargetKind?)null;
+            // Milestone 8.75d. The single-clause fallback reads WHICH binding the card declares
+            // rather than asking whether it is the one member that existed when this fallback was
+            // written; see SingleDeclaredRepeatBinding for the defect that closed.
+            switch (SingleDeclaredRepeatBinding(resolution, definitions))
+            {
+                case RepeatTargetBinding.DifferentEnemyHero:
+                    return AttackTargetKind.Hero;
+                case RepeatTargetBinding.DifferentEnemyMinion:
+                    return AttackTargetKind.Minion;
+                default:
+                    return null;
+            }
         }
 
         /// <summary>
@@ -3031,11 +3168,31 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 candidate.Id.Equals(resolution.ActionDefinitionId));
         }
 
-        private static bool DeclaresEnemyHeroRepeat(EffectDefinition effect) =>
-            effect != null &&
-            effect.Nodes.Any(node =>
-                node.Kind == EffectNodeKind.RepeatAction &&
-                node.RepeatTargetBinding == RepeatTargetBinding.DifferentEnemyHero);
+        /// <summary>
+        /// The binding the first <see cref="EffectNodeKind.RepeatAction"/> node of one body declares,
+        /// or <see cref="RepeatTargetBinding.Unbound"/> where the body prints no repeat at all. The
+        /// definition's own node order is the printed order, which is the assumption
+        /// <see cref="CardTextRepeatChain.ClausesOf"/> and <c>RepeatedActionQuery.Requested</c> both
+        /// already make.
+        /// </summary>
+        private static RepeatTargetBinding DeclaredRepeatBinding(EffectDefinition effect)
+        {
+            if (effect == null)
+            {
+                return RepeatTargetBinding.Unbound;
+            }
+
+            foreach (var node in effect.Nodes)
+            {
+                if (node.Kind == EffectNodeKind.RepeatAction &&
+                    node.RepeatTargetBinding != RepeatTargetBinding.Unbound)
+                {
+                    return node.RepeatTargetBinding;
+                }
+            }
+
+            return RepeatTargetBinding.Unbound;
+        }
 
         /// <summary>
         /// The attacker's Attack value: the printed icon with rulebook p.16's item bonuses composed

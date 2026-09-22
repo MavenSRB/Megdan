@@ -54,8 +54,11 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             // Milestone 8.39d1, applied before the consumer narrowing rather than after it: a piece
             // an excluding repeat took is not a candidate at all, so no question about it is put to a
             // consumer. It is also the one narrowing here that applies where no consumer can be read.
-            var candidates = WithoutTheExcludedSubject(
-                selectionNode, offered ?? Array.Empty<EffectValue>(), frame, context);
+            var candidates = WithoutWhatTheProducingRepeatRefuses(
+                selectionNode,
+                WithoutTheExcludedSubject(
+                    selectionNode, offered ?? Array.Empty<EffectValue>(), frame, context),
+                context);
             if (candidates.Count == 0 ||
                 !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
             {
@@ -216,6 +219,16 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 return false;
             }
 
+            // Milestone 8.75d, the answer-side half of the repeat narrowing above, and it reads the
+            // same method for the same reason: a unit the producing clause left out of the offer
+            // cannot be submitted to it either, which is what keeps "on a different hero" and "on a
+            // minion" rules rather than presentation on a card-text-bound Attack.
+            if (chosen.Count > 0 && WithoutWhatTheProducingRepeatRefuses(
+                    selectionNode, chosen, context).Count != chosen.Count)
+            {
+                return false;
+            }
+
             if (chosen.Count == 0 ||
                 !TryReadConsumer(selectionNode, frame, outcomes, context, out var consumer))
             {
@@ -288,6 +301,104 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 }
             }
         }
+        /// <summary>
+        /// Milestone 8.75d. The units the clause that produced a REPEATED Attack instance will not let
+        /// it take, removed from what a card-text subject of that Attack offers - Ignatia the Mad's
+        /// Loosely-Aimed Firebolts, "May repeat once on a different hero", and Imminent Eruption, "May
+        /// repeat once on a minion".
+        ///
+        /// <para><b>The gap it closes, and why it could only be closed here.</b> Rulebook p.13's own
+        /// target question already applies both halves of such a clause, and an Attack that asks that
+        /// question is correct today. An Attack whose target is bound by CARD TEXT never asks it: it
+        /// reaches p.14's step 1 with nothing bound and its printed subject names a unit instead. So
+        /// the repeated instance re-ran the printed sentence whole and the sentence has never heard of
+        /// the clause - the offer still admitted the unit the first instance attacked, and for a
+        /// clause naming a KIND it admitted the wrong kind outright. Recorded as ID-Q10c by milestone
+        /// 8.75c and measured by both of her progressed journeys.</para>
+        ///
+        /// <para><b>It is applied to the OFFER rather than inside each handler</b>, for milestone
+        /// 8.39d1's own stated reason: supplying a value can be capability-agnostic by handing it
+        /// over, REMOVING one cannot, because only a selection knows its candidates. Three unrelated
+        /// selection capabilities name a card-text Attack's target in the corpus - the roster's
+        /// <c>choose-target@2</c>, <c>synthetic-range-hero-target@1</c>, Ignatia's own four range
+        /// selections and Tigerclaw's <c>choose-through-target-line@1</c> - and narrowing them one at
+        /// a time would be four readings of one clause.</para>
+        ///
+        /// <para><b>Which selections it applies to is read off the definition, not declared.</b> A
+        /// selection narrows this way exactly when some <c>set-attack-target@1</c> node in the same
+        /// definition binds one of ITS outputs: that is what "this selection names the Attack's
+        /// target" means, and it is the same fact <see cref="EffectOptionFeasibilityQuery"/> already
+        /// walks the definition for. A selection feeding the binding through an intermediate node is
+        /// left unnarrowed rather than guessed at, which is this query's standing direction; no
+        /// composed face in the build has that shape.</para>
+        ///
+        /// <para><b>A SPACE candidate is narrowed by kind alone.</b> A coordinate says where, not
+        /// which piece, so "on a minion" cannot be asked of one; what can be asked is whether the
+        /// clause admits any unit kind at all. Nothing in the build offers spaces for an attack
+        /// target, and the arm exists so that a face which did would be narrowed rather than
+        /// silently exempt.</para>
+        /// </summary>
+        private static IReadOnlyList<EffectValue> WithoutWhatTheProducingRepeatRefuses(
+            EffectNodeDefinition selectionNode,
+            IReadOnlyList<EffectValue> candidates,
+            EffectResolutionContext context)
+        {
+            var narrowing = context.EnclosingAttack.RepeatedSubject;
+            if (candidates.Count == 0 || !narrowing.IsDefined ||
+                !NamesTheEnclosingAttacksTarget(context.Definition, selectionNode))
+            {
+                return candidates;
+            }
+
+            return candidates.Where(Admitted).ToArray();
+
+            bool Admitted(EffectValue candidate)
+            {
+                switch (candidate.Kind)
+                {
+                    case EffectValueKind.Hero:
+                        return narrowing.Admits(BoardObjectReference.ForHero(candidate.HeroId));
+                    case EffectValueKind.Minion:
+                        return narrowing.Admits(BoardObjectReference.ForMinion(candidate.MinionId));
+                    case EffectValueKind.Coordinate:
+                        return narrowing.AdmitsKind(BoardObjectKind.Hero) ||
+                            narrowing.AdmitsKind(BoardObjectKind.Minion);
+                    default:
+                        return true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether some <c>set-attack-target@1</c> node in this definition binds one of this
+        /// selection's outputs - which is how a definition says "this selection names the Attack's
+        /// target" without a second declaration beside the one it already makes.
+        /// </summary>
+        private static bool NamesTheEnclosingAttacksTarget(
+            EffectDefinition definition, EffectNodeDefinition selectionNode)
+        {
+            foreach (var node in definition.Nodes)
+            {
+                if (!node.Capability.Equals(
+                        GuardsDigital.Core.Effects.Synthetic.SyntheticContinuationCapabilities
+                            .SetAttackTargetV1))
+                {
+                    continue;
+                }
+
+                foreach (var input in node.Inputs)
+                {
+                    if (input.SourceKind == EffectBindingSourceKind.NodeOutput &&
+                        input.SourceNodeId.Equals(selectionNode.Id))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// The consumer this selection declares, bound to everything needed to put a candidate to it,
         /// or nothing where the pairing cannot be read yet.

@@ -1558,6 +1558,66 @@ namespace GuardsDigital.Tests.EditMode
                 "card also names (p.18's Push is away from the pusher; Ignatia's two faces name no " +
                 "direction at all), and for a subject that is not a board piece - both would need " +
                 "more than an anchor.")
+            ,
+
+            // Milestone 8.75d
+            new SharedFoundationClaim(
+                "selection.repeat-clause-narrows-a-card-text-attack-subject",
+                new MemberLocator(
+                    typeof(GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts),
+                    nameof(GuardsDigital.Core.Rules.EffectResolution.EnclosingAttackFacts
+                        .RepeatedSubject),
+                    MemberTypes.Property),
+                SharedFoundationClaimStatus.ExplicitlyNarrow,
+                new[]
+                {
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(IgnatiaRepeatOfferTests),
+                            nameof(IgnatiaRepeatOfferTests
+                                .LooselyAimedsRepeat_OffersHeroesOnly_WhereItsPrintedInstanceOfferedUnits),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the identical printed sentence offers UNITS to the printed instance and " +
+                        "HEROES to the repeated one, which is the clause and nothing else"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(IgnatiaRepeatOfferTests),
+                            nameof(IgnatiaRepeatOfferTests
+                                .LooselyAimedsRepeat_RefusesTheExcludedHeroAsAnAnswerToo),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.ViolatorFixture,
+                        "a piece left out of the offer is refused as an answer by the same method, " +
+                        "so offer and answer cannot come to disagree"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(IgnatiaRepeatOfferTests),
+                            nameof(IgnatiaRepeatOfferTests
+                                .EveryRepeatInTheCorpus_NarrowsTheKindItsOwnClauseNames),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "every repeat clause in the twenty-two-hero corpus beside the kind it " +
+                        "admits, so a reading that moved an unmeasured card reds here"),
+                    new FoundationEvidenceLocator(
+                        new MemberLocator(typeof(IgnatiaRepeatOfferTests),
+                            nameof(IgnatiaRepeatOfferTests
+                                .OnlyIgnatiasTwoFaces_BothBindTheirTargetByCardTextAndDeclareARepeat),
+                            MemberTypes.Method),
+                        SharedFoundationEvidenceKind.BoundaryFixture,
+                        "the complete set of Attacks this seam can reach, and the guard that a " +
+                        "binding it does not carry cannot arrive on one unnoticed")
+                },
+                new[] { "unit kind", "excluded units", "which selection", "reach" },
+                "One derived fact on the enclosing-Attack facts, carrying the unit KIND a repeat " +
+                "clause admits and the units it excludes, consulted by the one query that already " +
+                "narrows every selection's offer and answer together. It applies only to a " +
+                "selection whose output a `set-attack-target@1` node in the same definition binds, " +
+                "and only inside a REPEATED instance, so every printed instance and every selection " +
+                "that names something other than the Attack's target keeps its exact candidate " +
+                "set. The kind is read by the same method rulebook p.13's own target question uses. " +
+                "Nothing is stored: no capability revision, schema version or wire field moves.",
+                "Reassess for a card-text-bound Attack declaring a REACH narrowing " +
+                "(`DifferentUnitAdjacentToActor`), which this fact does not carry and no composed " +
+                "face declares, and for a selection that feeds the binding through an intermediate " +
+                "node rather than directly - both are left unnarrowed today and the corpus case " +
+                "above is what makes one arrive as a red row.")
         };
     }
 

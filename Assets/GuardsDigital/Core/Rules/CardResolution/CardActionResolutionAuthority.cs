@@ -2398,7 +2398,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions,
                     materializedInstances,
                     participants,
-                    modifications),
+                    modifications,
+                    timing,
+                    roundIndex,
+                    turnIndex),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var result = EffectResolutionSession.Start(
                 new EffectResolutionId(
@@ -2767,7 +2770,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 attack.TargetSpaceBeforeConsequences,
                 attack.ActorSpaceAtActionStart,
                 attack.DefenseOffer?.SourceCardInstanceId ?? default,
-                TargetWasRemoved(attack, board));
+                TargetWasRemoved(attack, board),
+                // Milestone 8.75d. What the clause that produced a REPEATED instance lets it take.
+                // It is built here, in the one place these facts are built, so the live card-text
+                // walk and the snapshot restore that re-asks a paused capability read the identical
+                // narrowing - the same reason p.13's printed subtype is read here rather than stored.
+                AttackDefenseCardActionStrategyBackend.RepeatedSubjectNarrowingOf(
+                    attack, definitions));
         }
 
         /// <summary>
@@ -2961,7 +2970,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<CardInstance> instances,
             MatchParticipants participants,
-            RuleModificationSet modifications)
+            RuleModificationSet modifications,
+            ActiveEffectLifecycle timing,
+            int roundIndex,
+            int turnIndex)
         {
             // Milestone 8.35z46. On a card that prints a CHAIN of repeat clauses, p.10's
             // bar is answered per clause rather than per instance, and this is where that answer is
@@ -3000,7 +3012,84 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 // The text asking this is a step of the Attack it offers to repeat, so that Attack
                 // being under way is the subject of the question rather than an obstacle to it.
-                theAskingInstanceIsStillUnderWay: true);
+                theAskingInstanceIsStillUnderWay: true,
+                // Milestone 8.75d. An Attack whose target is bound by CARD TEXT plans no target
+                // question, so until this milestone the judgement above returned "yes" for one
+                // without ever asking whether the printed subject could name anybody under the
+                // clause that would produce the instance. Ignatia's two printed repeats are the only
+                // faces in the corpus that reach it - every other repeat-declaring Attack binds its
+                // target through p.13's own question - and on a board whose one admissible unit is
+                // the one this instance took, the offer was made, confirmed, and the second instance
+                // stopped at its own mandatory bind.
+                cardTextCanBindATarget: planned => RepeatedCardTextCanBindATarget(
+                    planned, definitions, instances, participants, timing, modifications,
+                    roundIndex, turnIndex));
+        }
+
+        /// <summary>
+        /// Milestone 8.75d. Whether the printed subject of a planned REPEATED instance of a
+        /// card-text-bound Attack could name anybody, asked of the board as it now stands.
+        ///
+        /// <para><b>It is <see cref="CanAttackFindTarget"/>'s card-text arm with one thing added.</b>
+        /// That method probes the same typed effect body for a FIRST instance and has done since
+        /// milestone 8.29d; what a repeat needs beside it is the clause that produced it, which
+        /// travels on the enclosing facts built from the planned instance - so the walk narrows the
+        /// subject's own candidates exactly as the live pause will, and reports
+        /// <c>ImpossibleMandatory</c> where nothing admissible is left.</para>
+        ///
+        /// <para><b>It refuses only what it can prove empty</b>, which is
+        /// <see cref="EffectOptionFeasibilityQuery"/>'s standing direction: a body with no
+        /// "Before the attack:" moment to read comes back true rather than greyed, because an Attack
+        /// declaring a card-text binding and printing no such text is a content fault the resolver
+        /// reports where it meets it, not a repeat to suppress here.</para>
+        /// </summary>
+        private bool RepeatedCardTextCanBindATarget(
+            PendingAttackResolution planned,
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            MatchParticipants participants,
+            ActiveEffectLifecycle timing,
+            RuleModificationSet modifications,
+            int roundIndex,
+            int turnIndex)
+        {
+            var cardText = ActionOf(planned, definitions)
+                ?.CardTextAt(CardTextTiming.BeforeTheAttack);
+            if (cardText == null)
+            {
+                return true;
+            }
+
+            var context = new EffectResolutionContext(
+                cardText,
+                ContentCatalogs.Capabilities,
+                participants,
+                timing,
+                roundIndex,
+                turnIndex,
+                modifications,
+                EffectCardState.Of(definitions, instances),
+                ActionKind.Attack,
+                components: components,
+                heroItems: skillBackend.HeroItems,
+                enclosingAttack: EnclosingAttackOf(planned, definitions, board),
+                rosterState: rosterState,
+                tieBreakerRevealedSide: LiveTieBreakerSide);
+            return EffectOptionFeasibilityQuery.CanCompleteMandatoryAttackTargetBinding(
+                EffectResolutionSession.BuildStartFrame(
+                    new EffectResolutionId(
+                        $"probe-repeat-attack-target-{planned.ResolutionId.Value}"),
+                    planned.SourceCardInstanceId,
+                    planned.SourceDefinitionReference,
+                    planned.ActionDefinitionId,
+                    planned.ActorId,
+                    planned.ActorId,
+                    // The frame is the card TEXT's, and a live card-text resolution is started as
+                    // PrintedPrimary whatever instance of the Attack it belongs to - p.10's repeat
+                    // is a fact about the action, carried here on the enclosing facts above.
+                    ActionInvocationContext.PrintedPrimary,
+                    context),
+                context);
         }
 
         /// <summary>
@@ -3611,7 +3700,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     materializedDefinitions,
                     materializedInstances,
                     participants,
-                    modifications),
+                    modifications,
+                    timing,
+                    roundIndex,
+                    turnIndex),
                 tieBreakerRevealedSide: LiveTieBreakerSide);
             var step = EffectResolutionSession.Answer(pendingCardText.Frame, command, context);
             if (!step.Accepted)

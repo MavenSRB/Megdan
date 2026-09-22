@@ -268,13 +268,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(OfferedUnits(runtime), Has.Member(enemy.Value),
                 "and \"a different hero\" has a hero to name. " + Remaining(runtime));
 
-            // RECORDED, NOT REQUIRED - the same gap the Imminent Eruption journey records, on the
-            // other clause: "on a different HERO" narrows the repeated instance to heroes, and a
-            // ByCardText subject is not narrowed by it, so the enemy melee minion still standing on
-            // one of her files is offered as well.
-            Assert.That(OfferedUnits(runtime), Has.Member(RedMeleeOnAFile.Value),
-                "RECORDED GAP: the repeated instance's card-text subject is not narrowed to p.19's " +
-                "heroes by the clause that produced it. " + Remaining(runtime));
+            // CLOSED at milestone 8.75d, and recorded as a gap by 8.75c's own run of this line -
+            // ID-Q10c. "On a different HERO" narrows the repeated instance to p.19's heroes, and
+            // the clause now reaches a ByCardText subject, so the enemy melee minion standing on
+            // one of her files is NOT offered although the identical printed sentence offered it to
+            // the first instance a moment ago.
+            Assert.That(OfferedUnits(runtime), Has.No.Member(RedMeleeOnAFile.Value),
+                "\"on a different HERO\": the repeated instance's card-text subject is narrowed to " +
+                "p.19's heroes by the clause that produced it. " + Remaining(runtime));
             yield return Pick(root, CandidateFor(runtime, enemy));
             yield return null;
             yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
@@ -408,22 +409,21 @@ namespace GuardsDigital.Tests.PlayMode
                         "\"on a MINION\" - the minion in her ring is what the printed clause names, " +
                         "and the repeated instance is offered it. " + Remaining(runtime));
 
-                    // RECORDED, NOT REQUIRED - the gap milestone 8.75c's first Unity run measured,
-                    // written the way milestone 8.75's own fixtures recorded the straight-line gap
-                    // that 8.75b then closed. "May repeat once ON A MINION" narrows what the second
-                    // instance may TAKE, and `FindLegalAttackTargets` applies that narrowing (and
-                    // the exclusion of the unit the asking instance took) to rulebook p.13's own
-                    // target question - so a repeat bound that way is refused at the bind. Her
-                    // Attacks reach p.14's step 1 with NO target and name one in card text instead,
-                    // and the card-text selection never asks: it re-runs the printed subject whole,
-                    // so the hero this instance just attacked is offered again. Pressing him would
-                    // stop the Attack without a target, which is the offer-admits-more-than-the-
-                    // answer-can-perform class of milestones 8.29d, 8.29e, 8.35z5 and 8.35z15. The
-                    // day the narrowing reaches a ByCardText subject this line fails and says so.
-                    Assert.That(OfferedUnits(runtime), Has.Member(enemy.Value),
-                        "RECORDED GAP: the repeated instance's card-text subject is not narrowed by " +
-                        "the clause that produced it, so the hero the first instance took is still " +
-                        "offered. " + Remaining(runtime));
+                    // CLOSED at milestone 8.75d - ID-Q10c, the gap milestone 8.75c's first Unity run
+                    // measured on this very line. "May repeat once ON A MINION" narrows what the
+                    // second instance may TAKE, and `FindLegalAttackTargets` has applied that
+                    // narrowing (and the exclusion of the unit the asking instance took) to rulebook
+                    // p.13's own target question since milestone 8.24. Her Attacks reach p.14's step
+                    // 1 with NO target and name one in card text instead, and until 8.75d the
+                    // card-text selection never asked: it re-ran the printed subject whole, so the
+                    // hero this instance just attacked was offered again and pressing him stopped
+                    // the Attack without a target - the offer-admits-more-than-the-answer-can-perform
+                    // class of milestones 8.29d, 8.29e, 8.35z5 and 8.35z15. The clause now reaches
+                    // the subject, so the offer is the admissible set and nothing else.
+                    Assert.That(OfferedUnits(runtime), Has.No.Member(enemy.Value),
+                        "\"on a MINION\": the hero the first instance took is neither the kind the " +
+                        "clause names nor a different unit, so the repeat does not offer him. " +
+                        Remaining(runtime));
                     yield return Pick(root, CandidateFor(runtime, RedRanged));
                     yield return null;
                     yield return null;

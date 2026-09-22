@@ -45,10 +45,12 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             HexCoordinate? targetSpaceBeforeConsequences,
             HexCoordinate? actorSpaceAtActionStart = null,
             CardInstanceId defenseCardInstanceId = default,
-            bool targetWasRemoved = false)
+            bool targetWasRemoved = false,
+            RepeatedAttackSubjectNarrowing repeatedSubject = default)
         {
             DefenseCardInstanceId = defenseCardInstanceId;
             TargetWasRemoved = targetWasRemoved;
+            RepeatedSubject = repeatedSubject;
             if (!Enum.IsDefined(typeof(AttackRangeKind), range))
             {
                 throw new ArgumentException(
@@ -163,6 +165,21 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// </summary>
         public bool TargetWasRemoved { get; }
 
+        /// <summary>
+        /// Milestone 8.75d. What the clause that produced this Attack instance lets it take, where
+        /// this instance is a REPEAT and its clause narrows anything -
+        /// <see cref="RepeatedAttackSubjectNarrowing.None"/> for every printed instance and every
+        /// repeat whose clause says nothing.
+        ///
+        /// <para>It is here rather than anywhere else because it is a property of the ACTION the text
+        /// is printed inside, exactly like <see cref="Range"/>: the text did not produce it, cannot
+        /// change it, and has to obey it. What reads it is the one place every selection's offer and
+        /// answer are already narrowed together -
+        /// <see cref="EffectSelectionEligibilityQuery"/> - so a card-text subject that binds this
+        /// Attack's target offers exactly the units rulebook p.13's own question would accept.</para>
+        /// </summary>
+        public RepeatedAttackSubjectNarrowing RepeatedSubject { get; }
+
         /// <summary>Whether there is an enclosing Attack to ask about at all.</summary>
         public bool IsDefined => ActorId.IsDefined;
 
@@ -172,7 +189,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             MinionTargetId.Equals(other.MinionTargetId) &&
             Range == other.Range &&
             Nullable.Equals(TargetSpaceBeforeConsequences, other.TargetSpaceBeforeConsequences) &&
-            TargetWasRemoved == other.TargetWasRemoved;
+            TargetWasRemoved == other.TargetWasRemoved &&
+            RepeatedSubject.Equals(other.RepeatedSubject);
 
         public override bool Equals(object obj) => obj is EnclosingAttackFacts other && Equals(other);
 
@@ -184,7 +202,8 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                 hash = (hash * 397) ^ MinionTargetId.GetHashCode();
                 hash = (hash * 397) ^ (int)Range;
                 hash = (hash * 397) ^ (TargetSpaceBeforeConsequences?.GetHashCode() ?? 0);
-                return (hash * 397) ^ TargetWasRemoved.GetHashCode();
+                hash = (hash * 397) ^ TargetWasRemoved.GetHashCode();
+                return (hash * 397) ^ RepeatedSubject.GetHashCode();
             }
         }
 

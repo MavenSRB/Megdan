@@ -329,7 +329,15 @@ namespace GuardsDigital.Tests.EditMode
             IEnumerable<CardInstance> extraCards = null,
             ActiveEffectLifecycle timing = null,
             int roundIndex = 1,
-            bool startImmediately = true)
+            bool startImmediately = true,
+            // Milestone 8.75d. What the frame may ask about the Attack it is running inside - which
+            // for a REPEATED instance carries the clause that produced it. Default for every case
+            // before that milestone, which is text asking nothing about the page around it.
+            //
+            // The frame's own invocation context stays PrintedPrimary, exactly as a live card-text
+            // resolution's does whatever instance of the Attack it belongs to: p.10's repeat is a
+            // fact about the ACTION, and `RepeatContinuation` is the effect's own counter.
+            EnclosingAttackFacts enclosingAttack = default)
         {
             CardId = cardId;
             this.board = board;
@@ -356,6 +364,7 @@ namespace GuardsDigital.Tests.EditMode
                     IgnatiaBoard.Components(), board, new MarkerAttachmentRegister(),
                     board, board, board, board),
                 heroItems: items ?? new HeroItemState(Participants),
+                enclosingAttack: enclosingAttack,
                 rosterState: EffectRosterState.Absent,
                 tieBreakerRevealedSide: coin);
 
@@ -366,6 +375,9 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         internal CardDefinitionId CardId { get; }
+
+        /// <summary>The context this frame walks, for a case that asks a query of it directly.</summary>
+        internal EffectResolutionContext Context => context;
 
         internal MatchParticipants Participants { get; }
 
