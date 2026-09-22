@@ -89,17 +89,30 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The sun face: "Move up to N spaces in a straight line. Place a magma token in each empty
         /// space you moved through, or out of."
         ///
-        /// <para>Three nodes in order. <c>synthetic-actor-space@1</c> publishes where she stands before
-        /// the Move, which feeds both the Move's mover and the wake's origin. <c>synthetic-direct-move@3</c>
-        /// walks her up to N spaces - a direct Move is p.11's straight line, so nothing else states the
-        /// line, and the distance is "up to" (<see cref="EffectFailurePolicy.UpTo"/> with a floor of
-        /// zero), so standing still is a legal answer that lays no trail. <c>ignatia-place-magma-wake@1</c>
-        /// then reads the Move's two endpoints and drops a magma token in each empty space from the
-        /// origin up to but not including where she now stands.</para>
+        /// <para>Four nodes in order. <c>synthetic-actor-space@1</c> publishes where she stands before
+        /// the Move, which feeds both the Move's mover and the wake's origin.
+        /// <c>choose-line-destination@1</c> offers where a STRAIGHT-LINE move of up to N spaces can end
+        /// - the capability whose own remarks read "move up to that number of spaces in a straight
+        /// line", walking the file rather than filtering one, so a space reachable only by turning a
+        /// corner is never offered. <c>synthetic-direct-move@3</c> then walks her to the space that
+        /// answer named (<see cref="DirectMoveDestinationPolicy.NamedSpace"/>, Brogan's charge shape and
+        /// Silverarrow's), and <c>ignatia-place-magma-wake@1</c> reads the Move's two endpoints and
+        /// drops a magma token in each empty space from the origin up to but not including where she
+        /// now stands.</para>
+        ///
+        /// <para><b>The straight line is the offer's, not the Move's</b> - corrected at milestone
+        /// 8.75c. <c>synthetic-direct-move@3</c> under
+        /// <see cref="DirectMoveDestinationPolicy.Unrestricted"/> is p.11's ordinary Movement
+        /// reachability, which turns corners: composed that way, "Move up to 2 spaces in a straight
+        /// line" offered every space two steps of walking away, and the printed three words did
+        /// nothing. Both the line offer and the Move are <see cref="EffectFailurePolicy.UpTo"/>, so
+        /// "up to" is honoured by declining the whole step - which lays no trail, because a Move that
+        /// did not happen has no wake.</para>
         /// </summary>
         private static IEnumerable<EffectNodeDefinition> MagmaMoveArm(EffectNodeId arm, int count)
         {
             var actorSpace = new EffectNodeId("ignatia-magma-sun-actor-space");
+            var line = new EffectNodeId("ignatia-magma-sun-line");
             var move = new EffectNodeId("ignatia-magma-sun-move");
             var wake = new EffectNodeId("ignatia-magma-sun-wake");
 
@@ -107,7 +120,7 @@ namespace GuardsDigital.Core.Cards.Verified
             {
                 new EffectNodeDefinition(
                     arm, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                    childNodeIds: new[] { actorSpace, move, wake }),
+                    childNodeIds: new[] { actorSpace, line, move, wake }),
 
                 // Where she stands before the Move - the "moved out of" space, and the mover the Move
                 // walks. It decides nothing and publishes a coordinate.
@@ -119,7 +132,26 @@ namespace GuardsDigital.Core.Cards.Verified
                         new EffectOutputBinding(ActorSpaceOutput, EffectValueKind.Coordinate)
                     }),
 
-                // "Move up to N spaces in a straight line" - her own Move, distance optional from zero.
+                // "in a straight line", and "up to N". The offer's own floor is one - standing still
+                // is not a straight-line move, so her own space is never a destination - and the
+                // "up to" is carried by the node's `may`, which is what puts a Decline on the pause:
+                // only `EffectFailurePolicy.May` offers one, so an `up to` here would have forced her
+                // to move whenever any file was open.
+                new EffectNodeDefinition(
+                    line, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                    SyntheticRosterCapabilities.ChooseLineDestinationV1,
+                    inputs: new[]
+                    {
+                        EffectInputBinding.FromLiteral(
+                            "maximumDistance", EffectValue.Integer(count))
+                    },
+                    outputs: new[]
+                    {
+                        new EffectOutputBinding(MagmaLineDestinationOutput, EffectValueKind.Coordinate)
+                    }),
+
+                // "Move up to N spaces" - to the space the line offer named, so the Move applies it
+                // rather than asking a second question with one answer.
                 new EffectNodeDefinition(
                     move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
                     SyntheticDisplacementCapabilities.DirectMoveV3,
@@ -128,12 +160,12 @@ namespace GuardsDigital.Core.Cards.Verified
                         EffectInputBinding.FromNodeOutput(
                             "mover", actorSpace, ActorSpaceOutput, EffectValueKind.Coordinate),
                         EffectInputBinding.FromLiteral("distance", EffectValue.Integer(count)),
-                        EffectInputBinding.FromLiteral(
-                            SyntheticDisplacementCapabilities.LeastDistanceParameterName,
-                            EffectValue.Integer(0)),
                         EffectInputBinding.FromClosedVocabulary(
                             SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            DirectMoveDestinationPolicy.Unrestricted)
+                            DirectMoveDestinationPolicy.NamedSpace),
+                        EffectInputBinding.FromNodeOutput(
+                            SyntheticDisplacementCapabilities.NamedDestinationParameterName,
+                            line, MagmaLineDestinationOutput, EffectValueKind.Coordinate)
                     },
                     outputs: new[]
                     {
@@ -201,6 +233,9 @@ namespace GuardsDigital.Core.Cards.Verified
 
         /// <summary>The coordinate <c>synthetic-actor-space@1</c> publishes - her own space.</summary>
         private const string ActorSpaceOutput = "space";
+
+        /// <summary>The coordinate <c>choose-line-destination@1</c> publishes - where the file ends.</summary>
+        private const string MagmaLineDestinationOutput = "destination";
 
         /// <summary>
         /// One coin-branched "Swap with a friendly/enemy unit in radius": the sun arm exchanges the

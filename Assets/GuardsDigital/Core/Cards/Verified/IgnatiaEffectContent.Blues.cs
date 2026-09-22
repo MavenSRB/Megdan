@@ -364,8 +364,20 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectValueKind.Coordinate)
                     }),
 
+                // Milestone 8.75c. The policy is `up to` because that is the ONLY reading under which
+                // `leastDistance` is read at all: `AdmittedDistances.ForDeclared` admits
+                // [leastDistance, distance] under `up to` and exactly [distance, distance] under every
+                // other policy. Composed as mandatory, Scorching Blaze's printed "2 or 3 spaces"
+                // offered only the threes and its Tier II sibling's "2 spaces" was right by accident.
+                // The two printed shapes are then one declaration - a floor equal to the distance is
+                // "2 spaces", a floor below it is "2 or 3 spaces" - which is what Brogan's charges get
+                // from `NamedSpace` and what this arm has no named destination to get it from.
+                //
+                // Nothing about whether the step happens changes: the selection above declares this
+                // node as its consumer, so a hero who could not be moved is never offered, and the
+                // move that follows always has somewhere to go.
                 new EffectNodeDefinition(
-                    move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                    move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
                     SyntheticDisplacementCapabilities.DirectMoveV3,
                     inputs: new[]
                     {

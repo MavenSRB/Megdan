@@ -196,12 +196,31 @@ namespace GuardsDigital.Core.Cards.Verified
                     : EffectExecutionResultKind.Applied;
         }
 
-        /// <summary>Whether the acting hero is under Equilibrium's round-long free-choice marker.</summary>
+        /// <summary>
+        /// Whether the acting hero is under Equilibrium's round-long free-choice marker.
+        ///
+        /// <para><b>Two corrections at milestone 8.75c, both measured rather than reasoned.</b> The
+        /// marker is <see cref="ActiveEffectAffectedScopeKind.ControllerHero"/>-scoped, and an
+        /// occurrence of that scope carries its hero on <c>ControllerHeroId</c> - <c>AffectedHeroId</c>
+        /// is the undefined hero, because <see cref="ActiveEffectCreationHandler"/> names nobody for
+        /// any scope but <see cref="ActiveEffectAffectedScopeKind.Hero"/> and
+        /// <see cref="ActiveEffectLifecycle"/>'s own <c>IsRelevantHero</c> reads the controller for
+        /// this one. Asking the affected hero therefore matched nobody at all and Equilibrium's whole
+        /// sentence did nothing: the coin predicate went on reading the coin.</para>
+        ///
+        /// <para>And the PHASE is asked, which is the rule every other reader of a standing effect in
+        /// this build states - <c>RuleModificationQuery</c>, <c>HeroCondition</c> and
+        /// <c>MinionDefeatBountyQuery</c> each count an occurrence only while it is
+        /// <see cref="ActiveEffectPhase.Active"/>. Without it the marker Equilibrium created would go
+        /// on freeing the choice after <see cref="TimingCheckpoint.RoundEnd"/> ended it, which is the
+        /// opposite of "This round:".</para>
+        /// </summary>
         private static bool ActorMayChooseTheFace(EffectCapabilityContext context) =>
             context.Timing != null && context.ActorId.IsDefined &&
             context.Timing.Effects.Any(effect =>
                 string.Equals(effect.Definition.EffectKind, FreeCoinChoiceKind, StringComparison.Ordinal) &&
-                effect.AffectedHeroId.Equals(context.ActorId));
+                effect.Phase == ActiveEffectPhase.Active &&
+                effect.ControllerHeroId.Equals(context.ActorId));
 
         /// <summary>
         /// A pure predicate over the match's own Tie Breaker state: it mutates nothing, asks nobody, and

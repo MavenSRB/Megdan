@@ -245,6 +245,14 @@ namespace GuardsDigital.Core.Cards.Verified
             /// <see cref="PlaceOperation.PlaceFromSupply"/> re-derives the admitted destinations from the
             /// live board and refuses a coordinate that is off the map, occupied, overlaid, or beyond the
             /// supply, so the caller need only offer each wake space and count what lands.
+            ///
+            /// <para><b>The reach is anchored at the DESTINATION, corrected at milestone 8.75c.</b>
+            /// <c>PlaceDestinationQuery</c>'s radius scope excludes the anchor's own coordinate - a
+            /// Place never puts a piece on the space it measures from - so anchoring the wake at the
+            /// space she moved OUT OF silently refused the one token the printed sentence names first:
+            /// "each empty space you moved through, OR OUT OF". Anchoring at the space the Move left
+            /// her admits the origin (at exactly the distance moved) and every space between, and
+            /// excludes the one she is standing on, which is the whole wake and nothing else.</para>
             /// </summary>
             private bool TryPlaceMagma(
                 EffectCapabilityContext context,
@@ -266,9 +274,6 @@ namespace GuardsDigital.Core.Cards.Verified
                     reach,
                     PlaceChooserKind.ActingHero,
                     PlaceNoDestinationPolicy.Impossible,
-                    // The piece comes from the supply and stands nowhere, so the reach is measured from
-                    // the space she moved out of - the origin passed below - rather than from where she
-                    // is now.
                     PlaceDestinationAnchor.ActingHero);
 
                 var token = new PlacedToken(
@@ -291,7 +296,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     components.Tokens,
                     components.Catalog,
                     token,
-                    origin,
+                    destination,
                     Array.Empty<HexCoordinate>(),
                     context.Modifications).Accepted;
             }

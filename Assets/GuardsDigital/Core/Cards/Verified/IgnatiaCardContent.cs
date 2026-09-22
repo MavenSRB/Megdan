@@ -212,7 +212,12 @@ namespace GuardsDigital.Core.Cards.Verified
                 IgnatiaPrimaryKind.Skill, 0, PrintedValueChannel.Radius, 4,
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Blue, CardTier.II, PrintedValueChannel.Attack,
-                    new[] { ViolentConflagration }),
+                    // p.15's fork: EITHER Tier III of the colour, from EITHER Tier II. Corrected at
+                    // 8.75c - the inventory pass named one successor apiece on the Blue and Green
+                    // ladders, which would have offered a levelling seat one card where the rulebook
+                    // deals two. Her Red ladder already named both, and so does every one of the
+                    // twenty-one heroes before her.
+                    new[] { ViolentConflagration, ScorchingBlaze }),
                 "☀: An enemy hero in radius adjacent to a token or to a minion discards a card, if " +
                 "able. ☾: Remove an enemy minion in radius adjacent to an enemy hero.",
                 PrintedTextComposition.AwaitedAt("8.75d")),
@@ -222,7 +227,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 IgnatiaPrimaryKind.Skill, 0, PrintedValueChannel.Radius, 3,
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Blue, CardTier.II, PrintedValueChannel.Initiative,
-                    new[] { ScorchingBlaze }),
+                    new[] { ViolentConflagration, ScorchingBlaze }),
                 "☀: Move a friendly hero in radius 2 spaces in a straight line. " +
                 "☾: Move an enemy hero in radius 2 spaces in a straight line.",
                 PrintedTextComposition.AwaitedAt("8.75d")),
@@ -263,7 +268,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 IgnatiaPrimaryKind.Skill, 0, PrintedValueChannel.Radius, 4,
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Green, CardTier.II, PrintedValueChannel.Defense,
-                    new[] { PathOfFlames }),
+                    new[] { PathOfFlames, ChaosGate }),
                 "☀: Move up to 3 spaces in a straight line. Place a magma token in each empty space " +
                 "you moved through, or out of. ☾: Place up to 3 magma tokens in radius.",
                 PrintedTextComposition.AwaitedAt("8.75e")),
@@ -273,7 +278,7 @@ namespace GuardsDigital.Core.Cards.Verified
                 IgnatiaPrimaryKind.Skill, 0, PrintedValueChannel.Radius, 4,
                 CardProgressionProfile.NonBasicCard(
                     CardColor.Green, CardTier.II, PrintedValueChannel.Attack,
-                    new[] { ChaosGate }),
+                    new[] { PathOfFlames, ChaosGate }),
                 "☀: Swap with a friendly unit in radius. ☾: Swap with an enemy unit in radius.",
                 PrintedTextComposition.AwaitedAt("8.75e")),
 

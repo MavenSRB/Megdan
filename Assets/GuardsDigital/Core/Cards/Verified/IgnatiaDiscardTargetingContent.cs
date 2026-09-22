@@ -22,17 +22,30 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <list type="bullet">
     /// <item><description>the SUN arm's subject, "an enemy hero in radius, adjacent to a token, or a
     /// minion" - a printed-Radius enemy-hero selection narrowed to candidates standing beside at least
-    /// one MAGMA token OR at least one minion (either side);</description></item>
+    /// one TOKEN OR at least one minion (either side);</description></item>
     /// <item><description>the MOON arm's subject, "an enemy minion in radius adjacent to an enemy hero"
     /// - a printed-Radius enemy-minion selection narrowed to candidates standing beside at least one
     /// enemy hero.</description></item>
     /// </list>
     ///
-    /// <para><b>Why "a token, or a minion" is not "any obstacle".</b> A minion is itself one of
-    /// rulebook p.18's obstacles, so the sentence distinguishing a token FROM a minion means
-    /// specifically a MAGMA token (the obstacle Ignatia's Green line drops) OR a minion, and never
-    /// terrain, another hero, or a foreign token. The two halves are one printed clause joined by "or",
-    /// so a candidate satisfying EITHER qualifies - the same reading
+    /// <para><b>Why "a token, or a minion" is not "any obstacle" - and not "her magma" either.</b>
+    /// ID-Q8c, SETTLED at milestone 8.75c against the printed front (<c>ignatia8__7641669</c>, whose
+    /// sun line reads "An enemy hero in radius, adjacent to a token, or a minion, discards a card, If
+    /// able"). A minion is itself one of rulebook p.18's obstacles, so a sentence that names a token
+    /// AND a minion separately is narrower than p.18's list: it never reaches terrain and it never
+    /// reaches another hero. It is not narrower than that. The card prints "a token" with no
+    /// qualifier - not "your token", not "a magma token" - and p.19's word covers every placed token
+    /// whoever put it there, so a hero standing beside Min's mine or Tali's totem satisfies the clause
+    /// exactly as one standing beside her own magma does.
+    ///
+    /// <para>The inventory pass read it as HER magma alone, which is the reading this block removed:
+    /// the argument for it established only that "a token, or a minion" is narrower than "any
+    /// obstacle", and a narrowing the text does not carry is one "Cards are the definition" forbids.
+    /// Her Green line still makes the clause hers in practice, because on most boards the token beside
+    /// an enemy hero is one she dropped.</para>
+    ///
+    /// <para>The two halves are one printed clause joined by "or", so a candidate satisfying EITHER
+    /// qualifies - the same reading
     /// <see cref="SyntheticTargetingCapabilities.AdjacentToAnEnemyHeroOrHoldingADiscardParameterName"/>
     /// records for a disjunction carried as one narrowing.</para>
     ///
@@ -43,12 +56,11 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <see cref="RadiusValueQuery"/> for p.9's icon with p.16's items, and <see cref="RadiusQuery"/>
     /// for the geometry - so the disk, immunity and item composition are still read in one place.</para>
     ///
-    /// <para><b>MAGMA-TOKEN DEPENDENCY.</b> The magma token's own <c>TokenDefinition</c> is minted in
-    /// the parallel Green shard, <c>IgnatiaMagmaContent</c>. The hero narrowing reads that file's own
-    /// <see cref="IgnatiaMagmaContent.Magma"/> identity through <see cref="MagmaTokenId"/> - one source
-    /// of truth, so the token a Green face drops and the token this narrowing looks for can never
-    /// disagree. A minion beside the hero qualifies it regardless, so the narrowing is never broader
-    /// than the printed clause.</para>
+    /// <para><b>NO TOKEN-DEFINITION DEPENDENCY.</b> Because the printed word is the unqualified "a
+    /// token", the hero narrowing asks the token authority whether ANY token stands beside the
+    /// candidate rather than matching a definition id. That is one fewer thing that can drift: the
+    /// magma token her Green line drops is a token, so it satisfies the clause without this file
+    /// naming it, and so does every other token p.19 admits.</para>
     ///
     /// <para><b>Nothing here is registered.</b> Like every Ignatia declaration, these wait in
     /// <see cref="Handlers"/> until her dealing block moves them into the registered-capability list a
@@ -62,7 +74,14 @@ namespace GuardsDigital.Core.Cards.Verified
         // Capability identities.
         // -----------------------------------------------------------------------------------------
 
-        /// <summary>"An enemy hero in radius, adjacent to a [magma] token, or a minion."</summary>
+        /// <summary>
+        /// "An enemy hero in radius, adjacent to a token, or a minion."
+        ///
+        /// <para>The word "magma" in the identity is the inventory pass's spelling, kept because a
+        /// capability id is content identity and renaming one is a change to what a snapshot records
+        /// rather than a correction to a rule. ID-Q8c widened what the handler ADMITS - any token, not
+        /// only hers - and the id is the same contract either way.</para>
+        /// </summary>
         public static EffectCapabilityId EnemyHeroAdjacentToMagmaOrMinion { get; } =
             new EffectCapabilityId("ignatia-enemy-hero-adjacent-to-magma-or-minion");
 
@@ -75,14 +94,6 @@ namespace GuardsDigital.Core.Cards.Verified
 
         public static EffectCapabilityReference EnemyMinionAdjacentToEnemyHeroV1 =>
             new EffectCapabilityReference(EnemyMinionAdjacentToEnemyHero, 1);
-
-        /// <summary>
-        /// The magma token's stable definition id - see the MAGMA-TOKEN DEPENDENCY note in the type
-        /// remarks. Read from <see cref="IgnatiaMagmaContent.Magma"/> (the Green shard's own token
-        /// identity) so the narrowing and the token that satisfies it are one source of truth and can
-        /// never drift.
-        /// </summary>
-        public static TokenDefinitionId MagmaTokenId => IgnatiaMagmaContent.Magma;
 
         /// <summary>The name a selecting node reads its chosen hero on - the shared family's own spelling.</summary>
         public const string ChosenHeroOutputName = SyntheticTargetingCapabilities.ChosenHeroOutputName;
@@ -277,7 +288,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     }
 
                     if (board.TryGetObjectCoordinate(target, out var at) &&
-                        IsAdjacentToMagmaTokenOrMinion(board, tokens, at))
+                        IsAdjacentToATokenOrAMinion(board, tokens, at))
                     {
                         heroes.Add(target.HeroId);
                     }
@@ -288,15 +299,17 @@ namespace GuardsDigital.Core.Cards.Verified
         }
 
         /// <summary>
-        /// Whether one of the six spaces neighbouring <paramref name="coordinate"/> holds a MAGMA token
-        /// (<see cref="MagmaTokenId"/>) or a minion of either side.
+        /// Whether one of the six spaces neighbouring <paramref name="coordinate"/> holds a TOKEN of
+        /// any definition and any owner, or a minion of either side - ID-Q8c's reading of "adjacent to
+        /// a token, or a minion", settled at 8.75c against the printed front.
         ///
         /// <para>The minion half asks the board occupancy directly - a minion is one obstacle per space,
-        /// so its space names it - and the magma half asks the token authority for a placed token of the
-        /// magma definition at that space. Neither half counts terrain, another hero, or a foreign
-        /// token, which is what makes "a token, or a minion" narrower than "any obstacle".</para>
+        /// so its space names it - and the token half asks the token authority for any placed token at
+        /// that space. Neither half counts terrain or another hero, which is what makes "a token, or a
+        /// minion" narrower than p.18's obstacle list; nothing narrows it further, because the card
+        /// prints "a token" with no qualifier.</para>
         /// </summary>
-        private static bool IsAdjacentToMagmaTokenOrMinion(
+        private static bool IsAdjacentToATokenOrAMinion(
             IBoardDisplacementAuthority board,
             ITokenPlacementAuthority tokens,
             HexCoordinate coordinate)
@@ -309,9 +322,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     return true;
                 }
 
-                if (tokens.PlacedTokens.Any(token =>
-                        token.Coordinate.Equals(neighbour) &&
-                        token.Definition.Id.Equals(MagmaTokenId)))
+                if (tokens.PlacedTokens.Any(token => token.Coordinate.Equals(neighbour)))
                 {
                     return true;
                 }
