@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.75a Chaos Incarnate completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.75a | Chaos Incarnate composed on Cutter's once-per-turn after-primary-action trigger: a `may` flip (`ignatia-flip-tie-breaker@1`, settled by the triggered-effect authority through the bound `IMatchTieBreakerCoin` before the repeat runs) then a `may` repeat on the opposite face (`DifferentTarget`); the live coin bound into every card-text path of the card-action authority; coloured Skill/Movement primaries made visible to after-primary-action triggers; the existing `TieBreakerFlipped` row, wire /20 and schema v44 unmoved; ID-Q6a and ID-Q7a settled. 21 cases; harness 4359 on the branch, 4440/4440 merged; focused Edit Mode 240/240 on the branch, 174/174 merged. Owed to 8.75b: the coin predicate's anticipated outcome (over-offered attacks) and the snapshot pending-choice coin. [Definition](../../Roadmap/PHASE_8_TWENTY_SECOND_HERO.md#x-875a-support-chaos-incarnate-and-thread-the-live-coin). | `3f319a46` |
+
 ## Milestone 8.75 Ignatia inventory and set completion evidence
 
 | Milestone | Outcome and definition | Commit |
