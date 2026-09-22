@@ -297,7 +297,8 @@ namespace GuardsDigital.Tests.EditMode
                 "`gd-card-live-text-face` is not a name this builder knows any more.");
             Assert.That(
                 typeof(TrayCardViewModel).GetProperty(
-                    "LiveText", BindingFlags.Public | BindingFlags.Instance),
+                    "LiveText" /* absence-intended: 8.75e removed the reading; it must stay removed */,
+                    BindingFlags.Public | BindingFlags.Instance),
                 Is.Null,
                 "and no view model carries a live-text reading nothing reads.");
         }

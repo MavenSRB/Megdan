@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.75e live-face badge completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.75e | The user's live call ("Drop the badge and rely on the coin strip alone"): no card surface draws a live-text marker - `ConfiguredCardFaceView` draws none and the dead reading is gone; the Core declaration, `CoinSelectedTextQuery`, the Equilibrium window labels and the tie-breaker rail banner stay; the presentation fixture re-stated to assert the absence and every Ignatia journey reads the live face from the projection's coin and the flip from the rail banner. Harness 4464/4464 on its branch (= the 8.75d baseline; the re-stated fixture is Unity-only); complete Edit Mode 5488 / 5452 / 0 / 36 established skips; complete Play Mode 825/825 zero skips; schema v44 / wire /21 unmoved. [Definition](../../Roadmap/PHASE_8_TWENTY_SECOND_HERO.md#x-875e-drop-the-live-face-badge-and-rely-on-the-coin-strip). | `dcbb8e88` |
+
 ## Milestone 8.80 Defense window attacker card completion evidence
 
 | Milestone | Outcome and definition | Commit |

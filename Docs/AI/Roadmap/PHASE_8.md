@@ -275,6 +275,18 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
+### [~] 8.82 Swift's minion move keeps the minion inside her Radius as her icon and items say it
+
+Authorized 2026-09-22 by the user from the live playtest, on Swift's Mark for Death ("Swift is not being offered blue minion to move"; "Swift has +1 radius as well, so she should offer both ranged and and melee hero closest to her" - she held Super-Shotgun's +1 Radius item).
+
+Cause, measured: `SwiftEffectContent.CreateMark` (Mark for Death and Hunting Season, "Move [up to two] enemy minion[s] in radius up to 3 spaces to [a space / spaces] in radius") declares the move's `WithinActorRadius` leash and binds no radius; `DirectMoveDestinations.Admit` reads an unbound leash as admitting nothing, so the move could only stand still - tonight's host log has the skill used at 20:36:11Z and no minion moved. The minion offer itself already reads `RadiusValueQuery` with her items. Sabina's and Xargatha's faces bind a literal.
+
+Outcome: a `DirectMoveDestinationPolicy` member for "to a space in radius" whose radius IS the card's Radius icon as p.16 raises it (items and modifications), read by the DirectMove handler through the same `RadiusValueQuery` the offer uses; Swift's two faces bind it with revision `swift-8-82-rev-1` on the content, her 18 artwork-catalog rows and her identity pin; her Mark for Death journey asserts the minion's space changed.
+
+Acceptance: the pre-fix red (only the minion's own space offered) recorded; the offer inside a Radius 4 disk and, with the item, a Radius 5 disk reaching a minion at distance 5; Hunting Season's two moves under the same leash; a card printing no Radius admits nothing; the harness and the focused Swift, Sabina, identity and conformance fixtures green; the complete Unity suites on the merged tree before the re-cut. T2 minimum.
+
+Non-goals: Sabina's and Xargatha's literal leashes (routed if the report finds Sabina's is the printed icon); any other hero.
+
 ### [x] 8.80 The Defense window shows the attacker's card on every seat
 
 Reported by the user from the live 8.79 playtest on 2026-09-22 ("Defense window does not show attacking card anymroe") with a screenshot from a joined seat defending against Whisper: the three defence candidates and the hover breakdown are drawn, the attacker's card and its `ATTACK N` chip are not. Cause as first recorded: the window builds that card from `IMatchReadModel.PendingAttackResolution`, which `NetworkMatchClient` returns as `null` (its comment claimed the frame "already crosses whole"; the row arrives and the client never materialises it) - the block corrected the recording's other half: the defending seat does receive the narrowed frame (see the completion below). So the card has been absent on every network seat - the host's own loopback seat included - since 8.58 drew it; 8.58's captures and `DecisionWindowPresenterTests` ran on a Director session where the frame is whole. Authorized the same evening, after 8.75d, for the re-cut package.

@@ -70,7 +70,7 @@ Completed 2026-09-22 (`be1f9769`, squash-merged from `2e083e9a` on `8.75d-repeat
 
 Historical evidence: [8.75d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-875d-repeat-offer-completion-evidence).
 
-### [~] 8.75e Drop the live-face badge and rely on the coin strip
+### [x] 8.75e Drop the live-face badge and rely on the coin strip
 
 Authorized 2026-09-22 by the user from the live playtest, on the `SUN` badge the coin-face prep drew in the corner of her cards ("why do we have top right SUN symbol ? Oo"; "Drop the badge and rely on the coin strip alone"). The badge was the reading ID-Q2 asked for; the user now judges the tie-breaker rail banner sufficient.
 
@@ -79,3 +79,7 @@ Outcome: no card surface draws a live-text marker; every card of every hero rend
 Acceptance: `ConfiguredCardFaceView.Build` draws no marker and no dead reading survives; `CoinSelectedTextPresentationTests` re-stated to assert the absence; every 8.75c journey still proves which text is live before it presses (from the projection's coin through `CoinSelectedTextQuery`) and still proves Chaos Incarnate's flip on the rail banner, with no step passing because an element is absent; the harness, the complete Edit Mode suite and the complete Play Mode suite green with zero skips. T3 (the re-cut package is built from it).
 
 Non-goals: the window labels; the banner; the declaration.
+
+Completed 2026-09-22 (`dcbb8e88`, squash-merged from `e7a55aed` on `8.75e-drop-badge`). Removed: `ConfiguredCardFaceView.AddLiveTextFaceMarker` and its six constants, the whole `CoinSelectedTextViewModel`, `TrayCardViewModel.LiveText` and the clause it appended to `AssistiveLabel` (the tooltip every face carries, so a coin-selected card's tree is now identical to a one-text card's), the `tieBreaker` parameter of `RoundActionPresenter.CreateSystemTransitionPrompt`, and `PrintedTextFaceLabels`' `EitherFaceWord` / `MarkerLabel` / `AssistiveLine`. Kept: `CardDefinition.PrintedTextSelection`, `CoinSelectedTextQuery` entire, and the window half of the labels; the Equilibrium choice and the rail banner untouched. Pins: `CoinSelectedTextPresentationTests` 20 -> 23 (a coin-selected card and a freed card build a tree identical, element for element, to the same card declaring `None`; a sweep finds no marker and no `LIVE TEXT` tooltip; a reflection case holds the corner cleared); `IgnatiaUiJourneyPlayModeTests.AssertLiveFace` reads `CoinSelectedTextQuery.LiveFace` over the seat's projected `TieBreakerState`, cross-checked against the rail banner's own geometry on screen, finds the card first so no step passes by absence, refuses an unrevealed coin, and names which card freed a round; the non-coin arm asserts the face is one of the exactly two readable without the coin. The block's commit body says wire `/20` because its branch was cut before 8.80; main carries `/21`. Harness 4464/4464 on its branch (= the 8.75d baseline; the re-stated fixture is Unity-only); complete Edit Mode 5488 / 5452 / 0 / 36 established skips (`tmp/875e-edit-complete.xml`); complete Play Mode 825/825 zero skips (`tmp/875e-play-complete.xml`); schema v44 and wire `/21` unmoved, no pin moved.
+
+Historical evidence: [8.75e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-875e-live-face-badge-completion-evidence).
