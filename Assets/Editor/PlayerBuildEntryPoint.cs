@@ -126,9 +126,17 @@ namespace GuardsDigital.EditorTools
             BuildReport report;
             try
             {
-                PlayerSettings.bundleVersion = baseVersion + "+" +
-                    DateTime.UtcNow.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture) +
-                    "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+                // Milestone 8.77. `BuildIdentityStamp.Current` (Application.version + the Unity
+                // version) is an element of the private-online admission tuple
+                // (`PrivateSessionIdentity`, `BuildIdentityMismatch`), so two platform builds of one
+                // package MUST carry one stamp or they refuse each other. GUARDS_BUILD_STAMP, when
+                // set, is used verbatim: the Windows smoke mints the stamp and the Mac build reuses it.
+                var explicitStamp = Environment.GetEnvironmentVariable("GUARDS_BUILD_STAMP");
+                PlayerSettings.bundleVersion = !string.IsNullOrWhiteSpace(explicitStamp)
+                    ? explicitStamp.Trim()
+                    : baseVersion + "+" +
+                        DateTime.UtcNow.ToString("yyyyMMddHHmmss", System.Globalization.CultureInfo.InvariantCulture) +
+                        "-" + Guid.NewGuid().ToString("N").Substring(0, 8);
                 Debug.Log($"{MarkerPrefix} STAMP {PlayerSettings.bundleVersion}");
 
                 report = BuildPipeline.BuildPlayer(new BuildPlayerOptions

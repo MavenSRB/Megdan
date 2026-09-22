@@ -19,7 +19,13 @@
     binary inside is named after the product ("Guards 0.1").
 #>
 [CmdletBinding()]
-param()
+param(
+    # The exact full version stamp the Windows build of this package carries
+    # (`GUARDS_BUILD: STAMP ...` in tmp/player-build-smoke-build.log). The build identity is part
+    # of the private-online admission tuple, so the Mac and Windows players of one package must
+    # share it or they refuse each other. Required.
+    [Parameter(Mandatory = $true)] [string] $Stamp
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -52,6 +58,8 @@ if (Test-Path -LiteralPath $buildLog) { Remove-Item -LiteralPath $buildLog -Forc
 if (Test-Path -LiteralPath $bundlePath) { Remove-Item -LiteralPath $bundlePath -Recurse -Force }
 
 Write-Output '== Build the macOS player (universal, Mono) =='
+Write-Output "Stamp reused from the Windows build: $Stamp"
+$env:GUARDS_BUILD_STAMP = $Stamp
 $buildArguments = @(
     '-batchmode',
     '-quit',
@@ -83,8 +91,12 @@ if (-not (Test-Path -LiteralPath $dataDir -PathType Container)) {
     exit 1
 }
 
-$stamp = Select-String -LiteralPath $buildLog -Pattern 'GUARDS_BUILD: STAMP (.+)$' | Select-Object -First 1
-if ($stamp) { Write-Output ("Stamp: " + $stamp.Matches[0].Groups[1].Value.Trim()) }
+$stamped = Select-String -LiteralPath $buildLog -Pattern 'GUARDS_BUILD: STAMP (.+)$' | Select-Object -First 1
+if (-not $stamped -or $stamped.Matches[0].Groups[1].Value.Trim() -ne $Stamp) {
+    Write-Error "MAC BUILD FAILED: the build did not carry the requested stamp '$Stamp'."
+    exit 1
+}
+Write-Output "Stamp: $Stamp"
 Write-Output "Built: $bundlePath"
 Write-Output 'MAC BUILD PASSED (build report and bundle layout; launch is proven on a Mac).'
 exit 0
