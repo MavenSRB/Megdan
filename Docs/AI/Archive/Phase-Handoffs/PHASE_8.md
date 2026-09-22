@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.77 | Mac Build Support (Mono) installed; `PlayerBuildEntryPoint.BuildMacPlayer` and `Tools/Invoke-PlayerBuildMac.ps1` build a universal (x64 + arm64) `GuardsDigital.app` from the Windows host, proving the report and the bundle layout; the Windows smoke unchanged in contract and green on the same tree (GATE PASSED at 16:58 (build 0, player 0, the scripted interaction completed; `tmp/player-build-smoke-build.log`)); the package recipe gains the Mac folder and its read-me. Editor tooling only; launch on a Mac proven only by a Mac player. [Definition](../../Roadmap/PHASE_8.md#x-877-a-macos-player-build-beside-the-windows-one). | `pending` |
+| 8.77 | Mac Build Support (Mono) installed; `PlayerBuildEntryPoint.BuildMacPlayer` and `Tools/Invoke-PlayerBuildMac.ps1` build a universal (x64 + arm64) `GuardsDigital.app` from the Windows host, proving the report and the bundle layout; the Windows smoke unchanged in contract and green on the same tree (GATE PASSED at 16:58 (build 0, player 0, the scripted interaction completed; `tmp/player-build-smoke-build.log`)); the package recipe gains the Mac folder and its read-me. Editor tooling only; launch on a Mac proven only by a Mac player. [Definition](../../Roadmap/PHASE_8.md#x-877-a-macos-player-build-beside-the-windows-one). | `22ec2ccd` |
 
 ## Milestone 8.75b Ignatia dealing completion evidence
 
