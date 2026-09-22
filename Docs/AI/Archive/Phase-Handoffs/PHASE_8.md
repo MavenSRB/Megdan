@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.82 Swift radius leash completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.82 | The user's live report on Swift's Mark for Death: the move's `WithinActorRadius` leash was declared without its number, so the minion could only stand still. A `WithinActorPrintedRadius` policy whose disk is the card's Radius icon as p.16 raises it, read by the DirectMove handler through the offer's own `RadiusValueQuery`; `IfAble` -> `UpTo` on the same node; both faces re-bound under `swift-8-82-rev-1` (content, 18 catalog rows, pin `da09a403...`); a seven-case fixture with the pre-fix red measured (the face offered nobody) and the journey asserting the minion's space changed. Routed: Hunting Season composes one mover for "up to two"; Sabina's leash is a literal printed Radius. Harness 4472/4472 zero skips (= 4465 + 7); focused Edit Mode 327/327 over 13 fixtures (`tmp/882-edit-results.xml` in `8-80-defense`); focused Play Mode 41/41 over the Swift and Sabina fixtures (`tmp/882-play-results.xml`); schema v44 / wire /21 unmoved. [Definition](../../Roadmap/PHASE_8.md#x-882-swifts-minion-move-keeps-the-minion-inside-her-radius-as-her-icon-and-items-say-it). | `f86b6466` |
+
 ## Milestone 8.75e live-face badge completion evidence
 
 | Milestone | Outcome and definition | Commit |
@@ -2139,19 +2145,19 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.64 | The victory screen's column legend retired from view and models, the 8.53 fixtures re-stated to its absence, team-win and solo-win photographs under `tmp/864-captures/`; approved by the user 2026-09-20. Landed as `bc270186` on `8.62-hud-cues`, squash-merged as `de886e51`. [Definition](../../Roadmap/PHASE_8.md#x-864-the-victory-screen-drops-its-column-legend). | `milestone/8.64` |
+| 8.64 | The victory screen's column legend retired from view and models, the 8.53 fixtures re-stated to its absence, team-win and solo-win photographs under `tmp/864-captures/`; approved by the user 2026-09-20. Landed as `bc270186` on `8.62-hud-cues`, squash-merged as `de886e51`. [Definition](../../Roadmap/PHASE_8_COMPLETED_10.md#x-864-the-victory-screen-drops-its-column-legend). | `milestone/8.64` |
 
 ## Milestone 8.63 Decision window topmost completion evidence
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.63 | The decision window topmost whenever shown (`DecisionWindowTopMostPlayModeTests` over the live hierarchy, the 8.46 banner rule kept) and, from the user's second call on the same screenshot, the defence breakdown content-sized with rigid lines (cause: a flat 240-unit `maxHeight` with shrinkable rows under non-shrinking labels); photographs under `tmp/863-captures/`; approved by the user 2026-09-20. Landed as `ef19c060` on `8.62-hud-cues`, squash-merged as `4feec1c4`. [Definition](../../Roadmap/PHASE_8.md#x-863-the-decision-window-is-drawn-above-every-other-panel). | `milestone/8.63` |
+| 8.63 | The decision window topmost whenever shown (`DecisionWindowTopMostPlayModeTests` over the live hierarchy, the 8.46 banner rule kept) and, from the user's second call on the same screenshot, the defence breakdown content-sized with rigid lines (cause: a flat 240-unit `maxHeight` with shrinkable rows under non-shrinking labels); photographs under `tmp/863-captures/`; approved by the user 2026-09-20. Landed as `ef19c060` on `8.62-hud-cues`, squash-merged as `4feec1c4`. [Definition](../../Roadmap/PHASE_8_COMPLETED_10.md#x-863-the-decision-window-is-drawn-above-every-other-panel). | `milestone/8.63` |
 
 ## Milestone 8.62 Targeting cues completion evidence
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.62 | The target cue as the user settled it over six photograph rounds: the original corner marks on the target's tile painted solid by side (blood red enemy, green ally), nothing on the token, the marks closing into the full hex edge on hover; `BoardTargetCuePresentation.Treatment` with the ring and always-on-hex variants kept behind it; every piece-cue pin re-stated through `AsDrawn`; permanent photograph fixture under `tmp/862-captures/`; complete Play Mode 666/666 zero skips, complete Edit Mode 4877 / 4841 / 0 / 36; approved 2026-09-20 ("That's it. This is the one."). Landed as `2058ddd8` on `8.62-hud-cues`, squash-merged as `c9c615ec`. [Definition](../../Roadmap/PHASE_8.md#x-862-targeting-cues-read-as-blood-red-light). | `milestone/8.62` |
+| 8.62 | The target cue as the user settled it over six photograph rounds: the original corner marks on the target's tile painted solid by side (blood red enemy, green ally), nothing on the token, the marks closing into the full hex edge on hover; `BoardTargetCuePresentation.Treatment` with the ring and always-on-hex variants kept behind it; every piece-cue pin re-stated through `AsDrawn`; permanent photograph fixture under `tmp/862-captures/`; complete Play Mode 666/666 zero skips, complete Edit Mode 4877 / 4841 / 0 / 36; approved 2026-09-20 ("That's it. This is the one."). Landed as `2058ddd8` on `8.62-hud-cues`, squash-merged as `c9c615ec`. [Definition](../../Roadmap/PHASE_8_COMPLETED_10.md#x-862-targeting-cues-read-as-blood-red-light). | `milestone/8.62` |
 
 ## Milestone 8.61j Min dealt, registered and artworked completion evidence
 
