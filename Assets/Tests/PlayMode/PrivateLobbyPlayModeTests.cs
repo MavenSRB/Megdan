@@ -1090,7 +1090,11 @@ namespace GuardsDigital.Tests.PlayMode
                 "Clicking a candidate must immediately show which hero PICK HERO will confirm.");
             driver.Presenter.Refresh();
             yield return null;
-            Assert.That(HeroOptions(driver)[0].text, Does.Contain("SELECTED"), "An ordinary redraw preserves the candidate.");
+            // Milestone 8.76: the candidate is shown by its gold ring and class alone, never a suffix.
+            Assert.That(HeroOptions(driver)[0].ClassListContains("gd-hero-selected"), Is.True,
+                "An ordinary redraw preserves the candidate.");
+            Assert.That(HeroOptions(driver)[0].text, Is.EqualTo(((PrivateLobbyHeroOption)HeroOptions(driver)[0].userData).DisplayName),
+                "8.76: the label is the hero's name alone; the ring says it is selected.");
             Assert.That(driver.View.Root.resolvedStyle.backgroundColor.a, Is.EqualTo(1f),
                 "No part of the provisional map should show through the pre-match screen.");
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.WordmarkName)), Is.True);
@@ -1118,11 +1122,29 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             var greyed = HeroOptions(driver)
-                .Single(button => button.text.StartsWith(taken.DisplayName));
+                .Single(button => button.text == taken.DisplayName);
             Assert.That(greyed.enabledSelf, Is.False);
-            Assert.That(greyed.text, Does.Contain("already taken"),
-                "A hero that vanished would teach a player nothing; the one-copy rule's own " +
-                "sentence rides the option itself.");
+            // Milestone 8.76: the greyed chrome is the whole statement - the label is the name alone
+            // and no reason rides the button anywhere ("I dont need a reason as a tooltip at all, it
+            // is obvious"); hovering the greyed hero still opens the pick card ("Mouse over is still
+            // a pick card").
+            Assert.That(greyed.tooltip, Is.Null.Or.Empty, "8.76: no reason on the button.");
+            UiPlayer.PointAt(greyed.parent);
+            yield return null;
+            var greyedPreview = (Image)Element(driver, PrivateLobbyUnityView.HeroOverviewName);
+            Assert.That(UiPlayer.IsShown(greyedPreview), Is.True, "8.76: a greyed hero still shows its pick card on hover.");
+            Assert.That(greyedPreview.image, Is.SameAs(Resources.Load<Texture2D>("Private/HeroSelection/" + taken.HeroIdValue)));
+            // 8.76, "make sure pick card is in the front": the card is the last child of the lobby
+            // view, and the view itself is the last child of whatever it is mounted on while the
+            // card is open - so a later sibling on the host document cannot cover it.
+            var lobbyRoot = driver.View.Root;
+            Assert.That(ReferenceEquals(lobbyRoot.ElementAt(lobbyRoot.childCount - 1), greyedPreview), Is.True,
+                "the pick card is the lobby view's topmost child");
+            Assert.That(lobbyRoot.parent, Is.Not.Null);
+            Assert.That(ReferenceEquals(lobbyRoot.parent.ElementAt(lobbyRoot.parent.childCount - 1), lobbyRoot), Is.True,
+                "the lobby view is raised above every sibling while a pick card is open");
+            UiPlayer.PointAway(greyed.parent);
+            yield return null;
             Assert.That(driver.View.HighlightedHero, Is.Empty, "An accepted pick clears the local candidate.");
             Assert.That(Texts(driver, "gd-lobby-seat-hero").Where(text => text.Length > 0),
                 Is.EqualTo(new[] { PrivateLobbyLabels.Identifier(taken.HeroIdValue) }));
@@ -1167,6 +1189,15 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(starButtons, Has.Length.EqualTo(4));
             Assert.That(roleButtons, Has.Length.EqualTo(10));
             Assert.That(HeroOptions(driver).Count, Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count));
+            // Milestone 8.76: the roster box is sized by the whole roster and never resizes under a
+            // filter - a filtered-out hero is hidden in place, and every other button stays put.
+            var heroBox = Element(driver, PrivateLobbyUnityView.HeroesName);
+            var fullHeight = heroBox.resolvedStyle.height;
+            var fullWidth = heroBox.resolvedStyle.width;
+            var restingBounds = AllHeroOptions(driver).ToDictionary(
+                button => ((PrivateLobbyHeroOption)button.userData).HeroIdValue,
+                button => button.worldBound);
+            Assert.That(fullHeight, Is.GreaterThan(0f));
             Assert.That(clear.resolvedStyle.backgroundColor,
                 Is.EqualTo(starButtons[0].resolvedStyle.backgroundColor),
                 "CLEAR is a filter button, not a text link or separate treatment.");
@@ -1231,6 +1262,21 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(HeroOptions(driver).Count, Is.EqualTo(1),
                 "An ordinary model redraw preserves this client's local filter state.");
+            Assert.That(AllHeroOptions(driver).Count, Is.EqualTo(RegisteredHeroRoster.ForThisBuild.Count),
+                "8.76: a filter hides heroes in place; it removes none.");
+            Assert.That(heroBox.resolvedStyle.height, Is.EqualTo(fullHeight).Within(0.5f),
+                "8.76: the roster box keeps the size of the whole roster under a filter.");
+            Assert.That(heroBox.resolvedStyle.width, Is.EqualTo(fullWidth).Within(0.5f));
+            foreach (var button in AllHeroOptions(driver))
+            {
+                var id = ((PrivateLobbyHeroOption)button.userData).HeroIdValue;
+                Assert.That(button.worldBound.position, Is.EqualTo(restingBounds[id].position),
+                    "8.76: no hero moves when a filter changes - " + id);
+            }
+            var hiddenTile = AllHeroOptions(driver)
+                .First(button => ((PrivateLobbyHeroOption)button.userData).HeroIdValue != "hero-bain");
+            Assert.That(hiddenTile.focusable, Is.False, "a hidden hero takes no focus");
+            Assert.That(hiddenTile.pickingMode, Is.EqualTo(PickingMode.Ignore), "nor any pointer");
 
             UiPlayer.Click(clear);
             yield return null;
@@ -1257,6 +1303,8 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.Click(Role(HeroRole.Tokens));
             yield return null;
             Assert.That(HeroOptions(driver), Is.Empty);
+            Assert.That(heroBox.resolvedStyle.height, Is.EqualTo(fullHeight).Within(0.5f),
+                "8.76: even an empty match keeps the box at its full size.");
             Assert.That(UiPlayer.IsShown(Element(driver, PrivateLobbyUnityView.HeroFilterEmptyName)), Is.True,
                 "Zero matches is explicit rather than a stale highlighted hero or a blank unexplained row.");
         }
@@ -1502,7 +1550,7 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return null;
                     UiPlayer.Click(option);
                     yield return null;
-                    Assert.That(option.text, Does.Contain("SELECTED"));
+                    Assert.That(option.ClassListContains("gd-hero-selected"), Is.True, "8.76: the ring, not a suffix.");
                     if (viewport.x == 2560)
                         Assert.That(option.worldBound.height * Screen.width / driver.View.Root.worldBound.width,
                             Is.GreaterThanOrEqualTo(24f), "A short window must scroll, not miniaturize the picker.");
@@ -1939,10 +1987,33 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>Every registered hero's option button on the selection panel.</summary>
+        /// <summary>
+        /// The hero buttons a player can see. Milestone 8.76: every hero keeps its tile in the flow
+        /// and a filtered-out one is hidden IN PLACE (visibility, not display), so "the options" a
+        /// case reasons about are the shown ones, read through the same visibility walk a player's
+        /// eye makes; <see cref="AllHeroOptions"/> is the whole tree.
+        /// </summary>
         private static IReadOnlyList<Button> HeroOptions(PrivateLobbyDriver driver) =>
+            AllHeroOptions(driver).Where(IsHeroOptionShown).ToArray();
+
+        private static IReadOnlyList<Button> AllHeroOptions(PrivateLobbyDriver driver) =>
             Named(driver, PrivateLobbyUnityView.HeroOptionName)
                 .OfType<Button>()
                 .ToArray();
+
+        private static bool IsHeroOptionShown(VisualElement element)
+        {
+            for (var current = element; current != null; current = current.hierarchy.parent)
+            {
+                if (current.resolvedStyle.display == DisplayStyle.None ||
+                    current.resolvedStyle.visibility == Visibility.Hidden)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
 
         // --- Helpers ------------------------------------------------------------------------------
 

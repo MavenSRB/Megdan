@@ -394,15 +394,38 @@ namespace GuardsDigital.Presentation.Interaction
                 HeroHighlighted?.Invoke(string.Empty);
             }
             selectionStatus.text = selection.StatusLabel;
-            foreach (var option in displayed)
+            // Milestone 8.76, the user: "make the window fixed size so it fits all the heroes, and
+            // dont resize it when selecting filters. just show/hide heroes." EVERY hero keeps its
+            // tile in the flow, so the panel is always the size of the whole roster and no button
+            // moves when a filter changes; a hero the filters exclude is hidden in place (drawn
+            // nothing, picked by nothing, focused by nothing) rather than removed from the tree.
+            foreach (var option in selection.Heroes)
             {
-                heroes.Add(BuildHeroOption(option, selection.IsOwnPick));
+                var tile = BuildHeroOption(option, selection.IsOwnPick);
+                SetHeroTileShown(tile, MatchesHeroFilters(option));
+                heroes.Add(tile);
             }
             emptyHeroFilters.style.display = displayed.Length == 0
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
             RefreshHeroFilterHighlights();
             RefreshHeroHighlights();
+        }
+
+        /// <summary>
+        /// Milestone 8.76. A filtered-out hero keeps its slot and loses everything else: it is not
+        /// drawn, its tile and button take no pointer (so the hover overview cannot open on an empty
+        /// slot) and its button takes no focus.
+        /// </summary>
+        private static void SetHeroTileShown(VisualElement tile, bool shown)
+        {
+            tile.style.visibility = shown ? Visibility.Visible : Visibility.Hidden;
+            tile.pickingMode = shown ? PickingMode.Position : PickingMode.Ignore;
+            foreach (var button in tile.Query<Button>(HeroOptionName).ToList())
+            {
+                button.pickingMode = shown ? PickingMode.Position : PickingMode.Ignore;
+                button.focusable = shown;
+            }
         }
 
         private bool MatchesHeroFilters(PrivateLobbyHeroOption option)
@@ -457,7 +480,10 @@ namespace GuardsDigital.Presentation.Interaction
         private static void SetFilterHighlight(VisualElement button, bool selected)
         {
             var edge = selected ? MatchHudTheme.CoinFace : PanelEdge;
-            var width = selected ? 2f : 1f;
+            // Milestone 8.76: the selected filter is told by its colour alone. A thicker edge grew
+            // the filter row by a pixel and pushed every hero below it down, which is exactly the
+            // resize the user asked to be rid of ("dont resize it when selecting filters").
+            var width = 1f;
             HudElements.Border(button, edge, width, MatchHudTheme.ButtonCornerRadius);
         }
 
@@ -478,11 +504,13 @@ namespace GuardsDigital.Presentation.Interaction
             {
                 name = HeroOptionName,
                 userData = option,
-                // The reason travels ON the option rather than in a status line, so a player reading
-                // a greyed hero is told why by the thing they are looking at.
-                text = option.IsAvailable
-                    ? option.DisplayName
-                    : option.DisplayName + " - " + option.UnavailableReason
+                // Milestone 8.76, the user on the pick screen: "when hero is taken by another player,
+                // button is grayed out. The text 'another player...' is unessasary" and "I dont need
+                // a reason as a tooltip at all, it is obvious. Mouse over is still a pick card." The
+                // greyed chrome is the whole statement, and the hover keeps opening the overview
+                // card exactly as it does on any other hero - the SIXTH amendment's hover reason is
+                // the user's own call to drop here, on a control whose meaning is self-evident.
+                text = option.DisplayName
             };
             button.style.marginRight = 6f;
             button.style.marginTop = 6f;
@@ -499,14 +527,6 @@ namespace GuardsDigital.Presentation.Interaction
             // this control's own established meaning, not part of the four idle/hover/pressed/
             // disabled states, and neither is touched here.
             ApplyButtonChrome(button);
-            if (!option.IsAvailable)
-            {
-                // SIXTH amendment: nothing is greyed without saying why, at the cursor on hover.
-                // The reason already stands permanently in the label above (a taken-hero list
-                // reads better with the reason in place than hidden behind a hover), so this adds
-                // the same hover vocabulary the rest of the HUD uses without duplicating text.
-                button.tooltip = option.UnavailableReason;
-            }
             button.SetEnabled(pickable);
             button.style.color = option.IsAvailable
                 ? PanelText
@@ -542,8 +562,10 @@ namespace GuardsDigital.Presentation.Interaction
                 var color = selected ? new Color(1f, 0.82f, 0.35f, 1f) : PanelEdge;
                 button.style.borderTopColor = button.style.borderBottomColor = color;
                 button.style.borderLeftColor = button.style.borderRightColor = color;
+                // Milestone 8.76: the gold ring and the class say "selected"; the user: "I already
+                // see the gold outline, i dont need the text." The label is the name alone.
                 button.EnableInClassList("gd-hero-selected", selected);
-                button.text = option.DisplayName + (selected ? " — SELECTED" : option.IsAvailable ? "" : " - " + option.UnavailableReason);
+                button.text = option.DisplayName;
             }
         }
 
@@ -561,7 +583,15 @@ namespace GuardsDigital.Presentation.Interaction
             heroOverview.style.left = Mathf.Clamp(local.x + 20f, 16f, bounds.width - width - 16f);
             heroOverview.style.top = Mathf.Clamp(local.y - height - 16f, 16f, bounds.height - height - 16f);
             heroOverview.style.display = DisplayStyle.Flex;
+            // Milestone 8.76, the user: "make sure pick card is in the front". The card is the last
+            // child of this view AND this view is raised to the front of whatever it is mounted on
+            // every time the card opens, so nothing a host document adds beside the lobby later can
+            // stand between a player and the card they are hovering.
             heroOverview.BringToFront();
+            if (Root.parent != null)
+            {
+                Root.BringToFront();
+            }
         }
 
         private void HideHeroOverview()
