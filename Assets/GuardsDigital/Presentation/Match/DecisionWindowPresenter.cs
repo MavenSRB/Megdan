@@ -1250,6 +1250,8 @@ namespace GuardsDigital.Presentation.Match
                     return "WHICH CARD?";
                 case EffectChoiceSubject.Mode:
                     return "CHOOSE ONE";
+                case EffectChoiceSubject.TextFace:
+                    return PrintedTextFaceLabels.FallbackTitle;
                 default:
                     return "WHICH ONE?";
             }
@@ -1271,6 +1273,16 @@ namespace GuardsDigital.Presentation.Match
                     return DecisionWindowFamily.Colour;
                 case EffectChoiceSubject.Direction:
                     return DecisionWindowFamily.Direction;
+                case EffectChoiceSubject.TextFace:
+                    // Milestone 8.75b. Deliberately NOT a fifteenth family. The window's family decides
+                    // layout - where the question opens, whether the board answers it, which element
+                    // names a card-faced control - and "which of this card's two printed texts applies"
+                    // wants exactly what a mode choice already draws: the card itself, with one control
+                    // per printed arm beside it. What makes it its own question is the eyebrow
+                    // (`EffectChoicePromptLabels.SectionLabel`) and the two controls' own words, both of
+                    // which come from the SUBJECT. A new member here would have been a second name for
+                    // the same shape, and every switch over this enum would have had to learn it.
+                    return DecisionWindowFamily.Mode;
                 default:
                     return DecisionWindowFamily.PieceOrSpace;
             }

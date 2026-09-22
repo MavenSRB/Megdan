@@ -335,7 +335,13 @@ namespace GuardsDigital.Core.Cards.Verified
                         PrintedTextComposition.AwaitedAt("8.75f"),
                         Enumerable.Empty<PrintedValueDefinition>())
                     : null,
-                CardSourceContent.Transcribed(profile.PrintedText));
+                CardSourceContent.Transcribed(profile.PrintedText),
+                // Milestone 8.75b. The typed statement a surface reads to say WHICH of this face's two
+                // printed texts is live - never the transcription above, which no production type may
+                // touch. It is read off the composed body rather than listed here, so a face cannot
+                // declare one thing and resolve another; see IgnatiaEffectContent.PrintedTextSelectionOf.
+                IgnatiaEffectContent.PrintedTextSelectionOf(
+                    IgnatiaEffectContent.PrimaryBody(profile.Id, ContentRevision)));
 
         private static IEnumerable<ActionDefinition> BuildActions(IgnatiaCardProfile profile)
         {

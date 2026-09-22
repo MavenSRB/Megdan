@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards.Verified
@@ -39,12 +41,20 @@ namespace GuardsDigital.Core.Cards.Verified
         /// The coin face that bears Ignatia's SUN (☀) symbol. USER-SETTLED 2026-09-22: "sun is red
         /// team". The Tie Breaker coin the engine models only as a <see cref="TeamSide"/>
         /// (<see cref="GuardsDigital.Core.Setup.TieBreakerState.RevealedSide"/>), and her sun/moon are
-        /// its two physical faces. The mapping lives here as ONE constant so every reader stays in step.
+        /// its two physical faces.
+        ///
+        /// <para><b>Milestone 8.75b moved the constant, and only the constant.</b> It was declared here
+        /// at 8.75; the HUD has to know the same thing to say which of a card's two texts is live, and
+        /// presentation may not reference <see cref="GuardsDigital.Core.Cards.Verified"/> at all
+        /// (<c>VerifiedContentIsolationConformanceTests</c>). Two copies of one mapping could disagree
+        /// silently about which face is which, on the hero whose entire identity is that question, so
+        /// it is stated once in non-Verified Core - <see cref="CoinSelectedTextQuery.SunSide"/> - and
+        /// read from there here. The user's ruling is unchanged and the value is unchanged.</para>
         /// </summary>
-        public static TeamSide SunFace => TeamSide.Red;
+        public static TeamSide SunFace => CoinSelectedTextQuery.SunSide;
 
         /// <summary>The other face bears the moon (☾). USER-SETTLED 2026-09-22: "moon is blue team".</summary>
-        public static TeamSide MoonFace => TeamSide.Blue;
+        public static TeamSide MoonFace => CoinSelectedTextQuery.MoonSide;
 
         /// <summary>
         /// Whether a revealed coin face is Ignatia's sun. Pure and total over the three
@@ -144,15 +154,27 @@ namespace GuardsDigital.Core.Cards.Verified
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                // Equilibrium's round: the actor picks the face, so the coin is not read at all. The
-                // two candidates are 1 (sun) and 0 (moon); Resume publishes the matching boolean.
+                // Equilibrium's round: the actor picks the face, so the coin is not read at all.
+                //
+                // Milestone 8.75b DECLARED what the two integers mean. They are the ordinals of
+                // PrintedTextFace - Sun is 1 and Moon is 2 - offered under
+                // EffectChoiceValueVocabulary.PrintedTextFace, so the seat drawing this pause reads
+                // "APPLY THE SUN TEXT" and "APPLY THE MOON TEXT" rather than the buttons "1" and "0".
+                // The moon candidate moved off 0 for the reason CardColor.None sits there too: a
+                // vocabulary's members are the values a chooser may pick, and an offered candidate that
+                // is the default integer is the trap every optional Integer in this codebase carries.
                 if (ActorMayChooseTheFace(context))
                 {
                     return EffectExecutionResult.NeedsChoice(new EffectChoiceRequest(
                         EffectChooserRole.Actor,
-                        new[] { EffectValue.Integer(1), EffectValue.Integer(0) },
+                        new[]
+                        {
+                            EffectValue.Integer((int)PrintedTextFace.Sun),
+                            EffectValue.Integer((int)PrintedTextFace.Moon)
+                        },
                         1,
-                        1));
+                        1,
+                        valueVocabulary: EffectChoiceValueVocabulary.PrintedTextFace));
                 }
 
                 if (!IsRevealed(context.TieBreakerRevealedSide))
@@ -172,14 +194,18 @@ namespace GuardsDigital.Core.Cards.Verified
                 EffectCapabilityContext context, IReadOnlyList<EffectValue> selected)
             {
                 if (selected == null || selected.Count != 1 ||
-                    selected[0].Kind != EffectValueKind.Integer)
+                    selected[0].Kind != EffectValueKind.Integer ||
+                    (selected[0].IntegerValue != (int)PrintedTextFace.Sun &&
+                        selected[0].IntegerValue != (int)PrintedTextFace.Moon))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
                 return EffectExecutionResult.Applied(new[]
                 {
-                    new EffectOutcomeFact(SunOutput, EffectValue.Boolean(selected[0].IntegerValue == 1))
+                    new EffectOutcomeFact(
+                        SunOutput,
+                        EffectValue.Boolean(selected[0].IntegerValue == (int)PrintedTextFace.Sun))
                 });
             }
 

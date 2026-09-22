@@ -14,6 +14,7 @@
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/BroganAlliedHeroCardTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/CardCommitmentDragStateTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ClearPresentationTests.cs" />
+    <UnityOnlyTest Include="../../Assets/Tests/EditMode/CoinSelectedTextPresentationTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ComponentLifetimeOwnershipConformanceTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ConfiguredCardArtworkCatalogTests.cs" />
     <UnityOnlyTest Include="../../Assets/Tests/EditMode/ConfiguredMatchCutoverArchitectureTests.cs" />

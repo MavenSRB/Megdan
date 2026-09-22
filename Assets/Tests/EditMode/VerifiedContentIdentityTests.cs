@@ -21,6 +21,36 @@ namespace GuardsDigital.Tests.EditMode
     /// </summary>
     public sealed class VerifiedContentIdentityTests
     {
+        // MILESTONE 8.75b MOVED ALL TWENTY-ONE PINS AT ONCE, and it is the SECOND change ever to
+        // move every pin together - the first was 8.38d, whose note is below and whose standing
+        // lesson this is an instance of, exactly as that note predicted.
+        //
+        // THE CAUSE. Ignatia the Mad is the first hero whose action cards print TWO texts, a sun (☀)
+        // line and a moon (☾) line, with the live Tie Breaker coin face selecting which applies. A
+        // surface has to be able to say which half of such a card is live, and the only ways it could
+        // work that out for itself - recognising a hero, a card name, a capability id, or the printed
+        // words - are the ones AGENTS.md forbids. So the content states it, on the shared
+        // `CardDefinition`: `PrintedTextSelection`, whose value is `None` on every card of the
+        // twenty-one heroes dealt today. This walker encodes every public property of every object it
+        // reaches, so each canonical string gained one segment reading `PrintedTextSelection=...None;`
+        // and twenty-one digests moved while twenty-one heroes' printed content did not.
+        //
+        // THE CAUSE WAS ISOLATED BEFORE THE PINS WERE TOUCHED, by 8.38d's own probe and no inference:
+        // `PrintedTextSelection` was temporarily added to the exclusion list in the property walk
+        // below, and all twenty-one then measured BYTE-IDENTICAL to the values this change replaces.
+        // That is the whole proof that no hero's semantics moved, and it is why the twenty-one
+        // revision strings are unchanged - bumping them would assert that twenty-one heroes' content
+        // changed, which is false, and would drag `ConfiguredCardArtworkCatalog.json` and the
+        // git-ignored shine sprites along with it for nothing.
+        //
+        // 8.38d'S QUESTION WAS ASKED AND ANSWERED: can the field live on the content that needs it
+        // instead? It cannot. The reader is presentation, which meets a card only as the definition
+        // its instance names in `IMatchReadModel.Definitions` - so a declaration on anything narrower
+        // than `CardDefinition` is a declaration no card surface can reach. It is otherwise as inert
+        // as it can be made: no rule branches on it, the coin branch is an ordinary `Conditional` over
+        // a predicate capability and resolves identically without it, and no snapshot or wire frame
+        // carries a definition at all, so it moves neither the schema nor the protocol.
+        //
         // MILESTONE 8.38d MOVED ALL TWELVE PINS AT ONCE, AND IT IS THE FIRST CHANGE THAT EVER HAS.
         // Every move recorded below it is one hero's: a reorder that reached Brogan alone, a phantom
         // declaration dropped from Sabina alone, an icon corrected on Tigerclaw alone. This one
@@ -45,24 +75,24 @@ namespace GuardsDigital.Tests.EditMode
         // probe, and should first ask whether the field can live on the content that needs it instead.
         private static readonly IdentityPin[] Pins =
         {
-            new IdentityPin("arien", "arien-8-35l-rev-1", "5dd40507cb7cf29f1fc8005f6446685bf459591b9742976967df93a3028813be"),
+            new IdentityPin("arien", "arien-8-35l-rev-1", "d33d1df2d0a012361be3a285331a5b340ce8bf2ba8111e410ee8c51dcf0fcaba"),
             // Milestone 8.35p moved Brogan alone: the three charges ask where he lands, move, and
             // only then ask whom he takes. The other five pins are byte-identical, which is the
             // measurement that says the reorder reached his content and nobody else's.
-            new IdentityPin("brogan", "brogan-8-35p-rev-1", "cc94ae2fc6853f29166d8a0432d5f2aa1d7df75bf3d3e884466e072f1ba649e5"),
+            new IdentityPin("brogan", "brogan-8-35p-rev-1", "5b03652442fed56f8ff14bd4e5c0b6ee2436bc6977ca82198d4f43ee6fb754d6"),
             // The phantom-declaration removal moved Sabina alone: Troop Movement, Marching Orders and
             // Path to Victory each dropped a RepeatTargetBinding.DifferentTarget that no printed face
             // supports and that no code path could enforce on a Skill. The other seven pins are
             // byte-identical, which is the measurement that says the removal reached her content and
             // nobody else's - and the digest moving at all is what says a declaration is part of the
             // content's identity even when it changes no behaviour.
-            new IdentityPin("sabina", "sabina-8-35z44-rev-1", "34255c4ea7866675ff912fabb852b480713a3db9d41dd3d5ed941747e21d2024"),
+            new IdentityPin("sabina", "sabina-8-35z44-rev-1", "078c53c95fe81eb1ba07c3d6ae548d908dc86a7ab9d18332a310f9ed4edaabfe"),
             // Milestone 8.35z20 corrected Blend Into Shadows' secondary icon (Defense 2, not Movement
             // 2 - the one-icon slot-position trap; see Docs/AI/Rules/HERO_TIGERCLAW.md's
             // settled-corrections block), which is the whole reason this digest moved.
-            new IdentityPin("tigerclaw", "tigerclaw-8-35z25-rev-1", "9e90449d8355cef92a056ff4cc4ae39a7d0f00405961d2608a0b539adff798b6"),
-            new IdentityPin("wasp", "wasp-8-25e7-rev-1", "d86e05cf60ca75af94b5ad3f077d4fb8541211df7369526bba762a5e3b5a096c"),
-            new IdentityPin("xargatha", "xargatha-8-25e5f1-rev-1", "9301b89845b10cf00e9002bb51781eb12eb32760caa56888785a3a83009b8d81"),
+            new IdentityPin("tigerclaw", "tigerclaw-8-35z25-rev-1", "a5c6cbc9c63719abd8ed78659a0f3078f2154b04b3094a855f142998c5f601dc"),
+            new IdentityPin("wasp", "wasp-8-25e7-rev-1", "b698578d1318ececdab14974d276dce37ecedd5e11fa314c0e3d82e0c8b5e122"),
+            new IdentityPin("xargatha", "xargatha-8-25e5f1-rev-1", "7ab1d0126e024b621cdb5fb4df0928cf39fb0d6d767a48757c5a3e1cd5fdb38b"),
             // Milestone 8.35z34. THE SEVENTH PIN, and the first added since this oracle was built -
             // every one above it was pinned at milestone 8.25e7 and has only ever moved. It arrives
             // now rather than at the milestone that composed her because a pin is a claim about
@@ -87,7 +117,7 @@ namespace GuardsDigital.Tests.EditMode
             // computed over the content and not over the revision - measured at milestone 8.35z44 by
             // renaming Sabina's and watching her digest stay byte-identical while a deliberately
             // corrupted digest was still caught.
-            new IdentityPin("dodger", "dodger-8-35z45-rev-1", "f1db617e94b5223144facc8c3ee1a24f26cab41fdb339628ff1353334c6b53d1"),
+            new IdentityPin("dodger", "dodger-8-35z45-rev-1", "87d94e12c35192e32fac78df4f3e1701199a8dc6855dd7debaadc0a4afee7418"),
             // Milestone 8.35z38. THE EIGHTH PIN, arriving on exactly the terms the seventh did: a pin
             // is a claim about content a configured match loads, and milestone 8.35z29 composed Misa
             // without dealing her.
@@ -96,7 +126,7 @@ namespace GuardsDigital.Tests.EditMode
             // deliberately wrong value and the digest read off this oracle's own failure output. A
             // filtered pin run has been green while digests moved, which is why the rule is the
             // complete run rather than the cheap one.
-            new IdentityPin("misa", "misa-8-36f-rev-1", "5d229a27f0a0adcf8a26e7fe831dcc2a92959db9edcb70de3c9ed8f599b0caec"),
+            new IdentityPin("misa", "misa-8-36f-rev-1", "53a1e174907cb1ce751b52c26109934517ece7fdc6cc72c866f67f8083524c73"),
             // Milestone 8.35z46. THE NINTH PIN, arriving on exactly the terms the seventh and eighth
             // did: a pin is a claim about content a configured match loads, and milestone 8.35z30
             // composed Silverarrow without dealing her.
@@ -109,7 +139,7 @@ namespace GuardsDigital.Tests.EditMode
             // its offer a ceiling and no floor, so the free move lit the spaces ONE away too; the
             // floor is now bound on `wild-hunt-line`, which is a literal added to one node of one
             // face and is the whole of this digest's move.
-            new IdentityPin("silverarrow", "silverarrow-8-66-rev-1", "ec9b93b558d3315ae31eefd88acdd4853a5cf0cd060ca3ac07bd5cffde8916aa"),
+            new IdentityPin("silverarrow", "silverarrow-8-66-rev-1", "11788f758120c458f46eb53712c635e196c2a12160d3186f5785a4810d08b770"),
             // Milestone 8.35z50. THE TENTH PIN, arriving on exactly the terms the seventh through
             // ninth did: a pin is a claim about content a configured match loads, and milestone
             // 8.35z31 composed Ursafar without dealing him.
@@ -119,7 +149,7 @@ namespace GuardsDigital.Tests.EditMode
             // the nine pins above confirmed byte-identical in that same run. A filtered pin run has
             // been green while digests moved, which is why the rule is the complete run rather than
             // the cheap one.
-            new IdentityPin("ursafar", "ursafar-8-35z50-rev-1", "eab908f366273b956c7b1de1d0c62374cac8b6c0290264323be788365d403e85"),
+            new IdentityPin("ursafar", "ursafar-8-35z50-rev-1", "6afc2a46e8ded1ca39c739e35d393a9b22e5970371176b369d1c17e9d141c6bb"),
             // Milestone 8.35z53. THE ELEVENTH PIN, arriving on exactly the terms the seventh through
             // tenth did: a pin is a claim about content a configured match loads, and milestone
             // 8.35z33 composed Whisper without dealing her.
@@ -130,7 +160,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers was added in the same commit that
             // made her pickable, so the digest below is over her whole dealt set.
-            new IdentityPin("whisper", "whisper-8-36f3-rev-1", "e819b97041fcab05748c2b4d02a2ac5d9c5d0da43ee823f9b01a94a7f5f25f93"),
+            new IdentityPin("whisper", "whisper-8-36f3-rev-1", "21e1ec7fb5288a6f0e78324c098cd97895d81d976822f88341c90f00ed575ea4"),
             // Milestone 8.37. THE TWELFTH AND LAST PIN of the package arc, arriving on exactly the
             // terms the seventh through eleventh did: a pin is a claim about content a configured
             // match loads, and milestone 8.35z32 composed Tali's Green line without dealing her.
@@ -141,7 +171,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("tali", "tali-8-37a-rev-1", "b746dfae0d337b6513bab5c8f0a06b23e4e4d7f9b49f4a36b3bfb9240a23bde0"),
+            new IdentityPin("tali", "tali-8-37a-rev-1", "449f1cbab1e1cce59d2cc493a767fa29d9f8f4bd343624649850ce9eb8865a77"),
             // Milestone 8.38e. THE THIRTEENTH PIN, and the first added after the package arc closed.
             // It arrives on exactly the terms the seventh through twelfth did: a pin is a claim about
             // content a configured match loads, and milestone 8.38d composed Swift without dealing
@@ -158,7 +188,7 @@ namespace GuardsDigital.Tests.EditMode
             // not this space 1 away which is illegal." Both moves are one literal on one node of one
             // face, and on 8.59's complete unfiltered run every pin but Silverarrow's - whose own
             // Ultimate the same sweep corrected - measured byte-identical.
-            new IdentityPin("swift", "swift-8-66-rev-1", "0df66b449cfb56f314a3dad62c95d7166d51e97d01fb189d960b0bae49b5ca42"),
+            new IdentityPin("swift", "swift-8-66-rev-1", "c51c221b22299b84956508a8bf1e70c32df7a8ef198244879b72119a76ce6e0f"),
             // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
             // composed Cutter's eighteen faces without dealing her.
@@ -169,7 +199,7 @@ namespace GuardsDigital.Tests.EditMode
             // trap was watched for and did not recur: a pin added WITHOUT its staged configuration
             // measures the hero as contributing ZERO cards, and hers went in beside the row in
             // EveryDealtDefinition below, in one change.
-            new IdentityPin("cutter", "cutter-8-39h-rev-1", "f1c3d7be14b331e994cbaa29fdd9f7e0a1970228547f1fd87e09ca686afd0172"),
+            new IdentityPin("cutter", "cutter-8-39h-rev-1", "79529a42892a271f8e162601479e79a19c4e48835e81c05c4c8b5f16a2e27344"),
             // Milestone 8.40j. THE FIFTEENTH PIN, on exactly the terms the seventh through fourteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.40i composed Bain's eighteen faces without dealing him.
@@ -179,9 +209,9 @@ namespace GuardsDigital.Tests.EditMode
             // did not recur: a pin added WITHOUT its staged configuration measures the hero as
             // contributing ZERO cards, and his went in beside the row in EveryDealtDefinition below,
             // in one change.
-            new IdentityPin("bain", "bain-8-40i-rev-1", "4aa847253fd0406aef2c544ea0c5e57fb737e8801cbb3c61564e31e1609289e9"),
-            new IdentityPin("garrus", "garrus-8-41d-rev-1", "8244a9e8ebadb20886be72acc9bc590dd090252d0b9bb943a12fe57cddb7b335"),
-            new IdentityPin("widget", "widget-8-43d-rev-1", "80a8f06d51ba41181a990e3cd62387fce7d476044a2e48eba56c21815afd6c05"),
+            new IdentityPin("bain", "bain-8-40i-rev-1", "0dc50c9f41365e63ced1fd5e752e791ed0609f2bdb38f719e2a86822caed98b0"),
+            new IdentityPin("garrus", "garrus-8-41d-rev-1", "1a153941b7b765a1adb7d1a529a5d307607e5e9902d43915e9ea6ffb2c4d8609"),
+            new IdentityPin("widget", "widget-8-43d-rev-1", "25a3bfcea7e90a57f8563047d70cf2a782907bd2e6da5bab47b102ede6b38bfd"),
             // Milestone 8.57g. THE EIGHTEENTH PIN, on exactly the terms every pin from the seventh on
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.57f composed Rowenna's nineteen faces without dealing her.
@@ -190,7 +220,7 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: her staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("rowenna", "rowenna-8-57f-rev-1", "d3d66ab284dfb90aa842d9f75f07aab90646d95dd49722d1b7a6aa14cf209e22"),
+            new IdentityPin("rowenna", "rowenna-8-57f-rev-1", "83a95f36192da92cf0586c04bb4ca6e0e9e7879dfa780d82ff1c45ccc829f76d"),
             // Milestone 8.61j. THE NINETEENTH PIN, on exactly the terms every pin from the seventh
             // on arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.61i composed Min's nineteen faces without dealing her.
@@ -199,7 +229,7 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for
             // and did not recur: her staged configuration went into EveryDealtDefinition below in
             // this same change, so the walk sees her eighteen rather than measuring her as zero.
-            new IdentityPin("min", "min-8-61i-rev-1", "364d994e0afac8ab6f35586c528ee341bdce236f91e9efb26e6eff61991aa198"),
+            new IdentityPin("min", "min-8-61i-rev-1", "21a226902a4d3cda16cf7e91f396dde019c6cb0bf8f06bf5e3c921386d306036"),
             // Milestone 8.69g. THE TWENTIETH PIN, on exactly the terms every pin from the seventh on
             // arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.69f composed Brynn's nineteen faces without dealing him.
@@ -208,7 +238,7 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: his staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees his eighteen rather than measuring him as zero.
-            new IdentityPin("brynn", "brynn-8-69f-rev-1", "eafde64d49552397d570d5ee6ec7fd14a915004745f88f6e7d0487116a78601f"),
+            new IdentityPin("brynn", "brynn-8-69f-rev-1", "9f131bc16c06db9080dfe6a52e79479a484a8ea24ca679bd8967b0e28d4b04a9"),
             // Milestone 8.71h. THE TWENTY-FIRST PIN, on exactly the terms every pin from the seventh
             // on arrived on: a pin is a claim about content a configured match loads, and milestone
             // 8.71g composed Hanu's nineteen faces without dealing him.
@@ -217,7 +247,7 @@ namespace GuardsDigital.Tests.EditMode
             // confirmed byte-identical in that same run. Milestone 8.35z50's trap was watched for and
             // did not recur: his staged configuration went into EveryDealtDefinition below in this
             // same change, so the walk sees his eighteen rather than measuring him as zero.
-            new IdentityPin("hanu", "hanu-8-71g-rev-1", "b5251764a41fb9c1b70358471e03819d3dc749ed64adfbaa86bceededee59fcc")
+            new IdentityPin("hanu", "hanu-8-71g-rev-1", "5637931ca485749e4343a2672beffe73a630d67932e51ab483335c7a93fc42d4")
         };
 
         [Test]

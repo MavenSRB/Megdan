@@ -158,6 +158,23 @@ namespace GuardsDigital.Presentation.Match
                         ? ((Core.Board.HexDirection)value).ToString()
                         : null;
                     break;
+                case EffectChoiceValueVocabulary.PrintedTextFace:
+                    // Milestone 8.75b. The one vocabulary whose controls NAME THE CONSEQUENCE rather
+                    // than wearing the member's own word, which is the decision window's own rule since
+                    // 8.46 ("two buttons whose labels NAME THE CONSEQUENCE"). `SUN` and `MOON` alone say
+                    // what was picked, not what picking it does; the card in the window prints both
+                    // lines, and these two controls say which of them will run.
+                    //
+                    // `PrintedTextFace.None` is deliberately not labelled: it is the unrevealed coin,
+                    // never an offered candidate, so meeting one here means the handler and its declared
+                    // vocabulary disagree - which is the fault this method already refuses to hide.
+                    return value == (int)Core.Cards.PrintedTextFace.Sun
+                            ? PrintedTextFaceLabels.ApplySunTextLabel
+                        : value == (int)Core.Cards.PrintedTextFace.Moon
+                            ? PrintedTextFaceLabels.ApplyMoonTextLabel
+                        : throw new ArgumentOutOfRangeException(
+                            nameof(value),
+                            $"{value} is not a member of the declared vocabulary {vocabulary}.");
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(vocabulary),
@@ -248,7 +265,15 @@ namespace GuardsDigital.Presentation.Match
         /// Milestone 8.37. Rulebook p.17's six board directions - Tali's Cold Snap and Snowstorm. The
         /// same story as <see cref="Colour"/>: integers whose meaning is declared, not inferred.
         /// </summary>
-        Direction = 8
+        Direction = 8,
+
+        /// <summary>
+        /// Milestone 8.75b. Which of a card's two printed texts to apply - the sun (☀) line or the
+        /// moon (☾) line - when its controller is choosing instead of reading the Tie Breaker coin.
+        /// The same story as <see cref="Colour"/> and <see cref="Direction"/> once more: integers whose
+        /// meaning is declared by the handler that offered them, never inferred from their values.
+        /// </summary>
+        TextFace = 9
     }
 
     /// <summary>
@@ -302,6 +327,8 @@ namespace GuardsDigital.Presentation.Match
                     return EffectChoiceSubject.Colour;
                 case EffectChoiceValueVocabulary.HexDirection:
                     return EffectChoiceSubject.Direction;
+                case EffectChoiceValueVocabulary.PrintedTextFace:
+                    return EffectChoiceSubject.TextFace;
             }
 
             var subjects = choice.Candidates
@@ -463,6 +490,8 @@ namespace GuardsDigital.Presentation.Match
                     return "NAME A COLOUR";
                 case EffectChoiceSubject.Direction:
                     return "CHOOSE A DIRECTION";
+                case EffectChoiceSubject.TextFace:
+                    return PrintedTextFaceLabels.SectionLabel;
                 default:
                     return "CHOICE";
             }
@@ -486,6 +515,8 @@ namespace GuardsDigital.Presentation.Match
                     return count == 1 ? "colour" : "colours";
                 case EffectChoiceSubject.Direction:
                     return count == 1 ? "direction" : "directions";
+                case EffectChoiceSubject.TextFace:
+                    return count == 1 ? "printed text" : "printed texts";
                 default:
                     return count == 1 ? "option" : "options";
             }

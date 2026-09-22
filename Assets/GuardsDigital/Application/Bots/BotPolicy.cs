@@ -809,19 +809,11 @@ namespace GuardsDigital.Application.Bots
             if (candidateValue.Kind == EffectValueKind.Integer &&
                 choice.ValueVocabulary != EffectChoiceValueVocabulary.None)
             {
-                // Milestone 8.40j, the second arm. An integer candidate under a DECLARED value
-                // vocabulary - rulebook p.9's six colours today, through `name-color@1` - reached no
-                // branch above at all, so every candidate scored zero and the conductor's tiebreak
-                // named the colour. Tali has been answering that way since her dealing and Bain's
-                // guess is the first prompt where the answer decides an outcome.
-                //
-                // THE PREFERENCE IS PUBLIC INFORMATION AND THE BOT'S OWN, WHICH IS THE WHOLE POINT.
-                // The offered domain is already narrowed by `restrictToColorsOwnedBy` to what public
-                // zones admit (BA-D2); among what is left, a colour this seat can see lying face up
-                // in a discard pile, a turn area, an item slot or an Ultimate area is a colour less
-                // likely to be in the hidden hand, so it is scored down. Nothing here reads another
-                // hero's hand: a seat's projection does not contain one.
-                return 25 - SeenInOpenZones(readModel, candidateValue.IntegerValue);
+                return DeclaredVocabularyUtility(
+                    choice.ValueVocabulary,
+                    candidateValue.IntegerValue,
+                    readModel.Cards,
+                    readModel.Definitions);
             }
 
             if (invocation.Candidate.Kind == EffectChoiceCandidateKind.Option)
@@ -850,7 +842,48 @@ namespace GuardsDigital.Application.Bots
         /// seat's private information rather than the table's, and counting them would make a bot's
         /// guess depend on which seat happened to be asking.
         /// </summary>
-        private static int SeenInOpenZones(IMatchReadModel readModel, int colorValue)
+        /// <summary>
+        /// What one integer candidate is worth to a bot when its choice DECLARED what its integers
+        /// mean.
+        ///
+        /// <para><b>Milestone 8.40j's colour arm, and milestone 8.75b's correction of its reach.</b>
+        /// 8.40j taught this scorer rulebook p.9's six colours - an integer candidate under a declared
+        /// vocabulary had reached no branch at all, so every candidate scored zero and the conductor's
+        /// tiebreak named the colour, which is fine until the answer decides an outcome (Bain the
+        /// Gatherer's hidden guess). The preference is public information and the bot's own: among the
+        /// colours the offered domain admits, one this seat can see lying faceup in a discard pile, a
+        /// turn area, an item slot or an Ultimate area is a colour less likely to be in the hidden hand,
+        /// so it is scored down. Nothing here reads another hero's hand; a seat's projection does not
+        /// contain one.</para>
+        ///
+        /// <para><b>What 8.75b corrects.</b> That arm was reached by EVERY declared vocabulary, so
+        /// since 8.40j a <c>HexDirection</c> candidate has been scored by counting the cards of the
+        /// COLOUR whose ordinal happens to match the direction's - `NorthEast` weighed as `Blue`.
+        /// Nothing looked wrong because both readings produce a number and a bot always answers, which
+        /// is exactly how a defect like this survives a green suite. The vocabulary is the handler's
+        /// statement about what its integers MEAN, so a scorer that ignores it is guessing at integers -
+        /// the one thing <see cref="EffectChoiceValueVocabulary"/> exists to stop. Every vocabulary
+        /// with no tactical reading of its own now scores neutrally and the conductor's deterministic
+        /// tiebreak names the answer, which is where they all stood before 8.40j.</para>
+        ///
+        /// <para>Milestone 8.75b's own <see cref="EffectChoiceValueVocabulary.PrintedTextFace"/> is
+        /// deliberately one of those: which of a card's two printed texts is better cannot be judged
+        /// without resolving both of them, which this policy does not do, so a neutral score is honest
+        /// where a preference invented from the face's ordinal would not be.</para>
+        /// </summary>
+        public static int DeclaredVocabularyUtility(
+            EffectChoiceValueVocabulary vocabulary,
+            int candidateValue,
+            IReadOnlyList<CardInstance> cards,
+            IReadOnlyList<CardDefinition> definitions) =>
+            vocabulary == EffectChoiceValueVocabulary.CardColor
+                ? 25 - SeenInOpenZones(cards, definitions, candidateValue)
+                : 0;
+
+        private static int SeenInOpenZones(
+            IReadOnlyList<CardInstance> cards,
+            IReadOnlyList<CardDefinition> allDefinitions,
+            int colorValue)
         {
             var color = (CardColor)colorValue;
             if (color == CardColor.None)
@@ -858,8 +891,8 @@ namespace GuardsDigital.Application.Bots
                 return 0;
             }
 
-            var definitions = readModel.Definitions ?? Array.Empty<CardDefinition>();
-            return (readModel.Cards ?? Array.Empty<CardInstance>())
+            var definitions = allDefinitions ?? Array.Empty<CardDefinition>();
+            return (cards ?? Array.Empty<CardInstance>())
                 .Count(card => card != null &&
                     (card.State.Location == CardLocation.DiscardPile ||
                         card.State.Location == CardLocation.TurnArea ||

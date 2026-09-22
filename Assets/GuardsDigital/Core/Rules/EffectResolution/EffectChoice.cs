@@ -50,7 +50,19 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         CardColor = 1,
 
         /// <summary>Rulebook p.17's six board directions.</summary>
-        HexDirection = 2
+        HexDirection = 2,
+
+        /// <summary>
+        /// Milestone 8.75b. The two symbols the Tie Breaker coin's faces bear
+        /// (<see cref="Cards.PrintedTextFace"/>), offered when a card's controller is choosing WHICH of
+        /// its two printed texts to apply rather than reading the coin - Ignatia the Mad's Equilibrium,
+        /// "This round: Each time you perform or repeat a primary action you may apply either ☀ or ☾
+        /// card text, regardless of the Tie Breaker coin."
+        ///
+        /// <para>Without it the two candidates reach a player as the buttons "1" and "2", which is
+        /// precisely the failure this enum was written for.</para>
+        /// </summary>
+        PrintedTextFace = 3
     }
 
     public enum EffectChoiceCandidateKind

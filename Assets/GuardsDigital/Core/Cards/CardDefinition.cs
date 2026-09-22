@@ -53,6 +53,11 @@ namespace GuardsDigital.Core.Cards
         /// that its face prints none, and a synthetic fixture may carry neither. So a verified card
         /// cannot reach an unstated source content by leaving an argument out - it cannot be
         /// constructed at all.
+        ///
+        /// <paramref name="printedTextSelection"/> is milestone 8.75b's, and it defaults to
+        /// <see cref="Cards.PrintedTextSelection.None"/> because that is what every printed face in
+        /// the game said until Ignatia the Mad: one text, always in force. See
+        /// <see cref="PrintedTextSelection"/>.
         /// </summary>
         public CardDefinition(
             CardDefinitionId id,
@@ -63,8 +68,16 @@ namespace GuardsDigital.Core.Cards
             CardProgressionProfile progression,
             IEnumerable<ActionDefinition> actionDefinitions,
             UltimateRuleDefinition ultimateRule,
-            CardSourceContent sourceContent = null)
+            CardSourceContent sourceContent = null,
+            PrintedTextSelection printedTextSelection = Cards.PrintedTextSelection.None)
         {
+            if (!Enum.IsDefined(typeof(PrintedTextSelection), printedTextSelection))
+            {
+                throw new ArgumentException(
+                    "A card definition states one of the declared printed-text selections.",
+                    nameof(printedTextSelection));
+            }
+
             if (!id.IsDefined)
             {
                 throw new ArgumentException("Card definition requires a defined ID.", nameof(id));
@@ -167,6 +180,7 @@ namespace GuardsDigital.Core.Cards
             Progression = progression;
             UltimateRule = ultimateRule;
             SourceContent = statedSourceContent;
+            PrintedTextSelection = printedTextSelection;
             var materializedActionDefinitions = actionDefinitions.ToArray();
             ActionDefinitions = Array.AsReadOnly(materializedActionDefinitions);
 
@@ -214,6 +228,25 @@ namespace GuardsDigital.Core.Cards
         /// effect content; what it says is here.
         /// </summary>
         public CardSourceContent SourceContent { get; }
+
+        /// <summary>
+        /// Milestone 8.75b. Whether this face prints more than one text, and what selects which one is
+        /// in force - <see cref="Cards.PrintedTextSelection"/>.
+        ///
+        /// <para><b>Unlike <see cref="SourceContent"/>, a surface IS meant to read this.</b> The two
+        /// are opposites on purpose: the transcription carries the printed WORDS and no production type
+        /// may touch it, because reading words would be a printed-text parser; this carries one typed
+        /// fact ABOUT those words, so the HUD can tell a player which half of a two-text card is live
+        /// without recognising a hero, a card or a capability. No rule reads it either - the coin branch
+        /// is an ordinary <c>Conditional</c> over a predicate capability and would resolve identically
+        /// if this property did not exist.</para>
+        ///
+        /// <para>It is schema- and wire-neutral: definitions are content every seat reconstructs from
+        /// its own registered catalogs (<c>MatchSessionProjection.Definitions</c> passes them through
+        /// and <c>NetworkMatchClient.Definitions</c> reads the locally trusted list), so no snapshot
+        /// byte and no frame carries a definition field.</para>
+        /// </summary>
+        public PrintedTextSelection PrintedTextSelection { get; }
 
         public IReadOnlyList<ActionDefinition> ActionDefinitions { get; }
 

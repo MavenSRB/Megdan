@@ -1083,13 +1083,21 @@ namespace GuardsDigital.Presentation.Match
                 projection?.PendingSystemTransitionDescription,
                 projection?.Definitions,
                 projection?.Setup?.Heroes,
-                projection?.DecisionContract);
+                projection?.DecisionContract,
+                projection?.TieBreakerState ?? TieBreakerState.Unrevealed);
 
+        /// <param name="tieBreaker">
+        /// Milestone 8.75b. The live coin, so a p.15 upgrade candidate that prints two texts is drawn
+        /// with the same live-text marker it will wear once it is in the hand. It defaults to
+        /// <see cref="TieBreakerState.Unrevealed"/> - the "this caller was told nothing" answer - and a
+        /// candidate under it simply carries no marker.
+        /// </param>
         public static SystemTransitionPromptViewModel CreateSystemTransitionPrompt(
             GuardsDigital.Core.Rules.Transitions.SystemTransitionStepDescription description,
             IReadOnlyList<CardDefinition> definitions,
             IReadOnlyList<QuickGameHeroSetupState> heroes,
-            PendingDecisionContract contract)
+            PendingDecisionContract contract,
+            TieBreakerState tieBreaker = default)
         {
             if (description == null || description.Options.Count == 0)
             {
@@ -1126,7 +1134,10 @@ namespace GuardsDigital.Presentation.Match
                         // `ReadFace` already does for a tray card - one missing registration must not
                         // take a mandatory decision off the screen.
                         CurrentRoundCards.DeckCard(
-                            option.TakenCardInstanceId, Definition(definitions, option.TakenCard)),
+                            option.TakenCardInstanceId,
+                            Definition(definitions, option.TakenCard),
+                            CoinSelectedTextViewModel.ForCoinOnly(
+                                Definition(definitions, option.TakenCard), tieBreaker)),
                         DefinitionName(definitions, option.UpgradedCard),
                         option.ItemIcon,
                         option.SetAsideCardInstanceId.IsDefined

@@ -67,6 +67,40 @@ namespace GuardsDigital.Core.Cards.Verified
             ShardBody(cardId, contentRevision);
 
         /// <summary>
+        /// Milestone 8.75b. What a composed body says about WHICH of its card's printed texts applies -
+        /// the declaration <c>CardDefinition.PrintedTextSelection</c> carries to the HUD.
+        ///
+        /// <para><b>Read off the composition rather than listed beside it.</b> A hand-kept list of
+        /// "which of her faces print two texts" is a second statement of something the bodies already
+        /// say structurally, and the two could drift the moment a later 8.75 slice recomposed a face.
+        /// A body whose ROOT is the coin Conditional is, by <see cref="CoinBranched"/>'s construction,
+        /// a card whose text the coin selects; a body that creates Equilibrium's round marker is the
+        /// card that FREES that choice. Both are facts about the composition, so a face cannot declare
+        /// one thing and resolve another.</para>
+        ///
+        /// <para>A face still awaiting composition answers <see cref="PrintedTextSelection.None"/> and
+        /// begins declaring the moment its slice lands, which is the honest reading: until there is a
+        /// body there is no branch for a marker to describe.</para>
+        /// </summary>
+        public static PrintedTextSelection PrintedTextSelectionOf(EffectDefinition body)
+        {
+            if (body == null)
+            {
+                return PrintedTextSelection.None;
+            }
+
+            if (body.Root.Capability.Equals(IgnatiaComponentContent.CoinSunV1))
+            {
+                return PrintedTextSelection.TieBreakerCoin;
+            }
+
+            return body.Nodes.Any(node =>
+                node.Capability.Equals(IgnatiaComponentContent.EquilibriumV1))
+                ? PrintedTextSelection.FreesTheCoinChoice
+                : PrintedTextSelection.None;
+        }
+
+        /// <summary>
         /// Dispatches a card id to its shard's body factory. Implemented once per shard as a chain of
         /// <c>?? </c> fall-throughs the shards each extend; returns <c>null</c> for a card no shard has
         /// composed yet.
