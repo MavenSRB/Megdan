@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.78 no-hero Windows and Mac package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.78 | `Builds/Playtest-8.77-hud-lobby` and `Playtest-8.77-hud-lobby-mac` (+ zips: 183 / 184 entries, 79.6 / 87.1 MB, no logs) cut from `55143b27` plus the 8.77 tooling for the user's 21:00 playtest without the twenty-second hero; one stamp `...150528-eff1b16c` on both players; protocol /20, schema 44, digest `4c4869e1...` unchanged from 8.73. Gate on the packaged tree: harness 4440/4440; Edit Mode 5457/5420/1/36 (the one red the known `BotTierTwoTests` timeout under machine load); Play Mode 783/783; Windows smoke passed; Mac build passed; packaged exe reached the lobby. [Definition](../../Roadmap/PHASE_8.md#x-878-package-the-playtest-build-without-the-twenty-second-hero-for-windows-and-macos). | `milestone/8.78` |
+
 ## Milestone 8.77 macOS player build completion evidence
 
 | Milestone | Outcome and definition | Commit |

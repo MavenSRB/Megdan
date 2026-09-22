@@ -305,6 +305,20 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
+### [x] 8.78 Package the playtest build without the twenty-second hero, for Windows and macOS
+
+Authorized 2026-09-22 by the user for a 21:00 playtest ("Will need a new mac and windows build. So at around 7 make a call if hero is gonna land in time or not and cut out the builds with all the changes but w/o new hero"). Ignatia's gate (8.75c) was still running when the package had to be gated, so the package is cut from the last main commit BEFORE her dealing landed - where her content is composed but gated out of the roster - plus 8.77's build tooling.
+
+Outcome: `Builds/Playtest-8.77-hud-lobby` (+ zip) and `Builds/Playtest-8.77-hud-lobby-mac` (+ zip), the first package with a macOS player, both carrying ONE stamp so they join each other, built from `55143b27` with the 8.77 tooling applied in a detached worktree and bundleVersion `1.0-8.77-hud-lobby`.
+
+Acceptance: T3 - the complete Edit Mode suite, the complete Play Mode suite and the harness on the packaged tree; the Windows build-and-launch smoke; the Mac build passing with the Windows stamp; the packaged Windows exe launched once from its own folder to `LOBBY_BEGIN`; the zips inspected for logs; the identity, manifest and read-mes by hand per the 8.44 recipe plus a Mac read-me.
+
+Non-goals: Ignatia (the next package deals her once 8.75c completes); code signing.
+
+Completed 2026-09-22 at 18:00. Stamp `1.0-8.77-hud-lobby+20260922150528-eff1b16c` (the Windows smoke minted it, the Mac build reused it through `-Stamp`); protocol `/20`, schema 44, configured content digest `4c4869e1...` re-measured with the offline probe (108 definitions, 21 playable heroes - unchanged from 8.73 because nothing new is registered at `55143b27`). Carries 8.74, 8.76, 8.77 and the gated 8.75 / 8.75a groundwork. Gate on the packaged tree (`tmp/wt-pkg-nohero`): harness 4440/4440 zero skips (11 m 28 s); complete Edit Mode 5457 / 5420 / 1 / 36 established skips, the one red `BotTierTwoTests`' 180 s per-case ceiling (209.8 s) while the gate agent's Unity and harness runs shared the machine - the environment fact recorded at 8.46, the same case green in the harness run; complete Play Mode 783/783 zero skips; Windows smoke GATE PASSED; Mac build PASSED (universal binary, Data folder, the shared stamp); the packaged exe reached `GUARDS_ONLINE: LOBBY_BEGIN` from its own folder. Windows zip 183 entries / 79.6 MB, Mac zip 184 entries / 87.1 MB, neither carrying a log or the DoNotShip folder. `READ ME MAC.txt` states the two Terminal lines a Windows-made zip needs (`chmod -R +x` on `Contents/MacOS`, `xattr -cr` on the bundle) and the launch line for the product-named binary; the Mac player's first launch is tonight's.
+
+Historical evidence: [8.78 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-878-no-hero-windows-and-mac-package-completion-evidence).
+
 ### [x] 8.68 Package the playtest build with the Silverarrow corrections
 
 Authorized 2026-09-20 by the user ("Cut a new build with the silverarrow fixes"), the same evening 8.66 and 8.67 landed after the 8.65 package was cut.
