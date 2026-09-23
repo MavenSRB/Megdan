@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.88 | The eight registered printed-icon selection arms share one candidate derivation, and every targeting clause is an optional parameter on every arm it can mean something on, refused by name elsewhere; ten new clauses (straight line, maximum reach, moved and second centre, adjacency to terrain, own tokens or a space with a count, object kinds, own tokens only) plus the empty-hand clause; Ignatia's four Range narrowings delegate; the four survey shapes are expressed as data. No registration, digest (`e037a054...`), schema or wire movement. Harness 4510/4510, Edit 5499 + focused 53/53, Play 827/827. Definition: [8.88](../../Roadmap/PHASE_8.md#x-888-one-composable-target-selection-before-the-next-hero). | pending |
+| 8.88 | The eight registered printed-icon selection arms share one candidate derivation, and every targeting clause is an optional parameter on every arm it can mean something on, refused by name elsewhere; ten new clauses (straight line, maximum reach, moved and second centre, adjacency to terrain, own tokens or a space with a count, object kinds, own tokens only) plus the empty-hand clause; Ignatia's four Range narrowings delegate; the four survey shapes are expressed as data. No registration, digest (`e037a054...`), schema or wire movement. Harness 4510/4510, Edit 5499 + focused 53/53, Play 827/827. Definition: [8.88](../../Roadmap/PHASE_8.md#x-888-one-composable-target-selection-before-the-next-hero). | `31a1d462` |
 
 ## Milestone 8.87 audited package completion evidence
 
