@@ -16,7 +16,7 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 - Current completed milestone: **8.87**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z71**.
+- Next proposed milestone: **8.88**.
 
 On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 
