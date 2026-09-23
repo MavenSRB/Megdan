@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.88a | Placement destinations (every `synthetic-place-*` declaration and the hero-token supply placement) compose the ten space clauses through the one `PrintedIconSpaceClauses` reading the printed-icon family uses; moved centre, re-asked at the answer. Harness 4522/4522, Edit 5512 + 37 explicit skips, Play 827/827; no digest, schema or wire movement. Definition: [8.88a](../../Roadmap/PHASE_8.md#x-888a-placement-destinations-compose-the-printed-icon-clauses). | pending |
+| 8.88a | Placement destinations (every `synthetic-place-*` declaration and the hero-token supply placement) compose the ten space clauses through the one `PrintedIconSpaceClauses` reading the printed-icon family uses; moved centre, re-asked at the answer. Harness 4522/4522, Edit 5512 + 37 explicit skips, Play 827/827; no digest, schema or wire movement. Definition: [8.88a](../../Roadmap/PHASE_8.md#x-888a-placement-destinations-compose-the-printed-icon-clauses). | `0543a7f0` |
 
 ## Milestone 8.90 immune hero selection completion evidence
 
