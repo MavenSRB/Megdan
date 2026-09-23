@@ -103,14 +103,25 @@ namespace GuardsDigital.Tests.PlayMode
                 "The staged board has to leave a unit beside him for the printed targeting to have " +
                 "anything to name. " + Remaining(runtime));
             var victim = StandingNode(runtime);
+            var takenId = beside[0].MinionId;
             Assert.That(
                 UiPlayer.ClickBoard(
-                    pointerInput, hud, MinionView(beside[0].MinionId).transform.position),
+                    pointerInput, hud, MinionView(takenId).transform.position),
                 Is.True,
                 "The unit this Attack takes is named by clicking it.");
             yield return null;
             yield return ConfirmIfStillStanding(root, victim);
             yield return null;
+
+            // MILESTONE 8.86. What the Attack DID. This journey named the unit and went straight on to
+            // the second move, so a targeting that named the right piece and struck nobody would have
+            // read the same. p.13: a targeted enemy minion is simply defeated.
+            Assert.That(
+                Object.FindObjectsByType<StandardMinionView>()
+                    .Any(view => view.Occupancy != null && view.Occupancy.MinionId.Equals(takenId)),
+                Is.False,
+                "\"Target a unit adjacent to you\" - the piece the board click named was defeated " +
+                "and removed. " + Remaining(runtime));
 
             // Step 7: the second move, open because the first was declined.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
@@ -192,6 +203,19 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.True,
                 "A marker is given rather than a hero removed.");
+
+            // MILESTONE 8.86. THE MARKER IS READ. Everything above this was about the OFFER and the
+            // click; the one thing the printed sentence promises - "give a hero in range a Poison
+            // marker" - was left for the sibling journey to notice, so a click that named the right
+            // hero and gave them nothing would have passed here. He is Blue and the hero he named is
+            // Red, and p.18 gives the marker to its HOLDER, so both rails are read and only one of
+            // them may be carrying it.
+            yield return null;
+            HeroRailMarkerCheck.AssertReadings(
+                hud, TeamSide.Red, "the answered Poisoned Dagger",
+                HeroRailMarkerCheck.PoisonOneReading);
+            HeroRailMarkerCheck.AssertReadings(
+                hud, TeamSide.Blue, "the answered Poisoned Dagger");
         }
 
         /// <summary>
@@ -298,6 +322,16 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             var destinations = LitDestinations(runtime);
             Assert.That(destinations, Is.Not.Empty);
+            // MILESTONE 8.86. "He took the step the rider offered" was asserted of the space that was
+            // CLICKED rather than of the board, and it had to be: p.14's step 6 removes him a moment
+            // later, so there is no surviving piece to read a coordinate off afterwards. What can be
+            // read is the offer, and the claim worth making of it is that NO answer to this rider is
+            // a stand-still - so whichever space is pressed, the rider really moved him.
+            Assert.That(destinations, Has.No.Member(stoodAt),
+                "\"You may move 1 space\" offers no space he is already standing on, so every answer " +
+                "to it is a step. Offered: " +
+                string.Join(", ", destinations.Select(space => space.ToString())) + ". " +
+                Remaining(runtime));
             var step = StandingNode(runtime);
             var chosen = FirstClickableSpace(pointerInput, destinations);
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, Tile(chosen).transform.position),
@@ -371,7 +405,10 @@ namespace GuardsDigital.Tests.PlayMode
 
             // The step first, then the retrieve: the card prints them in that order.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
-            var destinations = LitDestinations(runtime);
+            var stoodAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(tigerclawId)).Coordinate;
+            var destinations = LitDestinations(runtime)
+                .Where(space => !space.Equals(stoodAt))
+                .ToArray();
             Assert.That(destinations, Is.Not.Empty, "\"You may move 1 space.\" " + Remaining(runtime));
             var step = StandingNode(runtime);
             var chosen = FirstClickableSpace(pointerInput, destinations);
@@ -380,6 +417,18 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return ConfirmIfStillStanding(root, step);
             yield return null;
+
+            // MILESTONE 8.86. The step this journey took was never read off the board at all - it
+            // clicked a space and moved straight on to the retrieve, so a rider that offered a step
+            // and refused to take it would have passed. Unlike Sidestep's, Evade's Block is printed
+            // against an attack this one IS, so he survives to be read.
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(tigerclawId)).Coordinate,
+                Is.EqualTo(chosen),
+                "He is standing on the space the rider's step was clicked on. " + Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(chosen, stoodAt), Is.EqualTo(1),
+                "one space, which is the printed count and not an \"up to\".");
+            Assert.That(HeroView(tigerclawId).Coordinate, Is.EqualTo(chosen),
+                "with his token drawn there rather than where the Attack found him.");
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"You may retrieve your resolved or discarded basic skill card\" is the third " +
@@ -391,6 +440,12 @@ namespace GuardsDigital.Tests.PlayMode
                 "The card he may take back has to be drawn as a face he can press. Shown: " +
                 UiPlayer.Describe(hud));
             var retrieve = StandingNode(runtime);
+            // MILESTONE 8.86. The face pressed is NAMED, so the card the assertion below is about is
+            // the card the player chose rather than "whatever the hand count says".
+            var takenBackId = faces[0].Command.EffectChoice.Candidate.Value.CardInstanceId;
+            var takenBack = runtime.Cards.Single(card => card.Id.Equals(takenBackId));
+            Assert.That(takenBack.OwnerId, Is.EqualTo(tigerclawId),
+                "\"your resolved or discarded basic skill card\" - the card offered is HIS.");
             UiPlayer.EnsureVisible(
                 UiPlayer.NamedElementWithText(hud, "gd-effect-card", faces[0].Label));
             yield return null;
@@ -401,11 +456,15 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(
+                runtime.Cards.Single(card => card.Id.Equals(takenBack.Id)).State.Location,
+                Is.EqualTo(CardLocation.Hand),
+                "THAT card is back in his hand, which is what \"retrieve\" means - a count that went " +
+                "up could have been any card arriving from anywhere. " + Remaining(runtime));
+            Assert.That(
                 runtime.Cards.Count(card =>
                     card.OwnerId.Equals(tigerclawId) && card.State.Location == CardLocation.Hand),
-                Is.GreaterThan(handBefore - 1),
-                "The retrieved card came back into his hand, so answering the Defense cost him one " +
-                "card and gave one back.");
+                Is.GreaterThanOrEqualTo(handBefore),
+                "so answering the Defense cost him one card and the retrieve gave one back.");
         }
 
         /// <summary>
@@ -489,6 +548,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             CommitSoTheNamedSeatActs(runtime, tigerclawId, TigerclawCardContent.BlinkStrike);
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(tigerclawId));
+            var startedAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(tigerclawId)).Coordinate;
             yield return PointTrayAt(root, tigerclawId);
             yield return StartActionThroughControl(root, ActionKind.Attack);
 
@@ -497,11 +557,27 @@ namespace GuardsDigital.Tests.PlayMode
             var offered = MinionsAt(
                 runtime.RoundView.Model.EffectChoiceTargets.Select(candidate => candidate.Space));
             Assert.That(offered, Is.Not.Empty, Remaining(runtime));
+            var crossedId = offered[0].Occupancy.MinionId;
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, offered[0].transform.position), Is.True);
             yield return null;
             yield return ConfirmIfStillStanding(root, line);
             yield return null;
             yield return null;
+
+            // MILESTONE 8.86. "The performed basic action" is the premise of everything below, and
+            // this journey took it on trust: it clicked the line and read straight on to the repeat
+            // offer. Blink Strike's own journey proves the whole sentence; what is asserted here is
+            // that the action the Ultimate is watching really happened.
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(tigerclawId)).Coordinate,
+                Is.Not.EqualTo(startedAt),
+                "\"Move 2 spaces in a straight line through an enemy unit\" - the basic action moved " +
+                "him. " + Remaining(runtime));
+            Assert.That(
+                Object.FindObjectsByType<StandardMinionView>().Any(view =>
+                    view.Occupancy != null && view.Occupancy.MinionId.Equals(crossedId)),
+                Is.False,
+                "and \"target that unit\" took the piece he crossed off the board, which is the " +
+                "basic ATTACK action the Ultimate's offer is about. " + Remaining(runtime));
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The performed basic action is what the Ultimate watches, so the game stops on its " +

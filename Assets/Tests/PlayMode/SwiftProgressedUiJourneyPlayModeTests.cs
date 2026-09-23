@@ -137,12 +137,29 @@ namespace GuardsDigital.Tests.PlayMode
                     .AsCollection,
                 "Exactly the two units at four on a file, and nothing nearer or off the file.");
 
+            var shot = choice.LegalTargets[0].MinionId;
             Assert.That(
-                runtime.SubmitProjectedCommand(
-                    DirectorCommand.ChooseAttackTarget(choice.LegalTargets[0].MinionId)),
+                runtime.SubmitProjectedCommand(DirectorCommand.ChooseAttackTarget(shot)),
                 Is.True,
                 "The narrowed target is takeable through the projected command a player submits.");
             yield return null;
+            yield return null;
+
+            // MILESTONE 8.86. What the Attack DID. This journey proved the offer exactly - two units,
+            // at four, on a file - and then submitted a target and stopped, so a narrowing that was
+            // perfect and an Attack that never landed would have read the same. p.13: "when you
+            // target an enemy minion with an attack, it is simply defeated."
+            Assert.That(
+                runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(shot)),
+                Is.False,
+                "The miniature at exactly her printed Range 4 was defeated and taken off the board. " +
+                Remaining(runtime));
+            Assert.That(
+                Object.FindObjectsByType<StandardMinionView>(FindObjectsSortMode.None)
+                    .Any(view => view.Occupancy != null &&
+                        view.Occupancy.MinionId.Equals(shot)),
+                Is.False,
+                "and its piece left with it rather than standing where it was shot.");
         }
 
         /// <summary>
@@ -413,14 +430,27 @@ namespace GuardsDigital.Tests.PlayMode
                 borrowed.SelectInvocations.Count + " candidates=[" + string.Join("; ",
                     borrowed.Candidates.Select(c => c.Kind + ":" + c.Value.Kind)) + "]");
 
-            var landing = borrowed.Candidates
-                .First(candidate => candidate.Value.Kind == EffectValueKind.Coordinate)
-                .Value.Coordinate;
+            // MILESTONE 8.86. A landing that is the space she is already standing on would satisfy
+            // "she is at the landing" while the borrowed performance had done nothing at all, so the
+            // one taken is a landing that travels and that is stated rather than hoped for.
+            var stoodAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+            var travelling = borrowed.Candidates
+                .Where(candidate => candidate.Value.Kind == EffectValueKind.Coordinate)
+                .Select(candidate => candidate.Value.Coordinate)
+                .Where(space => !space.Equals(stoodAt))
+                .ToArray();
+            Assert.That(travelling, Is.Not.Empty,
+                "\"Place yourself into a space in a straight line in radius\" - the only landing " +
+                "offered was the space she already stood on, so the borrowed primary could not " +
+                "place her anywhere. " + Remaining(runtime));
+            var landing = travelling[0];
             Assert.That(runtime.SubmitEffectChoiceValue(landing), Is.True);
             yield return null;
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate,
                 Is.EqualTo(landing),
                 "The borrowed primary moved her, which is Reload! performing another card's action.");
+            Assert.That(HeroView(swiftId).Coordinate, Is.EqualTo(landing),
+                "and her token followed the borrowed performance.");
         }
 
         /// <summary>
@@ -661,9 +691,29 @@ namespace GuardsDigital.Tests.PlayMode
                 "With the one enemy hero off terrain, Suppress has a subject and its primary runs. " +
                 Remaining(runtime));
 
+            // MILESTONE 8.86. The loop below presses the first invocation at every pause, so what
+            // every hero-valued offer ADMITS is asserted as it goes: "an enemy hero in radius, who is
+            // not adjacent to terrain" is the whole of what this face does, and a loop taking
+            // whatever is first could not otherwise say which hero it reached.
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The primary opens its own selection. " + Remaining(runtime));
+
             for (var step = 0; step < 8 && runtime.PendingEffectChoice != null; step++)
             {
                 var pause = runtime.PendingEffectChoice;
+                var heroes = pause.Candidates
+                    .Where(candidate => candidate.Value.Kind == EffectValueKind.Hero)
+                    .Select(candidate => candidate.Value.HeroId)
+                    .ToArray();
+                if (heroes.Length > 0)
+                {
+                    Assert.That(heroes, Is.EquivalentTo(new[] { enemyId }),
+                        "The only hero this face offers is the one the walked turn stepped off " +
+                        "terrain: the clause excludes him where he started, and it is the clause " +
+                        "doing the work rather than the board having one hero on it. " +
+                        Remaining(runtime));
+                }
+
                 if (pause.SelectInvocations.Count > 0)
                 {
                     runtime.SubmitProjectedCommand(
@@ -984,6 +1034,14 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate,
                 Is.EqualTo(landings[0]),
                 "She stands where the promise placed her.");
+            // MILESTONE 8.86: a Place is only a Place if the space is a different one. The loop above
+            // already refuses every landing on a file from her, which excludes her own space by
+            // construction - this says so out loud rather than leaving it to be re-derived.
+            Assert.That(landings[0], Is.Not.EqualTo(from),
+                "and it is not the space she was standing on when the promise was made. " +
+                Remaining(runtime));
+            Assert.That(HeroView(swiftId).Coordinate, Is.EqualTo(landings[0]),
+                "with her token drawn where the promise put her.");
         }
 
         /// <summary>
@@ -1266,9 +1324,25 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(subject, Is.Not.Null,
                 "The defeat bullet asks which adjacent minion. " + Remaining(runtime));
             Assert.That(subject.SelectInvocations, Is.Not.Empty);
+
+            // MILESTONE 8.86. The minion is NAMED and the board is read afterwards. This took
+            // `SelectInvocations[0]` and asserted only that coins went up, so a bullet that defeated
+            // nobody while p.13 paid for something else would have read the same - and the bounty
+            // this journey exists for is precisely a payment attributable to one Defeat.
+            var herAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+            var doomed = subject.SelectInvocations.FirstOrDefault(invocation =>
+                invocation.Candidate.Value.Kind == EffectValueKind.Minion);
+            Assert.That(doomed, Is.Not.Null,
+                "\"Defeat a minion adjacent to you\" names a MINION. Offered: " + string.Join("; ",
+                    subject.SelectInvocations.Select(invocation =>
+                        invocation.Candidate.Value.Kind.ToString())) + ". " + Remaining(runtime));
+            var doomedId = doomed.Candidate.Value.MinionId;
+            var doomedAt = runtime.ReadModel.Minions
+                .Single(minion => minion.MinionId.Equals(doomedId)).Coordinate;
+            Assert.That(HexDistanceQuery.Calculate(doomedAt, herAt), Is.EqualTo(1),
+                "and it is standing beside her, which is the other half of the printed bullet.");
             Assert.That(
-                runtime.SubmitProjectedCommand(
-                    DirectorCommand.AnswerEffectChoice(subject.SelectInvocations[0])),
+                runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(doomed)),
                 Is.True);
             yield return null;
 
@@ -1300,6 +1374,11 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             yield return null;
+            Assert.That(
+                runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(doomedId)),
+                Is.False,
+                "MILESTONE 8.86: the named minion really left the board, which is the cause the " +
+                "bounty below is being paid for. " + Remaining(runtime));
             var gained = runtime.CoinsOf(swiftId) - before;
             Assert.That(gained, Is.GreaterThan(0),
                 "Defeating a minion inside the marked radius pays. Gained " + gained + " coins. " +

@@ -113,6 +113,7 @@ namespace GuardsDigital.Tests.PlayMode
             // defender's ranged Block is offered against an attack made from one space away.
             var block = runtime.RoundView.Model.DefenseChoices.FirstOrDefault(value =>
                 value.DefenseBreakdown != null &&
+                value.DefenseBreakdown.CardInstanceId.HasValue &&
                 value.DefenseBreakdown.Outcome == AttackResolutionOutcome.SuccessfullyDefended);
             Assert.That(block, Is.Not.Null,
                 "A Block that answers a ranged attack must be offered here. It is offered because " +
@@ -122,11 +123,30 @@ namespace GuardsDigital.Tests.PlayMode
 
             // A defense face is a card ELEMENT and not a labelled button - milestone 8.35z38's dealing
             // found this the hard way, and the fix is the same one: submit the invocation directly.
+            var blocked = block.DefenseBreakdown.CardInstanceId.Value;
+            var enemyHandBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand);
             Assert.That(runtime.RoundPresenter.Submit(block), Is.True);
             yield return null;
+            yield return null;
 
+            // MILESTONE 8.86. "The defender is still standing" was the whole of what this journey
+            // read, and a hero nobody managed to attack is standing too - so the Block being SPENT is
+            // asserted here rather than inferred from a survival that has other causes.
+            Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                "The submitted face answers p.14's response. " + Remaining(runtime));
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(blocked)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "The Block was PAID for: p.14 puts the face the defender spent in their discard. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(enemyHandBefore - 1),
+                "and their hand is one card lighter for it.");
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.True,
-                "The Block succeeded, so the defender is still standing.");
+                "The Block succeeded, so the defender is still standing - which is RULING 39's own " +
+                "outcome: a ranged Block answered an attack made from one space away.");
         }
 
         /// <summary>
@@ -175,6 +195,11 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate,
                 Is.EqualTo(landing));
+            Assert.That(landing, Is.Not.EqualTo(at),
+                "MILESTONE 8.86: the step the active effect was opened for is a step that really " +
+                "changed her space, not a Movement session that opened and closed on the spot.");
+            Assert.That(HeroView(silverarrowId).Coordinate, Is.EqualTo(landing),
+                "and her token is drawn where she now stands.");
         }
 
         /// <summary>
@@ -240,6 +265,14 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
             }
             yield return null;
+
+            // MILESTONE 8.86. "Target a unit at maximum range" - what the Attack DID, read before the
+            // rider it opens. This journey proved the band the offer drew and then went straight to
+            // the Fast Travel, so a target that was named and never struck would have gone unnoticed.
+            // A declined Defense is a Defense Total of nought, which is p.14's step 6.
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.False,
+                "The enemy hero at exactly her printed Range declined the Defense, so the Attack " +
+                "defeated them. " + Remaining(runtime));
 
             // p.14's step 7: "If able, you may fast travel to an adjacent zone."
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
@@ -316,22 +349,65 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True);
             yield return null;
 
-            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
-                Is.Not.EqualTo(enemyBefore),
-                "The mandatory push is exactly one space and it happened.");
+            var enemyAfter = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate;
+            Assert.That(enemyAfter, Is.EqualTo(pushTo),
+                "The mandatory push put the enemy on the space that was clicked.");
+            Assert.That(HexDistanceQuery.Calculate(enemyAfter, enemyBefore), Is.EqualTo(1),
+                "\"Move an enemy unit adjacent to you 1 SPACE\" - exactly one, which is what makes " +
+                "this face's first Move mandatory-and-exact where its two siblings print \"up to\".");
 
             // "if you do, you may move 1 space" - the optional half, and the control is what makes it
             // observably different from its two siblings, which print no may.
+            //
+            // MILESTONE 8.86 TAKES THE STEP RATHER THAN REFUSING IT. This journey proved the decline
+            // EXISTED and then pressed it, so the only thing it could say about her own printed Move
+            // was that she had not made one - which is a journey proving a move by declining it, the
+            // shape 8.86 exists to remove. The refusal is still read, because its presence is the
+            // whole of what separates Disorient from Divert Attention and Lead Astray; what changes
+            // is that the arm taken afterwards is the one that moves her.
             var decline = DeclineControl(runtime);
             Assert.That(decline, Is.Not.Null,
                 "Disorient's self-move is optional where Divert Attention's and Lead Astray's are " +
                 "not, so it must draw a decline the other two never draw. " + Remaining(runtime));
-            UiPlayer.Click(UiPlayer.Button(root.Hud, decline.Label));
+
+            // The "may" is drawn either as a decision carrying its own destinations or as an accept
+            // that opens them - both shapes exist in this build (Sabina's Steady Advance is the
+            // first, Swift's Hunting Season the second), so the accept is pressed only when the
+            // board is not already lit rather than assumed either way.
+            if (LitDestinations(runtime).Length == 0)
+            {
+                var accept = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
+                Assert.That(accept, Is.Not.Null,
+                    "The optional step offers neither a destination nor an accept, so there is no " +
+                    "way to take it. " + Remaining(runtime));
+                UiPlayer.Click(UiPlayer.Button(root.Hud, accept.Label));
+                yield return null;
+                yield return null;
+            }
+
+            var herSteps = LitDestinations(runtime)
+                .Where(space => !space.Equals(silverarrowAt))
+                .ToArray();
+            Assert.That(herSteps, Is.Not.Empty,
+                "\"you may move 1 space\" must offer somewhere other than the space she is standing " +
+                "on, or the offer is a move that cannot move. " + Remaining(runtime));
+            var herStep = FirstClickableSpace(pointerInput, herSteps);
+            var stepNode = StandingNode(runtime);
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, root.Hud, Tile(herStep).transform.position),
+                Is.True);
+            yield return null;
+            yield return ConfirmIfStillStanding(root, stepNode);
             yield return null;
 
-            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate,
-                Is.EqualTo(silverarrowAt),
-                "A declined step is a step not taken, so she is where she was.");
+            var herNow = runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate;
+            Assert.That(herNow, Is.EqualTo(herStep),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: she took the optional step and is standing " +
+                "on the space she clicked. " + Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(herNow, silverarrowAt), Is.EqualTo(1),
+                "one space, which is the printed count.");
+            Assert.That(HeroView(silverarrowId).Coordinate, Is.EqualTo(herNow),
+                "with her token drawn there rather than where she started.");
         }
 
         /// <summary>
@@ -390,13 +466,31 @@ namespace GuardsDigital.Tests.PlayMode
                 "secondary Defense. " + Remaining(runtime));
             // A defense face is a card ELEMENT and not a labelled button - the same submit-directly
             // fix milestone 8.35z38's dealing found.
+            //
+            // MILESTONE 8.86. The card she pays with is NAMED and counted. `DiscardOf(...) Is.Not.Empty`
+            // was the old reading and it is true of a pile with anything at all in it, whoever put it
+            // there and whenever - so it could not tell this Defense from one paid on an earlier turn.
+            var spent = defense.DefenseBreakdown.CardInstanceId.Value;
+            var handBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(silverarrowId) && card.State.Location == CardLocation.Hand);
             Assert.That(runtime.RoundPresenter.Submit(defense), Is.True);
             yield return null;
+            yield return null;
 
+            Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                "The submitted face answers p.14's response. " + Remaining(runtime));
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(silverarrowId)), Is.True,
                 "She survived, which is what a Defense Total at least the Attack Total means.");
-            Assert.That(DiscardOf(runtime, silverarrowId), Is.Not.Empty,
-                "and the card she answered with is in her discard pile, where p.14 puts it.");
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(spent)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "and the card she answered with - THAT card, not merely some card - is in her " +
+                "discard pile, where p.14 puts it. " + Remaining(runtime));
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(silverarrowId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(handBefore - 1),
+                "Her printed Defense of 1 is the lowest in the roster, and this is what it costs: " +
+                "one card out of a hand that was one card larger a moment ago.");
         }
 
         // ---------------------------------------------------------------------------------------

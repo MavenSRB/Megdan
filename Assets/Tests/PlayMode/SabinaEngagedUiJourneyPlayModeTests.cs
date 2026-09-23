@@ -300,6 +300,21 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.RoundView.Model.EffectChoiceTargets.Select(candidate => candidate.Space));
             Assert.That(offered, Is.Not.Empty,
                 "A minion selection is answered on the map. " + Remaining(runtime));
+            // MILESTONE 8.86. The candidate taken below is `offered[0]`, so what the offer ADMITS is
+            // asserted rather than left to the board's ordering: "a FRIENDLY minion in radius" is
+            // half the sentence, and a journey that named whichever miniature came first could have
+            // ordered an enemy's without noticing.
+            var herSide = runtime.Setup.Heroes
+                .Single(hero => hero.HeroId.Equals(sabinaId)).TeamSide;
+            Assert.That(offered.All(view => view.Occupancy.TeamSide == herSide), Is.True,
+                "\"a friendly minion in radius\" - no enemy piece is offered, however close it " +
+                "stands. Offered: " + string.Join(", ", offered.Select(view =>
+                    view.Occupancy.MinionId.Value + "/" + view.Occupancy.TeamSide)));
+            Assert.That(
+                offered.All(view => HexDistanceQuery.Calculate(
+                    view.Occupancy.Coordinate, sabinaAt) <= 2),
+                Is.True,
+                "and every one of them stands inside her printed Radius 2, which is the other half.");
             var orderNode = StandingNode(runtime);
             var ordered = offered[0];
             var orderedId = ordered.Occupancy.MinionId;

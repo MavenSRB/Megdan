@@ -109,27 +109,77 @@ namespace GuardsDigital.Tests.PlayMode
                 "All six of p.9's colours are offered, RULING 21's Purple included, and the naming " +
                 "step reads none of the ally's own cards to decide which to offer. " + Remaining(runtime));
 
-            var chosenColor = colorCandidates.First();
+            // MILESTONE 8.86. The colour is NAMED rather than taken first: it is the colour of a card
+            // Tali is actually holding, so the "you may discard a card of that colour" step below has
+            // a real candidate and the refusal that follows is a refusal of something. `First()` names
+            // whichever colour the six happen to be ordered in, and on a colour she holds nothing of
+            // the optional step has nothing to offer either way - which would make the assertions
+            // below true of a card that had done nothing at all.
+            var heldColors = runtime.Cards
+                .Where(card => card.OwnerId.Equals(taliId) &&
+                    card.State.Location == CardLocation.Hand)
+                .Select(card => runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(card.DefinitionReference))
+                    .Progression.Color)
+                .Distinct()
+                .ToArray();
+            var chosenColor = colorCandidates.FirstOrDefault(value =>
+                heldColors.Contains(value.Swatch));
+            Assert.That(chosenColor, Is.Not.Null,
+                "None of the six colours offered is one she is holding a card of, so nothing she " +
+                "could name would reach the optional discard. Holding: " +
+                string.Join(", ", heldColors) + "; offered: " +
+                string.Join(", ", colorCandidates.Select(value => value.Swatch.ToString())));
+            var handBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(taliId) && card.State.Location == CardLocation.Hand);
             Assert.That(runtime.SubmitProjectedCommand(chosenColor.Command), Is.True);
             yield return null;
 
             // "You may discard a card of that color" is Tali's own optional step, back on her seat.
-            if (runtime.PendingEffectChoice != null &&
-                runtime.PendingEffectChoice.ChooserId.Equals(taliId))
-            {
-                // Declining is always legal; this journey's subject is the naming and the routing
-                // rather than the optional discard, so it takes the simplest legal answer here.
-                var decline = runtime.RoundView.Model.EffectChoices
-                    .First(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
-                Assert.That(runtime.SubmitProjectedCommand(decline.Command), Is.True, Remaining(runtime));
-                yield return null;
-            }
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The named colour hands the card back to Tali for its own optional discard. " +
+                Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(taliId),
+                "It is HER hand the optional discard comes out of, so the decision comes back to " +
+                "her seat after the ally has named the colour. " + Remaining(runtime));
+            var decline = runtime.RoundView.Model.EffectChoices
+                .FirstOrDefault(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
+            Assert.That(decline, Is.Not.Null,
+                "\"You MAY discard\" prints a refusal, and a refusal a player cannot press is not " +
+                "one. " + Remaining(runtime));
+            Assert.That(runtime.SubmitProjectedCommand(decline.Command), Is.True, Remaining(runtime));
+            yield return null;
+            yield return null;
+
+            // RECORDED GAP, not a defect, and the reason the refusal is the arm this journey takes.
+            // TAKING the discard would stand a card of the named colour in Tali's own discard and hand
+            // the `borrow-primary-action` node below a real candidate - which drives straight into the
+            // Ursafar executor's still-unbuilt "start it" authority. `TaliPlayerPathGateTests`' own
+            // remarks record that, and this journey's job is the naming and the routing. So what is
+            // asserted here is the refusal's own consequence, in state:
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(taliId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(handBefore),
+                "A declined \"may\" spends nothing: her hand is the size it was before the naming. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.Cards.Any(card => card.OwnerId.Equals(taliId) &&
+                    card.State.Location == CardLocation.DiscardPile),
+                Is.False,
+                "and nothing of hers went to the discard pile, which is what makes the mandatory " +
+                "borrow below find nothing. " + Remaining(runtime));
 
             // "Perform the primary action on a card of that color in your discard" is mandatory and,
-            // with nothing of that colour yet in Tali's own discard on a fresh board, finds nothing -
-            // the safe "if able"-shaped reading a mandatory step with no legal subject always gets.
-            // STOPS HERE: starting the borrowed action itself is BorrowedActionQuery, the Ursafar
-            // executor's own unbuilt authority - see this milestone's checklist.
+            // with nothing of that colour in Tali's own discard, finds nothing - the safe "if
+            // able"-shaped reading a mandatory step with no legal subject always gets. That is a
+            // printed step which really does nothing on this board, so rule three of milestone 8.86
+            // is answered by asserting THAT rather than by stopping in silence.
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "\"Perform the primary action on a card of that color in your discard\" - her discard " +
+                "is empty, so the step has no subject and the card is finished rather than standing " +
+                "on a question nobody can answer. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -219,7 +269,23 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(destinations, Is.Not.Empty,
                 "p.8's waves stand a friendly minion somewhere inside her printed Range at this " +
                 "staging - which is what a totem needs to protect at all. " + Remaining(runtime));
-            var destination = destinations[0];
+
+            // MILESTONE 8.86. The space is CHOSEN rather than indexed: the printed sentence the rest
+            // of this card is about - "if a friendly minion adjacent to a totem would be defeated,
+            // remove the totem instead" - is only a sentence about anything while the totem stands
+            // beside one of her own minions, and `destinations[0]` is wherever the board happens to
+            // order the offer. That such a space is inside the printed Range is asserted rather than
+            // assumed, because it is the whole reason this placement is worth making.
+            var side = TaliSeat(runtime).TeamSide;
+            var beside = destinations.Where(space => runtime.BoardView.Model.Minions.Any(minion =>
+                minion.TeamSide == side &&
+                HexDistanceQuery.Calculate(minion.Coordinate, space) == 1)).ToArray();
+            Assert.That(beside, Is.Not.Empty,
+                "No offered space stands beside a friendly minion, so the totem could be placed but " +
+                "would have nothing to protect. Offered: " +
+                string.Join(", ", destinations.Select(space => space.ToString())) + ". " +
+                Remaining(runtime));
+            var destination = FirstClickableSpace(pointerInput, beside);
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(destination).transform.position), Is.True);
             yield return null;
@@ -229,7 +295,15 @@ namespace GuardsDigital.Tests.PlayMode
                 .Select(view => view.Token)
                 .Single(token => token != null &&
                     token.Definition.Id.Equals(TaliComponentContent.VeneratedTotem));
-            Assert.That(totem.Coordinate, Is.EqualTo(destination));
+            Assert.That(totem.Coordinate, Is.EqualTo(destination),
+                "The totem stands on the space that was clicked. " + Remaining(runtime));
+            Assert.That(
+                runtime.BoardView.Model.Minions.Any(minion =>
+                    minion.TeamSide == side &&
+                    HexDistanceQuery.Calculate(minion.Coordinate, totem.Coordinate) == 1),
+                Is.True,
+                "and a friendly minion is standing beside it, which is the board the prevention " +
+                "clause is written about.");
 
             // STOPS HERE on the save's own drive: bringing a Defeat to bear on the adjacent minion and
             // observing the totem, not the minion, disappear needs a headless attack sequence this
@@ -309,11 +383,43 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the gated \"target a unit in range\" reading is the one taken.");
             yield return null;
 
+            // MILESTONE 8.86, AND THE MEASUREMENT THAT WROTE THIS BLOCK. The taken bullet does not
+            // resume the Attack it is printed inside: it asks for a target OF ITS OWN. The first run
+            // of this assertion came back `status='YOUR ATTACK - CHOOSE A TARGET'` with no Defense
+            // standing, which is the printed sentence doing exactly what it says - "Choose one, OR
+            // BOTH, ON DIFFERENT TARGETS" means each arm carries its own targeting, so the target
+            // named before the modal belongs to p.14 and this one belongs to the bullet. The journey
+            // used to end at the modal and could not have seen the difference.
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null,
+                "\"...on different targets\" - the arm that was taken asks whom it is aimed at. " +
+                Remaining(runtime));
+            var bulletsTarget = runtime.PendingAttackTargetChoice.LegalTargets
+                .FirstOrDefault(candidate => candidate.Kind == AttackTargetKind.Hero &&
+                    candidate.HeroId.Equals(enemyId));
+            Assert.That(bulletsTarget.IsDefined, Is.True,
+                "and the enemy hero at this board's printed distance is one of the units in range " +
+                "it admits. " + Remaining(runtime));
+            Assert.That(
+                runtime.SubmitProjectedCommand(
+                    DirectorCommand.ChooseAttackTarget(bulletsTarget.HeroId)),
+                Is.True);
+            yield return null;
+
+            Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
+                "The named target opens p.14's Defense response. " + Remaining(runtime));
             for (var budget = 0; budget < 4 && runtime.PendingDefenseChoice != null; budget++)
             {
                 Assert.That(runtime.DeclineDefense(), Is.True, Remaining(runtime));
                 yield return null;
             }
+
+            yield return null;
+            // The Attack's outcome, which this journey stopped short of: it proved which arm was
+            // offered and which was taken, and never read whether the arm it took did anything.
+            // A declined Defense is a Defense Total of nought.
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.False,
+                "\"Target a unit in range\" with the Defense declined is p.14's Defeat, so the hero " +
+                "the chosen bullet named is off the board. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -550,7 +656,12 @@ namespace GuardsDigital.Tests.PlayMode
 
             // Sentence one, on Cold Snap's own terms: six directions as arrows around her, one press
             // to answer, then a batch with no second question.
-            yield return AnswerTheFreeDirection(root, "the printed pass");
+            var beforeThePrintedPass = EnemyUnitPositions(runtime, taliId);
+            yield return AnswerTheFreeDirection(root, "the printed pass", enemyId);
+            Assert.That(EnemyUnitPositions(runtime, taliId), Is.Not.EqualTo(beforeThePrintedPass),
+                "MILESTONE 8.86: the printed pass moved somebody. This journey read the board only " +
+                "AFTER the repeat, so a printed pass that had legally moved nobody would have left " +
+                "the whole comparison below about one batch instead of two.");
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The first batch applies from its own node table and asks nothing further. " +
                 Remaining(runtime));
@@ -595,7 +706,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             // Sentence two asks the SAME question the printed pass asked, on a fresh set of arrows -
             // never a repeat control, because nothing here is a p.10 repeat to the engine.
-            yield return AnswerTheFreeDirection(root, "the End-of-turn repeat");
+            yield return AnswerTheFreeDirection(root, "the End-of-turn repeat", enemyId);
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The repeat's batch applies with no second question either. " + Remaining(runtime));
@@ -627,6 +738,7 @@ namespace GuardsDigital.Tests.PlayMode
             var root = Root();
             var runtime = root.Runtime;
             var taliId = TaliSeat(runtime).HeroId;
+            var enemyId = OtherHeroId(runtime, taliId);
 
             CommitSoTheNamedSeatActs(runtime, taliId, TaliCardContent.Blizzard);
             yield return YieldUntilTheNamedSeatActs(runtime, taliId);
@@ -638,12 +750,17 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return PointTrayAt(root, taliId);
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            yield return AnswerTheFreeDirection(root, "the printed pass");
+            var beforeThePrintedPass = EnemyUnitPositions(runtime, taliId);
+            yield return AnswerTheFreeDirection(root, "the printed pass", enemyId);
 
             Assert.That(runtime.IsActiveEffectSource(blizzard.Id), Is.True,
                 "The arm stands on her own tray between the printed pass and the turn's close. " +
                 Remaining(runtime));
             var afterThePrintedPass = EnemyUnitPositions(runtime, taliId);
+            Assert.That(afterThePrintedPass, Is.Not.EqualTo(beforeThePrintedPass),
+                "MILESTONE 8.86: the printed pass moved somebody, which is what makes \"nothing " +
+                "moved a SECOND time\" below a statement about the refusal rather than a board that " +
+                "had never moved at all.");
 
             yield return YieldUntilNobodyIsActing(runtime);
 
@@ -676,8 +793,15 @@ namespace GuardsDigital.Tests.PlayMode
         /// authority offers immediately after it - so nothing is left holding an unspent direction
         /// and no second control is pressed. Cold Snap's own journey states the same reading.</para>
         /// </summary>
+        /// <param name="enemyId">
+        /// Milestone 8.86. The enemy hero the pressed direction must really be able to move, so the
+        /// batch this answer carries displaces somebody rather than legally displacing nobody: "if
+        /// able" makes a blocked direction a correct answer that changes no board at all, and a
+        /// journey that pressed one could not tell the printed sentence from silence. The caller
+        /// reads the board afterwards; this step is what makes that read decisive.
+        /// </param>
         private static IEnumerator AnswerTheFreeDirection(
-            MatchSceneCompositionRoot root, string which)
+            MatchSceneCompositionRoot root, string which, HeroId enemyId)
         {
             yield return null;
             var runtime = root.Runtime;
@@ -694,13 +818,20 @@ namespace GuardsDigital.Tests.PlayMode
                 "All six of p.17's directions are always offered - the sentence names no origin and " +
                 "no destination to narrow them. " + Remaining(runtime));
 
-            var chosen = FirstClickableDirection(root, pointerInput);
+            var enemyAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate;
+            var chosen = FirstClickableDirection(root, pointerInput, candidate =>
+                NothingStandsOn(enemyAt.GetNeighbor(candidate.Direction)));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, Tile(chosen.Neighbour).transform.position),
                 Is.True,
                 $"The {chosen.Label} arrow answers {which} where it is drawn.");
             yield return null;
             yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
+                Is.EqualTo(enemyAt.GetNeighbor(chosen.Direction)),
+                $"\"Move each enemy unit in radius 1 space in that direction\" - on {which} the enemy " +
+                $"hero really stepped one space along the {chosen.Label} arrow, from {enemyAt}. " +
+                Remaining(runtime));
         }
 
         /// <summary>

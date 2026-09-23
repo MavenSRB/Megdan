@@ -127,6 +127,32 @@ namespace GuardsDigital.Tests.PlayMode
                 "RULING 37: \"that number\" is the spaces the enemy was ACTUALLY moved. A two-space " +
                 "destination offered here would be the printed-ceiling reading the user overruled, " +
                 "and it is the one thing this journey exists to refuse.");
+
+            // MILESTONE 8.86. The second Move is TAKEN. This journey read the bound off the offer and
+            // stopped there, so it proved which spaces were lit and never that pressing one of them
+            // moved her - and "move up to that number of spaces" is a printed move, which 8.86 says a
+            // journey answers by making it rather than by inspecting the question.
+            var travelling = herLine.Where(space => !space.Equals(silverarrowAt)).ToArray();
+            Assert.That(travelling, Is.Not.Empty,
+                "A bound of one admits a step of one, so the only space offered cannot be the one " +
+                "she is already standing on. " + Remaining(runtime));
+            var herStep = FirstClickableSpace(pointerInput, travelling);
+            var stepNode = StandingNode(runtime);
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, root.Hud, Tile(herStep).transform.position),
+                Is.True);
+            yield return null;
+            yield return ConfirmIfStillStanding(root, stepNode);
+            yield return null;
+
+            var herNow = runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate;
+            Assert.That(herNow, Is.EqualTo(herStep),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: she really walked the line the bound left " +
+                "her. " + Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(herNow, silverarrowAt), Is.EqualTo(1),
+                "one space - the number the enemy was actually moved, and not the printed two.");
+            Assert.That(HeroView(silverarrowId).Coordinate, Is.EqualTo(herNow),
+                "with her token drawn there rather than where she started.");
         }
 
         /// <summary>
@@ -188,6 +214,17 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(silverarrowAt),
                 "And a second Move bounded at nought is a step not taken - she is where she was. " +
                 "That is the whole of why \"if you do\" needed no condition.");
+
+            // MILESTONE 8.86, rule three: a step that says nothing happens has to assert THAT rather
+            // than stop in silence. "Move up to that number of spaces in a straight line" over a
+            // number of nought is a move with nowhere to go, so the board offers her no space she is
+            // not already standing on - which is a stronger claim than "she did not move", because
+            // she could not have moved if she was never asked either.
+            Assert.That(
+                LitDestinations(runtime).Where(space => !space.Equals(silverarrowAt)),
+                Is.Empty,
+                "A second Move bounded at nought offers her no travelling destination at all. " +
+                Remaining(runtime));
         }
 
         /// <summary>
@@ -233,10 +270,21 @@ namespace GuardsDigital.Tests.PlayMode
                 "She names the enemy by clicking their piece - the board-first contract.");
             yield return null;
 
+            var enemyHandBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand);
             yield return AnswerTheRetrievalWithItsFirstCard(root);
+            yield return null;
 
             Assert.That(DiscardOf(runtime, enemyId), Has.Length.EqualTo(discardedBefore - 1),
                 "A card left the enemy's discard pile, which is what \"retrieve\" means.");
+            // MILESTONE 8.86. A card leaving a discard pile is half the sentence; "retrieve" names
+            // where it goes, and a step that removed it from play would satisfy the count above.
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(enemyHandBefore + 1),
+                "and it arrived in the enemy's HAND - retrieved, not merely gone. " +
+                Remaining(runtime));
         }
 
         /// <summary>
@@ -277,10 +325,20 @@ namespace GuardsDigital.Tests.PlayMode
                 "last and the one no friendly-hero reading would offer.");
             yield return null;
 
+            var herHandBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(silverarrowId) && card.State.Location == CardLocation.Hand);
             yield return AnswerTheRetrievalWithItsFirstCard(root);
+            yield return null;
 
             Assert.That(DiscardOf(runtime, silverarrowId), Has.Length.EqualTo(discardedBefore - 1),
                 "Her own card came back to her own hand.");
+            // MILESTONE 8.86: "came back to her own hand" is what the sentence says, so it is read
+            // in her hand rather than inferred from a pile that got one shorter.
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(silverarrowId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(herHandBefore + 1),
+                "and her hand is one card larger for it. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -430,6 +488,14 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.ClickDefenseDecline(runtime, root.Hud);
                 yield return null;
             }
+
+            // MILESTONE 8.86. The PRINTED instance's own outcome, read before the chain's absence is
+            // read: "one enemy hero on the board and the printed instance took them" is the premise
+            // every assertion below rests on, and this journey used to assume it from the click. A
+            // declined Defense is a Defense Total of nought, which is p.14's step 6.
+            Assert.That(runtime.Heroes.Any(candidate => candidate.HeroId.Equals(enemyId)), Is.False,
+                "The hero the printed instance targeted declined the Defense and was defeated, " +
+                "which is why \"a different hero\" then has nobody. " + Remaining(runtime));
 
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
                 "One enemy hero on the board and the printed instance took them, so \"a different " +
@@ -595,6 +661,31 @@ namespace GuardsDigital.Tests.PlayMode
                 "Two spaces is the printed count, and nothing on this card raises or lowers it - hers " +
                 "is the first Ultimate in the roster that prints neither Range nor Radius, so p.16's " +
                 "item has nothing here to reach.");
+
+            // MILESTONE 8.86. THE MOVE IS MADE. This journey measured the shape of the offer and
+            // stopped, so everything it said was about spaces being LIT - and a free move nobody ever
+            // takes is indistinguishable from an offer the engine draws and cannot honour. "You may
+            // move 2 spaces in a straight line" is a printed move, and 8.86 answers a printed move by
+            // making it and reading the board afterwards.
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var landing = FirstClickableSpace(pointerInput, line);
+            var lineNode = StandingNode(runtime);
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, root.Hud, Tile(landing).transform.position),
+                Is.True);
+            yield return null;
+            yield return ConfirmIfStillStanding(root, lineNode);
+            yield return null;
+
+            var herNow = runtime.Heroes.Single(hero => hero.HeroId.Equals(silverarrowId)).Coordinate;
+            Assert.That(herNow, Is.EqualTo(landing),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the free line really moved her, before the " +
+                "action she started. " + Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(herNow, startedAt), Is.EqualTo(2),
+                "two spaces, which is the printed count and the reach that lets her play her own " +
+                "band from where she was standing.");
+            Assert.That(HeroView(silverarrowId).Coordinate, Is.EqualTo(herNow),
+                "with her token drawn there rather than where she started.");
         }
 
         /// <summary>

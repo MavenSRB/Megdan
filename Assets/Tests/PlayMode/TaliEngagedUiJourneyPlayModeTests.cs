@@ -10,6 +10,8 @@ using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
+using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -157,7 +159,16 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EquivalentTo(directionCandidates.Select(value => value.Neighbour)),
                 "and each one is drawn on the space its own candidate names.");
 
-            var chosen = FirstClickableDirection(root, pointerInput);
+            // MILESTONE 8.86. The direction is CHOSEN rather than taken first-come, and the choice is
+            // what makes the assertion below a real one: this journey used to press whichever arrow a
+            // player could reach and then accept EITHER outcome - "the enemy either stayed (the 'if
+            // able' fizzle) or moved exactly one space" - which is a sentence that cannot fail. A
+            // direction whose own step is blocked proves nothing about a batch Move; the one pressed
+            // here is a direction the enemy hero can really be pushed along, read off the live board,
+            // and that such a direction exists at all is asserted rather than hoped for.
+            var chosen = FirstClickableDirection(root, pointerInput, candidate =>
+                NothingStandsOn(enemyStoodAt.GetNeighbor(candidate.Direction)));
+            var pushedTo = enemyStoodAt.GetNeighbor(chosen.Direction);
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(chosen.Neighbour).transform.position),
                 Is.True,
@@ -177,16 +188,16 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the arrows are cleared with the pause that raised them.");
 
             var enemyNowAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate;
-            // "If able": on this board the enemy stands within radius 2 of a two-space-apart engagement,
-            // so the chosen direction may or may not have an empty space to step into. Either observable
-            // outcome is a legal reading of the same sentence, which is why this asserts the fizzle
-            // reads correctly rather than assuming the move always lands.
-            Assert.That(
-                enemyNowAt.Equals(enemyStoodAt) ||
-                GuardsDigital.Core.Board.HexDistanceQuery.Calculate(enemyNowAt, enemyStoodAt) == 1,
-                Is.True,
-                $"The enemy either stayed (blocked or off-map, the \"if able\" fizzle) or moved exactly " +
-                $"one space (the printed distance). Was at {enemyStoodAt}, now at {enemyNowAt}.");
+            Assert.That(enemyNowAt, Is.Not.EqualTo(enemyStoodAt),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: \"Move each enemy unit in radius 1 space in " +
+                $"that direction\" - the enemy hero really left {enemyStoodAt}. The direction pressed " +
+                "was chosen because its own step was free, so the \"if able\" fizzle is not one of " +
+                "the readings this board admits. " + Remaining(runtime));
+            Assert.That(enemyNowAt, Is.EqualTo(pushedTo),
+                $"and he stands one space along the {chosen.Label} arrow that was pressed - the " +
+                "printed distance, in the printed direction, and no other space.");
+            Assert.That(HeroView(enemyId).Coordinate, Is.EqualTo(enemyNowAt),
+                "with his token drawn where he now is rather than where he stood.");
         }
 
         /// <summary>
@@ -201,13 +212,29 @@ namespace GuardsDigital.Tests.PlayMode
         /// the arm this milestone added to <c>SubmitEffectChoiceAtSpace</c>.</para>
         /// </summary>
         internal static DirectionCandidateViewModel FirstClickableDirection(
-            MatchSceneCompositionRoot root, PrimitiveHeroPointerInput pointerInput)
+            MatchSceneCompositionRoot root, PrimitiveHeroPointerInput pointerInput) =>
+            FirstClickableDirection(root, pointerInput, _ => true);
+
+        /// <summary>
+        /// Milestone 8.86. The same reading, narrowed to the directions a journey's own printed
+        /// sentence needs - the overload every batch-Move journey now uses, because a direction whose
+        /// step is blocked lets the batch legally move nobody and a journey that pressed it could not
+        /// tell the printed move from the "if able" fizzle.
+        /// </summary>
+        internal static DirectionCandidateViewModel FirstClickableDirection(
+            MatchSceneCompositionRoot root, PrimitiveHeroPointerInput pointerInput,
+            System.Func<DirectionCandidateViewModel, bool> admits)
         {
             var camera = pointerInput.EventCamera;
             Assert.That(camera, Is.Not.Null, "The pointer input has no event camera configured.");
             var drawn = Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None);
             foreach (var candidate in root.Runtime.BoardView.Model.DirectionCandidates)
             {
+                if (!admits(candidate))
+                {
+                    continue;
+                }
+
                 var tile = drawn.FirstOrDefault(value =>
                     value.Coordinate.Equals(candidate.Neighbour));
                 if (tile == null)
@@ -228,11 +255,24 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             Assert.Fail(
-                "No direction arrow is drawn on a space a player could click: " +
+                "No direction arrow this journey admits is drawn on a space a player could click: " +
                 string.Join(", ", root.Runtime.BoardView.Model.DirectionCandidates.Select(value =>
-                    value.Label + "@" + value.Neighbour)));
+                    value.Label + "@" + value.Neighbour + (admits(value) ? "" : " (not admitted)"))));
             return null;
         }
+
+        /// <summary>
+        /// Milestone 8.86. Whether the board draws that space as PLAYABLE with nothing standing on it -
+        /// Swift's own push journey's reading, which is what tells a direction a unit can really be
+        /// moved along from one the batch would legally leave it standing in.
+        /// </summary>
+        internal static bool NothingStandsOn(GuardsDigital.Core.Board.HexCoordinate space) =>
+            Object.FindObjectsByType<HexTileView>(FindObjectsSortMode.None)
+                .Any(tile => tile.Coordinate.Equals(space) && tile.IsPlayable) &&
+            !Object.FindObjectsByType<StandardMinionView>(FindObjectsSortMode.None)
+                .Any(view => view.Occupancy != null && view.Occupancy.Coordinate.Equals(space)) &&
+            !Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None)
+                .Any(view => view.Coordinate.Equals(space));
 
         /// <summary>
         /// The direction choice is the ONLY pause her free-direction batch Move ever opens - the batch
@@ -272,12 +312,25 @@ namespace GuardsDigital.Tests.PlayMode
             // the batch it applied included, and the question then stands again exactly as it stood.
             var arrows = runtime.BoardView.Model.DirectionCandidates;
             Assert.That(arrows, Has.Count.EqualTo(6), Remaining(runtime));
+            // MILESTONE 8.86. The arrow pressed is the one that really moves somebody, not `arrows[0]`.
+            // "Nothing stays moved" is only evidence about an Undo if something WAS moved: a direction
+            // whose own step is blocked applies a batch that legally displaces nobody, and the
+            // assertion below would then hold with the retraction doing no work at all.
+            var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var mover = FirstClickableDirection(root, pointerInput, candidate =>
+                NothingStandsOn(enemyStoodAt.GetNeighbor(candidate.Direction)));
             Assert.That(
-                runtime.SubmitProjectedCommand(arrows[0].Command), Is.True,
+                runtime.SubmitProjectedCommand(mover.Command), Is.True,
                 "A direction is answered in one press. " + Remaining(runtime));
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "and the question closes on that press. " + Remaining(runtime));
+            Assert.That(
+                runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
+                Is.EqualTo(enemyStoodAt.GetNeighbor(mover.Direction)),
+                "and the batch it carried really moved the enemy hero one space along the " +
+                $"{mover.Label} arrow, which is what the Undo below then has to take back. " +
+                Remaining(runtime));
 
             UiPlayer.Click(UiPlayer.Button(hud, "DIRECTOR"));
             yield return null;
@@ -301,13 +354,21 @@ namespace GuardsDigital.Tests.PlayMode
 
             var restoredArrows = runtime.BoardView.Model.DirectionCandidates;
             Assert.That(restoredArrows, Has.Count.EqualTo(6), Remaining(runtime));
+            var restoredMover = restoredArrows.Single(candidate =>
+                candidate.Direction == mover.Direction);
             Assert.That(
-                runtime.SubmitProjectedCommand(restoredArrows[0].Command), Is.True,
+                runtime.SubmitProjectedCommand(restoredMover.Command), Is.True,
                 "The restored pause answers exactly like the original, in one press.");
             yield return null;
             yield return null;
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "and closes on it exactly like the original. " + Remaining(runtime));
+            Assert.That(
+                runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
+                Is.EqualTo(enemyStoodAt.GetNeighbor(mover.Direction)),
+                "and carries the same batch: the restored answer put the enemy hero on the same " +
+                "space the live one did, which is what makes the restore a continuation rather than " +
+                "a question drawn over a board that has stopped listening. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -358,6 +419,19 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.DeclineDefense(), Is.True, Remaining(runtime));
                 yield return null;
             }
+
+            yield return null;
+            // MILESTONE 8.86. The Attack's own outcome, which this journey used to leave unread: it
+            // asserted the raised total the defender was shown and then declined out of the window
+            // without ever asking what the Attack did. A declined Defense is a Defense Total of
+            // nought against a total of 5, and p.14's step 6 is what that means.
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.False,
+                "\"Target a unit adjacent to you\" answered with a decline is p.14's Defeat, so the " +
+                "enemy hero is off the board. " + Remaining(runtime));
+            Assert.That(Object.FindObjectsByType<PrimitiveHeroView>(FindObjectsSortMode.None)
+                    .Any(view => view.Occupancy.HeroId.Equals(enemyId)),
+                Is.False,
+                "and their token left with them rather than standing where they were struck.");
         }
 
         /// <summary>
@@ -405,11 +479,32 @@ namespace GuardsDigital.Tests.PlayMode
             var defenseFaceName = NameOf(runtime, runtime.Cards
                 .Single(card => card.Id.Equals(defenseCard.SourceCardInstanceId))
                 .DefinitionReference.DefinitionId);
+            var spent = defenseCard.SourceCardInstanceId;
+            var enemyHandBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand);
             UiPlayer.EnsureVisible(UiPlayer.NamedElementWithText(hud, "gd-defense-card", defenseFaceName));
             yield return null;
             UiPlayer.Click(UiPlayer.NamedElementWithText(hud, "gd-defense-card", defenseFaceName));
             yield return null;
             yield return null;
+
+            // MILESTONE 8.86. The GATE'S OWN PRECONDITION, read in state rather than assumed from the
+            // click: "if the target discards a card to defend". A journey whose only remaining
+            // assertion is that nothing further stands would hold just as well if the Defense had
+            // never been paid at all - and then the fizzle it records would be about the wrong thing.
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(spent)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "The face the defender pressed left their hand for their discard pile, which is what " +
+                "\"discards a card to defend\" means and what opens the rider's gate at all. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(enemyHandBefore - 1),
+                "and their hand is one card lighter for it.");
+            Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                "The pressed face answered p.14's response, so no Defense question is left standing " +
+                "for the rider's gate to be read across. " + Remaining(runtime));
 
             // The rider's own after-the-attack pause either opens (if "another enemy hero in radius"
             // has a candidate) or the mandatory step reports impossible and the turn simply continues -

@@ -340,6 +340,21 @@ namespace GuardsDigital.Tests.PlayMode
             var enemyHandBefore = runtime.Cards.Count(card =>
                 card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand);
             var discardNode = StandingNode(runtime);
+            // MILESTONE 8.86. The face pressed is taken from the offer's FIRST invocation, so what
+            // the offer admits is asserted rather than assumed: "discards a card" is a card out of
+            // the hero's own hand, and every candidate has to be one.
+            Assert.That(
+                runtime.PendingEffectChoice.SelectInvocations.All(invocation =>
+                    runtime.Cards.Single(card =>
+                        card.Id.Equals(invocation.Candidate.Value.CardInstanceId)).OwnerId
+                            .Equals(enemyId) &&
+                    runtime.Cards.Single(card =>
+                        card.Id.Equals(invocation.Candidate.Value.CardInstanceId)).State.Location ==
+                            CardLocation.Hand),
+                Is.True,
+                "Every card the named hero is offered is a card in THEIR OWN HAND - which is what " +
+                "p.10's discard is, and what makes the count below attributable. " +
+                Remaining(runtime));
             var paidWith = NameOf(runtime, runtime.Cards
                 .Single(card => card.Id.Equals(
                     runtime.PendingEffectChoice.SelectInvocations[0].Candidate.Value.CardInstanceId))
@@ -446,6 +461,19 @@ namespace GuardsDigital.Tests.PlayMode
             var enemyHandBefore = runtime.Cards.Count(card =>
                 card.OwnerId.Equals(enemyId) && card.State.Location == CardLocation.Hand);
             var discardNode = StandingNode(runtime);
+            // MILESTONE 8.86, the same reading as Close Support's: the face pressed is the offer's
+            // first invocation, so what the offer admits is asserted rather than assumed.
+            Assert.That(
+                runtime.PendingEffectChoice.SelectInvocations.All(invocation =>
+                    runtime.Cards.Single(card =>
+                        card.Id.Equals(invocation.Candidate.Value.CardInstanceId)).OwnerId
+                            .Equals(enemyId) &&
+                    runtime.Cards.Single(card =>
+                        card.Id.Equals(invocation.Candidate.Value.CardInstanceId)).State.Location ==
+                            CardLocation.Hand),
+                Is.True,
+                "Every card the PUSHED hero is offered is a card in their own hand. " +
+                Remaining(runtime));
             var paidWith = NameOf(runtime, runtime.Cards
                 .Single(card => card.Id.Equals(
                     runtime.PendingEffectChoice.SelectInvocations[0].Candidate.Value.CardInstanceId))

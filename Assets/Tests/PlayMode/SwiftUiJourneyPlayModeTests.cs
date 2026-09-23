@@ -80,6 +80,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null);
 
+            var startedAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var destination = runtime.PendingMovementChoice.LegalDestinations
                 .Where(value => value.Cost == 1)
@@ -92,6 +93,15 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate,
                 Is.EqualTo(destination));
+            // MILESTONE 8.86: the walk is a walk. A one-cost destination cannot be the space she is
+            // standing on, and this says so rather than leaving it to the cost to imply.
+            Assert.That(destination, Is.Not.EqualTo(startedAt),
+                "Her printed boot really carried her off the space she started on.");
+            Assert.That(
+                Object.FindObjectsByType<PrimitiveHeroView>()
+                    .Single(view => view.Occupancy.HeroId.Equals(swiftId)).Coordinate,
+                Is.EqualTo(destination),
+                "and her token is drawn where she now is, not where she was.");
 
             if (runtime.PendingMovementChoice != null)
             {
