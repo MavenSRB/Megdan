@@ -98,6 +98,7 @@ Milestone definitions and their exact acceptance/non-goal checks are authoritati
 - [Phase 8 - Eighth shard of completed milestone definitions](Roadmap/PHASE_8_COMPLETED_8.md)
 - [Phase 8 - Ninth shard of completed milestone definitions](Roadmap/PHASE_8_COMPLETED_9.md)
 - [Phase 8 - Tenth shard of completed milestone definitions](Roadmap/PHASE_8_COMPLETED_10.md)
+- [Phase 8 - Eleventh shard of completed milestone definitions](Roadmap/PHASE_8_COMPLETED_11.md)
 - [Phase 9 - Presentation and pitch polish](Roadmap/PHASE_9.md)
 - [Phase 10 - Private publisher pitch package](Roadmap/PHASE_10.md)
 - [Post-pitch production direction - not scheduled](Roadmap/POST_PITCH.md)
