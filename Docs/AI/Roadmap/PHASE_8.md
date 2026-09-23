@@ -179,7 +179,7 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
-### [ ] 8.87 Package the audited twenty-two-hero playtest build, for Windows and macOS
+### [x] 8.87 Package the audited twenty-two-hero playtest build, for Windows and macOS
 
 Authorized 2026-09-23 by the user's standing playtest order, the moment 8.86 landed: the current packages (8.84) predate the Movement-primary hit surface (8.85) the user asked to try.
 
@@ -188,6 +188,10 @@ Outcome: `Builds/Playtest-8.85-movement` (+ zip) and `Builds/Playtest-8.85-movem
 Acceptance: T3 - the complete Edit Mode and Play Mode suites and the harness on the packaged tree, whose player source the version string alone changes; the Windows build-and-launch smoke and the Mac build on the packaged tree; the packaged Windows exe launched once from its own folder to `LOBBY_BEGIN`; the zips inspected for logs; the identity, manifest and read-mes per the 8.44 recipe plus the Mac read-me.
 
 Non-goals: code signing; any further correction.
+
+Completed 2026-09-23 at 11:18. Stamp `1.0-8.85-movement+20260923084546-ddfd503e` on both players; protocol `/21`, schema 44; configured content digest `e037a054...` re-measured by the offline probe (108 definitions, 22 playable heroes; unchanged from 8.84's - neither 8.85 nor the audited journeys touch content). Gate on the packaged tree: complete Edit Mode 5514 total / 5477 passed / 0 failed / 37 skipped (`tmp/887-edit-complete.xml`; the 37th skip is 8.83's explicit inventory printer beside the 36 established instruments), complete Play Mode 827 total / 827 passed / 0 failed / 0 skipped zero skips (`tmp/887-play-complete.xml`), harness 4487 / 4487 passed / 0 failed / 0 skipped (11 m 31 s) (`tmp/887-harness.log`); the Windows smoke GATE PASSED (10:46) and the Mac build PASSED under the Windows stamp (10:48); the packaged exe reached `GUARDS_ONLINE: LOBBY_BEGIN` from its own folder. Windows zip 183 entries / 79.6 MB, Mac zip 184 entries / 87.1 MB, no log or DoNotShip folder in either.
+
+Historical evidence: [8.87 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-887-audited-package-completion-evidence).
 
 ### [x] 8.86 Every journey asserts the board actually changed
 

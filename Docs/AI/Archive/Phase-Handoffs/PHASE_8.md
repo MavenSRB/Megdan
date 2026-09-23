@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.87 audited package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.87 | `Builds/Playtest-8.85-movement` and `Playtest-8.85-movement-mac` (+ zips: 183 / 184 entries, 79.6 / 87.1 MB, no logs) cut from main at `64d46b7d` plus the stamp `1.0-8.85-movement+...084546-ddfd503e` on both players, carrying 8.85 and 8.86 over 8.84; protocol /21, schema 44, digest `e037a054...`. Gate on the packaged tree: Edit Mode 5514 total / 5477 passed / 0 failed / 37 skipped, Play Mode 827 total / 827 passed / 0 failed / 0 skipped, harness 4487 / 4487 passed / 0 failed / 0 skipped (11 m 31 s); Windows smoke and Mac build passed; packaged exe reached the lobby. [Definition](../../Roadmap/PHASE_8.md#x-887-package-the-audited-twenty-two-hero-playtest-build-for-windows-and-macos). | `milestone/8.87` |
+
 ## Milestone 8.86 journey audit completion evidence
 
 | Milestone | Outcome and definition | Commit |
