@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.83 roster move sweep completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.83 | Hunting Season composes two optional `UpTo` passes (the second excluding the first's minion); Sabina's three commands bind `WithinActorPrintedRadius`; `RosterMoveLeashSweepTests` asserts the unbound-leash and exact-distance-under-"up to" shapes absent roster-wide with named allow-lists, and the sweep found and fixed three unreported families - Swift's jump pushes (Drop Trooper forced both units), Xargatha's Charm/Control/Dominate (exactly 2), Tigerclaw's Master Thief (exactly 2). Four revisions and pins re-measured. Pre-fix reds 10 of 40. Harness 4487/4487; focused Edit Mode 256/256; focused Play Mode 84/84; schema v44 / wire /21 unmoved. [Definition](../../Roadmap/PHASE_8.md#x-883-hunting-season-moves-up-to-two-minions-sabinas-leash-reads-her-icon-and-the-roster-is-swept-for-both-shapes). | `f367cc9b` |
+
 ## Milestone 8.81 re-cut package completion evidence
 
 | Milestone | Outcome and definition | Commit |

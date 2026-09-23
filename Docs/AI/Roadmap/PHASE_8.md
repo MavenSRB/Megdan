@@ -219,6 +219,30 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
+### [ ] 8.84 Package the swept twenty-two-hero playtest build, for Windows and macOS
+
+Authorized 2026-09-23 by the user's standing playtest order, the moment 8.83 landed: the packages cut at 8.81 predate the sweep, and the user plays on the current package.
+
+Outcome: `Builds/Playtest-8.83-sweep` (+ zip) and `Builds/Playtest-8.83-sweep-mac` (+ zip), built from main at the 8.83 ceremony plus the version stamp `1.0-8.83-sweep`, one stamp on both players; protocol `/21`; everything 8.81 carried plus 8.83.
+
+Acceptance: T3 - the complete Edit Mode and Play Mode suites and the harness on the packaged tree, whose player source the version string alone changes; the Windows build-and-launch smoke and the Mac build on the packaged tree; the packaged Windows exe launched once from its own folder to `LOBBY_BEGIN`; the zips inspected for logs; the identity, manifest and read-mes per the 8.44 recipe plus the Mac read-me.
+
+Non-goals: code signing; any further correction.
+
+### [x] 8.83 Hunting Season moves up to two minions, Sabina's leash reads her icon, and the roster is swept for both shapes
+
+Authorized 2026-09-23 by the user on the two findings 8.82 routed ("Dude, fix those issues"), with the sweep added because the user's real complaint was "every time we play i find new broken cards. Not cool".
+
+Outcome: Hunting Season composes a second subject-and-move pass that excludes the minion the first moved, each pass optional and `UpTo` 3 inside `WithinActorPrintedRadius`, Mark for Death byte-identical; Sabina's three "to a space in radius" commands bind `WithinActorPrintedRadius` instead of the literal printed number; and a harness-runnable sweep over all twenty-two heroes asserts the two mechanical shapes absent roster-wide (a `WithinActorRadius` leash with no radius; a non-`UpTo` distance under an "up to N" sentence), with every deliberate exception named beside its printed clause.
+
+Acceptance: the pre-fix reds recorded; Hunting Season's two moves, the second offer's exclusion, and declining either; Sabina's disk widening with a Radius item; the sweep's two assertions green with their allow-lists; the affected identity pins re-measured; the harness and the focused fixtures green; the complete suites on the packaged tree under 8.84. T2 minimum.
+
+Non-goals: any sentence the sweep classifies as a different shape.
+
+Completed 2026-09-23 (`f367cc9b`, squash-merged from `264d54bc` on `8.83-two-movers-sabina-leash`). THE SWEEP FOUND THREE MORE BROKEN FAMILIES NOBODY HAD REPORTED, all fixed in the same commit: Swift's Steam Jump / Assault Jump / Drop Trooper push was `May` at its full distance and its offer set minimum = maximum, so Drop Trooper FORCED the player to push both units whenever two stood beside her; Xargatha's Charm / Control / Dominate move was `Mandatory` at exactly 2, so a commanded minion could only land in the second ring and one boxed in at one space could not be commanded at all; Tigerclaw's Master Thief follow-up was `May` at exactly 2 against "you may move up to 2 spaces". Sweep results: (a) `WithinActorRadius` with no radius - zero, now asserted absent; (b) literal equal to the printed Radius icon - four hits, Sabina's three fixed and Xargatha's Siren's Call (literal 1, "adjacent to you", no Radius icon) allow-listed as correct, the Place family's nine written-radius nodes clean; (c) non-`UpTo` distance under "up to" - the three families above, 47 exact-distance declarations allow-listed beside their printed clauses; (d) a multi-unit sentence with one subject - Hunting Season alone. Composition facts: the second Hunting Season pass is NESTED inside the first because `EffectDefinitionValidator` refuses a flat sibling reading the first's output (`NodeOutputNotGuaranteed`); `choose-target-set@1` was rejected on purpose - its reach is a required literal `distance`, which would have re-introduced 8.82's defect one node to the left; the second selection declares 8.69c's `excludeMinion`. Revisions and pins re-measured: swift `8-82` -> `8-83` `c43ec6af...`, sabina `8-35z44` -> `8-83` `5b056adb...`, xargatha `8-25e5f1` -> `8-83` `d5975d9d...`, tigerclaw `8-35z25` -> `8-83` `50db97cd...`; exactly four pins moved, no card id changed. Ledgers: `TimedOptionalOfferTests` gained three rows (Xargatha's moves only became optional surfaces now); Swift's Hunting Season gate row gained `ConfirmOrDecline` and a new journey; Tigerclaw's Master Thief row lost it (an `up to` direct move expresses the decline inside its own offer). Unity-tier lesson recorded on the fixture: the Editor's NUnit resolves `Has.Count` by reflection and an array carries only `Length`, so three cases green offline threw `Property Count was not found` in Unity. Pre-fix reds 10 of 40 by reverting the four content files. Harness 4487/4487 zero skips (= 4472 + 15); focused Edit Mode 256/256 over 17 fixtures (`tmp/883-edit-results.xml` in `8-80-defense`); focused Play Mode 84/84 over nine journey and gate fixtures (`tmp/883-play-results.xml`); schema v44 and wire `/21` unmoved.
+
+Historical evidence: [8.83 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-883-roster-move-sweep-completion-evidence).
+
 ### [x] 8.81 Re-cut the twenty-two-hero playtest packages with the evening's four fixes
 
 Authorized 2026-09-22 by the user's standing playtest order and "ok, you go do the fix, we play with the bug": the packages the evening was played on (8.79) carried the repeat-offer gap (8.75d), the Defense window without the attacker's card on network seats (8.80), the live-face badge the user dropped (8.75e) and Swift's stand-still minion move (8.82); once all four landed the pair was cut again.
