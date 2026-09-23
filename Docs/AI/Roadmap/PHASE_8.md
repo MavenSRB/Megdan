@@ -219,6 +219,16 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
+### [~] 8.86 Every journey asserts the board actually changed
+
+Authorized 2026-09-23 by the user ("I'd like to audit every journey so each one asserts the board actually change. Do it."), after a night in which five card families were found broken while their Play Mode journeys were green: 8.82's Mark for Death journey answered the first offer blindly at every pause and passed while the face offered nobody.
+
+Outcome: every UI journey of every dealt hero (the three per-hero fixtures, Garrus's and Widget's named fixtures, and the shared journey fixtures) asserts the printed outcome in state after the press - a moved piece's coordinate changed to a legal destination (an "up to" or "may" journey chooses a non-zero option), an Attack's outcome, a discard's hand count, a token on its space, coins and levels moved, an active effect standing and firing where reachable; no journey answers `SelectInvocations[0]` blindly; no step passes because an element or offer is absent. A journey that reds because the card does not do what it prints is not fixed by touching the card: the gap is recorded on the assertion in 8.75c's `RECORDED GAP` form and routed.
+
+Acceptance: four parallel waves (a: Arien, Bain, Brogan, Brynn, Cutter, Dodger; b: Garrus, Hanu, Ignatia, Min, Misa, Rowenna; c: Sabina, Silverarrow, Swift, Tali, Tigerclaw; d: Ursafar, Wasp, Whisper, Widget, Xargatha), each with a before/after table per journey and its defects found; the gate tables unchanged in shape; focused Play Mode per wave green; the complete Play Mode suite on the merged main green with zero skips; every defect found routed as its own block. T2 (tests only).
+
+Non-goals: content, engine or presentation changes; the shape bindings' meaning.
+
 ### [x] 8.85 A primary Movement's hit surface is the printed action panel
 
 Authorized 2026-09-23 by the user from the live playtest: "something strange is happening with cards that have primary movment action. Players seem to have trouble clicking them." / "They have trouble selecting primary movmenent action."
