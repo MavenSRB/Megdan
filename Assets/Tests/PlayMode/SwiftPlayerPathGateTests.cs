@@ -84,6 +84,14 @@ namespace GuardsDigital.Tests.PlayMode
         private const string MarkForDeathJourney =
             "MarkForDeathMovesAMinion_ThenPaysItsCountedBountyNextTurn";
 
+        // Milestone 8.83. Hunting Season's own journey, which it did not have and did not need until
+        // this milestone: the face composed exactly Mark for Death's nodes with a second promise
+        // behind them, so every shape it introduced was one that journey already drove. "Move up to
+        // TWO enemy minions" is now two optional passes, and an optional pass is a control - so the
+        // face owes a journey that presses it.
+        private const string HuntingSeasonJourney =
+            "HuntingSeasonMovesOneMinion_ThenLetsHerWalkAwayFromTheSecond";
+
         private const string BulletTimeJourney =
             "BulletTimeGrantsTheResolvedCardsPrimary_AndNamesItsOwnRefusal";
 
@@ -413,18 +421,27 @@ namespace GuardsDigital.Tests.PlayMode
                 Face(SwiftCardContent.HuntingSeason, "Hunting Season", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
-                        Prove(PrimarySkillControl, MarkForDeathJourney),
+                        Prove(PrimarySkillControl, HuntingSeasonJourney),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk),
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn),
-                        Prove(BoardUnitSelection, MarkForDeathJourney),
-                        Prove(BoardSpaceSelection, MarkForDeathJourney),
+
+                        // MILESTONE 8.83's ADDITION, and the only shape this face introduces that its
+                        // Tier II sibling does not. "Move UP TO TWO enemy minions in radius" composes
+                        // two optional passes rather than one mandatory selection, so a player meets a
+                        // decision before each minion: take this pass, or move no more. Mark for Death
+                        // prints no count at all and therefore still meets none.
+                        Prove(ConfirmOrDecline, HuntingSeasonJourney),
+                        Prove(BoardUnitSelection, HuntingSeasonJourney),
+                        Prove(BoardSpaceSelection, HuntingSeasonJourney),
                         Prove(ActiveEffectReading, MarkForDeathJourney),
                         Prove(RoundLongActiveEffectReading, MarkForDeathJourney)
                     },
                     new[]
                     {
                         "SwiftPrintedSetTests.HuntingSeasonsTwoPromises_CarryDifferentUniquenessKeys",
-                        "MinionDefeatBountyTests.TwoPromises_PayExactlyTwiceAcrossThreeDefeats"
+                        "MinionDefeatBountyTests.TwoPromises_PayExactlyTwiceAcrossThreeDefeats",
+                        "SwiftMarkForDeathTests.HuntingSeason_MovesTwoDifferentMinions_AndReallyMovesBothOfThem",
+                        "SwiftMarkForDeathTests.HuntingSeasonsSecondSelection_ExcludesTheMinionTheFirstOneNamed"
                     }),
 
                 // p.16's Ultimate. It prints no Initiative, no action and neither Range nor Radius, so

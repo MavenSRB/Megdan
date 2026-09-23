@@ -86,13 +86,27 @@ namespace GuardsDigital.Tests.EditMode
             // byte-identical, which is the measurement that says the removal reached her content and
             // nobody else's - and the digest moving at all is what says a declaration is part of the
             // content's identity even when it changes no behaviour.
-            new IdentityPin("sabina", "sabina-8-35z44-rev-1", "078c53c95fe81eb1ba07c3d6ae548d908dc86a7ab9d18332a310f9ed4edaabfe"),
+            // MILESTONE 8.83 moved Sabina alone among the three Green command faces' owners: Troop
+            // Movement, Marching Orders and Path to Victory bound their "to a space in radius" leash
+            // as the literal 2 / 3 / 3 while the SELECTION above it read her printed icon, so a
+            // Radius item widened who she could command and not where she could put them. The leash
+            // is 8.82's printed member now and declares no number at all.
+            new IdentityPin("sabina", "sabina-8-83-rev-1", "5b056adb41fd00c47f3d8a5f3482165ac4ea4a91b150bd1c3678ae2f0e3b77c6"),
             // Milestone 8.35z20 corrected Blend Into Shadows' secondary icon (Defense 2, not Movement
             // 2 - the one-icon slot-position trap; see Docs/AI/Rules/HERO_TIGERCLAW.md's
             // settled-corrections block), which is the whole reason this digest moved.
-            new IdentityPin("tigerclaw", "tigerclaw-8-35z25-rev-1", "a5c6cbc9c63719abd8ed78659a0f3078f2154b04b3094a855f142998c5f601dc"),
+            // MILESTONE 8.83 moved Tigerclaw for one word on one face: Master Thief ends "you may move
+            // UP TO 2 spaces" and its follow-up step declared `may` at an exact 2, which is p.11's
+            // OTHER wording. Light-Fingered's and Pick Pocket's "you may move 1 space" are unchanged
+            // and still declare `may`, which is what makes this one card's correction rather than a
+            // family's.
+            new IdentityPin("tigerclaw", "tigerclaw-8-83-rev-1", "50db97cd2d53f45c651d77f9ae202a12065700165284903910fb1b4906944edd"),
             new IdentityPin("wasp", "wasp-8-25e7-rev-1", "b698578d1318ececdab14974d276dce37ecedd5e11fa314c0e3d82e0c8b5e122"),
-            new IdentityPin("xargatha", "xargatha-8-25e5f1-rev-1", "7ab1d0126e024b621cdb5fb4df0928cf39fb0d6d767a48757c5a3e1cd5fdb38b"),
+            // MILESTONE 8.83 moved Xargatha for the same clause on three faces: Charm, Control and
+            // Dominate print "you may move an enemy minion in radius UP TO 2 spaces" and their move
+            // declared `Mandatory` at 2, so the minion could only ever be put in the second ring.
+            // Her Siren's Call is untouched - its literal 1 is a number the sentence writes down.
+            new IdentityPin("xargatha", "xargatha-8-83-rev-1", "d5975d9d6013873c7b0fa84593c17ec5fc7b0627347fbca6373ff62fbed4b9f3"),
             // Milestone 8.35z34. THE SEVENTH PIN, and the first added since this oracle was built -
             // every one above it was pinned at milestone 8.25e7 and has only ever moved. It arrives
             // now rather than at the milestone that composed her because a pin is a claim about
@@ -198,7 +212,12 @@ namespace GuardsDigital.Tests.EditMode
             // onto it (a literal would have stopped following her Super-Shotgun's +1 Radius), and the
             // same node's "up to 3 spaces" is now `UpTo` rather than `IfAble`. Two literals on one
             // node of two faces; measured on the offline harness, not predicted.
-            new IdentityPin("swift", "swift-8-82-rev-1", "da09a40362dceb8f89f0ecc3479c2e703d982a0d4b06b1b0feaee9aeb41e11bb"),
+            // MILESTONE 8.83 moved Swift for two corrections 8.82 routed and found: Hunting Season now
+            // composes TWO subject+move pairs for "Move up to two enemy minions in radius" (it
+            // composed one, so half its own sentence was unreachable), and her three jump Skills'
+            // push declares `up to` rather than `may`, which had made "up to 1 / 2 spaces" an exact
+            // distance and Drop Trooper's "up to TWO enemy units" a forced both.
+            new IdentityPin("swift", "swift-8-83-rev-1", "c43ec6af33606d0daf1e97dde74aa21700353179bf12c5047b6e8d3aa5d4267a"),
             // Milestone 8.39i. THE FOURTEENTH PIN, on exactly the terms the seventh through thirteenth
             // arrived on: a pin is a claim about content a configured match loads, and milestone 8.39h
             // composed Cutter's eighteen faces without dealing her.

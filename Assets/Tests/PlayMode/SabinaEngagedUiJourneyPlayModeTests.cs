@@ -268,8 +268,12 @@ namespace GuardsDigital.Tests.PlayMode
         /// <para>The face that asks a player for the most: which minion, where it goes, and whether to
         /// do it again. The two printed radii are measured from two different places - who may be
         /// ordered is bounded from Sabina, and where they may go is bounded from Sabina as well, which
-        /// is what milestone 8.22's <c>WithinActorRadius</c> destination policy exists for and what
-        /// keeps the destination set from being "anywhere one space away".</para>
+        /// is what a destination policy over her own disk exists for and what keeps the destination set
+        /// from being "anywhere one space away". MILESTONE 8.83 re-bound that leash from milestone
+        /// 8.22's declared <c>WithinActorRadius</c> - which carried her face's printed number as a
+        /// literal - to 8.82's <c>WithinActorPrintedRadius</c>, which reads the icon the SELECTION
+        /// above it has always read. On a hero holding no Radius item the two draw the same disk, so
+        /// this journey's assertions are unchanged; what changed is what happens when she holds one.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator TroopMovement_MovesAFriendlyMinionByTwoClicksAndDeclinesItsRepeat()
@@ -334,6 +338,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(MinionView(orderedId).Occupancy.Coordinate, Is.EqualTo(chosen),
                 "The ordered miniature is standing on the space that was clicked.");
+            Assert.That(MinionView(orderedId).Occupancy.Coordinate, Is.Not.EqualTo(orderedFrom),
+                "and it really LEFT the space it stood on - milestone 8.82's lesson, made explicit " +
+                "here at 8.83 because this is the journey that covers the leash 8.83 re-bound.");
 
             // Question three: the printed repeat, refused on its own control.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,

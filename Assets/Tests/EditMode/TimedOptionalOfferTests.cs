@@ -50,6 +50,14 @@ namespace GuardsDigital.Tests.EditMode
         /// sentences milestone 8.29e was reported for, one of them on three faces; the rest were
         /// already honest, and saying so is the point of listing them - an <c>Optional</c> control
         /// node was the only shape whose offer never consulted its own branch.</para>
+        ///
+        /// <para><b>Milestone 8.83 added THREE rows and closed none of them, which is the shape a
+        /// correction takes here.</b> Charm, Control and Dominate print "you may move an enemy minion
+        /// in radius UP TO 2 spaces" and declared their move <c>Mandatory</c> at an exact 2, so it was
+        /// not an optional surface at all and this matrix could not see it. It is
+        /// <c>Capability/UpTo</c> now - p.11's optional distance - and it arrives already gated by the
+        /// same capability <c>Anticipate</c> that has answered every other direct Move here since
+        /// 8.29e. The `you may` beside it is the <c>green-may</c> row above and is untouched.</para>
         /// </summary>
         private static readonly string[] DeclaredTimedOptionalSurfaces =
         {
@@ -77,11 +85,14 @@ namespace GuardsDigital.Tests.EditMode
             "wasp-thunder-boomerang | AfterTheAttack | thunder-repeat | RepeatAction/May | repeat gate",
             "xargatha-charm | AroundTheAction | green-order | Choose/Mandatory | option gate",
             "xargatha-charm | AroundTheAction | green-may | Optional/May | offer gate",
+            "xargatha-charm | AroundTheAction | green-move | Capability/UpTo | the capability's own Anticipate",
             "xargatha-cleave | AfterTheAttack | repeat | RepeatAction/May | repeat gate",
             "xargatha-control | AroundTheAction | green-order | Choose/Mandatory | option gate",
             "xargatha-control | AroundTheAction | green-may | Optional/May | offer gate",
+            "xargatha-control | AroundTheAction | green-move | Capability/UpTo | the capability's own Anticipate",
             "xargatha-dominate | AroundTheAction | green-order | Choose/Mandatory | option gate",
             "xargatha-dominate | AroundTheAction | green-may | Optional/May | offer gate",
+            "xargatha-dominate | AroundTheAction | green-move | Capability/UpTo | the capability's own Anticipate",
             "xargatha-rapid-thrusts | AfterTheAttack | repeat | RepeatAction/May | repeat gate"
         };
 

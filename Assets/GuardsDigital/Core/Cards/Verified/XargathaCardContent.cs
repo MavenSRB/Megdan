@@ -44,7 +44,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <see cref="TigerclawCardContent.ContentRevision"/> has: it moves when Xargatha's content
         /// does.
         /// </summary>
-        public const string ContentRevision = "xargatha-8-25e5f1-rev-1";
+        public const string ContentRevision = "xargatha-8-83-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

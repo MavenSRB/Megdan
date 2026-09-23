@@ -50,7 +50,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// compose their step-1 sentences in the order the faces print them, which changes the nodes
         /// those two cards declare and the moment their target is bound.
         /// </summary>
-        public const string ContentRevision = "tigerclaw-8-35z25-rev-1";
+        public const string ContentRevision = "tigerclaw-8-83-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

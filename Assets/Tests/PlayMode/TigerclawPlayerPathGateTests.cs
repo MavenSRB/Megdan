@@ -466,13 +466,20 @@ namespace GuardsDigital.Tests.PlayMode
                             ".TheFriendlyHalfOfTheMarkerSelection_IsUnreachableOnAOneVersusOneBoard"
                     }),
 
+                // MILESTONE 8.83 DROPPED ONE SHAPE FROM THIS ROW AND FROM NO OTHER, and the drop is
+                // the correction rather than a loss of coverage. Master Thief ends "you may move UP
+                // TO 2 spaces" - p.11's optional DISTANCE - and its follow-up step declared `may` at
+                // an exact 2, which is p.11's optional STEP and a confirm-or-decline beside the board.
+                // Under `up to` the same handler expresses the optionality INSIDE its own offer: the
+                // hero's own space is one of the destinations, so walking away is a board click and
+                // not a button. Light-Fingered and Pick Pocket print "you may move 1 SPACE" and still
+                // declare `may`, which is why their rows still carry the shape.
                 Face(TigerclawCardContent.MasterThief, "Master Thief", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, TheftJourney),
                         Prove(BoardUnitSelection, TheftJourney),
                         Prove(ResourceAmountChoice, TheftJourney),
-                        Prove(ConfirmOrDecline, TheftJourney),
                         Prove(BoardSpaceSelection, TheftJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)

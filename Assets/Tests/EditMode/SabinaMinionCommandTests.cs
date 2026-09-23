@@ -1,9 +1,23 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Components.Synthetic;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Displacement;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Rules.Movement;
+using GuardsDigital.Core.Rules.Progression;
+using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Units.Heroes;
+using GuardsDigital.Core.Units.Minions;
 using NUnit.Framework;
 using static GuardsDigital.Tests.EditMode.SabinaBoard;
 using static GuardsDigital.Tests.EditMode.StagedHeroBoard;
@@ -596,6 +610,280 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             return moves;
+        }
+
+        // -----------------------------------------------------------------------------------------
+        // Milestone 8.83: "to a space in radius" is her ICON, and it used to be a literal
+        // -----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// THE PRINTED DISK, UNMOVED. Her three Green command faces bound their leash as the number
+        /// their own face prints - 2, 3 and 3 - and milestone 8.83 replaced that literal with
+        /// <c>DirectMoveDestinationPolicy.WithinActorPrintedRadius</c>, which reads the icon. On a
+        /// hero holding no Radius item those are the same number, so the destinations a player is
+        /// offered must be EXACTLY what they were: this case is the half of the correction that must
+        /// change nothing, and it is measured on all three faces because each prints its own icon.
+        /// </summary>
+        [TestCase(1, 2, TestName = "TroopMovement_PrintedRadius2")]
+        [TestCase(2, 3, TestName = "MarchingOrders_PrintedRadius3")]
+        [TestCase(3, 3, TestName = "PathToVictory_PrintedRadius3")]
+        public void EachCommandFacesLeash_IsItsOwnPrintedRadiusDisk_WithNoItemInPlay(
+            int tier, int printedRadius)
+        {
+            var cardId = tier == 1
+                ? SabinaCardContent.TroopMovement
+                : tier == 2 ? SabinaCardContent.MarchingOrders : SabinaCardContent.PathToVictory;
+            var fixture = Create(
+                tier: tier,
+                minionPlacements: At("blue-melee-01", FirstAdjacent));
+            var subject = fixture.MinionAt(FirstAdjacent);
+
+            fixture.StartPrimary(cardId);
+            fixture.SelectAndConfirm(subject);
+
+            var destinations = fixture.CandidateSpaces(fixture.Choice);
+            Assert.That(destinations, Is.Not.Empty, "The move opens its own question.");
+            Assert.That(
+                destinations.All(space => HexDistanceQuery.Calculate(space, FirstAdjacent) == 1),
+                Is.True,
+                "\"1 space\" is one step from where the minion is standing, whichever face it is.");
+            Assert.That(
+                destinations.All(space =>
+                    HexDistanceQuery.Calculate(space, HeroAt) <= printedRadius),
+                Is.True,
+                cardId + " prints Radius " + printedRadius + ", and the printed member draws the " +
+                "same disk the literal did - nothing outside it.");
+            Assert.That(
+                destinations.Any(space => HexDistanceQuery.Calculate(space, HeroAt) == 2),
+                Is.True,
+                "and nothing INSIDE it has been lost either: a minion standing beside her may be " +
+                "ordered one step OUTWARD, to the second ring, which is inside every one of the " +
+                "three printed radii and is the outermost ring of the smallest of them. That is " +
+                "what makes the bound above a disk rather than a leash clipped to where the minion " +
+                "already stands. Two is the farthest a one-space order from the first ring can " +
+                "reach at all, so the wider faces are measured at the item case below instead.");
+        }
+
+        /// <summary>
+        /// THE HALF A LITERAL COULD NEVER DO, and the defect milestone 8.83 closes. p.16's Radius item
+        /// raises a printed icon, and the SELECTION above this leash has always read that icon - it is
+        /// a printed-icon arm, and it asks <c>RadiusValueQuery</c> on every ask. The leash did not. So
+        /// with a +1 Radius item in play the two disks were one ring apart: she could name a minion
+        /// the outer ring, and then had nowhere legal to put it.
+        ///
+        /// <para>It is measured through her REAL move node, handed her real card and a real item,
+        /// rather than through the staged session - the staged board has no way to grant an item, and
+        /// what this case is about is the number the node reads.</para>
+        /// </summary>
+        [Test]
+        public void APlusOneRadiusItem_WidensTheLeashWithTheOffer_OnAllThreeCommandFaces()
+        {
+            foreach (var row in new[]
+            {
+                new { Card = SabinaCardContent.TroopMovement, Printed = 2 },
+                new { Card = SabinaCardContent.MarchingOrders, Printed = 3 },
+                new { Card = SabinaCardContent.PathToVictory, Printed = 3 }
+            })
+            {
+                // The minion starts on her OUTERMOST printed ring, which is the only board on which
+                // the leash is the binding constraint: from anywhere further in, a one-space order
+                // cannot reach the edge of the disk and a leash of any width would measure the same.
+                var moverAt = new HexCoordinate(row.Printed, 0);
+                var unarmed = LeashDestinations(row.Card, radiusItems: 0, moverAt);
+                Assert.That(
+                    unarmed.Max(space => HexDistanceQuery.Calculate(CommandCentre, space)),
+                    Is.EqualTo(row.Printed),
+                    row.Card + " prints Radius " + row.Printed + ", so with no item its leash reaches " +
+                    "exactly that far - the same number the removed literal wrote down.");
+
+                var armed = LeashDestinations(row.Card, radiusItems: 1, moverAt);
+                Assert.That(
+                    armed.Max(space => HexDistanceQuery.Calculate(CommandCentre, space)),
+                    Is.EqualTo(row.Printed + 1),
+                    "THE POINT: p.16 raises the printed icon by one and BOTH halves of \"in radius\" " +
+                    "follow it. Under the literal this stayed at " + row.Printed + " while the " +
+                    "selection above it widened, which is the pair coming apart on a live board.");
+                Assert.That(armed, Is.SupersetOf(unarmed),
+                    "and the item only ever widens: every space the printed disk admitted is still " +
+                    "admitted.");
+            }
+        }
+
+        /// <summary>
+        /// The correction read off the composition: all three faces declare the printed member and
+        /// none of them writes a number down any more.
+        /// </summary>
+        [Test]
+        public void TheThreeCommandFaces_DeclareThePrintedRadiusLeash_AndBindNoLiteralRadius()
+        {
+            foreach (var cardId in new[]
+            {
+                SabinaCardContent.TroopMovement,
+                SabinaCardContent.MarchingOrders,
+                SabinaCardContent.PathToVictory
+            })
+            {
+                var move = CommandMoveNode(cardId);
+                Assert.That(
+                    (DirectMoveDestinationPolicy)move.Inputs
+                        .Single(input => input.ParameterName ==
+                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName)
+                        .Literal.IntegerValue,
+                    Is.EqualTo(DirectMoveDestinationPolicy.WithinActorPrintedRadius),
+                    cardId + " says \"to a space in radius\", and p.9 says that means the icon.");
+                Assert.That(
+                    move.Inputs.Any(input => input.ParameterName ==
+                        SyntheticDisplacementCapabilities.ActorRadiusParameterName),
+                    Is.False,
+                    cardId + " must write no number down: a literal is a leash that stops following " +
+                    "the item the offer above it already follows.");
+                Assert.That(
+                    move.Inputs.Single(input => input.ParameterName == "distance")
+                        .Literal.IntegerValue,
+                    Is.EqualTo(1),
+                    "and the STEP is still exactly one space, which is the number this sentence " +
+                    "really does write down.");
+                Assert.That(move.FailurePolicy, Is.EqualTo(EffectFailurePolicy.Mandatory),
+                    "\"Move a friendly minion in radius 1 space\" prints neither \"may\" nor \"up " +
+                    "to\" over its distance, so the exact number is the only one that satisfies it.");
+            }
+        }
+
+        // -----------------------------------------------------------------------------------------
+        // The leash probe
+        // -----------------------------------------------------------------------------------------
+
+        private static readonly MapId CommandMap = new MapId("sabina-command-leash-map");
+        private static readonly HeroId Commander =
+            new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly TeamId CommandedTeam =
+            new TeamId(StagedBoardParticipants.RedTeamIdValue);
+        private static readonly HexCoordinate CommandCentre = new HexCoordinate(0, 0);
+        private static readonly IReadOnlyList<HexCoordinate> CommandPlayable = Disk(CommandCentre, 9);
+
+        /// <summary>
+        /// Every space her command move would offer for a minion standing one step from her, on a
+        /// featureless disk - which is the shape that makes the answer about the leash rather than
+        /// about the staging.
+        ///
+        /// <para>The caller places the mover on her own outermost printed ring, so a leash that
+        /// failed to widen has nowhere new to offer and a leash that widened has exactly one more
+        /// ring of it.</para>
+        /// </summary>
+        private static IReadOnlyList<HexCoordinate> LeashDestinations(
+            CardDefinitionId cardId, int radiusItems, HexCoordinate moverAt)
+        {
+            var definition = SabinaCardContent.Definition(cardId);
+            var action = definition.ActionDefinitions.Single(
+                candidate => candidate.Origin == ActionDefinitionOrigin.PrintedPrimary);
+            var move = CommandMoveNode(cardId);
+            var participants = StagedBoardParticipants.Create();
+            var board = new AdjacentMoveAuthority(
+                BoardMapDefinition.CreateSynthetic(CommandMap, 1, CommandPlayable),
+                new[] { new HeroOccupancy(Commander, CommandCentre) },
+                Array.Empty<ObstacleOccupancy>(),
+                new[]
+                {
+                    new QuickGameMinionSetupState(
+                        new MinionId("sabina-command-leash-minion"),
+                        CommandedTeam,
+                        TeamSide.Red,
+                        StandardMinionType.Melee,
+                        default,
+                        new ConfiguredSpaceReference(
+                            CommandMap, new SpaceId($"q{moverAt.Q}_r{moverAt.R}")),
+                        moverAt)
+                });
+            var card = CardInstance.CreateInHand(
+                new CardInstanceId("sabina-command-leash-card"), definition.Reference, Commander);
+
+            var inputs = new Dictionary<string, EffectValue>
+            {
+                ["mover"] = EffectValue.Space(moverAt)
+            };
+            foreach (var input in move.Inputs.Where(input =>
+                input.SourceKind == EffectBindingSourceKind.Literal))
+            {
+                inputs[input.ParameterName] = input.Literal;
+            }
+
+            var context = new EffectCapabilityContext(
+                move.Id,
+                move.FailurePolicy,
+                Commander,
+                Commander,
+                card.Id,
+                definition.Reference,
+                action.Id,
+                inputs,
+                1,
+                1,
+                participants,
+                null,
+                RuleModificationSet.Empty,
+                EffectCardState.Of(new[] { definition }, new[] { card }),
+                action.Kind,
+                new MatchComponents(
+                    SyntheticComponentDefinitions.CreateCatalog(), board,
+                    new MarkerAttachmentRegister(), board, board, board),
+                RadiusItems(participants, radiusItems));
+
+            var result = SyntheticEffectCapabilities.CreateCatalog()
+                .Load(SyntheticDisplacementCapabilities.DirectMoveV3)
+                .Execute(context);
+            Assert.That(result.Choice, Is.Not.Null,
+                cardId + "'s move must open a destination question at all.");
+            return result.Choice.Candidates
+                .Select(candidate => candidate.Coordinate)
+                .ToArray();
+        }
+
+        /// <summary>p.16's Radius items as state, under the dashboard slot that accepts that icon.</summary>
+        private static HeroItemState RadiusItems(MatchParticipants participants, int count)
+        {
+            if (count <= 0)
+            {
+                return new HeroItemState(participants);
+            }
+
+            Assert.That(
+                HeroDashboard.RulebookLayout.TryFindSlotAccepting(
+                    PrintedValueChannel.Radius, out var slot),
+                Is.True,
+                "p.16's layout accepts a Radius item.");
+            return HeroItemState.Restore(
+                participants,
+                new HeroItemRestoreState(Enumerable.Range(0, count)
+                    .Select(index => new HeroItem(
+                        Commander,
+                        new CardInstanceId($"sabina-radius-item-{index}"),
+                        slot.Position,
+                        PrintedValueChannel.Radius,
+                        index + 1))
+                    .ToArray()));
+        }
+
+        private static EffectNodeDefinition CommandMoveNode(CardDefinitionId cardId) =>
+            SabinaCardContent.Definition(cardId).ActionDefinitions
+                .Single(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary)
+                .EffectRoot.Nodes
+                .Single(node => node.Capability.Equals(
+                    SyntheticDisplacementCapabilities.DirectMoveV3));
+
+        private static IReadOnlyList<HexCoordinate> Disk(HexCoordinate centre, int radius)
+        {
+            var spaces = new List<HexCoordinate>();
+            for (var dq = -radius; dq <= radius; dq++)
+            {
+                for (var dr = Math.Max(-radius, -dq - radius);
+                    dr <= Math.Min(radius, -dq + radius);
+                    dr++)
+                {
+                    spaces.Add(new HexCoordinate(centre.Q + dq, centre.R + dr));
+                }
+            }
+
+            return spaces;
         }
 
         /// <summary>

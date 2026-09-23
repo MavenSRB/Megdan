@@ -55,6 +55,15 @@ namespace GuardsDigital.Core.Cards.Verified
                 "Defeat a minion adjacent to you");
             yield return DecisionStep(SwiftCardContent.Bounce, "bounce-repeat",
                 "Move 2 more spaces in a straight line", "Stop here");
+
+            // Milestone 8.83. Hunting Season's "Move UP TO TWO enemy minions in radius" is two passes
+            // with a floor of zero, so each one stops and asks - and each says what taking it does in
+            // the printed clause's own words. Mark for Death prints no count and stands no such
+            // decision, which is why only this face appears here.
+            yield return DecisionStep(SwiftCardContent.HuntingSeason, "hunt-pass-0",
+                "Move an enemy minion in radius up to 3 spaces", "Move no minions");
+            yield return DecisionStep(SwiftCardContent.HuntingSeason, "hunt-pass-1",
+                "Move a second enemy minion up to 3 spaces", "Move no more minions");
         }
         private const string ActorSpaceOutput = "space";
         private const string PresentOutput = "present";
@@ -163,14 +172,14 @@ namespace GuardsDigital.Core.Cards.Verified
             if (cardId.Equals(SwiftCardContent.MarkForDeath))
             {
                 return CreateMark(
-                    cardId, contentRevision, "mark",
+                    cardId, contentRevision, "mark", movers: 1,
                     SwiftActiveEffectContent.MarkForDeathBountyV1);
             }
 
             if (cardId.Equals(SwiftCardContent.HuntingSeason))
             {
                 return CreateMark(
-                    cardId, contentRevision, "hunt",
+                    cardId, contentRevision, "hunt", movers: 2,
                     SwiftActiveEffectContent.HuntingSeasonFirstBountyV1,
                     SwiftActiveEffectContent.HuntingSeasonSecondBountyV1);
             }
@@ -588,8 +597,15 @@ namespace GuardsDigital.Core.Cards.Verified
         /// <c>maximumTargets</c> is what separates Drop Trooper from its two siblings, using the
         /// parameter milestone 8.8 minted for Wasp's kinetic Skills.</para>
         ///
-        /// <para>"up to N spaces" is a floor of zero against a printed distance, which is p.18's own
-        /// reading of a Push that may move nothing.</para>
+        /// <para><b>"up to N spaces" is p.11's OPTIONAL DISTANCE, and milestone 8.83 is where this
+        /// node finally says so.</b> It declared <see cref="EffectFailurePolicy.May"/> beside a
+        /// <c>leastDistance</c> of nought, and <c>AdmittedDistances.ForDeclared</c> reads `may` as
+        /// leaving the number EXACT - the floor is consulted under <see cref="EffectFailurePolicy.UpTo"/>
+        /// alone. So all three faces pushed the declared number of spaces and no fewer, and
+        /// <c>OfferTargets</c> sets its minimum to the maximum under any policy but `up to`, which
+        /// made Drop Trooper's "push UP TO TWO enemy units" force BOTH of them whenever two stood
+        /// beside her. The roster sweep that found it is 8.83's, and Wasp's two kinetic Skills - the
+        /// only other pushes naming a count - have declared `up to` since milestone 8.8.</para>
         /// </summary>
         private static EffectDefinition CreateJump(
             CardDefinitionId cardId, string contentRevision, int pushDistance, int maximumPushTargets)
@@ -613,7 +629,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         place, actorSpace,
                         SyntheticPlacementCapabilities.PlaceInRadiusInStraightLineV1),
                     new EffectNodeDefinition(
-                        push, EffectNodeKind.Capability, EffectFailurePolicy.May,
+                        push, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
                         SyntheticDisplacementCapabilities.ObjectPushV3,
                         inputs: new[]
                         {
@@ -843,71 +859,104 @@ namespace GuardsDigital.Core.Cards.Verified
         /// applies "even if you choose to move zero spaces". It is corrected in the same milestone
         /// because it is the same clause of the same sentence on the same node.</para>
         ///
+        /// <para><b>MILESTONE 8.83: HUNTING SEASON MOVES TWO MINIONS, AND IT USED TO MOVE ONE.</b>
+        /// Both faces were composed here as ONE subject and ONE move, with only the bounty count
+        /// doubling - so the Tier III face that prints "Move up to TWO enemy minions in radius ... to
+        /// SPACES in radius" offered exactly the one minion its Tier II sibling does, and the second
+        /// half of its own sentence was unreachable on every board. It is <paramref name="movers"/>
+        /// now: Mark for Death keeps the single pair, and Hunting Season composes two, each in its own
+        /// <see cref="EffectNodeKind.Optional"/> pass so that "up to two" really is none, one or two.
+        /// The second pass declares milestone 8.69c's <c>excludeMinion</c> against the first pass's
+        /// own chosen minion, which is the roster's one spelling of "a different unit than the one
+        /// already chosen" - see <see cref="MarkSubjectNode"/> for why it is two printed-icon
+        /// selections rather than <c>choose-target-set@1</c>.</para>
+        ///
         /// <para><b>The promise is instance multiplicity</b>, which is milestone 8.38c1's whole design:
         /// Hunting Season stands TWO bounty effects and each is spent once, so "the first two times" is
         /// counted by how many are still live rather than by a counter. The two carry different
         /// uniqueness keys, because the lifecycle suppresses a duplicate and one key would silently
-        /// turn Hunting Season into Mark for Death.</para>
+        /// turn Hunting Season into Mark for Death. They are UNCHANGED by 8.83: the promises were
+        /// always two, and it was the moves that were one.</para>
         /// </summary>
+        /// <param name="movers">
+        /// How many minions the printed sentence moves - 1 for Mark for Death's "an enemy minion", 2
+        /// for Hunting Season's "up to two enemy minions". The bounty count is a separate number the
+        /// same sentence prints ("the first [two] time[s]"), which is why the two are not derived from
+        /// each other: a face could print one without the other, and reading the count off
+        /// <paramref name="bounties"/> would be this method inventing a rule the cards do not state.
+        /// </param>
         private static EffectDefinition CreateMark(
             CardDefinitionId cardId,
             string contentRevision,
             string prefix,
+            int movers,
             params EffectCapabilityReference[] bounties)
         {
             var root = new EffectNodeId($"{prefix}-root");
-            var subject = new EffectNodeId($"{prefix}-subject");
-            var move = new EffectNodeId($"{prefix}-move");
             var promiseIds = bounties
                 .Select((_, index) => new EffectNodeId($"{prefix}-promise-{index}"))
                 .ToArray();
 
-            var nodes = new List<EffectNodeDefinition>
+            var nodes = new List<EffectNodeDefinition>();
+            var moverRoots = new List<EffectNodeId>();
+
+            if (movers == 1)
             {
-                new EffectNodeDefinition(
-                    root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
-                    childNodeIds: new[] { subject, move }.Concat(promiseIds).ToArray()),
-                new EffectNodeDefinition(
-                    subject, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
-                    SyntheticTargetingCapabilities.RadiusMinionTargetV1,
-                    inputs: new[]
-                    {
-                        EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
-                        EffectInputBinding.FromClosedVocabulary(
-                            SyntheticTargetingCapabilities.TargetRelationParameterName,
-                            SourceTeamRelation.OpposingSource),
-                        EffectInputBinding.FromLiteral(
-                            EffectSelectionDeclaration.ConsumerParameterName,
-                            EffectValue.Node(move))
-                    },
-                    outputs: new[]
-                    {
-                        new EffectOutputBinding(
-                            SyntheticTargetingCapabilities.ChosenMinionOutputName,
-                            EffectValueKind.Minion),
-                        new EffectOutputBinding(
-                            SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
-                            EffectValueKind.Coordinate)
-                    }),
-                new EffectNodeDefinition(
-                    move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
-                    SyntheticDisplacementCapabilities.DirectMoveV3,
-                    inputs: new[]
-                    {
-                        EffectInputBinding.FromNodeOutput(
-                            "mover", subject,
-                            SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
-                            EffectValueKind.Coordinate),
-                        EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
-                        EffectInputBinding.FromClosedVocabulary(
-                            SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                            DirectMoveDestinationPolicy.WithinActorPrintedRadius)
-                    },
-                    outputs: new[]
-                    {
-                        new EffectOutputBinding("moved", EffectValueKind.Coordinate)
-                    })
-            };
+                // Mark for Death names ONE minion and names it without a count, so the pair stands
+                // directly under the root exactly as it has since milestone 8.38c: there is no "up
+                // to" over the subject to wrap in a decision, and `if able` is p.10's reading of a
+                // step with nobody to perform it on.
+                var subject = new EffectNodeId($"{prefix}-subject");
+                var move = new EffectNodeId($"{prefix}-move");
+                moverRoots.Add(subject);
+                moverRoots.Add(move);
+                nodes.Add(MarkSubjectNode(subject, move, excludedFrom: default));
+                nodes.Add(MarkMoveNode(move, subject));
+            }
+            else
+            {
+                // "Move UP TO two enemy minions" prints no "may", so each pass carries p.10's own word
+                // for a count whose floor is zero rather than a decline of a step - Brynn's Decoy
+                // ("Choose up to two times") takes the identical shape for the identical grammar, and
+                // this is that shape at one minion a pass.
+                //
+                // EACH PASS IS NESTED INSIDE THE ONE BEFORE IT, which is Decoy's shape too and is
+                // REQUIRED rather than tidy: the second selection binds the first selection's own
+                // chosen minion into `excludeMinion`, and `EffectDefinitionValidator` refuses a
+                // binding whose producer is not GUARANTEED to have run - which two passes standing as
+                // siblings under the root are not, because the first may be declined. Nesting makes
+                // the order structural, and it is also what the sentence means: a player who moves no
+                // minions at all has finished the clause, not earned a second ask.
+                moverRoots.Add(new EffectNodeId($"{prefix}-pass-0"));
+                for (var index = 0; index < movers; index++)
+                {
+                    var pass = new EffectNodeId($"{prefix}-pass-{index}");
+                    var body = new EffectNodeId($"{prefix}-body-{index}");
+                    var subject = new EffectNodeId($"{prefix}-subject-{index}");
+                    var move = new EffectNodeId($"{prefix}-move-{index}");
+                    var last = index == movers - 1;
+
+                    nodes.Add(new EffectNodeDefinition(
+                        pass, EffectNodeKind.Optional, EffectFailurePolicy.UpTo,
+                        childNodeIds: new[] { body },
+                        chooser: EffectChooserRole.Actor));
+                    nodes.Add(new EffectNodeDefinition(
+                        body, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                        childNodeIds: last
+                            ? new[] { subject, move }
+                            : new[] { subject, move, new EffectNodeId($"{prefix}-pass-{index + 1}") }));
+                    nodes.Add(MarkSubjectNode(
+                        subject, move,
+                        excludedFrom: index == 0
+                            ? default
+                            : new EffectNodeId($"{prefix}-subject-{index - 1}")));
+                    nodes.Add(MarkMoveNode(move, subject));
+                }
+            }
+
+            nodes.Insert(0, new EffectNodeDefinition(
+                root, EffectNodeKind.Sequence, EffectFailurePolicy.Mandatory,
+                childNodeIds: moverRoots.Concat(promiseIds).ToArray()));
 
             nodes.AddRange(promiseIds.Select((nodeId, index) => new EffectNodeDefinition(
                 nodeId, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
@@ -920,6 +969,92 @@ namespace GuardsDigital.Core.Cards.Verified
 
             return new EffectDefinition(SkillEffectId(cardId), contentRevision, root, nodes);
         }
+
+        /// <summary>
+        /// "[up to two] enemy minion[s] in radius" - p.9's disk read off the card's own printed Radius
+        /// icon with p.16's items composed onto it, on the side opposing hers, declaring the Move it
+        /// feeds as its consumer.
+        ///
+        /// <para><b><paramref name="excludedFrom"/> is what makes "two minions" two minions.</b>
+        /// Hunting Season's second pass must not name the minion its first pass already moved, and
+        /// milestone 8.69c's <c>excludeMinion</c> is the roster's one spelling of that clause - bound
+        /// to the earlier selection's own published minion, exactly as Brynn's Decoy and his two
+        /// guides bind it. It is optional, so a first pass the player DECLINED publishes no minion,
+        /// the binding resolves to nothing, and the second pass excludes nobody - which is the printed
+        /// answer, because a pass that named nobody took nobody out of the disk.</para>
+        ///
+        /// <para><b>Why two printed-icon selections rather than <c>choose-target-set@1</c>.</b> The
+        /// set selection is the roster's usual answer to "up to N units" - Dodger's skulls take it -
+        /// but its reach is a REQUIRED literal <c>distance</c>, and "in radius" is the icon rather
+        /// than a number the sentence writes down. Composing this face on it would put back exactly
+        /// the defect milestone 8.82 closed, one node to the left: her Super-Shotgun's +1 Radius would
+        /// widen the leash and not the offer. The printed-icon arm reads
+        /// <c>RadiusValueQuery</c> on every ask, so both passes and both leashes read one total.</para>
+        /// </summary>
+        private static EffectNodeDefinition MarkSubjectNode(
+            EffectNodeId nodeId, EffectNodeId consumer, EffectNodeId excludedFrom)
+        {
+            var inputs = new List<EffectInputBinding>
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.TargetRelationParameterName,
+                    SourceTeamRelation.OpposingSource),
+                EffectInputBinding.FromLiteral(
+                    EffectSelectionDeclaration.ConsumerParameterName,
+                    EffectValue.Node(consumer))
+            };
+
+            if (excludedFrom.IsDefined)
+            {
+                inputs.Add(EffectInputBinding.FromNodeOutput(
+                    SyntheticTargetingCapabilities.ExcludedMinionParameterName,
+                    excludedFrom,
+                    SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                    EffectValueKind.Minion));
+            }
+
+            return new EffectNodeDefinition(
+                // `if able` is p.10's reading of a step with nobody to perform it on: a disk with no
+                // enemy minion in it asks nothing and stops nothing. The COUNT's optionality is the
+                // enclosing pass's, where "up to two" prints it.
+                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.IfAble,
+                SyntheticTargetingCapabilities.RadiusMinionTargetV1,
+                inputs: inputs,
+                outputs: new[]
+                {
+                    new EffectOutputBinding(
+                        SyntheticTargetingCapabilities.ChosenMinionOutputName,
+                        EffectValueKind.Minion),
+                    new EffectOutputBinding(
+                        SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
+                        EffectValueKind.Coordinate)
+                });
+        }
+
+        /// <summary>
+        /// "... up to 3 spaces to [a space / spaces] in radius." - p.11's optional distance against
+        /// milestone 8.82's printed-Radius leash, one node per minion the sentence moves.
+        /// </summary>
+        private static EffectNodeDefinition MarkMoveNode(EffectNodeId nodeId, EffectNodeId subject) =>
+            new EffectNodeDefinition(
+                nodeId, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
+                SyntheticDisplacementCapabilities.DirectMoveV3,
+                inputs: new[]
+                {
+                    EffectInputBinding.FromNodeOutput(
+                        "mover", subject,
+                        SyntheticTargetingCapabilities.ChosenMinionSpaceOutputName,
+                        EffectValueKind.Coordinate),
+                    EffectInputBinding.FromLiteral("distance", EffectValue.Integer(3)),
+                    EffectInputBinding.FromClosedVocabulary(
+                        SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
+                        DirectMoveDestinationPolicy.WithinActorPrintedRadius)
+                },
+                outputs: new[]
+                {
+                    new EffectOutputBinding("moved", EffectValueKind.Coordinate)
+                });
 
         // -----------------------------------------------------------------------------------------
         // Shared nodes

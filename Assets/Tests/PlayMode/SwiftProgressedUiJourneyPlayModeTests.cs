@@ -13,6 +13,7 @@ using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Interaction;
 using GuardsDigital.Presentation.Match;
 using GuardsDigital.Presentation.Units.Heroes;
+using GuardsDigital.Presentation.Units.Minions;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -467,26 +468,128 @@ namespace GuardsDigital.Tests.PlayMode
                     "face from Delayed Jump's complement. Offer was: " + shape);
             }
 
-            var beside = new HexCoordinate(-4, 1);
-            Assert.That(landings, Has.Member(beside),
+            Assert.That(landings, Has.Member(new HexCoordinate(-4, 1)),
                 "The landing that keeps the Red ranged minion adjacent. Offer was: " + shape);
+
+            // MILESTONE 8.83 CHOOSES THE LANDING RATHER THAN NAMING IT, because the second printed
+            // sentence is now really answered: a push has to have somewhere to push TO, and p.18 is
+            // explicit that a unit stopped by an obstacle or the map's edge is pushed nought spaces
+            // and the push is still valid. Landing beside a minion with its back to a wall would
+            // therefore prove nothing about the distance this milestone corrected. So the landing is
+            // the one that leaves an adjacent unit with a free space directly away from her, read off
+            // the live board - and that such a landing exists at all is asserted rather than assumed.
+            var pushable = landings
+                .SelectMany(landing => runtime.ReadModel.Minions
+                    .Where(minion =>
+                        HexDistanceQuery.Calculate(landing, minion.Coordinate) == 1 &&
+                        IsFree(Beyond(landing, minion.Coordinate)))
+                    .Select(minion => (Landing: landing, At: minion.Coordinate)))
+                .ToArray();
+            Assert.That(pushable, Is.Not.Empty,
+                "No landing on this board leaves an adjacent unit anywhere to be pushed, so the " +
+                "printed push could not be measured at all. Offer was: " + shape);
+
+            var beside = pushable[0].Landing;
             Assert.That(runtime.SubmitEffectChoiceValue(beside), Is.True);
             yield return null;
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate,
                 Is.EqualTo(beside));
 
             // The push, which is the second printed sentence and a separate pause.
+            //
+            // MILESTONE 8.83 FINISHED THIS HALF OF THE JOURNEY, and it had to: the journey used to
+            // name a subject and stop, so it could not tell a push from a subject nobody moved - the
+            // same blind spot 8.82 found on Mark for Death. The push declared `may` beside a printed
+            // "up to 1 space", and `AdmittedDistances.ForDeclared` reads `may` as the declared number
+            // and nothing less, so there was no distance to answer and `OfferTargets` set its minimum
+            // to its maximum. It declares `up to` now, which is what her gate row has claimed all
+            // along in `PushDistanceChoice`.
             var push = runtime.PendingEffectChoice;
             Assert.That(push, Is.Not.Null,
                 "Landing beside an enemy unit opens the printed push. " + Remaining(runtime));
             Assert.That(push.SelectInvocations, Is.Not.Empty,
                 "The push names a subject a player submits. Offer kind: " + push.Kind);
+            Assert.That(push.DeclineInvocation, Is.Not.Null,
+                "\"Push AN enemy unit ... up to 1 space\" has a floor of nought on its own count, " +
+                "so not pushing is one of the answers. " + Remaining(runtime));
+
+            var subject = push.SelectInvocations.FirstOrDefault(invocation =>
+                invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
+                IsFree(Beyond(beside, invocation.Candidate.Value.Coordinate)));
+            Assert.That(subject, Is.Not.Null,
+                "The subject this landing was chosen for has to be one the push offers. " +
+                Remaining(runtime));
+            var pushedAt = subject.Candidate.Value.Coordinate;
+            var pushed = runtime.ReadModel.Minions
+                .FirstOrDefault(minion => minion.Coordinate.Equals(pushedAt));
+            Assert.That(pushed, Is.Not.Null,
+                "The subject offered stands where the offer says it does. " + Remaining(runtime));
             Assert.That(
-                runtime.SubmitProjectedCommand(
-                    DirectorCommand.AnswerEffectChoice(push.SelectInvocations[0])),
+                runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(subject)),
                 Is.True);
             yield return null;
+
+            if (runtime.PendingEffectChoice?.ConfirmInvocation != null &&
+                runtime.PendingEffectChoice.SelectedCandidates.Count > 0)
+            {
+                runtime.SubmitProjectedCommand(
+                    DirectorCommand.AnswerEffectChoice(
+                        runtime.PendingEffectChoice.ConfirmInvocation));
+                yield return null;
+            }
+
+            // The distance. p.18 settles it over the units already named, and "up to 1 space" draws
+            // it as the integers nought and one - which is the `PushDistanceChoice` her row declares
+            // and which no player was ever shown before this milestone.
+            var distance = runtime.PendingEffectChoice;
+            Assert.That(distance, Is.Not.Null,
+                "\"up to 1 space\" is a distance a player picks. " + Remaining(runtime));
+            var furthest = distance.SelectInvocations
+                .Where(invocation => invocation.Candidate.Value.Kind == EffectValueKind.Integer)
+                .OrderByDescending(invocation => invocation.Candidate.Value.IntegerValue)
+                .FirstOrDefault();
+            Assert.That(furthest, Is.Not.Null,
+                "The distances are the answers. Offer kind: " + distance.Kind + ". " +
+                Remaining(runtime));
+            Assert.That(
+                distance.SelectInvocations.Any(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.Integer &&
+                    invocation.Candidate.Value.IntegerValue == 0),
+                Is.True,
+                "and nought is one of them, which is the whole of what \"up to\" adds to a number.");
+            runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(furthest));
+            yield return null;
+            yield return null;
+
+            Assert.That(
+                runtime.ReadModel.Minions
+                    .Single(minion => minion.MinionId.Equals(pushed.MinionId)).Coordinate,
+                Is.EqualTo(Beyond(beside, pushedAt)),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the unit she landed beside really moved, " +
+                "one space directly away from her, which is p.19's own measure of a push.");
         }
+
+        /// <summary>
+        /// The space a unit standing at <paramref name="target"/> is pushed into by a pusher standing
+        /// at <paramref name="pusher"/> - one step further along the line between them, which is what
+        /// p.18's push does to an adjacent unit at a distance of one.
+        /// </summary>
+        private static HexCoordinate Beyond(HexCoordinate pusher, HexCoordinate target) =>
+            new HexCoordinate((2 * target.Q) - pusher.Q, (2 * target.R) - pusher.R);
+
+        /// <summary>
+        /// Whether the board draws that space as PLAYABLE and nothing is standing on it - Brogan's own
+        /// push journey's reading, copied rather than re-derived: the board draws a tile for terrain
+        /// too, and a piece pushed against a rock travels nowhere, which is a legal p.18 result and an
+        /// impossible thing for a journey to assert a move about.
+        /// </summary>
+        private static bool IsFree(HexCoordinate space) =>
+            Object.FindObjectsByType<HexTileView>()
+                .Any(tile => tile.Coordinate.Equals(space) && tile.IsPlayable) &&
+            !Object.FindObjectsByType<StandardMinionView>()
+                .Any(view => view.Occupancy != null && view.Occupancy.Coordinate.Equals(space)) &&
+            !Object.FindObjectsByType<PrimitiveHeroView>()
+                .Any(view => view.Coordinate.Equals(space));
 
         /// <summary>
         /// Suppress: "An enemy hero in radius, who is not adjacent to terrain discards a card, if
@@ -881,6 +984,135 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate,
                 Is.EqualTo(landings[0]),
                 "She stands where the promise placed her.");
+        }
+
+        /// <summary>
+        /// Hunting Season: "Move up to two enemy minions in radius up to 3 spaces to spaces in
+        /// radius. **Next turn:** The first two times an enemy minion in radius is defeated, gain 1
+        /// coin."
+        ///
+        /// <para><b>Milestone 8.83, and the control this journey exists for is the one the card grew.</b>
+        /// The face composed ONE subject and ONE move until 8.83 - only the bounty count doubled - so
+        /// "up to two" asked nothing and a player met exactly Mark for Death's questions. It now
+        /// composes two passes, each an <see cref="EffectNodeKind.Optional"/> carrying
+        /// <see cref="EffectFailurePolicy.UpTo"/>, and that is the `ConfirmOrDecline` her gate row now
+        /// declares for this face and for no other reason.</para>
+        ///
+        /// <para><b>What it drives, and why it stops where it does.</b> The first pass is TAKEN, a
+        /// minion is named, a destination that really travels is named, and the board is read
+        /// afterwards - the assertion milestone 8.82 learned to make. The second pass is then
+        /// DECLINED, because "up to two" includes one and a journey that could only finish by moving
+        /// two would be asserting the opposite of what the card says. That the second pass's own offer
+        /// excludes the minion the first one moved is measured against the real definition in
+        /// <c>SwiftMarkForDeathTests.HuntingSeasonsSecondSelection_ExcludesTheMinionTheFirstOneNamed</c>,
+        /// where a board can be built to hold three minions and the answer is about the content rather
+        /// than about the staging.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator HuntingSeasonMovesOneMinion_ThenLetsHerWalkAwayFromTheSecond()
+        {
+            yield return LoadStagedScene(
+                SceneCardContent.VerifiedTierThreeAlternateEngagedStagedSwift);
+            var root = Root();
+            var runtime = root.Runtime;
+            var swiftId = SwiftSeat(runtime).HeroId;
+
+            yield return HerTurnOn(root, swiftId, SwiftCardContent.HuntingSeason);
+            Assert.That(runtime.SubmitAction(PrimaryActionOf(runtime)), Is.True);
+
+            var firstPass = runtime.PendingEffectChoice;
+            Assert.That(firstPass, Is.Not.Null,
+                "\"Move UP TO two enemy minions in radius\" opens a decision before it opens a " +
+                "selection: the count's floor is zero. " + Remaining(runtime));
+            Assert.That(firstPass.ConfirmInvocation, Is.Not.Null,
+                "The pass can be taken. " + Remaining(runtime));
+            Assert.That(firstPass.DeclineInvocation, Is.Not.Null,
+                "THE CONTROL THIS FACE GREW AT 8.83: \"up to two\" includes none, so walking away " +
+                "from the first pass is one of the answers a player is shown. " + Remaining(runtime));
+            runtime.SubmitProjectedCommand(
+                DirectorCommand.AnswerEffectChoice(firstPass.ConfirmInvocation));
+            yield return null;
+
+            var chosenMinion = default(MinionId);
+            var movedFrom = default(HexCoordinate);
+            var secondPass = default(PendingEffectChoice);
+            for (var step = 0; step < 8 && runtime.PendingEffectChoice != null; step++)
+            {
+                var pause = runtime.PendingEffectChoice;
+                var minionOffer = pause.SelectInvocations.FirstOrDefault(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.Minion);
+                if (minionOffer != null && !chosenMinion.IsDefined)
+                {
+                    chosenMinion = minionOffer.Candidate.Value.MinionId;
+                    movedFrom = runtime.ReadModel.Minions
+                        .Single(minion => minion.MinionId.Equals(chosenMinion)).Coordinate;
+                    runtime.SubmitProjectedCommand(
+                        DirectorCommand.AnswerEffectChoice(minionOffer));
+                }
+                else if (chosenMinion.IsDefined && pause.SelectInvocations.Any(invocation =>
+                    invocation.Candidate.Value.Kind == EffectValueKind.Coordinate))
+                {
+                    var her = runtime.Heroes.Single(hero => hero.HeroId.Equals(swiftId)).Coordinate;
+                    var travelling = pause.SelectInvocations
+                        .Where(invocation =>
+                            invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
+                            !invocation.Candidate.Value.Coordinate.Equals(movedFrom))
+                        .ToArray();
+                    var travels =
+                        travelling.FirstOrDefault(invocation =>
+                            HexDistanceQuery.Calculate(
+                                her, invocation.Candidate.Value.Coordinate) == 1)
+                        ?? travelling.FirstOrDefault();
+                    Assert.That(travels, Is.Not.Null,
+                        "\"up to 3 spaces to spaces in radius\" - the only destination offered was " +
+                        "the space the minion already stood on. " + Remaining(runtime));
+                    runtime.SubmitProjectedCommand(DirectorCommand.AnswerEffectChoice(travels));
+                }
+                else if (pause.DeclineInvocation != null && chosenMinion.IsDefined)
+                {
+                    // The SECOND pass. It is the same decision as the first, asked again because the
+                    // sentence names two minions and the player has moved one.
+                    secondPass = pause;
+                    break;
+                }
+                else if (pause.ConfirmInvocation != null)
+                {
+                    runtime.SubmitProjectedCommand(
+                        DirectorCommand.AnswerEffectChoice(pause.ConfirmInvocation));
+                }
+                else
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            Assert.That(chosenMinion.IsDefined, Is.True,
+                "\"Move up to two enemy minions in radius\" - the first pass has to offer one. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.ReadModel.Minions
+                    .Single(minion => minion.MinionId.Equals(chosenMinion)).Coordinate,
+                Is.Not.EqualTo(movedFrom),
+                "and the minion really left the space it stood on - a journey that only answers " +
+                "cannot tell a move from a step that never ran. " + Remaining(runtime));
+
+            Assert.That(secondPass, Is.Not.Null,
+                "The second pass asks before it happens: \"up to TWO\" is two decisions, not one " +
+                "decision and one forced repetition. " + Remaining(runtime));
+            Assert.That(secondPass.DeclineInvocation, Is.Not.Null,
+                "and walking away from it is legal, which is what \"up to\" means over a count.");
+            runtime.SubmitProjectedCommand(
+                DirectorCommand.AnswerEffectChoice(secondPass.DeclineInvocation));
+            yield return null;
+            yield return null;
+
+            Assert.That(
+                runtime.ReadModel.Minions
+                    .Single(minion => minion.MinionId.Equals(chosenMinion)).Coordinate,
+                Is.Not.EqualTo(movedFrom),
+                "and the declined second pass leaves the first move standing.");
         }
 
         /// <summary>

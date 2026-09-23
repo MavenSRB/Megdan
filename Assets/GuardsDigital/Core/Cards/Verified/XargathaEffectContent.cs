@@ -584,6 +584,17 @@ namespace GuardsDigital.Core.Cards.Verified
         /// p.9 gives the first to p.16's Radius item and p.16 expressly withholds the second, so a
         /// Radius item widens who may be moved and never how far.</para>
         ///
+        /// <para><b>MILESTONE 8.83: "UP TO 2 SPACES" IS AN OPTIONAL DISTANCE AND THIS NODE DECLARED AN
+        /// EXACT ONE.</b> The move carried <see cref="EffectFailurePolicy.Mandatory"/> beside its
+        /// literal 2, and p.11 is explicit that the two wordings are not the same - "unless the
+        /// distance is optional ('up to 2 spaces')... you must move the exact number of spaces". So
+        /// all three faces offered the minion the second ring and nothing else: a one-space nudge, and
+        /// the stand-still p.11 admits when it says a card's text applies "even if you choose to move
+        /// zero spaces", were both unreachable, and a minion boxed in at one space simply could not be
+        /// commanded at all. The "you may" is the <c>green-may</c> Optional above and is untouched;
+        /// this is the OTHER half of p.11's sentence, on the node that carries the number. Found by
+        /// milestone 8.83's roster sweep for the shape, not from a report.</para>
+        ///
         /// <para><b>Dominate's override is on the move, not on her.</b> p.18's Heavy immunity is
         /// something the minion has; "ignore heavy minion's immunity" is this card's permission to move
         /// it anyway, declared on the node that moves it and on the selection that offers it - both,
@@ -661,7 +672,7 @@ namespace GuardsDigital.Core.Cards.Verified
                         },
                         immunityOverrides: overrides),
                     new EffectNodeDefinition(
-                        move, EffectNodeKind.Capability, EffectFailurePolicy.Mandatory,
+                        move, EffectNodeKind.Capability, EffectFailurePolicy.UpTo,
                         SyntheticDisplacementCapabilities.DirectMoveV3,
                         inputs: new[]
                         {

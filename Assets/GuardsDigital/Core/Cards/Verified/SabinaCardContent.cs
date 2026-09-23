@@ -55,7 +55,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// changed, so the string moves and the pin, the artwork catalog and the digest move with it.
         /// </para>
         /// </summary>
-        public const string ContentRevision = "sabina-8-35z44-rev-1";
+        public const string ContentRevision = "sabina-8-83-rev-1";
 
         /// <summary>
         /// The hero this content belongs to, as p.5's content-set identity - the printed set a seat

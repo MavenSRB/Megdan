@@ -214,17 +214,17 @@ namespace GuardsDigital.Core.Cards.Verified
 
             if (cardId.Equals(SabinaCardContent.TroopMovement))
             {
-                return CreateCommandedMove(cardId, contentRevision, radius: 2, maximumRepeats: 1);
+                return CreateCommandedMove(cardId, contentRevision, maximumRepeats: 1);
             }
 
             if (cardId.Equals(SabinaCardContent.MarchingOrders))
             {
-                return CreateCommandedMove(cardId, contentRevision, radius: 3, maximumRepeats: 1);
+                return CreateCommandedMove(cardId, contentRevision, maximumRepeats: 1);
             }
 
             if (cardId.Equals(SabinaCardContent.PathToVictory))
             {
-                return CreateCommandedMove(cardId, contentRevision, radius: 3, maximumRepeats: 2);
+                return CreateCommandedMove(cardId, contentRevision, maximumRepeats: 2);
             }
 
             if (cardId.Equals(SabinaCardContent.CloseSupport))
@@ -846,10 +846,24 @@ namespace GuardsDigital.Core.Cards.Verified
         ///
         /// <para><b>The sentence prints "in radius" twice and means it twice.</b> The first bounds who
         /// may be moved and is the selection's own reach; the second bounds where that minion may end
-        /// up, which is milestone 8.22's
-        /// <see cref="DirectMoveDestinationPolicy.WithinActorRadius"/>. Without the second, this card
-        /// could walk a minion one space further out of her command each time it was played, which is
-        /// the opposite of what it says.</para>
+        /// up. Without the second, this card could walk a minion one space further out of her command
+        /// each time it was played, which is the opposite of what it says.</para>
+        ///
+        /// <para><b>MILESTONE 8.83: BOTH "IN RADIUS" NOW READ HER ICON, AND ONE OF THEM USED TO READ A
+        /// LITERAL.</b> The leash declared milestone 8.22's
+        /// <see cref="DirectMoveDestinationPolicy.WithinActorRadius"/> with the face's printed number
+        /// written out beside it - 2 for Troop Movement, 3 for Marching Orders and Path to Victory -
+        /// while the SELECTION above it is a printed-icon arm that asks <c>RadiusValueQuery</c> on
+        /// every ask. So p.16's Radius item widened who she could command and left where she could put
+        /// them exactly where it was: with the item in play her disk of candidates was one ring wider
+        /// than her disk of destinations, and a minion picked from the outer ring had nowhere legal to
+        /// go. p.9 settles which of the two readings this sentence wants - "if the card text mentions
+        /// Range/Radius, it refers to this value" - so the leash is milestone 8.82's
+        /// <see cref="DirectMoveDestinationPolicy.WithinActorPrintedRadius"/> and declares no number
+        /// at all. The literal went with it; there is nothing left in this method for a
+        /// <c>radius</c> parameter to say. Xargatha's Siren's Call keeps the declared member and its
+        /// literal 1, because its sentence writes the number down ("to a space adjacent to you") and
+        /// her face prints no Radius icon for an item to raise.</para>
         ///
         /// <para><b>The distance is exactly one and the move is mandatory.</b> "Move a friendly minion
         /// 1 space" prints neither "may" nor "up to", so standing still is not one of the answers -
@@ -875,7 +889,7 @@ namespace GuardsDigital.Core.Cards.Verified
         /// definition" ruling, an absence in the text is an absence in the content.</para>
         /// </summary>
         private static EffectDefinition CreateCommandedMove(
-            CardDefinitionId cardId, string contentRevision, int radius, int maximumRepeats)
+            CardDefinitionId cardId, string contentRevision, int maximumRepeats)
         {
             var root = new EffectNodeId("troop-root");
             var select = new EffectNodeId("troop-target");
@@ -904,10 +918,7 @@ namespace GuardsDigital.Core.Cards.Verified
                             EffectInputBinding.FromLiteral("distance", EffectValue.Integer(1)),
                             EffectInputBinding.FromClosedVocabulary(
                                 SyntheticDisplacementCapabilities.DestinationPolicyParameterName,
-                                DirectMoveDestinationPolicy.WithinActorRadius),
-                            EffectInputBinding.FromLiteral(
-                                SyntheticDisplacementCapabilities.ActorRadiusParameterName,
-                                EffectValue.Integer(radius))
+                                DirectMoveDestinationPolicy.WithinActorPrintedRadius)
                         },
                         outputs: new[]
                         {

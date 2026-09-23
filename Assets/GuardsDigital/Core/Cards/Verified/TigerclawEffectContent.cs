@@ -221,7 +221,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     cardId, contentRevision,
                     openingIsOptional: true, openingDistance: 1,
                     minimumCoins: 1, maximumCoins: 1,
-                    followUpIsOptional: true, followUpDistance: 1);
+                    followUpDistanceIsOptional: false, followUpDistance: 1);
             }
 
             if (cardId.Equals(TigerclawCardContent.PickPocket))
@@ -232,7 +232,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     cardId, contentRevision,
                     openingIsOptional: false, openingDistance: 2,
                     minimumCoins: 1, maximumCoins: 1,
-                    followUpIsOptional: true, followUpDistance: 1);
+                    followUpDistanceIsOptional: false, followUpDistance: 1);
             }
 
             if (cardId.Equals(TigerclawCardContent.MasterThief))
@@ -243,7 +243,7 @@ namespace GuardsDigital.Core.Cards.Verified
                     cardId, contentRevision,
                     openingIsOptional: false, openingDistance: 2,
                     minimumCoins: 1, maximumCoins: 2,
-                    followUpIsOptional: true, followUpDistance: 2);
+                    followUpDistanceIsOptional: true, followUpDistance: 2);
             }
 
             if (cardId.Equals(TigerclawCardContent.PoisonedDagger))
@@ -727,7 +727,7 @@ namespace GuardsDigital.Core.Cards.Verified
             int openingDistance,
             int minimumCoins,
             int maximumCoins,
-            bool followUpIsOptional,
+            bool followUpDistanceIsOptional,
             int followUpDistance)
         {
             var root = new EffectNodeId("theft-root");
@@ -803,9 +803,15 @@ namespace GuardsDigital.Core.Cards.Verified
                             new EffectOutputBinding(TransferAmountOutput, EffectValueKind.Integer)
                         }),
                     ActorSpaceNode(followUpSpace),
-                    followUpIsOptional
-                        ? OptionalStepNode(followUp, followUpSpace, followUpDistance)
-                        : UpToStepNode(followUp, followUpSpace, followUpDistance)
+                    // Milestone 8.83. Which of p.11's two wordings the follow-up prints, read off the
+                    // face rather than assumed: Light-Fingered and Pick Pocket end "you may move 1
+                    // space", which is an optional STEP at an exact distance, and Master Thief ends
+                    // "you may move up to 2 spaces", which is an optional DISTANCE. All three were
+                    // composed as the first, so Master Thief's player who took the step had to spend
+                    // both spaces - never one, and never the stand-still p.11 admits.
+                    followUpDistanceIsOptional
+                        ? UpToStepNode(followUp, followUpSpace, followUpDistance)
+                        : OptionalStepNode(followUp, followUpSpace, followUpDistance)
                 });
         }
 

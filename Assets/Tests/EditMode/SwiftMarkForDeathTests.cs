@@ -179,22 +179,228 @@ namespace GuardsDigital.Tests.EditMode
         public void HuntingSeason_MovesAMinionUnderTheSameLeash_AndStandsBothOfItsPromises()
         {
             var minionAt = new HexCoordinate(3, 0);
+            var other = new HexCoordinate(-2, 0);
             var drive = Drive(
                 SwiftCardContent.HuntingSeason,
-                new[] { minionAt, new HexCoordinate(-2, 0) },
-                subject: minionAt);
+                new[] { minionAt, other },
+                subject: minionAt,
+                passesTaken: 1);
 
-            Assert.That(drive.OfferedMinions, Has.Count.EqualTo(2),
+            Assert.That(drive.MinionOffers[0].Count, Is.EqualTo(2),
                 "Both enemy minions stand inside her printed Radius 4.");
             Assert.That(
-                drive.OfferedDestinations,
+                drive.DestinationOffers[0],
                 Is.EquivalentTo(ExpectedDestinations(
-                    minionAt, PrintedRadius, occupied: new[] { minionAt, new HexCoordinate(-2, 0) })),
+                    minionAt, PrintedRadius, occupied: new[] { minionAt, other })),
                 "and the minion she names is kept inside the same disk Mark for Death draws.");
             Assert.That(drive.SpaceOfTheMovedMinion, Is.Not.EqualTo(minionAt));
             Assert.That(drive.PromisesStanding, Is.EqualTo(2),
                 "\"The first two times ... gain 1 coin\" is two promises, and the move running is " +
                 "what lets the walk reach them at all.");
+        }
+
+        // -------------------------------------------------------------------------------------------
+        // Milestone 8.83: "Move UP TO TWO enemy minions in radius ... to SPACES in radius"
+        //
+        // THE COUNTS BELOW ARE READ AS `.Count` RATHER THAN THROUGH `Has.Count`, and that is a fact
+        // about the Unity tier rather than a style: the Editor's NUnit resolves `Has.Count` by
+        // reflecting for a public `Count` property, and an ARRAY has `Length` with `ICollection.Count`
+        // implemented explicitly - so every one of these read green in the cross-platform harness and
+        // threw `Property Count was not found` on the first Unity run. Measured at 8.83, on three
+        // cases, and recorded here so the next fixture that fans a selection into arrays does not pay
+        // a Unity run to learn it.
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// THE SECOND ROUTED FINDING, as a case. Hunting Season prints "up to TWO enemy minions" and
+        /// composed ONE subject and ONE move until milestone 8.83 - only the bounty count doubled - so
+        /// the face moved exactly as many minions as its Tier II sibling, and the word "two" in the
+        /// first half of its own sentence did nothing at all.
+        ///
+        /// <para>It fails on the shipped composition at the first assertion: there was only ever one
+        /// selection to open.</para>
+        /// </summary>
+        [Test]
+        public void HuntingSeason_MovesTwoDifferentMinions_AndReallyMovesBothOfThem()
+        {
+            var first = new HexCoordinate(3, 0);
+            var second = new HexCoordinate(-2, 0);
+            var drive = Drive(SwiftCardContent.HuntingSeason, new[] { first, second });
+
+            Assert.That(drive.MinionOffers.Count, Is.EqualTo(2),
+                "\"Move up to two enemy minions in radius\" asks twice. It asked once.");
+            Assert.That(drive.ChosenMinions.Count, Is.EqualTo(2),
+                "and both answers name a minion.");
+            Assert.That(drive.ChosenMinions[0], Is.Not.EqualTo(drive.ChosenMinions[1]),
+                "TWO minions, not one twice.");
+            for (var index = 0; index < 2; index++)
+            {
+                Assert.That(drive.SpacesAfter[index], Is.Not.EqualTo(drive.SpacesBefore[index]),
+                    $"and the minion named by pass {index} really left the space it stood on - the " +
+                    "assertion milestone 8.82 learned to make, because a drive that only answers " +
+                    "cannot tell a move from a step that never ran.");
+                Assert.That(
+                    HexDistanceQuery.Calculate(SwiftAt, drive.SpacesAfter[index]),
+                    Is.LessThanOrEqualTo(PrintedRadius),
+                    "\"to SPACES in radius\" - the plural is the same disk, twice.");
+            }
+
+            Assert.That(drive.PromisesStanding, Is.EqualTo(2),
+                "and both promises still stand behind the two moves.");
+        }
+
+        /// <summary>
+        /// What makes "two minions" two minions. The second selection declares milestone 8.69c's
+        /// <c>excludeMinion</c> against the first selection's own chosen minion, so the minion already
+        /// moved is not among the candidates the second pass offers.
+        /// </summary>
+        [Test]
+        public void HuntingSeasonsSecondSelection_ExcludesTheMinionTheFirstOneNamed()
+        {
+            var first = new HexCoordinate(3, 0);
+            var second = new HexCoordinate(-2, 0);
+            var third = new HexCoordinate(0, 3);
+            var drive = Drive(SwiftCardContent.HuntingSeason, new[] { first, second, third });
+
+            Assert.That(drive.MinionOffers[0].Count, Is.EqualTo(3),
+                "All three stand inside her printed Radius 4, so the first pass offers all three.");
+            Assert.That(drive.MinionOffers[1].Count, Is.EqualTo(2),
+                "and the second pass offers one fewer.");
+            Assert.That(drive.MinionOffers[1].Contains(drive.ChosenMinions[0]), Is.False,
+                "\"up to two enemy minionS\" - the one already named is out of its own disk for the " +
+                "second half of the sentence, which is the roster's `excludeMinion` clause and not a " +
+                "new one.");
+            Assert.That(drive.MinionOffers[1],
+                Is.EquivalentTo(drive.MinionOffers[0]
+                    .Where(id => !id.Equals(drive.ChosenMinions[0]))),
+                "and nothing ELSE is taken out: the exclusion names one minion, not a ring.");
+        }
+
+        /// <summary>
+        /// "UP TO two" is a floor of zero at both passes. Taking one and walking away from the second
+        /// is a legal answer, and so is walking away from both - which is why each pass is an
+        /// <see cref="EffectNodeKind.Optional"/> carrying <see cref="EffectFailurePolicy.UpTo"/>
+        /// rather than a mandatory step.
+        /// </summary>
+        [Test]
+        public void HuntingSeason_MayMoveOneMinionOrNone_AndBothPromisesStandEitherWay()
+        {
+            var first = new HexCoordinate(3, 0);
+            var second = new HexCoordinate(-2, 0);
+
+            var one = Drive(SwiftCardContent.HuntingSeason, new[] { first, second }, passesTaken: 1);
+            Assert.That(one.ChosenMinions.Count, Is.EqualTo(1),
+                "Declining the second pass is legal and the first move stands.");
+            Assert.That(one.SpacesAfter[0], Is.Not.EqualTo(one.SpacesBefore[0]));
+            Assert.That(one.PromisesStanding, Is.EqualTo(2),
+                "\"Next turn: the first two times...\" is behind the moves and does not depend on " +
+                "how many of them were taken.");
+
+            var none = Drive(SwiftCardContent.HuntingSeason, new[] { first, second }, passesTaken: 0);
+            Assert.That(none.ChosenMinions, Is.Empty,
+                "and \"up to two\" includes none, so declining the first pass is legal too.");
+            Assert.That(none.PromisesStanding, Is.EqualTo(2),
+                "with both promises still standing - the moves are optional and the bounty is not.");
+        }
+
+        /// <summary>
+        /// The composition read off both faces: Mark for Death keeps exactly one subject-and-move pair
+        /// and Hunting Season composes two, the second nested inside the first so that its exclusion
+        /// binding reads a node guaranteed to have run.
+        ///
+        /// <para>The nesting is not a style. <c>EffectDefinitionValidator</c> refuses a binding whose
+        /// producer is not guaranteed to have executed, and two optional passes standing as siblings
+        /// under the root are exactly that - which is what it said when this was first composed
+        /// flat.</para>
+        /// </summary>
+        [Test]
+        public void MarkForDeathComposesOnePair_AndHuntingSeasonComposesTwoNestedOnes()
+        {
+            Assert.That(MoveNodes(SwiftCardContent.MarkForDeath).Count, Is.EqualTo(1),
+                "\"Move AN enemy minion in radius\" is one minion and one move.");
+
+            var hunt = SkillRoot(SwiftCardContent.HuntingSeason);
+            Assert.That(MoveNodes(SwiftCardContent.HuntingSeason).Count, Is.EqualTo(2),
+                "\"Move up to TWO enemy minions in radius\" is two.");
+
+            var passes = hunt.Nodes
+                .Where(node => node.Kind == EffectNodeKind.Optional)
+                .ToArray();
+            Assert.That(passes, Has.Length.EqualTo(2));
+            Assert.That(passes.Select(node => node.FailurePolicy),
+                Is.All.EqualTo(EffectFailurePolicy.UpTo),
+                "\"up to two\" prints no \"may\", so each pass is p.10's optional COUNT.");
+
+            var firstBody = hunt.Nodes.Single(node => node.Id.Value == "hunt-body-0");
+            Assert.That(firstBody.ChildNodeIds.Select(id => id.Value),
+                Does.Contain("hunt-pass-1"),
+                "The second pass stands INSIDE the first, which is what makes its `excludeMinion` " +
+                "binding read a producer the validator can guarantee ran.");
+
+            var secondSubject = hunt.Nodes.Single(node => node.Id.Value == "hunt-subject-1");
+            var exclusion = secondSubject.Inputs.Single(input =>
+                input.ParameterName ==
+                SyntheticTargetingCapabilities.ExcludedMinionParameterName);
+            Assert.That(exclusion.SourceNodeId.Value, Is.EqualTo("hunt-subject-0"));
+            Assert.That(exclusion.SourceOutputName,
+                Is.EqualTo(SyntheticTargetingCapabilities.ChosenMinionOutputName));
+
+            Assert.That(
+                SkillRoot(SwiftCardContent.MarkForDeath).Nodes
+                    .Any(node => node.Inputs != null && node.Inputs.Any(input =>
+                        input.ParameterName ==
+                        SyntheticTargetingCapabilities.ExcludedMinionParameterName)),
+                Is.False,
+                "and Mark for Death declares no exclusion at all: there is no second pass to " +
+                "exclude anybody from.");
+        }
+
+        /// <summary>
+        /// THE THIRD CORRECTION THE 8.83 SWEEP FOUND ON HER, and the one nobody reported. Her three
+        /// jump Skills print "Push ... UP TO 1 / 2 spaces" and their push declared
+        /// <see cref="EffectFailurePolicy.May"/>, which <c>AdmittedDistances.ForDeclared</c> reads as
+        /// the declared number and nothing less - the floor beside it is consulted under `up to`
+        /// alone.
+        ///
+        /// <para>On Drop Trooper it was worse than a distance: <c>OfferTargets</c> sets its minimum to
+        /// its maximum under any policy but `up to`, so "Push UP TO TWO enemy units adjacent to you"
+        /// forced BOTH of them whenever two stood beside her.</para>
+        /// </summary>
+        [Test]
+        public void HerThreeJumpSkills_PushAnOptionalDistance_AndDropTroopersCountIsOptionalToo()
+        {
+            foreach (var row in new[]
+            {
+                new { Card = SwiftCardContent.SteamJump, Distance = 1, Targets = 1 },
+                new { Card = SwiftCardContent.AssaultJump, Distance = 2, Targets = 1 },
+                new { Card = SwiftCardContent.DropTrooper, Distance = 2, Targets = 2 }
+            })
+            {
+                var push = SkillRoot(row.Card).Nodes.Single(node =>
+                    node.Capability.Equals(SyntheticDisplacementCapabilities.ObjectPushV3));
+
+                Assert.That(push.FailurePolicy, Is.EqualTo(EffectFailurePolicy.UpTo),
+                    row.Card + " prints \"up to " + row.Distance + " space(s)\", which is p.11's " +
+                    "optional distance and not p.10's optional step.");
+
+                var admitted = AdmittedDistances.ForDeclared(
+                    push.FailurePolicy,
+                    push.Inputs.Single(input => input.ParameterName == "distance")
+                        .Literal.IntegerValue,
+                    push.Inputs.Single(input => input.ParameterName ==
+                            SyntheticDisplacementCapabilities.LeastDistanceParameterName)
+                        .Literal.IntegerValue);
+                Assert.That(admitted.Enumerate(), Is.EqualTo(Enumerable.Range(0, row.Distance + 1)),
+                    "so the pushed unit may travel none of the spaces, all of them, or any number " +
+                    "between - measured through the production statement rather than restated.");
+                Assert.That(
+                    push.Inputs.Single(input => input.ParameterName ==
+                            SyntheticDisplacementCapabilities.MaximumTargetsParameterName)
+                        .Literal.IntegerValue,
+                    Is.EqualTo(row.Targets),
+                    row.Card + " names its own count, and under `up to` that count's floor is zero " +
+                    "- which is what stops Drop Trooper forcing both units.");
+            }
         }
 
         /// <summary>
@@ -285,7 +491,8 @@ namespace GuardsDigital.Tests.EditMode
             foreach (var cardId in new[]
                 { SwiftCardContent.MarkForDeath, SwiftCardContent.HuntingSeason })
             {
-                var move = MoveNode(cardId);
+            foreach (var move in MoveNodes(cardId))
+            {
                 Assert.That(
                     (DirectMoveDestinationPolicy)move.Inputs
                         .Single(input => input.ParameterName ==
@@ -302,6 +509,7 @@ namespace GuardsDigital.Tests.EditMode
                     cardId + " prints \"up to 3 spaces\", which p.11 makes the distance itself the " +
                     "decision - an exact reading would offer only the third ring.");
             }
+            }
         }
 
         // -------------------------------------------------------------------------------------------
@@ -312,6 +520,22 @@ namespace GuardsDigital.Tests.EditMode
         {
             internal readonly List<MinionId> OfferedMinions = new List<MinionId>();
             internal readonly List<HexCoordinate> OfferedDestinations = new List<HexCoordinate>();
+
+            /// <summary>One entry per minion selection the walk opened, in the order it opened them.</summary>
+            internal readonly List<IReadOnlyList<MinionId>> MinionOffers =
+                new List<IReadOnlyList<MinionId>>();
+
+            /// <summary>One entry per minion selection the walk opened, holding the offered destinations.</summary>
+            internal readonly List<IReadOnlyList<HexCoordinate>> DestinationOffers =
+                new List<IReadOnlyList<HexCoordinate>>();
+
+            internal readonly List<MinionId> ChosenMinions = new List<MinionId>();
+            internal readonly List<HexCoordinate> SpacesBefore = new List<HexCoordinate>();
+            internal readonly List<HexCoordinate> SpacesAfter = new List<HexCoordinate>();
+
+            /// <summary>How many optional passes the walk stopped to ask about.</summary>
+            internal int PassDecisions;
+
             internal MinionId ChosenMinion;
             internal HexCoordinate SpaceOfTheMovedMinion;
             internal int PromisesStanding;
@@ -327,7 +551,8 @@ namespace GuardsDigital.Tests.EditMode
             IReadOnlyList<HexCoordinate> minionSpaces,
             int radiusItems = 0,
             HexCoordinate? destination = null,
-            HexCoordinate? subject = null)
+            HexCoordinate? subject = null,
+            int passesTaken = int.MaxValue)
         {
             var definition = SwiftCardContent.Definition(cardId);
             var action = definition.ActionDefinitions.Single(
@@ -372,7 +597,7 @@ namespace GuardsDigital.Tests.EditMode
                 ActionInvocationContext.PrintedPrimary,
                 context);
 
-            for (var guard = 0; guard < 24; guard++)
+            for (var guard = 0; guard < 48; guard++)
             {
                 var choice = step.Frame?.PendingChoice;
                 if (choice == null)
@@ -390,6 +615,8 @@ namespace GuardsDigital.Tests.EditMode
                 EffectChoiceCommand answer;
                 if (minions.Length > 0)
                 {
+                    result.MinionOffers.Add(
+                        minions.Select(candidate => candidate.Value.MinionId).ToArray());
                     foreach (var candidate in minions)
                     {
                         if (!result.OfferedMinions.Contains(candidate.Value.MinionId))
@@ -401,19 +628,33 @@ namespace GuardsDigital.Tests.EditMode
                     // The minion the case names, found by where it stands, and otherwise the first
                     // one offered. A drive that took the first on a two-minion board would measure
                     // the disk around whichever minion the offer happened to list first.
-                    var named = subject.HasValue
-                        ? choice.SelectInvocations.Single(invocation =>
-                            invocation.Candidate.Value.Kind == EffectValueKind.Minion &&
+                    // The minion the case names where it is still on offer - a later pass of the
+                    // same sentence has taken it out of its own disk, which is the whole point of
+                    // `excludeMinion` - and otherwise the first one offered.
+                    var minionInvocations = choice.SelectInvocations
+                        .Where(invocation => invocation.Candidate.Value.Kind == EffectValueKind.Minion)
+                        .ToArray();
+                    var named = (subject.HasValue
+                        ? minionInvocations.FirstOrDefault(invocation =>
                             board.Minions.Single(minion =>
                                     minion.MinionId.Equals(invocation.Candidate.Value.MinionId))
                                 .Coordinate.Equals(subject.Value))
-                        : choice.SelectInvocations.First(invocation =>
-                            invocation.Candidate.Value.Kind == EffectValueKind.Minion);
-                    result.ChosenMinion = named.Candidate.Value.MinionId;
+                        : null) ?? minionInvocations.First();
+                    if (result.ChosenMinions.Count == 0)
+                    {
+                        result.ChosenMinion = named.Candidate.Value.MinionId;
+                    }
+
+                    result.ChosenMinions.Add(named.Candidate.Value.MinionId);
+                    result.SpacesBefore.Add(board.Minions
+                        .Single(minion => minion.MinionId.Equals(named.Candidate.Value.MinionId))
+                        .Coordinate);
                     answer = named;
                 }
                 else if (spaces.Length > 0)
                 {
+                    result.DestinationOffers.Add(
+                        spaces.Select(candidate => candidate.Value.Coordinate).ToArray());
                     foreach (var candidate in spaces)
                     {
                         result.OfferedDestinations.Add(candidate.Value.Coordinate);
@@ -422,6 +663,7 @@ namespace GuardsDigital.Tests.EditMode
                     // The named space where the case names one, and otherwise the first destination
                     // that is not the minion standing still - a stand-still answer would leave every
                     // "did it move" assertion true of a board nothing happened on.
+                    var mover = result.ChosenMinions[result.ChosenMinions.Count - 1];
                     var wanted = destination.HasValue
                         ? choice.SelectInvocations.Single(invocation =>
                             invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
@@ -430,14 +672,27 @@ namespace GuardsDigital.Tests.EditMode
                             invocation.Candidate.Value.Kind == EffectValueKind.Coordinate &&
                             !invocation.Candidate.Value.Coordinate.Equals(
                                 board.Minions.Single(minion =>
-                                    minion.MinionId.Equals(result.ChosenMinion)).Coordinate));
+                                    minion.MinionId.Equals(mover)).Coordinate));
                     Assert.That(wanted, Is.Not.Null,
                         "The move offered nowhere but the space the minion already stands on.");
                     answer = wanted;
                 }
                 else if (choice.ConfirmInvocation != null)
                 {
-                    answer = choice.ConfirmInvocation;
+                    // An optional pass of "Move up to two enemy minions": taking it is Confirm and
+                    // walking away from it is Decline, and a case that names a count declines from
+                    // that count on.
+                    if (choice.DeclineInvocation != null)
+                    {
+                        result.PassDecisions++;
+                        answer = result.PassDecisions > passesTaken
+                            ? choice.DeclineInvocation
+                            : choice.ConfirmInvocation;
+                    }
+                    else
+                    {
+                        answer = choice.ConfirmInvocation;
+                    }
                 }
                 else
                 {
@@ -458,11 +713,13 @@ namespace GuardsDigital.Tests.EditMode
                 }
             }
 
-            result.SpaceOfTheMovedMinion = result.OfferedMinions.Count == 0
+            result.SpaceOfTheMovedMinion = result.ChosenMinions.Count == 0
                 ? default
                 : board.Minions
                     .Single(minion => minion.MinionId.Equals(result.ChosenMinion))
                     .Coordinate;
+            result.SpacesAfter.AddRange(result.ChosenMinions.Select(id =>
+                board.Minions.Single(minion => minion.MinionId.Equals(id)).Coordinate));
             result.PromisesStanding = timing.Effects.Count(
                 effect => effect.Phase != ActiveEffectPhase.Ended);
             return result;
@@ -600,12 +857,22 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly CardInstance NoIconInstance = CardInstance.CreateInHand(
             new CardInstanceId("swift-mark-probe-no-icon-card"), NoIconCard.Reference, Swift);
 
-        private static EffectNodeDefinition MoveNode(CardDefinitionId cardId) =>
+        /// <summary>
+        /// Every direct Move one of her marking faces composes - ONE on Mark for Death and TWO on
+        /// Hunting Season since milestone 8.83, which is why this is a list and was a `Single`.
+        /// </summary>
+        private static IReadOnlyList<EffectNodeDefinition> MoveNodes(CardDefinitionId cardId) =>
             SwiftCardContent.Definition(cardId).ActionDefinitions
                 .Single(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary)
                 .EffectRoot.Nodes
-                .Single(node => node.Capability.Equals(
-                    SyntheticDisplacementCapabilities.DirectMoveV3));
+                .Where(node => node.Capability.Equals(
+                    SyntheticDisplacementCapabilities.DirectMoveV3))
+                .ToArray();
+
+        private static EffectDefinition SkillRoot(CardDefinitionId cardId) =>
+            SwiftCardContent.Definition(cardId).ActionDefinitions
+                .Single(action => action.Origin == ActionDefinitionOrigin.PrintedPrimary)
+                .EffectRoot;
 
         private static IReadOnlyList<HexCoordinate> Disk(HexCoordinate centre, int radius)
         {
