@@ -732,6 +732,22 @@ namespace GuardsDigital.Tests.PlayMode
 
                 if (!withARedInThePile)
                 {
+                    // MILESTONE 8.86, SO THIS ARM IS NOT AN ABSENCE. The silence is read as the
+                    // printed rule only after the Attack it hangs off is shown to have happened and
+                    // the pool it reads is shown to be empty for the reason MI-Q7 gives.
+                    Assert.That(
+                        runtime.Cards.Single(card =>
+                            card.OwnerId.Equals(enemy) &&
+                            card.DefinitionReference.DefinitionId.Equals(
+                                WaspCardContent.Electrocute)).State.Location,
+                        Is.EqualTo(CardLocation.DiscardPile),
+                        "Her Gold's own Attack reached p.14 and the defender spent the face they " +
+                        "answered with. " + Remaining(runtime));
+                    Assert.That(
+                        DiscardsOf(runtime, her).Contains(MinCardContent.CraneStance.Value),
+                        Is.False,
+                        "and her one Red is still in HAND rather than in the pile, which is the " +
+                        "whole of why the borrow names nothing. " + Remaining(runtime));
                     Assert.That(runtime.PendingEffectChoice, Is.Null,
                         "MI-Q7: a Red still in hand is neither resolved nor discarded, so the " +
                         "borrow has no card to apply and draws no control. " + Remaining(runtime));
@@ -768,6 +784,52 @@ namespace GuardsDigital.Tests.PlayMode
                         candidate.Value.Kind == EffectValueKind.Minion),
                     Is.True,
                     "\"Push an enemy unit adjacent to you\" is a piece on the board.");
+                Assert.That(subject.Candidates, Is.Not.Empty, Remaining(runtime));
+
+                // MILESTONE 8.86, THE HALF THIS JOURNEY STOPPED SHORT OF. It asserted that the
+                // borrowed sentence OPENED and left it standing, so a borrow that reached the right
+                // node and then pushed nobody would have passed. The borrowed clause is now driven
+                // to its end - a named subject, a non-zero distance, and the board read afterwards -
+                // because "apply the text of your resolved or discarded red card" is a promise about
+                // what the other card DOES.
+                var pushed = subject.Candidates
+                    .OrderBy(candidate => candidate.Value.Kind == EffectValueKind.Hero ? 0 : 1)
+                    .ThenBy(candidate => UnitName(candidate.Value), StringComparer.Ordinal)
+                    .First();
+                var pushedUnit = pushed.Value;
+                var pushedFrom = SpaceOf(runtime, pushedUnit);
+                yield return Pick(root, pushed);
+
+                var distance = runtime.PendingEffectChoice;
+                Assert.That(distance, Is.Not.Null,
+                    "Crane Stance's own \"up to 3 spaces\" is its own numeric control, and the " +
+                    "borrow runs the whole borrowed sentence. " + Remaining(runtime));
+                Assert.That(distance.NodeId.Value, Is.EqualTo("crane-push"));
+                var amounts = distance.Candidates
+                    .Where(candidate => candidate.Value.Kind == EffectValueKind.Integer)
+                    .Select(candidate => candidate.Value.IntegerValue)
+                    .OrderBy(value => value)
+                    .ToArray();
+                Assert.That(amounts, Is.Not.Empty, Remaining(runtime));
+                Assert.That(amounts.All(value => value >= 0 && value <= 3), Is.True,
+                    "MI-Q7: \"(If it has radius, use that card's value)\" - the borrowed card's own " +
+                    "printed \"up to 3\" is the ceiling, not her Gold's. Offered: " +
+                    string.Join(", ", amounts) + ". " + Remaining(runtime));
+                // A NON-ZERO answer, deliberately: a journey may not prove a push by declining it.
+                var chosenAmount = amounts.Where(value => value > 0).DefaultIfEmpty(0).Max();
+                Assert.That(chosenAmount, Is.GreaterThan(0),
+                    "and the board admits a push of at least one space, which is what makes the " +
+                    "reading below a measurement. " + Remaining(runtime));
+                yield return PressAmount(root, chosenAmount);
+                Assert.That(
+                    Distance(SpaceOf(runtime, pushedUnit), pushedFrom), Is.EqualTo(chosenAmount),
+                    "THE ASSERTION THE BORROW WAS MISSING: the borrowed push really moved the unit " +
+                    "it named, exactly as far as was pressed. " + Remaining(runtime));
+                Assert.That(
+                    Distance(SpaceOf(runtime, pushedUnit), Position(runtime, her)),
+                    Is.EqualTo(Distance(pushedFrom, Position(runtime, her)) + chosenAmount),
+                    "and p.18 pushes in a straight line directly away from her. " +
+                    Remaining(runtime));
                 Healthy(runtime);
             }
         }
@@ -1048,7 +1110,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "and the refusal leaves the question exactly where it was.");
 
-            yield return Pick(root, discard.Candidates.First());
+            yield return Pick(root, Named(discard.Candidates, "discard"));
             Assert.That(HandCountOf(runtime, enemy), Is.EqualTo(enemyHandBefore - 1),
                 "One blast, one card, out of that hero's own hand. " + Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null);

@@ -203,6 +203,22 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
+            // MILESTONE 8.86, THE STEP THAT MUST NOT PASS BY ABSENCE. The reading below is that
+            // NOTHING is offered, so the Attack it hangs off has to be shown to have happened: the
+            // defender answered p.14 with the face they spent, and her own bomb supply is empty for
+            // the printed reason rather than because the card never ran.
+            Assert.That(
+                runtime.Cards.Single(card =>
+                    card.OwnerId.Equals(enemy) &&
+                    card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electrocute))
+                    .State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "Viper Stance's own Attack reached p.14 and the defender spent the face they " +
+                "answered with. " + Remaining(runtime));
+            Assert.That(Tokens(runtime), Is.Empty,
+                "and the reason the swap has nothing to do is the board: p.8 took her one bomb at " +
+                "the round boundary, which the assertion above this one measured. " +
+                Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "With nothing in radius to swap with the branch has nothing to do, so the printed " +
                 "`may` is not drawn at all - which is milestone 8.35z15's rule that an offer with " +
@@ -293,7 +309,7 @@ namespace GuardsDigital.Tests.PlayMode
                         "\"for every blast removed, that hero discards a card\". " +
                         Remaining(runtime));
                     Assert.That(discard.ChooserId, Is.EqualTo(enemy));
-                    yield return Pick(root, discard.Candidates.First());
+                    yield return Pick(root, Named(discard.Candidates, "discard"));
                     Assert.That(HandCountOf(runtime, enemy), Is.EqualTo(handBefore - 1));
                 }
                 else
@@ -412,7 +428,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Remaining(runtime));
                     SeatsAgree(runtime, "the grenade's own discard");
                     var heldWhenAsked = HandCountOf(runtime, enemy);
-                    yield return Pick(root, discard.Candidates.First());
+                    yield return Pick(root, Named(discard.Candidates, "discard"));
                     Assert.That(HandCountOf(runtime, enemy), Is.EqualTo(heldWhenAsked - 1),
                         "and it costs exactly one card out of the hand it was asked of. " +
                         Remaining(runtime));

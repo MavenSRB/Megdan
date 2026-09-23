@@ -3,6 +3,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Cards.Verified;
+using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.EffectResolution;
@@ -194,12 +195,27 @@ namespace GuardsDigital.Tests.PlayMode
             // `you may` whose offer is empty must still be closable: an unanswerable prompt is the
             // defect milestone 8.35z24 recorded, and leaving the table stuck on one is what this arm
             // rules out.
+            var stoodOn = SpaceOfTarget(runtime, chosen.Target);
+            Assert.That(stoodOn, Is.Not.Null,
+                "Arrange: the target is still on the board for its own rider to move. " +
+                Remaining(runtime));
+
             var destinations = LitDestinations(runtime);
             if (destinations.Length == 0)
             {
+                // MILESTONE 8.86: this arm used to conclude from the ABSENCE of an offer. It now
+                // asserts why the offer is empty - the board leaves "a space farther away from you"
+                // nowhere to be - and then that the target really stayed put.
+                Assert.That(
+                    FreeSpacesFartherFrom(runtime, stoodOn.Value, stoodAt), Is.Empty,
+                    "An empty shove offer is only honest when the board has nowhere to shove to: " +
+                    "every space beside the target and farther from her must be occupied or off " +
+                    "the map. " + Remaining(runtime));
                 UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
                 yield return null;
                 yield return null;
+                Assert.That(SpaceOfTarget(runtime, chosen.Target), Is.EqualTo(stoodOn),
+                    "and the target is standing exactly where it stood. " + Remaining(runtime));
                 Assert.That(runtime.PendingEffectChoice, Is.Null,
                     "A `may` whose offer is empty is still answerable by declining it, and the card " +
                     "finishes. " + Remaining(runtime));
@@ -216,13 +232,23 @@ namespace GuardsDigital.Tests.PlayMode
                     $"({space.Q},{space.R})@{HexDistanceQuery.Calculate(space, stoodAt)}")) +
                 " against the target at " + chosenDistance);
 
+            var shoveTo = destinations[0];
             Assert.That(
                 UiPlayer.ClickBoard(
-                    pointerInput, hud, Tile(destinations[0]).transform.position),
+                    pointerInput, hud, Tile(shoveTo).transform.position),
                 Is.True,
                 "The shove's destination is answered on the board.");
             yield return null;
             yield return null;
+            // THE ASSERTION THIS JOURNEY WAS MISSING (milestone 8.86). It proved the POLICY over the
+            // offer and then clicked and stopped, so a shove that lit the right ring and moved
+            // nobody would have passed it.
+            Assert.That(SpaceOfTarget(runtime, chosen.Target), Is.EqualTo(shoveTo),
+                "\"you may move it 1 space, to a space farther away from you\" - the target is " +
+                "standing on the space that was clicked. " + Remaining(runtime));
+            Assert.That(
+                HexDistanceQuery.Calculate(shoveTo, stoodAt), Is.GreaterThan(chosenDistance),
+                "and it really is farther from her than it stood. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -256,6 +282,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "The journey needs her turn open on Dash and Slash. " + Remaining(runtime));
 
             var stoodAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate;
+            // MILESTONE 8.86: read for the rider's own assertion at the end of this journey.
+            var discardedBefore = runtime.Cards.Count(card =>
+                !card.OwnerId.Equals(misaId) && card.State.Location == CardLocation.DiscardPile);
 
             yield return PointTrayAt(root, misaId);
             yield return StartActionThroughControl(root, ActionKind.Skill);
@@ -342,6 +371,37 @@ namespace GuardsDigital.Tests.PlayMode
                 "The Move walks her to the end of the line she named - which is the assertion this " +
                 "journey could not reach while the discard rider faulted the whole command. " +
                 Remaining(runtime));
+            Assert.That(
+                HexDistanceQuery.Calculate(chosenEnd, stoodAt), Is.GreaterThan(0),
+                "and she really travelled: a zero-space line is not a walked one. " +
+                Remaining(runtime));
+
+            // THE PRINTED RIDER, asserted rather than left unmentioned (milestone 8.86). "An enemy
+            // HERO you moved through discards a card, if able" is the one half of the sentence this
+            // line cannot satisfy: its interior holds a MINION and no hero at all, so the printed
+            // "if able" is a step NOT TAKEN - and that is asserted here rather than allowed to pass
+            // as an absence nobody named. The hero-crossing half is owned at the authoritative tier;
+            // what a configured match on this staging can reach is this negative.
+            var travelled = HexDistanceQuery.Calculate(chosenEnd, stoodAt);
+            Assert.That(
+                runtime.Heroes.Any(hero =>
+                    !hero.HeroId.Equals(misaId) &&
+                    HexDistanceQuery.Calculate(stoodAt, hero.Coordinate) > 0 &&
+                    HexDistanceQuery.Calculate(stoodAt, hero.Coordinate) +
+                        HexDistanceQuery.Calculate(hero.Coordinate, chosenEnd) == travelled),
+                Is.False,
+                "Arrange: no enemy HERO stands on the line she walked, which is what the rider " +
+                "reads. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null,
+                "\"an enemy hero you moved through discards a card, IF ABLE\" - the line crossed no " +
+                "hero at all, so the step is not taken and no question is drawn. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    !card.OwnerId.Equals(misaId) &&
+                    card.State.Location == CardLocation.DiscardPile),
+                Is.EqualTo(discardedBefore),
+                "and nobody's pile grew by it. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -395,6 +455,15 @@ namespace GuardsDigital.Tests.PlayMode
 
             var first = offered[0];
             var second = offered[1];
+            // MILESTONE 8.86: WHO stands on each of the two spaces is read BEFORE the pair is
+            // answered, because "Swap two units" is a promise about where those two pieces end up
+            // and this journey used to assert only that the prompt had closed.
+            var firstUnit = UnitOn(runtime, first);
+            var secondUnit = UnitOn(runtime, second);
+            Assert.That(firstUnit, Is.Not.Null.And.Not.Empty,
+                "Arrange: a piece is standing on " + first + ". " + Remaining(runtime));
+            Assert.That(secondUnit, Is.Not.Null.And.Not.Empty,
+                "Arrange: a piece is standing on " + second + ". " + Remaining(runtime));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(first).transform.position), Is.True);
             yield return null;
@@ -406,6 +475,13 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "Two selections answer one prompt: the pair is asked once with a floor and a " +
                 "ceiling of two, which is what closes it. " + Remaining(runtime));
+            // THE ASSERTION THIS JOURNEY WAS MISSING (milestone 8.86): p.19's Swap EXCHANGES the two
+            // pieces, so each of them is now standing on the space the other one stood on.
+            Assert.That(UnitOn(runtime, first), Is.EqualTo(secondUnit),
+                "p.19's Swap exchanges the two units the pair named: " + secondUnit +
+                " is standing on " + first + ". " + Remaining(runtime));
+            Assert.That(UnitOn(runtime, second), Is.EqualTo(firstUnit),
+                "and " + firstUnit + " on " + second + ". " + Remaining(runtime));
         }
 
         /// <summary>
@@ -619,6 +695,63 @@ namespace GuardsDigital.Tests.PlayMode
                 "Play Mode runs could not reach while the discard rider faulted the whole command " +
                 "and rolled the match back onto her staged space. " + Remaining(runtime));
 
+            // THE SECOND BULLET'S OWN CONSEQUENCE (milestone 8.86). RULING 28 let her take both, and
+            // this journey used to assert only the first one's. "Defeat a minion adjacent to you" is
+            // asked from the space the Place has just put her on - so either it opens and a named
+            // minion leaves the board, or no enemy minion stands beside her landing space and the
+            // printed sentence has nobody, which is asserted rather than assumed.
+            var besideHer = runtime.ReadModel.Minions
+                .Where(minion => HexDistanceQuery.Calculate(minion.Coordinate, landing) == 1)
+                .ToArray();
+            var doomed = string.Empty;
+            for (var budget = 0; budget < 6 && runtime.PendingEffectChoice != null; budget++)
+            {
+                var minions = runtime.PendingEffectChoice.SelectInvocations
+                    .Where(invocation => invocation.Candidate.Value.Kind == EffectValueKind.Minion)
+                    .OrderBy(
+                        invocation => invocation.Candidate.Value.MinionId.Value,
+                        System.StringComparer.Ordinal)
+                    .ToArray();
+                if (minions.Length > 0)
+                {
+                    doomed = minions[0].Candidate.Value.MinionId.Value;
+                    Assert.That(
+                        runtime.SubmitProjectedCommand(
+                            DirectorCommand.AnswerEffectChoice(minions[0])),
+                        Is.True,
+                        "The second bullet's own question is answerable. " + Remaining(runtime));
+                }
+                else if (!AnswerStandingChoiceHeadlessly(runtime))
+                {
+                    break;
+                }
+
+                yield return null;
+                yield return null;
+                if (doomed.Length > 0)
+                {
+                    break;
+                }
+            }
+
+            if (doomed.Length > 0)
+            {
+                Assert.That(
+                    runtime.ReadModel.Minions.Any(minion => minion.MinionId.Value == doomed),
+                    Is.False,
+                    "\"Defeat a minion adjacent to you\" - the piece the second bullet named leaves " +
+                    "the board. " + Remaining(runtime));
+            }
+            else
+            {
+                Assert.That(besideHer, Is.Empty,
+                    "\"Defeat a minion adjacent to you\" named nobody, and the only honest reason " +
+                    "is that no minion stands beside the space the Place put her on. Standing " +
+                    "beside " + landing + ": " + string.Join(", ",
+                        besideHer.Select(minion => minion.MinionId.Value)) + ". " +
+                    Remaining(runtime));
+            }
+
             // RULING 30's half: the trigger is armed against HER OWN self-placements and no others.
             // What a journey can hold it to is that the Ultimate is the source of a rule the match
             // carries, which is the reading the composition asserts from the other side.
@@ -823,6 +956,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Decline), Is.Not.Null,
                 "A printed `you may` is answerable both ways. " + Remaining(runtime));
 
+            var thunderStoodOn = SpaceOfTarget(runtime, chosen.Target);
+            Assert.That(thunderStoodOn, Is.Not.Null,
+                "Arrange: the target is still on the board for its own rider to move. " +
+                Remaining(runtime));
             var destinations = LitDestinations(runtime);
             if (destinations.Length > 0)
             {
@@ -831,15 +968,33 @@ namespace GuardsDigital.Tests.PlayMode
                         HexDistanceQuery.Calculate(space, stoodAt) > chosenDistance),
                     Is.True,
                     "Every offered space is strictly further from her than the target stands.");
+                var shoveTo = destinations[0];
                 Assert.That(
                     UiPlayer.ClickBoard(
-                        pointerInput, hud, Tile(destinations[0]).transform.position),
+                        pointerInput, hud, Tile(shoveTo).transform.position),
                     Is.True);
+                yield return null;
+                yield return null;
+                // THE ASSERTION THIS JOURNEY WAS MISSING (milestone 8.86): the present-tense arm
+                // opened its rider AND the rider moved the piece it was about.
+                Assert.That(SpaceOfTarget(runtime, chosen.Target), Is.EqualTo(shoveTo),
+                    "\"you may move it 1 space, to a space farther away from you\" - the target is " +
+                    "standing on the space that was clicked. " + Remaining(runtime));
             }
             else
             {
+                // MILESTONE 8.86: the empty arm asserts WHY it is empty rather than concluding from
+                // the absence, and then that the target really stayed put.
+                Assert.That(
+                    FreeSpacesFartherFrom(runtime, thunderStoodOn.Value, stoodAt), Is.Empty,
+                    "An empty shove offer is only honest when the board has nowhere to shove to. " +
+                    Remaining(runtime));
                 // Milestone 8.46e: the printed may is declined on the decision window, read off its model.
                 UiPlayer.ClickEffectControl(runtime, hud, EffectChoiceCommandKind.Decline);
+                yield return null;
+                yield return null;
+                Assert.That(SpaceOfTarget(runtime, chosen.Target), Is.EqualTo(thunderStoodOn),
+                    "and the target is standing exactly where it stood. " + Remaining(runtime));
             }
 
             yield return null;
@@ -897,6 +1052,11 @@ namespace GuardsDigital.Tests.PlayMode
             // relational constraint rather than two independent selections.
             var first = offered[0];
             var firstDistance = HexDistanceQuery.Calculate(first, stoodAt);
+            // MILESTONE 8.86: the two pieces are read BEFORE the pair is answered, so the exchange
+            // can be asserted afterwards. This journey used to end at "the prompt closed".
+            var firstUnit = UnitOn(runtime, first);
+            Assert.That(firstUnit, Is.Not.Null.And.Not.Empty,
+                "Arrange: a piece is standing on " + first + ". " + Remaining(runtime));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(first).transform.position), Is.True);
             yield return null;
@@ -907,6 +1067,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(partner, Is.Not.EqualTo(default(HexCoordinate)),
                 "A unit at the same distance as the first must exist for the pair to close - the " +
                 "offline measurement found seven such pairs. " + Remaining(runtime));
+            var partnerUnit = UnitOn(runtime, partner);
+            Assert.That(partnerUnit, Is.Not.Null.And.Not.Empty,
+                "Arrange: a piece is standing on " + partner + ". " + Remaining(runtime));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(partner).transform.position), Is.True);
             yield return null;
@@ -914,6 +1077,17 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "Two selections at one distance answer the prompt. " + Remaining(runtime));
+            // THE ASSERTION THIS JOURNEY WAS MISSING (milestone 8.86): "Swap two units in radius and
+            // at equal distance from you" exchanges them, and both are still at that one distance.
+            Assert.That(UnitOn(runtime, first), Is.EqualTo(partnerUnit),
+                "p.19's Swap exchanges the equal-distance pair: " + partnerUnit +
+                " is standing on " + first + ". " + Remaining(runtime));
+            Assert.That(UnitOn(runtime, partner), Is.EqualTo(firstUnit),
+                "and " + firstUnit + " on " + partner + ". " + Remaining(runtime));
+            Assert.That(
+                HexDistanceQuery.Calculate(partner, stoodAt), Is.EqualTo(firstDistance),
+                "and the two spaces the exchange used are the same distance from her, which is the " +
+                "relational constraint the pair was admitted by. " + Remaining(runtime));
         }
     }
 }

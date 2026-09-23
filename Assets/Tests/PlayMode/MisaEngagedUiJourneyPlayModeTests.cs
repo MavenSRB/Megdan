@@ -259,10 +259,20 @@ namespace GuardsDigital.Tests.PlayMode
                 "The Place puts her on the qualifying space she clicked. " + Remaining(runtime));
 
             // The retrieve. "If you do, you may retrieve a discarded card" - an optional step behind a
-            // condition the Place just satisfied. What is asserted is the printed shape: either the
-            // offer stands with its own decline control, or her discard is empty and p.10's optional
-            // step does not happen at all. Both are the card working; neither is a failure.
+            // condition the Place just satisfied.
+            //
+            // MILESTONE 8.86: this arm used to accept either outcome without saying which the board
+            // was in, so an offer that never opened would have passed it silently. The two are now
+            // TIED TO HER OWN PILE, which is the only thing the printed sentence reads: a card in it
+            // means the step must be offered, an empty one means p.10's optional step does not
+            // happen and THAT is what is asserted.
+            var pileWhenAsked = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(misaId) && card.State.Location == CardLocation.DiscardPile);
             var standing = runtime.PendingEffectChoice;
+            Assert.That(standing != null, Is.EqualTo(pileWhenAsked > 0),
+                "\"If you do, you may retrieve a discarded card\" - the step is offered exactly " +
+                "while her own pile holds one. Her pile holds " + pileWhenAsked + ". " +
+                Remaining(runtime));
             if (standing != null)
             {
                 // Milestone 8.46e: the retrieve's decline and its card chooser are the decision
@@ -277,22 +287,42 @@ namespace GuardsDigital.Tests.PlayMode
                     .Where(control => control.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
                         control.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                     .ToArray();
-                if (cards.Length > 0 && cards[0].Card != null)
+                // MILESTONE 8.86: the offer is her own pile, face for face, and the step is TAKEN
+                // rather than declined - a journey may not prove a retrieve by refusing it.
+                Assert.That(cards, Is.Not.Empty,
+                    "Her pile holds " + pileWhenAsked + " cards, so the retrieve draws a face for " +
+                    "each one to choose from. " + Remaining(runtime));
+                Assert.That(
+                    cards.All(control => runtime.Cards
+                        .Single(card => card.Id.Equals(
+                            control.Command.EffectChoice.Candidate.Value.CardInstanceId))
+                        .OwnerId.Equals(misaId)),
+                    Is.True,
+                    "and nobody retrieves another hero's card. " + Remaining(runtime));
+                var retrieved = cards[0].Command.EffectChoice.Candidate.Value.CardInstanceId;
+                if (cards[0].Card != null)
                 {
                     UiPlayer.Click(UiPlayer.NamedElementWithText(
                         hud, "gd-effect-card", cards[0].Card.DisplayName.ToUpperInvariant()));
                 }
-                else if (cards.Length > 0)
-                {
-                    UiPlayer.Click(UiPlayer.Button(hud, cards[0].Label));
-                }
                 else
                 {
-                    UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
+                    UiPlayer.Click(UiPlayer.Button(hud, cards[0].Label));
                 }
 
                 yield return null;
                 yield return null;
+                Assert.That(
+                    runtime.Cards.Single(card => card.Id.Equals(retrieved)).State.Location,
+                    Is.EqualTo(CardLocation.Hand),
+                    "THE PRINTED OUTCOME: the face she took really left the pile for her hand. " +
+                    Remaining(runtime));
+                Assert.That(
+                    runtime.Cards.Count(card =>
+                        card.OwnerId.Equals(misaId) &&
+                        card.State.Location == CardLocation.DiscardPile),
+                    Is.EqualTo(pileWhenAsked - 1),
+                    "and the pile is exactly one card shorter. " + Remaining(runtime));
             }
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
@@ -355,15 +385,26 @@ namespace GuardsDigital.Tests.PlayMode
                     $"({candidate.Space.Q},{candidate.Space.R})@" +
                     HexDistanceQuery.Calculate(candidate.Space, stoodAt))));
 
-            var minion = candidates.First(candidate =>
-                candidate.Target.Kind == AttackTargetKind.Minion);
+            // MILESTONE 8.86: named by its own id rather than taken first off the offer.
+            var minion = candidates
+                .Where(candidate => candidate.Target.Kind == AttackTargetKind.Minion)
+                .OrderBy(candidate => candidate.Target.MinionId.Value, System.StringComparer.Ordinal)
+                .First();
+            var struckId = minion.Target.MinionId;
             Assert.That(
                 UiPlayer.ClickBoard(
-                    pointerInput, hud, MinionView(minion.Target.MinionId).transform.position),
+                    pointerInput, hud, MinionView(struckId).transform.position),
                 Is.True,
                 "The target is chosen by clicking the miniature where it stands.");
             yield return null;
             yield return null;
+            // THE ATTACK'S OWN OUTCOME (milestone 8.86). The journey asserted the candidate SET and
+            // the rider's Active effect and never the Attack itself, so a card that asked whom and
+            // then did nothing to them would have passed it.
+            Assert.That(
+                runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(struckId)), Is.False,
+                "p.14 defeats an attacked minion without a Defense step, so the piece she named " +
+                "leaves the board. " + Remaining(runtime));
 
             // p.14's step 7 rider. Whatever confirms or declines stand between here and the end of the
             // action are pressed the way a player presses them.
@@ -490,20 +531,31 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(crossed, Is.Not.Empty,
                 "The chosen line's interior holds the enemy Ranged minion, measured offline. " +
                 Remaining(runtime));
+            // MILESTONE 8.86: WHICH piece she crossed is named and its space read, because "you may
+            // place an enemy unit you moved through into a space adjacent to you" is a promise about
+            // where that piece ends up - and this journey used to press its way to the end of the
+            // card without ever looking at it again.
+            var crossedId = crossed[0].BoundMinionId;
+            var crossedFrom = runtime.ReadModel.Minions
+                .Single(minion => minion.MinionId.Equals(crossedId)).Coordinate;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, crossed[0].transform.position), Is.True);
             yield return null;
             yield return null;
 
+            var placedAt = default(HexCoordinate?);
             for (var budget = 0; budget < 4 && runtime.PendingEffectChoice != null; budget++)
             {
                 var targets = AnyOfferedSpaces(runtime);
                 if (targets.Length > 0)
                 {
+                    // A NON-ZERO answer, deliberately: the place is TAKEN rather than refused,
+                    // because a journey may not prove a placement by declining it.
                     var space = Object.FindObjectsByType<HexTileView>()
                         .Single(value => value.Coordinate.Equals(targets[0]));
                     Assert.That(
                         UiPlayer.ClickBoard(pointerInput, hud, space.transform.position), Is.True);
+                    placedAt = targets[0];
                 }
                 else
                 {
@@ -523,6 +575,24 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The card finishes once the rider is answered. " + Remaining(runtime));
+            // THE ASSERTION THIS JOURNEY WAS MISSING (milestone 8.86).
+            Assert.That(placedAt, Is.Not.Null,
+                "\"you may place an enemy unit you moved through into a space adjacent to you\" - " +
+                "the rider has to have offered a space to put the crossed piece on. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.ReadModel.Minions
+                    .Single(minion => minion.MinionId.Equals(crossedId)).Coordinate,
+                Is.EqualTo(placedAt.Value),
+                "and the piece she crossed is standing on the space she placed it on, rather than " +
+                "where the line passed over it. " + Remaining(runtime));
+            Assert.That(
+                HexDistanceQuery.Calculate(placedAt.Value,
+                    runtime.Heroes.Single(hero => hero.HeroId.Equals(misaId)).Coordinate),
+                Is.EqualTo(1),
+                "\"adjacent to you\", measured from where the line left her. " + Remaining(runtime));
+            Assert.That(placedAt.Value, Is.Not.EqualTo(crossedFrom),
+                "and the placement really moved it. " + Remaining(runtime));
         }
 
         /// <summary>

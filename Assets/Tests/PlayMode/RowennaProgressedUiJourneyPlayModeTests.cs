@@ -285,8 +285,8 @@ namespace GuardsDigital.Tests.PlayMode
 
                 var minion = runtime.PendingEffectChoice;
                 Assert.That(minion.NodeId.Value, Is.EqualTo(branch + "-minion"), Remaining(runtime));
-                var moved = minion.Candidates.First().Value.MinionId;
-                yield return Pick(root, minion.Candidates.First());
+                var moved = Named(minion.Candidates, "minion").Value.MinionId;
+                yield return Pick(root, Named(minion.Candidates, "minion"));
 
                 if (index == "first")
                 {
@@ -345,15 +345,15 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.EqualTo(enemies.OrderBy(value => value.Value, StringComparer.Ordinal).ToArray())
                     .AsCollection,
                 "Both enemy heroes stand in radius with empty piles. " + Remaining(runtime));
-            var named = first.Candidates.First().Value.HeroId;
-            yield return Pick(root, first.Candidates.First());
+            var named = Named(first.Candidates, "first").Value.HeroId;
+            yield return Pick(root, Named(first.Candidates, "first"));
 
             var discard = runtime.PendingEffectChoice;
             Assert.That(discard.NodeId.Value, Is.EqualTo("volley-discard"));
             Assert.That(discard.ChooserId, Is.EqualTo(named),
                 "The named hero spends one of their OWN cards. " + Remaining(runtime));
             SeatsAgree(runtime, "the first opponent's discard");
-            yield return Pick(root, discard.Candidates.First());
+            yield return Pick(root, Named(discard.Candidates, "discard"));
             Assert.That(DiscardsOf(runtime, named), Has.Length.EqualTo(1));
 
             var repeat = runtime.PendingEffectChoice;
@@ -374,7 +374,7 @@ namespace GuardsDigital.Tests.PlayMode
             var other = second.Candidates.Single().Value.HeroId;
             yield return Pick(root, second.Candidates.Single());
             Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(other));
-            yield return Pick(root, runtime.PendingEffectChoice.Candidates.First());
+            yield return Pick(root, Named(runtime.PendingEffectChoice.Candidates, "runtime.PendingEffectChoice"));
             Assert.That(DiscardsOf(runtime, other), Has.Length.EqualTo(1));
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The printed repeat is once, so there is no third instance. " + Remaining(runtime));
@@ -773,7 +773,18 @@ namespace GuardsDigital.Tests.PlayMode
                 "and it is still the OPPONENT's decision after the restore, which is the half a " +
                 "journey driven from her seat alone could not tell apart. " + Remaining(runtime));
             SeatsAgree(runtime, "the restored opponent move");
-            yield return Space(root);
+            // MILESTONE 8.86: the restored move is ANSWERED with a space the enemy really travels
+            // to, and both halves of "that hero may move 1 space; if they do, gain 2 coins" are
+            // read - the displacement first, then the coin it is the condition of.
+            var enemyStood = Position(runtime, enemy);
+            var restoredTo = FirstClickableSpace(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), OfferedSpaces(runtime));
+            yield return Space(root, restoredTo);
+            Assert.That(Position(runtime, enemy), Is.EqualTo(restoredTo),
+                "The hero whose decision this was really moved to the space the answer named. " +
+                Remaining(runtime));
+            Assert.That(Distance(Position(runtime, enemy), enemyStood), Is.EqualTo(1),
+                "one space, which is what the sentence prints. " + Remaining(runtime));
             Assert.That(CoinsOf(runtime, her), Is.EqualTo(2),
                 "and answering it on the same surface pays the printed 2 coins.");
             Healthy(runtime);
@@ -791,7 +802,7 @@ namespace GuardsDigital.Tests.PlayMode
             var before = shotsRuntime.PendingEffectChoice.Candidates.Count;
             var pause = shotsRuntime.CaptureSnapshot();
 
-            yield return Pick(shotsRoot, shotsRuntime.PendingEffectChoice.Candidates.First());
+            yield return Pick(shotsRoot, Named(shotsRuntime.PendingEffectChoice.Candidates, "shotsRuntime.PendingEffectChoice"));
             Assert.That(DiscardsOf(shotsRuntime, shotsEnemy), Has.Length.EqualTo(1));
 
             Assert.That(shotsRuntime.RestoreSnapshot(pause), Is.True);
@@ -805,7 +816,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "position back rather than re-deriving it. " + Remaining(shotsRuntime));
             Assert.That(DiscardsOf(shotsRuntime, shotsEnemy), Is.Empty);
             SeatsAgree(shotsRuntime, "the restored opponent discard");
-            yield return Pick(shotsRoot, shotsRuntime.PendingEffectChoice.Candidates.First());
+            yield return Pick(shotsRoot, Named(shotsRuntime.PendingEffectChoice.Candidates, "shotsRuntime.PendingEffectChoice"));
             Assert.That(DiscardsOf(shotsRuntime, shotsEnemy), Has.Length.EqualTo(1));
             Healthy(shotsRuntime);
         }

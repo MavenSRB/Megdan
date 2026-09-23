@@ -78,10 +78,14 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(Distance(Position(runtime, her), Position(runtime, ally)),
                     Is.EqualTo(1),
                     "Arrange: the ally stands inside even Token of Gratitude's printed Radius 1.");
+                var herSpace = Position(runtime, her);
+                var allySpace = Position(runtime, ally);
 
                 yield return BeginRowenna(root, face, ActionKind.Attack);
 
-                var minion = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.First();
+                // MILESTONE 8.86: named by its own id rather than taken first off the offer.
+                var minion = runtime.PendingAttackTargetChoice.LegalTargetMinionIds
+                    .OrderBy(value => value.Value, StringComparer.Ordinal).First();
                 Assert.That(
                     UiPlayer.ClickBoard(
                         Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -96,6 +100,15 @@ namespace GuardsDigital.Tests.PlayMode
                     UiPlayer.ClickDefenseDecline(runtime, root.Hud);
                     yield return null;
                 }
+
+                // THE ATTACK'S OWN OUTCOME (milestone 8.86): the reward this journey is about is a
+                // rider on an Attack, so the Attack has to have happened. p.14 defeats an attacked
+                // minion without a Defense step.
+                Assert.That(
+                    runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(minion)),
+                    Is.False,
+                    face.Value + ": the minion she attacked is defeated, which is what makes the " +
+                    "reward below a rider rather than a card on its own. " + Remaining(runtime));
 
                 var reward = runtime.PendingEffectChoice;
                 Assert.That(reward, Is.Not.Null,
@@ -134,7 +147,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Is.True,
                         "Nobody retrieves another hero's card.");
                     SeatsAgree(runtime, "the rewarded hero's own retrieve");
-                    yield return Pick(root, theirs.Candidates.First());
+                    yield return Pick(root, Named(theirs.Candidates, "theirs"));
                     Assert.That(DiscardsOf(runtime, ally), Has.Length.EqualTo(discardsBefore - 1),
                         "and taking it moves exactly one card out of THEIR pile.");
                     Assert.That(CoinsOf(runtime, ally), Is.EqualTo(coinsBefore),
@@ -155,7 +168,18 @@ namespace GuardsDigital.Tests.PlayMode
                 Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
                 SeatsAgree(runtime, face.Value + " resolved");
                 Healthy(runtime);
-                Assert.That(Position(runtime, enemy), Is.Not.EqualTo(Position(runtime, her)));
+                // MILESTONE 8.86: what stood here was `Position(enemy) != Position(her)`, which is
+                // true of every board two pieces can stand on and proved nothing about this card.
+                // What the three Reward Reds do NOT do is move anybody, and that is the assertion
+                // worth making beside the grant.
+                Assert.That(Position(runtime, her), Is.EqualTo(herSpace),
+                    face.Value + " grants a coin or a retrieval and moves nobody, her included. " +
+                    Remaining(runtime));
+                Assert.That(Position(runtime, ally), Is.EqualTo(allySpace),
+                    "and the hero it rewards stands where they stood. " + Remaining(runtime));
+                Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.True,
+                    "and the enemy hero, whom none of the three Reds names, is untouched. " +
+                    Remaining(runtime));
             }
 
             // The negative, on the board that has no friendly hero at all.
@@ -169,7 +193,9 @@ namespace GuardsDigital.Tests.PlayMode
             var aloneRuntime = aloneRoot.Runtime;
             yield return BeginRowenna(
                 aloneRoot, RowennaCardContent.TokenOfGratitude, ActionKind.Attack);
-            var target = aloneRuntime.PendingAttackTargetChoice.LegalTargetMinionIds.First();
+            var target = aloneRuntime.PendingAttackTargetChoice.LegalTargetMinionIds
+                .OrderBy(value => value.Value, StringComparer.Ordinal).First();
+            var aloneHer = Rowenna(aloneRuntime);
             Assert.That(
                 UiPlayer.ClickBoard(
                     Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -184,6 +210,21 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
             }
 
+            // MILESTONE 8.86, SO THE NEGATIVE IS NOT AN ABSENCE. Three things are asserted rather
+            // than one: the Attack really ran, there really is no friendly hero for the reward to
+            // name on this board, and only THEN is the silence read as the printed stop.
+            Assert.That(
+                aloneRuntime.ReadModel.Minions.Any(value => value.MinionId.Equals(target)),
+                Is.False,
+                "The Attack the reward rides on really happened. " + Remaining(aloneRuntime));
+            Assert.That(
+                aloneRuntime.Heroes.Count(hero =>
+                    aloneRuntime.Setup.Heroes.Single(seat => seat.HeroId.Equals(hero.HeroId))
+                        .TeamSide ==
+                    aloneRuntime.Setup.Heroes.Single(seat => seat.HeroId.Equals(aloneHer)).TeamSide),
+                Is.EqualTo(1),
+                "and she is the only hero on her own team, so \"a friendly hero in radius\" names " +
+                "nobody by the board rather than by a bug. " + Remaining(aloneRuntime));
             Assert.That(aloneRuntime.PendingEffectChoice, Is.Null,
                 "RO-Q7b: nobody in radius is p.10's stop, not a refusal and not a prompt with an " +
                 "empty offer. " + Remaining(aloneRuntime));
@@ -237,6 +278,17 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.ClickDefenseDecline(runtime, root.Hud);
                 yield return null;
                 yield return null;
+                // THE FIRST INSTANCE'S OWN OUTCOME (milestone 8.86). The journey pressed its way
+                // past p.14 without reading what it did; the Attack is now asserted to have RUN -
+                // the Defense window she declined on the defender's behalf is closed, and either
+                // p.14 took his piece or he is standing there having answered it.
+                Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                    face.Value + ": the declined Defense closed the window rather than stalling " +
+                    "the Attack. " + Remaining(runtime));
+                Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.False,
+                    face.Value + " prints an Attack of 6 or more and the defender answered with " +
+                    "nothing at all, so p.13's Defeat takes his piece - which is also why the " +
+                    "repeat below is offered no hero. " + Remaining(runtime));
 
                 Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("reward-ally"),
                     Remaining(runtime));
@@ -276,7 +328,9 @@ namespace GuardsDigital.Tests.PlayMode
                     runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Is.Empty,
                     "\"on a different target\" excludes the hero the first instance took. " +
                     Remaining(runtime));
-                var second = runtime.PendingAttackTargetChoice.LegalTargetMinionIds.First();
+                // MILESTONE 8.86: named by its own id rather than taken first off the offer.
+                var second = runtime.PendingAttackTargetChoice.LegalTargetMinionIds
+                    .OrderBy(value => value.Value, StringComparer.Ordinal).First();
                 Assert.That(
                     UiPlayer.ClickBoard(
                         Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -290,6 +344,13 @@ namespace GuardsDigital.Tests.PlayMode
                     UiPlayer.ClickDefenseDecline(runtime, root.Hud);
                     yield return null;
                 }
+
+                // THE REPEATED INSTANCE'S OWN OUTCOME (milestone 8.86): the repeat performed a
+                // second Attack rather than only re-asking the question.
+                Assert.That(
+                    runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(second)),
+                    Is.False,
+                    "The repeat's own target is defeated by it. " + Remaining(runtime));
 
                 Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("reward-ally"),
                     "The second instance runs its own rider. " + Remaining(runtime));
@@ -427,7 +488,7 @@ namespace GuardsDigital.Tests.PlayMode
                     .Single(card => card.Id.Equals(candidate.Value.CardInstanceId))
                     .OwnerId.Equals(tierThreeHer)),
                 Is.True);
-            yield return Pick(tierThreeRoot, retrieve.Candidates.First());
+            yield return Pick(tierThreeRoot, Named(retrieve.Candidates, "retrieve"));
             Assert.That(
                 DiscardsOf(tierThreeRuntime, tierThreeHer), Has.Length.EqualTo(pileBefore - 1));
             Assert.That(tierThreeRuntime.PendingEffectChoice, Is.Null);
@@ -630,7 +691,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True);
             SeatsAgree(runtime, "the opponent's own discard");
             var handBefore = HandCountOf(runtime, enemy);
-            yield return Pick(root, discard.Candidates.First());
+            yield return Pick(root, Named(discard.Candidates, "discard"));
             Assert.That(HandCountOf(runtime, enemy), Is.EqualTo(handBefore - 1));
             Assert.That(DiscardsOf(runtime, enemy), Has.Length.EqualTo(1),
                 "and the card they chose is the one card now in their pile.");

@@ -469,7 +469,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "and nobody retrieves another hero's card. " + Remaining(runtime));
             SeatsAgree(runtime, "her own retrieve");
             var hersBefore = DiscardsOf(runtime, her).Length;
-            yield return Pick(root, mine.Candidates.First());
+            yield return Pick(root, Named(mine.Candidates, "mine"));
             Assert.That(DiscardsOf(runtime, her), Has.Length.EqualTo(hersBefore - 1),
                 "and taking it moves exactly one card out of her pile.");
 
@@ -488,7 +488,7 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True);
             SeatsAgree(runtime, "the target's retrieve");
             var theirsBefore = DiscardsOf(runtime, enemy).Length;
-            yield return Pick(root, theirs.Candidates.First());
+            yield return Pick(root, Named(theirs.Candidates, "theirs"));
             Assert.That(DiscardsOf(runtime, enemy), Has.Length.EqualTo(theirsBefore - 1));
             SeatsAgree(runtime, "both retrieves answered");
 
@@ -496,6 +496,13 @@ namespace GuardsDigital.Tests.PlayMode
                 "and only then does p.14 ask the defender. " + Remaining(runtime));
             UiPlayer.ClickDefenseDecline(runtime, root.Hud);
             yield return null;
+            yield return null;
+            // THE ATTACK'S OWN OUTCOME (milestone 8.86). The journey proved the two retrieves and
+            // then declined p.14 without reading what declining it cost: an undefended Attack is a
+            // defeat, and that is the printed end of this card.
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.False,
+                "The Attack her retrieves ran before was answered by no Defense at all, so p.14 " +
+                "defeats the hero she targeted and the piece leaves the board. " + Remaining(runtime));
             Healthy(runtime);
 
             // The negative: the same face, the same board, a MINION target and no rider at all.
@@ -507,7 +514,11 @@ namespace GuardsDigital.Tests.PlayMode
             var minionRuntime = minionRoot.Runtime;
             yield return BeginRowenna(
                 minionRoot, RowennaCardContent.CodeOfChivalry, ActionKind.Attack);
-            var minion = minionRuntime.PendingAttackTargetChoice.LegalTargetMinionIds.First();
+            // MILESTONE 8.86: named by its own id rather than taken first off the offer.
+            var minion = minionRuntime.PendingAttackTargetChoice.LegalTargetMinionIds
+                .OrderBy(value => value.Value, StringComparer.Ordinal).First();
+            var minionHer = Rowenna(minionRuntime);
+            var pileBefore = DiscardsOf(minionRuntime, minionHer).Length;
             Assert.That(
                 UiPlayer.ClickBoard(
                     Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -519,6 +530,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(minionRuntime.PendingEffectChoice, Is.Null,
                 "\"If you target a hero\" is false of a minion, so neither retrieve is offered. " +
                 Remaining(minionRuntime));
+            // MILESTONE 8.86, SO THE NEGATIVE IS NOT AN ABSENCE. The gate is proved by a card that
+            // really ran: the minion she targeted is defeated by p.14, and her own pile is exactly
+            // as long as it was - nothing was retrieved because the condition was false, not
+            // because the card never reached its rider.
+            Assert.That(
+                minionRuntime.ReadModel.Minions.Any(value => value.MinionId.Equals(minion)),
+                Is.False,
+                "p.14 defeats the attacked minion, so the Attack the ungated rider hangs off really " +
+                "happened. " + Remaining(minionRuntime));
+            Assert.That(DiscardsOf(minionRuntime, minionHer), Has.Length.EqualTo(pileBefore),
+                "and nothing left her pile. " + Remaining(minionRuntime));
             Healthy(minionRuntime);
         }
 

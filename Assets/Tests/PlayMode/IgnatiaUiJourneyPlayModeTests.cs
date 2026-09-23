@@ -979,6 +979,15 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             Assert.That(sunRuntime.PendingEffectChoice, Is.Null,
                 "Binding the target finishes the card text. " + Remaining(sunRuntime));
+            // THE ATTACK'S OWN OUTCOME (milestone 8.86). This journey bound the target and then
+            // asserted only that nothing more was asked, so an Attack whose card text named the
+            // right minion and then applied nothing would have passed it.
+            Assert.That(
+                sunRuntime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(RedRanged)),
+                Is.False,
+                "☀ \"Target a minion adjacent to you\" - p.14 defeats an attacked minion without a " +
+                "Defense step, so the piece her card text named leaves the board. " +
+                Remaining(sunRuntime));
             SeatsAgree(sunRuntime, "Chaos Bolt's sun text");
             Healthy(sunRuntime);
 
@@ -1010,6 +1019,17 @@ namespace GuardsDigital.Tests.PlayMode
             yield return ClickDefenseFace(moonRoot, WaspCardContent.Electrocute);
             yield return null;
             yield return null;
+            // THE ATTACK'S OWN OUTCOME (milestone 8.86): the hero her moon text named really answered
+            // p.14, and the face they answered with is spent into their own discard pile.
+            Assert.That(
+                moonRuntime.Cards.Single(card =>
+                    card.OwnerId.Equals(moonEnemy) &&
+                    card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electrocute))
+                    .State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "☾ \"Target a hero in range\" - the Attack reached p.14's Defense window and the " +
+                "defender spent the face they answered with. " + Remaining(moonRuntime));
+            Assert.That(moonRuntime.PendingDefenseChoice, Is.Null, Remaining(moonRuntime));
             SeatsAgree(moonRuntime, "Chaos Bolt's moon text");
             Healthy(moonRuntime);
 
@@ -1253,12 +1273,31 @@ namespace GuardsDigital.Tests.PlayMode
                 if (onTheMoon)
                 {
                     yield return Pick(root, CandidateFor(runtime, RedRanged));
+                    yield return null;
+                    yield return null;
+                    // THE ATTACK'S OWN OUTCOME (milestone 8.86): the straight-line arm's target is
+                    // defeated, so the arm did something rather than only offering a set.
+                    Assert.That(
+                        runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(RedRanged)),
+                        Is.False,
+                        "☾ the minion on her file is defeated by the Attack that named it. " +
+                        Remaining(runtime));
                 }
                 else
                 {
                     yield return Pick(root, CandidateFor(runtime, enemy));
                     yield return null;
                     yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
+                    yield return null;
+                    yield return null;
+                    Assert.That(
+                        runtime.Cards.Single(card =>
+                            card.OwnerId.Equals(enemy) &&
+                            card.DefinitionReference.DefinitionId.Equals(
+                                WaspCardContent.Electrocute)).State.Location,
+                        Is.EqualTo(CardLocation.DiscardPile),
+                        "☀ the hero off every file really answered p.14, and the face is spent. " +
+                        Remaining(runtime));
                 }
 
                 yield return null;

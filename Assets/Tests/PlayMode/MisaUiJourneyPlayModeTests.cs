@@ -437,6 +437,66 @@ namespace GuardsDigital.Tests.PlayMode
             return runtime.SubmitProjectedCommand(control.Command);
         }
 
+        /// <summary>
+        /// The identity of whatever unit is standing on this space, or an empty string when the space
+        /// is free. MILESTONE 8.86: a Swap is asserted by reading the two spaces before and after,
+        /// which is the only reading that can tell an exchange from a prompt that merely closed.
+        /// </summary>
+        internal static string UnitOn(ConfiguredMatchSceneRuntime runtime, HexCoordinate space) =>
+            runtime.Heroes
+                .Where(hero => hero.Coordinate.Equals(space))
+                .Select(hero => "hero:" + hero.HeroId.Value)
+                .Concat(runtime.ReadModel.Minions
+                    .Where(minion => minion.Coordinate.Equals(space))
+                    .Select(minion => "minion:" + minion.MinionId.Value))
+                .FirstOrDefault() ?? string.Empty;
+
+        /// <summary>
+        /// Where the piece one rulebook p.14 target names is standing NOW, or null when it has left
+        /// the board. MILESTONE 8.86: a rider that shoves, places or swaps "the target" is read on
+        /// this before and after the press, because nothing else can tell a displacement from a step
+        /// that never ran.
+        /// </summary>
+        internal static HexCoordinate? SpaceOfTarget(
+            ConfiguredMatchSceneRuntime runtime, Core.Rules.CardResolution.AttackTarget target) =>
+            target.Kind == Core.Rules.CardResolution.AttackTargetKind.Hero
+                ? runtime.Heroes
+                    .Where(hero => hero.HeroId.Equals(target.HeroId))
+                    .Select(hero => (HexCoordinate?)hero.Coordinate)
+                    .FirstOrDefault()
+                : runtime.ReadModel.Minions
+                    .Where(minion => minion.MinionId.Equals(target.MinionId))
+                    .Select(minion => (HexCoordinate?)minion.Coordinate)
+                    .FirstOrDefault();
+
+        /// <summary>
+        /// Every space beside <paramref name="from"/> that is free, playable and strictly farther
+        /// from <paramref name="actor"/> - the whole set milestone 8.35z29's <c>AwayFromActor</c>
+        /// policy can put a shoved piece on.
+        ///
+        /// <para>MILESTONE 8.86: a journey that meets an EMPTY shove offer may not conclude from that
+        /// absence. It asserts THIS instead - that the board really leaves the printed sentence
+        /// nowhere to put the target - which is the difference between a card that did nothing and a
+        /// card that could do nothing.</para>
+        /// </summary>
+        internal static HexCoordinate[] FreeSpacesFartherFrom(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate from, HexCoordinate actor)
+        {
+            var occupied = runtime.Projection.Heroes.Select(hero => hero.Coordinate)
+                .Concat(runtime.Projection.Minions.Select(minion => minion.Coordinate))
+                .Concat(runtime.Projection.Obstacles.Select(obstacle => obstacle.Coordinate))
+                .ToArray();
+            return from.GetNeighbors()
+                .Where(space =>
+                    HexDistanceQuery.Calculate(space, actor) >
+                        HexDistanceQuery.Calculate(from, actor) &&
+                    runtime.Projection.SelectedMap.Spaces.Any(value =>
+                        value.Coordinate.Equals(space) &&
+                        value.Kind == BoardMapSpaceKind.Playable) &&
+                    !occupied.Any(value => value.Equals(space)))
+                .ToArray();
+        }
+
         internal static Component ViewOf(Core.Rules.CardResolution.AttackTarget target) =>
             target.Kind == Core.Rules.CardResolution.AttackTargetKind.Hero
                 ? (Component)HeroView(target.HeroId)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
@@ -34,6 +35,56 @@ namespace GuardsDigital.Tests.PlayMode
             (Math.Abs(a.Q-b.Q) + Math.Abs(a.R-b.R) + Math.Abs(a.Q+a.R-b.Q-b.R))/2;
         internal static HexCoordinate Position(ConfiguredMatchSceneRuntime runtime, HeroId hero) =>
             runtime.Heroes.Single(value => value.HeroId.Equals(hero)).Coordinate;
+
+        /// <summary>
+        /// Where the piece a candidate names is standing, read off the authority. MILESTONE 8.86: a
+        /// journey that drives a Move, a Push, a Place or a Swap reads this BEFORE and AFTER the
+        /// press, because nothing else can tell a displacement from a step that never ran.
+        /// </summary>
+        internal static HexCoordinate SpaceOf(ConfiguredMatchSceneRuntime runtime, EffectValue unit) =>
+            unit.Kind == EffectValueKind.Hero
+                ? Position(runtime, unit.HeroId)
+                : runtime.ReadModel.Minions
+                    .Single(value => value.MinionId.Equals(unit.MinionId)).Coordinate;
+
+        /// <summary>
+        /// The one answer a journey NAMES out of an offer - MILESTONE 8.86's replacement for taking
+        /// whatever the resolver happened to put first. The pick is by the candidate's own identity
+        /// in ordinal order, so the journey can say afterwards which piece, card or space it answered
+        /// with and assert what that answer DID; and the offer is asserted non-empty, so a step can
+        /// never pass by having nothing to answer.
+        /// </summary>
+        internal static EffectChoiceCandidate Named(
+            IEnumerable<EffectChoiceCandidate> offer, string what)
+        {
+            var candidates = offer.ToArray();
+            Assert.That(candidates, Is.Not.Empty,
+                "MILESTONE 8.86: a journey names its own answer, and the offer it is naming one " +
+                "out of is empty - " + what);
+            return candidates
+                .OrderBy(candidate => CandidateName(candidate.Value), StringComparer.Ordinal)
+                .First();
+        }
+
+        /// <summary>The identity any candidate names, for an ordering a journey can repeat.</summary>
+        internal static string CandidateName(EffectValue value) =>
+            value.Kind == EffectValueKind.Hero ? "hero:" + value.HeroId.Value
+            : value.Kind == EffectValueKind.Minion ? "minion:" + value.MinionId.Value
+            : value.Kind == EffectValueKind.CardInstance ? "card:" + value.CardInstanceId.Value
+            : value.Kind == EffectValueKind.Coordinate ? "space:" + value.Coordinate
+            : value.Kind == EffectValueKind.Integer
+                ? "int:" + value.IntegerValue.ToString("D4")
+                : value.Kind.ToString();
+
+        /// <summary>The identity a unit-valued candidate names, for an ordering a journey can repeat.</summary>
+        internal static string UnitName(EffectValue unit) =>
+            unit.Kind == EffectValueKind.Hero ? unit.HeroId.Value
+            : unit.Kind == EffectValueKind.Minion ? unit.MinionId.Value
+            : unit.Kind.ToString();
+
+        /// <summary>Whether this minion is still standing on the board at all.</summary>
+        internal static bool MinionStands(ConfiguredMatchSceneRuntime runtime, MinionId minionId) =>
+            runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(minionId));
         internal static void Healthy(ConfiguredMatchSceneRuntime runtime)
         {
             Assert.That(runtime.Projection.DiagnosticEvents.Select(value => value.DisplayText),
@@ -185,18 +236,43 @@ namespace GuardsDigital.Tests.PlayMode
                 {
                     Assert.That(runtime.PendingEffectChoice, Is.Not.Null, face.Value + " execution " + iteration + "; " + Remaining(runtime));
                     Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("target"), face.Value);
+                    // MILESTONE 8.86, THE NAMED SUBJECT. This used to take whatever the offer put
+                    // first, which is an answer a journey cannot state afterwards. Every candidate is
+                    // now asserted to be a PIECE the printed sentence can move, and the one driven is
+                    // picked by its own identity in ordinal order - so the before-and-after reading
+                    // below is about a unit this journey can name.
+                    Assert.That(
+                        runtime.PendingEffectChoice.Candidates.All(value =>
+                            value.Value.Kind == EffectValueKind.Hero ||
+                            value.Value.Kind == EffectValueKind.Minion),
+                        Is.True,
+                        face.Value + ": \"move a unit\" names a piece on the board, and every " +
+                        "candidate is one. " + Remaining(runtime));
                     var candidate = friendly
-                        ? runtime.PendingEffectChoice.Candidates.First(value => value.Value.Kind == EffectValueKind.Hero)
-                        : runtime.PendingEffectChoice.Candidates.First();
+                        ? runtime.PendingEffectChoice.Candidates
+                            .Where(value => value.Value.Kind == EffectValueKind.Hero)
+                            .OrderBy(value => UnitName(value.Value), StringComparer.Ordinal).First()
+                        : runtime.PendingEffectChoice.Candidates
+                            .OrderBy(value => UnitName(value.Value), StringComparer.Ordinal).First();
                     var target = candidate.Value;
-                    var before = target.Kind == EffectValueKind.Hero ? Position(runtime,target.HeroId)
-                        : runtime.ReadModel.Minions.Single(value => value.MinionId.Equals(target.MinionId)).Coordinate;
+                    var before = SpaceOf(runtime, target);
                     yield return Pick(root, candidate);
                     Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("unit-move"));
                     var destinations = OfferedSpaces(runtime);
                     Assert.That(destinations.All(at => Distance(at,before) == 1 &&
                         Distance(at,Position(runtime,actor)) == Distance(before,Position(runtime,actor)) + (friendly ? -1 : 1)), Is.True);
-                    yield return Space(root);
+                    var landing = FirstClickableSpace(
+                        Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), destinations);
+                    yield return Space(root, landing);
+                    // THE ASSERTION THIS JOURNEY WAS MISSING (milestone 8.86). It proved the SHAPE of
+                    // the offer and then never read the board again, so a move that never ran would
+                    // have passed it exactly as a move that did.
+                    Assert.That(SpaceOf(runtime, target), Is.EqualTo(landing),
+                        face.Value + ": the named unit is standing on the space that was clicked. " +
+                        Remaining(runtime));
+                    Assert.That(Distance(SpaceOf(runtime, target), before), Is.EqualTo(1),
+                        face.Value + ": \"1 space\" is a count, so the piece really left the space " +
+                        "it stood on. " + Remaining(runtime));
                     if (iteration < repeats)
                     {
                         Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("repeat"));
@@ -219,10 +295,22 @@ namespace GuardsDigital.Tests.PlayMode
                 var enemy = OtherHeroId(runtime, actor); var start = Position(runtime,actor);
                 var enemyStart = Position(runtime,enemy);
                 yield return Begin(root, face, ActionKind.Attack);
-                var target = runtime.PendingAttackTargetChoice.LegalTargets.First(value => value.Kind == AttackTargetKind.Minion);
+                // MILESTONE 8.86: the target is named by its own id in ordinal order rather than
+                // taken first off the offer, so the defeat asserted below is about a piece this
+                // journey can state.
+                var target = runtime.PendingAttackTargetChoice.LegalTargets
+                    .Where(value => value.Kind == AttackTargetKind.Minion)
+                    .OrderBy(value => value.MinionId.Value, StringComparer.Ordinal)
+                    .First();
                 Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud,
                     MinionView(target.MinionId).transform.position), Is.True);
                 yield return null;
+                // THE ATTACK'S OWN OUTCOME (milestone 8.86): p.14 defeats an attacked minion without
+                // a Defense step, so the piece this Attack named is off the board before its printed
+                // push is ever offered.
+                Assert.That(MinionStands(runtime, target.MinionId), Is.False,
+                    face.Value + ": the attacked minion is defeated and its piece leaves the board. " +
+                    Remaining(runtime));
                 Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
                 yield return May(root);
                 Assert.That(OfferedSpaces(runtime), Does.Contain(start), "GA-Q1: selecting zero is a real choice.");
@@ -263,7 +351,16 @@ namespace GuardsDigital.Tests.PlayMode
                 else
                 {
                     Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("unit-target"));
-                    yield return Pick(root,runtime.PendingEffectChoice.Candidates.First(value => value.Value.Kind == EffectValueKind.Minion));
+                    // MILESTONE 8.86: named by id, and the Attack's own outcome read afterwards.
+                    var struck = runtime.PendingEffectChoice.Candidates
+                        .Where(value => value.Value.Kind == EffectValueKind.Minion)
+                        .OrderBy(value => value.Value.MinionId.Value, StringComparer.Ordinal)
+                        .First();
+                    var struckId = struck.Value.MinionId;
+                    yield return Pick(root, struck);
+                    Assert.That(MinionStands(runtime, struckId), Is.False,
+                        face.Value + ": the ordinary bullet's own Attack defeats the minion it " +
+                        "named. " + Remaining(runtime));
                     Assert.That(Position(runtime,actor), Is.EqualTo(start));
                 }
                 Assert.That(runtime.PendingEffectChoice, Is.Null);
@@ -285,9 +382,28 @@ namespace GuardsDigital.Tests.PlayMode
                 if (!empty)
                 {
                     Assert.That(runtime.PendingEffectChoice.ChooserId, Is.EqualTo(enemy));
-                    var card = runtime.PendingEffectChoice.Candidates.First();
+                    // MILESTONE 8.86: every face offered is a card the NAMED hero is holding - the
+                    // printed sentence is about their hand and nobody else's - and the card driven is
+                    // named by its own instance id rather than taken first off the offer.
+                    Assert.That(
+                        runtime.PendingEffectChoice.Candidates.All(value => runtime.Cards
+                            .Single(held => held.Id.Equals(value.Value.CardInstanceId))
+                            .OwnerId.Equals(enemy)),
+                        Is.True,
+                        "\"the target discards a card\" offers that hero's own hand. " + Remaining(runtime));
+                    var heldBefore = runtime.Cards.Count(value =>
+                        value.OwnerId.Equals(enemy) && value.State.Location == CardLocation.Hand);
+                    var card = runtime.PendingEffectChoice.Candidates
+                        .OrderBy(value => value.Value.CardInstanceId.Value, StringComparer.Ordinal)
+                        .First();
                     yield return Pick(root,card);
                     Assert.That(runtime.Cards.Single(value => value.Id.Equals(card.Value.CardInstanceId)).State.Location, Is.EqualTo(CardLocation.DiscardPile));
+                    // THE PRINTED NUMBER (milestone 8.86): one card, out of the hand it was asked of.
+                    Assert.That(
+                        runtime.Cards.Count(value =>
+                            value.OwnerId.Equals(enemy) && value.State.Location == CardLocation.Hand),
+                        Is.EqualTo(heldBefore - 1),
+                        "and the named hero's hand is exactly one card shorter. " + Remaining(runtime));
                 }
                 Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("may-move"));
                 Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)),
@@ -345,8 +461,23 @@ namespace GuardsDigital.Tests.PlayMode
                     for (var iteration=0; iteration<2; iteration++)
                     {
                         Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("target"));
-                        yield return Pick(root,runtime.PendingEffectChoice.Candidates.First());
-                        yield return Space(root);
+                        // MILESTONE 8.86: Battle Fury's own performance moves a unit, and this
+                        // journey used to press through both instances without ever reading the
+                        // board. The subject is named, its space read, and the move asserted.
+                        var moved = runtime.PendingEffectChoice.Candidates
+                            .OrderBy(value => UnitName(value.Value), StringComparer.Ordinal).First();
+                        var unit = moved.Value;
+                        var stood = SpaceOf(runtime, unit);
+                        yield return Pick(root, moved);
+                        var to = FirstClickableSpace(
+                            Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                            OfferedSpaces(runtime));
+                        yield return Space(root, to);
+                        Assert.That(SpaceOf(runtime, unit), Is.EqualTo(to),
+                            "Battle Fury's performance " + iteration + " really moved the unit it " +
+                            "named. " + Remaining(runtime));
+                        Assert.That(Distance(SpaceOf(runtime, unit), stood), Is.EqualTo(1),
+                            "exactly the one printed space. " + Remaining(runtime));
                         if (iteration == 0) yield return May(root);
                     }
                 }

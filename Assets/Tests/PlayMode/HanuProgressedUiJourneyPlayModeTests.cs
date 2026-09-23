@@ -249,6 +249,23 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
                     }
+
+                    yield return null;
+                    yield return null;
+                    // THE FIRST SEQUENCE'S OWN OUTCOME (milestone 8.86): the hero it named either
+                    // answered p.14 with a face they have now spent, or was defeated by it. Both are
+                    // the printed outcome; neither is "nothing happened", which is what this journey
+                    // used to admit.
+                    Assert.That(
+                        !runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)) ||
+                            runtime.Cards.Single(card =>
+                                card.OwnerId.Equals(enemy) &&
+                                card.DefinitionReference.DefinitionId.Equals(
+                                    WaspCardContent.Electrocute)).State.Location ==
+                                CardLocation.DiscardPile,
+                        Is.True,
+                        "The first sequence really ran p.14 on the hero it named. " +
+                        Remaining(runtime));
                 }
                 else
                 {
@@ -256,7 +273,9 @@ namespace GuardsDigital.Tests.PlayMode
                         "The adjacent bullet was chosen first, and no hero stands in his ring. " +
                         Remaining(runtime));
                     Assert.That(target.LegalTargetMinionIds, Is.Not.Empty, Remaining(runtime));
-                    var minion = target.LegalTargetMinionIds.First();
+                    // MILESTONE 8.86: named by its own id rather than taken first off the offer.
+                    var minion = target.LegalTargetMinionIds
+                        .OrderBy(value => value.Value, StringComparer.Ordinal).First();
                     Assert.That(
                         UiPlayer.ClickBoard(
                             Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -264,6 +283,12 @@ namespace GuardsDigital.Tests.PlayMode
                             MinionView(minion).transform.position),
                         Is.True);
                     yield return null;
+                    yield return null;
+                    Assert.That(
+                        runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(minion)),
+                        Is.False,
+                        "THE FIRST SEQUENCE'S OWN OUTCOME: p.14 defeats an attacked minion without " +
+                        "a Defense step. " + Remaining(runtime));
                 }
 
                 yield return null;
@@ -277,7 +302,8 @@ namespace GuardsDigital.Tests.PlayMode
                     Assert.That(next.LegalTargetMinionIds, Is.Not.Empty,
                         "\"a unit adjacent to you\" binds afresh against the board the first " +
                         "sequence left. " + Remaining(runtime));
-                    var minion = next.LegalTargetMinionIds.First();
+                    var minion = next.LegalTargetMinionIds
+                        .OrderBy(value => value.Value, StringComparer.Ordinal).First();
                     Assert.That(
                         UiPlayer.ClickBoard(
                             Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -285,6 +311,12 @@ namespace GuardsDigital.Tests.PlayMode
                             MinionView(minion).transform.position),
                         Is.True);
                     yield return null;
+                    yield return null;
+                    Assert.That(
+                        runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(minion)),
+                        Is.False,
+                        "THE SECOND SEQUENCE'S OWN OUTCOME (milestone 8.86): the second bullet's " +
+                        "p.14 really ran on the piece it named. " + Remaining(runtime));
                 }
                 else
                 {
@@ -301,6 +333,18 @@ namespace GuardsDigital.Tests.PlayMode
                     {
                         yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
                     }
+
+                    yield return null;
+                    yield return null;
+                    Assert.That(
+                        !runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)) ||
+                            runtime.Cards.Single(card =>
+                                card.OwnerId.Equals(enemy) &&
+                                card.DefinitionReference.DefinitionId.Equals(
+                                    WaspCardContent.Electrocute)).State.Location ==
+                                CardLocation.DiscardPile,
+                        Is.True,
+                        "THE SECOND SEQUENCE'S OWN OUTCOME (milestone 8.86). " + Remaining(runtime));
                 }
 
                 yield return null;
@@ -1701,7 +1745,21 @@ namespace GuardsDigital.Tests.PlayMode
                 }
                 else
                 {
-                    yield return Pick(root, pause.Candidates.First());
+                    // MILESTONE 8.86: the answer is NAMED rather than taken first off the offer -
+                    // every candidate is a unit the printed sentence admits, and the one driven is
+                    // picked by its own identity so the replay below answers the same question the
+                    // same way.
+                    Assert.That(
+                        pause.Candidates.All(candidate =>
+                            candidate.Value.Kind == EffectValueKind.Hero ||
+                            candidate.Value.Kind == EffectValueKind.Minion),
+                        Is.True,
+                        face.Value + ": the pause names a piece on the board. " + Remaining(runtime));
+                    yield return Pick(
+                        root,
+                        pause.Candidates
+                            .OrderBy(candidate => UnitName(candidate.Value), StringComparer.Ordinal)
+                            .First());
                 }
 
                 OpenDirectorDrawer(root.Hud);
@@ -1735,9 +1793,39 @@ namespace GuardsDigital.Tests.PlayMode
                 }
                 else
                 {
-                    yield return Pick(root, runtime.PendingEffectChoice.Candidates.First());
-                    Assert.That(runtime.PendingEffectChoice, Is.Not.Null.Or.Null,
-                        Remaining(runtime));
+                    // MILESTONE 8.86. What stood here was `Is.Not.Null.Or.Null`, which is true of
+                    // every state a match can be in and asserted nothing at all. The replay answers
+                    // the SAME named candidate and the board is read afterwards: a swap moved two
+                    // pieces, so the unit the answer named is not standing where it stood.
+                    var replayed = runtime.PendingEffectChoice.Candidates
+                        .OrderBy(candidate => UnitName(candidate.Value), StringComparer.Ordinal)
+                        .First();
+                    var replayedUnit = replayed.Value;
+                    var replayedFrom = SpaceOf(runtime, replayedUnit);
+                    yield return Pick(root, replayed);
+                    if (face.Equals(HanuCardContent.SafeTravels))
+                    {
+                        // "Swap with an enemy hero in radius" is answered whole by one pick, so the
+                        // replayed answer has to have exchanged the two pieces.
+                        Assert.That(SpaceOf(runtime, replayedUnit), Is.Not.EqualTo(replayedFrom),
+                            face.Value + ": replaying the retained prefix performs the swap the " +
+                            "pause was about, so the piece it named really left its space. " +
+                            Remaining(runtime));
+                    }
+                    else
+                    {
+                        // "Swap two friendly units in radius" is a PAIR, so one pick is half an
+                        // answer: nothing has moved yet and the same control is standing for the
+                        // second member. A journey that asserted a displacement here would be
+                        // asserting the engine swapped a pair of one.
+                        Assert.That(SpaceOf(runtime, replayedUnit), Is.EqualTo(replayedFrom),
+                            face.Value + ": the first half of an unordered pair moves nobody. " +
+                            Remaining(runtime));
+                        Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
+                        Assert.That(runtime.PendingEffectChoice.NodeId, Is.EqualTo(node),
+                            face.Value + ": and the pair is still asking, on its own control. " +
+                            Remaining(runtime));
+                    }
                 }
 
                 SeatsAgree(runtime, face.Value + " replayed");

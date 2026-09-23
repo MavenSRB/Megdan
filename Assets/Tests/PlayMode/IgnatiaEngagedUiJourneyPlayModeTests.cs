@@ -107,13 +107,18 @@ namespace GuardsDigital.Tests.PlayMode
                     "enemy melee at (-4,4) is three away and off every file, and nothing at all " +
                     "stands three away ON one. " + Remaining(runtime));
 
-                yield return Pick(
-                    root,
-                    onTheMoon
-                        ? CandidateFor(runtime, RedRanged)
-                        : CandidateFor(runtime, RedMeleeAtThree));
+                var struck = onTheMoon ? RedRanged : RedMeleeAtThree;
+                yield return Pick(root, CandidateFor(runtime, struck));
                 yield return null;
                 yield return null;
+                // THE ATTACK'S OWN OUTCOME (milestone 8.86). The journey proved the two OFFERS at the
+                // wider Range and stopped there, so a card that lit the right sets and then applied
+                // nothing would have passed it. p.14 defeats an attacked minion.
+                Assert.That(
+                    runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(struck)),
+                    Is.False,
+                    "The piece the wider disk admitted is defeated by the Attack that named it. " +
+                    Remaining(runtime));
                 SeatsAgree(runtime, onTheMoon ? "the wider straight line" : "its wider complement");
                 Healthy(runtime);
             }
@@ -210,13 +215,18 @@ namespace GuardsDigital.Tests.PlayMode
                         Remaining(runtime));
                 }
 
-                yield return Pick(
-                    root,
-                    onTheMoon
-                        ? CandidateFor(runtime, RedMeleeAtFive)
-                        : CandidateFor(runtime, RedRanged));
+                var taken = onTheMoon ? RedMeleeAtFive : RedRanged;
+                yield return Pick(root, CandidateFor(runtime, taken));
                 yield return null;
                 yield return null;
+                // THE ATTACK'S OWN OUTCOME (milestone 8.86): the ring and the maximum-range equality
+                // were asserted over the offer; the piece at each end is now asserted to have been
+                // defeated by the Attack that named it.
+                Assert.That(
+                    runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(taken)),
+                    Is.False,
+                    (onTheMoon ? "☾ at exactly the printed Range" : "☀ in p.19's ring") +
+                    " - p.14 defeats an attacked minion. " + Remaining(runtime));
                 SeatsAgree(runtime, onTheMoon ? "the maximum range" : "the ring");
                 Healthy(runtime);
             }
@@ -651,6 +661,18 @@ namespace GuardsDigital.Tests.PlayMode
             yield return ClickDefenseFace(wallRoot, WaspCardContent.Electrocute);
             yield return null;
             yield return null;
+            // MILESTONE 8.86: the wall is what this journey is about, but the Attack it is raised by
+            // still has to have happened - a rewind wall over an Attack that applied nothing would be
+            // a wall over nothing.
+            Assert.That(
+                wallRuntime.Cards.Single(card =>
+                    card.OwnerId.Equals(wallEnemy) &&
+                    card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electrocute))
+                    .State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "The locked Attack really reached p.14 and the defender spent the face they " +
+                "answered with. " + Remaining(wallRuntime));
+            Assert.That(wallRuntime.PendingDefenseChoice, Is.Null, Remaining(wallRuntime));
             Healthy(wallRuntime);
 
             // The plain rewind: a friendly hero moved, and one press gives the question back.

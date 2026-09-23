@@ -1051,6 +1051,20 @@ namespace GuardsDigital.Tests.PlayMode
                         Remaining(runtime));
                     yield return null;
                     yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
+                    yield return null;
+                    yield return null;
+                    // THE ATTACK'S OWN OUTCOME (milestone 8.86). This journey pressed the bullet, the
+                    // target and the Defense and then asserted only that the seats agreed, so an
+                    // Attack that asked all three questions and applied nothing would have passed.
+                    // "Defense answered" is read where a player reads it: the face is spent.
+                    Assert.That(
+                        runtime.Cards.Single(card =>
+                            card.OwnerId.Equals(enemy) &&
+                            card.DefinitionReference.DefinitionId.Equals(
+                                WaspCardContent.Electrocute)).State.Location,
+                        Is.EqualTo(CardLocation.DiscardPile),
+                        "The defender really spent the face they answered with. " + Remaining(runtime));
+                    Assert.That(runtime.PendingDefenseChoice, Is.Null, Remaining(runtime));
                 }
                 else
                 {
@@ -1069,6 +1083,15 @@ namespace GuardsDigital.Tests.PlayMode
                             MinionView(RedRanged).transform.position),
                         Is.True,
                         Remaining(runtime));
+                    yield return null;
+                    yield return null;
+                    // THE ATTACK'S OWN OUTCOME (milestone 8.86): p.14 defeats an attacked minion
+                    // without a Defense step, so the piece the bullet named leaves the board.
+                    Assert.That(
+                        runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(RedRanged)),
+                        Is.False,
+                        "\"Target a unit adjacent to you\" - the minion this bullet named is " +
+                        "defeated. " + Remaining(runtime));
                 }
 
                 yield return null;

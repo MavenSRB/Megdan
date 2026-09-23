@@ -43,6 +43,13 @@ namespace GuardsDigital.Tests.PlayMode
             // Milestone 8.46e: the Defense decline is the decision window's corner, read off its model.
             UiPlayer.ClickDefenseDecline(runtime,root.Hud); yield return null;
             Assert.That(runtime.PendingDefenseChoice, Is.Null);
+            // THE ATTACK'S OWN OUTCOME (milestone 8.86). This journey read the counted TOTAL and
+            // stopped there, so an Attack that computed the right number and then applied nothing
+            // would have passed it. An undefended Attack is p.14's defeat.
+            Assert.That(
+                runtime.Heroes.Any(hero => hero.HeroId.Equals(OtherHeroId(runtime,actor))), Is.False,
+                "The counted Attack was answered by no Defense at all, so p.14 defeats the hero it " +
+                "was aimed at and the piece leaves the board. " + Remaining(runtime));
             Healthy(runtime);
         }
 
@@ -116,9 +123,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingMovementChoice.RemainingAllowance, Is.EqualTo(2), "Shock prints Move 4, but the aura caps this action at 2.");
             var at = FirstClickableSpace(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
                 runtime.PendingMovementChoice.LegalDestinations.Where(value => value.Cost == 1).Select(value => value.Destination).ToArray());
+            var walkedFrom = Position(runtime,enemy);
             Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),root.Hud,Tile(at).transform.position), Is.True);
             yield return null;
             Assert.That(runtime.PendingMovementChoice.RemainingAllowance, Is.EqualTo(1));
+            // MILESTONE 8.86: the capped walk is read on the BOARD as well as on the allowance - a
+            // step that spent the allowance and moved nobody would have passed the line above.
+            Assert.That(Position(runtime,enemy), Is.EqualTo(at),
+                "The restricted hero really walked the step the aura still allows him. " +
+                Remaining(runtime));
+            Assert.That(Distance(Position(runtime,enemy),walkedFrom), Is.EqualTo(1),
+                "one space, for one point of the capped allowance. " + Remaining(runtime));
             var sawLaterTurn = false;
             for (var budget = 0; budget < 100 && runtime.RoundIndex == 1; budget++)
             {
@@ -239,9 +254,29 @@ namespace GuardsDigital.Tests.PlayMode
                 for (var i=0; i<count; i++)
                 {
                     yield return May(root);
-                    var choice = runtime.PendingEffectChoice.Candidates.First();
+                    // MILESTONE 8.86: every face offered is one of HER OWN discards - which is what
+                    // "retrieve a discarded card" admits and nothing else - and the one taken is
+                    // named by its instance id rather than taken first off the offer.
+                    Assert.That(
+                        runtime.PendingEffectChoice.Candidates.All(value => runtime.Cards
+                            .Single(card => card.Id.Equals(value.Value.CardInstanceId))
+                            .OwnerId.Equals(actor) &&
+                            runtime.Cards.Single(card => card.Id.Equals(value.Value.CardInstanceId))
+                                .State.Location == CardLocation.DiscardPile),
+                        Is.True,
+                        face.Value + ": the offer is his own discard pile. " + Remaining(runtime));
+                    var pileBefore = runtime.Cards.Count(card =>
+                        card.OwnerId.Equals(actor) && card.State.Location == CardLocation.DiscardPile);
+                    var choice = runtime.PendingEffectChoice.Candidates
+                        .OrderBy(value => value.Value.CardInstanceId.Value, StringComparer.Ordinal)
+                        .First();
                     yield return Pick(root,choice);
                     Assert.That(runtime.Cards.Single(card => card.Id.Equals(choice.Value.CardInstanceId)).State.Location, Is.EqualTo(CardLocation.Hand));
+                    Assert.That(
+                        runtime.Cards.Count(card => card.OwnerId.Equals(actor) &&
+                            card.State.Location == CardLocation.DiscardPile),
+                        Is.EqualTo(pileBefore - 1),
+                        face.Value + ": and the pile is exactly one card shorter. " + Remaining(runtime));
                 }
                 Assert.That(runtime.PendingEffectChoice, Is.Null);
                 Healthy(runtime);

@@ -215,6 +215,18 @@ namespace GuardsDigital.Tests.PlayMode
             yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
             yield return null;
             yield return null;
+            // THE ATTACK'S OWN OUTCOME (milestone 8.86). The journey proved the REACH and stopped
+            // there; an Attack that offered the hero four away and then applied nothing at all would
+            // have passed it. The printed outcome here is p.14's Defense, answered and spent.
+            Assert.That(
+                runtime.Cards.Single(card =>
+                    card.OwnerId.Equals(enemy) &&
+                    card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electrocute))
+                    .State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "The hero at Range 4 really answered the Attack, and the face they answered with is " +
+                "spent into their own discard pile. " + Remaining(runtime));
+            Assert.That(runtime.PendingDefenseChoice, Is.Null, Remaining(runtime));
             SeatsAgree(runtime, "Even the Odds at Range 4");
             Healthy(runtime);
         }
@@ -276,7 +288,10 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True,
                 "inside the printed Range 4. " + Remaining(runtime));
 
-            var chosen = target.LegalTargetMinionIds.First();
+            // MILESTONE 8.86: named by its own id in ordinal order rather than taken first off the
+            // offer, so the defeat asserted below is about a piece this journey can state.
+            var chosen = target.LegalTargetMinionIds
+                .OrderBy(value => value.Value, StringComparer.Ordinal).First();
             Assert.That(
                 UiPlayer.ClickBoard(
                     Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
@@ -286,7 +301,18 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             yield return null;
             yield return null;
-            Assert.That(Position(runtime, enemy), Is.Not.EqualTo(Position(runtime, his)));
+            // THE ATTACK'S OWN OUTCOME (milestone 8.86). What stood here was
+            // `Position(enemy) != Position(his)`, which is true of every board two pieces can stand
+            // on and therefore proved nothing about this card. p.14 defeats an attacked minion
+            // without a Defense step, and that is the printed outcome.
+            Assert.That(
+                runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(chosen)),
+                Is.False,
+                "\"Target a MINION in range, adjacent to your friendly hero\" - the piece the " +
+                "narrowed bullet named is defeated and leaves the board. " + Remaining(runtime));
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.True,
+                "and the enemy HERO the bullet could not name is untouched by it. " +
+                Remaining(runtime));
             SeatsAgree(runtime, "Outnumber's minion bullet");
             Healthy(runtime);
         }
@@ -431,7 +457,22 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return Bullet(boxedRoot, DistanceNode(1));
             Assert.That(OfferedSpaces(boxedRuntime), Is.Not.Empty, Remaining(boxedRuntime));
-            yield return Space(boxedRoot);
+            // MILESTONE 8.86: the boxed arm used to press the one legal distance and then assert
+            // only that the pause had closed, so a co-move that greyed the two correctly and then
+            // moved nobody would have passed it. Both pieces are read before and after.
+            var boxedHisWas = Position(boxedRuntime, boxedHanu);
+            var boxedAllyWas = Position(boxedRuntime, boxedAlly);
+            var boxedTo = FirstClickableSpace(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), OfferedSpaces(boxedRuntime));
+            yield return Space(boxedRoot, boxedTo);
+            Assert.That(Position(boxedRuntime, boxedHanu), Is.EqualTo(boxedTo),
+                "The one distance the board admits is walked, and he is standing where it put " +
+                "him. " + Remaining(boxedRuntime));
+            Assert.That(Distance(Position(boxedRuntime, boxedHanu), boxedHisWas), Is.EqualTo(1),
+                Remaining(boxedRuntime));
+            Assert.That(Distance(Position(boxedRuntime, boxedAlly), boxedAllyWas), Is.EqualTo(1),
+                "\"Both must be moved the full distance, or neither one moves.\" " +
+                Remaining(boxedRuntime));
             Assert.That(boxedRuntime.PendingEffectChoice, Is.Null, Remaining(boxedRuntime));
             SeatsAgree(boxedRuntime, "the greyed distance");
             Healthy(boxedRuntime);
@@ -493,8 +534,26 @@ namespace GuardsDigital.Tests.PlayMode
                     candidate.Value.HeroId.Equals(ally)));
             var second = runtime.PendingEffectChoice;
             Assert.That(second, Is.Not.Null, Remaining(runtime));
-            var minion = second.Candidates.First(candidate =>
-                candidate.Value.Kind == EffectValueKind.Minion);
+            // MILESTONE 8.86: every minion still offered as the pair's second member is a FRIENDLY
+            // one inside the printed Radius 2 - which is what "two friendly units in radius" admits -
+            // and the one taken is named by its own id rather than by the offer's order.
+            var hisSide = runtime.Setup.Heroes.Single(hero => hero.HeroId.Equals(his)).TeamSide;
+            Assert.That(
+                second.Candidates
+                    .Where(candidate => candidate.Value.Kind == EffectValueKind.Minion)
+                    .All(candidate =>
+                        runtime.ReadModel.Minions.Single(value =>
+                            value.MinionId.Equals(candidate.Value.MinionId)).TeamSide == hisSide &&
+                        Distance(
+                            runtime.ReadModel.Minions.Single(value =>
+                                value.MinionId.Equals(candidate.Value.MinionId)).Coordinate,
+                            Position(runtime, his)) <= 2),
+                Is.True,
+                "p.17's Friendly, inside the printed Radius 2. " + Remaining(runtime));
+            var minion = second.Candidates
+                .Where(candidate => candidate.Value.Kind == EffectValueKind.Minion)
+                .OrderBy(candidate => candidate.Value.MinionId.Value, StringComparer.Ordinal)
+                .First();
             var minionId = minion.Value.MinionId;
             var minionWas = MinionView(minionId).Occupancy.Coordinate;
             yield return Pick(root, minion);

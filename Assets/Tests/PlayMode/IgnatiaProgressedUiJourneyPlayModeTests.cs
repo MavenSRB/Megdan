@@ -377,6 +377,17 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
                 yield return null;
                 yield return null;
+                // THE FIRST INSTANCE'S OWN OUTCOME (milestone 8.86): the hero it named answered
+                // p.14, and the face they answered with is spent - an Attack that asked the target
+                // question and applied nothing would have passed this journey before.
+                Assert.That(
+                    runtime.Cards.Single(card =>
+                        card.OwnerId.Equals(enemy) &&
+                        card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electrocute))
+                        .State.Location,
+                    Is.EqualTo(CardLocation.DiscardPile),
+                    "☀ the adjacent hero the first instance took really answered the Attack. " +
+                    Remaining(runtime));
 
                 if (takeTheRepeat)
                 {
@@ -407,11 +418,24 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return Pick(root, CandidateFor(runtime, RedRanged));
                     yield return null;
                     yield return null;
+                    // THE REPEATED INSTANCE'S OWN OUTCOME (milestone 8.86): "on a MINION" was
+                    // asserted over the offer; the minion it took is now asserted defeated.
+                    Assert.That(
+                        runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(RedRanged)),
+                        Is.False,
+                        "\"May repeat once on a minion\" - the repeated Attack really ran. " +
+                        Remaining(runtime));
                 }
                 else
                 {
                     Assert.That(runtime.PendingEffectChoice, Is.Null,
                         "Refusing the repeat finishes the card. " + Remaining(runtime));
+                    Assert.That(
+                        runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(RedRanged)),
+                        Is.True,
+                        "and the minion the refused repeat would have taken is still standing - " +
+                        "which is what makes the refusal a decision rather than an absence. " +
+                        Remaining(runtime));
                 }
 
                 SeatsAgree(runtime, takeTheRepeat ? "the minion repeat" : "the refused repeat");
@@ -890,6 +914,14 @@ namespace GuardsDigital.Tests.PlayMode
             yield return Pick(root, CandidateFor(runtime, RedRanged));
             yield return null;
             yield return null;
+            // THE FIRST ACTION'S OWN OUTCOME (milestone 8.86): p.16's flip is only reached because a
+            // primary action was PERFORMED, and what performing it did is the minion leaving the
+            // board.
+            Assert.That(
+                runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(RedRanged)),
+                Is.False,
+                "☀ \"a minion adjacent to you\" - the Attack that opens the Ultimate's offer really " +
+                "defeated the piece it named. " + Remaining(runtime));
 
             var flip = runtime.PendingEffectChoice;
             Assert.That(flip, Is.Not.Null,
@@ -941,6 +973,17 @@ namespace GuardsDigital.Tests.PlayMode
             yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
             yield return null;
             yield return null;
+            // THE REPEATED ACTION'S OWN OUTCOME (milestone 8.86): the hero the flipped face could
+            // name answered p.14 and spent the face they answered with, so the repeat performed a
+            // second attack rather than merely re-asking a question.
+            Assert.That(
+                runtime.Cards.Single(card =>
+                    card.OwnerId.Equals(enemy) &&
+                    card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electrocute))
+                    .State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "☾ \"a hero in range\" - the second attack the sun face could not have made really " +
+                "reached him. " + Remaining(runtime));
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "\"The FIRST time each turn\" - the repeated instance is a primary action too, and " +
@@ -977,6 +1020,12 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return Pick(root, CandidateFor(runtime, RedRanged));
                 yield return null;
                 yield return null;
+                // MILESTONE 8.86: the action whose performance opens p.16's offer really performed.
+                Assert.That(
+                    runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(RedRanged)),
+                    Is.False,
+                    "☀ the Attack that reaches the Ultimate's offer defeated the minion it named. " +
+                    Remaining(runtime));
 
                 Assert.That(runtime.PendingEffectChoice.NodeId.Value,
                     Is.EqualTo(IgnatiaEffectContent.ChaosIncarnateFlipNode), Remaining(runtime));

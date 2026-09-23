@@ -223,10 +223,25 @@ namespace GuardsDigital.Tests.PlayMode
                     "and the push follows either answer - MI-Q12c prints it last and " +
                     "unconditionally. " + Remaining(runtime));
                 Assert.That(subject.NodeId.Value, Is.EqualTo("dragon-push-subject"));
-                yield return Pick(root, subject.Candidates.First());
+                // MILESTONE 8.86: the push's subject is named, its space is read, and the board is
+                // read again after the amount is pressed. This journey used to press ONE and never
+                // look, so a push that offered its integers and moved nobody would have passed it.
+                var pushed = Named(subject.Candidates, "dragon-push-subject");
+                var pushedUnit = pushed.Value;
+                var pushedFrom = SpaceOf(runtime, pushedUnit);
+                yield return Pick(root, pushed);
                 Assert.That(runtime.PendingEffectChoice.NodeId.Value,
                     Is.EqualTo("dragon-push-push"));
                 yield return PressAmount(root, 1);
+                Assert.That(Distance(SpaceOf(runtime, pushedUnit), pushedFrom), Is.EqualTo(1),
+                    "\"Push an enemy unit adjacent to you up to 3 spaces\" - one space, because one " +
+                    "is what she pressed, and the piece really left the space it stood on. " +
+                    Remaining(runtime));
+                Assert.That(
+                    Distance(SpaceOf(runtime, pushedUnit), Position(runtime, her)),
+                    Is.EqualTo(Distance(pushedFrom, Position(runtime, her)) + 1),
+                    "and p.18 pushes in a straight line directly away from her. " +
+                    Remaining(runtime));
                 SeatsAgree(runtime, steps ? "Dragon's two-space step" : "Dragon's declined step");
                 Healthy(runtime);
             }
@@ -287,6 +302,19 @@ namespace GuardsDigital.Tests.PlayMode
             yield return AnswerAnyUltimateRepeat(root, false);
             yield return null;
 
+            // MILESTONE 8.86, THE STEP THAT MUST NOT PASS BY ABSENCE: the Attack the silent `may`
+            // hangs off is shown to have happened before its silence is read as content.
+            Assert.That(
+                runtime.Cards.Single(card =>
+                    card.OwnerId.Equals(enemy) &&
+                    card.DefinitionReference.DefinitionId.Equals(WaspCardContent.Electrocute))
+                    .State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "Cobra Stance's own Attack reached p.14 and the defender spent the face they " +
+                "answered with. " + Remaining(runtime));
+            Assert.That(Tokens(runtime), Is.Empty,
+                "and the reason the swap has nothing to do is the board p.8 left. " +
+                Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "With nothing in radius the swap has nothing to do and the printed `may` is not " +
                 "drawn - and MI-Q10c's nesting means the re-place beside it is not either. If a " +
@@ -366,7 +394,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(first, Is.Not.Null,
                 "The blast he crossed asks him for a card. " + Remaining(runtime));
             Assert.That(first.ChooserId, Is.EqualTo(enemy));
-            yield return Pick(root, first.Candidates.First());
+            yield return Pick(root, Named(first.Candidates, "first"));
             Assert.That(HandCountOf(runtime, enemy), Is.EqualTo(handBefore - 1));
             Assert.That(
                 Tokens(runtime).Any(token => token.Coordinate.Equals(new HexCoordinate(-2, 0))),
@@ -450,7 +478,7 @@ namespace GuardsDigital.Tests.PlayMode
                 "The chosen hero's own card, on the chosen hero's own seat. " + Remaining(runtime));
             SeatsAgree(runtime, "the first grenade discard");
             var heldWhenAsked = HandCountOf(runtime, enemy);
-            yield return Pick(root, firstDiscard.Candidates.First());
+            yield return Pick(root, Named(firstDiscard.Candidates, "firstDiscard"));
             Assert.That(HandCountOf(runtime, enemy), Is.EqualTo(heldWhenAsked - 1),
                 "and it costs exactly one card out of the hand it was asked of. " +
                 Remaining(runtime));
@@ -660,7 +688,7 @@ namespace GuardsDigital.Tests.PlayMode
                     "card choice is a projection property, which is milestone 8.40k's rule. " +
                     Remaining(runtime));
 
-                var taken = deckCard.Candidates.First();
+                var taken = Named(deckCard.Candidates, "deckCard");
                 var takenId = taken.Value.CardInstanceId;
                 yield return Pick(root, taken);
                 Assert.That(
@@ -747,6 +775,13 @@ namespace GuardsDigital.Tests.PlayMode
                 Remaining(runtime));
             yield return null;
             yield return null;
+            // THE FIRST INSTANCE'S OWN OUTCOME (milestone 8.86): p.14 defeats an attacked minion
+            // without a Defense step, which is also what makes "a DIFFERENT target" below a real
+            // narrowing rather than an accident of the offer.
+            Assert.That(
+                runtime.ReadModel.Minions.Any(value => value.MinionId.Equals(minion)), Is.False,
+                "Her printed Attack defeated the minion her first instance named. " +
+                Remaining(runtime));
 
             // Dragon's own rider is answered out of the way - which of it and the Ultimate's trigger
             // a player meets first is the resolver's ordering rather than this journey's subject.
@@ -776,7 +811,7 @@ namespace GuardsDigital.Tests.PlayMode
                         candidate.Value.Kind == EffectValueKind.Hero)
                         ? standing.Candidates.First(candidate =>
                             candidate.Value.Kind == EffectValueKind.Hero)
-                        : standing.Candidates.First();
+                        : Named(standing.Candidates, "standing");
                     yield return Pick(root, preferred);
                 }
             }
@@ -808,6 +843,15 @@ namespace GuardsDigital.Tests.PlayMode
                 "and the repeat's own target is answered on the board. " + Remaining(runtime));
             yield return null;
             yield return null;
+            // THE REPEAT'S OWN OUTCOME (milestone 8.86): the hero it took really met p.14 - either
+            // he answered with a face he has now spent, or the repeat defeated him. What the journey
+            // used to prove was only that the offer had excluded the first target.
+            Assert.That(
+                !runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)) ||
+                    runtime.PendingDefenseChoice != null,
+                Is.True,
+                "The repeated Attack really reached the hero it named - he is either answering " +
+                "p.14 or off the board, and never merely re-offered. " + Remaining(runtime));
 
             for (var budget = 0; budget < 12 && runtime.PendingEffectChoice != null; budget++)
             {
@@ -833,7 +877,7 @@ namespace GuardsDigital.Tests.PlayMode
                         candidate.Value.Kind == EffectValueKind.Hero)
                         ? standing.Candidates.First(candidate =>
                             candidate.Value.Kind == EffectValueKind.Hero)
-                        : standing.Candidates.First();
+                        : Named(standing.Candidates, "standing");
                     yield return Pick(root, preferred);
                 }
             }
@@ -1031,7 +1075,14 @@ namespace GuardsDigital.Tests.PlayMode
                 "The cross-seat half of her content survives the replayed prefix too: the hero who " +
                 "walked over the blast is still the one being asked. " + Remaining(runtime));
             SeatsAgree(runtime, "the opponent's own mine discard after the replay");
-            yield return Pick(root, discard.Candidates.First());
+            // MILESTONE 8.86: the replayed prompt is ANSWERED and its printed cost read - a journey
+            // that only proved whose question it was could not tell a live prompt from a dead one.
+            var replayedHand = HandCountOf(runtime, enemy);
+            yield return Pick(root, Named(discard.Candidates, "discard"));
+            Assert.That(HandCountOf(runtime, enemy), Is.EqualTo(replayedHand - 1),
+                "\"that hero discards a card\" - one card, out of the hand it was asked of, after " +
+                "the retained prefix was replayed. " + Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
             Healthy(runtime);
         }
 
