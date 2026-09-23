@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.85 Movement primary hit surface completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.85 | The user's live report that Movement-primary cards were hard to select: a primary Movement's hit surface was the 80x82 badge circle (one ninth of the panel an Attack or Skill primary offers); it is now the complete printed action panel, the fallback glow the box, the secondary badge's circle kept, the pin flipped. Focused Edit Mode 270/270; focused Play Mode 223/223; schema v44 / wire /21 unmoved. [Definition](../../Roadmap/PHASE_8.md#x-885-a-primary-movements-hit-surface-is-the-printed-action-panel). | `727342d6` |
+
 ## Milestone 8.84 swept package completion evidence
 
 | Milestone | Outcome and definition | Commit |

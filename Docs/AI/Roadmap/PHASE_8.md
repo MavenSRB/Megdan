@@ -219,6 +219,22 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
+### [x] 8.85 A primary Movement's hit surface is the printed action panel
+
+Authorized 2026-09-23 by the user from the live playtest: "something strange is happening with cards that have primary movment action. Players seem to have trouble clicking them." / "They have trouble selecting primary movmenent action."
+
+Cause, measured: on a prepared front, `DirectorHandsUnityView.PreparedActionSourceBounds` gave a PRIMARY Movement the same 80x82 source-pixel circle around the printed boot/value badge that the rail's SECONDARY Movement owns, while a primary Attack or Skill owns the whole 360x184 lower action panel - about one ninth of the area, on the card's lower-left, so a player pressing the printed action panel (where every other primary answers) pressed nothing. `MatchHudPresentationTests` pinned the circle on purpose ("Primary Movement uses the same compact circle as the rail boot").
+
+Outcome: a primary Movement's hit surface is the complete printed action panel like every other primary (`Rect(6, 318, 360, 174)` on the shared 372x520 anatomy), its fallback glow the panel box; the rail's secondary Movement keeps its circle; the lit ring overlay, which already traced the panel's printed lines, is unchanged.
+
+Acceptance: the pin flipped (every primary spans more than 90% of the card's width and 25% of its height, and wears the box, Movement included; the secondary keeps its circle); the hands-view fixtures green; every journey that presses a Movement primary through the click driver still green. T2 (Presentation only).
+
+Non-goals: the generated fallback face's bands; the secondary badge; any ribbon anchor.
+
+Completed 2026-09-23 (`727342d6`, on main). One rectangle and one flag: `PreparedActionSourceBounds` returns the panel for a primary Movement, and `AddPreparedArtworkHighlight` takes `circle` (true only for a secondary Movement) instead of deriving the shape from the kind alone. `MatchHudPresentationTests` re-stated: the Movement arm of the prepared-hotspot case folds into the every-primary arm. Focused Edit Mode 270/270 (`tmp/885-edit-results.xml`); focused Play Mode 223/223 over the gate and journey fixtures that bind `PrimaryMovementDestination` (`tmp/885-play-results.xml`); harness unaffected (Unity-only fixtures); schema v44 and wire `/21` unmoved. Not yet in a package: 8.84 predates it.
+
+Historical evidence: [8.85 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-885-movement-primary-hit-surface-completion-evidence).
+
 ### [x] 8.84 Package the swept twenty-two-hero playtest build, for Windows and macOS
 
 Authorized 2026-09-23 by the user's standing playtest order, the moment 8.83 landed: the packages cut at 8.81 predate the sweep, and the user plays on the current package.
