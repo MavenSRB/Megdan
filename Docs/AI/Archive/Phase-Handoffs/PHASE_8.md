@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.89 selection differential audit completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.89 | Four hero-local selections compared with their 8.88 family expression on 300 seeded boards each - all agree (presence differs only where p.19's immune-hero rule allows); no drift defect; High Voltage's unfiltered immune-hero choice raised as open question 36; 8.88's ownership reading shown not to fit Min (Smoke bomb and Mines); two missing adjacency clauses recorded. Harness 4514/4514, Edit 5504 + 37 explicit skips. Definition: [8.89](../../Roadmap/PHASE_8.md#x-889-differential-audit-of-the-hero-local-selections-against-the-composable-family). | pending |
+
 ## Milestone 8.88 composable target selection completion evidence
 
 | Milestone | Outcome and definition | Commit |

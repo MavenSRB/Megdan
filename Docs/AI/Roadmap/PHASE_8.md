@@ -113,7 +113,7 @@ Completed 2026-09-23. `SyntheticTargetingCapabilities` became partial and its ei
 
 Historical evidence: [8.88 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-888-composable-target-selection-completion-evidence).
 
-### [~] 8.89 Differential audit of the hero-local selections against the composable family
+### [x] 8.89 Differential audit of the hero-local selections against the composable family
 
 AUTHORIZED 2026-09-23 by the user ("ok, do that 8.89, and we hope it is enough"), to run after 8.88 closes. The aim is finding defects the roster has not shown yet, in the places copied selection code can drift from the shared reading.
 
@@ -124,6 +124,20 @@ Acceptance: a stated inventory of the hero-local selections (id, hero, printed p
 Non-goals: re-pointing card definitions at the family; placement destinations (8.88a); new hero content; any rule reinterpretation - a disagreement the printed text does not settle is raised to the user, not decided.
 
 Dependencies: 8.88.
+
+Completed 2026-09-23. **No drift defect found** in any hero-local selection the family can express; **one rules inconsistency raised** to the user as [open question 36](../Rules/OPEN_QUESTIONS.md) (High Voltage offers an immune hero to its discard where Shock does not; behaviour unchanged); **one limit of 8.88 measured** on a dealt hero (below). New `SelectionDifferentialAuditTests` compares four capabilities with their family expression on 300 seeded boards each (terrain, both teams' minions, tokens of every owner, discard piles, one All-immunity on a quarter of the boards, Radius 1-3), with coverage floors on both outcomes; a deliberately broken expression (the obstacle clause turned off) failed at seed 0, so the comparison discriminates.
+
+Inventory and verdicts:
+- **Agree on every board:** `brynn-enemy-hero-in-radius-adjacent-to-obstacles@1` and `enemy-hero-with-discard-present@1` (presence = the Radius hero arm is non-empty, except where an immune hero is the reason, which p.19 makes legal); `hanu-friendly-unit-pair@1` (its pool = the Radius unit arm, allied, as a Swap); the Radius half of `brynn-tracking-swap-subject@1` (= the Radius hero arm with the obstacle clause, not adjacent). The discard presence duplicates `HeroDiscardPileQuery`'s test inline with identical semantics.
+- **Equal by construction:** Ignatia's four `ignatia-range-*` narrowings (delegate since 8.88).
+- **Not expressible, clause recorded:** `ignatia-enemy-hero-adjacent-to-magma-or-minion@1` needs adjacency to ANY token and to a minion; `ignatia-enemy-minion-adjacent-to-enemy-hero@1` needs adjacency to units of a side. The family's adjacency kinds are terrain, the actor's own tokens and one named space.
+- **8.88's ownership reading does not fit Min:** `min-smoke-bomb-in-radius@1` / `-in-range@1` name the Smoke bomb by its definition, and Min also owns Mines, so "a token the actor owns" is wider than "the Smoke bomb" for her. It fits every undealt hero 8.88 was written for except Trinkets, whose Turret is named by space.
+- **Out of the family's reach by design (a written distance or a line, not a printed disk):** `synthetic-hero-adjacent-to-minion@1` (the subject of question 36), the anchored family (`enemy-unit-beside-anchor` and kin), the written-distance `choose-target` revisions, `synthetic-range-obstacle-target@1`'s line walk, the "adjacent to you" half of the tracking swap, and `unit-pair@1`'s equal-distance pair; `choose-swap-subject@1` is a union of an adjacent half and a Range-hero half and was not compared.
+
+Evidence: harness 4514/4514; complete Unity Edit Mode 5541 total / 5504 passed / 0 failed / 37 explicit skips. T2 - tests and documentation only, no content or production change, so Play Mode was not re-run (827/827 at 8.88 on the same production source).
+
+Historical evidence: [8.89 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-889-selection-differential-audit-completion-evidence).
+
 
 ### [ ] 8.88a Placement destinations compose the printed-icon clauses
 
