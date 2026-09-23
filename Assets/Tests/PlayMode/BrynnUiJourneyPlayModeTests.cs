@@ -662,6 +662,19 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
                 yield return null;
+                // MILESTONE 8.86: the Attack the chosen bullet bound really RAN. p.14's own outcome
+                // here is the defense being answered and paid for, which is the half this journey
+                // used to leave to SeatsAgree - a check that every seat reads the same board, not a
+                // check that anything happened on it.
+                Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                    "The clicked face answered p.14's response. " + Remaining(runtime));
+                Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                    "and the Attack completed rather than standing on its target question. " +
+                    Remaining(runtime));
+                Assert.That(DiscardsOf(runtime, enemy),
+                    Contains.Item(WaspCardContent.Electrocute.Value),
+                    "and p.14's Defense was PAID: the face the defender answered with is in their " +
+                    "own discard pile. " + Remaining(runtime));
                 SeatsAgree(runtime, "Familiar Ground's " + (obstacleBullet ? "second" : "first") +
                     " bullet");
                 Healthy(runtime);
@@ -787,6 +800,14 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return ClickDefenseFace(root, WaspCardContent.Electrocute);
             yield return null;
+            // MILESTONE 8.86: p.14's own outcome, on the hero the water ring made a legal subject.
+            Assert.That(runtime.PendingDefenseChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                "The Attack the water ring's bullet bound completed. " + Remaining(runtime));
+            Assert.That(DiscardsOf(runtime, enemy),
+                Contains.Item(WaspCardContent.Electrocute.Value),
+                "and the Defense that answered it was paid out of that hero's own hand. " +
+                Remaining(runtime));
             SeatsAgree(runtime, "the water ring's own hero");
             Healthy(runtime);
         }

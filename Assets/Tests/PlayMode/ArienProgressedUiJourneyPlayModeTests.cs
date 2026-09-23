@@ -79,35 +79,110 @@ namespace GuardsDigital.Tests.PlayMode
             }
 
             // "After the attack: You may push an enemy unit adjacent to you up to 2 spaces."
+            //
+            // MILESTONE 8.86, AND THIS IS THE STEP THE AUDIT WAS FOR. Until this milestone the
+            // journey took whichever unit the offer happened to mark, answered every remaining
+            // control blindly, and claimed one thing about the board: that the pushed unit ended NO
+            // CLOSER to Arien. A unit that never moved an inch satisfies that exactly, so the
+            // printed sentence could have pushed nobody for four milestones and this case would
+            // still have been green - which is milestone 8.82's class of vacuous pass, on a
+            // displacement instead of a move. It now NAMES the unit, names the distance, and asserts
+            // the space CHANGED.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The after-attack push must stop the Attack. " + Remaining(runtime));
-            var pushed = Object.FindObjectsByType<StandardMinionView>()
-                .Where(view => view.Occupancy != null)
-                .FirstOrDefault(view => runtime.RoundView.Model.EffectChoiceTargets
-                    .Any(target => target.Space.Equals(view.Occupancy.Coordinate)));
-            Assert.That(pushed, Is.Not.Null,
-                "An enemy unit beside Arien must be offered on the board. " + Remaining(runtime));
-            var pushedId = pushed.Occupancy.MinionId;
             var arienAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(arienId)).Coordinate;
-            var distanceBefore = HexDistanceQuery.Calculate(
-                MinionCoordinate(runtime, pushedId), arienAt);
+            var offeredUnits = Object.FindObjectsByType<StandardMinionView>()
+                .Where(view => view.Occupancy != null)
+                .Where(view => runtime.RoundView.Model.EffectChoiceTargets
+                    .Any(target => target.Space.Equals(view.Occupancy.Coordinate)))
+                .ToArray();
+            Assert.That(offeredUnits, Is.Not.Empty,
+                "An enemy unit beside Arien must be offered on the board. " + Remaining(runtime));
+
+            // p.18 pushes DIRECTLY AWAY from the pusher, so WHICH offered unit can travel at all is
+            // a fact about the board rather than about the card: the space one step further along
+            // that heading has to be free and playable. A journey that named a boxed-in unit would
+            // be asserting about a distance the board never admitted - the same correction milestone
+            // 8.83 had to make to Steam Jump's landing.
+            var pushed = offeredUnits.FirstOrDefault(view =>
+                IsFreeSpace(runtime, DirectlyAway(arienAt, view.Occupancy.Coordinate)));
+            Assert.That(pushed, Is.Not.Null,
+                "\"push an enemy unit adjacent to you up to 2 spaces\" - at least one offered unit " +
+                "must have the space directly away from Arien free, or there is no push on this " +
+                "board to prove. Offered: " + string.Join(", ", offeredUnits.Select(view =>
+                    view.Occupancy.MinionId.Value + "@" + view.Occupancy.Coordinate)) + ". " +
+                Remaining(runtime));
+            var pushedId = pushed.Occupancy.MinionId;
+            var pushedFrom = pushed.Occupancy.Coordinate;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, pushed.transform.position), Is.True,
                 "The pushed unit is chosen where it stands.");
             yield return null;
 
-            yield return AnswerEveryRemainingEffectControl(root);
+            // "up to 2 spaces" reaches a player as one control per number, so the journey NAMES a
+            // non-zero one instead of pressing whichever control came last. A push of nought is a
+            // legal p.18 answer and it is not what this printed sentence is being asked to prove.
+            var distances = runtime.RoundView.Model.EffectChoices
+                .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
+                .OrderByDescending(value =>
+                    value.Command.EffectChoice.Candidate.Value.IntegerValue)
+                .ToArray();
+            Assert.That(distances, Is.Not.Empty,
+                "The named unit must be followed by the printed distance question. " +
+                Remaining(runtime));
+            Assert.That(distances[0].Command.EffectChoice.Candidate.Value.IntegerValue,
+                Is.GreaterThan(0),
+                "and the board admits a distance that actually travels, which is what makes the " +
+                "answer below a push rather than a stand-still. Offered: " + string.Join(", ",
+                    distances.Select(value =>
+                        value.Command.EffectChoice.Candidate.Value.IntegerValue.ToString())) + ". " +
+                Remaining(runtime));
+            UiPlayer.Click(UiPlayer.Button(hud, distances[0].Label));
+            yield return null;
+            yield return null;
+
+            var confirmPush = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            if (confirmPush != null)
+            {
+                UiPlayer.Click(UiPlayer.Button(hud, confirmPush.Label));
+                yield return null;
+            }
+
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The push's own controls carry it to completion. " + Remaining(runtime));
 
-            // p.18 resolves a push against the pre-push state and an occupied space is an obstacle,
-            // so the exact distance belongs to the board rather than to the card. What the card
-            // promises is that a push never brings its unit closer.
+            var pushedTo = MinionCoordinate(runtime, pushedId);
+            Assert.That(pushedTo, Is.Not.EqualTo(pushedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the pushed unit really left the space it " +
+                "was standing on. It stood on " + pushedFrom + ". " + Remaining(runtime));
             Assert.That(
-                HexDistanceQuery.Calculate(MinionCoordinate(runtime, pushedId), arienAt),
-                Is.GreaterThanOrEqualTo(distanceBefore),
-                "A push moves its unit away from Arien or not at all.");
+                HexDistanceQuery.Calculate(pushedTo, arienAt),
+                Is.GreaterThan(HexDistanceQuery.Calculate(pushedFrom, arienAt)),
+                "and p.18 sent it directly away from the pusher rather than anywhere else. " +
+                Remaining(runtime));
         }
+
+        /// <summary>
+        /// The space one step further along the heading from <paramref name="from"/> through an
+        /// ADJACENT <paramref name="piece"/>, which is where rulebook p.18 puts the first space of a
+        /// push. Milestone 8.86.
+        /// </summary>
+        private static HexCoordinate DirectlyAway(HexCoordinate from, HexCoordinate piece) =>
+            new HexCoordinate(piece.Q + (piece.Q - from.Q), piece.R + (piece.R - from.R));
+
+        /// <summary>
+        /// Whether a space is playable under rulebook p.19 and carries no piece - which is what p.18
+        /// asks before it lets a push travel through it. Milestone 8.86.
+        /// </summary>
+        private static bool IsFreeSpace(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate space) =>
+            runtime.Projection.SelectedMap.Spaces.Any(value =>
+                value.Coordinate.Equals(space) &&
+                value.Kind == BoardMapSpaceKind.Playable) &&
+            !runtime.Projection.Heroes.Any(hero => hero.Coordinate.Equals(space)) &&
+            !runtime.Projection.Minions.Any(minion => minion.Coordinate.Equals(space)) &&
+            !runtime.Projection.Obstacles.Any(obstacle => obstacle.Coordinate.Equals(space));
 
         [UnityTest]
         public IEnumerator SlipperyGround_AppliesItsTextBeforeMovingAndStopsTheEnemysFastTravel()
@@ -250,11 +325,30 @@ namespace GuardsDigital.Tests.PlayMode
                 "The swapped minion is chosen where it stands.");
             yield return null;
 
-            yield return AnswerEveryRemainingEffectControl(root);
+            // MILESTONE 8.86. The blind answer-everything loop that used to stand here is replaced
+            // by the ONE answer this node can still owe - its own confirm - so a question the swap
+            // never asked cannot be silently answered on its behalf.
+            var closeSwap = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
+                value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
+            if (closeSwap != null)
+            {
+                UiPlayer.Click(UiPlayer.Button(hud, closeSwap.Label));
+                yield return null;
+            }
+
+            Assert.That(
+                runtime.RoundView.Model.EffectChoices.Any(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select),
+                Is.False,
+                "and no further selection stands: \"Swap with an enemy minion in range\" asks which " +
+                "minion and nothing else. " + Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null, "The swap asks nothing else.");
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(arienId)).Coordinate,
                 Is.EqualTo(targetAt),
                 "Arien stands where the clicked minion was.");
+            Assert.That(targetAt, Is.Not.EqualTo(arienAt),
+                "and the two spaces really were different, so the exchange below is an exchange. " +
+                Remaining(runtime));
             Assert.That(MinionCoordinate(runtime, targetId), Is.EqualTo(arienAt),
                 "and the minion stands where Arien was - a swap, which p.19 separates from movement.");
         }
@@ -312,6 +406,14 @@ namespace GuardsDigital.Tests.PlayMode
             // it by whether the frame is offering candidates at all.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The before-attack line must stop the Attack. " + Remaining(runtime));
+            // MILESTONE 8.86. Declining is the arm this journey takes, and the arm is NAMED: the
+            // subject of the case is the repeat behind the line, and the line's own non-zero arm -
+            // "Up to 1 enemy hero ... discards a card, or is defeated" - is driven to its discard by
+            // DangerousCurrent_MakesTheHeroBehindItsTargetDiscardOnItsOwnCardFace on the identical
+            // printed sentence. What is asserted here is that the refusal really is the zero arm:
+            // the hero it could have named keeps every card.
+            var enemyHeldBefore = runtime.Cards.Count(card =>
+                card.OwnerId.Equals(waspId) && card.State.Location == CardLocation.Hand);
             if (runtime.PendingEffectChoice.Candidates.Count > 0)
             {
                 var declineLine = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
@@ -321,6 +423,13 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.Click(UiPlayer.Button(hud, declineLine.Label));
                 yield return null;
             }
+
+            Assert.That(
+                runtime.Cards.Count(card =>
+                    card.OwnerId.Equals(waspId) && card.State.Location == CardLocation.Hand),
+                Is.EqualTo(enemyHeldBefore),
+                "and the refused line took nothing, which is what a floor of zero answered with " +
+                "nought means. " + Remaining(runtime));
 
             // "May repeat once on a different unit" - the printed decision, taken on its control.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
@@ -345,6 +454,21 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.AcceptedCommands, Has.Count.EqualTo(commandsBefore + 1),
                 "One click on the repeat's control is one command.");
+
+            // MILESTONE 8.86: the FIRST instance really ran, read on the seat-public log rather than
+            // inferred from the second question opening. "May repeat once" repeats an attack, and a
+            // repeat of an attack that never resolved is not what the printed sentence promises.
+            Assert.That(
+                Object.FindObjectsByType<StandardMinionView>()
+                    .Any(view => view.Occupancy != null &&
+                        view.Occupancy.MinionId.Equals(targetId)),
+                Is.False,
+                "The first Attack instance must have REACHED ITS CONSEQUENCE before the repeat " +
+                "begins: p.14's step 6 took the unit it named off the board. " + Remaining(runtime));
+            Assert.That(MinionsDefeated(runtime), Is.Not.Empty,
+                "and the whole table can read that it did, on the seat-public log. Log: " +
+                string.Join(" | ", runtime.Projection.MatchLog
+                    .Select(entry => entry.Kind + "/" + entry.Outcome)) + ". " + Remaining(runtime));
 
             var second = runtime.PendingAttackTargetChoice;
             Assert.That(second, Is.Not.Null,
@@ -690,37 +814,28 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Answers every control a paused frame still offers, by clicking it, until nothing is
-        /// paused. A confirm is preferred over a decline so a batch runs rather than being refused.
+        /// MILESTONE 8.86. Every Attack that has RESOLVED, with its outcome, read off the
+        /// seat-public match log - which is where rulebook p.14's own result is recorded for the
+        /// whole table and therefore the one surface a journey can assert an attack against without
+        /// knowing the printed values either side of it.
+        ///
+        /// <para>It replaces <c>AnswerEveryRemainingEffectControl</c>, the blind answer-everything
+        /// loop this fixture used to carry: a loop that presses whatever control stands cannot tell
+        /// a step that ran from one that was never asked, which is the whole of what this milestone
+        /// audits out of the journeys.</para>
+        ///
+        /// <para><b>MEASURED at 8.86:</b> the log DOES carry a <c>MatchLogEntryKind.Attack</c> row
+        /// for an attack on a minion, and that row's <c>Outcome</c> is <c>None</c> - the four
+        /// <c>MatchLogOutcome</c> members are about an attack a DEFENDER answered, and a minion
+        /// holds no hand. So the Defeat row is the honest reading, and the stronger one.</para>
         /// </summary>
-        private static IEnumerator AnswerEveryRemainingEffectControl(MatchSceneCompositionRoot root)
-        {
-            var runtime = root.Runtime;
-            for (var budget = 0; runtime.PendingEffectChoice != null && budget < 6; budget++)
-            {
-                var choices = runtime.RoundView.Model.EffectChoices;
-
-                // A printed distance range - "up to 2 spaces" - reaches the player as one control per
-                // number, which is the Integer arm milestone 8.15 named after finding them drawn as
-                // anonymous ordinals. The furthest is taken, so the push is a push.
-                var selects = choices
-                    .Where(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
-                    .ToArray();
-                var next = selects.Length > 0
-                    ? selects[selects.Length - 1]
-                    : choices.FirstOrDefault(value =>
-                        value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm) ??
-                      choices.FirstOrDefault(value =>
-                        value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
-                if (next == null)
-                {
-                    yield break;
-                }
-
-                UiPlayer.Click(UiPlayer.Button(root.Hud, next.Label));
-                yield return null;
-            }
-        }
+        private static GuardsDigital.Core.Diagnostics.MatchLogEntry[] MinionsDefeated(
+            ConfiguredMatchSceneRuntime runtime) =>
+            runtime.Projection.MatchLog
+                .Where(entry =>
+                    entry.Kind ==
+                        GuardsDigital.Core.Diagnostics.MatchLogEntryKind.MinionDefeated)
+                .ToArray();
 
         /// <summary>
         /// Declines whatever trigger is standing before the action a journey is about, on its own

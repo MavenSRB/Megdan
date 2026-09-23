@@ -113,6 +113,8 @@ namespace GuardsDigital.Tests.PlayMode
                 "An enemy minion stands beside her on the staged board, and \"a unit adjacent to " +
                 "you\" admits it. " + Remaining(runtime));
 
+            var named = offered[0].Occupancy.MinionId;
+            var offeredAt = offered[0].Occupancy.Coordinate;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, offered[0].transform.position), Is.True,
                 "The target is chosen by clicking the miniature where it stands.");
@@ -122,7 +124,35 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The named target closes the step-1 binding and the Attack resolves against it. " +
                 Remaining(runtime));
+            // MILESTONE 8.86: "the Attack resolves against it" is asserted rather than narrated. The
+            // line above says only that no question is left standing, which an Attack that bound a
+            // target and then applied nothing satisfies exactly; p.14's own result is recorded for
+            // the whole table on the seat-public log, and that is what is read here.
+            Assert.That(MinionsAt(new[] { offeredAt }), Is.Empty,
+                "The bullet's Attack REACHED ITS CONSEQUENCE: p.14's step 6 took " + named.Value +
+                " off " + offeredAt + ". " + Remaining(runtime));
+            Assert.That(MinionsDefeated(runtime), Is.Not.Empty,
+                "and the whole table can read that it did, on the seat-public log. Log: " +
+                string.Join(" | ", runtime.Projection.MatchLog
+                    .Select(entry => entry.Kind + "/" + entry.Outcome)) + ". " + Remaining(runtime));
         }
+
+        /// <summary>
+        /// MILESTONE 8.86. Every Defeat rulebook p.14's step 6 has written to the seat-public match
+        /// log - the table-public record of an Attack having reached its consequence.
+        ///
+        /// <para><b>MEASURED at 8.86:</b> the log DOES carry a <c>MatchLogEntryKind.Attack</c> row
+        /// for an attack on a minion, and that row's <c>Outcome</c> is <c>None</c> - the four
+        /// <c>MatchLogOutcome</c> members are about an attack a DEFENDER answered, and a minion
+        /// holds no hand. So the Defeat row is the honest reading, and the stronger one.</para>
+        /// </summary>
+        private static GuardsDigital.Core.Diagnostics.MatchLogEntry[] MinionsDefeated(
+            ConfiguredMatchSceneRuntime runtime) =>
+            runtime.Projection.MatchLog
+                .Where(entry =>
+                    entry.Kind ==
+                        GuardsDigital.Core.Diagnostics.MatchLogEntryKind.MinionDefeated)
+                .ToArray();
 
         /// <summary>
         /// Dark Ritual: "If there are 2 or more empty spawn points in radius in the battle zone, gain

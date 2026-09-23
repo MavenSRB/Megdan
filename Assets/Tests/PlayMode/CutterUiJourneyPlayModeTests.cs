@@ -688,12 +688,39 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
                 "p.14 then runs the attack the card text bound, so the defender is asked. " +
                 Remaining(runtime));
+
+            // MILESTONE 8.86. The bullet prints "+2 Attack" and this journey never read it: it drove
+            // the Move and the narrowing and then declined its way out, so the half of the sentence
+            // that is a NUMBER was the half nothing asserted. It is read where a player reads it -
+            // the Attack total on the defender's own breakdown, at p.14's step 4 - and as its own
+            // named row rather than as a bigger printed number.
+            var breakdown = runtime.RoundView.Model.DefenseChoices
+                .Select(choice => choice.DefenseBreakdown)
+                .FirstOrDefault(value => value != null);
+            Assert.That(breakdown, Is.Not.Null,
+                "p.14's Defense question draws the Attack total the defender is answering. " +
+                Remaining(runtime));
+            Assert.That(breakdown.AttackRows.Count(row => row.Amount == 2), Is.EqualTo(1),
+                "\"+2 Attack\" is one contribution of two on the total, earned by moving first. " +
+                "Rows: " + string.Join(", ", breakdown.AttackRows.Select(row =>
+                    row.SourceLabel + " " + row.SignedAmount)) + ". " + Remaining(runtime));
+
             for (var budget = 0; budget < 4 && runtime.PendingDefenseChoice != null; budget++)
             {
                 Assert.That(runtime.DeclineDefense(), Is.True, Remaining(runtime));
                 yield return null;
                 yield return null;
             }
+
+            Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                "and p.14's response is answered. " + Remaining(runtime));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                "so the lunge's own Attack RESOLVED rather than standing open on a question. " +
+                Remaining(runtime));
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(cutterId)).Coordinate,
+                Is.EqualTo(step),
+                "and she is still standing where the printed Move put her, which is the space the " +
+                "narrowing was measured from. " + Remaining(runtime));
         }
 
         /// <summary>

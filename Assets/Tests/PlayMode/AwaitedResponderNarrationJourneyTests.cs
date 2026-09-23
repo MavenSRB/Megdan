@@ -105,6 +105,16 @@ namespace GuardsDigital.Tests.PlayMode
                     runtime.RefreshAll(); yield return null;
                 }
                 Assert.That(runtime.ReadModel.PendingDefenseChoice, Is.Null);
+                // MILESTONE 8.86: p.14's Defense was ANSWERED rather than merely withdrawn. The
+                // printed cost of answering is the face leaving the defender's hand, so the card
+                // this journey pressed is read in the discard pile it was spent into - which is the
+                // one board fact a narration journey can otherwise pass without ever touching.
+                Assert.That(
+                    runtime.ReadModel.Cards
+                        .Single(value => value.Id.Equals(defense.SourceCardInstanceId))
+                        .State.Location,
+                    Is.EqualTo(CardLocation.DiscardPile),
+                    "The face that answered p.14 is spent into the defender's own discard pile.");
                 Assert.That(runtime.RoundView.Model.Status, Does.Not.Contain("DEFENSE"));
                 Assert.That(runtime.RoundView.Model.Status,
                     viewer.Equals(attacker) ? Does.StartWith("YOUR TURN") : Does.Contain("WASP"));

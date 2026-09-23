@@ -206,6 +206,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(candidates, Is.Not.Empty,
                 "A unit selection is answered on the map, never as a prompt list.");
             var movedFrom = candidates[0].Space;
+            // MILESTONE 8.86: the moved piece is NAMED before it is clicked. This journey used to
+            // finish by asking only whether SOMEBODY stood on the destination, which a second piece
+            // arriving from anywhere would satisfy and which says nothing about the unit the printed
+            // sentence is actually about.
+            var movedMinion = Object.FindObjectsByType<StandardMinionView>()
+                .FirstOrDefault(view => view.Occupancy != null &&
+                    view.Occupancy.Coordinate.Equals(movedFrom));
+            Assert.That(movedMinion, Is.Not.Null,
+                "\"another unit that is adjacent to the target\" - the offered candidate on " +
+                movedFrom + " has to be a miniature this journey can follow. " + Remaining(runtime));
+            var movedId = movedMinion.Occupancy.MinionId;
             var piece = PieceAt(movedFrom);
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, piece), Is.True,
                 "The moved unit is chosen by clicking it where it stands.");
@@ -234,8 +245,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "Both questions are answered. Remaining: " + Remaining(runtime));
             Assert.That(OccupantAt(runtime, destination), Is.True,
                 "The clicked unit stands on the clicked space.");
+            // MILESTONE 8.86, the two halves the line above cannot say on its own: it is the unit
+            // this journey NAMED that is standing there, and the space it came off is empty.
+            Assert.That(MinionView(movedId).Occupancy.Coordinate, Is.EqualTo(destination),
+                "\"You may move another unit that is adjacent to the target 1 space\" - the " +
+                "miniature this journey named is the miniature that moved. " + Remaining(runtime));
+            Assert.That(OccupantAt(runtime, movedFrom), Is.False,
+                "and it really left " + movedFrom + " rather than a second piece arriving beside " +
+                "it. " + Remaining(runtime));
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
                 "The Attack resumed and completed after its before-attack text.");
+            Assert.That(
+                Object.FindObjectsByType<StandardMinionView>()
+                    .Any(view => view.Occupancy != null &&
+                        view.Occupancy.MinionId.Equals(targetId)),
+                Is.False,
+                "and the Attack the text stopped RESOLVED against the unit it named, which p.14's " +
+                "step 6 took off the board. " + Remaining(runtime));
+            Assert.That(MinionsDefeated(runtime), Is.Not.Empty,
+                "and the whole table can read that it did, on the seat-public log. Log: " +
+                string.Join(" | ", runtime.Projection.MatchLog
+                    .Select(entry => entry.Kind + "/" + entry.Outcome)) + ". " + Remaining(runtime));
         }
 
         [UnityTest]
@@ -864,6 +894,11 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Null, "The clicked space answers the Place.");
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(arienId)).Coordinate,
                 Is.EqualTo(destination));
+            // MILESTONE 8.86: a Place that put him back where he was standing would satisfy the two
+            // lines above word for word, so the space is asserted to have CHANGED.
+            Assert.That(destination, Is.Not.EqualTo(startedAt),
+                "\"Place yourself into a space in range\" - he really left " + startedAt + ". " +
+                Remaining(runtime));
             Assert.That(HeroView(arienId).Coordinate, Is.EqualTo(destination),
                 "and the token stands where the Place put him.");
         }
@@ -1133,6 +1168,28 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(minion, Is.Not.Null, $"No piece is drawn on {space}.");
             return minion.transform.position;
         }
+
+        /// <summary>
+        /// MILESTONE 8.86. Every Defeat rulebook p.14's step 6 has written to the seat-public match
+        /// log - the table-public record of an Attack having reached its consequence, and therefore
+        /// the surface on which a journey can assert that an attack really ran without knowing
+        /// either printed value or which minion defense modifiers the board contributed.
+        ///
+        /// <para><b>MEASURED at 8.86, and it is why this reads the Defeat rather than the Attack.</b>
+        /// The log DOES carry a <c>MatchLogEntryKind.Attack</c> row for an attack on a minion, and
+        /// that row's <c>Outcome</c> is <c>None</c>: <c>MatchLogOutcome</c>'s four members are about
+        /// an attack a DEFENDER answered, and a minion holds no hand and answers nothing. An
+        /// assertion written against the outcome therefore said nothing true about a minion target,
+        /// which the first run of this milestone's focused tier measured on five journeys at once.
+        /// The Defeat row is the honest reading, and it is also the stronger one.</para>
+        /// </summary>
+        private static GuardsDigital.Core.Diagnostics.MatchLogEntry[] MinionsDefeated(
+            ConfiguredMatchSceneRuntime runtime) =>
+            runtime.Projection.MatchLog
+                .Where(entry =>
+                    entry.Kind ==
+                        GuardsDigital.Core.Diagnostics.MatchLogEntryKind.MinionDefeated)
+                .ToArray();
 
         /// <summary>Whether any hero or minion now stands on this space.</summary>
         internal static bool OccupantAt(ConfiguredMatchSceneRuntime runtime, HexCoordinate space) =>

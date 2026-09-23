@@ -530,6 +530,15 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
+            // MILESTONE 8.86: the ATTACK half of this face is asserted rather than assumed from the
+            // rider opening behind it. "Target a unit adjacent to you" and p.14's step 6 take the
+            // miniature off the board, which is also why the give's own recipient is still standing.
+            Assert.That(
+                runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(victim.MinionId)),
+                Is.False,
+                "His printed Attack against the one adjacent enemy unit removed it at p.14's step " +
+                "6. " + Remaining(runtime));
+
             // p.14's own SECOND moment - the card text after the attack has been applied.
             var may = runtime.PendingEffectChoice;
             Assert.That(may, Is.Not.Null,
@@ -707,6 +716,12 @@ namespace GuardsDigital.Tests.PlayMode
                     "and inside the printed Range 4. Offer was: " + shape);
             }
 
+            // MILESTONE 8.86: the pulled piece is NAMED before the click. The assertion below used to
+            // read the minion standing on the landing space and then assert that it stood on the
+            // landing space - true of whatever piece happened to be there, and silent about whether
+            // the piece this journey chose had travelled at all.
+            var pulledId = runtime.ReadModel.Minions
+                .Single(minion => minion.Coordinate.Equals(pulled)).MinionId;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(pulled).transform.position), Is.True,
                 "The pulled piece is named by clicking the space it stands on. " +
@@ -714,20 +729,18 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
-            Assert.That(
-                runtime.ReadModel.Minions.Single(minion =>
-                    minion.Coordinate.Equals(landsOn)).Coordinate,
-                Is.EqualTo(landsOn),
+            var pulledNow = runtime.ReadModel.Minions
+                .Single(minion => minion.MinionId.Equals(pulledId)).Coordinate;
+            Assert.That(pulledNow, Is.EqualTo(landsOn),
                 "\"move the target towards you in a straight line, until you are adjacent\" walked " +
-                "it the one space between and stopped it beside him. " + Remaining(runtime));
+                "THE PIECE THIS JOURNEY NAMED the one space between and stopped it beside him. It " +
+                "stood on " + pulled + ". " + Remaining(runtime));
+            Assert.That(pulledNow, Is.Not.EqualTo(pulled),
+                "and the space it came off is not the space it is on. " + Remaining(runtime));
             Assert.That(
-                HexDistanceQuery.Calculate(
-                    from, runtime.ReadModel.Minions
-                        .Single(minion => minion.MinionId.Equals(
-                            runtime.ReadModel.Minions.Single(value =>
-                                value.Coordinate.Equals(landsOn)).MinionId))
-                        .Coordinate),
-                Is.EqualTo(1),
+                runtime.ReadModel.Minions.Any(minion => minion.Coordinate.Equals(pulled)), Is.False,
+                "which leaves " + pulled + " empty. " + Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(from, pulledNow), Is.EqualTo(1),
                 "and it really is adjacent to him now. " + Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The face is finished: the Move names its own destination and asks nothing. " +

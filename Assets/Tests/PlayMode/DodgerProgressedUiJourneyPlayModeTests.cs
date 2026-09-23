@@ -221,10 +221,18 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(pending.LegalTargetMinionIds, Is.Not.Empty,
                 "An enemy minion stands within her printed Range on the staged board.");
 
-            var adjacent = pending.LegalTargetMinionIds
+            // MILESTONE 8.86. The target is chosen to leave her own ring intact wherever the board
+            // allows it: p.14's step 6 removes what this Ranged Attack hits, and the rider below is
+            // about "1 minion ADJACENT TO YOU" rather than about the minion the attack took - which
+            // is what her gate's own Edit Mode contract says in as many words
+            // ("TheTwoSkullRiders_ShoveAnyAdjacentMinionOutOfHerRing").
+            var her = runtime.Heroes.Single(hero => hero.HeroId.Equals(dodgerId)).Coordinate;
+            var shot = pending.LegalTargetMinionIds
                 .Select(MinionView)
+                .OrderByDescending(view =>
+                    HexDistanceQuery.Calculate(view.Occupancy.Coordinate, her))
                 .First();
-            Assert.That(UiPlayer.ClickBoard(pointerInput, hud, adjacent.transform.position), Is.True);
+            Assert.That(UiPlayer.ClickBoard(pointerInput, hud, shot.transform.position), Is.True);
             yield return null;
             yield return null;
 
@@ -233,27 +241,96 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(DeclineControl(runtime), Is.Not.Null,
                 "A printed \"up to\" has to be declinable on its own control.");
 
-            // Milestone 8.46e: the shove is a board-answered question drawn on the docked window,
-            // whose DONE stands only once a piece is chosen - so the confirm is read off the
-            // window's own model rather than the strip's, which still lists one it no longer draws.
-            var confirm = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
-            if (confirm != null)
-            {
-                UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
-                yield return null;
-                yield return null;
-            }
+            // MILESTONE 8.86, AND THIS JOURNEY IS ONE OF THE TWO THE AUDIT WAS ASKED FOR. Until now
+            // it pressed whichever of the rider's answers happened to stand and finished on
+            // `PendingEffectChoice is null`: it never named a minion, never clicked a space, and
+            // would have read exactly the same on a board where the rider shoved nobody - while its
+            // OWN gate row binds `BoardUnitSelection` and `BoardSpaceSelection` to it. That is
+            // milestone 8.38f's lesson word for word: the gate cannot verify that a journey
+            // exercises the shape it binds, and only reading the journey can.
+            var shovable = Object.FindObjectsByType<StandardMinionView>()
+                .Where(view => view.Occupancy != null)
+                .Where(view => runtime.RoundView.Model.EffectChoiceTargets
+                    .Any(target => target.Space.Equals(view.Occupancy.Coordinate)))
+                .ToArray();
+            Assert.That(shovable, Is.Not.Empty,
+                "\"Move up to 1 minion adjacent to you 1 space to a space not adjacent to you\" - " +
+                "the rider has to offer a minion standing in her own ring, or there is no shove for " +
+                "a player to make and no board shape for the gate's two rows to be about. " +
+                Remaining(runtime));
+            // WHICH offered minion the journey names is measured rather than taken first: the
+            // printed destination is "1 space to a space not adjacent to you", so a minion whose own
+            // ring holds no such space cannot be shoved anywhere and naming it would be asserting
+            // about a move the board never admitted.
+            var shoved = shovable.FirstOrDefault(view => view.Occupancy.Coordinate
+                .GetNeighbors()
+                .Any(space =>
+                    IsFreeSpace(runtime, space) &&
+                    HexDistanceQuery.Calculate(space, her) > 1));
+            Assert.That(shoved, Is.Not.Null,
+                "At least one offered minion has to have a free space beside it that is out of " +
+                "her own ring, or the printed destination admits nothing. Offered: " +
+                string.Join(", ", shovable.Select(view =>
+                    view.Occupancy.MinionId.Value + "@" + view.Occupancy.Coordinate)) + ". " +
+                Remaining(runtime));
+            var shovedId = shoved.Occupancy.MinionId;
+            var shovedFrom = shoved.Occupancy.Coordinate;
+            Assert.That(HexDistanceQuery.Calculate(shovedFrom, her), Is.EqualTo(1),
+                "and every offered subject is one the printed \"adjacent to you\" admits. " +
+                Remaining(runtime));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, shoved.transform.position), Is.True,
+                "The shoved minion is named by clicking the miniature where it stands.");
+            yield return null;
+            yield return null;
 
-            // Whichever way the shove was opened, the journey answers it rather than leaving it
-            // standing: a step 7 left unanswered would end the turn on an open question.
-            if (runtime.PendingEffectChoice != null)
+            // MEASURED at 8.86, on the first focused run of this re-stated journey: the one board
+            // click that NAMES the minion carries the whole rider. Rulebook p.18 sends a shove
+            // directly away from the actor, so once the subject is chosen the destination is
+            // DERIVED rather than asked - the pause closes inside that single accepted command and
+            // neither a destination offer nor the window's own DONE is drawn behind it.
+            //
+            // The branch below is kept rather than deleted because it is the honest shape of the
+            // claim: if a board ever offers this step a choice of landings, the journey drives it
+            // as a second board click instead of walking past a standing question.
+            var landings = LitDestinations(runtime);
+            if (landings.Length > 0)
             {
-                UiPlayer.ClickDecisionCorner(runtime, hud);
+                foreach (var landing in landings)
+                {
+                    Assert.That(HexDistanceQuery.Calculate(landing, shovedFrom), Is.EqualTo(1),
+                        "\"1 space\" is an exact distance. Offer was: " +
+                        string.Join(", ", landings.Select(space => space.ToString())) + ". " +
+                        Remaining(runtime));
+                    Assert.That(HexDistanceQuery.Calculate(landing, her), Is.GreaterThan(1),
+                        "and what bounds the destination is where SHE stands - \"to a space not " +
+                        "adjacent to you\". Offer was: " +
+                        string.Join(", ", landings.Select(space => space.ToString())) + ". " +
+                        Remaining(runtime));
+                }
+
+                var chosenLanding = FirstClickableSpace(pointerInput, landings);
+                Assert.That(
+                    UiPlayer.ClickBoard(
+                        pointerInput, hud, Tile(chosenLanding).transform.position),
+                    Is.True,
+                    "and where it goes is the second board click. " + Remaining(runtime));
+                yield return null;
                 yield return null;
             }
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The rider is answered and the card is finished. " + Remaining(runtime));
+
+            var shovedNow = MinionView(shovedId).Occupancy.Coordinate;
+            Assert.That(shovedNow, Is.Not.EqualTo(shovedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the shoved minion really left " +
+                shovedFrom + ". " + Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(shovedNow, shovedFrom), Is.EqualTo(1),
+                "\"1 space\" is the exact distance the rider prints. " + Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(shovedNow, her), Is.GreaterThan(1),
+                "and it is out of her ring - \"to a space not adjacent to you\", which is the " +
+                "whole of what the rider is for. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -412,6 +489,30 @@ namespace GuardsDigital.Tests.PlayMode
                     "named a minion. " + Remaining(runtime));
             }
 
+            // MILESTONE 8.86: "its complete p.14 ran" is asserted rather than asserted ABOUT. The
+            // target question closing says the page moved on; the seat-public log's Defeat row says
+            // the attack reached the consequence the chosen bullet promises.
+            // MEASURED: the unit this staging puts beside her is a MINION, so the consequence is
+            // p.14's step 6. The branch is kept because the bullet's own sentence admits either.
+            if (named.Kind == AttackTargetKind.Minion)
+            {
+                Assert.That(MinionsDefeated(runtime), Is.Not.Empty,
+                    "The chosen bullet's own complete p.14 reached its step 6. Log: " +
+                    string.Join(" | ", runtime.Projection.MatchLog
+                        .Select(entry => entry.Kind + "/" + entry.Outcome)) + ". " +
+                    Remaining(runtime));
+                Assert.That(
+                    runtime.Projection.Minions.Any(minion =>
+                        minion.MinionId.Equals(named.MinionId)),
+                    Is.False,
+                    "and the unit the bullet named is off the board. " + Remaining(runtime));
+            }
+            else
+            {
+                Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                    "A hero target's own p.14 response was answered, which is this bullet's " +
+                    "consequence when the unit beside her is a hero. " + Remaining(runtime));
+            }
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
                 "One bullet was chosen, its complete p.14 ran, and the action is finished rather " +
                 "than standing open. MILESTONE 8.70 is what makes that the whole of it: the second " +
@@ -436,6 +537,7 @@ namespace GuardsDigital.Tests.PlayMode
             yield return LoadStagedScene(SceneCardContent.VerifiedTierTwoAlternateEngagedStagedDodger);
             var root = Root();
             var runtime = root.Runtime;
+            var hud = root.Hud;
             var dodgerId = DodgerSeat(runtime).HeroId;
 
             CommitSoTheNamedSeatActs(runtime, dodgerId, DodgerCardContent.Weakness);
@@ -454,6 +556,27 @@ namespace GuardsDigital.Tests.PlayMode
                 "The raised Active effect must be readable against the card that raised it - a " +
                 "drain nobody can attribute is a number that appears from nowhere. " +
                 Remaining(runtime));
+
+            // MILESTONE 8.86: the effect is read WHERE A PLAYER READS IT as well as in the
+            // authority. An effect that draws no control of its own has exactly one surface - the
+            // played card's own slot on her tray, wearing the Active outline - and a journey that
+            // only asks the runtime whether a source is live is not standing where the player is.
+            yield return PointTrayAt(root, dodgerId);
+            yield return null;
+            var slot = UiPlayer.NamedElementWithText(
+                hud, "gd-card-slot", NameOf(runtime, DodgerCardContent.Weakness));
+            Assert.That(slot.resolvedStyle.borderTopColor.a, Is.GreaterThan(0.5f),
+                "The card's slot wears the Active-effect outline while the drain lives, which is " +
+                "the only place a player can read that it is standing at all.");
+
+            // RECORDED GAP (milestone 8.86, and it is a gap in the JOURNEY rather than in the card).
+            // "This turn: enemy heroes in radius have -4 Attack" is a signed contribution on the
+            // Attack Total (the user's RULING 13), and the moment it fires is an enemy attack this
+            // arc never reaches: nobody attacks inside it, so the -4 is proved standing here and
+            // proved arithmetically offline rather than read off a breakdown a player is looking at.
+            // Enfeeblement's journey below is the one that carries an enemy attack under the same
+            // family of lock, and its attack takes a MINION, which holds no hand and draws no
+            // Defense breakdown to read a row on. Raised in this milestone's report.
         }
 
         /// <summary>
@@ -551,6 +674,21 @@ namespace GuardsDigital.Tests.PlayMode
             // that must not be pressable is that one, and every other option the enemy has is
             // untouched. A restriction the stopped player cannot see is what this shape exists to
             // catch, so the assertion is about what is SHOWN rather than about what resolved.
+            // MILESTONE 8.86, and it is rule 3 applied to this exact shape: the claim below is that
+            // a control is ABSENT, and an absence proves nothing unless the moment it would have
+            // been drawn at was actually reached. An attack that never resolved would satisfy it
+            // word for word. So the attack's own resolution is read first, on the seat-public log.
+            Assert.That(MinionsDefeated(runtime), Is.Not.Empty,
+                "The enemy's Attack has to have REACHED ITS CONSEQUENCE for p.14's step 7 to be " +
+                "the moment this journey is reading. Log: " +
+                string.Join(" | ", runtime.Projection.MatchLog
+                    .Select(entry => entry.Kind + "/" + entry.Outcome)) + ". " + Remaining(runtime));
+            Assert.That(
+                runtime.Projection.Minions.Any(minion => minion.MinionId.Equals(target.Value)),
+                Is.False,
+                "and the minion it named is off the board, so the attack really was carried " +
+                "through to its own step 6. " + Remaining(runtime));
+
             var repeatConfirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
                 value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
             Assert.That(repeatConfirm, Is.Null,
@@ -808,6 +946,39 @@ namespace GuardsDigital.Tests.PlayMode
                 .Where(control => control.Command?.Kind == DirectorCommandKind.AnswerEffectChoice &&
                     control.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select)
                 .ToArray();
+
+        /// <summary>
+        /// MILESTONE 8.86. Every Defeat rulebook p.14's step 6 has written to the seat-public match
+        /// log - the table-public record of an Attack having reached its consequence, and therefore
+        /// the surface on which a journey can assert that an attack really ran without knowing
+        /// either printed value or which minion defense modifiers the board contributed.
+        ///
+        /// <para><b>MEASURED at 8.86, and it is why this reads the Defeat rather than the Attack.</b>
+        /// The log DOES carry a <c>MatchLogEntryKind.Attack</c> row for an attack on a minion, and
+        /// that row's <c>Outcome</c> is <c>None</c>: <c>MatchLogOutcome</c>'s four members are about
+        /// an attack a DEFENDER answered, and a minion holds no hand and answers nothing.</para>
+        /// </summary>
+        private static GuardsDigital.Core.Diagnostics.MatchLogEntry[] MinionsDefeated(
+            ConfiguredMatchSceneRuntime runtime) =>
+            runtime.Projection.MatchLog
+                .Where(entry =>
+                    entry.Kind ==
+                        GuardsDigital.Core.Diagnostics.MatchLogEntryKind.MinionDefeated)
+                .ToArray();
+
+        /// <summary>
+        /// Whether a space is playable under rulebook p.19 and carries no piece. Milestone 8.86:
+        /// the shove's own destination has to be somewhere a minion can actually stand, so the
+        /// journey measures that before it names the minion it shoves.
+        /// </summary>
+        private static bool IsFreeSpace(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate space) =>
+            runtime.Projection.SelectedMap.Spaces.Any(value =>
+                value.Coordinate.Equals(space) &&
+                value.Kind == BoardMapSpaceKind.Playable) &&
+            !runtime.Projection.Heroes.Any(hero => hero.Coordinate.Equals(space)) &&
+            !runtime.Projection.Minions.Any(minion => minion.Coordinate.Equals(space)) &&
+            !runtime.Projection.Obstacles.Any(obstacle => obstacle.Coordinate.Equals(space));
 
         private static bool UltimateIsFaceup(
             ConfiguredMatchSceneRuntime runtime, HeroId heroId) =>

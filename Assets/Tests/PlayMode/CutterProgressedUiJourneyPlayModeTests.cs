@@ -93,6 +93,21 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
+            // MILESTONE 8.86: the ATTACK resolved, read on the seat-public log rather than inferred
+            // from the rider opening behind it. The rider's own offer is measured from the space the
+            // attack captured, so a page that reached the rider without resolving would make every
+            // assertion below a measurement of nothing.
+            Assert.That(
+                runtime.ReadModel.Minions.Any(minion => minion.MinionId.Equals(near.MinionId)),
+                Is.False,
+                "\"Target a unit in range and in a straight line\" - p.14's step 6 took the unit " +
+                "she shot off the board, which is also what makes the retreat below a retreat from " +
+                "a space that is now empty. " + Remaining(runtime));
+            Assert.That(MinionsDefeated(runtime), Is.Not.Empty,
+                "and the whole table can read that it did, on the seat-public log. Log: " +
+                string.Join(" | ", runtime.Projection.MatchLog
+                    .Select(entry => entry.Kind + "/" + entry.Outcome)) + ". " + Remaining(runtime));
+
             // "After the attack" - p.14's own second moment, and the pause is the shape the row binds.
             var retreat = runtime.PendingEffectChoice;
             Assert.That(retreat, Is.Not.Null,
@@ -255,7 +270,18 @@ namespace GuardsDigital.Tests.PlayMode
                     string.Join(", ", spaces.Select(value => value.ToString())));
             }
 
-            var destination = FirstClickableSpace(pointerInput, spaces);
+            // MILESTONE 8.86: the destination is chosen to DIFFER from the space he is standing on,
+            // and the change is asserted. "You place that hero in a space in radius" is a
+            // displacement, and a journey that took whatever space came first could have placed him
+            // back where he was and still have read the two lines below as true.
+            var himBefore = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate;
+            var travelling = spaces.Where(space => !space.Equals(himBefore)).ToArray();
+            Assert.That(travelling, Is.Not.Empty,
+                "The place has to be able to put him somewhere other than the space he chose to be " +
+                "moved out of. Offer was: " +
+                string.Join(", ", spaces.Select(value => value.ToString())) + ". " +
+                Remaining(runtime));
+            var destination = FirstClickableSpace(pointerInput, travelling);
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(destination).transform.position), Is.True);
             yield return null;
@@ -263,6 +289,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(enemyId)).Coordinate,
                 Is.EqualTo(destination),
                 "The hero who chose to be moved is standing where she put him. " + Remaining(runtime));
+            Assert.That(destination, Is.Not.EqualTo(himBefore),
+                "and he really left " + himBefore + ", which is the whole of what the bullet he " +
+                "elected costs him. " + Remaining(runtime));
         }
 
         /// <summary>
@@ -427,6 +456,18 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(repeat.DeclineInvocation, Is.Not.Null,
                 "and refused, which is what makes \"may\" a decision rather than a step. " +
                 Remaining(runtime));
+
+            // MILESTONE 8.86. A journey may not prove a clause by declining it, so the arm this one
+            // takes is NAMED and the board fact that makes it the printed answer is asserted: "May
+            // repeat once ON A DIFFERENT TARGET", and this board holds exactly one enemy hero, whom
+            // the first instance has already taken. The repeat's non-zero arm belongs to a board
+            // with a second subject and is owned offline by her Edit Mode contract.
+            Assert.That(
+                runtime.Heroes.Count(hero =>
+                    TeamSideOf(runtime, hero.HeroId) == TeamSideOf(runtime, enemyId)),
+                Is.EqualTo(1),
+                "\"on a different target\" names nobody here, because one enemy hero stands on this " +
+                "board and the first instance took him. " + Remaining(runtime));
 
             var decline = DeclineControl(runtime);
             Assert.That(decline, Is.Not.Null, Remaining(runtime));
@@ -719,5 +760,22 @@ namespace GuardsDigital.Tests.PlayMode
                 VictoryScreenUiJourneyPlayModeTests.Screen_(hud)), Is.True);
             VictoryScreenUiJourneyPlayModeTests.AssertFits(hud, "the solo split at the live viewport");
         }
+
+        /// <summary>
+        /// MILESTONE 8.86. Every Defeat rulebook p.14's step 6 has written to the seat-public match
+        /// log - the table-public record of an Attack having reached its consequence.
+        ///
+        /// <para><b>MEASURED at 8.86:</b> the log DOES carry a <c>MatchLogEntryKind.Attack</c> row
+        /// for an attack on a minion, and that row's <c>Outcome</c> is <c>None</c> - the four
+        /// <c>MatchLogOutcome</c> members are about an attack a DEFENDER answered, and a minion
+        /// holds no hand. So the Defeat row is the honest reading, and the stronger one.</para>
+        /// </summary>
+        private static GuardsDigital.Core.Diagnostics.MatchLogEntry[] MinionsDefeated(
+            ConfiguredMatchSceneRuntime runtime) =>
+            runtime.Projection.MatchLog
+                .Where(entry =>
+                    entry.Kind ==
+                        GuardsDigital.Core.Diagnostics.MatchLogEntryKind.MinionDefeated)
+                .ToArray();
     }
 }

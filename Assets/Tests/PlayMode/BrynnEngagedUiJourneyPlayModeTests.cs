@@ -371,9 +371,27 @@ namespace GuardsDigital.Tests.PlayMode
                     Is.EqualTo("guide-second-walk"));
                 Assert.That(OfferedSpaces(runtime), Contains.Item(secondFrom),
                     "and its own \"up to 2\" admits standing still. " + Remaining(runtime));
-                yield return Space(root, secondFrom);
-                Assert.That(MinionView(BlueRanged).Occupancy.Coordinate, Is.EqualTo(secondFrom),
-                    "A walk of nought is a walk that happened and moved nobody. " +
+                // MILESTONE 8.86. This step used to ANSWER with that nought, and a mandatory second
+                // sentence proved by a walk of nought is a sentence no journey has ever seen move a
+                // piece: the "up to" floor is asserted as OFFERED above, and the answer taken below
+                // is a real one. The zero arm of the same node is BR-Q9's own reading and is owned
+                // offline by the composition's Edit Mode contract.
+                var elsewhere = OfferedSpaces(runtime)
+                    .Where(space => !space.Equals(secondFrom))
+                    .ToArray();
+                Assert.That(elsewhere, Is.Not.Empty,
+                    "\"move a different friendly unit in radius up to 2 spaces\" - the second " +
+                    "sentence has to be able to send it somewhere, or the printed distance is " +
+                    "drawing nothing. Offer was: " + string.Join(", ",
+                        OfferedSpaces(runtime).Select(space => space.ToString())) + ". " +
+                    Remaining(runtime));
+                var secondTo = elsewhere[0];
+                yield return Space(root, secondTo);
+                Assert.That(MinionView(BlueRanged).Occupancy.Coordinate, Is.EqualTo(secondTo),
+                    "and the second friendly unit stands where Brynn walked it. " +
+                    Remaining(runtime));
+                Assert.That(secondTo, Is.Not.EqualTo(secondFrom),
+                    "THE ASSERTION THIS STEP WAS MISSING: it really left " + secondFrom + ". " +
                     Remaining(runtime));
                 Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
                 SeatsAgree(runtime, "Mountain Guide's two sentences");
