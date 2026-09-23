@@ -80,6 +80,11 @@ namespace GuardsDigital.Tests.EditMode
                 // REGISTERED, so an added parameter is inside the registered set the moment it is
                 // written. That is worth recording beside them as the other half of the same class.
                 "minimumCardsInHand",
+                // Milestone 8.88. How many of a candidate's neighbours the printed-icon family's
+                // adjacency clause needs - Mortimer's "adjacent to two or more Zombie tokens". An
+                // ordinary quantity in the sense `minimumCardsInHand` is: a count compared against a
+                // number of spaces, whose meaning the parameter's name already says.
+                "adjacentAtLeast",
                 "minimumDistance",
                 // Milestone 8.71h. The number Hanu's Hurry up! sets a printed icon TO - "Set the
                 // printed Initiative value of an unresolved card of a hero in range to 11". It is an

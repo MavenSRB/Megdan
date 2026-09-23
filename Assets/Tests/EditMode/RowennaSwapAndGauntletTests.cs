@@ -626,14 +626,16 @@ namespace GuardsDigital.Tests.EditMode
                 "One printed clause, carried as one flag - two booleans would read the printed 'or' " +
                 "as an 'and'.");
 
+            // Milestone 8.88. The hero arm declares it too, optional - the family composes every
+            // clause on every arm it can mean something on.
             Assert.That(
                 catalog.Load(SyntheticTargetingCapabilities.RangeHeroTargetV1)
-                    .Schema.Parameters.Any(parameter =>
+                    .Schema.Parameters.Single(parameter =>
                         parameter.Name == SyntheticTargetingCapabilities
-                            .AdjacentToAnEnemyHeroOrHoldingADiscardParameterName),
+                            .AdjacentToAnEnemyHeroOrHoldingADiscardParameterName)
+                    .IsRequired,
                 Is.False,
-                "and it is declared on the UNIT arm alone, because that is the arm her three Blue " +
-                "faces print it on.");
+                "and optional there, so no hero selection composed before 8.88 changes.");
 
             var move = catalog.Load(SyntheticDisplacementCapabilities.DirectMoveV3);
             var chooser = move.Schema.Parameters.Single(parameter =>

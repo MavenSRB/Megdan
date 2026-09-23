@@ -265,12 +265,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The narrowing is an OPTIONAL BOOLEAN declared on the printed-RANGE hero arm and on no
-        /// other, which is the shape 8.57c settled and the rule this file follows: declare the
-        /// clause a verified face pairs with this selection, and nothing else.
+        /// The narrowing is an OPTIONAL BOOLEAN on the printed-Range hero arm, which is the shape 8.57c
+        /// settled. Since milestone 8.88 every arm that can offer a hero declares it too, optional, and
+        /// the minion arm refuses it by name - a minion holds no card.
         /// </summary>
         [Test]
-        public void TheNarrowing_IsAnOptionalBooleanOnTheRangeArmAlone()
+        public void TheNarrowing_IsAnOptionalBooleanOnEveryArmOfferingAHero()
         {
             var handlers = SyntheticTargetingCapabilities.Handlers().ToArray();
 
@@ -299,12 +299,17 @@ namespace GuardsDigital.Tests.EditMode
                          SyntheticTargetingCapabilities.RangeTargetV1
                      })
             {
+                // Milestone 8.88 reversed the rule this loop used to pin: every arm that can offer a
+                // hero now declares the clause, optional, and the minion arm refuses it by name
+                // because a minion holds no card.
+                var refusal = SyntheticTargetingCapabilities.PrintedIconFilterRefusal(
+                    reference, SyntheticTargetingCapabilities.HoldsAnUnresolvedCardParameterName);
                 Assert.That(
                     Declares(
                         handlers, reference,
                         SyntheticTargetingCapabilities.HoldsAnUnresolvedCardParameterName),
-                    Is.False,
-                    reference + " declares a clause no face in the corpus pairs with it.");
+                    Is.EqualTo(refusal == null),
+                    reference + " declares the clause exactly when it does not refuse it by name.");
             }
         }
 

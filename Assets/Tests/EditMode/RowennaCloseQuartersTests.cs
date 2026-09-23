@@ -1041,14 +1041,16 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(narrowing.IsRequired, Is.False);
             Assert.That(narrowing.ValueKind, Is.EqualTo(EffectValueKind.Boolean));
 
+            // Milestone 8.88. The Range arm declares it too, optional - the family composes every
+            // clause on every arm it can mean something on.
             Assert.That(
                 catalog.Load(SyntheticTargetingCapabilities.RangeHeroTargetV1)
                     .Schema.Parameters
-                    .Any(parameter => parameter.Name ==
-                        SyntheticTargetingCapabilities.BothDiscardPilesEmptyParameterName),
+                    .Single(parameter => parameter.Name ==
+                        SyntheticTargetingCapabilities.BothDiscardPilesEmptyParameterName)
+                    .IsRequired,
                 Is.False,
-                "and the Range arm declares it nowhere, because no face in the corpus pairs the " +
-                "clause with a Range icon.");
+                "and optional on the Range arm as well, so no Range selection changes.");
         }
 
         /// <summary>

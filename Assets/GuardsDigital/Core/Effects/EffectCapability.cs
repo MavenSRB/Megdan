@@ -562,6 +562,60 @@ namespace GuardsDigital.Core.Effects
                 space,
                 InvocationContext);
 
+        /// <summary>
+        /// Milestone 8.88. This same context with <paramref name="clauses"/> added to its inputs, each
+        /// replacing an input of the same name.
+        ///
+        /// <para>It exists so a hero-local selection whose narrowings are fixed by its own identity -
+        /// Ignatia's "a unit in range in a straight line" bakes its clause into the capability rather
+        /// than reading it from a parameter - can ask the printed-icon family's one candidate
+        /// derivation the same question a definition binding those clauses would ask. Nothing else about
+        /// the question moves: the node, the answers already given, the board, the timing and the
+        /// hypothetical actor space are all carried across unchanged.</para>
+        /// </summary>
+        internal EffectCapabilityContext WithAdditionalInputs(
+            IReadOnlyDictionary<string, EffectValue> clauses)
+        {
+            var merged = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
+            foreach (var input in Inputs)
+            {
+                merged[input.Key] = input.Value;
+            }
+
+            foreach (var clause in clauses ?? throw new ArgumentNullException(nameof(clauses)))
+            {
+                merged[clause.Key] = clause.Value;
+            }
+
+            return new EffectCapabilityContext(
+                NodeId,
+                FailurePolicy,
+                ActorId,
+                ControllerId,
+                SourceCardInstanceId,
+                SourceDefinitionReference,
+                ActionDefinitionId,
+                merged,
+                RoundIndex,
+                TurnIndex,
+                Participants,
+                Timing,
+                Modifications,
+                CardState,
+                EnclosingActionKind,
+                Components,
+                HeroItems,
+                AnswersAlreadyGiven,
+                EnclosingAttack,
+                RosterState,
+                ImmunityOverrides,
+                DeclaredOutputs,
+                Capabilities,
+                ProspectiveActorSpace,
+                InvocationContext,
+                TieBreakerRevealedSide);
+        }
+
         public EffectValue Input(string parameterName) =>
             Inputs.TryGetValue(parameterName, out var value) ? value : default;
     }

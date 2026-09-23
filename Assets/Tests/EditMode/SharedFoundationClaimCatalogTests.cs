@@ -1031,7 +1031,7 @@ namespace GuardsDigital.Tests.EditMode
                     new FoundationEvidenceLocator(
                         new MemberLocator(typeof(BrynnObstacleAdjacencyTests),
                             nameof(BrynnObstacleAdjacencyTests
-                                .TheRadiusNarrowing_IsAnOptionalBooleanAndIsAbsentFromTheRangeArm),
+                                .TheRadiusNarrowing_IsAnOptionalBooleanOnBothIconArms),
                             MemberTypes.Method),
                         SharedFoundationEvidenceKind.ViolatorFixture,
                         "a Boolean rather than the threshold Integer it looks like, and declared on " +
@@ -1167,7 +1167,7 @@ namespace GuardsDigital.Tests.EditMode
                     new FoundationEvidenceLocator(
                         new MemberLocator(typeof(BrynnDecoyAndGuidesTests),
                             nameof(BrynnDecoyAndGuidesTests
-                                .TheExclusions_AreOptionalAndDeclaredOnTheRadiusArmsAlone),
+                                .TheExclusions_AreOptionalAndDeclaredWhereverTheyCanApply),
                             MemberTypes.Method),
                         SharedFoundationEvidenceKind.ViolatorFixture,
                         "optional, spelled with the anchored family's own constant, and absent from " +
@@ -1347,7 +1347,7 @@ namespace GuardsDigital.Tests.EditMode
                     new FoundationEvidenceLocator(
                         new MemberLocator(typeof(HanuHurryUpTests),
                             nameof(HanuHurryUpTests
-                                .TheNarrowing_IsAnOptionalBooleanOnTheRangeArmAlone),
+                                .TheNarrowing_IsAnOptionalBooleanOnEveryArmOfferingAHero),
                             MemberTypes.Method),
                         SharedFoundationEvidenceKind.ViolatorFixture,
                         "a Boolean rather than the count it could have been, optional, and absent " +

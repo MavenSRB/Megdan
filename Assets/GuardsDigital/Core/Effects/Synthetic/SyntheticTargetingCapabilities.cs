@@ -41,8 +41,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
     /// This is the seam 6.5b and 6.6a reuse: Red Needle's Push, Red Bombard's direct Move of another
     /// adjacent unit, and Blue Sentinel's Swap all name their object through this one selection rather
     /// than each inventing a binding.
+    /// <para><b>Milestone 8.88 changed the rule this file's parameter notes describe.</b> Until then a
+    /// narrowing was declared only on the arm whose verified face printed it, so a later phrase pairing
+    /// a known clause with another arm minted a capability. Every clause of the printed-icon family is
+    /// now declared on every arm it can mean something on, optional, and refused by name only where it
+    /// cannot be true of anything the arm offers - see <see cref="PrintedIconFilterParameterNames"/> and
+    /// <see cref="PrintedIconFilterRefusal"/>. The "declared on one arm alone" notes below record where
+    /// each clause was first needed; they no longer describe where it may be bound.</para>
     /// </summary>
-    public static class SyntheticTargetingCapabilities
+    public static partial class SyntheticTargetingCapabilities
     {
         public static EffectCapabilityId ChooseTarget { get; } =
             new EffectCapabilityId("synthetic-choose-target");
@@ -469,7 +476,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// (<see cref="PublicCardZoneQuery"/>) and this asks only about face-up cards in it, so every
         /// seat can already see exactly which heroes qualify.</para>
         ///
-        /// <para><b>Declared on the Range arm alone</b>, by this file's standing rule: Hurry up! is
+        /// <para><b>First declared on the Range arm alone</b> (see milestone 8.88's note on the class), by the rule this file then followed: Hurry up! is
         /// the one face in the corpus printing the clause and it prints a Range 4 icon. A parameter
         /// added to a registered capability moves no pinned byte - see
         /// <see cref="BothDiscardPilesEmptyParameterName"/>'s own note for why.</para>
@@ -513,7 +520,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// Opening Volley's repeat re-derives the whole list, which is what makes the hero who just
         /// discarded drop out of it and the actor - who discarded nothing - stay in.</para>
         ///
-        /// <para><b>Declared on the Radius arm alone</b>, by the rule this file already follows: her
+        /// <para><b>First declared on the Radius arm alone</b> (see milestone 8.88's note on the class), by the rule this file then followed: her
         /// two faces print a Radius 3 icon and no face in the corpus pairs the clause with a Range one.
         /// Optional and defaulting to false, so every hero selection composed before her keeps its
         /// exact candidate set without naming it - and a parameter added to a registered capability
@@ -543,7 +550,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// +2 on the Attack total and the presence predicate cannot come to disagree about it - and his
         /// Ultimate's counts-as overlay reaches all four at once.</para>
         ///
-        /// <para><b>Declared on the Radius arm alone</b>, by this file's standing rule: every face of
+        /// <para><b>First declared on the Radius arm alone</b> (see milestone 8.88's note on the class), by the rule this file then followed: every face of
         /// his that prints the clause beside a reach prints a Radius icon, and his one Range face
         /// (Familiar Ground) states it as a modal-Attack bullet instead. Optional and defaulting to
         /// false, so every hero selection composed before him keeps its exact candidate set, and a
@@ -574,7 +581,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// answer - a sentence that named nobody excludes nobody. That is 8.61f's own note, restated
         /// here because the two families now read one clause.</para>
         ///
-        /// <para><b>Declared on the Radius hero and Radius unit arms alone</b>, which are the two his
+        /// <para><b>First declared on the Radius hero and Radius unit arms alone</b> (see milestone 8.88's note on the class), which are the two his
         /// faces print: Decoy's second bullet names "an enemy hero in radius" and the guides' second
         /// sentence names "a friendly unit in radius". No arm that no face pairs it with declares it,
         /// and a parameter added to a registered capability moves no pinned byte - see
@@ -623,8 +630,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// count this narrows by cannot come apart.</para>
         ///
         /// <para>Optional, and an unbound parameter is no narrowing at all, so every hero selection
-        /// composed before Bain keeps its exact candidate set without naming it. Declared on the
-        /// Radius arm alone, by the rule this file already follows - his three faces print "in
+        /// composed before Bain keeps its exact candidate set without naming it. First declared on
+        /// the Radius arm alone (see milestone 8.88's note on the class), by the rule this file then followed - his three faces print "in
         /// radius" and no face in the corpus pairs the clause with a Range icon.</para>
         /// </summary>
         public const string MinimumCardsInHandParameterName = "minimumCardsInHand";
@@ -769,31 +776,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 new ChooseTargetHandler(ChooseTargetV3, declaresActivity: false),
                 new ChooseTargetHandler(ChooseTargetV4, declaresActivity: true),
                 new PrintedIconTargetHandler(
-                    RadiusTargetV1, PrintedValueChannel.Radius, declaresStraightLineFilter: false),
+                    RadiusTargetV1, PrintedValueChannel.Radius),
                 new PrintedIconTargetHandler(
-                    RangeTargetV1, PrintedValueChannel.Range, declaresStraightLineFilter: true),
+                    RangeTargetV1, PrintedValueChannel.Range),
                 new PrintedIconTargetHandler(
                     RadiusHeroTargetV1, PrintedValueChannel.Radius,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero),
+                    PrintedIconSelectionSubject.Hero),
                 new PrintedIconTargetHandler(
                     RangeHeroTargetV1, PrintedValueChannel.Range,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Hero),
+                    PrintedIconSelectionSubject.Hero),
                 new PrintedIconTargetHandler(
                     RadiusMinionTargetV1, PrintedValueChannel.Radius,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Minion),
+                    PrintedIconSelectionSubject.Minion),
                 new PrintedIconTargetHandler(
                     RangeMinionTargetV1, PrintedValueChannel.Range,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Minion),
+                    PrintedIconSelectionSubject.Minion),
                 new PrintedIconTargetHandler(
                     RangeUnitTargetV1, PrintedValueChannel.Range,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit),
+                    PrintedIconSelectionSubject.Unit),
                 // Milestone 8.35z53. The Radius half of the printed-icon UNIT pair, which waited in
                 // `DeferredHandlers` above until a dealt card named it: Whisper's three Blue
                 // displacement Skills are the first, and this is the seventh declaration over the one
                 // handler p.9's two icons already share rather than a new type.
                 new PrintedIconTargetHandler(
                     RadiusUnitTargetV1, PrintedValueChannel.Radius,
-                    declaresStraightLineFilter: false, PrintedIconSelectionSubject.Unit),
+                    PrintedIconSelectionSubject.Unit),
                 new HeroAdjacentToMinionHandler(),
                 // Milestone 8.39i. The obstacle selection Grappling Bolt names, which waited in
                 // `DeferredHandlers` above until a dealt card started it - her Silver basic is that
@@ -826,108 +833,6 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             Unit = 3
         }
-
-        /// <summary>
-        /// Every board object the acting hero may target inside its card's printed icon, with the
-        /// origin the disk was measured from.
-        ///
-        /// <para>Shared by both selections this class builds on p.9's icons - milestone 7.2b's, which
-        /// publishes the chosen object's space, and milestone 8.10's, which publishes the chosen hero -
-        /// so p.9's disk, p.18's immunity and p.16's item composition are asked in exactly one place
-        /// and the two selections cannot come to disagree about who is inside a card's icon.</para>
-        ///
-        /// <para>The total is re-derived on every ask rather than captured, which is what makes the
-        /// offered disk and the disk an answer is checked against the same one: an item gained between
-        /// the two would widen both, and neither is written to the snapshot.</para>
-        /// </summary>
-        private static IReadOnlyList<BoardObjectReference> PrintedIconTargets(
-            EffectCapabilityContext context,
-            PrintedValueChannel channel,
-            bool includeSelf,
-            out HexCoordinate origin)
-        {
-            origin = default;
-            var components = context.Components;
-            if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
-            {
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            var activity = (RuleActivity)context.Input("activity").IntegerValue;
-            if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
-            {
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            var board = components.Board;
-            var selector = BoardObjectReference.ForHero(context.ActorId);
-            if (!board.TryGetObjectCoordinate(selector, out origin))
-            {
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            var printedTotal = channel == PrintedValueChannel.Radius
-                ? RadiusValueQuery.Calculate(
-                    context.SourceCardInstanceId,
-                    context.SourceDefinitionReference,
-                    context.ActionDefinitionId,
-                    context.CardState.Definitions,
-                    context.ActorId,
-                    context.HeroItems,
-                    context.Modifications)
-                : RangeValueQuery.Calculate(
-                    context.SourceCardInstanceId,
-                    context.SourceDefinitionReference,
-                    context.ActionDefinitionId,
-                    context.CardState.Definitions,
-                    context.ActorId,
-                    context.HeroItems,
-                    context.Modifications,
-                    // Milestone 8.19c. Card text resolving inside an action asks for the same Range
-                    // total that action's own targeting asked for, so the class is read from the card
-                    // and action this node is inside rather than assumed from the node.
-                    ActionValueApplicabilityQuery.For(
-                        context.SourceDefinitionReference,
-                        context.ActionDefinitionId,
-                        context.CardState.Definitions));
-            if (printedTotal.Total <= 0)
-            {
-                // A card printing no icon of this channel has no such bound at all, and p.16 does
-                // not give it one: an item raises a printed icon and never invents one. The
-                // selection is therefore impossible rather than adjacent-by-default.
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            // p.9 states one geometry for both icons - "targets up to 3 spaces away", counted
-            // through obstacles because there are no line-of-sight rules - so the Range reading
-            // asks the same disk question. RadiusQuery is where that question lives and it refuses
-            // a total of the wrong channel by construction, which is why the Range arm asks
-            // TargetQuery, the shared contract underneath it, rather than mislabelling its total.
-            return channel == PrintedValueChannel.Radius
-                ? RadiusQuery.Targets(
-                    origin,
-                    printedTotal,
-                    includeSelf,
-                    selector.AsRuleObject(),
-                    activity,
-                    board,
-                    context.Participants,
-                    context.Modifications,
-                    context.ImmunityOverrides,
-                    activity)
-                : TargetQuery.FindTargetsWithin(
-                    origin,
-                    printedTotal.Total,
-                    includeSelf,
-                    selector.AsRuleObject(),
-                    activity,
-                    board,
-                    context.Participants,
-                    context.Modifications,
-                    context.ImmunityOverrides,
-                    activity);
-        }
-
 
         /// <summary>
         /// Milestone 8.39b. See <see cref="RangeObstacleTarget"/>.
@@ -1232,215 +1137,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 IEffectImmunityOverrideCapabilityHandler
         {
             private readonly PrintedValueChannel channel;
-            private readonly bool declaresStraightLineFilter;
             private readonly PrintedIconSelectionSubject subject;
 
             public PrintedIconTargetHandler(
                 EffectCapabilityReference reference,
                 PrintedValueChannel channel,
-                bool declaresStraightLineFilter,
                 PrintedIconSelectionSubject subject = PrintedIconSelectionSubject.BoardObject)
             {
                 Reference = reference;
                 this.channel = channel;
-                this.declaresStraightLineFilter = declaresStraightLineFilter;
                 this.subject = subject;
 
-                var parameters = new List<EffectCapabilityParameter>
-                {
-                    new EffectCapabilityParameter(
-                        "activity",
-                        EffectValueKind.Integer,
-                        integerDomain: EffectIntegerDomain.AllExcept(RuleActivity.None))
-                };
-                if (subject == PrintedIconSelectionSubject.BoardObject)
-                {
-                    // Only an object selection can be asked about the actor's own space; a selection
-                    // that names heroes on a declared side answers that question through the side.
-                    parameters.Insert(0, new EffectCapabilityParameter(
-                        "includeSelf", EffectValueKind.Boolean));
-                }
-                else if (subject == PrintedIconSelectionSubject.Hero)
-                {
-                    parameters.Add(new EffectCapabilityParameter(
-                        TargetRelationParameterName,
-                        EffectValueKind.Integer,
-                        integerDomain: EffectIntegerDomain.AllExcept(
-                            SourceTeamRelation.None)));
-
-                    // Milestone 8.11. Each icon's hero selection declares the one narrowing a verified
-                    // card pairs with it and no other: p.9's disk without its innermost ring for the
-                    // Radius cards' "not adjacent to you", and the attacker's exclusion for the Range
-                    // cards' "other than the attacker". Declaring both on both would carry a parameter
-                    // nothing sets, which is the ambiguity the Range/Radius split exists to refuse.
-                    parameters.Add(channel == PrintedValueChannel.Radius
-                        ? new EffectCapabilityParameter(
-                            ExcludeAdjacentParameterName, EffectValueKind.Boolean)
-                        : new EffectCapabilityParameter(
-                            ExcludeTheAttackerParameterName, EffectValueKind.Boolean));
-
-                    // Milestone 8.35z28. The two narrowings Dodger's hero selections print, each declared
-                    // on the arm whose face prints it and neither on the other - the same rule that
-                    // kept `excludeAdjacent` off the Range arm and `excludeTheAttacker` off the Radius
-                    // one. Both are optional, so every hero selection composed before her is unchanged
-                    // without naming either.
-                    parameters.Add(channel == PrintedValueChannel.Range
-                        ? new EffectCapabilityParameter(
-                            HasCardInDiscardParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false)
-                        : new EffectCapabilityParameter(
-                            AdjacentToEmptyMinionSpawnPointParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false));
-
-                    // Milestone 8.71a. Hanu's Hurry up!, "an unresolved card of a hero in range", on
-                    // the Range arm alone because that is the icon the one face printing it carries.
-                    // Optional and unbound everywhere else, so every hero selection composed before
-                    // him keeps its exact candidate set.
-                    if (channel == PrintedValueChannel.Range)
-                    {
-                        parameters.Add(new EffectCapabilityParameter(
-                            HoldsAnUnresolvedCardParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false));
-                    }
-
-                    // Milestone 8.35z30. Optional, and false where nothing sets it, which is
-                    // every hero selection written before Silverarrow: see RULING 8 and
-                    // <see cref="HeroCandidates"/> for why hers is the first face that can be its own
-                    // candidate.
-                    parameters.Add(new EffectCapabilityParameter(
-                        IncludeSelfParameterName, EffectValueKind.Boolean, isRequired: false));
-
-                    // Milestone 8.40f. Bain's "with two or more cards in hand", on the Radius arm
-                    // alone because that is the icon his three guessing faces print. Optional and
-                    // unbound everywhere else, so every earlier hero selection is untouched.
-                    if (channel == PrintedValueChannel.Radius)
-                    {
-                        parameters.Add(new EffectCapabilityParameter(
-                            MinimumCardsInHandParameterName,
-                            EffectValueKind.Integer,
-                            isRequired: false));
-
-                        // Milestone 8.57d. Rowenna's "if both you and an enemy hero in radius have no
-                        // cards in the discard", on the Radius arm alone because that is the icon her
-                        // two faces print. Optional and unbound everywhere else, so every earlier hero
-                        // selection is untouched.
-                        parameters.Add(new EffectCapabilityParameter(
-                            BothDiscardPilesEmptyParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false));
-
-                        // Milestone 8.69a. Brynn's "an enemy hero in radius who is adjacent to 3 or
-                        // more obstacles", on the Radius arm alone because that is the icon all seven
-                        // of his faces printing it carry. Optional and unbound everywhere else, so
-                        // every earlier hero selection is untouched.
-                        parameters.Add(new EffectCapabilityParameter(
-                            AdjacentToThreeOrMoreObstaclesParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false));
-
-                        // Milestone 8.69c. Decoy's "on different targets", read by the second
-                        // performance of his Silver basic. Optional, so an unbound binding - a first
-                        // performance that named nobody - excludes nobody, and every hero selection
-                        // written before him is untouched.
-                        parameters.Add(new EffectCapabilityParameter(
-                            ExcludedHeroParameterName,
-                            EffectValueKind.Hero,
-                            isRequired: false));
-                    }
-                }
-                else
-                {
-                    parameters.Add(new EffectCapabilityParameter(
-                        TargetRelationParameterName,
-                        EffectValueKind.Integer,
-                        integerDomain: EffectIntegerDomain.AllExcept(
-                            SourceTeamRelation.None)));
-
-                    // Milestone 8.24. The class adjective Xargatha's Green line prints, on the minion
-                    // arm alone: a unit selection's sentence names heroes as well, so a minion-class
-                    // narrowing there would be a parameter that could not describe half its own
-                    // candidates.
-                    if (subject == PrintedIconSelectionSubject.Minion)
-                    {
-                        parameters.Add(new EffectCapabilityParameter(
-                            AdmittedMinionClassParameterName,
-                            EffectValueKind.Integer,
-                            isRequired: false,
-                            integerDomain: EffectIntegerDomain.All<RosterMinionClass>()));
-                    }
-
-                    // Milestone 8.24. "not adjacent to you", which the hero arm has declared since
-                    // 8.11 and which a verified card now pairs with the unit arm as well: Siren's
-                    // Call, "Target an enemy unit not adjacent to you and in range". It is added here
-                    // by the same rule that kept it off the arms that had no card printing it -
-                    // declare the narrowing a verified face pairs with this selection - and it is
-                    // optional, so Brogan's two unit selections keep their exact candidate sets.
-                    if (subject == PrintedIconSelectionSubject.Unit)
-                    {
-                        parameters.Add(new EffectCapabilityParameter(
-                            ExcludeAdjacentParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false));
-
-                        // Milestone 8.35z33. "occupying a spawn point", which Whisper's three Blue
-                        // displacement Skills pair with the unit arm and no earlier face prints. It
-                        // is declared here by the same rule the line above follows - declare the
-                        // narrowing a verified face pairs with this selection - and it is optional,
-                        // so Brogan's and Xargatha's unit selections keep their exact candidate sets.
-                        parameters.Add(new EffectCapabilityParameter(
-                            OccupiesSpawnPointParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false));
-
-                        // Milestone 8.57b. Rowenna's three Blue swaps, "a friendly unit in range
-                        // WHICH IS ADJACENT TO AN ENEMY HERO, OR HAS A CARD IN THE DISCARD". It is
-                        // declared here by the rule the two above follow - declare the narrowing a
-                        // verified face pairs with this selection - and it is optional, so Brogan's,
-                        // Xargatha's and Whisper's unit selections keep their exact candidate sets.
-                        parameters.Add(new EffectCapabilityParameter(
-                            AdjacentToAnEnemyHeroOrHoldingADiscardParameterName,
-                            EffectValueKind.Boolean,
-                            isRequired: false));
-                    }
-
-                    // Milestone 8.69c. "a DIFFERENT friendly unit in radius" - Brynn's Mountain Guide
-                    // and Expedition Leader, whose second sentence must not name the unit their first
-                    // sentence named, and Decoy's second performance where the first took the minion
-                    // bullet. Declared on the Radius arms his faces print and nowhere else; both are
-                    // optional, so an unbound binding excludes nobody and every minion and unit
-                    // selection written before him keeps its exact candidate set.
-                    if (channel == PrintedValueChannel.Radius)
-                    {
-                        parameters.Add(new EffectCapabilityParameter(
-                            ExcludedMinionParameterName,
-                            EffectValueKind.Minion,
-                            isRequired: false));
-
-                        if (subject == PrintedIconSelectionSubject.Unit)
-                        {
-                            parameters.Add(new EffectCapabilityParameter(
-                                ExcludedHeroParameterName,
-                                EffectValueKind.Hero,
-                                isRequired: false));
-                        }
-                    }
-                }
-
-                if (declaresStraightLineFilter)
-                {
-                    parameters.Add(new EffectCapabilityParameter(
-                        ExcludeStraightLineParameterName, EffectValueKind.Boolean));
-                }
-
-                parameters.Add(new EffectCapabilityParameter(
-                    EffectSelectionDeclaration.ConsumerParameterName,
-                    EffectValueKind.Node,
-                    isRequired: false));
+                // Milestone 8.88. One declaration for every arm: each filter the family composes, on
+                // every arm it can mean something on, each optional but the ones the arm always required.
                 Schema = new EffectCapabilityParameterSchema(
-                    parameters,
+                    PrintedIconParameters(subject, channel),
                     new[]
                     {
                         subject == PrintedIconSelectionSubject.BoardObject
@@ -1479,6 +1190,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             public EffectCapabilityReference Reference { get; }
+
+            /// <summary>Which kind this arm offers. Milestone 8.88, for the refusal table.</summary>
+            public PrintedIconSelectionSubject Subject => subject;
 
             public IReadOnlyList<RuleActivity> SupportedImmunityOverrideActivities =>
                 AllActivities;
@@ -1685,460 +1399,39 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             .ToArray()
                     : Candidates(context).Select(candidate => EffectValue.Space(candidate)).ToArray();
 
-            private IReadOnlyList<MinionId> MinionCandidates(EffectCapabilityContext context)
-            {
-                var relation = (SourceTeamRelation)context
-                    .Input(TargetRelationParameterName).IntegerValue;
-                if (relation == SourceTeamRelation.None ||
-                    !Enum.IsDefined(typeof(SourceTeamRelation), relation))
-                {
-                    return Array.Empty<MinionId>();
-                }
-
-                // Milestone 8.24. The class adjective, where the sentence prints one. An undeclared
-                // parameter is p.22's whole set, which is what every minion selection before
-                // Xargatha's Green line means by naming no class; an integer that is not one of the
-                // three is a definition making a claim this vocabulary cannot answer, so it offers
-                // nobody rather than quietly widening to everybody.
-                var admittedClass = (RosterMinionClass)context
-                    .Input(AdmittedMinionClassParameterName).IntegerValue;
-                if (!Enum.IsDefined(typeof(RosterMinionClass), admittedClass))
-                {
-                    return Array.Empty<MinionId>();
-                }
-
-                var targets = PrintedIconTargets(context, channel, includeSelf: false, out var origin);
-                var board = context.Components?.Board;
-                if (board == null) return Array.Empty<MinionId>();
-
-                // Milestone 8.24. A unit selection's "not adjacent to you" has to remove minions as
-                // well as heroes, or Siren's Call would refuse the adjacent hero and offer the
-                // adjacent minion standing beside him - which is not what "an enemy unit not adjacent
-                // to you" says. The hero half applies the identical rule.
-                var excludeAdjacent = subject == PrintedIconSelectionSubject.Unit &&
-                    context.Input(ExcludeAdjacentParameterName).BooleanValue;
-                var onSpawnPoint = RequiresSpawnPoint(context);
-
-                // Milestone 8.69c. The minion an earlier pass of the same printed sentence already
-                // named, where this arm declares the clause and the pass that would have named one
-                // ran. An unbound binding carries no minion at all, which is a sentence that named
-                // nobody - see ExcludedMinionParameterName.
-                var excludedMinion = channel == PrintedValueChannel.Radius
-                    ? context.Input(ExcludedMinionParameterName)
-                    : default;
-
-                return targets
-                    .Where(target => target.Kind == BoardObjectKind.Minion &&
-                        !(excludedMinion.Kind == EffectValueKind.Minion &&
-                            target.MinionId.Equals(excludedMinion.MinionId)) &&
-                        TargetQuery.StandsInRelationTo(
-                            relation, target, context.ActorId, context.Participants, board) &&
-                        AdmitsClass(admittedClass, target.MinionId, board) &&
-                        !(excludeAdjacent &&
-                            board.TryGetObjectCoordinate(target, out var at) &&
-                            HexDistanceQuery.Calculate(origin, at) == 1) &&
-                        (!onSpawnPoint || StandsOnASpawnPoint(board, target)) &&
-
-                        // Milestone 8.57b. A minion owns no cards, so the discard half of Rowenna's
-                        // clause can never be true of one; the shared reading below says that once
-                        // rather than this arm assuming it.
-                        (!RequiresTheSwapQualifier(context) ||
-                            SatisfiesTheSwapQualifier(context, board, target)))
+            /// <summary>
+            /// Milestone 8.88. The minions this arm offers, from the family's one pipeline.
+            /// </summary>
+            private IReadOnlyList<MinionId> MinionCandidates(EffectCapabilityContext context) =>
+                Offered(context)
+                    .Where(target => target.Kind == BoardObjectKind.Minion)
                     .Select(target => target.MinionId)
                     .ToArray();
-            }
 
             /// <summary>
-            /// Whether one minion on the board is of a class the printed sentence admits.
-            ///
-            /// <para>It reads the minion's own <see cref="StandardMinionType"/> off the board rather
-            /// than deriving a class from behaviour, because p.22 prints the three classes as
-            /// identities and a card that says "ranged minion" is naming that identity. A minion the
-            /// board does not know is admitted by nothing, which cannot happen for a target the disk
-            /// just produced and is stated so the answer does not depend on that.</para>
+            /// Milestone 8.88. The heroes this arm offers, from the family's one pipeline. The acting
+            /// hero is among them only where the sentence includes them.
             /// </summary>
-            private static bool AdmitsClass(
-                RosterMinionClass admittedClass, MinionId minionId, IBoardDisplacementAuthority board)
-            {
-                if (admittedClass == RosterMinionClass.AnyClass)
-                {
-                    return true;
-                }
-
-                var minion = board.Minions
-                    .FirstOrDefault(value => value.MinionId.Equals(minionId));
-                if (minion == null)
-                {
-                    return false;
-                }
-
-                return SyntheticRosterCapabilities.AdmittedClassIncludes(
-                    admittedClass, minion.MinionType);
-            }
+            private IReadOnlyList<HeroId> HeroCandidates(EffectCapabilityContext context) =>
+                Offered(context)
+                    .Where(target => target.Kind == BoardObjectKind.Hero)
+                    .Select(target => target.HeroId)
+                    .ToArray();
 
             /// <summary>
-            /// Milestone 8.10. The heroes on the declared side of the board inside the same disk, which
-            /// is what card text naming "an enemy hero in radius" chooses among.
-            ///
-            /// <para>The acting hero is never among them: the disk is asked without self, and the side
-            /// would exclude them in any case. An empty result is
-            /// <see cref="EffectExecutionResultKind.ImpossibleMandatory"/> rather than a decline,
-            /// because by p.10 the sentence is one mandatory step and a step with nobody to perform it
-            /// is one that cannot complete; the `if able` its lower-Tier printings add is about the
-            /// card, and is declared on the discard node where the page puts it.</para>
-            /// </summary>
-            private IReadOnlyList<HeroId> HeroCandidates(EffectCapabilityContext context)
-            {
-                var relation = (SourceTeamRelation)context
-                    .Input(TargetRelationParameterName).IntegerValue;
-                if (relation == SourceTeamRelation.None ||
-                    !Enum.IsDefined(typeof(SourceTeamRelation), relation))
-                {
-                    return Array.Empty<HeroId>();
-                }
-
-                // Milestone 8.35z30, RULING 8. Every hero selection written before
-                // Silverarrow names a side its own hero cannot be on - "an enemy hero", "a friendly
-                // hero" - so leaving the actor out decided nothing. Fae Healing and Nature's Blessing
-                // print "A hero in radius" with no side at all, and the user settled that this reaches
-                // enemies and reaches her: "sure, she can target enemies if she wants" and "We include
-                // self". So the arm carries the same optional widening the board-object arm has always
-                // had, and a card that says nothing sets nothing and keeps its exact candidates.
-                var includeSelf = context.Inputs.ContainsKey(IncludeSelfParameterName) &&
-                    context.Input(IncludeSelfParameterName).BooleanValue;
-                var targets = PrintedIconTargets(context, channel, includeSelf, out var origin);
-                var board = context.Components?.Board;
-                if (board == null)
-                {
-                    return Array.Empty<HeroId>();
-                }
-
-                // Milestone 8.24 widens the arm rather than the meaning: the Radius hero selection has
-                // declared this since 8.11, and a unit selection declares it now because Siren's Call
-                // prints it on one. The word means the same thing on both - p.9's reach without its
-                // innermost ring.
-                var excludeAdjacent =
-                    (channel == PrintedValueChannel.Radius ||
-                        subject == PrintedIconSelectionSubject.Unit) &&
-                    context.Input(ExcludeAdjacentParameterName).BooleanValue;
-
-                // Milestone 8.11. "other than the attacker", which only a Block's rider prints and only
-                // a Range selection therefore declares. The attacker is the enclosing Attack's own
-                // actor - a fact about the action this text is answering rather than about anything
-                // the text did - so it is read from the same context p.13's subtype is.
-                var excludedAttacker = channel == PrintedValueChannel.Range &&
-                    context.Input(ExcludeTheAttackerParameterName).BooleanValue
-                        ? context.EnclosingAttack.ActorId
-                        : default;
-
-                // Milestone 8.35z28. Dodger's two hero narrowings, each read only on the arm that
-                // declares it. An unbound optional parameter is the absence of the clause, which is why
-                // both default to false and every earlier hero selection is untouched.
-                var requiresACardInDiscard = channel == PrintedValueChannel.Range &&
-                    context.Input(HasCardInDiscardParameterName).BooleanValue;
-
-                // Milestone 8.71a. Hurry up!'s "an unresolved card of a hero in range", read only on
-                // the arm that declares it and through the one owner of the phrase. An unbound
-                // optional parameter is the absence of the clause, so every hero selection written
-                // before Hanu keeps its exact candidate set.
-                var requiresAnUnresolvedCard = channel == PrintedValueChannel.Range &&
-                    context.Input(HoldsAnUnresolvedCardParameterName).BooleanValue;
-                var requiresAnEmptySpawnPointBeside = channel == PrintedValueChannel.Radius &&
-                    context.Input(AdjacentToEmptyMinionSpawnPointParameterName).BooleanValue;
-
-                // Milestone 8.40f. Bain's hand-size narrowing, read only on the arm that declares it.
-                // An unbound optional parameter is zero, which HeroHandQuery answers as no narrowing
-                // at all, so every hero selection written before him keeps its exact candidate set.
-                var minimumCardsInHand = channel == PrintedValueChannel.Radius
-                    ? context.Input(MinimumCardsInHandParameterName).IntegerValue
-                    : 0;
-
-                // Milestone 8.57d. Rowenna's both-parties clause, read only on the arm that declares
-                // it. Her own pile is asked ONCE for the whole offer rather than per candidate - it is
-                // a fact about her and not about them - and a card in it empties the candidate list
-                // entirely, which is the printed "if" answered as a candidate set. An unbound optional
-                // parameter is the absence of the clause, so every earlier hero selection is untouched.
-                // Milestone 8.69a. Brynn's one printed predicate, read only on the arm that declares
-                // it. An unbound optional Boolean is the absence of the clause - which is why it is a
-                // Boolean and not the threshold Integer it looks like, since an unbound Integer reads
-                // as zero and zero obstacles is every hero on the board.
-                var requiresThreeObstaclesBeside = channel == PrintedValueChannel.Radius &&
-                    context.Input(AdjacentToThreeOrMoreObstaclesParameterName).BooleanValue;
-
-                // Milestone 8.69c. The hero an earlier pass of the same printed sentence already
-                // named - Decoy's "on different targets" and the guides' "a different friendly unit".
-                // An unbound binding carries no hero at all, which is a pass that named nobody, and
-                // narrows nothing. See ExcludedHeroParameterName.
-                var excludedHero = channel == PrintedValueChannel.Radius &&
-                    (subject == PrintedIconSelectionSubject.Hero ||
-                        subject == PrintedIconSelectionSubject.Unit)
-                    ? context.Input(ExcludedHeroParameterName)
-                    : default;
-
-                var requiresBothDiscardsEmpty = channel == PrintedValueChannel.Radius &&
-                    context.Input(BothDiscardPilesEmptyParameterName).BooleanValue;
-                if (requiresBothDiscardsEmpty &&
-                    (!context.CardState.IsAvailable ||
-                        HeroDiscardPileQuery.HasAnyCard(
-                            context.CardState.Instances, context.ActorId)))
-                {
-                    return Array.Empty<HeroId>();
-                }
-
-                // Derived once for the whole offer rather than per candidate: the qualifying points are
-                // a property of the board and the map, and asking six times would answer identically
-                // six times.
-                //
-                // The overlay is read from the ACTOR and never from the candidate. Tide of Darkness is
-                // Dodger's own Ultimate and its clause is "while YOU are performing an action"; Death
-                // Trap's sentence then asks whether the enemy hero it is about stands beside a
-                // qualifying point. Two different heroes, one of whom supplies the board reading and
-                // the other of whom is measured against it - which is exactly what the printed sentence
-                // says. Milestone 8.35z28.
-                var qualifyingSpawnPoints =
-                    requiresAnEmptySpawnPointBeside && context.Components?.Tokens != null
-                        ? EmptyMinionSpawnPointQuery.FindInCurrentBattleZone(
-                            board,
-                            context.Components.Tokens,
-                            SpawnPointOverlay.ForActor(
-                                context.Modifications, context.Participants, context.ActorId))
-                        : Array.Empty<HexCoordinate>();
-
-                var heroes = new List<HeroId>(targets.Count);
-                foreach (var target in targets)
-                {
-                    if (target.Kind != BoardObjectKind.Hero ||
-                        !TargetQuery.StandsInRelationTo(
-                            relation, target, context.ActorId, context.Participants, board))
-                    {
-                        continue;
-                    }
-
-                    if (excludedAttacker.IsDefined && target.HeroId.Equals(excludedAttacker))
-                    {
-                        continue;
-                    }
-
-                    // "on different targets" / "a DIFFERENT friendly unit" - the hero an earlier pass
-                    // of this same printed sentence named. Milestone 8.69c.
-                    if (excludedHero.Kind == EffectValueKind.Hero &&
-                        target.HeroId.Equals(excludedHero.HeroId))
-                    {
-                        continue;
-                    }
-
-                    // p.9's disk without its innermost ring, which is what "and not adjacent to you"
-                    // removes. It is stated as the exact distance the word means rather than as
-                    // "further than one", so it says nothing about the actor's own space and does not
-                    // quietly depend on that space having been excluded above.
-                    if (excludeAdjacent &&
-                        board.TryGetObjectCoordinate(target, out var at) &&
-                        HexDistanceQuery.Calculate(origin, at) == 1)
-                    {
-                        continue;
-                    }
-
-                    // "who has one or more cards in the discard" - the named hero's own pile, read the
-                    // same way `owned-card-present@1` reads one so a card that selects by the fact and
-                    // a card that conditions on it cannot come to disagree about what it means.
-                    //
-                    // Milestone 8.35z45 made that sentence true. It was three copies of the
-                    // same two clauses; the modal-Attack bullet's narrowing would have been a fourth,
-                    // so the reading became one derivation that all of them ask.
-                    if (requiresACardInDiscard &&
-                        (!context.CardState.IsAvailable ||
-                            !HeroDiscardPileQuery.HasAnyCard(
-                                context.CardState.Instances, target.HeroId)))
-                    {
-                        continue;
-                    }
-
-                    // "an unresolved card of a hero in range" - p.10's played-and-not-yet-acted-on
-                    // card, asked through the query the turn order itself reads. Milestone 8.71a.
-                    if (requiresAnUnresolvedCard &&
-                        (!context.CardState.IsAvailable ||
-                            !GuardsDigital.Core.Cards.HeroUnresolvedCardQuery.Holds(
-                                context.CardState.Instances, target.HeroId)))
-                    {
-                        continue;
-                    }
-
-                    // "and an enemy hero in radius have no cards in the discard" - the candidate's own
-                    // half of the clause, asked through the same query the positive readings ask.
-                    // Rowenna's half is answered above, once, because it decides the whole list rather
-                    // than this candidate. Milestone 8.57d.
-                    if (requiresBothDiscardsEmpty &&
-                        HeroDiscardPileQuery.HasAnyCard(
-                            context.CardState.Instances, target.HeroId))
-                    {
-                        continue;
-                    }
-
-                    // "with two or more cards in hand" - the candidate's OWN hand, counted the same
-                    // way every seat's published hand summary counts it, so a player can check the
-                    // greying against a number they are already shown. Milestone 8.40f.
-                    if (minimumCardsInHand > 0 &&
-                        (!context.CardState.IsAvailable ||
-                            !GuardsDigital.Core.Cards.HeroHandQuery.HasAtLeast(
-                                context.CardState.Instances, target.HeroId, minimumCardsInHand)))
-                    {
-                        continue;
-                    }
-
-                    // "who is adjacent to 3 or more obstacles" - measured from each candidate's own
-                    // space through the one owner of that phrase, which is what makes p.19's water
-                    // ring, a token, a minion, terrain, a milestone 8.7 overlay and Brynn's own
-                    // Ultimate all reach this selection without it naming any of them. The
-                    // classification port is the placement one, because that is the board this
-                    // capability's components expose. Milestone 8.69a.
-                    if (requiresThreeObstaclesBeside &&
-                        (context.Components?.Tokens == null ||
-                            !ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
-                                context.Components.Tokens, target.HeroId, context.Modifications)))
-                    {
-                        continue;
-                    }
-
-                    // "who is adjacent to an empty spawn point in the battle zone" - measured from each
-                    // candidate's own space, which is what makes it a second bound rather than a wider
-                    // disk.
-                    if (requiresAnEmptySpawnPointBeside &&
-                        (!board.TryGetObjectCoordinate(target, out var beside) ||
-                            !qualifyingSpawnPoints.Any(point =>
-                                HexDistanceQuery.Calculate(beside, point) == 1)))
-                    {
-                        continue;
-                    }
-
-                    // Milestone 8.35z33. "occupying a spawn point" reaches heroes as well as minions,
-                    // because the sentence it comes from names p.19's units: Seeds of Fear moves
-                    // "an enemy unit in radius occupying a spawn point", and an enemy hero standing
-                    // on one is exactly that.
-                    if (RequiresSpawnPoint(context) && !StandsOnASpawnPoint(board, target))
-                    {
-                        continue;
-                    }
-
-                    // Milestone 8.57b. Rowenna's swap qualifier, read on the unit arm alone and as one
-                    // clause rather than as two - see the parameter's own remarks for why "or" cannot
-                    // be two narrowings in the chain above.
-                    if (RequiresTheSwapQualifier(context) &&
-                        !SatisfiesTheSwapQualifier(context, board, target))
-                    {
-                        continue;
-                    }
-
-                    heroes.Add(target.HeroId);
-                }
-
-                return heroes;
-            }
-
-            /// <summary>
-            /// Whether this selection's own sentence prints "occupying a spawn point". Only the unit
-            /// arm declares the parameter, so every other arm reads it as absent and narrows nothing.
-            /// </summary>
-            private bool RequiresSpawnPoint(EffectCapabilityContext context) =>
-                subject == PrintedIconSelectionSubject.Unit &&
-                context.Input(OccupiesSpawnPointParameterName).BooleanValue;
-
-            /// <summary>
-            /// Milestone 8.57b. Whether this selection's own sentence prints Rowenna's swap qualifier.
-            /// Only the unit arm declares the parameter, so every other arm reads it as absent and
-            /// narrows nothing.
-            /// </summary>
-            private bool RequiresTheSwapQualifier(EffectCapabilityContext context) =>
-                subject == PrintedIconSelectionSubject.Unit &&
-                context.Input(AdjacentToAnEnemyHeroOrHoldingADiscardParameterName).BooleanValue;
-
-            /// <summary>
-            /// Milestone 8.57b. "which is adjacent to an enemy hero, or has a card in the discard" -
-            /// one candidate measured against one printed clause, in the printed order.
-            ///
-            /// <para>The pile is asked first because it is the cheaper half and because it is the half
-            /// that decides nothing about the board. The adjacency is a disk of one drawn on the
-            /// CANDIDATE, which is exactly "adjacent to it" with no second bound smuggled in: the
-            /// enemy hero qualifying a friendly unit need not be inside Rowenna's own Range, and the
-            /// sentence bounds only the unit.</para>
-            ///
-            /// <para>Derived on every ask - the offer, the answer and a restored pause - because both
-            /// halves are live state: a hero discards to defend, and units walk.</para>
-            /// </summary>
-            private static bool SatisfiesTheSwapQualifier(
-                EffectCapabilityContext context,
-                IBoardDisplacementAuthority board,
-                BoardObjectReference target)
-            {
-                if (target.Kind == BoardObjectKind.Hero && context.CardState.IsAvailable &&
-                    HeroDiscardPileQuery.HasAnyCard(context.CardState.Instances, target.HeroId))
-                {
-                    return true;
-                }
-
-                if (board == null || context.Participants == null ||
-                    !board.TryGetObjectCoordinate(target, out var at))
-                {
-                    return false;
-                }
-
-                // "Enemy" from the actor, which is the same side the friendly candidate opposes - so a
-                // candidate is never found in its own neighbourhood and nothing needs excluding.
-                return RosterPresenceQuery.FindUnitsWithin(
-                    at,
-                    1,
-                    RosterUnitKind.Hero,
-                    SourceTeamRelation.OpposingSource,
-                    context.ActorId,
-                    board,
-                    context.Participants,
-                    context.Modifications).Count > 0;
-            }
-
-            /// <summary>
-            /// Whether the space one unit is standing on carries a Spawn point.
-            ///
-            /// <para><b>Any Spawn point, of either type and either team, anywhere on the board.</b>
-            /// That is p.19's own definition - "Spaces on the board used to spawn minions and heroes"
-            /// - and it is the whole of what these three faces print. The narrower
-            /// empty-minion-spawn-point-in-the-battle-zone question the Red and Green lines ask is a
-            /// different phrase with three more conditions, derived in
-            /// <see cref="GuardsDigital.Core.Rules.Modifications.EmptyMinionSpawnPointQuery"/>; the
-            /// two are deliberately not shared, because reading one through the other would put
-            /// qualifiers on these faces that they do not print.</para>
-            /// </summary>
-            private static bool StandsOnASpawnPoint(
-                IBoardDisplacementAuthority board, BoardObjectReference target)
-            {
-                if (!board.TryGetObjectCoordinate(target, out var at))
-                {
-                    return false;
-                }
-
-                return board.MapDefinition.SpawnPoints.Any(point =>
-                    board.MapDefinition.Spaces.Any(space =>
-                        space.Id.Equals(point.SpaceId) && space.Coordinate.Equals(at)));
-            }
-
-            /// <summary>
-            /// The spaces of every object the acting hero may target inside its card's printed icon, in
-            /// canonical axial order.
-            ///
-            /// The total is re-derived on every ask rather than captured, which is what makes the
-            /// offered disk and the disk the answer is checked against the same one: an item gained
-            /// between the two would widen both, and neither is written to the snapshot.
+            /// The spaces of every object an object arm offers, in canonical axial order - the disk's
+            /// own order, which every clause preserves.
             /// </summary>
             private IReadOnlyList<HexCoordinate> Candidates(EffectCapabilityContext context)
             {
-                var targets = PrintedIconTargets(
-                    context, channel, context.Input("includeSelf").BooleanValue, out var origin);
                 var board = context.Components?.Board;
                 if (board == null)
                 {
                     return Array.Empty<HexCoordinate>();
                 }
 
-                var spaces = new List<HexCoordinate>(targets.Count);
-                foreach (var target in targets)
+                var spaces = new List<HexCoordinate>();
+                foreach (var target in Offered(context))
                 {
                     if (board.TryGetObjectCoordinate(target, out var at))
                     {
@@ -2146,15 +1439,25 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     }
                 }
 
-                // p.19's straight-line rule read as a complement, anchored at the selecting hero. It is
-                // applied after immunity rather than before it because the two narrow for different
-                // reasons and neither is a special case of the other: a unit can be out of line and
-                // immune at once, and both refusals are the card's.
-                return declaresStraightLineFilter &&
-                    context.Input(ExcludeStraightLineParameterName).BooleanValue
-                    ? StraightLineQuery.FilterOutStraightLine(origin, spaces)
-                    : (IReadOnlyList<HexCoordinate>)spaces;
+                return spaces;
             }
+
+            /// <summary>
+            /// Milestone 8.88. What this arm offers: its own kinds through the family's one pipeline. A
+            /// hero, minion or unit arm requires a side; an object arm may leave it unbound.
+            /// </summary>
+            private IReadOnlyList<BoardObjectReference> Offered(EffectCapabilityContext context) =>
+                PrintedIconSelection(
+                    context,
+                    channel,
+                    subject == PrintedIconSelectionSubject.Hero
+                        ? PrintedIconKinds.Heroes
+                        : subject == PrintedIconSelectionSubject.Minion
+                            ? PrintedIconKinds.Minions
+                            : subject == PrintedIconSelectionSubject.Unit
+                                ? PrintedIconKinds.Units
+                                : PrintedIconKinds.All,
+                    relationRequired: subject != PrintedIconSelectionSubject.BoardObject);
         }
 
         private sealed class HeroAdjacentToMinionHandler

@@ -472,12 +472,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The narrowing is an optional BOOLEAN, on the Radius arm alone - the shape milestone 8.57c
-        /// settled, and for the reason it settled it: an unbound optional Integer reads as zero, and a
-        /// threshold of zero admits every hero on the board.
+        /// The narrowing is an optional BOOLEAN - the shape milestone 8.57c settled, and for the reason
+        /// it settled it: an unbound optional Integer reads as zero, and a threshold of zero admits
+        /// every hero on the board. Since milestone 8.88 both icon arms declare it.
         /// </summary>
         [Test]
-        public void TheRadiusNarrowing_IsAnOptionalBooleanAndIsAbsentFromTheRangeArm()
+        public void TheRadiusNarrowing_IsAnOptionalBooleanOnBothIconArms()
         {
             var radius = HeroSelectionHandler(SyntheticTargetingCapabilities.RadiusHeroTargetV1);
             var parameter = radius.Schema.Parameters.Single(value =>
@@ -491,15 +491,16 @@ namespace GuardsDigital.Tests.EditMode
                 "Optional, so every hero selection composed before him keeps its exact candidate set " +
                 "without naming it.");
 
+            // Milestone 8.88. The Range arm declares it too, optional: the family composes every
+            // clause on every arm it can mean something on, so a later face pairing it with a Range
+            // icon binds it rather than minting a capability.
             var range = HeroSelectionHandler(SyntheticTargetingCapabilities.RangeHeroTargetV1);
-            Assert.That(
-                range.Schema.Parameters.Any(value =>
-                    value.Name ==
-                    SyntheticTargetingCapabilities.AdjacentToThreeOrMoreObstaclesParameterName),
-                Is.False,
-                "and it is declared on the Radius arm alone, by this file's standing rule: every face " +
-                "of his printing the clause beside a reach prints a Radius icon, and his one Range " +
-                "face states it as a modal-Attack bullet instead.");
+            var onRange = range.Schema.Parameters.Single(value =>
+                value.Name ==
+                SyntheticTargetingCapabilities.AdjacentToThreeOrMoreObstaclesParameterName);
+            Assert.That(onRange.ValueKind, Is.EqualTo(EffectValueKind.Boolean));
+            Assert.That(onRange.IsRequired, Is.False,
+                "and optional there as well, so no Range selection composed before 8.88 changes.");
         }
 
         // -------------------------------------------------------------------------------------------

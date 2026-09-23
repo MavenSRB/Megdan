@@ -50,6 +50,12 @@ namespace GuardsDigital.Core.Cards.Verified
     /// narrowing cannot come to disagree with the registered family about who is inside a card's icon.
     /// None of it ignores immunity: an Attack targets what it may target.</para>
     ///
+    /// <para><b>Milestone 8.88.</b> The three clauses above are now parameters of the printed-icon family
+    /// itself (<c>requireStraightLine</c>, <c>excludeStraightLine</c>, <c>atMaximumReach</c> and
+    /// <c>excludeAdjacent</c>, on every arm), so a later face printing them binds the family instead of
+    /// minting. These four identities stay registered exactly as dealt - a snapshot names them - and
+    /// their candidates now come from the family's one derivation with their clauses fixed.</para>
+    ///
     /// <para><b>Nothing here is registered.</b> Like every Ignatia declaration, these wait in
     /// <see cref="Handlers"/> until her dealing block moves them into the registered-capability list a
     /// snapshot pins - milestone 7.9's gate.</para>
@@ -139,84 +145,11 @@ namespace GuardsDigital.Core.Cards.Verified
         }
 
         // -----------------------------------------------------------------------------------------
-        // Shared disk. Mirrors PrintedIconTargetHandler's Range arm: p.9's Range icon measured from the
-        // actor at the acting card's own printed Range with p.16's items composed on, and p.18's
-        // immunity filtered through the same TargetQuery every printed-icon selection uses.
-        // -----------------------------------------------------------------------------------------
-
-        private static IReadOnlyList<BoardObjectReference> RangeTargets(
-            EffectCapabilityContext context, out HexCoordinate origin, out int total)
-        {
-            origin = default;
-            total = 0;
-            var components = context.Components;
-            if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
-            {
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            var activity = (RuleActivity)context.Input("activity").IntegerValue;
-            if (activity == RuleActivity.None || !Enum.IsDefined(typeof(RuleActivity), activity))
-            {
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            var board = components.Board;
-            var selector = BoardObjectReference.ForHero(context.ActorId);
-            if (!board.TryGetObjectCoordinate(selector, out origin))
-            {
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            var printedTotal = RangeValueQuery.Calculate(
-                context.SourceCardInstanceId,
-                context.SourceDefinitionReference,
-                context.ActionDefinitionId,
-                context.CardState.Definitions,
-                context.ActorId,
-                context.HeroItems,
-                context.Modifications,
-                // Card text resolving inside an action asks for the same Range total that action's own
-                // targeting asked for, so the class is read from the card and action this node is
-                // inside rather than assumed - PrintedIconTargetHandler's own reading.
-                ActionValueApplicabilityQuery.For(
-                    context.SourceDefinitionReference,
-                    context.ActionDefinitionId,
-                    context.CardState.Definitions));
-            if (printedTotal.Total <= 0)
-            {
-                // A card printing no Range icon has no such bound at all, and p.16 does not give it one
-                // - the reading the printed-icon family already records.
-                return Array.Empty<BoardObjectReference>();
-            }
-
-            total = printedTotal.Total;
-            return TargetQuery.FindTargetsWithin(
-                origin,
-                printedTotal.Total,
-                includeSelf: false,
-                selector.AsRuleObject(),
-                activity,
-                board,
-                context.Participants,
-                context.Modifications,
-                context.ImmunityOverrides,
-                activity);
-        }
-
-        private static SourceTeamRelation Relation(EffectCapabilityContext context)
-        {
-            var relation = (SourceTeamRelation)context.Input(TargetRelationParameterName).IntegerValue;
-            return Enum.IsDefined(typeof(SourceTeamRelation), relation)
-                ? relation
-                : SourceTeamRelation.None;
-        }
-
-        // -----------------------------------------------------------------------------------------
         // One handler, four declarations. It offers p.19's units (or heroes alone) inside p.9's Range
         // disk, narrowed by the straight-line rule, the maximum-range equality and the adjacency
-        // exclusion its constructor bakes in - the same "one implementation, many declarations" shape
-        // PrintedIconTargetHandler has, kept Ignatia-local because she is not this build's to register.
+        // exclusion its constructor bakes in. Milestone 8.88 made those three clauses parameters of the
+        // printed-icon family itself, so the candidates now come from that family's one derivation and
+        // this handler only fixes which clauses its own identity prints.
         // -----------------------------------------------------------------------------------------
 
         private sealed class IgnatiaRangeAttackTargetHandler
@@ -376,83 +309,46 @@ namespace GuardsDigital.Core.Cards.Verified
             }
 
             /// <summary>
-            /// The board objects this selection admits, in the disk's own order, after relation, the
-            /// straight-line rule, the maximum-range equality and the adjacency exclusion. Derived on
-            /// every ask - the offer, the answer and a restored pause - because a unit that has moved
-            /// since the question opened has changed which file it is on and how far away it stands.
+            /// The board objects this selection admits, in the disk's own order. Milestone 8.88: the
+            /// printed-icon family's one derivation, asked with the clauses this identity prints - so
+            /// p.9's disk, p.16's items, p.18's immunity and the side of the board are read in exactly
+            /// the place every other printed-icon selection reads them. Derived on every ask, because a
+            /// unit that has moved since the question opened has changed which file it is on and how
+            /// far away it stands.
             /// </summary>
             private IReadOnlyList<BoardObjectReference> FilteredTargets(EffectCapabilityContext context)
             {
-                var relation = Relation(context);
-                if (relation == SourceTeamRelation.None)
+                var clauses = new Dictionary<string, EffectValue>(StringComparer.Ordinal);
+                if (excludeAdjacent)
                 {
-                    return Array.Empty<BoardObjectReference>();
+                    clauses[SyntheticTargetingCapabilities.ExcludeAdjacentParameterName] =
+                        EffectValue.Boolean(true);
                 }
 
-                var targets = RangeTargets(context, out var origin, out var total);
-                var board = context.Components?.Board;
-                if (board == null)
+                if (atMaximumRange)
                 {
-                    return Array.Empty<BoardObjectReference>();
+                    clauses[SyntheticTargetingCapabilities.AtMaximumReachParameterName] =
+                        EffectValue.Boolean(true);
                 }
 
-                var result = new List<BoardObjectReference>(targets.Count);
-                foreach (var target in targets)
+                if (line == LineMode.InStraightLine)
                 {
-                    // p.19's units only - a hero or a minion - and heroes alone where the subject is a
-                    // hero. A token or a heap of terrain is not a unit and is never an Attack's target.
-                    if (target.Kind != BoardObjectKind.Hero && target.Kind != BoardObjectKind.Minion)
-                    {
-                        continue;
-                    }
-
-                    if (subject == TargetSubject.Hero && target.Kind != BoardObjectKind.Hero)
-                    {
-                        continue;
-                    }
-
-                    if (!TargetQuery.StandsInRelationTo(
-                            relation, target, context.ActorId, context.Participants, board))
-                    {
-                        continue;
-                    }
-
-                    if (!board.TryGetObjectCoordinate(target, out var at))
-                    {
-                        continue;
-                    }
-
-                    // "not adjacent to you" - p.9's disk without its innermost ring, stated as the exact
-                    // distance the word means.
-                    if (excludeAdjacent && HexDistanceQuery.Calculate(origin, at) == 1)
-                    {
-                        continue;
-                    }
-
-                    // "at maximum range" - RULING 1's equality: the candidate stands at exactly the
-                    // printed Range Total, items composed on, and never merely within it.
-                    if (atMaximumRange && HexDistanceQuery.Calculate(origin, at) != total)
-                    {
-                        continue;
-                    }
-
-                    // p.19's straight-line rule, membership or its complement, anchored at the actor.
-                    if (line == LineMode.InStraightLine &&
-                        !StraightLineQuery.AreInStraightLine(origin, at))
-                    {
-                        continue;
-                    }
-
-                    if (line == LineMode.NotInStraightLine &&
-                        StraightLineQuery.AreInStraightLine(origin, at))
-                    {
-                        continue;
-                    }
-
-                    result.Add(target);
+                    clauses[SyntheticTargetingCapabilities.RequireStraightLineParameterName] =
+                        EffectValue.Boolean(true);
+                }
+                else if (line == LineMode.NotInStraightLine)
+                {
+                    clauses[SyntheticTargetingCapabilities.ExcludeStraightLineParameterName] =
+                        EffectValue.Boolean(true);
                 }
 
-                return result;
+                return SyntheticTargetingCapabilities.PrintedIconSelection(
+                    context.WithAdditionalInputs(clauses),
+                    PrintedValueChannel.Range,
+                    subject == TargetSubject.Hero
+                        ? SyntheticTargetingCapabilities.PrintedIconKinds.Heroes
+                        : SyntheticTargetingCapabilities.PrintedIconKinds.Units,
+                    relationRequired: true);
             }
         }
     }

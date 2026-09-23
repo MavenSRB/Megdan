@@ -949,11 +949,12 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         /// <summary>
-        /// The two exclusion parameters are OPTIONAL and declared on the Radius arms his faces print
-        /// and on no others - the rule the printed-icon family has followed since milestone 8.11.
+        /// The two exclusion parameters are OPTIONAL, declared on the Radius arms his faces print and -
+        /// since milestone 8.88 - on every other arm that can offer the kind they exclude, and refused
+        /// by name on the arm that cannot.
         /// </summary>
         [Test]
-        public void TheExclusions_AreOptionalAndDeclaredOnTheRadiusArmsAlone()
+        public void TheExclusions_AreOptionalAndDeclaredWhereverTheyCanApply()
         {
             var hero = Handler(SyntheticTargetingCapabilities.RadiusHeroTargetV1);
             var heroExclusion = Parameter(
@@ -985,13 +986,24 @@ namespace GuardsDigital.Tests.EditMode
                 SyntheticTargetingCapabilities.RangeUnitTargetV1
             })
             {
-                var names = Handler(range).Schema.Parameters.Select(value => value.Name).ToArray();
-                Assert.That(names,
-                    Has.No.Member(SyntheticTargetingCapabilities.ExcludedHeroParameterName));
-                Assert.That(names,
-                    Has.No.Member(SyntheticTargetingCapabilities.ExcludedMinionParameterName),
-                    $"'{range}' pairs with no face of his, and this file declares a narrowing only " +
-                    "where a verified card prints it.");
+                // Milestone 8.88 reversed the rule this loop used to pin ("declare a narrowing only
+                // where a verified card prints it"): every arm now declares each exclusion it can
+                // mean something on, optional, and refuses by name the one it cannot - a hero arm
+                // offers no minion to exclude, a minion arm no hero.
+                foreach (var name in new[]
+                {
+                    SyntheticTargetingCapabilities.ExcludedHeroParameterName,
+                    SyntheticTargetingCapabilities.ExcludedMinionParameterName
+                })
+                {
+                    var declared = Handler(range).Schema.Parameters
+                        .Where(value => value.Name == name).ToArray();
+                    var refusal = SyntheticTargetingCapabilities.PrintedIconFilterRefusal(range, name);
+                    Assert.That(declared.Length, Is.EqualTo(refusal == null ? 1 : 0),
+                        $"'{range}' declares '{name}' exactly when it does not refuse it by name.");
+                    Assert.That(declared.All(value => !value.IsRequired), Is.True,
+                        $"'{range}' carries '{name}' as an optional clause.");
+                }
             }
 
             Assert.That(
