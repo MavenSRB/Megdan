@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Components.Synthetic;
 using GuardsDigital.Core.Effects;
@@ -110,7 +111,9 @@ namespace GuardsDigital.Tests.EditMode
             var objectKinds = new[]
             {
                 SyntheticTargetingCapabilities.AdmittedObjectKindParameterName,
-                SyntheticTargetingCapabilities.OwnTokensOnlyParameterName
+                SyntheticTargetingCapabilities.OwnTokensOnlyParameterName,
+                // Milestone 8.91: the token-kind narrowing, like the other two, chooses among kinds.
+                SyntheticTargetingCapabilities.TokenKindParameterName
             };
 
             Assert.That(Refused(SyntheticTargetingCapabilities.RangeTargetV1), Is.Empty);
@@ -623,6 +626,55 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Milestone 8.91 - a token named by its kind, and the kind a facedown token hides
+        // -------------------------------------------------------------------------------------------
+
+        private static EffectInputBinding[] TokensOfKind(TokenDefinitionId kind) =>
+            ObjectSelection(
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.AdmittedObjectKindParameterName,
+                    PrintedIconObjectKind.TokensOnly),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.TokenKindParameterName, EffectValue.TokenKind(kind)));
+
+        [Test]
+        public void AFacedownToken_ShowsItsFacedownFace_ToEveryoneButItsOwner()
+        {
+            var mineAt = new HexCoordinate(2, 0);
+            var enemysMine = Board(Heroes(enemyAt: new HexCoordinate(-3, 3), secondEnemyAt: new HexCoordinate(0, 3)));
+            PlaceDefinition(enemysMine, mineAt, Enemy, MinComponentContent.MineBlastDefinition);
+
+            Assert.That(
+                Offered(SyntheticTargetingCapabilities.RangeTargetV1,
+                    TokensOfKind(MinComponentContent.MineBlastDefinition.Id), enemysMine, range: 2),
+                Is.Empty,
+                "Another hero's card cannot find which facedown piece is a live Mine by asking for one.");
+            Assert.That(
+                Offered(SyntheticTargetingCapabilities.RangeTargetV1,
+                    TokensOfKind(MinComponentContent.MineFacedownDefinition.Id), enemysMine, range: 2),
+                Is.EqualTo(new[] { EffectValue.Space(mineAt) }),
+                "It sees the facedown face, which is what the table sees.");
+
+            var ownMine = Board(Heroes(enemyAt: new HexCoordinate(-3, 3), secondEnemyAt: new HexCoordinate(0, 3)));
+            PlaceDefinition(ownMine, mineAt, Actor, MinComponentContent.MineBlastDefinition);
+            Assert.That(
+                Offered(SyntheticTargetingCapabilities.RangeTargetV1,
+                    TokensOfKind(MinComponentContent.MineBlastDefinition.Id), ownMine, range: 2),
+                Is.EqualTo(new[] { EffectValue.Space(mineAt) }),
+                "Its owner knows what she placed.");
+        }
+
+        private static void PlaceDefinition(
+            AdjacentMoveAuthority board, HexCoordinate at, HeroId owner, TokenDefinition definition) =>
+            board.CommitValidatedTokenPlacement(new PlacedToken(
+                new TokenInstanceId($"composable-{definition.Id.Value}-{at.Q}-{at.R}"),
+                definition,
+                owner,
+                owner,
+                new CardInstanceId("composable-kind-source"),
+                at));
+
+        // -------------------------------------------------------------------------------------------
         // The geometry clauses on an arm that never had them
         // -------------------------------------------------------------------------------------------
 
@@ -737,6 +789,8 @@ namespace GuardsDigital.Tests.EditMode
                     return EffectValue.Minion(EnemyMinion);
                 case EffectValueKind.Coordinate:
                     return EffectValue.Space(Origin);
+                case EffectValueKind.TokenKind:
+                    return EffectValue.TokenKind(new TokenDefinitionId("composable-test-token"));
                 default:
                     throw new ArgumentOutOfRangeException(nameof(parameter), parameter.ValueKind, null);
             }

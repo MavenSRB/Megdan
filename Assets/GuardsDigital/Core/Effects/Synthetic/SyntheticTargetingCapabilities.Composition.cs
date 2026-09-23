@@ -96,6 +96,43 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public const string AdjacentToSpaceParameterName = "adjacentToSpace";
 
         /// <summary>
+        /// Milestone 8.91. Whether a neighbouring space holding ANY token - of any kind and any owner -
+        /// counts toward the adjacency clause: Ignatia's "adjacent to a token, or a minion".
+        /// </summary>
+        public const string AdjacentToAnyTokenParameterName = "adjacentToAnyToken";
+
+        /// <summary>
+        /// Milestone 8.91. A token KIND whose pieces count toward the adjacency clause, as a
+        /// <see cref="EffectValueKind.TokenKind"/> literal - "adjacent to a Zombie token" named by the
+        /// token's definition rather than by its owner, which is what a hero owning two kinds (Min's
+        /// Smoke bomb and Mines, Trinkets' Turret and Barriers) needs. A token that hides its kind
+        /// (a facedown Mine) shows its facedown face to everyone but its owner, so another hero's card
+        /// can never find out which facedown piece is which.
+        /// </summary>
+        public const string AdjacentToTokenKindParameterName = "adjacentToTokenKind";
+
+        /// <summary>
+        /// Milestone 8.91. Which of p.19's unit kinds on a neighbouring space counts toward the
+        /// adjacency clause, as <see cref="RosterUnitKind"/>: Ignatia's "a minion adjacent to an enemy
+        /// hero". Unbound (<see cref="RosterUnitKind.None"/>) is the absence of the clause. Standing
+        /// beside somebody is not something done to them, so immunity is not asked (p.19).
+        /// </summary>
+        public const string AdjacentToUnitKindParameterName = "adjacentToUnitKind";
+
+        /// <summary>
+        /// Milestone 8.91. The side of the board those neighbouring units must be on, read from the
+        /// acting hero like every relation here. Unbound is any side.
+        /// </summary>
+        public const string AdjacentToUnitRelationParameterName = "adjacentToUnitRelation";
+
+        /// <summary>
+        /// Milestone 8.91. An OBJECT selection's tokens narrowed to one kind - "a Smoke bomb in
+        /// radius" - as a <see cref="EffectValueKind.TokenKind"/> literal. Units are untouched by it.
+        /// A token hiding its kind is judged by its facedown face except by its owner.
+        /// </summary>
+        public const string TokenKindParameterName = "tokenKind";
+
+        /// <summary>
         /// Milestone 8.88. How many of the candidate's six neighbours must satisfy the adjacency
         /// clause - Mortimer's "adjacent to two or more Zombie tokens".
         ///
@@ -152,9 +189,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 AdjacentToTerrainParameterName,
                 AdjacentToOwnTokenParameterName,
                 AdjacentToSpaceParameterName,
+                AdjacentToAnyTokenParameterName,
+                AdjacentToTokenKindParameterName,
+                AdjacentToUnitKindParameterName,
+                AdjacentToUnitRelationParameterName,
                 AdjacentAtLeastParameterName,
                 AdmittedObjectKindParameterName,
-                OwnTokensOnlyParameterName
+                OwnTokensOnlyParameterName,
+                TokenKindParameterName
             });
 
         /// <summary>
@@ -183,7 +225,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         {
             if (subject != PrintedIconSelectionSubject.BoardObject &&
                 (parameterName == AdmittedObjectKindParameterName ||
-                    parameterName == OwnTokensOnlyParameterName))
+                    parameterName == OwnTokensOnlyParameterName ||
+                    parameterName == TokenKindParameterName))
             {
                 return "this arm's kind is its identity; only an object selection chooses among kinds";
             }
@@ -297,6 +340,15 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 case AdmittedObjectKindParameterName:
                     return new EffectCapabilityParameter(
                         name, EffectValueKind.Integer, isRequired, EffectIntegerDomain.All<PrintedIconObjectKind>());
+                case AdjacentToUnitKindParameterName:
+                    return new EffectCapabilityParameter(
+                        name, EffectValueKind.Integer, isRequired, EffectIntegerDomain.All<RosterUnitKind>());
+                case AdjacentToUnitRelationParameterName:
+                    return new EffectCapabilityParameter(
+                        name, EffectValueKind.Integer, isRequired, EffectIntegerDomain.All<SourceTeamRelation>());
+                case AdjacentToTokenKindParameterName:
+                case TokenKindParameterName:
+                    return new EffectCapabilityParameter(name, EffectValueKind.TokenKind, isRequired);
                 case MinimumCardsInHandParameterName:
                 case AdjacentAtLeastParameterName:
                     return new EffectCapabilityParameter(name, EffectValueKind.Integer, isRequired);
@@ -563,6 +615,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly bool requiresASpawnPoint;
             private readonly bool requiresTheSwapQualifier;
             private readonly bool ownTokensOnly;
+            private readonly EffectValue tokenKind;
 
             public PrintedIconClauses(
                 EffectCapabilityContext context,
@@ -602,6 +655,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     context.Input(AdjacentToAnEnemyHeroOrHoldingADiscardParameterName).BooleanValue;
 
                 ownTokensOnly = context.Input(OwnTokensOnlyParameterName).BooleanValue;
+                tokenKind = context.Input(TokenKindParameterName);
 
                 // Milestone 8.57d. Rowenna's own half of "both you and an enemy hero ... have no cards
                 // in the discard" is a fact about her and not about any candidate, so it is asked once
@@ -678,6 +732,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 if (ownTokensOnly && target.Kind == BoardObjectKind.Token &&
                     !PrintedIconSpaceClauses.IsOwnToken(context, at))
+                {
+                    return false;
+                }
+
+                // Milestone 8.91. "a Smoke bomb in radius": a token of the named kind, as the acting
+                // hero may know it.
+                if (tokenKind.Kind == EffectValueKind.TokenKind && target.Kind == BoardObjectKind.Token &&
+                    !PrintedIconSpaceClauses.HoldsTokenOfKind(context, at, tokenKind.TokenKindId))
                 {
                     return false;
                 }
@@ -764,6 +826,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 AdjacentToTerrainParameterName,
                 AdjacentToOwnTokenParameterName,
                 AdjacentToSpaceParameterName,
+                AdjacentToAnyTokenParameterName,
+                AdjacentToTokenKindParameterName,
+                AdjacentToUnitKindParameterName,
+                AdjacentToUnitRelationParameterName,
                 AdjacentAtLeastParameterName
             });
 
@@ -802,6 +868,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly bool adjacentToTerrain;
             private readonly bool adjacentToOwnToken;
             private readonly HexCoordinate? adjacentToSpace;
+            private readonly bool adjacentToAnyToken;
+            private readonly EffectValue adjacentToTokenKind;
+            private readonly RosterUnitKind adjacentToUnitKind;
+            private readonly SourceTeamRelation adjacentToUnitRelation;
             private readonly int adjacentAtLeast;
 
             public PrintedIconSpaceClauses(
@@ -822,6 +892,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 adjacentToTerrain = context.Input(AdjacentToTerrainParameterName).BooleanValue;
                 adjacentToOwnToken = context.Input(AdjacentToOwnTokenParameterName).BooleanValue;
                 adjacentToSpace = CoordinateOrNothing(context.Input(AdjacentToSpaceParameterName));
+                adjacentToAnyToken = context.Input(AdjacentToAnyTokenParameterName).BooleanValue;
+                adjacentToTokenKind = context.Input(AdjacentToTokenKindParameterName);
+                adjacentToUnitKind = (RosterUnitKind)context.Input(AdjacentToUnitKindParameterName).IntegerValue;
+                adjacentToUnitRelation =
+                    (SourceTeamRelation)context.Input(AdjacentToUnitRelationParameterName).IntegerValue;
                 adjacentAtLeast = Math.Max(1, context.Input(AdjacentAtLeastParameterName).IntegerValue);
             }
 
@@ -854,9 +929,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                return !(adjacentToTerrain || adjacentToOwnToken || adjacentToSpace.HasValue) ||
-                    QualifyingNeighbours(at) >= adjacentAtLeast;
+                return !DeclaresAdjacency || QualifyingNeighbours(at) >= adjacentAtLeast;
             }
+
+            private bool DeclaresAdjacency =>
+                adjacentToTerrain || adjacentToOwnToken || adjacentToSpace.HasValue || adjacentToAnyToken ||
+                adjacentToTokenKind.Kind == EffectValueKind.TokenKind ||
+                adjacentToUnitKind != RosterUnitKind.None;
 
             /// <summary>
             /// How many of the six spaces around <paramref name="at"/> satisfy the declared adjacency
@@ -871,7 +950,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     if ((adjacentToSpace.HasValue && neighbour.Equals(adjacentToSpace.Value)) ||
                         (adjacentToTerrain && board != null &&
                             TerrainPresenceQuery.IsTerrain(board, neighbour, context.Modifications)) ||
-                        (adjacentToOwnToken && IsOwnToken(context, neighbour)))
+                        (adjacentToOwnToken && IsOwnToken(context, neighbour)) ||
+                        (adjacentToAnyToken && HoldsAnyToken(context, neighbour)) ||
+                        (adjacentToTokenKind.Kind == EffectValueKind.TokenKind &&
+                            HoldsTokenOfKind(context, neighbour, adjacentToTokenKind.TokenKindId)) ||
+                        (adjacentToUnitKind != RosterUnitKind.None && HoldsQualifyingUnit(neighbour)))
                     {
                         count++;
                     }
@@ -879,6 +962,51 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 return count;
             }
+
+            /// <summary>
+            /// Milestone 8.91. Whether a unit of the declared kind, on the declared side (any side when
+            /// unbound), stands on <paramref name="at"/>. A kind the vocabulary cannot answer qualifies
+            /// nothing rather than everything.
+            /// </summary>
+            private bool HoldsQualifyingUnit(HexCoordinate at)
+            {
+                if (board == null || !Enum.IsDefined(typeof(RosterUnitKind), adjacentToUnitKind) ||
+                    !Enum.IsDefined(typeof(SourceTeamRelation), adjacentToUnitRelation) ||
+                    !board.TryGetObjectAt(at, out var occupant))
+                {
+                    return false;
+                }
+
+                var kindMatches =
+                    (occupant.Kind == BoardObjectKind.Hero &&
+                        (adjacentToUnitKind == RosterUnitKind.Hero || adjacentToUnitKind == RosterUnitKind.Unit)) ||
+                    (occupant.Kind == BoardObjectKind.Minion &&
+                        (adjacentToUnitKind == RosterUnitKind.Minion || adjacentToUnitKind == RosterUnitKind.Unit));
+                return kindMatches &&
+                    (adjacentToUnitRelation == SourceTeamRelation.None ||
+                        (context.Participants != null && TargetQuery.StandsInRelationTo(
+                            adjacentToUnitRelation, occupant, context.ActorId, context.Participants, board)));
+            }
+
+            /// <summary>Milestone 8.91. Whether any token, of any kind and owner, stands on <paramref name="at"/>.</summary>
+            public static bool HoldsAnyToken(EffectCapabilityContext context, HexCoordinate at) =>
+                context.Components?.Tokens != null &&
+                context.Components.Tokens.PlacedTokens.Any(token => token.Coordinate.Equals(at));
+
+            /// <summary>
+            /// Milestone 8.91. Whether a token of <paramref name="kind"/> stands on
+            /// <paramref name="at"/>, as the acting hero may know it: a token hiding its kind shows its
+            /// facedown face to everyone but its owner, so no card of another hero can tell a facedown
+            /// piece's kind by what it selects.
+            /// </summary>
+            public static bool HoldsTokenOfKind(
+                EffectCapabilityContext context, HexCoordinate at, TokenDefinitionId kind) =>
+                context.Components?.Tokens != null &&
+                context.Components.Tokens.PlacedTokens.Any(token =>
+                    token.Coordinate.Equals(at) &&
+                    (token.Definition.HidesItsKind && !token.OwnerHeroId.Equals(context.ActorId)
+                        ? token.Definition.FacedownFace.Id
+                        : token.Definition.Id).Equals(kind));
 
             /// <summary>Whether a token the acting hero owns stands on <paramref name="at"/>.</summary>
             public static bool IsOwnToken(EffectCapabilityContext context, HexCoordinate at) =>

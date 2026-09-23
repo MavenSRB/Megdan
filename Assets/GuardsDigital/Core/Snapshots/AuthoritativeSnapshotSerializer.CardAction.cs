@@ -1779,6 +1779,14 @@ namespace GuardsDigital.Core.Snapshots
                     "A node reference is a definition-time address and is never written to a snapshot.");
             }
 
+            if (value.Kind == EffectValueKind.TokenKind)
+            {
+                // Milestone 8.91. A token kind names trusted content exactly as a node reference does,
+                // and is refused here for the same reason.
+                throw new InvalidOperationException(
+                    "A token kind is a definition-time address and is never written to a snapshot.");
+            }
+
             writer.Write((int)value.Kind);
             switch (value.Kind)
             {

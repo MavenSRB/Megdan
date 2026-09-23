@@ -1,6 +1,7 @@
 using System;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
 
@@ -29,7 +30,16 @@ namespace GuardsDigital.Core.Effects
         /// one, no capability publishes one, and the snapshot writer refuses one - which is what keeps
         /// eligibility derived and out of every payload.
         /// </summary>
-        Node = 7
+        Node = 7,
+
+        /// <summary>
+        /// Milestone 8.91. A token KIND - one token definition - named by card text: "a Zombie token",
+        /// "a Smoke bomb", "the Turret". Like <see cref="Node"/> it is a definition-time address and
+        /// nothing else: it may be written as a literal input, no role supplies one, no capability
+        /// publishes one, and the snapshot writer and the network codec refuse one. A token's kind is a
+        /// fact about trusted content, so naming it never has to cross a payload.
+        /// </summary>
+        TokenKind = 8
     }
 
     /// <summary>Where an input binding reads its value from.</summary>
@@ -139,7 +149,8 @@ namespace GuardsDigital.Core.Effects
             MinionId minionId,
             CardInstanceId cardInstanceId,
             HexCoordinate coordinate,
-            EffectNodeId nodeId)
+            EffectNodeId nodeId,
+            TokenDefinitionId tokenKind = default)
         {
             Kind = kind;
             BooleanValue = booleanValue;
@@ -149,6 +160,7 @@ namespace GuardsDigital.Core.Effects
             CardInstanceId = cardInstanceId;
             Coordinate = coordinate;
             NodeId = nodeId;
+            TokenKindId = tokenKind;
         }
 
         public EffectValueKind Kind { get; }
@@ -159,6 +171,17 @@ namespace GuardsDigital.Core.Effects
         public CardInstanceId CardInstanceId { get; }
         public HexCoordinate Coordinate { get; }
         public EffectNodeId NodeId { get; }
+
+        /// <summary>
+        /// The token definition a <see cref="EffectValueKind.TokenKind"/> literal names. Milestone 8.91.
+        ///
+        /// <para>Internal rather than public, and that is load-bearing: the verified-content identity
+        /// walker reflects over this struct's PUBLIC properties to digest every literal a card binds, so a
+        /// public member would add an empty field to every hero's canonical text and move every pinned
+        /// identity without any card's meaning changing. Only the selection code in this assembly reads
+        /// it; content and tests name a kind through <see cref="TokenKind(TokenDefinitionId)"/>.</para>
+        /// </summary>
+        internal TokenDefinitionId TokenKindId { get; }
 
         public bool IsDefined => Kind != EffectValueKind.None;
 
@@ -218,6 +241,18 @@ namespace GuardsDigital.Core.Effects
                 EffectValueKind.Node, false, 0, default, default, default, default, value);
         }
 
+        /// <summary>Milestone 8.91. A token kind, for a literal input and nothing else.</summary>
+        public static EffectValue TokenKind(TokenDefinitionId value)
+        {
+            if (!value.IsDefined)
+            {
+                throw new ArgumentException("A token-kind effect value requires a defined token definition.", nameof(value));
+            }
+
+            return new EffectValue(
+                EffectValueKind.TokenKind, false, 0, default, default, default, default, default, value);
+        }
+
         public bool Equals(EffectValue other)
         {
             if (Kind != other.Kind)
@@ -241,6 +276,8 @@ namespace GuardsDigital.Core.Effects
                     return Coordinate.Equals(other.Coordinate);
                 case EffectValueKind.Node:
                     return NodeId.Equals(other.NodeId);
+                case EffectValueKind.TokenKind:
+                    return TokenKindId.Equals(other.TokenKindId);
                 default:
                     return true;
             }
@@ -266,6 +303,8 @@ namespace GuardsDigital.Core.Effects
                     return ((int)Kind * 397) ^ Coordinate.GetHashCode();
                 case EffectValueKind.Node:
                     return ((int)Kind * 397) ^ NodeId.GetHashCode();
+                case EffectValueKind.TokenKind:
+                    return ((int)Kind * 397) ^ TokenKindId.GetHashCode();
                 default:
                     return (int)Kind;
             }
@@ -289,6 +328,8 @@ namespace GuardsDigital.Core.Effects
                     return Coordinate.ToString();
                 case EffectValueKind.Node:
                     return NodeId.ToString();
+                case EffectValueKind.TokenKind:
+                    return TokenKindId.ToString();
                 default:
                     return "none";
             }
@@ -453,10 +494,10 @@ namespace GuardsDigital.Core.Effects
         /// </summary>
         private static void RequireRuntimeValueKind(EffectValueKind valueKind, string source)
         {
-            if (valueKind == EffectValueKind.Node)
+            if (valueKind == EffectValueKind.Node || valueKind == EffectValueKind.TokenKind)
             {
                 throw new ArgumentException(
-                    $"A node reference is a definition-time address, so no {source} supplies one; " +
+                    $"A {valueKind} is a definition-time address, so no {source} supplies one; " +
                     "bind it as a literal.", nameof(valueKind));
             }
         }
@@ -496,9 +537,9 @@ namespace GuardsDigital.Core.Effects
                     "An effect output binding requires a typed value kind.", nameof(valueKind));
             }
 
-            if (valueKind == EffectValueKind.Node)
+            if (valueKind == EffectValueKind.Node || valueKind == EffectValueKind.TokenKind)
             {
-                // Milestone 6.8l. Nothing may publish a node reference: it addresses the definition
+                // Milestone 6.8l (and 8.91 for a token kind). Nothing may publish a node reference: it addresses the definition
                 // that is already loaded, so a produced one could only name a step the payload
                 // carrying it did not describe.
                 throw new ArgumentException(
@@ -540,9 +581,9 @@ namespace GuardsDigital.Core.Effects
                 throw new ArgumentException("An effect outcome requires a defined value.", nameof(value));
             }
 
-            if (value.Kind == EffectValueKind.Node)
+            if (value.Kind == EffectValueKind.Node || value.Kind == EffectValueKind.TokenKind)
             {
-                // Milestone 6.8l, the same rule <see cref="EffectOutputBinding"/> states: a produced
+                // Milestone 6.8l (and 8.91 for a token kind), the same rule <see cref="EffectOutputBinding"/> states: a produced
                 // fact crosses the snapshot boundary, and a node reference has no meaning there.
                 throw new ArgumentException(
                     "A node reference is a definition-time address, never a produced fact.",

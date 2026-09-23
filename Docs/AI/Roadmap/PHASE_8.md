@@ -167,7 +167,7 @@ Completed 2026-09-23. The geometry and adjacency half of 8.88's clause reading b
 
 Historical evidence: [8.88a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-888a-placement-clauses-completion-evidence).
 
-### [~] 8.91 The clauses the 8.89 audit found missing, and a token named by its kind
+### [x] 8.91 The clauses the 8.89 audit found missing, and a token named by its kind
 
 AUTHORIZED 2026-09-23 ("Ok, do it") as the second of the bounded sequence **8.88a -> 8.91**; starts when 8.88a closes.
 
@@ -176,6 +176,12 @@ Outcome: the printed-icon family (and, through 8.88a, placement) gains the three
 Acceptance: each clause optional on every arm it can mean something on, refused by name elsewhere; the kind is carried without a new effect value kind reaching the network codec, or the milestone stops and reports why it cannot; the 8.89 differential extended to Ignatia's two discard selections and Min's Smoke-bomb selections, agreeing on every generated board; digest, schema and wire unmoved; complete suites. T3.
 
 Non-goals: re-pointing card definitions; any hero dealing.
+
+Completed 2026-09-23. New clauses, optional everywhere they can mean something and shared by selection and placement: `adjacentToAnyToken`, `adjacentToTokenKind`, `adjacentToUnitKind` with `adjacentToUnitRelation` (any side when unbound), and on the object arms `tokenKind` (refused by name on the hero, minion and unit arms). A token's KIND is carried by a new literal-only `EffectValueKind.TokenKind` (`EffectValue.TokenKind(TokenDefinitionId)`), guarded exactly like `Node`: no role supplies it, no output or outcome may carry it, the snapshot writer refuses it, and the network codec - untouched - refuses it in its existing default branch, so wire `/21` does not move. A token that hides its kind (a facedown Mine) shows its facedown face to everyone but its owner, so another hero's card cannot find a live Mine by asking for one. The differential audit now covers Ignatia's two discard selections and Min's Smoke bomb in radius - all agree on 300 boards each; with `tokenKind` removed the Min comparison fails at seed 5 (her other token kind is offered), which is the 8.88 ownership limit this closes.
+
+One red was observed and fixed: the first complete harness and the first complete Unity Edit Mode run each failed `VerifiedContentIdentityTests.EveryReachableSemanticReferenceMovesWithItsOwningContentIdentity`, all 22 hero digests moving at once. Cause, isolated: that walker digests every PUBLIC property of each literal `EffectValue` by reflection, and the new accessor was public, adding an empty field to every hero's canonical text with no card's meaning changed. The accessor is now internal (documented as load-bearing); every pin measures unchanged and no pin was edited. Final evidence on the fixed source: complete harness 4526/4526; complete Unity Edit Mode 5553 total / 5516 passed / 0 failed / 37 explicit skips; complete Play Mode 827/827, zero skips. No registration changed: digest, schema v44 and wire `/21` unmoved.
+
+Historical evidence: [8.91 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-891-missing-clauses-and-token-kind-completion-evidence).
 
 ### [x] 8.87 Package the audited twenty-two-hero playtest build, for Windows and macOS
 

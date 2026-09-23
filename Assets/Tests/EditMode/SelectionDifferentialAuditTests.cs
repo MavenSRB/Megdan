@@ -195,8 +195,129 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         // -------------------------------------------------------------------------------------------
+        // Milestone 8.91 - the selections 8.89 recorded as inexpressible
+        // -------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Ignatia's `ignatia-enemy-hero-adjacent-to-magma-or-minion@1` - "an enemy hero in radius
+        /// adjacent to a token, or a minion" - against the Radius hero arm with `adjacentToAnyToken`
+        /// and `adjacentToUnitKind` = minion (any side).
+        /// </summary>
+        [Test]
+        public void IgnatiasTokenOrMinionSelection_IsTheFamilysAdjacencyUnion()
+        {
+            var inputs = new[]
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.TargetRelationParameterName, SourceTeamRelation.OpposingSource)
+            };
+            var family = inputs.Concat(new[]
+            {
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.ExcludeAdjacentParameterName, EffectValue.Boolean(false)),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.AdjacentToAnyTokenParameterName, EffectValue.Boolean(true)),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.AdjacentToUnitKindParameterName, RosterUnitKind.Minion)
+            }).ToArray();
+
+            CompareSelection(
+                IgnatiaDiscardTargetingContent.EnemyHeroAdjacentToMagmaOrMinionV1, inputs,
+                SyntheticTargetingCapabilities.RadiusHeroTargetV1, family);
+        }
+
+        /// <summary>
+        /// Ignatia's `ignatia-enemy-minion-adjacent-to-enemy-hero@1` - "an enemy minion in radius
+        /// adjacent to an enemy hero" - against the Radius minion arm with `adjacentToUnitKind` = hero
+        /// and `adjacentToUnitRelation` = enemy.
+        /// </summary>
+        [Test]
+        public void IgnatiasMinionBesideAnEnemyHero_IsTheFamilysUnitAdjacency()
+        {
+            var inputs = new[]
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.TargetRelationParameterName, SourceTeamRelation.OpposingSource)
+            };
+            var family = inputs.Concat(new[]
+            {
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.AdjacentToUnitKindParameterName, RosterUnitKind.Hero),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.AdjacentToUnitRelationParameterName, SourceTeamRelation.OpposingSource)
+            }).ToArray();
+
+            CompareSelection(
+                IgnatiaDiscardTargetingContent.EnemyMinionAdjacentToEnemyHeroV1, inputs,
+                SyntheticTargetingCapabilities.RadiusMinionTargetV1, family);
+        }
+
+        /// <summary>
+        /// Min's `min-smoke-bomb-in-radius@1` - "your Smoke bomb in radius", published as its space -
+        /// against the Radius object arm narrowed to the actor's own tokens of the Smoke bomb's kind.
+        /// Every board also carries a SECOND kind of token some of which the actor owns, which is the
+        /// case 8.88's ownership reading alone could not tell apart.
+        /// </summary>
+        [Test]
+        public void MinsSmokeBomb_IsTheFamilysOwnTokenOfThatKind()
+        {
+            var family = new[]
+            {
+                EffectInputBinding.FromClosedVocabulary("activity", RuleActivity.Skill),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.IncludeSelfParameterName, EffectValue.Boolean(false)),
+                EffectInputBinding.FromClosedVocabulary(
+                    SyntheticTargetingCapabilities.AdmittedObjectKindParameterName, PrintedIconObjectKind.TokensOnly),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.OwnTokensOnlyParameterName, EffectValue.Boolean(true)),
+                EffectInputBinding.FromLiteral(
+                    SyntheticTargetingCapabilities.TokenKindParameterName,
+                    EffectValue.TokenKind(MinComponentContent.SmokeBombDefinition.Id))
+            };
+
+            int found = 0, absent = 0;
+            ForEveryBoard((board, world, seed) =>
+            {
+                var expected = FamilyCandidates(SyntheticTargetingCapabilities.RadiusTargetV1, family, world);
+                var result = Capability(MinComponentContent.SmokeBombInRadiusV1).Execute(world.Context(board));
+                var published = result.Kind == EffectExecutionResultKind.Applied
+                    ? new[] { result.Outcomes.Single(fact => fact.OutputName == SyntheticOwnedTokenCapabilities.SpaceOutput).Value }
+                    : Array.Empty<EffectValue>();
+                if (published.Length > 0) found++; else absent++;
+                Assert.That(published, Is.EqualTo(expected), $"seed {seed}");
+            });
+
+            Assert.That(found, Is.GreaterThan(10), "Enough boards hold her Smoke bomb in reach.");
+            Assert.That(absent, Is.GreaterThan(10), "Enough boards do not.");
+        }
+
+        // -------------------------------------------------------------------------------------------
         // The comparison machinery
         // -------------------------------------------------------------------------------------------
+
+        private static void CompareSelection(
+            EffectCapabilityReference local,
+            EffectInputBinding[] localInputs,
+            EffectCapabilityReference arm,
+            EffectInputBinding[] family)
+        {
+            var reached = 0;
+            ForEveryBoard((board, world, seed) =>
+            {
+                var expected = FamilyCandidates(arm, family, world);
+                var result = Capability(local).Execute(world.Context(
+                    board, localInputs.ToDictionary(binding => binding.ParameterName, binding => binding.Literal)));
+                var offered = result.Kind == EffectExecutionResultKind.NeedsChoice
+                    ? result.Choice.Candidates.ToArray()
+                    : Array.Empty<EffectValue>();
+                if (expected.Length > 0) reached++;
+                Assert.That(offered, Is.EquivalentTo(expected), $"seed {seed}");
+            });
+
+            Assert.That(reached, Is.GreaterThan(10), "Enough boards offered somebody for the comparison to mean something.");
+        }
 
         private static void ComparePresence(
             EffectCapabilityReference presence, string outputName, EffectInputBinding[] family)
@@ -340,6 +461,20 @@ namespace GuardsDigital.Tests.EditMode
                     minions.ToArray());
 
                 var owners = new[] { Actor, Enemy, SecondEnemy };
+
+                // Milestone 8.91. Her Smoke bomb - one piece, the actor's or an enemy's - on two boards
+                // in three, so the kind and the owner both have to be read.
+                if (random.Next(3) > 0)
+                {
+                    board.CommitValidatedTokenPlacement(new PlacedToken(
+                        new TokenInstanceId($"differential-smoke-{seed}"),
+                        MinComponentContent.SmokeBombDefinition,
+                        random.Next(2) == 0 ? Actor : Enemy,
+                        Actor,
+                        new CardInstanceId("differential-smoke-source"),
+                        Near()));
+                }
+
                 for (var index = random.Next(0, 5); index > 0; index--)
                 {
                     var at = Near();
