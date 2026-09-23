@@ -162,8 +162,13 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
             public EffectCapabilityReference Reference { get; }
 
+            /// <summary>
+            /// Milestone 8.88a. The space clauses the printed-icon family knows, each optional -
+            /// "place a rock token into an empty space adjacent to the target" binds data here.
+            /// </summary>
             public EffectCapabilityParameterSchema Schema { get; } = new EffectCapabilityParameterSchema(
-                outputs: new[] { new EffectOutputBinding(PlacedOutput, EffectValueKind.Coordinate) });
+                SyntheticTargetingCapabilities.PlacementClauseParameters(),
+                new[] { new EffectOutputBinding(PlacedOutput, EffectValueKind.Coordinate) });
 
             public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
                 Array.Empty<ActiveEffectDefinition>();
@@ -205,12 +210,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin))
+                if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var actorAt))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
+                var origin = SyntheticTargetingCapabilities.MeasuredFromOr(context, actorAt);
                 var coordinate = selected[0].Coordinate;
+
+                // Milestone 8.88a. The space clauses are asked again of the answer, as the operation
+                // below re-asks everything else.
+                if (!new SyntheticTargetingCapabilities.PrintedIconSpaceClauses(
+                        context, components.Board, origin, ResolveReach(context)).Admit(coordinate))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
 
                 // The operation re-derives the admitted spaces and re-asks the supply rather than
                 // trusting the paused choice: a space legal when the choice opened may have been taken
@@ -311,13 +325,27 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             context.ActionDefinitionId,
                             context.CardState.Definitions))).Total;
 
+            /// <summary>
+            /// The empty spaces in reach, measured from the actor or from where the declaration moved
+            /// the centre, with the declared space clauses applied. Milestone 8.88a.
+            /// </summary>
             private IEnumerable<HexCoordinate> LegalSpaces(
-                EffectCapabilityContext context, MatchComponents components) =>
-                components.Tokens.TryGetHeroCoordinate(context.ActorId, out var origin)
-                    ? PlaceDestinationQuery.FindDestinations(
+                EffectCapabilityContext context, MatchComponents components)
+            {
+                if (!components.Tokens.TryGetHeroCoordinate(context.ActorId, out var actorAt))
+                {
+                    return Array.Empty<HexCoordinate>();
+                }
+
+                var origin = SyntheticTargetingCapabilities.MeasuredFromOr(context, actorAt);
+                var clauses = new SyntheticTargetingCapabilities.PrintedIconSpaceClauses(
+                    context, components.Board, origin, ResolveReach(context));
+                return PlaceDestinationQuery.FindDestinations(
                         Policy(context, components), components.Tokens, origin,
                         Array.Empty<HexCoordinate>(), context.Modifications)
-                    : Array.Empty<HexCoordinate>();
+                    .Where(clauses.Admit)
+                    .ToArray();
+            }
         }
 
         /// <summary>

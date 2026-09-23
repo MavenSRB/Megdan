@@ -713,6 +713,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         BesideSpaceParameterName, EffectValueKind.Coordinate));
                 }
 
+                // Milestone 8.88a. Every placement declaration composes the space clauses the
+                // printed-icon family knows - optional, and unbound is the absence of the clause - so
+                // a destination phrase binds data rather than minting a placement capability.
+                parameters.AddRange(SyntheticTargetingCapabilities.PlacementClauseParameters());
                 Schema = new EffectCapabilityParameterSchema(
                     parameters,
                     new[] { new EffectOutputBinding("placed", EffectValueKind.Coordinate) });
@@ -732,9 +736,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
 
-                var destinations = PlaceDestinationQuery.FindDestinations(
-                    policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
-                    context.Modifications, context.Components.Units, context.Components.Board);
+                var destinations = Destinations(context, policy, origin);
                 if (destinations.Count == 0)
                 {
                     return policy.NoDestinationPolicy == PlaceNoDestinationPolicy.Decline
@@ -755,6 +757,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (selected == null || selected.Count != 1 ||
                     selected[0].Kind != EffectValueKind.Coordinate ||
                     !TryDeclare(context, out var policy, out var subject, out var measuredFrom))
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                // Milestone 8.88a. The space clauses are asked again of the answer, as the operation
+                // below re-asks everything else: a destination that has stopped satisfying them since
+                // the choice opened is refused rather than committed.
+                if (!Clauses(context, policy, measuredFrom).Admit(selected[0].Coordinate))
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
@@ -792,9 +802,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return EffectExecutionResultKind.ImpossibleMandatory;
                 }
 
-                var destinations = PlaceDestinationQuery.FindDestinations(
-                    policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
-                    context.Modifications, context.Components.Units, context.Components.Board);
+                var destinations = Destinations(context, policy, origin);
                 if (destinations.Count > 0)
                 {
                     return EffectExecutionResultKind.NeedsChoice;
@@ -804,6 +812,26 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     ? EffectExecutionResultKind.DeclinedOptional
                     : EffectExecutionResultKind.ImpossibleMandatory;
             }
+
+            /// <summary>
+            /// Milestone 8.88a. The policy's destinations with the declared space clauses applied, in
+            /// the query's own order.
+            /// </summary>
+            private IReadOnlyList<HexCoordinate> Destinations(
+                EffectCapabilityContext context, PlacePolicy policy, HexCoordinate origin)
+            {
+                var clauses = Clauses(context, policy, origin);
+                return PlaceDestinationQuery.FindDestinations(
+                        policy, context.Components.Tokens, origin, QualifyingSpaces(context, policy, origin),
+                        context.Modifications, context.Components.Units, context.Components.Board)
+                    .Where(clauses.Admit)
+                    .ToArray();
+            }
+
+            private static SyntheticTargetingCapabilities.PrintedIconSpaceClauses Clauses(
+                EffectCapabilityContext context, PlacePolicy policy, HexCoordinate origin) =>
+                new SyntheticTargetingCapabilities.PrintedIconSpaceClauses(
+                    context, context.Components?.Board, origin, policy.DestinationRadius);
 
             /// <summary>
             /// Milestone 8.35z29. The spaces this declaration's qualifier admits, or an empty set
@@ -1053,6 +1081,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     measuredFrom = named.Coordinate;
                 }
+
+                // Milestone 8.88a. "in radius of the Turret": the reach is measured from a published
+                // space where the declaration moves it, and from the anchor otherwise.
+                measuredFrom = SyntheticTargetingCapabilities.MeasuredFromOr(context, measuredFrom);
 
                 var exclusion = boundChannel == PrintedValueChannel.None
                     ? PlaceSpawnPointExclusion.None

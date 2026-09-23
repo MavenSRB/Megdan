@@ -550,11 +550,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly HeroId excludedAttacker;
             private readonly EffectValue excludedHero;
             private readonly EffectValue excludedMinion;
-            private readonly bool excludeAdjacent;
-            private readonly bool excludeStraightLine;
-            private readonly bool requireStraightLine;
-            private readonly bool atMaximumReach;
-            private readonly HexCoordinate? alsoWithinReachOf;
+            private readonly PrintedIconSpaceClauses space;
 
             private readonly bool requiresACardInDiscard;
             private readonly bool requiresAnUnresolvedCard;
@@ -566,11 +562,6 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly IReadOnlyList<HexCoordinate> qualifyingSpawnPoints;
             private readonly bool requiresASpawnPoint;
             private readonly bool requiresTheSwapQualifier;
-
-            private readonly bool adjacentToTerrain;
-            private readonly bool adjacentToOwnToken;
-            private readonly HexCoordinate? adjacentToSpace;
-            private readonly int adjacentAtLeast;
             private readonly bool ownTokensOnly;
 
             public PrintedIconClauses(
@@ -595,11 +586,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 excludedHero = context.Input(ExcludedHeroParameterName);
                 excludedMinion = context.Input(ExcludedMinionParameterName);
 
-                excludeAdjacent = context.Input(ExcludeAdjacentParameterName).BooleanValue;
-                excludeStraightLine = context.Input(ExcludeStraightLineParameterName).BooleanValue;
-                requireStraightLine = context.Input(RequireStraightLineParameterName).BooleanValue;
-                atMaximumReach = context.Input(AtMaximumReachParameterName).BooleanValue;
-                alsoWithinReachOf = CoordinateOrNothing(context.Input(AlsoWithinReachOfParameterName));
+                space = new PrintedIconSpaceClauses(context, board, origin, total);
 
                 requiresACardInDiscard = context.Input(HasCardInDiscardParameterName).BooleanValue;
                 requiresAnUnresolvedCard = context.Input(HoldsAnUnresolvedCardParameterName).BooleanValue;
@@ -614,10 +601,6 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 requiresTheSwapQualifier =
                     context.Input(AdjacentToAnEnemyHeroOrHoldingADiscardParameterName).BooleanValue;
 
-                adjacentToTerrain = context.Input(AdjacentToTerrainParameterName).BooleanValue;
-                adjacentToOwnToken = context.Input(AdjacentToOwnTokenParameterName).BooleanValue;
-                adjacentToSpace = CoordinateOrNothing(context.Input(AdjacentToSpaceParameterName));
-                adjacentAtLeast = Math.Max(1, context.Input(AdjacentAtLeastParameterName).IntegerValue);
                 ownTokensOnly = context.Input(OwnTokensOnlyParameterName).BooleanValue;
 
                 // Milestone 8.57d. Rowenna's own half of "both you and an enemy hero ... have no cards
@@ -662,29 +645,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                var distance = HexDistanceQuery.Calculate(origin, at);
-
-                // p.9's disk without its innermost ring, stated as the exact distance the word means.
-                if (excludeAdjacent && distance == 1)
-                {
-                    return false;
-                }
-
-                // RULING 1's equality: exactly the printed total, items composed on.
-                if (atMaximumReach && distance != total)
-                {
-                    return false;
-                }
-
-                // p.19's straight-line rule, membership or its complement, anchored at the disk's centre.
-                var inLine = StraightLineQuery.AreInStraightLine(origin, at);
-                if ((excludeStraightLine && inLine) || (requireStraightLine && !inLine))
-                {
-                    return false;
-                }
-
-                if (alsoWithinReachOf.HasValue &&
-                    HexDistanceQuery.Calculate(alsoWithinReachOf.Value, at) > total)
+                // Geometry and adjacency: the clauses a bare space can satisfy, shared with placement.
+                if (!space.Admit(at))
                 {
                     return false;
                 }
@@ -714,13 +676,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     return false;
                 }
 
-                if ((adjacentToTerrain || adjacentToOwnToken || adjacentToSpace.HasValue) &&
-                    QualifyingNeighbours(at) < adjacentAtLeast)
-                {
-                    return false;
-                }
-
-                if (ownTokensOnly && target.Kind == BoardObjectKind.Token && !IsOwnToken(at))
+                if (ownTokensOnly && target.Kind == BoardObjectKind.Token &&
+                    !PrintedIconSpaceClauses.IsOwnToken(context, at))
                 {
                     return false;
                 }
@@ -786,6 +743,120 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Milestone 8.88a. The clauses a bare SPACE can satisfy - the disk's geometry and the space's
+        /// neighbours - which is everything a placement destination can be asked. The printed-icon
+        /// family and both placement families read them here, so "in a straight line", "at maximum
+        /// radius", "adjacent to terrain" and the rest mean one thing whether a card chooses a unit or
+        /// a space.
+        /// </summary>
+        public static IReadOnlyList<string> PlacementClauseParameterNames { get; } =
+            Array.AsReadOnly(new[]
+            {
+                ExcludeAdjacentParameterName,
+                ExcludeStraightLineParameterName,
+                RequireStraightLineParameterName,
+                AtMaximumReachParameterName,
+                MeasuredFromParameterName,
+                AlsoWithinReachOfParameterName,
+                AdjacentToTerrainParameterName,
+                AdjacentToOwnTokenParameterName,
+                AdjacentToSpaceParameterName,
+                AdjacentAtLeastParameterName
+            });
+
+        /// <summary>
+        /// Milestone 8.88a. The placement clauses as optional parameters, for a placement declaration
+        /// to append to its own. Unbound, each is the absence of its clause.
+        /// </summary>
+        internal static IEnumerable<EffectCapabilityParameter> PlacementClauseParameters() =>
+            PlacementClauseParameterNames.Select(name => Declare(name, isRequired: false));
+
+        /// <summary>
+        /// Milestone 8.88a. The space a reach is measured from where the declaration moved it
+        /// (<see cref="MeasuredFromParameterName"/>), or <paramref name="otherwise"/>.
+        /// </summary>
+        internal static HexCoordinate MeasuredFromOr(EffectCapabilityContext context, HexCoordinate otherwise)
+        {
+            var moved = context.Input(MeasuredFromParameterName);
+            return moved.Kind == EffectValueKind.Coordinate ? moved.Coordinate : otherwise;
+        }
+
+        /// <summary>
+        /// Milestone 8.88a. The space clauses read once for one offer, measured from one centre at one
+        /// total. See <see cref="PlacementClauseParameterNames"/>.
+        /// </summary>
+        internal sealed class PrintedIconSpaceClauses
+        {
+            private readonly EffectCapabilityContext context;
+            private readonly IBoardDisplacementAuthority board;
+            private readonly HexCoordinate origin;
+            private readonly int total;
+            private readonly bool excludeAdjacent;
+            private readonly bool excludeStraightLine;
+            private readonly bool requireStraightLine;
+            private readonly bool atMaximumReach;
+            private readonly HexCoordinate? alsoWithinReachOf;
+            private readonly bool adjacentToTerrain;
+            private readonly bool adjacentToOwnToken;
+            private readonly HexCoordinate? adjacentToSpace;
+            private readonly int adjacentAtLeast;
+
+            public PrintedIconSpaceClauses(
+                EffectCapabilityContext context,
+                IBoardDisplacementAuthority board,
+                HexCoordinate origin,
+                int total)
+            {
+                this.context = context;
+                this.board = board;
+                this.origin = origin;
+                this.total = total;
+                excludeAdjacent = context.Input(ExcludeAdjacentParameterName).BooleanValue;
+                excludeStraightLine = context.Input(ExcludeStraightLineParameterName).BooleanValue;
+                requireStraightLine = context.Input(RequireStraightLineParameterName).BooleanValue;
+                atMaximumReach = context.Input(AtMaximumReachParameterName).BooleanValue;
+                alsoWithinReachOf = CoordinateOrNothing(context.Input(AlsoWithinReachOfParameterName));
+                adjacentToTerrain = context.Input(AdjacentToTerrainParameterName).BooleanValue;
+                adjacentToOwnToken = context.Input(AdjacentToOwnTokenParameterName).BooleanValue;
+                adjacentToSpace = CoordinateOrNothing(context.Input(AdjacentToSpaceParameterName));
+                adjacentAtLeast = Math.Max(1, context.Input(AdjacentAtLeastParameterName).IntegerValue);
+            }
+
+            public bool Admit(HexCoordinate at)
+            {
+                var distance = HexDistanceQuery.Calculate(origin, at);
+
+                // p.9's disk without its innermost ring, stated as the exact distance the word means.
+                if (excludeAdjacent && distance == 1)
+                {
+                    return false;
+                }
+
+                // RULING 1's equality: exactly the printed total, items composed on.
+                if (atMaximumReach && distance != total)
+                {
+                    return false;
+                }
+
+                // p.19's straight-line rule, membership or its complement, anchored at the centre.
+                var inLine = StraightLineQuery.AreInStraightLine(origin, at);
+                if ((excludeStraightLine && inLine) || (requireStraightLine && !inLine))
+                {
+                    return false;
+                }
+
+                if (alsoWithinReachOf.HasValue &&
+                    HexDistanceQuery.Calculate(alsoWithinReachOf.Value, at) > total)
+                {
+                    return false;
+                }
+
+                return !(adjacentToTerrain || adjacentToOwnToken || adjacentToSpace.HasValue) ||
+                    QualifyingNeighbours(at) >= adjacentAtLeast;
+            }
 
             /// <summary>
             /// How many of the six spaces around <paramref name="at"/> satisfy the declared adjacency
@@ -798,9 +869,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 foreach (var neighbour in at.GetNeighbors())
                 {
                     if ((adjacentToSpace.HasValue && neighbour.Equals(adjacentToSpace.Value)) ||
-                        (adjacentToTerrain &&
+                        (adjacentToTerrain && board != null &&
                             TerrainPresenceQuery.IsTerrain(board, neighbour, context.Modifications)) ||
-                        (adjacentToOwnToken && IsOwnToken(neighbour)))
+                        (adjacentToOwnToken && IsOwnToken(context, neighbour)))
                     {
                         count++;
                     }
@@ -810,7 +881,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
             }
 
             /// <summary>Whether a token the acting hero owns stands on <paramref name="at"/>.</summary>
-            private bool IsOwnToken(HexCoordinate at) =>
+            public static bool IsOwnToken(EffectCapabilityContext context, HexCoordinate at) =>
                 context.Components?.Tokens != null &&
                 context.Components.Tokens.PlacedTokens.Any(token =>
                     token.Coordinate.Equals(at) && token.OwnerHeroId.Equals(context.ActorId));

@@ -153,15 +153,29 @@ Completed 2026-09-23. Both selections now ask `TargetQuery.IsPrevented` for the 
 
 Historical evidence: [8.90 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-890-immune-hero-selection-completion-evidence).
 
-### [ ] 8.88a Placement destinations compose the printed-icon clauses
+### [x] 8.88a Placement destinations compose the printed-icon clauses
 
-Split from 8.88 during implementation (2026-09-23); inside 8.88's approved outcome ("placement destinations compose the same filters") but NOT started - it waits for the user's word to continue.
+Split from 8.88 during implementation (2026-09-23). AUTHORIZED 2026-09-23 ("Ok, do it") as the first of the bounded sequence **8.88a -> 8.91**.
 
 Outcome: the registered placement family (`synthetic-place-*`) offers destinations through the same clause vocabulary 8.88 gave the printed-icon family - geometry, a moved or second centre, adjacency to terrain, own tokens or a named space with a count - declared optional on every placement arm it can mean something on, so a new "place ... in radius, adjacent to ..." phrase binds data rather than minting a placement capability.
 
 Acceptance: behaviour preservation (every existing placement fixture and the complete suites green, digest, schema and wire unmoved); focused fixtures expressing at least Mrak's "place rock tokens into empty spaces adjacent to the target" and Trinkets' "place yourself into a space in radius of the Turret" as definition data; a conformance sweep like 8.88's. T3.
 
 Non-goals: any hero dealing; new placement semantics beyond the clauses.
+
+Completed 2026-09-23. The geometry and adjacency half of 8.88's clause reading became one class, `SyntheticTargetingCapabilities.PrintedIconSpaceClauses`, which the printed-icon family, every `synthetic-place-*` declaration (board pieces) and the hero-token placement (`SyntheticTokenCapabilities.PlaceHandler`, the supply placement every token-placing hero uses) all ask; the ten space clauses (`PlacementClauseParameterNames`: not adjacent, straight line or not, maximum reach, moved centre, second centre, adjacency to terrain, own tokens or a named space, at-least count) are optional on every placement declaration, the moved centre replaces the anchor where bound, and the answer re-asks the clauses before the operation commits. The showcase `synthetic-place-token@1` (a fixed radius-1 test hazard no hero uses) is unchanged. New `PlacementClauseTests` (6): the conformance sweep over every placement declaration, Mrak's "into an empty space adjacent to the target", Trinkets' "a space in radius of the Turret", the answer refused when it breaks a clause, and the straight-line clause on the Radius placement. Placement fixtures 1526/1526 unchanged; complete harness 4522/4522; complete Unity Edit Mode 5549 total / 5512 passed / 0 failed / 37 explicit skips; complete Play Mode 827/827, zero skips. No registration changed: digest, schema v44 and wire `/21` unmoved. The Mrak shape covers "adjacent to the target"; his "and farthest away from you" is a new clause for his dealing.
+
+Historical evidence: [8.88a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-888a-placement-clauses-completion-evidence).
+
+### [~] 8.91 The clauses the 8.89 audit found missing, and a token named by its kind
+
+AUTHORIZED 2026-09-23 ("Ok, do it") as the second of the bounded sequence **8.88a -> 8.91**; starts when 8.88a closes.
+
+Outcome: the printed-icon family (and, through 8.88a, placement) gains the three clauses 8.89 recorded as missing - adjacency to ANY token, adjacency to units of a declared side (with the at-least count), and a token named by its KIND rather than by its owner - so Ignatia's two discard selections, Min's Smoke bomb (she also owns Mines) and Trinkets' Barrier and Turret are expressible as data.
+
+Acceptance: each clause optional on every arm it can mean something on, refused by name elsewhere; the kind is carried without a new effect value kind reaching the network codec, or the milestone stops and reports why it cannot; the 8.89 differential extended to Ignatia's two discard selections and Min's Smoke-bomb selections, agreeing on every generated board; digest, schema and wire unmoved; complete suites. T3.
+
+Non-goals: re-pointing card definitions; any hero dealing.
 
 ### [x] 8.87 Package the audited twenty-two-hero playtest build, for Windows and macOS
 
