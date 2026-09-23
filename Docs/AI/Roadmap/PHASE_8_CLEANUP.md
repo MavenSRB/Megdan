@@ -225,6 +225,14 @@ Outcome: each skipped fixture has a reason, replacement coverage, and owning rep
 
 Historical evidence: exempt - no milestone was executed here, so there is no phase-handoff row of its own; the discharging evidence belongs to 8.36f3 and 8.37a.
 
+### [!] 8.35z87 Retire the hero-local selections 8.89 and 8.91 proved equivalent
+
+Parked by user 2026-09-23 ("just make notes, and if we have to mess with affected heroes we will fix it"): do it opportunistically, inside whatever milestone next changes the affected hero, not on its own.
+
+Proven equivalent to the printed-icon family on 300 seeded boards each (`SelectionDifferentialAuditTests`), so each can be replaced by family data on its cards and its handler deleted: `brynn-enemy-hero-in-radius-adjacent-to-obstacles@1` (Brynn), `enemy-hero-with-discard-present@1` (roster), `ignatia-enemy-hero-adjacent-to-magma-or-minion@1` and `ignatia-enemy-minion-adjacent-to-enemy-hero@1` (Ignatia) - about 450 lines. Partly duplicated, pool or half only: `hanu-friendly-unit-pair@1`, `brynn-tracking-swap-subject@1`, Min's smoke-bomb readers.
+
+Cost when done: the affected cards' definitions change, so their content revisions and identity pins move and seeded journeys may need re-deriving (8.38d's shape); the handler registration may stay if a snapshot names it. Closing check: the hero's printed-set, journey and gate fixtures green, the differential comparison for the retired handler replaced by the card's own family node, complete suites.
+
 ### [!] 8.35z75 Card-authoring workbench
 
 Parked by user. Outcome if reopened: designer-facing validated card authoring/balance workbench. Dependency: explicit product scope and content/privacy decision. Closing check to define at approval: authored variant validates and runs in the approved internal test path. No player feature or publishing authorization.
