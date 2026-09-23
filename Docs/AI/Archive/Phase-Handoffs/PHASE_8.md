@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.90 immune hero selection completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.90 | The user's ruling on open question 36 ("IMMUNE heroes are untargetable as per rulebook"): High Voltage's `synthetic-hero-adjacent-to-minion@1` and Misa's `choose-traversed-unit@1` no longer offer a unit immune to the enclosing action; the sweep found no other hostile selection without the filter. Regressions red before, green after; harness 4516/4516, Edit 5506 + 37 explicit skips, Play 827/827. Definition: [8.90](../../Roadmap/PHASE_8.md#x-890-an-immune-hero-is-never-the-one-a-hostile-clause-chooses). | pending |
+
 ## Milestone 8.89 selection differential audit completion evidence
 
 | Milestone | Outcome and definition | Commit |

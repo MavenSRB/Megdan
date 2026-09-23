@@ -1557,12 +1557,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (!board.TryGetObjectCoordinate(minion, out var origin))
                     return Array.Empty<HeroId>();
 
+                // Milestone 8.90, the user's ruling on open question 36: an immune hero is never the
+                // one this clause chooses, exactly as Shock's radius selection has always read it -
+                // asked for the action the text is running inside.
+                var activity = context.EnclosingActivity;
                 return board.Occupancies
                     .Where(occupancy =>
                         HexDistanceQuery.Calculate(origin, occupancy.Coordinate) == 1 &&
                         TargetQuery.StandsInRelationTo(
                             relation, BoardObjectReference.ForHero(occupancy.HeroId),
-                            context.ActorId, context.Participants, board))
+                            context.ActorId, context.Participants, board) &&
+                        (activity == RuleActivity.None || !TargetQuery.IsPrevented(
+                            RuleObject.ForHero(occupancy.HeroId),
+                            activity,
+                            RuleObject.ForHero(context.ActorId),
+                            board,
+                            context.Participants,
+                            context.Modifications,
+                            context.ImmunityOverrides)))
                     .Select(occupancy => occupancy.HeroId)
                     .OrderBy(id => id.Value, StringComparer.Ordinal)
                     .ToArray();

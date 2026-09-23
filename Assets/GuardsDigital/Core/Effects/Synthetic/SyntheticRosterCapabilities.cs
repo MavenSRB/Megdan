@@ -4952,10 +4952,22 @@ namespace GuardsDigital.Core.Effects.Synthetic
                     interior.Add(StraightLineQuery.Step(origin.Coordinate, direction, step));
                 }
 
+                // Milestone 8.90, the user's ruling on open question 36: an immune unit is never the
+                // one these riders choose - asked for the action the text is running inside, as the
+                // base class's own targeting asks it.
+                var activity = context.EnclosingActivity;
                 return interior
                     .SelectMany(space => RosterPresenceQuery.FindUnitsWithin(
                         space, 0, kind, relation, context.ActorId, board,
                         context.Participants, context.Modifications))
+                    .Where(target => activity == RuleActivity.None || !TargetQuery.IsPrevented(
+                        target.AsRuleObject(),
+                        activity,
+                        RuleObject.ForHero(context.ActorId),
+                        board,
+                        context.Participants,
+                        context.Modifications,
+                        context.ImmunityOverrides))
                     .Distinct()
                     .OrderBy(value => value.Kind)
                     .ThenBy(RosterPresenceQuery.Identity, StringComparer.Ordinal)

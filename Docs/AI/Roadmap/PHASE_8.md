@@ -139,6 +139,20 @@ Evidence: harness 4514/4514; complete Unity Edit Mode 5541 total / 5504 passed /
 Historical evidence: [8.89 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-889-selection-differential-audit-completion-evidence).
 
 
+### [x] 8.90 An immune hero is never the one a hostile clause chooses
+
+AUTHORIZED 2026-09-23 by the user's ruling on open question 36: "IMMUNE heroes are untargetable as per rulebook".
+
+Outcome: a selection that names an enemy unit for a card's effect never offers one that p.18's immunity protects from the enclosing action. Two shipped selections did: `synthetic-hero-adjacent-to-minion@1` (Wasp's High Voltage, "an enemy hero who was adjacent to that minion discards a card") and `choose-traversed-unit@1` (Misa's straight-line riders, "an enemy hero you moved through" and the unit her placement rider moves). A sweep of every capability that offers a unit found no other hostile selection without the filter; the friendly-hero choices (borrowing a friendly hero's card, a friendly hero retrieving or gaining) are beneficial and unchanged.
+
+Acceptance: a regression per selection that fails before the fix (the immune hero is offered) and passes after; Wasp's and Misa's printed-set fixtures and journeys green; complete Edit Mode, Play Mode and harness. T3 - dealt behaviour changes.
+
+Non-goals: presence checks (p.19 counts immune units); any other immunity reading.
+
+Completed 2026-09-23. Both selections now ask `TargetQuery.IsPrevented` for the action the text runs inside, as the family and the roster's targeting base already did. `ImmuneHeroSelectionTests` stages an immune and an exposed enemy hero where each clause reaches both: before the fix both cases failed (two candidates offered), after it each offers the exposed hero alone. Focused harness 200/200 (the two regressions, Wasp, Misa, roster and the 8.89 audit); complete harness 4516/4516; complete Unity Edit Mode 5543 total / 5506 passed / 0 failed / 37 explicit skips; complete Play Mode 827/827, zero skips. No registration changed, so the content digest, schema v44 and wire `/21` are unmoved.
+
+Historical evidence: [8.90 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-890-immune-hero-selection-completion-evidence).
+
 ### [ ] 8.88a Placement destinations compose the printed-icon clauses
 
 Split from 8.88 during implementation (2026-09-23); inside 8.88's approved outcome ("placement destinations compose the same filters") but NOT started - it waits for the user's word to continue.
