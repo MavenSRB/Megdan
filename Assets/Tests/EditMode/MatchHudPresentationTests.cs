@@ -3929,26 +3929,22 @@ namespace GuardsDigital.Tests.EditMode
                     var primaryModel = (PrintedActionRegionViewModel)primary.userData;
                     var primaryGlow = Descendants(primary)
                         .SingleOrDefault(element => element.name == "gd-prepared-action-glow");
-                    if (primaryModel.ActionKind == ActionKind.Movement)
-                    {
-                        Assert.That(primary.style.width.value.value,
-                            Is.LessThan(CardFootprint.Width * 0.25f));
-                        Assert.That(primaryGlow == null ||
-                            primaryGlow.ClassListContains("gd-prepared-action-glow-circle"), Is.True,
-                            "Primary Movement uses the same compact circle as the rail boot.");
-                    }
-                    else
-                    {
-                        Assert.That(primaryModel.ActionKind,
-                            Is.EqualTo(ActionKind.Skill).Or.EqualTo(ActionKind.Attack));
-                        Assert.That(primary.style.width.value.value,
-                            Is.GreaterThan(CardFootprint.Width * 0.90f),
-                            "Primary Skill or Attack boxes span the complete printed action panel.");
-                        Assert.That(primary.style.height.value.value,
-                            Is.GreaterThan(CardFootprint.Height * 0.25f));
-                        Assert.That(primaryGlow == null ||
-                            primaryGlow.ClassListContains("gd-prepared-action-glow-box"), Is.True);
-                    }
+                    // Milestone 8.85. Every primary - Movement included - spans the complete printed
+                    // action panel. A primary Movement used to be pinned here to the rail boot's
+                    // compact circle, which gave a Movement-primary card a hit target about one ninth
+                    // the area an Attack or Skill primary offers; the user's live report ("They have
+                    // trouble selecting primary movement action") is why the pin flipped.
+                    Assert.That(primaryModel.ActionKind,
+                        Is.EqualTo(ActionKind.Skill).Or.EqualTo(ActionKind.Attack)
+                            .Or.EqualTo(ActionKind.Movement));
+                    Assert.That(primary.style.width.value.value,
+                        Is.GreaterThan(CardFootprint.Width * 0.90f),
+                        "Every primary box spans the complete printed action panel - Movement too.");
+                    Assert.That(primary.style.height.value.value,
+                        Is.GreaterThan(CardFootprint.Height * 0.25f));
+                    Assert.That(primaryGlow == null ||
+                        primaryGlow.ClassListContains("gd-prepared-action-glow-box"), Is.True,
+                        "A primary Movement wears the panel box, never the rail boot's circle.");
 
                     var secondary = controls.Single(control =>
                         ((PrintedActionRegionViewModel)control.userData).InvocationContext ==

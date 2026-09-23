@@ -1003,7 +1003,10 @@ namespace GuardsDigital.Presentation.Match
                     AddPreparedArtworkHighlight(
                         control,
                         region.ActionKind,
-                        lit && region.Invocation != null);
+                        // Milestone 8.85: only the rail's SECONDARY Movement badge keeps the circle;
+                        // a primary Movement now owns the panel box like every other primary.
+                        circle: region.ActionKind == ActionKind.Movement && !isPrimary,
+                        available: lit && region.Invocation != null);
                 }
                 else
                 {
@@ -1499,16 +1502,25 @@ namespace GuardsDigital.Presentation.Match
 
         private static Rect PreparedActionSourceBounds(PrintedActionRegionViewModel region)
         {
-            // Prepared fronts share one verified 372x520 anatomy. Movement owns a compact circular
-            // treatment around its printed boot/value badge. Primary Attack and Skill own the broad
-            // lower action panel, so their temporary treatment is a single large box around that
-            // complete printed section. These are shared template coordinates, not card-name rules.
+            // Prepared fronts share one verified 372x520 anatomy. A SECONDARY Movement owns a compact
+            // circular treatment around its printed boot/value badge on the left rail. Every PRIMARY -
+            // Movement included - owns the broad lower action panel, so its hit surface is one large
+            // box around that complete printed section. These are shared template coordinates, not
+            // card-name rules.
+            //
+            // Milestone 8.85. A primary Movement used to take the 80x82 badge circle too (the same
+            // treatment as the rail boot), which left a Movement-primary card with a hit target about
+            // one ninth the area an Attack or Skill primary offers: a player who pressed the printed
+            // action panel - where every other primary answers - pressed nothing. The user, from the
+            // live playtest: "cards that have primary movement action. Players seem to have trouble
+            // clicking them" / "They have trouble selecting primary movement action". The panel is
+            // the hit surface now; the lit ring overlay already traced the panel's printed lines.
             if (region.InvocationContext == ActionInvocationContext.PrintedPrimary)
             {
                 switch (region.ActionKind)
                 {
                     case ActionKind.Movement:
-                        return new Rect(8f, 330f, 80f, 82f);
+                        return new Rect(6f, 318f, 360f, 174f);
                     case ActionKind.Attack:
                         return new Rect(6f, 308f, 360f, 184f);
                     case ActionKind.Skill:
@@ -1545,11 +1557,13 @@ namespace GuardsDigital.Presentation.Match
         private static void AddPreparedArtworkHighlight(
             VisualElement control,
             ActionKind actionKind,
+            bool circle,
             bool available)
         {
             // The control remains the typed hit/focus surface but contributes no fill or text. The
-            // temporary prepared-card treatment is deliberately simple: a circle around Movement's
-            // printed boot/value badge, or a broad box around the complete Primary Skill/Attack panel.
+            // temporary prepared-card treatment is deliberately simple: a circle around the rail's
+            // secondary Movement boot/value badge, or a broad box around the complete primary panel
+            // (Attack, Skill and - since milestone 8.85 - Movement alike).
             HudElements.Border(control, Color.clear, 0f, 0f);
             control.style.overflow = Overflow.Visible;
             if (!available)
@@ -1557,7 +1571,7 @@ namespace GuardsDigital.Presentation.Match
                 return;
             }
 
-            var glow = new PreparedActionGlow(actionKind == ActionKind.Movement)
+            var glow = new PreparedActionGlow(circle)
             {
                 name = "gd-prepared-action-glow",
                 pickingMode = PickingMode.Ignore,
