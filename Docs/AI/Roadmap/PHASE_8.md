@@ -219,7 +219,7 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
-### [ ] 8.84 Package the swept twenty-two-hero playtest build, for Windows and macOS
+### [x] 8.84 Package the swept twenty-two-hero playtest build, for Windows and macOS
 
 Authorized 2026-09-23 by the user's standing playtest order, the moment 8.83 landed: the packages cut at 8.81 predate the sweep, and the user plays on the current package.
 
@@ -228,6 +228,10 @@ Outcome: `Builds/Playtest-8.83-sweep` (+ zip) and `Builds/Playtest-8.83-sweep-ma
 Acceptance: T3 - the complete Edit Mode and Play Mode suites and the harness on the packaged tree, whose player source the version string alone changes; the Windows build-and-launch smoke and the Mac build on the packaged tree; the packaged Windows exe launched once from its own folder to `LOBBY_BEGIN`; the zips inspected for logs; the identity, manifest and read-mes per the 8.44 recipe plus the Mac read-me.
 
 Non-goals: code signing; any further correction.
+
+Completed 2026-09-23 at 03:00. Stamp `1.0-8.83-sweep+20260923001338-1cce4d73` on both players; protocol `/21`, schema 44; configured content digest `e037a054...` re-measured by the offline probe (108 definitions, 22 playable heroes; moved from 8.81's `48caa7f6...` by the four revision bumps - one of the swept heroes sits in the default configuration's dealt six). Gate on the packaged tree: complete Edit Mode 5514 total / 5477 passed / 0 failed / 37 skipped (`tmp/884-edit-complete.xml`; the 37th skip is 8.83's explicit inventory printer `PrintEveryLeashAndDistanceDeclarationInTheRoster`, beside the 36 established instruments), complete Play Mode 827/827 zero skips (`tmp/884-play-complete.xml`), harness 4487/4487 zero skips (`tmp/884-harness.log`); the Windows smoke GATE PASSED (02:14) and the Mac build PASSED under the Windows stamp (02:20); the packaged exe reached `GUARDS_ONLINE: LOBBY_BEGIN` from its own folder. Windows zip 183 entries / 79.6 MB, Mac zip 184 entries / 87.1 MB, no log or DoNotShip folder in either.
+
+Historical evidence: [8.84 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-884-swept-package-completion-evidence).
 
 ### [x] 8.83 Hunting Season moves up to two minions, Sabina's leash reads her icon, and the roster is swept for both shapes
 

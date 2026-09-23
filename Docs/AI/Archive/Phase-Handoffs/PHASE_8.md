@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.84 swept package completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.84 | `Builds/Playtest-8.83-sweep` and `Playtest-8.83-sweep-mac` (+ zips: 183 / 184 entries, 79.6 / 87.1 MB, no logs) cut from main at `3a68e1ba` plus the stamp `1.0-8.83-sweep+...001338-1cce4d73` on both players, an hour after 8.81, carrying 8.83; protocol /21, schema 44, digest `e037a054...`. Gate on the packaged tree: Edit Mode 5514 total / 5477 passed / 0 failed / 37 skipped, Play Mode 827/827, harness 4487/4487 zero skips; Windows smoke and Mac build passed; packaged exe reached the lobby. [Definition](../../Roadmap/PHASE_8.md#x-884-package-the-swept-twenty-two-hero-playtest-build-for-windows-and-macos). | `milestone/8.84` |
+
 ## Milestone 8.83 roster move sweep completion evidence
 
 | Milestone | Outcome and definition | Commit |
