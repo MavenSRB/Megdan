@@ -197,11 +197,23 @@ namespace GuardsDigital.Tests.PlayMode
         /// the minion and a second names where it goes. What bounds the destination is where SHE
         /// stands rather than how far the minion may travel, which is the narrowing this journey drives
         /// rather than asserts.</para>
+        ///
+        /// <para><b>THE BOARD IS RE-STAGED SO THE SECOND CLICK IS A REAL CHOICE</b>, which is milestone
+        /// 8.86's own correction of its first attempt. The shove is a direct Move of one space, and
+        /// from a space beside her up to THREE outer-ring landings are legal - but the untouched
+        /// staging left exactly one of them free, so milestone 8.46's rule that a choice of exactly one
+        /// resolves in a single press closed the whole rider on the click that named the minion. The
+        /// first re-statement read that as the destination being derived rather than asked, which was
+        /// the wrong reading of a right measurement: the shape is real, the board was the limitation.
+        /// <see cref="LoadStageWithRoomToShove"/> clears what blocks the other landings, the journey
+        /// asserts the offer really holds two or more, and the space it clicks is one a player chose
+        /// between - which is what the gate's <c>BoardSpaceSelection</c> row is about.</para>
         /// </summary>
         [UnityTest]
         public IEnumerator BurningSkull_ShovesTheMinionItJustHitAndIsAnsweredOnItsOwnConfirm()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedTierTwoAlternateEngagedStagedDodger);
+            yield return LoadStageWithRoomToShove(
+                SceneCardContent.VerifiedTierTwoAlternateEngagedStagedDodger);
             var root = Root();
             var runtime = root.Runtime;
             var hud = root.Hud;
@@ -259,19 +271,23 @@ namespace GuardsDigital.Tests.PlayMode
                 "a player to make and no board shape for the gate's two rows to be about. " +
                 Remaining(runtime));
             // WHICH offered minion the journey names is measured rather than taken first: the
-            // printed destination is "1 space to a space not adjacent to you", so a minion whose own
-            // ring holds no such space cannot be shoved anywhere and naming it would be asserting
-            // about a move the board never admitted.
+            // printed destination is "1 space to a space not adjacent to you", so the minion this
+            // journey names is one whose own ring really holds TWO of them. One would close the
+            // step on the naming click under milestone 8.46's exactly-one rule and leave the second
+            // board click - the one the gate's `BoardSpaceSelection` row is about - undriven.
             var shoved = shovable.FirstOrDefault(view => view.Occupancy.Coordinate
                 .GetNeighbors()
-                .Any(space =>
+                .Count(space =>
                     IsFreeSpace(runtime, space) &&
-                    HexDistanceQuery.Calculate(space, her) > 1));
+                    HexDistanceQuery.Calculate(space, her) > 1) >= 2);
             Assert.That(shoved, Is.Not.Null,
-                "At least one offered minion has to have a free space beside it that is out of " +
-                "her own ring, or the printed destination admits nothing. Offered: " +
-                string.Join(", ", shovable.Select(view =>
-                    view.Occupancy.MinionId.Value + "@" + view.Occupancy.Coordinate)) + ". " +
+                "At least one offered minion has to have TWO free spaces beside it that are out of " +
+                "her own ring, which is what LoadStageWithRoomToShove clears the board for. " +
+                "Offered: " + string.Join(", ", shovable.Select(view =>
+                    view.Occupancy.MinionId.Value + "@" + view.Occupancy.Coordinate + " landings=" +
+                    view.Occupancy.Coordinate.GetNeighbors().Count(space =>
+                        IsFreeSpace(runtime, space) &&
+                        HexDistanceQuery.Calculate(space, her) > 1))) + ". " +
                 Remaining(runtime));
             var shovedId = shoved.Occupancy.MinionId;
             var shovedFrom = shoved.Occupancy.Coordinate;
@@ -284,45 +300,49 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
-            // MEASURED at 8.86, on the first focused run of this re-stated journey: the one board
-            // click that NAMES the minion carries the whole rider. Rulebook p.18 sends a shove
-            // directly away from the actor, so once the subject is chosen the destination is
-            // DERIVED rather than asked - the pause closes inside that single accepted command and
-            // neither a destination offer nor the window's own DONE is drawn behind it.
-            //
-            // The branch below is kept rather than deleted because it is the honest shape of the
-            // claim: if a board ever offers this step a choice of landings, the journey drives it
-            // as a second board click instead of walking past a standing question.
+            // THE SECOND BOARD CLICK, AND IT IS A CHOICE. The naming click leaves the destination
+            // question standing because the re-staged board gives it more than one answer;
+            // milestone 8.46's exactly-one rule is what would close it on a board that gave it one,
+            // and asserting the COUNT here is what keeps this journey honest if a staging change
+            // ever narrows the offer back to a single landing.
             var landings = LitDestinations(runtime);
-            if (landings.Length > 0)
+            Assert.That(landings.Length, Is.GreaterThanOrEqualTo(2),
+                "\"1 space to a space not adjacent to you\" is answered on the board, and this " +
+                "journey needs it to be a CHOICE rather than a foregone conclusion - otherwise the " +
+                "naming click resolves the whole rider under milestone 8.46's exactly-one rule and " +
+                "nobody ever presses the space. Offer was: " +
+                string.Join(", ", landings.Select(space => space.ToString())) + ". " +
+                Remaining(runtime));
+            foreach (var landing in landings)
             {
-                foreach (var landing in landings)
-                {
-                    Assert.That(HexDistanceQuery.Calculate(landing, shovedFrom), Is.EqualTo(1),
-                        "\"1 space\" is an exact distance. Offer was: " +
-                        string.Join(", ", landings.Select(space => space.ToString())) + ". " +
-                        Remaining(runtime));
-                    Assert.That(HexDistanceQuery.Calculate(landing, her), Is.GreaterThan(1),
-                        "and what bounds the destination is where SHE stands - \"to a space not " +
-                        "adjacent to you\". Offer was: " +
-                        string.Join(", ", landings.Select(space => space.ToString())) + ". " +
-                        Remaining(runtime));
-                }
-
-                var chosenLanding = FirstClickableSpace(pointerInput, landings);
-                Assert.That(
-                    UiPlayer.ClickBoard(
-                        pointerInput, hud, Tile(chosenLanding).transform.position),
-                    Is.True,
-                    "and where it goes is the second board click. " + Remaining(runtime));
-                yield return null;
-                yield return null;
+                Assert.That(HexDistanceQuery.Calculate(landing, shovedFrom), Is.EqualTo(1),
+                    "\"1 space\" is an exact distance. Offer was: " +
+                    string.Join(", ", landings.Select(space => space.ToString())) + ". " +
+                    Remaining(runtime));
+                Assert.That(HexDistanceQuery.Calculate(landing, her), Is.GreaterThan(1),
+                    "and what bounds the destination is where SHE stands - \"to a space not " +
+                    "adjacent to you\". Offer was: " +
+                    string.Join(", ", landings.Select(space => space.ToString())) + ". " +
+                    Remaining(runtime));
             }
+
+            var chosenLanding = FirstClickableSpace(
+                pointerInput,
+                landings.Where(space => !space.Equals(shovedFrom)).ToArray());
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, Tile(chosenLanding).transform.position),
+                Is.True,
+                "and where it goes is the second board click. " + Remaining(runtime));
+            yield return null;
+            yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The rider is answered and the card is finished. " + Remaining(runtime));
 
             var shovedNow = MinionView(shovedId).Occupancy.Coordinate;
+            Assert.That(shovedNow, Is.EqualTo(chosenLanding),
+                "The minion stands on the space the player chose out of the offer, not on whichever " +
+                "one the rules would have picked for them. " + Remaining(runtime));
             Assert.That(shovedNow, Is.Not.EqualTo(shovedFrom),
                 "THE ASSERTION THIS JOURNEY WAS MISSING: the shoved minion really left " +
                 shovedFrom + ". " + Remaining(runtime));
@@ -331,6 +351,44 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(HexDistanceQuery.Calculate(shovedNow, her), Is.GreaterThan(1),
                 "and it is out of her ring - \"to a space not adjacent to you\", which is the " +
                 "whole of what the rider is for. " + Remaining(runtime));
+        }
+
+        /// <summary>
+        /// MILESTONE 8.86, at the coordinator's correction. Loads the staged scene twice: once to
+        /// READ where the composition put her and the miniatures, and again with every minion that
+        /// stands on a space Burning Skull's rider could shove a neighbour onto removed.
+        ///
+        /// <para><b>Why the board has to be cleared at all.</b> The rider is a direct Move of one
+        /// space "to a space not adjacent to you", so from a space beside her three of the subject's
+        /// six neighbours are candidates. The untouched staging leaves exactly one of those free,
+        /// and milestone 8.46's rule that a choice of exactly one resolves in a single press then
+        /// closes the whole rider on the click that NAMED the minion - so the second board click the
+        /// gate's <c>BoardSpaceSelection</c> row is about is never drawn, and a journey cannot drive
+        /// what is not asked. The board is not a defect; a shove with one legal landing is printed
+        /// behaviour. But a journey whose subject is a choice of landings has to be given a board
+        /// that offers one, exactly as milestone 8.82's minion journey had to be given a minion.</para>
+        ///
+        /// <para>Nothing else about the staging moves. The heroes are placed by the scene's own
+        /// composition on both passes, and only minions standing on the outer ring are removed - a
+        /// minion beside her is never one of them, because the spaces cleared are all more than one
+        /// space from her.</para>
+        /// </summary>
+        private static IEnumerator LoadStageWithRoomToShove(SceneCardContent stage)
+        {
+            yield return LoadStagedScene(stage);
+            var runtime = Root().Runtime;
+            var her = DodgerSeat(runtime).Coordinate;
+            var landings = runtime.Setup.Minions
+                .Where(minion => HexDistanceQuery.Calculate(minion.Coordinate, her) == 1)
+                .SelectMany(minion => minion.Coordinate.GetNeighbors())
+                .Where(space => HexDistanceQuery.Calculate(space, her) > 1)
+                .ToArray();
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                removedMinions: runtime.Setup.Minions
+                    .Where(minion => landings.Contains(minion.Coordinate))
+                    .Select(minion => minion.MinionId)
+                    .ToArray());
+            yield return LoadStagedScene(stage);
         }
 
         /// <summary>
