@@ -279,14 +279,23 @@ namespace GuardsDigital.Tests.PlayMode
             yield return ConfirmIfStillStanding(root, selection);
             yield return null;
 
-            var destinations = LitDestinations(runtime);
-            Assert.That(destinations, Is.Not.Empty,
+            var offeredSpaces = LitDestinations(runtime);
+            Assert.That(offeredSpaces, Is.Not.Empty,
                 "\"up to 2 spaces\" must offer somewhere to put it. " + Remaining(runtime));
-            foreach (var space in destinations)
+            foreach (var space in offeredSpaces)
             {
                 Assert.That(HexDistanceQuery.Calculate(space, stoodAt), Is.LessThanOrEqualTo(2),
                     "and every offered space is inside the printed distance.");
             }
+
+            // MILESTONE 8.86. "up to 2 spaces" lets a player choose nought, and the minion's own
+            // space is therefore a legal answer - so a journey that clicked the first lit space and
+            // then read the minion back onto it could be reading a minion that never moved. The
+            // space this clicks is one that TRAVELS, and the board is read for the change.
+            var destinations = offeredSpaces.Where(space => !space.Equals(stoodAt)).ToArray();
+            Assert.That(destinations, Is.Not.Empty,
+                "\"up to 2 spaces\" - every space offered was the one the minion already stood on, " +
+                "so no choice this journey could make would order it anywhere. " + Remaining(runtime));
 
             var move = StandingNode(runtime);
             var landing = FirstClickableSpace(pointerInput, destinations);
@@ -298,6 +307,9 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(MinionView(chosenId).Occupancy.Coordinate, Is.EqualTo(landing),
                 "and the melee minion she ordered is standing on the space she clicked.");
+            Assert.That(MinionView(chosenId).Occupancy.Coordinate, Is.Not.EqualTo(stoodAt),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: it really left the space it was ordered " +
+                "out of.");
 
             // and then her own Movement primary, which the card's text ran in front of. p.11's
             // default is that a Movement card's text comes into effect before the walk; this face is

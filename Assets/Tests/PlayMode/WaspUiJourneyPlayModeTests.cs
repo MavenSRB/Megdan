@@ -293,6 +293,8 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null,
                 "The clicked movement control must start the movement session.");
+            var startedAt = runtime.Heroes
+                .Single(hero => hero.HeroId.Equals(actingHeroId)).Coordinate;
             var destination = runtime.PendingMovementChoice.LegalDestinations
                 .First(value => value.Cost == 1).Destination;
             var tile = Object.FindObjectsByType<HexTileView>()
@@ -310,6 +312,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(actingHeroId)).Coordinate,
                 Is.EqualTo(destination),
                 "The clicked destination is where the hero now stands.");
+            // MILESTONE 8.86: and it is not where she started, so the walk is a walk rather than a
+            // re-seating on her own space.
+            Assert.That(destination, Is.Not.EqualTo(startedAt),
+                "The one-cost destination the journey clicked is a space away from her own.");
 
             // The piece follows the state: this is the hero-piece movement half of the row.
             var waspView = Object.FindObjectsByType<PrimitiveHeroView>()

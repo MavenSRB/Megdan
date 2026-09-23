@@ -79,6 +79,13 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.ClickBoard(pointerInput, hud, minionView.transform.position), Is.True);
             yield return null;
 
+            // MILESTONE 8.86. The Attack's own outcome, which this journey drove and never read: an
+            // attacked minion is taken off the board by p.13, so the piece that was clicked has to be
+            // gone before the rider below means anything.
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(targetId),
+                "\"Target a unit adjacent to you\" - the clicked minion is defeated by the Attack.");
+
             // Rulebook p.14 step 7: the card text stops the Attack on its first question, and the one
             // enemy hero in the printed Radius 2 disk who is not adjacent is marked on the board.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
@@ -172,6 +179,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, minionView.transform.position), Is.True);
             yield return null;
+
+            // MILESTONE 8.86: the Attack really took the minion, which is the state the Undo and the
+            // restore below have to carry across as much as the pause itself.
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(targetId),
+                "\"Target a unit adjacent to you\" - the clicked minion is defeated by the Attack.");
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The journey needs Shock's own after-attack pause standing.");
@@ -338,6 +351,12 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, minionView.transform.position), Is.True);
             yield return null;
+
+            // MILESTONE 8.86: the Attack's own printed outcome, beside the pin it raises.
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(targetId),
+                "\"Target a unit adjacent to you\" - the clicked minion is defeated by the Attack, " +
+                "which is what makes the after-attack pin below an AFTER.");
 
             // "After the attack: This turn:" - the pin is created by the completed Attack and lives
             // until the turn's own cancellation checkpoint, so the player sees the played card as the
@@ -531,10 +550,14 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             // The destination is one lit space of the orbit - the spaces equidistant from Wasp.
-            Assert.That(runtime.RoundView.Model.EffectChoiceDestinations, Is.Not.Empty,
-                "The orbit offers at least one destination on this board.");
-            var destination = runtime.RoundView.Model.EffectChoiceDestinations
-                .First().Command.EffectChoice.Candidate.Value.Coordinate;
+            //
+            // MILESTONE 8.86: it is a space the piece is NOT already standing on. "Move a unit, or a
+            // token, in radius 1 space" is an exact step, so the piece's own space is not a legal
+            // answer to it - and reading the piece back onto the space that was clicked would be
+            // true of a piece that never moved if it ever were.
+            var orbitedFrom = runtime.BoardView.Model.Minions
+                .Single(minion => minion.MinionId.Equals(engagedMinionId)).Coordinate;
+            var destination = TravellingOrbitSpace(runtime, orbitedFrom);
             var tile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(destination));
             Assert.That(tile.IsHighlighted, Is.False);
@@ -547,6 +570,12 @@ namespace GuardsDigital.Tests.PlayMode
                     .Single(minion => minion.MinionId.Equals(engagedMinionId)).Coordinate,
                 Is.EqualTo(destination),
                 "The chosen piece stands where the clicked orbit space is.");
+            Assert.That(
+                runtime.BoardView.Model.Minions
+                    .Single(minion => minion.MinionId.Equals(engagedMinionId)).Coordinate,
+                Is.Not.EqualTo(orbitedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the piece really left the space it stood " +
+                "on, which is what \"move ... 1 space\" says and what a lit own-space would fake.");
 
             // "May repeat once on the same target": the repeat is a real confirm-or-decline control,
             // and accepting it moves the same piece again without asking which piece.
@@ -562,8 +591,7 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.RoundView.Model.EffectChoiceDestinations, Is.Not.Empty,
                 "The repeated instance goes straight to the same piece's destinations.");
-            var secondDestination = runtime.RoundView.Model.EffectChoiceDestinations
-                .First().Command.EffectChoice.Candidate.Value.Coordinate;
+            var secondDestination = TravellingOrbitSpace(runtime, destination);
             var secondTile = Object.FindObjectsByType<HexTileView>()
                 .Single(value => value.Coordinate.Equals(secondDestination));
             Assert.That(
@@ -574,6 +602,30 @@ namespace GuardsDigital.Tests.PlayMode
                     .Single(minion => minion.MinionId.Equals(engagedMinionId)).Coordinate,
                 Is.EqualTo(secondDestination),
                 "The same piece moved again to the second clicked space.");
+            Assert.That(secondDestination, Is.Not.EqualTo(destination),
+                "and the repeat is a second MOVE rather than a second seating on the same space.");
+        }
+
+        /// <summary>
+        /// One lit orbit space that is not the space the piece already stands on. Milestone 8.86:
+        /// "move ... 1 space" is an exact step, so a destination equal to the subject's own space
+        /// would be a move that moved nothing - and a journey reading the piece back onto the space
+        /// it clicked could not tell the two apart.
+        /// </summary>
+        private static HexCoordinate TravellingOrbitSpace(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate from)
+        {
+            var offered = runtime.RoundView.Model.EffectChoiceDestinations
+                .Select(value => value.Command.EffectChoice.Candidate.Value.Coordinate)
+                .ToArray();
+            Assert.That(offered, Is.Not.Empty,
+                "The orbit offers at least one destination on this board.");
+            var travelling = offered.Where(value => !value.Equals(from)).ToArray();
+            Assert.That(travelling, Is.Not.Empty,
+                "\"Move a unit, or a token, in radius 1 space\" - the only space offered was the one " +
+                "the piece already stood on, so the Skill could not move it. Offered: " +
+                string.Join(", ", offered.Select(value => value.ToString())));
+            return travelling[0];
         }
 
         [UnityTest]

@@ -56,10 +56,18 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
             var minionView = ClickableAdjacentMinionTarget(runtime);
+            var attackedId = minionView.Occupancy.MinionId;
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, minionView.transform.position), Is.True);
             yield return null;
+
+            // MILESTONE 8.86. "Target a unit adjacent to you" is an ATTACK and its outcome is what
+            // this journey never read: p.13 takes an attacked minion off the board, so the named
+            // piece has to be gone before the rider below is worth anything.
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(attackedId),
+                "\"Target a unit adjacent to you\" - the minion the Attack named is defeated.");
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "Electrocute's own instance carries the same rider Shock's does, at its own icon.");
@@ -234,7 +242,7 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator KineticRepulse_SelectsItsPushedUnitOnTheBoardAndConfirmsTheBatch()
         {
-            yield return LoadStage(SceneCardContent.VerifiedTierTwoEngagedMirror);
+            yield return LoadStageWithRoomToPush(SceneCardContent.VerifiedTierTwoEngagedMirror);
             var root = Root();
             var runtime = root.Runtime;
             var redHeroId = HeroOf(runtime, TeamSide.Red);
@@ -248,11 +256,16 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "The batch push asks which adjacent enemy units to take.");
 
-            var engaged = ClickableEffectTargetMinion(runtime);
-            var engagedId = engaged.Occupancy.MinionId;
+            // MILESTONE 8.86. This used to take whichever unit came first and then assert the
+            // distance had not DECREASED - which is true of a unit that never left its space, so the
+            // journey could not tell a push from a stand-still. It names a unit whose first space
+            // away from her is playable and empty, and reads the board afterwards.
             var redAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate;
-            var distanceBefore = HexDistanceQuery.Calculate(
-                MinionCoordinate(runtime, engagedId), redAt);
+            var engaged = PushableEffectTargetMinion(runtime, redAt,
+                "Push up to 2 enemy units adjacent to you 3 spaces");
+            var engagedId = engaged.Occupancy.MinionId;
+            var pushedFrom = MinionCoordinate(runtime, engagedId);
+            var distanceBefore = HexDistanceQuery.Calculate(pushedFrom, redAt);
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, engaged.transform.position), Is.True);
@@ -260,15 +273,17 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "A fixed distance of 3 opens no second question.");
 
-            // The battle zone this board engages in can stop the push on its very first space -
-            // p.18 resolves against the pre-push state and an occupied space is an obstacle, which
-            // milestone 8.8's fixtures prove exactly. What a push can never do is bring the unit
-            // closer, and what this journey owns is that the clicked selection and confirm ran the
-            // batch to completion with no discard question for a pushed minion.
+            // THE ASSERTION THIS JOURNEY WAS MISSING: the named unit really left the space it stood
+            // on, and it went AWAY from her, which is the direction p.18 gives a push. The battle
+            // zone can still stop it short of the printed three - "move it as far as possible" - so
+            // the distance is asserted as strictly greater rather than as exactly three.
+            Assert.That(MinionCoordinate(runtime, engagedId), Is.Not.EqualTo(pushedFrom),
+                "\"Push up to 2 enemy units adjacent to you 3 spaces\" - the unit is standing where " +
+                "it started, so nothing was pushed.");
             Assert.That(
                 HexDistanceQuery.Calculate(MinionCoordinate(runtime, engagedId), redAt),
-                Is.GreaterThanOrEqualTo(distanceBefore),
-                "A push moves its unit away from Wasp or not at all.");
+                Is.GreaterThan(distanceBefore),
+                "and it is further from Wasp than it was, which is the only direction a push has.");
         }
 
         [UnityTest]
@@ -292,13 +307,21 @@ namespace GuardsDigital.Tests.PlayMode
                 UiPlayer.ClickBoard(pointerInput, root.Hud, piece.transform.position), Is.True);
             yield return null;
 
-            var destination = FirstLitDestination(runtime);
+            // MILESTONE 8.86: the destination has to be one that TRAVELS. A lit space equal to the
+            // piece's own is what an orbit offers when nothing else is reachable, and asserting the
+            // piece stands on the space that was clicked is then true of a piece that never moved.
+            var orbitedFrom = MinionCoordinate(runtime, pieceId);
+            var destination = ATravellingDestination(runtime, orbitedFrom,
+                "Move a unit, or a token, in radius 1 space, without moving it away from you or " +
+                "closer to you");
             Assert.That(
                 UiPlayer.ClickBoard(
                     pointerInput, root.Hud, TileAt(destination).transform.position),
                 Is.True);
             yield return null;
             Assert.That(MinionCoordinate(runtime, pieceId), Is.EqualTo(destination));
+            Assert.That(MinionCoordinate(runtime, pieceId), Is.Not.EqualTo(orbitedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the piece really left the space it stood on.");
 
             // "May repeat once on the same target" - declined through its own control this time.
             yield return ClickEffectDecline(root);
@@ -335,11 +358,14 @@ namespace GuardsDigital.Tests.PlayMode
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var redHeroView = Object.FindObjectsByType<PrimitiveHeroView>()
                 .Single(view => view.Occupancy.HeroId.Equals(redHeroId));
+            var placedFrom = runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, redHeroView.transform.position), Is.True);
             yield return null;
 
-            var destination = FirstLitDestination(runtime);
+            var destination = ATravellingDestination(runtime, placedFrom,
+                "Place a unit or a token in range, which is not in a straight line, into a space " +
+                "adjacent to you");
             var blueAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(blueHeroId)).Coordinate;
             Assert.That(HexDistanceQuery.Calculate(destination, blueAt), Is.EqualTo(1),
                 "Every offered destination is a space adjacent to the acting Wasp.");
@@ -354,6 +380,11 @@ namespace GuardsDigital.Tests.PlayMode
                 runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate,
                 Is.EqualTo(destination),
                 "The enemy Wasp stands on the clicked space beside the actor.");
+            Assert.That(
+                runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate,
+                Is.Not.EqualTo(placedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the Place moved the enemy Wasp off the " +
+                "space it was standing on rather than offering and doing nothing.");
         }
 
         // ---------------------------------------------------------------------------------------
@@ -376,10 +407,16 @@ namespace GuardsDigital.Tests.PlayMode
 
             yield return StartActionThroughControl(root, ActionKind.Attack);
             var minionView = ClickableAdjacentMinionTarget(runtime);
+            var attackedId = minionView.Occupancy.MinionId;
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, minionView.transform.position), Is.True);
             yield return null;
+
+            // MILESTONE 8.86: the Attack's own printed outcome, read before its rider.
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(attackedId),
+                "\"Target a unit adjacent to you\" - the minion the Attack named is defeated.");
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null);
             var blueHeroView = Object.FindObjectsByType<PrimitiveHeroView>()
@@ -461,7 +498,7 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator KineticBlast_AsksForItsDistanceAsRealControlsAfterItsUnitsAreClicked()
         {
-            yield return LoadStage(SceneCardContent.VerifiedTierThreeEngagedMirror);
+            yield return LoadStageWithRoomToPush(SceneCardContent.VerifiedTierThreeEngagedMirror);
             var root = Root();
             var runtime = root.Runtime;
             var redHeroId = HeroOf(runtime, TeamSide.Red);
@@ -472,11 +509,15 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.SelectedActor.ActorId, Is.EqualTo(redHeroId));
 
             yield return StartActionThroughControl(root, ActionKind.Skill);
-            var engaged = ClickableEffectTargetMinion(runtime);
-            var engagedId = engaged.Occupancy.MinionId;
+            // MILESTONE 8.86, exactly as on Kinetic Repulse: the unit is named because its first
+            // space away from her is playable and empty, so the push this journey is about has
+            // somewhere to go.
             var redAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate;
-            var distanceBefore = HexDistanceQuery.Calculate(
-                MinionCoordinate(runtime, engagedId), redAt);
+            var engaged = PushableEffectTargetMinion(runtime, redAt,
+                "Push up to 2 enemy units adjacent to you 3 or 4 spaces");
+            var engagedId = engaged.Occupancy.MinionId;
+            var pushedFrom = MinionCoordinate(runtime, engagedId);
+            var distanceBefore = HexDistanceQuery.Calculate(pushedFrom, redAt);
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, engaged.transform.position), Is.True);
@@ -498,10 +539,14 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
 
             Assert.That(runtime.PendingEffectChoice, Is.Null);
+            Assert.That(MinionCoordinate(runtime, engagedId), Is.Not.EqualTo(pushedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the clicked distance ran a push that " +
+                "really left the space it started on. It used to read GreaterThanOrEqualTo, which a " +
+                "unit that never moved satisfies.");
             Assert.That(
                 HexDistanceQuery.Calculate(MinionCoordinate(runtime, engagedId), redAt),
-                Is.GreaterThanOrEqualTo(distanceBefore),
-                "The clicked distance ran the push, which moves away from Wasp or not at all.");
+                Is.GreaterThan(distanceBefore),
+                "and it is further from Wasp than it was, which is the only direction a push has.");
         }
 
         [UnityTest]
@@ -527,9 +572,16 @@ namespace GuardsDigital.Tests.PlayMode
 
             // "May repeat up to two times on the same target": three moves in all, each destination
             // clicked on the board, each repeat accepted by its own control, and no third offer.
+            //
+            // MILESTONE 8.86: each of the three is asserted to have TRAVELLED. Reading the piece
+            // back onto the space that was clicked is true of a piece standing still when the space
+            // clicked was its own, so all three moves could have been nothing at all.
             for (var move = 0; move < 3; move++)
             {
-                var destination = FirstLitDestination(runtime);
+                var stoodAt = MinionCoordinate(runtime, pieceId);
+                var destination = ATravellingDestination(runtime, stoodAt,
+                    "Move a unit, or a token, in radius 1 space, without moving it away from you " +
+                    "or closer to you. May repeat up to two times on the same target");
                 Assert.That(
                     UiPlayer.ClickBoard(
                         pointerInput, root.Hud, TileAt(destination).transform.position),
@@ -537,6 +589,8 @@ namespace GuardsDigital.Tests.PlayMode
                     $"Move {move + 1} must click a lit orbit space.");
                 yield return null;
                 Assert.That(MinionCoordinate(runtime, pieceId), Is.EqualTo(destination));
+                Assert.That(MinionCoordinate(runtime, pieceId), Is.Not.EqualTo(stoodAt),
+                    $"Move {move + 1} really moved the piece rather than re-seating it.");
                 if (move < 2)
                 {
                     yield return ClickEffectConfirm(root);
@@ -569,10 +623,13 @@ namespace GuardsDigital.Tests.PlayMode
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
             var redHeroView = Object.FindObjectsByType<PrimitiveHeroView>()
                 .Single(view => view.Occupancy.HeroId.Equals(redHeroId));
+            var placedFrom = runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, root.Hud, redHeroView.transform.position), Is.True);
             yield return null;
-            var destination = FirstLitDestination(runtime);
+            var destination = ATravellingDestination(runtime, placedFrom,
+                "Place a unit or a token in range, which is not in a straight line, into a space " +
+                "adjacent to you. May repeat once");
             Assert.That(
                 UiPlayer.ClickBoard(
                     pointerInput, root.Hud, TileAt(destination).transform.position),
@@ -581,6 +638,10 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(
                 runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate,
                 Is.EqualTo(destination));
+            Assert.That(
+                runtime.Heroes.Single(hero => hero.HeroId.Equals(redHeroId)).Coordinate,
+                Is.Not.EqualTo(placedFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the Place really moved the piece.");
 
             // "May repeat once", with no target binding: the second instance would ask for its own
             // piece. Declining it through its control ends the Skill after one Place.
@@ -703,22 +764,86 @@ namespace GuardsDigital.Tests.PlayMode
                 .Single(value => value.Coordinate.Equals(coordinate));
 
         /// <summary>
-        /// The first lit destination of the paused effect frame, in a stable order, read from the
-        /// rendered model exactly as the lit board is drawn from it.
+        /// A lit destination of the paused effect frame that REALLY TRAVELS - read from the rendered
+        /// model exactly as the lit board is drawn from it, in a stable order, with the space the
+        /// piece is already standing on refused.
+        ///
+        /// <para><b>MILESTONE 8.86.</b> This used to return the first lit space whatever it was, and
+        /// every caller then asserted the piece stood on the space it had clicked - which is true of a
+        /// piece that never moved, because "the space it already occupies" is a legal answer to an
+        /// "up to" move and is exactly what the board offers when nothing else is reachable. Milestone
+        /// 8.82's class of vacuous pass in one line. The refusal is made here rather than per journey
+        /// so no later caller can reintroduce it, and the message names the printed sentence the
+        /// caller is proving.</para>
         /// </summary>
-        private static HexCoordinate FirstLitDestination(ConfiguredMatchSceneRuntime runtime)
+        private static HexCoordinate ATravellingDestination(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate from, string printed)
         {
             var destinations = runtime.RoundView.Model.EffectChoiceDestinations
                 .Select(value => value.Command.EffectChoice.Candidate.Value.Coordinate)
                 .OrderBy(value => value.Q).ThenBy(value => value.R)
                 .ToArray();
             Assert.That(destinations, Is.Not.Empty,
-                "The paused frame offers at least one destination on this board.");
-            var destination = destinations.First();
+                "\"" + printed + "\" - the paused frame offers no destination at all on this board.");
+            var travelling = destinations.Where(value => !value.Equals(from)).ToArray();
+            Assert.That(travelling, Is.Not.Empty,
+                "\"" + printed + "\" - every destination offered was the space the piece already " +
+                "stood on, so the card could not move anything. Offered: " +
+                string.Join(", ", destinations.Select(value => value.ToString())));
+            var destination = travelling[0];
             Assert.That(TileAt(destination).IsHighlighted, Is.False);
             Assert.That(TileAt(destination).CornerHighlight.Kind,
                 Is.EqualTo(HexCornerHighlightKind.Movement));
             return destination;
+        }
+
+        /// <summary>
+        /// One board-answerable target of the paused push whose FIRST STEP AWAY from the actor is a
+        /// playable, empty space - so the push it is about really travels rather than being stopped on
+        /// the space it starts from.
+        ///
+        /// <para><b>MILESTONE 8.86.</b> Both push journeys used to take whichever unit came first and
+        /// then assert the distance had not DECREASED, which a unit that never moved satisfies.
+        /// p.18 pushes "directly away from the pushing unit", so the first space of that path is
+        /// <c>2 * unit - actor</c> in axial terms, and a unit whose first space is off the map or
+        /// occupied is a unit this journey may not choose.</para>
+        /// </summary>
+        private static StandardMinionView PushableEffectTargetMinion(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate actorAt, string printed)
+        {
+            var targets = runtime.RoundView.Model.EffectChoiceTargets
+                .Select(target => target.Space)
+                .ToArray();
+            Assert.That(targets, Is.Not.Empty,
+                "\"" + printed + "\" - the paused frame names no board target at all.");
+            var occupied = runtime.BoardView.Model.Minions.Select(value => value.Coordinate)
+                .Concat(runtime.Heroes.Select(value => value.Coordinate))
+                .Concat(runtime.BoardView.Model.PlacedTokens.Select(value => value.Coordinate))
+                .ToArray();
+            var playable = Object.FindObjectsByType<HexTileView>()
+                .Where(tile => tile.IsPlayable)
+                .Select(tile => tile.Coordinate)
+                .ToArray();
+            var pushable = runtime.BoardView.Model.Minions
+                .Where(value => targets.Contains(value.Coordinate))
+                .Where(value => !Blocked(FirstSpaceAway(actorAt, value.Coordinate)))
+                .OrderBy(value => value.MinionId.Value, System.StringComparer.Ordinal)
+                .ToArray();
+            Assert.That(pushable, Is.Not.Empty,
+                "\"" + printed + "\" - every unit the push offered is already backed against an " +
+                "obstacle, so no choice this journey could make would move anybody. Offered: " +
+                string.Join("; ", targets.Select(space =>
+                    space + " -> away " + FirstSpaceAway(actorAt, space) +
+                    (playable.Contains(FirstSpaceAway(actorAt, space))
+                        ? " playable" : " OFF THE MAP") +
+                    (occupied.Contains(FirstSpaceAway(actorAt, space))
+                        ? " OCCUPIED" : " empty"))));
+
+            bool Blocked(HexCoordinate away) =>
+                !playable.Contains(away) || occupied.Contains(away);
+            return Object.FindObjectsByType<StandardMinionView>()
+                .Single(view => view.Occupancy != null &&
+                    view.Occupancy.MinionId.Equals(pushable[0].MinionId));
         }
 
         /// <summary>
@@ -848,6 +973,18 @@ namespace GuardsDigital.Tests.PlayMode
                 "The chooser's cards are offered. Shown controls: " + UiPlayer.Describe(root.Hud));
             Assert.That(choices.Select(value => value.Card), Has.All.Not.Null,
                 "Each offer is the whole printed face rather than a text button.");
+
+            // MILESTONE 8.86: the chosen card is NAMED and its own transition is read afterwards.
+            // This used to click `choices[0]` and leave the caller counting a pile, which cannot tell
+            // the clicked card from any other card of anybody's reaching that pile.
+            Assert.That(
+                choices.Select(value =>
+                    runtime.Cards.Single(card =>
+                        card.Id.Equals(value.Command.EffectChoice.Candidate.Value.CardInstanceId))
+                        .OwnerId),
+                Has.All.EqualTo(chooserHeroId),
+                "Every face offered belongs to the hero the text tells to discard.");
+            var chosen = choices[0].Command.EffectChoice.Candidate.Value.CardInstanceId;
             var faceName = choices[0].Card.DisplayName.ToUpperInvariant();
             UiPlayer.EnsureVisible(
                 UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", faceName));
@@ -855,6 +992,10 @@ namespace GuardsDigital.Tests.PlayMode
             UiPlayer.Click(
                 UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", faceName));
             yield return null;
+            Assert.That(
+                runtime.Cards.Single(card => card.Id.Equals(chosen)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "and it is the clicked face that left the hand for the pile.");
         }
 
         /// <summary>
@@ -881,6 +1022,48 @@ namespace GuardsDigital.Tests.PlayMode
         {
             UiPlayer.ClickEffectControl(root.Runtime, root.Hud, EffectChoiceCommandKind.Decline);
             yield return null;
+        }
+
+        /// <summary>
+        /// p.18's first space of a push: the space one step further along the straight line from the
+        /// pusher through the unit, which adjacency always makes a line (p.19). Axial arithmetic,
+        /// because nothing on the board has an opinion about a direction.
+        /// </summary>
+        private static HexCoordinate FirstSpaceAway(HexCoordinate pusher, HexCoordinate unit) =>
+            new HexCoordinate((unit.Q * 2) - pusher.Q, (unit.R * 2) - pusher.R);
+
+        /// <summary>
+        /// The Tier II/III engaged mirror, restaged so a push HAS SOMEWHERE TO GO. Milestone 8.86.
+        ///
+        /// <para><b>WHAT THE AUDIT FOUND, AND WHY THIS STEP EXISTS.</b> Both push journeys asserted
+        /// that the unit's distance from Wasp had not DECREASED, and both passed for eleven
+        /// milestones on a board where the one adjacent enemy unit is backed straight against
+        /// another minion: p.18 resolves against the pre-push state, an occupied space is an
+        /// obstacle, and "move it as far as possible" then moves it nought. So neither journey had
+        /// ever pushed anybody, and neither could tell. The board is not a defect - a blocked push is
+        /// printed behaviour - but a journey whose subject is a push has to be given a board the push
+        /// can happen on, exactly as milestone 8.82's minion journey had to be given a minion.</para>
+        ///
+        /// <para>The scene is composed once to read where the mirror restaging put the pieces, and
+        /// composed again with the minions standing in those first spaces removed. Nothing else
+        /// about the staging moves: the heroes are placed by the same restaging on both passes,
+        /// because the sandbox description is applied after it and does not touch them.</para>
+        /// </summary>
+        private static IEnumerator LoadStageWithRoomToPush(SceneCardContent stage)
+        {
+            yield return LoadStage(stage);
+            var runtime = Root().Runtime;
+            var redAt = runtime.Setup.Heroes.Single(hero => hero.TeamSide == TeamSide.Red).Coordinate;
+            var behind = runtime.Setup.Minions
+                .Where(minion => HexDistanceQuery.Calculate(minion.Coordinate, redAt) == 1)
+                .Select(minion => FirstSpaceAway(redAt, minion.Coordinate))
+                .ToArray();
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                removedMinions: runtime.Setup.Minions
+                    .Where(minion => behind.Contains(minion.Coordinate))
+                    .Select(minion => minion.MinionId)
+                    .ToArray());
+            yield return LoadStage(stage);
         }
 
         private static IEnumerator LoadStage(SceneCardContent stage)

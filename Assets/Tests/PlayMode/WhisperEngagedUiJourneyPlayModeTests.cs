@@ -154,7 +154,17 @@ namespace GuardsDigital.Tests.PlayMode
                     $"({candidate.Space.Q},{candidate.Space.R})@" +
                     HexDistanceQuery.Calculate(candidate.Space, stoodAt))));
 
-            var chosen = candidates[0];
+            // MILESTONE 8.86: the piece is NAMED rather than taken as whatever came first, because
+            // the outcome asserted below is a minion's and "a unit" admits heroes too.
+            var minionCandidates = candidates
+                .Where(candidate => candidate.Target.Kind == AttackTargetKind.Minion)
+                .ToArray();
+            var chosen = minionCandidates.Length > 0 ? minionCandidates[0] : candidates[0];
+            Assert.That(chosen.Target.Kind, Is.EqualTo(AttackTargetKind.Minion),
+                "\"Target a unit adjacent to you\" - the enemy Ranged minion this staging leaves " +
+                "beside her is the subject the second bullet is written for. Offered: " +
+                string.Join(", ", candidates.Select(candidate => candidate.Target.Kind.ToString())));
+            var attackedId = chosen.Target.MinionId;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, ViewOf(chosen.Target).transform.position),
                 Is.True,
@@ -170,6 +180,14 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return null;
                 yield return null;
             }
+
+            // MILESTONE 8.86, AND THIS IS THE OUTCOME THE JOURNEY NEVER READ. The chosen bullet is a
+            // TARGETING SENTENCE, so what proves it was taken is not that a question was asked but
+            // that p.14 ran its whole order for it: the named minion is off the board.
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(attackedId),
+                "The bullet handed p.14 a printed sentence and the page ran its full order against " +
+                "the unit it named, which p.13 takes off the board. " + Remaining(runtime));
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "One bullet is one full p.14 order and the modal does not re-open, because the " +
@@ -258,7 +276,13 @@ namespace GuardsDigital.Tests.PlayMode
             // silently skipped, which is a legitimate reading of the same rider and not this arm's.
             Assert.That(runtime.PendingDefenseChoice, Is.Not.Null,
                 "The named target's own seat is offered p.14's Defense window. " + Remaining(runtime));
-            var defense = SurvivingDefense(runtime);
+            // MILESTONE 8.86. The defence is chosen so the rider CAN fire. "That hero performs a
+            // movement action on the card they defended with" reads that card's own Movement value,
+            // so a surviving face printing no boot leaves the rider skipping in silence and the
+            // steered arm - the whole subject of this journey - unreached. The fizzle branch below is
+            // kept, because `if able` is printed and a board with no direction out is a legal
+            // reading of it; what changes is that this no longer arrives there BY ACCIDENT.
+            var defense = SurvivingDefenseThatCanMove(runtime) ?? SurvivingDefense(runtime);
             Assert.That(defense, Is.Not.Null,
                 "The rider reads the card the defender DEFENDED WITH, so the defender has to survive " +
                 "spending one - a defeated defender is off the board and the `if able` skips. " +
@@ -487,18 +511,49 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.IsActiveEffectSource(card.Id), Is.True);
             yield return YieldUntilTheNamedSeatActs(runtime, enemy);
             Assert.That(runtime.IsActiveEffectSource(card.Id), Is.True, "Immunity remains through the opponent's action in this turn.");
+            // MILESTONE 8.86. THE BRANCH THIS USED TO TAKE WHEN THE ATTACK WAS NOT OFFERED WAS A PASS
+            // BY ABSENCE: "UnavailableActions is not empty" is satisfied by ANY greyed control on the
+            // board and says nothing about her card. Both surfaces are still read, because rule 14
+            // legitimately refuses an Attack whose every target the immunity removed - but each is
+            // now a statement about HER: the offer that exists must not contain her, and the refusal
+            // that exists must be THIS ATTACK's. The precondition both rest on is asserted first.
+            var attackerAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemy)).Coordinate;
+            var herAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
+            Assert.That(HexDistanceQuery.Calculate(attackerAt, herAt), Is.EqualTo(1),
+                "This staging puts the attacker beside her, which is what makes her a target of " +
+                "Magnetic Dagger's \"unit adjacent to you\" but for the immunity. " +
+                Remaining(runtime));
             var attack = runtime.RoundView.Model.Actions.FirstOrDefault(value => KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack);
             if (attack != null)
             {
                 UiPlayer.Click(UiPlayer.Button(root.Hud, attack.Label));
                 yield return null;
-                Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null);
-                Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds.Contains(own), Is.False);
+                Assert.That(runtime.PendingAttackTargetChoice, Is.Not.Null,
+                    "The clicked Attack opens p.14's target question. " + Remaining(runtime));
+                Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds.Contains(own), Is.False,
+                    "\"This turn: You are immune to enemy actions\" - the immune hero standing " +
+                    "beside the attacker is not in the offer. Offered heroes: " + string.Join(", ",
+                        runtime.PendingAttackTargetChoice.LegalTargetHeroIds.Select(id => id.Value)) +
+                    ". " + Remaining(runtime));
             }
             else
             {
-                Assert.That(runtime.RoundView.Model.UnavailableActions, Is.Not.Empty, Remaining(runtime));
+                Assert.That(
+                    runtime.RoundView.Model.UnavailableActions.Any(value =>
+                        KindOf(runtime, value.ActionDefinitionId) == ActionKind.Attack),
+                    Is.True,
+                    "and where the Attack is refused outright it has to be THE ATTACK that is " +
+                    "greyed rather than any control at all - she was its one adjacent subject, so " +
+                    "the immunity emptying its offer is rule 14 refusing it. Greyed: " +
+                    string.Join(", ", runtime.RoundView.Model.UnavailableActions.Select(
+                        value => value.Label)) + ". " + Remaining(runtime));
+                Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                    "and no target question was opened behind the refusal. " + Remaining(runtime));
             }
+
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(own)), Is.True,
+                "Either way the immune hero is untouched by the enemy's whole turn. " +
+                Remaining(runtime));
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
@@ -551,6 +606,14 @@ namespace GuardsDigital.Tests.PlayMode
                     $"({space.Q},{space.R})@{HexDistanceQuery.Calculate(space, stoodAt)}")));
 
             var subject = subjects[0];
+            // MILESTONE 8.86: the piece standing on the chosen space is identified BEFORE the click,
+            // so the space it ends on can be read back off that same piece afterwards.
+            var subjectMinion = runtime.BoardView.Model.Minions
+                .SingleOrDefault(minion => minion.Coordinate.Equals(subject));
+            Assert.That(subjectMinion, Is.Not.Null,
+                "\"Target an enemy unit in radius occupying a spawn point\" - the offered space has " +
+                "a minion standing on it, which is what the sentence names. " + Remaining(runtime));
+            var subjectId = subjectMinion.MinionId;
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(subject).transform.position), Is.True,
                 "The unit is chosen by clicking where it stands.");
@@ -578,6 +641,22 @@ namespace GuardsDigital.Tests.PlayMode
                 "The destination is answered on the board.");
             yield return null;
             yield return null;
+
+            // MILESTONE 8.86, AND THE ASSERTION THE JOURNEY'S OWN NAME PROMISED. It ended on
+            // "PendingEffectChoice is null" - two questions asked and answered - and never once
+            // looked at the board, so a Move that offered a space and then moved nobody passed it.
+            Assert.That(
+                runtime.BoardView.Model.Minions
+                    .Single(minion => minion.MinionId.Equals(subjectId)).Coordinate,
+                Is.EqualTo(destinations[0]),
+                "\"Move that unit 1 space\" - the unit is standing on the space that was clicked. " +
+                Remaining(runtime));
+            Assert.That(
+                runtime.BoardView.Model.Minions
+                    .Single(minion => minion.MinionId.Equals(subjectId)).Coordinate,
+                Is.Not.EqualTo(subject),
+                "and it is OFF ITS SPAWN POINT - the printed distance is exact, so zero is not an " +
+                "outcome this sentence has.");
 
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "Two clicks answer the card's two printed clauses. " + Remaining(runtime));
@@ -794,5 +873,36 @@ namespace GuardsDigital.Tests.PlayMode
                 "Exactly one Whisper token stands after the respawn, not a second beside a stale.");
             Assert.That(respawned[0].Coordinate, Is.EqualTo(respawn.Destination));
         }
+
+        // ---------------------------------------------------------------------------------------
+        // Steps
+        // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// A Defense the defender survives AND whose card prints a Movement value, or null when the
+        /// hand holds none. Milestone 8.86.
+        ///
+        /// <para>Swift Justice's first bullet makes the defender "perform a movement action on the
+        /// card they defended with", and the value that move gets is that card's own printed boot -
+        /// so which face the defender spends decides whether the rider does anything at all. The
+        /// journey that drives the rider picks a face that can, rather than taking whichever
+        /// surviving face came first and landing on the silent `if able` branch by accident.</para>
+        /// </summary>
+        private static TypedInvocationViewModel SurvivingDefenseThatCanMove(
+            ConfiguredMatchSceneRuntime runtime) =>
+            runtime.RoundView.Model.DefenseChoices.FirstOrDefault(choice =>
+                choice.DefenseBreakdown != null &&
+                choice.DefenseBreakdown.CardInstanceId.HasValue &&
+                choice.DefenseBreakdown.Outcome == AttackResolutionOutcome.SuccessfullyDefended &&
+                runtime.Definitions
+                    .Single(definition => definition.Reference.Equals(
+                        runtime.Cards
+                            .Single(card =>
+                                card.Id.Equals(choice.DefenseBreakdown.CardInstanceId.Value))
+                            .DefinitionReference))
+                    .ActionDefinitions
+                    .SelectMany(action => action.BaseValues)
+                    .Any(value =>
+                        value.Channel == PrintedValueChannel.Movement && value.Amount > 0));
     }
 }

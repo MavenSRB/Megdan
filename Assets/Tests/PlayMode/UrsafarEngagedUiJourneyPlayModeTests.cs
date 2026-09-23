@@ -51,28 +51,111 @@ namespace GuardsDigital.Tests.PlayMode
             var own = UrsafarSeat(runtime).HeroId;
             CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.ClawsThatCatch);
             yield return YieldUntilTheNamedSeatActs(runtime, own);
-            if (runtime.RoundView.Model.Actions.Any(value => KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack))
+
+            // MILESTONE 8.86. Arm one used to branch - "if the Attack is offered, assert nothing
+            // pauses; otherwise assert SOMETHING is greyed" - and the second half is a pass by
+            // absence that would have been satisfied by any greyed control on the board. The staging
+            // puts the enemy two spaces away and the only minion three, so nothing is adjacent and
+            // the mandatory "target a unit adjacent to you" has no subject: the outcome asserted is
+            // that STARTING THE ATTACK ASKS NOTHING AND APPLIES NOTHING, on whichever of the two
+            // surfaces the offer is drawn on, and each surface is named.
+            var startable = runtime.RoundView.Model.Actions
+                .Any(value => KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack);
+            var heroesBefore = runtime.Heroes.Count;
+            if (startable)
             {
                 yield return StartActionThroughControl(root, ActionKind.Attack);
-                Assert.That(runtime.PendingAttackTargetChoice, Is.Null);
-                Assert.That(runtime.PendingEffectChoice, Is.Null);
+                Assert.That(runtime.PendingAttackTargetChoice, Is.Null,
+                    "\"Target a unit adjacent to you\" - nobody is adjacent on this staging, so p.14 " +
+                    "asks nothing. " + Remaining(runtime));
+                Assert.That(runtime.PendingEffectChoice, Is.Null,
+                    "and step 7's grant is never reached, because p.10 stops the card at the " +
+                    "mandatory targeting step it cannot complete. " + Remaining(runtime));
             }
-            else Assert.That(runtime.RoundView.Model.UnavailableActions, Is.Not.Empty);
+            else
+            {
+                Assert.That(
+                    runtime.RoundView.Model.UnavailableActions.Any(value =>
+                        KindOf(runtime, value.ActionDefinitionId) == ActionKind.Attack),
+                    Is.True,
+                    "The refusal has to be THIS card's Attack rather than any greyed control: rule " +
+                    "14 refuses an action whose mandatory step can be proven to have no subject. " +
+                    "Greyed: " + string.Join(", ",
+                        runtime.RoundView.Model.UnavailableActions.Select(value => value.Label)) +
+                    ". " + Remaining(runtime));
+            }
+
+            Assert.That(runtime.Heroes.Count, Is.EqualTo(heroesBefore),
+                "and nobody was attacked either way - the card stopped before it reached anybody.");
             Assert.That(IsEnraged(runtime, own), Is.False);
 
-            yield return UrsafarAuditStaging.Load(SceneCardContent.VerifiedEngagedStagedUrsafar);
+            yield return UrsafarAuditStaging.Load(SceneCardContent.VerifiedEngagedStagedUrsafar, enemyDistance: 2);
             yield return UrsafarAuditStaging.EnrageThroughProwlingBrute();
             root = Root(); runtime = root.Runtime; own = UrsafarSeat(runtime).HeroId;
             var enemy = OtherHeroId(runtime, own);
             CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.ClawsThatCatch);
             yield return YieldUntilTheNamedSeatActs(runtime, own);
             yield return PointTrayAt(root, own);
+            var stoodAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
             yield return StartActionThroughControl(root, ActionKind.Attack);
-            var decline = DeclineControl(runtime);
-            if (decline != null) { UiPlayer.ClickEffectAnswer(runtime, root.Hud, decline.Command); yield return null; }
+
+            // MILESTONE 8.86, AND THIS IS THE HALF THE JOURNEY'S NAME PROMISED AND DECLINED. "Before
+            // the attack: If enraged, you may move 1 space" was answered by pressing the pause's
+            // DECLINE whenever one happened to be offered - so the MOVE arm of "moves then targets"
+            // was never once driven, and a move that went nowhere would have read the same. The
+            // optional step is TAKEN, a destination away from his own space is clicked, and the
+            // board is read before the target is named from where the move left him.
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "\"If enraged, you may move 1 space\" - he is enraged, so the printed `may` stands. " +
+                Remaining(runtime));
+            var takeTheMove = UiPlayer.EffectControl(runtime, EffectChoiceCommandKind.Confirm);
+            Assert.That(takeTheMove, Is.Not.Null,
+                "and it is takeable on its own control beside its refusal. " + Remaining(runtime));
+            UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Confirm);
+            yield return null; yield return null;
+
+            // The step is chosen TOWARDS the enemy rather than anywhere: the printed order is move
+            // then target, and "target a unit adjacent to you" is judged from the space the move
+            // leaves him in - so a step that walked him out of contact would prove the reading by
+            // breaking the rest of the sentence.
+            var enemyAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemy)).Coordinate;
+            var steps = LitDestinations(runtime)
+                .Where(space => !space.Equals(stoodAt))
+                .ToArray();
+            Assert.That(steps, Is.Not.Empty,
+                "\"you may move 1 space\" - taking the option has to offer a space that is not the " +
+                "one he stands on. " + Remaining(runtime));
+            var contact = steps
+                .Where(space =>
+                    GuardsDigital.Core.Board.HexDistanceQuery.Calculate(space, enemyAt) == 1)
+                .ToArray();
+            Assert.That(contact, Is.Not.Empty,
+                "and one of them stands beside the enemy, which is what makes the targeting step " +
+                "after it reachable from where the move leaves him. Offered: " +
+                string.Join(", ", steps.Select(space => space.ToString())) + ". " +
+                Remaining(runtime));
+            var moveNode = StandingNode(runtime);
+            var landing = FirstClickableSpace(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), contact);
+            Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, Tile(landing).transform.position), Is.True);
+            yield return null;
+            yield return XargathaEngagedUiJourneyPlayModeTests.ConfirmIfStillStanding(root, moveNode);
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate,
+                Is.EqualTo(landing),
+                "RULING 46/47's card-text move really moved him. " + Remaining(runtime));
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate,
+                Is.Not.EqualTo(stoodAt),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the printed order is move THEN target, so " +
+                "the space the target is judged from is not the space he started on.");
+
             Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud, HeroView(enemy).transform.position), Is.True);
             yield return null; yield return null;
             yield return UrsafarAuditStaging.AnswerDefense(false);
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.False,
+                "and the target named from the space the move left him on was attacked with the " +
+                "Defense declined, which p.14 makes p.13's Defeat. " + Remaining(runtime));
             var card = runtime.Cards.Single(value => value.OwnerId.Equals(own) && value.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.ClawsThatCatch));
             Assert.That(runtime.IsActiveEffectSource(card.Id), Is.True);
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
@@ -177,10 +260,20 @@ namespace GuardsDigital.Tests.PlayMode
             var before = runtime.Cards.Count(card => card.OwnerId.Equals(enemy) && card.State.Location == CardLocation.Hand);
             var node = StandingNode(runtime);
             var choice = runtime.RoundView.Model.EffectChoices.First(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            // MILESTONE 8.86: the card is NAMED, and the assertion afterwards is about that card
+            // rather than about a count a card of anybody's reaching a pile would satisfy.
+            var discarded = choice.Command.EffectChoice.Candidate.Value.CardInstanceId;
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(discarded)).OwnerId,
+                Is.EqualTo(enemy),
+                "\"an enemy hero in range discards a card\" - the face offered is the enemy's own. " +
+                Remaining(runtime));
             var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", choice.Label);
             UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
             yield return XargathaEngagedUiJourneyPlayModeTests.ConfirmIfStillStanding(root, node);
             Assert.That(runtime.Cards.Count(card => card.OwnerId.Equals(enemy) && card.State.Location == CardLocation.Hand), Is.EqualTo(before - 1));
+            Assert.That(runtime.Cards.Single(card => card.Id.Equals(discarded)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "and it is THE CLICKED FACE that left their hand for their pile. " + Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
         }
 

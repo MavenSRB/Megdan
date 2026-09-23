@@ -153,10 +153,22 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate, Is.EqualTo(origin));
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null, Remaining(runtime));
             Assert.That(runtime.RoundView.Model.EffectChoiceTargets.All(value => HexDistanceQuery.Calculate(value.Space, origin) == 1), Is.True);
+            // MILESTONE 8.86: the unit is NAMED and its fate read. This used to take the first
+            // target and end on "nothing is pending", which says the questions were answered and
+            // nothing at all about the Attack they were asked for.
             var target = runtime.RoundView.Model.EffectChoiceTargets.First();
+            var attacked = runtime.BoardView.Model.Minions
+                .SingleOrDefault(minion => minion.Coordinate.Equals(target.Space));
+            Assert.That(attacked, Is.Not.Null,
+                "\"Target a unit adjacent to you\" - the offered space has a minion standing on it. " +
+                Remaining(runtime));
             Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, Tile(target.Space).transform.position), Is.True);
             yield return null;
             yield return null;
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(attacked.MinionId),
+                "and p.13 takes the unit the Attack named off the board, which is the outcome this " +
+                "journey drove and never read. " + Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
@@ -245,6 +257,12 @@ namespace GuardsDigital.Tests.PlayMode
                 .ToArray();
             Assert.That(bullets, Has.Length.EqualTo(2),
                 "Both printed bullets reach the enemy seat. " + Remaining(runtime));
+            // MILESTONE 8.86: the arm this journey takes is NAMED. `bullets[1]` was a position in a
+            // list, and a list that came back in the other order would have had this journey taking
+            // the price while its own message said it was taking the escape hatch.
+            Assert.That(UiPlayer.EffectOption(runtime, "modal-slaughter"), Is.Not.Null,
+                "\"You may defeat a minion adjacent to you\" is the bullet that costs the enemy " +
+                "nothing, and it is the one this journey has them take. " + Remaining(runtime));
 
             // RULING 17. Bullet 2 is "You may defeat a minion adjacent to you" - Whisper's own Defeat,
             // performed on her side of the board - so from the enemy's point of view it is the option
@@ -266,7 +284,9 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(modal.MaximumSelections, Is.EqualTo(1),
                 "Arrange: \"chooses one\" is the exactly-one shape milestone 8.46b answers in one " +
                 "press. " + Remaining(runtime));
-            Assert.That(runtime.SubmitProjectedCommand(bullets[1].Command), Is.True,
+            Assert.That(
+                runtime.SubmitProjectedCommand(UiPlayer.EffectOption(runtime, "modal-slaughter").Command),
+                Is.True,
                 "The bullet that does nothing to them is a legal answer and the enemy seat may take " +
                 "it. " + Remaining(runtime));
             yield return null;
@@ -418,6 +438,7 @@ namespace GuardsDigital.Tests.PlayMode
             // The hand-card question belongs to the hero paying it, which is the shape
             // `synthetic-discard-chosen-card@2` has carried since milestone 7.1a - the handler names
             // the chooser, where the modal above it needed a whole new role to say the same thing.
+            CardInstanceId? paid = null;
             if (runtime.PendingEffectChoice != null)
             {
                 Assert.That(StandingChoiceBelongsTo(runtime, enemyId), Is.True,
@@ -425,6 +446,12 @@ namespace GuardsDigital.Tests.PlayMode
                     Remaining(runtime));
                 var cardNode = StandingNode(runtime);
                 var card = runtime.RoundView.Model.EffectChoices.First(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+                // MILESTONE 8.86: the card is NAMED and read back, so "their hand fell by one" is
+                // about the face that was clicked rather than about any card of theirs.
+                paid = card.Command.EffectChoice.Candidate.Value.CardInstanceId;
+                Assert.That(runtime.Cards.Single(value => value.Id.Equals(paid.Value)).OwnerId,
+                    Is.EqualTo(enemyId),
+                    "The offered face is the paying hero's own. " + Remaining(runtime));
                 var face = UiPlayer.NamedElementWithText(hud, "gd-effect-card", card.Label);
                 UiPlayer.EnsureVisible(face);
                 yield return null;
@@ -449,6 +476,13 @@ namespace GuardsDigital.Tests.PlayMode
                 Is.True,
                 "and the card it cost them is in their pile - which is the second of the two routes " +
                 "that fill one at all, and the one Whisper can force. " + Remaining(runtime));
+            if (paid.HasValue)
+            {
+                Assert.That(
+                    runtime.Cards.Single(card => card.Id.Equals(paid.Value)).State.Location,
+                    Is.EqualTo(CardLocation.DiscardPile),
+                    "and it is THE CLICKED FACE that went there. " + Remaining(runtime));
+            }
             Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.True,
                 "A hero who CAN discard is not defeated: \"or is defeated\" is the other way to " +
                 "complete one mandatory step, not a second consequence. " + Remaining(runtime));
@@ -524,6 +558,11 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(subjects.Contains(stoodAt), Is.False, "Whisper cannot swap with herself.");
             var subject = subjects[0];
+            // MILESTONE 8.86: a Swap has TWO movers, and this journey only ever read one of them.
+            // The piece standing on the chosen space is identified first so its own end of the
+            // exchange can be asserted.
+            var swappedMinion = runtime.BoardView.Model.Minions
+                .SingleOrDefault(minion => minion.Coordinate.Equals(subject));
             Assert.That(
                 UiPlayer.ClickBoard(pointerInput, hud, Tile(subject).transform.position), Is.True,
                 "The swap subject is chosen by clicking the piece where it stands.");
@@ -533,36 +572,47 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(whisperId)).Coordinate,
                 Is.EqualTo(subject),
                 "The Swap put her in the space her subject was standing in. " + Remaining(runtime));
+            if (swappedMinion != null)
+            {
+                Assert.That(
+                    runtime.BoardView.Model.Minions
+                        .Single(minion => minion.MinionId.Equals(swappedMinion.MinionId)).Coordinate,
+                    Is.EqualTo(stoodAt),
+                    "and THE OTHER HALF OF THE EXCHANGE, which this journey never read: the unit " +
+                    "she swapped with is standing in the space she left. " + Remaining(runtime));
+            }
 
             // "You may then move up to 2 spaces" - her own decision, from where the Swap left her.
+            //
+            // MILESTONE 8.86. The empty-offer arm used to DECLINE, and a printed "up to" proved by
+            // declining it proves nothing about the move. She is standing in a space a unit occupied
+            // a moment ago, so the board around her is playable and the step has somewhere to go;
+            // an empty offer here is a finding rather than a branch.
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"You may then move\" is a separate printed step and its own question. " +
                 Remaining(runtime));
-            var steps = LitDestinations(runtime);
-            if (steps.Length > 0)
-            {
-                Assert.That(
-                    steps.All(space => HexDistanceQuery.Calculate(space, subject) <= 2), Is.True,
-                    "The budget is measured from where the Swap left her, which is the space the " +
-                    "exchange published rather than the board being asked again. Offered: " +
-                    string.Join(", ", steps.Select(space =>
-                        $"({space.Q},{space.R})@{HexDistanceQuery.Calculate(space, subject)}")));
-                Assert.That(
-                    UiPlayer.ClickBoard(pointerInput, hud, Tile(steps[0]).transform.position),
-                    Is.True);
-                yield return null;
-                yield return null;
-            }
-            else
-            {
-                var decline = DeclineControl(runtime);
-                Assert.That(decline, Is.Not.Null,
-                    "A printed `you may` whose offer is empty must still be closable. " +
-                    Remaining(runtime));
-                UiPlayer.Click(UiPlayer.Button(hud, decline.Label));
-                yield return null;
-                yield return null;
-            }
+            var steps = LitDestinations(runtime)
+                .Where(space => !space.Equals(subject))
+                .ToArray();
+            Assert.That(steps, Is.Not.Empty,
+                "\"You may then move up to 2 spaces\" - every space offered was the one the Swap " +
+                "left her on, so taking the step would move her nowhere. " + Remaining(runtime));
+            Assert.That(
+                steps.All(space => HexDistanceQuery.Calculate(space, subject) <= 2), Is.True,
+                "The budget is measured from where the Swap left her, which is the space the " +
+                "exchange published rather than the board being asked again. Offered: " +
+                string.Join(", ", steps.Select(space =>
+                    $"({space.Q},{space.R})@{HexDistanceQuery.Calculate(space, subject)}")));
+            Assert.That(
+                UiPlayer.ClickBoard(pointerInput, hud, Tile(steps[0]).transform.position),
+                Is.True);
+            yield return null;
+            yield return null;
+
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(whisperId)).Coordinate,
+                Is.EqualTo(steps[0]),
+                "and the taken step really walked her off the space the Swap put her on. " +
+                Remaining(runtime));
 
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
         }
@@ -891,6 +941,12 @@ namespace GuardsDigital.Tests.PlayMode
                         string.Join(", ", targetsTaken) + ". " + Remaining(runtime));
                 }
 
+                var minionTaken = heroCount > 0
+                    ? (MinionId?)null
+                    : pending.LegalTargetMinionIds[0];
+                var heroTaken = heroCount > 0
+                    ? (HeroId?)pending.LegalTargetHeroIds[0]
+                    : null;
                 Assert.That(runtime.SubmitProjectedCommand(chosen.Command), Is.True,
                     Remaining(runtime));
                 targetsTaken.Add(chosen.Target);
@@ -911,6 +967,26 @@ namespace GuardsDigital.Tests.PlayMode
                 }
 
                 yield return null;
+
+                // MILESTONE 8.86. "Both" is TWO COMPLETE p.14 ORDERS, and this journey counted the
+                // orders without ever reading what either of them did. Each sequence's Defense was
+                // declined above, which is what makes an Attack p.13's Defeat whatever the totals,
+                // so the unit each order named is off the board - and that is the difference
+                // between two sequences that RAN and two questions that were merely asked.
+                if (minionTaken.HasValue)
+                {
+                    Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                        Has.None.EqualTo(minionTaken.Value),
+                        $"Sequence {order + 1} resolved against the minion it named. " +
+                        Remaining(runtime));
+                }
+                else
+                {
+                    Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(heroTaken.Value)),
+                        Is.False,
+                        $"Sequence {order + 1} resolved against the hero it named, and the declined " +
+                        "Defense made it p.13's Defeat. " + Remaining(runtime));
+                }
             }
 
             Assert.That(sequences, Is.EqualTo(2),
@@ -968,6 +1044,13 @@ namespace GuardsDigital.Tests.PlayMode
             var handBefore = runtime.Cards.Count(value => value.OwnerId.Equals(own) && value.State.Location == CardLocation.Hand);
             node = StandingNode(runtime);
             var retrieve = runtime.RoundView.Model.EffectChoices.First(value => value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Select);
+            // MILESTONE 8.86: the retrieved card is NAMED, so the hand count below is about the face
+            // that was clicked rather than about any card reaching her hand by any route.
+            var retrieved = retrieve.Command.EffectChoice.Candidate.Value.CardInstanceId;
+            Assert.That(runtime.Cards.Single(value => value.Id.Equals(retrieved)).State.Location,
+                Is.EqualTo(CardLocation.DiscardPile),
+                "\"You may retrieve a discarded card\" - the face offered is standing in a pile. " +
+                Remaining(runtime));
             var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", retrieve.Label);
             UiPlayer.EnsureVisible(face);
             yield return null;
@@ -976,6 +1059,9 @@ namespace GuardsDigital.Tests.PlayMode
             yield return ConfirmIfStillStanding(root, node);
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
             Assert.That(runtime.Cards.Count(value => value.OwnerId.Equals(own) && value.State.Location == CardLocation.Hand), Is.EqualTo(handBefore + 1));
+            Assert.That(runtime.Cards.Single(value => value.Id.Equals(retrieved)).State.Location,
+                Is.EqualTo(CardLocation.Hand),
+                "and it is THE CLICKED FACE that came back to her hand. " + Remaining(runtime));
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
     }

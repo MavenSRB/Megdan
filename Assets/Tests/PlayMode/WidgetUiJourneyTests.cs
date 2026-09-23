@@ -121,6 +121,25 @@ namespace GuardsDigital.Tests.PlayMode
             yield return NextCommit(root);
         }
 
+        /// <summary>
+        /// One offered space of the standing move that is NOT the one the piece already stands on,
+        /// chosen so a camera ray reaches it. Milestone 8.86: an "up to" move offers the mover's own
+        /// space, and a journey that clicks it has proved a move by declining it.
+        /// </summary>
+        internal static HexCoordinate TravellingSpace(
+            ConfiguredMatchSceneRuntime runtime, HexCoordinate from)
+        {
+            var offered = runtime.PendingEffectChoice.Candidates
+                .Where(value => value.Value.Kind == EffectValueKind.Coordinate)
+                .Select(value => value.Value.Coordinate)
+                .Where(value => !value.Equals(from))
+                .ToArray();
+            Assert.That(offered, Is.Not.Empty,
+                "\"up to 2 spaces\" - every space offered was the one the piece already stood on, " +
+                "so taking the step would move nothing. " + Remaining(runtime));
+            return FirstClickableSpace(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), offered);
+        }
+
         internal static IEnumerator NextRound(MatchSceneCompositionRoot root)
         {
             var round = root.Runtime.RoundIndex;
@@ -147,10 +166,20 @@ namespace GuardsDigital.Tests.PlayMode
                 yield return Option(root,"move-both");
                 yield return Option(root,order);
                 var heroStart = Position(runtime,actor); var pyroStart = Pyro(runtime);
-                yield return Space(root);
-                yield return Space(root);
-                Assert.That(Distance(heroStart,Position(runtime,actor)), Is.InRange(0,2));
-                Assert.That(Distance(pyroStart,Pyro(runtime)), Is.InRange(0,2));
+                // MILESTONE 8.86. Both moves used to take whatever space came first and be judged
+                // `InRange(0,2)` - a bound a hero and a token that never left their spaces satisfy,
+                // so "moves both pieces" was provable by moving neither. "Move both yourself and
+                // Pyro up to 2 spaces" is an `up to`, and rule 1 of this milestone is that an `up
+                // to` is proved by CHOOSING a non-zero option: each of the two steps is answered
+                // with a space its own piece is not standing on, and each is read back.
+                yield return Space(root,TravellingSpace(runtime,order == "hero-first" ? heroStart : pyroStart));
+                yield return Space(root,TravellingSpace(runtime,order == "hero-first" ? pyroStart : heroStart));
+                Assert.That(Position(runtime,actor), Is.Not.EqualTo(heroStart),
+                    "\"move both yourself and Pyro up to 2 spaces\" - Widget really left her space.");
+                Assert.That(Pyro(runtime), Is.Not.EqualTo(pyroStart),
+                    "and Pyro really left its own, which is the half \"both\" is about.");
+                Assert.That(Distance(heroStart,Position(runtime,actor)), Is.InRange(1,2));
+                Assert.That(Distance(pyroStart,Pyro(runtime)), Is.InRange(1,2));
                 Assert.That(runtime.BoardView.Model.PlacedTokens.Single().Id, Is.EqualTo(token));
                 yield return NextRound(root);
                 yield return Begin(root,WidgetCardContent.DragonBond,ActionKind.Skill);
@@ -189,7 +218,20 @@ namespace GuardsDigital.Tests.PlayMode
                         HeroView(OtherHeroId(runtime,actor)).transform.position), Is.True);
                     yield return null;
                 }
+                var spent = runtime.Cards.Single(card => card.OwnerId.Equals(OtherHeroId(runtime,actor)) &&
+                    card.DefinitionReference.DefinitionId.Equals(WaspCardContent.StaticBarrier));
                 yield return ClickDefenseFace(root,WaspCardContent.StaticBarrier);
+                // MILESTONE 8.86: p.14's response has an outcome and this journey never read one.
+                // What it asserts is the transition the page names for a spent Defense - the face
+                // leaves the defender's hand for their pile - rather than survival, which these
+                // faces do NOT buy: the audit measured the Static Barrier answer against
+                // Diversionary Strike and the defender is DEFEATED by the comparison, so a journey
+                // asserting they stood would have been asserting a board this staging never had.
+                Assert.That(runtime.PendingDefenseChoice, Is.Null,
+                    face.Value + ": the clicked face answered p.14's response.");
+                Assert.That(runtime.Cards.Single(card => card.Id.Equals(spent.Id)).State.Location,
+                    Is.EqualTo(CardLocation.DiscardPile),
+                    face.Value + ": p.14 pays a Defense by discarding the face that answered it.");
                 if (!airborne)
                 {
                     Assert.That(runtime.PendingEffectChoice.NodeId.Value, Is.EqualTo("move-pyro"));

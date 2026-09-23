@@ -41,11 +41,16 @@ namespace GuardsDigital.Tests.PlayMode
                     yield return WidgetUiJourneyTests.Stage(definition.Id);
                     var root = Root(); var runtime = root.Runtime; var actor = Widget(runtime);
                     yield return WidgetUiJourneyTests.Begin(root,definition.Id,ActionKind.Movement);
+                    var startedAt = Position(runtime,actor);
                     var target = FirstClickableSpace(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
-                        runtime.PendingMovementChoice.LegalDestinations.Where(value => value.Cost == 1).Select(value => value.Destination).ToArray());
+                        runtime.PendingMovementChoice.LegalDestinations.Where(value => value.Cost == 1)
+                            .Select(value => value.Destination).Where(value => !value.Equals(startedAt)).ToArray());
                     Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),root.Hud,Tile(target).transform.position), Is.True);
                     yield return null;
                     Assert.That(Position(runtime,actor), Is.EqualTo(target));
+                    // MILESTONE 8.86: and the printed secondary really walked her off her own space.
+                    Assert.That(Position(runtime,actor), Is.Not.EqualTo(startedAt),
+                        definition.DisplayName + "'s printed secondary Movement moved her.");
                     if (runtime.PendingMovementChoice != null)
                     {
                         UiPlayer.Click(UiPlayer.Button(root.Hud,runtime.RoundView.Model.EndTurnInvocation.Label)); yield return null;

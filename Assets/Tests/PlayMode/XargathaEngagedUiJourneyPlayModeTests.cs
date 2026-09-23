@@ -123,11 +123,20 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingAttackTargetChoice.LegalTargetHeroIds, Has.Member(enemyId),
                 "and the enemy hero who just stepped in is admitted too, which is what gives the " +
                 "repeat somewhere to go. " + Remaining(runtime));
-            var targetView = MinionView(targets[0]);
+            var firstTargetId = targets[0];
+            var targetView = MinionView(firstTargetId);
             Assert.That(UiPlayer.ClickBoard(pointerInput, hud, targetView.transform.position), Is.True,
                 "The target is chosen by clicking the miniature where it stands.");
             yield return null;
             yield return null;
+
+            // MILESTONE 8.86. The printed instance's own outcome, which this journey drove and never
+            // read: p.13 takes an attacked minion off the board, so the piece that was clicked is
+            // gone - and the repeat below is a SECOND instance rather than the first one repeating.
+            Assert.That(runtime.BoardView.Model.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(firstTargetId),
+                "\"Target a unit adjacent to you\" - the clicked minion is defeated by the Attack. " +
+                Remaining(runtime));
 
             Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
                 "\"After the attack: May repeat once\" is p.14's step 7 and it asks. " +
@@ -168,6 +177,14 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
+            // MILESTONE 8.86: the repeated instance's own outcome. Declining is what makes an Attack
+            // a Defeat whatever the totals, so the hero the second instance named is off the board -
+            // which is the difference between a repeat that ran and a repeat that was merely offered.
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemyId)), Is.False,
+                "\"May repeat once on a different enemy hero\" - the repeated instance resolved " +
+                "against the hero it named, and the declined Defense made it p.13's Defeat. " +
+                Remaining(runtime));
+
             Assert.That(runtime.PendingEffectChoice, Is.Null,
                 "The second instance reaches its own step 7 and p.10 forbids repeating a repeat, so " +
                 "nothing is asked again. " + Remaining(runtime));
@@ -187,7 +204,8 @@ namespace GuardsDigital.Tests.PlayMode
         [UnityTest]
         public IEnumerator SirensCall_OffersOnlyDistantEnemiesAndDrawsTheNamedOneToHerSide()
         {
-            yield return LoadStagedScene(SceneCardContent.VerifiedEngagedStagedXargatha);
+            yield return LoadStagedSceneWithRoomBesideHer(
+                SceneCardContent.VerifiedEngagedStagedXargatha);
             var root = Root();
             var runtime = root.Runtime;
             var hud = root.Hud;
@@ -228,6 +246,14 @@ namespace GuardsDigital.Tests.PlayMode
             yield return ConfirmIfStillStanding(root, selection);
             yield return null;
 
+            // MILESTONE 8.86. THE WHOLE MOVE USED TO LIVE INSIDE `if (destinations.Length > 0)`, so a
+            // board that offered nowhere left this journey green having asserted nothing at all
+            // about the sentence its own name is about - and the audit's first run showed that is
+            // exactly what happened: the pause was already closed and the strip read RELEASE TO
+            // CONTINUE, so the second printed clause had run without ever asking. The offer is now
+            // answered where there is one, and the OUTCOME is asserted either way, off the board,
+            // because "the target is beside her" is what the sentence promises whichever surface
+            // asked for it.
             var destinations = LitDestinations(runtime);
             if (destinations.Length > 0)
             {
@@ -245,22 +271,37 @@ namespace GuardsDigital.Tests.PlayMode
                 var shorter = destinations.Where(space =>
                     HexDistanceQuery.Calculate(calledFrom, space) < 3).ToArray();
                 Assert.That(shorter, Is.Not.Empty,
-                    "The live board exposes at least one legal shorter path; requiring exactly three " +
-                    "spaces was the demonstrated player-facing defect.");
+                    "The live board exposes at least one legal shorter path; requiring exactly " +
+                    "three spaces was the demonstrated player-facing defect.");
                 var move = StandingNode(runtime);
                 var landing = FirstClickableSpace(pointerInput, shorter);
+                Assert.That(landing, Is.Not.EqualTo(calledFrom),
+                    "and the space this journey clicks is not the one the unit is already on - a " +
+                    "Siren's Call that drew nobody anywhere would otherwise read as one that did.");
                 Assert.That(
-                    UiPlayer.ClickBoard(pointerInput, hud, Tile(landing).transform.position), Is.True);
+                    UiPlayer.ClickBoard(pointerInput, hud, Tile(landing).transform.position),
+                    Is.True);
                 yield return null;
                 yield return ConfirmIfStillStanding(root, move);
                 yield return null;
-
                 Assert.That(
-                    HexDistanceQuery.Calculate(
-                        MinionView(chosen.Occupancy.MinionId).Occupancy.Coordinate, herSpace),
-                    Is.EqualTo(1),
-                    "The called unit is standing beside her now.");
+                    MinionView(chosen.Occupancy.MinionId).Occupancy.Coordinate, Is.EqualTo(landing),
+                    "The called unit is standing on the space that was clicked. " +
+                    Remaining(runtime));
             }
+
+            // THE OUTCOME, ASSERTED WHETHER OR NOT A DESTINATION WAS ASKED FOR. A move whose legal
+            // destinations are one space resolves on the selection that named its subject, and a
+            // journey that only ever looked at the question would call that a fizzle.
+            var landedAt = MinionView(chosen.Occupancy.MinionId).Occupancy.Coordinate;
+            Assert.That(landedAt, Is.Not.EqualTo(calledFrom),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: \"if able, move the target up to 3 spaces " +
+                "to a space adjacent to you\" - the unit really left the space it was called from. " +
+                "It was called from " + calledFrom + ", she stands at " + herSpace + ", and the " +
+                "second clause offered " + destinations.Length + " destination(s). " +
+                Remaining(runtime));
+            Assert.That(HexDistanceQuery.Calculate(landedAt, herSpace), Is.EqualTo(1),
+                "and it is standing beside her now, at " + landedAt + ".");
         }
 
         /// <summary>
@@ -366,16 +407,18 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
-            // The "you may" behind the placement is the second question.
+            // The "you may" behind the placement is the second question, and it is TAKEN. Milestone
+            // 8.86: this loop used to `break` the moment no confirm stood, so a run in which the
+            // optional move was never offered reached the candidate assertions below with an empty
+            // set and the journey ended having walked nobody - which is what its own name promises.
             for (var budget = 0; budget < 3 && runtime.RoundView.Model.EffectChoiceTargets.Count == 0; budget++)
             {
                 var confirm = runtime.RoundView.Model.EffectChoices.FirstOrDefault(value =>
                     value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Confirm);
-                if (confirm == null)
-                {
-                    break;
-                }
-
+                Assert.That(confirm, Is.Not.Null,
+                    "\"You may move an enemy ranged minion in radius up to 2 spaces\" - the printed " +
+                    "`may` has to be takeable on its own control, and taking it is what opens the " +
+                    "minion question this journey is about. " + Remaining(runtime));
                 UiPlayer.Click(UiPlayer.Button(hud, confirm.Label));
                 yield return null;
                 yield return null;
@@ -392,6 +435,49 @@ namespace GuardsDigital.Tests.PlayMode
                     "Charm reaches an enemy RANGED minion and no other class - the adjective its " +
                     "face prints, and the whole difference between it and Control.");
             }
+
+            // MILESTONE 8.86, AND THIS IS THE HALF THE JOURNEY'S OWN NAME PROMISED AND NEVER DROVE.
+            // It ended on the candidate set: it proved WHO Charm may move and never once moved
+            // anybody, so a walk that offered the right minion and then went nowhere passed it. The
+            // named minion is clicked, a destination that really travels is clicked, and the board
+            // is read afterwards.
+            var walked = offered[0];
+            var walkedId = walked.Occupancy.MinionId;
+            var walkedFrom = walked.Occupancy.Coordinate;
+            var selection = StandingNode(runtime);
+            Assert.That(UiPlayer.ClickBoard(pointerInput, hud, walked.transform.position), Is.True,
+                "The charmed minion is named by clicking the miniature where it stands.");
+            yield return null;
+            yield return ConfirmIfStillStanding(root, selection);
+            yield return null;
+
+            var destinations = LitDestinations(runtime)
+                .Where(space => !space.Equals(walkedFrom))
+                .ToArray();
+            Assert.That(destinations, Is.Not.Empty,
+                "\"up to 2 spaces\" - every space offered was the one the minion already stood on, " +
+                "so the walk could not happen. " + Remaining(runtime));
+            foreach (var space in destinations)
+            {
+                Assert.That(HexDistanceQuery.Calculate(space, walkedFrom),
+                    Is.LessThanOrEqualTo(2),
+                    "and every offered space is inside the printed distance.");
+            }
+
+            var walk = StandingNode(runtime);
+            var landing = FirstClickableSpace(pointerInput, destinations);
+            Assert.That(UiPlayer.ClickBoard(pointerInput, hud, Tile(landing).transform.position),
+                Is.True,
+                "The destination is answered on the board.");
+            yield return null;
+            yield return ConfirmIfStillStanding(root, walk);
+            yield return null;
+
+            Assert.That(MinionView(walkedId).Occupancy.Coordinate, Is.EqualTo(landing),
+                "THE ASSERTION THIS JOURNEY WAS MISSING: the ranged minion is standing on the space " +
+                "that was clicked. " + Remaining(runtime));
+            Assert.That(MinionView(walkedId).Occupancy.Coordinate, Is.Not.EqualTo(walkedFrom),
+                "and it really left the space it was charmed out of.");
         }
 
         [UnityTest]
@@ -664,6 +750,42 @@ namespace GuardsDigital.Tests.PlayMode
         // ---------------------------------------------------------------------------------------
         // Steps
         // ---------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// The staged Xargatha board with HER OWN RING CLEARED of minions. Milestone 8.86.
+        ///
+        /// <para><b>WHAT THE AUDIT MEASURED, AND WHY THIS STEP EXISTS.</b> Siren's Call ends "if
+        /// able, move the target up to 3 spaces to a space adjacent to you", and the journey named
+        /// for drawing a unit to her side kept its whole move inside <c>if (destinations.Length &gt;
+        /// 0)</c>. Asserting the outcome instead of the question showed why that branch was there:
+        /// the move NEVER RAN. She stands at (-3, 1) with the engaged melee minion and the enemy
+        /// Ranged minion filling two of her six neighbours and the enemy hero a third; every
+        /// remaining space beside her is four steps from the called unit at (-4, 4) once the
+        /// occupied spaces are walked around, so three spaces cannot reach one and <c>IfAble</c>
+        /// skipped the clause in silence. That is printed behaviour rather than a defect - but a
+        /// journey whose subject is the move has to stand on a board the move can happen on, which
+        /// is the same lesson milestone 8.82 paid for on Swift's minion.</para>
+        ///
+        /// <para>The scene is composed once to read where the restaging put her, and again with the
+        /// minions standing in her own ring removed. Nothing else moves: the sandbox description is
+        /// applied after <see cref="EngagedMirrorStaging"/>, so both passes place the heroes
+        /// identically, and the unit the card is about stands outside the ring by construction -
+        /// the sentence only admits subjects that are NOT adjacent to her.</para>
+        /// </summary>
+        internal static IEnumerator LoadStagedSceneWithRoomBesideHer(SceneCardContent content)
+        {
+            yield return LoadStagedScene(content);
+            var runtime = Root().Runtime;
+            var herSpace = runtime.Heroes
+                .Single(hero => hero.HeroId.Equals(XargathaSeat(runtime).HeroId)).Coordinate;
+            var ring = herSpace.GetNeighbors().ToArray();
+            MatchSceneCompositionRoot.NextComposedSandboxStaging = new SandboxStagingDescription(
+                removedMinions: runtime.Setup.Minions
+                    .Where(minion => ring.Contains(minion.Coordinate))
+                    .Select(minion => minion.MinionId)
+                    .ToArray());
+            yield return LoadStagedScene(content);
+        }
 
         /// <summary>Walks the named hero to a space through the headless surface, as setup.</summary>
         internal static IEnumerator WalkHeadlesslyTo(

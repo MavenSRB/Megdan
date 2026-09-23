@@ -67,6 +67,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return AdvanceToNextTurn(runtime);
         }
 
+        /// <summary>
+        /// Walks Ursafar one space through the real board and asserts he ACTUALLY WALKED IT.
+        ///
+        /// <para><b>MILESTONE 8.86.</b> Six journeys of his reach a movement through this one step -
+        /// the borrowed Movement primary, the modal borrow, the enrage set-up and the two Instinctive
+        /// Reaction arms among them - and not one of them read the board afterwards. The step clicked
+        /// a lit space and moved on, so a Movement that offered a destination and then put him back
+        /// where he was would have been invisible to every one of them. The start is captured, the
+        /// destination is refused if it is that same space, and the piece is read back.</para>
+        /// </summary>
         internal static IEnumerator FinishMovement()
         {
             var root = Root();
@@ -74,12 +84,26 @@ namespace GuardsDigital.Tests.PlayMode
             var own = UrsafarSeat(runtime).HeroId;
             var enemy = OtherHeroId(runtime, own);
             var enemyAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemy)).Coordinate;
+            var startedAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null, Remaining(runtime));
-            var destination = runtime.PendingMovementChoice.LegalDestinations.Where(value => value.Cost == 1)
-                .OrderBy(value => HexDistanceQuery.Calculate(value.Destination, enemyAt)).First().Destination;
+            var steps = runtime.PendingMovementChoice.LegalDestinations
+                .Where(value => value.Cost == 1 && !value.Destination.Equals(startedAt))
+                .OrderBy(value => HexDistanceQuery.Calculate(value.Destination, enemyAt))
+                .ToArray();
+            Assert.That(steps, Is.Not.Empty,
+                "p.10's movement session offers no one-space step that leaves the space he is " +
+                "standing on, so this walk could not move him. " + Remaining(runtime));
+            var destination = steps[0].Destination;
             Assert.That(UiPlayer.ClickBoard(Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(), root.Hud,
                 Object.FindObjectsByType<HexTileView>().Single(tile => tile.Coordinate.Equals(destination)).transform.position), Is.True);
             yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate,
+                Is.EqualTo(destination),
+                "THE ASSERTION EVERY JOURNEY THROUGH THIS STEP WAS MISSING: he is standing on the " +
+                "space that was clicked. " + Remaining(runtime));
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate,
+                Is.Not.EqualTo(startedAt),
+                "and he really left the space he set off from.");
             if (runtime.PendingMovementChoice != null)
             {
                 UiPlayer.Click(UiPlayer.Button(root.Hud, runtime.RoundView.Model.EndTurnInvocation.Label));

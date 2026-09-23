@@ -120,6 +120,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.PendingMovementChoice, Is.Not.Null);
 
             var pointerInput = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var startedAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(ursafarId)).Coordinate;
             var destination = runtime.PendingMovementChoice.LegalDestinations
                 .Where(value => value.Cost == 1)
                 .Select(value => value.Destination)
@@ -131,6 +132,13 @@ namespace GuardsDigital.Tests.PlayMode
 
             Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(ursafarId)).Coordinate,
                 Is.EqualTo(destination));
+            // MILESTONE 8.86: and it is not the space he set off from, so the walk walked.
+            Assert.That(destination, Is.Not.EqualTo(startedAt),
+                "The one-cost destination the journey clicked is a space away from his own.");
+            var ursafarView = Object.FindObjectsByType<PrimitiveHeroView>()
+                .Single(view => view.Occupancy.HeroId.Equals(ursafarId));
+            Assert.That(ursafarView.Coordinate, Is.EqualTo(destination),
+                "with his token standing where he now is rather than where he was.");
 
             if (runtime.PendingMovementChoice != null)
             {

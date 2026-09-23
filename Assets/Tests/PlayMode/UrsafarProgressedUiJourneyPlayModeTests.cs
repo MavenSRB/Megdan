@@ -183,6 +183,14 @@ namespace GuardsDigital.Tests.PlayMode
             }
             yield return UrsafarAuditStaging.AnswerDefense(false);
 
+            // MILESTONE 8.86. The borrowed Attack's own printed outcome, which this journey drove
+            // and never read: it proved the SOURCE CARD did not move and said nothing about the
+            // Attack it performed. The Defense was declined, which p.14 makes p.13's Defeat.
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.False,
+                "The borrowed Rip resolved against the hero it named and the declined Defense made " +
+                "it a Defeat - a dispatcher that started no Attack would leave them standing. " +
+                Remaining(runtime));
+
             Assert.That(runtime.PendingAttackTargetChoice, Is.Null, Remaining(runtime));
             Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
             Assert.That(runtime.Cards.Single(card => card.Id.Equals(source.Id)).State,
