@@ -6,7 +6,7 @@ Each row indexes one completed Phase 8 milestone to the commit whose body carrie
 
 | Milestone | Outcome and definition | Commit |
 | --- | --- | --- |
-| 8.91 | Adjacency to any token, to a token of a named kind and to units of a kind and side, plus an object selection narrowed to one token kind, carried by a literal-only `TokenKind` value the snapshot writer and codec refuse; facedown kinds hidden from non-owners; Ignatia's two discard selections and Min's Smoke bomb now agree with the family on 300 boards each. The identity-walker red (a public accessor) fixed by making it internal, no pin moved. Harness 4526/4526, Edit 5516 + 37 explicit skips, Play 827/827. Definition: [8.91](../../Roadmap/PHASE_8.md#x-891-the-clauses-the-889-audit-found-missing-and-a-token-named-by-its-kind). | pending |
+| 8.91 | Adjacency to any token, to a token of a named kind and to units of a kind and side, plus an object selection narrowed to one token kind, carried by a literal-only `TokenKind` value the snapshot writer and codec refuse; facedown kinds hidden from non-owners; Ignatia's two discard selections and Min's Smoke bomb now agree with the family on 300 boards each. The identity-walker red (a public accessor) fixed by making it internal, no pin moved. Harness 4526/4526, Edit 5516 + 37 explicit skips, Play 827/827. Definition: [8.91](../../Roadmap/PHASE_8.md#x-891-the-clauses-the-889-audit-found-missing-and-a-token-named-by-its-kind). | `4bd5dc83` |
 
 ## Milestone 8.88a placement clauses completion evidence
 
