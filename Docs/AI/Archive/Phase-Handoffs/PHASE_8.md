@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.86 journey audit completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.86 | Four waves audited all 402 UI journeys of the 22 heroes: 129 (20 + 47 + 24 + 38) re-stated to assert the printed outcome in state, no blind first answer, no pass by absence; no card defect found; the never-pushing Wasp pushes, the never-moving Siren's Call and a dozen other vacuous passes are real now; Burning Skull's journey re-staged onto a real choice of landings. Focused Play Mode 130/195/146/145; complete Play Mode 827/827 zero skips. [Definition](../../Roadmap/PHASE_8.md#x-886-every-journey-asserts-the-board-actually-changed). | `2c6e9768` |
+
 ## Milestone 8.85 Movement primary hit surface completion evidence
 
 | Milestone | Outcome and definition | Commit |

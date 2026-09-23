@@ -179,7 +179,17 @@ Completed 2026-09-22 on main. Mac Build Support (Mono) installed through Unity H
 
 Historical evidence: [8.77 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-877-macos-player-build-completion-evidence).
 
-### [~] 8.86 Every journey asserts the board actually changed
+### [ ] 8.87 Package the audited twenty-two-hero playtest build, for Windows and macOS
+
+Authorized 2026-09-23 by the user's standing playtest order, the moment 8.86 landed: the current packages (8.84) predate the Movement-primary hit surface (8.85) the user asked to try.
+
+Outcome: `Builds/Playtest-8.85-movement` (+ zip) and `Builds/Playtest-8.85-movement-mac` (+ zip), built from main at the 8.86 ceremony plus the version stamp `1.0-8.85-movement`, one stamp on both players; protocol `/21`; everything 8.84 carried plus 8.85 and the audited journeys.
+
+Acceptance: T3 - the complete Edit Mode and Play Mode suites and the harness on the packaged tree, whose player source the version string alone changes; the Windows build-and-launch smoke and the Mac build on the packaged tree; the packaged Windows exe launched once from its own folder to `LOBBY_BEGIN`; the zips inspected for logs; the identity, manifest and read-mes per the 8.44 recipe plus the Mac read-me.
+
+Non-goals: code signing; any further correction.
+
+### [x] 8.86 Every journey asserts the board actually changed
 
 Authorized 2026-09-23 by the user ("I'd like to audit every journey so each one asserts the board actually change. Do it."), after a night in which five card families were found broken while their Play Mode journeys were green: 8.82's Mark for Death journey answered the first offer blindly at every pause and passed while the face offered nobody.
 
@@ -188,6 +198,10 @@ Outcome: every UI journey of every dealt hero (the three per-hero fixtures, Garr
 Acceptance: four parallel waves (a: Arien, Bain, Brogan, Brynn, Cutter, Dodger; b: Garrus, Hanu, Ignatia, Min, Misa, Rowenna; c: Sabina, Silverarrow, Swift, Tali, Tigerclaw; d: Ursafar, Wasp, Whisper, Widget, Xargatha), each with a before/after table per journey and its defects found; the gate tables unchanged in shape; focused Play Mode per wave green; the complete Play Mode suite on the merged main green with zero skips; every defect found routed as its own block. T2 (tests only).
 
 Non-goals: content, engine or presentation changes; the shape bindings' meaning.
+
+Completed 2026-09-23 (waves landed as `981c257e`, `50a248cf`, `aaa36eef`, `2c6e9768` from `dec1ce42`, `891f927b`, `6c5f005e`, `154f0f0d`; the Burning Skull follow-up `b2adc81b` landed after them). 402 journeys audited across 22 heroes' 61 fixtures; 129 (20 + 47 + 24 + 38) re-stated, the rest already read state and were left byte-identical. NO CARD DEFECT: every red the audit raised was a journey or a staged board, never the card. The vacuous passes of 8.82's class, now real: Wasp's Kinetic Repulse and Kinetic Blast had never pushed anybody since 8.15 (the engaged mirror offered one adjacent unit with the space behind it occupied, so p.18 moved it nought and the journeys asserted only "no closer"); Xargatha's Siren's Call had never moved anybody (every space beside her was four steps from the called unit, so `IfAble` skipped in silence inside an `if (destinations.Length > 0)`); Misa's Living Tornado and Storm Spirit asserted only that the prompt closed; Hanu's Outnumber ended on two positions being different; Arien's Rogue Wave, Bain's Get over here!, Dodger's Burning Skull and Brynn's Mountain Guide proved a move by a bound a still piece satisfies or by the walk of nought; Tali's Cold Snap accepted either outcome; Silverarrow's Disorient, Divert Attention and Wild Hunt declined or measured the move they were written for; Swift's Snipe and Tigerclaw's Evade named a subject and stopped; twelve Attack journeys asserted offers and totals but never the defeat or the answered Defense. Measured on the way: an Attack against a minion carries `Outcome = None` in the match log (the defeat row is the outcome to read); Burning Skull's one-click shove was 8.46's one-candidate rule on a board with a single free landing, not a derived destination; Tali's Spirit Wolf's "or both, on different targets" gives each arm its own target after p.14's. Shared steps minted in the shared journey helpers (`Named`, `SpaceOf`, `UnitOn`, `FreeSpacesFartherFrom`, a predicate `FirstClickableDirection`). Gate finding closed by a follow-up on the same wave: Burning Skull's journey stood on a board with one legal landing, so 8.46's one-candidate rule closed the shove in the click that named the minion and the gate's `BoardSpaceSelection` row was never exercised; the journey is re-staged onto a board with a real choice of landings, asserts the offer, clicks one and reads the minion there - the row stands. Focused Play Mode per wave 130/130, 195/195, 146/146, 145/145; complete Play Mode on the merged main 827/827 zero skips (`tmp/886-play-complete.xml`); harness unaffected (Unity-only fixtures); schema v44 and wire `/21` unmoved.
+
+Historical evidence: [8.86 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-886-journey-audit-completion-evidence).
 
 ### [x] 8.85 A primary Movement's hit surface is the printed action panel
 
