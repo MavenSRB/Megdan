@@ -9,6 +9,7 @@ Historical files are version-controlled evidence excluded from routine startup l
 - [Retired routine governance experiment](GOVERNANCE_EXPERIMENT_RETIREMENT.md)
 
 - [Startup brief before the 2026-09-08 cleanup](SESSION_BRIEF_BEFORE_CLEANUP.md)
+- [Package and HUD completion history moved from the session brief on 2026-09-24](SESSION_BRIEF_PACKAGE_HISTORY_2026_09_24.md)
 
 - [SHA-256 sums of the immutable pre-governance source copies (titled "Pre-Governance Preservation Inventory" inside)](Pre-Governance/SHA256SUMS.md)
 - [Migration manifest](MIGRATION_MANIFEST.md)

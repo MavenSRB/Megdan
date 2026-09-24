@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92 Trinkets inventory completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92 | Nineteen Trinkets fronts, profile and dashboard inventoried; the user's single persistent non-token Turret, three-Barriers supply and actor/target rulings and the supplied designer pre-Defense discard answer recorded; capability gaps and 8.92a-8.92g route mapped. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892-inventory-trinkets-and-map-the-implementation-sequence). | `milestone/8.92` |
+
 ## Milestone 8.91 missing clauses and token kind completion evidence
 
 | Milestone | Outcome and definition | Commit |
