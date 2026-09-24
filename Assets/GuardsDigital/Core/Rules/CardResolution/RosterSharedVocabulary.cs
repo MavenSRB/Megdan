@@ -5,6 +5,7 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
@@ -205,7 +206,14 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the one owner of the printed phrase, so it reaches p.17's counts-as overlay and his Ultimate
         /// widens this +2 without either card naming the other.</para>
         /// </summary>
-        AttackTargetHeroAdjacentToThreeOrMoreObstacles = 9
+        AttackTargetHeroAdjacentToThreeOrMoreObstacles = 9,
+
+        /// <summary>
+        /// One when the bound Attack target is in straight lines independently from the actor and
+        /// the actor's singular obstacle of the trusted kind. Trinkets' three cannon Reds print the
+        /// same condition with different +Attack amounts.
+        /// </summary>
+        AttackTargetInStraightLineFromActorAndOwnedObstacle = 10
     }
 
     /// <summary>
@@ -218,7 +226,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public RosterValueContributionDefinition(
             PrintedValueChannel channel,
             RosterValueQueryKind query,
-            int amountPerMatch)
+            int amountPerMatch,
+            string obstacleKind = null)
         {
             if (channel != PrintedValueChannel.Attack &&
                 channel != PrintedValueChannel.Range &&
@@ -267,23 +276,45 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "enemy-unit count adjacent to the actor.", nameof(query));
             }
 
+            if (query == RosterValueQueryKind.AttackTargetInStraightLineFromActorAndOwnedObstacle
+                ? string.IsNullOrWhiteSpace(obstacleKind)
+                : obstacleKind != null)
+            {
+                throw new ArgumentException(
+                    "Only a dual-line obstacle contribution names a trusted obstacle kind.",
+                    nameof(obstacleKind));
+            }
+
+            if (query == RosterValueQueryKind.AttackTargetInStraightLineFromActorAndOwnedObstacle &&
+                channel != PrintedValueChannel.Attack)
+                throw new ArgumentException(
+                    "A dual-line obstacle contribution modifies Attack only.", nameof(channel));
+
             Channel = channel;
             Query = query;
             AmountPerMatch = amountPerMatch;
+            ObstacleKind = obstacleKind;
         }
 
         public PrintedValueChannel Channel { get; }
         public RosterValueQueryKind Query { get; }
         public int AmountPerMatch { get; }
+        public string ObstacleKind { get; }
 
         public bool Equals(RosterValueContributionDefinition other) =>
-            Channel == other.Channel && Query == other.Query && AmountPerMatch == other.AmountPerMatch;
+            Channel == other.Channel && Query == other.Query && AmountPerMatch == other.AmountPerMatch &&
+            string.Equals(ObstacleKind, other.ObstacleKind, StringComparison.Ordinal);
 
         public override bool Equals(object obj) =>
             obj is RosterValueContributionDefinition other && Equals(other);
 
-        public override int GetHashCode() =>
-            (((int)Channel * 397) ^ (int)Query) * 397 ^ AmountPerMatch;
+        public override int GetHashCode()
+        {
+            var oldHash = (((int)Channel * 397) ^ (int)Query) * 397 ^ AmountPerMatch;
+            return ObstacleKind == null
+                ? oldHash
+                : oldHash * 397 ^ StringComparer.Ordinal.GetHashCode(ObstacleKind);
+        }
     }
 
     /// <summary>How p.14's minion Defense modifiers contribute for one Defense card.</summary>
@@ -428,7 +459,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // re-derived here. Optional, so every caller written before this milestone composes its
             // exact contributions; a declaration that NAMES the query and is handed none is refused
             // loudly rather than answered with a silent zero.
-            ITokenPlacementAuthority spaces = null)
+            ITokenPlacementAuthority spaces = null,
+            IObstaclePlacementAuthority obstacles = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
@@ -442,9 +474,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 .Where(value => value.Channel == channel))
             {
                 var matches = MatchCount(
-                    declaration.Query, offer.ActorId, offer.SourceCardInstanceId, target, definitions,
+                    declaration, offer.ActorId, offer.SourceCardInstanceId, target, definitions,
                     instances, participants, board, modifications, rosterState, roundIndex, turnIndex,
-                    actorSpaceAtActionStart, spaces);
+                    actorSpaceAtActionStart, spaces, obstacles);
                 if (matches == 0) continue;
                 result.Add(new ValueContribution(
                     ValueContributionKind.CardTextModifier,
@@ -577,7 +609,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
         }
 
         private static int MatchCount(
-            RosterValueQueryKind query,
+            RosterValueContributionDefinition declaration,
             HeroId actorId,
             CardInstanceId sourceCardInstanceId,
             AttackTarget target,
@@ -590,8 +622,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int roundIndex,
             int turnIndex,
             HexCoordinate? actorSpaceAtActionStart,
-            ITokenPlacementAuthority spaces)
+            ITokenPlacementAuthority spaces,
+            IObstaclePlacementAuthority obstacles)
         {
+            var query = declaration.Query;
             if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out var actorAt))
                 return 0;
 
@@ -678,6 +712,20 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     return target.Kind == AttackTargetKind.Hero &&
                         ObstacleAdjacencyQuery.HeroIsAdjacentToThreeOrMoreObstacles(
                             spaces, target.HeroId, modifications)
+                        ? 1
+                        : 0;
+
+                case RosterValueQueryKind.AttackTargetInStraightLineFromActorAndOwnedObstacle:
+                    if (obstacles == null)
+                        throw new InvalidOperationException(
+                            "A dual-line Attack contribution requires the board's obstacle port.");
+                    return targetObject.IsDefined &&
+                        board.TryGetObjectCoordinate(targetObject, out var dualLineTargetAt) &&
+                        obstacles.TryGetObstacleCoordinate(
+                            OwnedObstacleIdentity.For(declaration.ObstacleKind, actorId),
+                            out var obstacleAt) &&
+                        StraightLineQuery.AreInStraightLine(actorAt, dualLineTargetAt) &&
+                        StraightLineQuery.AreInStraightLine(obstacleAt, dualLineTargetAt)
                         ? 1
                         : 0;
 

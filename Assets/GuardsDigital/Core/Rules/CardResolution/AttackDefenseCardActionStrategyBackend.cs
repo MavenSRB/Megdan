@@ -3249,6 +3249,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 // Milestone 8.69a. The same authority, handed on as p.18's classification port, so a
                 // declaration reading the obstacles around the bound target asks the one owner of that
                 // question rather than re-deriving it from occupancy.
+                adjacentMoveAuthority,
                 adjacentMoveAuthority);
             // Milestone 8.19c moved the printed/item/source composition into AttackValueQuery, so what
             // is left here is p.14's card-text contribution alone - the half that needs the bound

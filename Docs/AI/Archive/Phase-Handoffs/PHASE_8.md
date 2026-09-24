@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92b Trinkets Red Attack completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92b | Five undealt Red faces: printed actor/Turret target geometry, live dual-line Attack bonuses, post-Attack different-unit repeats, item boundaries and actor-owned Smoke Bomb screening. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892b-compose-the-turret-linked-attacks). | `milestone/8.92b` |
+
 ## Milestone 8.92a Trinkets component foundation completion evidence
 
 | Milestone | Outcome and definition | Commit |

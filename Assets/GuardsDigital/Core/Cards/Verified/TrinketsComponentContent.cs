@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Rules.Modifications;
 
 namespace GuardsDigital.Core.Cards.Verified
@@ -7,6 +9,35 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>Physical components of Trinkets; registration waits for his dealing milestone.</summary>
     public static class TrinketsComponentContent
     {
+        public const string TurretKind = "trinkets-turret";
+
+        public static EffectCapabilityReference TurretSpaceV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-turret-space"), 1);
+
+        public static EffectCapabilityReference PlaceTurretAdjacentV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-place-turret-adjacent"), 1);
+
+        public static EffectCapabilityReference RemoveTurretV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-remove-turret"), 1);
+
+        public static EffectCapabilityReference DualRangeTurretUnitV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-dual-range-turret-unit"), 1);
+
+        public static EffectCapabilityReference AdjacentTurretUnitV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-adjacent-turret-unit"), 1);
+
+        public static IEnumerable<IEffectCapabilityHandler> ObstacleHandlers()
+        {
+            yield return SyntheticObstacleCapabilities.SpaceHandler(TurretSpaceV1, TurretKind);
+            yield return SyntheticObstacleCapabilities.PlaceAdjacentHandler(
+                PlaceTurretAdjacentV1, TurretKind);
+            yield return SyntheticObstacleCapabilities.RemoveHandler(RemoveTurretV1, TurretKind);
+            yield return SyntheticTargetingCapabilities.OwnedObstacleRangeUnitHandler(
+                DualRangeTurretUnitV1, TurretKind, true);
+            yield return SyntheticTargetingCapabilities.OwnedObstacleRangeUnitHandler(
+                AdjacentTurretUnitV1, TurretKind, false);
+        }
+
         public static TokenDefinitionId BarrierId { get; } =
             new TokenDefinitionId("trinkets-barrier");
 

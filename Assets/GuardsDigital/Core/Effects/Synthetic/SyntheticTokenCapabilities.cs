@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Rules.CardResolution;
@@ -364,7 +365,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 if (adjacentToObstacleKind == null) return true;
                 return components.Obstacles != null &&
                     components.Obstacles.TryGetObstacleCoordinate(
-                        SyntheticObstacleCapabilities.OwnedObstacleId(
+                        OwnedObstacleIdentity.For(
                             adjacentToObstacleKind, context.ActorId), out var obstacleAt) &&
                     HexDistanceQuery.Calculate(space, obstacleAt) == 1;
             }

@@ -32,7 +32,7 @@ Completed 2026-09-24. A narrow board port places, repositions and removes the on
 
 Historical evidence: [8.92a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892a-trinkets-component-foundation-completion-evidence).
 
-### [~] 8.92b Compose the Turret-linked Attacks
+### [x] 8.92b Compose the Turret-linked Attacks
 
 Outcome: the five Red faces apply their printed targeting, line bonus and repeat clauses, including independent Range from Trinkets and the Turret.
 
@@ -40,7 +40,11 @@ Acceptance: every face's legal, refused, boundary and item-modified target sets;
 
 Non-goals: Blue and Green faces, dealing.
 
-### [ ] 8.92c Compose disruption and Barrier support
+Completed 2026-09-24. The five Red faces retain their printed values, items and forks. A shared printed-Range unit selection re-reads the actor-owned Turret on offer and answer: the dual-Range and Turret-adjacent patterns use the live obstacle, with Trinkets remaining actor and targeting source. Min's Smoke Bomb between Trinkets and a target screens the Attack even with the Turret off that line. A live dual-straight-line value query adds +2 or +3 only when both origins qualify. Steam Discharge and Flame Belcher request their different-unit repeats after each Attack, when its target is recorded; a full-turn red-to-green regression found and corrected the premature before-Attack request. Each face's boundaries and Range-item extension, all five full-turn Attack/Defense totals, two-target repeat exhaustion, and affected Smoke Bomb, repeat and continuation fixtures pass. Spell Break restricts Skills, not these Red Attacks; its Trinkets-specific distance case belongs to the Blue/Green Skill blocks. New definitions and handlers remain unregistered and undealt. Focused T2 evidence is in the milestone commit.
+
+Historical evidence: [8.92b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892b-trinkets-red-attack-completion-evidence).
+
+### [~] 8.92c Compose disruption and Barrier support
 
 Outcome: Disruptor Jolt, Pulse and Grid run their timed pre-action discard or defeat effects from the Turret's live Radius; Deployable Barrier and Bastion place their printed up-to counts and grant the printed adjacent Barrier Defense.
 

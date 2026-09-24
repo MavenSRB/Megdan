@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
@@ -747,6 +748,17 @@ namespace GuardsDigital.Core.Effects.Synthetic
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
             RegisteredHandlers().Concat(DeferredHandlers());
 
+        /// <summary>A printed-Range unit selection narrowed by one live, actor-owned obstacle.</summary>
+        public static IEffectCapabilityHandler OwnedObstacleRangeUnitHandler(
+            EffectCapabilityReference reference, string obstacleKind, bool dualRange)
+        {
+            if (string.IsNullOrWhiteSpace(obstacleKind))
+                throw new ArgumentException("Obstacle kind is required.", nameof(obstacleKind));
+            return new PrintedIconTargetHandler(
+                reference, PrintedValueChannel.Range, PrintedIconSelectionSubject.Unit,
+                obstacleKind, dualRange);
+        }
+
         /// <summary>
         /// Milestone 8.35z33. The declarations this build does <em>not</em> register, stated as its own
         /// list for the reason <see cref="SyntheticRosterCapabilities.DeferredHandlers"/> is: the
@@ -1138,15 +1150,28 @@ namespace GuardsDigital.Core.Effects.Synthetic
         {
             private readonly PrintedValueChannel channel;
             private readonly PrintedIconSelectionSubject subject;
+            private readonly string ownedObstacleKind;
+            private readonly bool dualRangeFromObstacle;
 
             public PrintedIconTargetHandler(
                 EffectCapabilityReference reference,
                 PrintedValueChannel channel,
-                PrintedIconSelectionSubject subject = PrintedIconSelectionSubject.BoardObject)
+                PrintedIconSelectionSubject subject = PrintedIconSelectionSubject.BoardObject,
+                string ownedObstacleKind = null,
+                bool dualRangeFromObstacle = false)
             {
+                if (ownedObstacleKind != null &&
+                    (string.IsNullOrWhiteSpace(ownedObstacleKind) ||
+                     subject != PrintedIconSelectionSubject.Unit ||
+                     channel != PrintedValueChannel.Range))
+                    throw new ArgumentException(
+                        "An owned-obstacle clause belongs to a printed-Range unit selection.",
+                        nameof(ownedObstacleKind));
                 Reference = reference;
                 this.channel = channel;
                 this.subject = subject;
+                this.ownedObstacleKind = ownedObstacleKind;
+                this.dualRangeFromObstacle = dualRangeFromObstacle;
 
                 // Milestone 8.88. One declaration for every arm: each filter the family composes, on
                 // every arm it can mean something on, each optional but the ones the arm always required.
@@ -1446,8 +1471,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// Milestone 8.88. What this arm offers: its own kinds through the family's one pipeline. A
             /// hero, minion or unit arm requires a side; an object arm may leave it unbound.
             /// </summary>
-            private IReadOnlyList<BoardObjectReference> Offered(EffectCapabilityContext context) =>
-                PrintedIconSelection(
+            private IReadOnlyList<BoardObjectReference> Offered(EffectCapabilityContext context)
+            {
+                var candidates = PrintedIconSelection(
                     context,
                     channel,
                     subject == PrintedIconSelectionSubject.Hero
@@ -1458,6 +1484,31 @@ namespace GuardsDigital.Core.Effects.Synthetic
                                 ? PrintedIconKinds.Units
                                 : PrintedIconKinds.All,
                     relationRequired: subject != PrintedIconSelectionSubject.BoardObject);
+                if (ownedObstacleKind == null)
+                    return candidates;
+
+                // Read the piece on every offer AND answer. An earlier node's coordinate fact is
+                // deliberately not trusted after a pending choice: the piece can be removed or moved.
+                var obstacles = context.Components?.Obstacles;
+                var board = context.Components?.Board;
+                if (obstacles == null || board == null ||
+                    !obstacles.TryGetObstacleCoordinate(
+                        OwnedObstacleIdentity.For(ownedObstacleKind, context.ActorId), out var obstacleAt))
+                    return Array.Empty<BoardObjectReference>();
+
+                var total = RangeValueQuery.Calculate(
+                    context.SourceCardInstanceId, context.SourceDefinitionReference,
+                    context.ActionDefinitionId, context.CardState.Definitions,
+                    context.ActorId, context.HeroItems, context.Modifications,
+                    ActionValueApplicabilityQuery.For(
+                        context.SourceDefinitionReference, context.ActionDefinitionId,
+                        context.CardState.Definitions)).Total;
+                return candidates.Where(candidate =>
+                    board.TryGetObjectCoordinate(candidate, out var at) &&
+                    (dualRangeFromObstacle
+                        ? HexDistanceQuery.Calculate(obstacleAt, at) <= total
+                        : HexDistanceQuery.Calculate(obstacleAt, at) == 1)).ToArray();
+            }
         }
 
         private sealed class HeroAdjacentToMinionHandler

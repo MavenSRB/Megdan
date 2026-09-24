@@ -5,7 +5,6 @@ using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Timing;
-using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Effects.Synthetic
 {
@@ -32,17 +31,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             EffectCapabilityReference reference, string obstacleKind) =>
             new RemoveObstacleHandler(reference, obstacleKind);
 
-        public static ObstacleId OwnedObstacleId(string obstacleKind, HeroId owner)
-        {
-            if (string.IsNullOrWhiteSpace(obstacleKind))
-                throw new ArgumentException("Obstacle kind is required.", nameof(obstacleKind));
-            if (!owner.IsDefined)
-                throw new ArgumentException("Obstacle owner is required.", nameof(owner));
-            return new ObstacleId($"{obstacleKind}:{owner.Value}");
-        }
-
         private static ObstacleId IdFor(string obstacleKind, EffectCapabilityContext context) =>
-            OwnedObstacleId(obstacleKind, context.ActorId);
+            OwnedObstacleIdentity.For(obstacleKind, context.ActorId);
 
         private abstract class ObstacleHandler : IEffectCapabilityHandler
         {
