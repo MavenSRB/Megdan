@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Units.Heroes;
@@ -45,13 +46,26 @@ namespace GuardsDigital.Core.Rules.CardResolution
             HeroId actorId,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
             RuleModificationSet modifications)
+            => Calculate(sourceCardInstanceId, sourceDefinitionReference,
+                actionDefinitionId, definitions, actorId, heroItems, modifications,
+                RuleValueApplicability.Always);
+
+        public static ValueResult Calculate(
+            CardInstanceId sourceCardInstanceId,
+            CardDefinitionReference sourceDefinitionReference,
+            ActionDefinitionId actionDefinitionId,
+            IEnumerable<CardDefinition> definitions,
+            HeroId actorId,
+            GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
+            RuleModificationSet modifications,
+            RuleValueApplicability performedAction)
         {
             if (modifications == null)
             {
                 throw new ArgumentNullException(nameof(modifications));
             }
 
-            return Calculate(
+            var composed = Calculate(
                 sourceCardInstanceId,
                 sourceDefinitionReference,
                 actionDefinitionId,
@@ -59,6 +73,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 actorId,
                 heroItems,
                 ItemBonusMultiplierQuery.BonusPerItem(actorId, modifications));
+            var declared = modifications.ValueContributions(
+                RuleObject.ForHero(actorId), PrintedValueChannel.Radius, performedAction);
+            return declared.Count == 0 ? composed : new ValueResult(
+                PrintedValueChannel.Radius, composed.Contributions.Concat(declared));
         }
 
         /// <summary>
@@ -106,6 +124,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 definitions,
                 offer.ActorId,
                 heroItems,
-                modifications);
+                modifications,
+                ActionValueApplicabilityQuery.ForOffer(offer, definitions));
     }
 }

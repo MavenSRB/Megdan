@@ -68,7 +68,7 @@ Completed 2026-09-24. The five undealt Green faces compose the printed actor-in-
 
 Historical evidence: [8.92d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892d-trinkets-green-completion-evidence).
 
-### [~] 8.92e Compose Unlimited Firepower and reconcile the complete set
+### [x] 8.92e Compose Unlimited Firepower and reconcile the complete set
 
 Outcome: the unlocked Ultimate grants its printed +1 Range and +1 Radius while Trinkets stands; all eighteen dealt faces plus the boxed Handicap have complete authoritative definitions behind the registration gate.
 
@@ -76,7 +76,11 @@ Acceptance: item and Ultimate contributions compose once at every actor- and Tur
 
 Non-goals: registration, pick screen, artwork or player-path gate.
 
-### [ ] 8.92f Deal Trinkets and present his artwork
+Completed 2026-09-24. Both basic Skills now compose their printed movement, Turret placement/removal, adjacent-minion defeat and optional retrieval arms. Unlimited Firepower contributes one standing +1 Range and +1 Radius; a failing-then-passing query test exposed and corrected the shared Radius total's missing standing-value contribution. All nineteen faces reconcile against inventory, eighteen are staged for dealing, and the p.20 Handicap is transcribed but boxed and explicitly deferred like the other odd-player faces. Focused affected offline tests and Unity Edit Mode pass. Registration and player-path evidence remain 8.92f/g; evidence is in the milestone commit.
+
+Historical evidence: [8.92e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892e-trinkets-full-set-completion-evidence).
+
+### [~] 8.92f Deal Trinkets and present his artwork
 
 Outcome: register eighteen playable definitions, the hero profile and physical components; add Trinkets to every legal picker and configuration route with the printed stars and roles, hero and component artwork, and the card hover/face catalog.
 

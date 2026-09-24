@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92e Trinkets full-set completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92e | Two basic Skills, standing Range/Radius Ultimate and boxed Handicap complete the nineteen-face inventory; a failing Radius standing-source test led to the shared query correction. Focused affected tests and Unity Edit Mode pass; the eighteen dealt faces remain behind the registration gate. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892e-compose-unlimited-firepower-and-reconcile-the-complete-set). | `milestone/8.92e` |
+
 ## Milestone 8.92d Trinkets Green completion evidence
 
 | Milestone | Outcome and definition | Commit |
