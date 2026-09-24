@@ -12,6 +12,72 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class AdjacentMoveAuthorityTests
     {
         [Test]
+        public void PersistentObstacle_PlaceRepositionAndRemove_KeepOneIdentityAndFreeOldSpace()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var first = new HexCoordinate(1, 0);
+            var second = new HexCoordinate(0, 1);
+            var obstacle = new ObstacleId("turret-test");
+            var board = new AdjacentMoveAuthority(
+                new[] { origin, first, second },
+                new[] { new HeroOccupancy(new HeroId("actor"), origin) });
+
+            Assert.That(board.TryPlaceOrRepositionObstacle(obstacle, first), Is.True);
+            Assert.That(board.TryPlaceOrRepositionObstacle(obstacle, second), Is.True);
+            Assert.That(board.ObstacleOccupancies, Has.Count.EqualTo(1));
+            Assert.That(board.TryGetObstacleCoordinate(obstacle, out var at), Is.True);
+            Assert.That(at, Is.EqualTo(second));
+            Assert.That(board.IsEmptyPlayableSpace(first), Is.True);
+            Assert.That(board.IsEmptyPlayableSpace(second), Is.False);
+            Assert.That(board.TryRemoveObstacle(obstacle), Is.True);
+            Assert.That(board.TryRemoveObstacle(obstacle), Is.False);
+            Assert.That(board.ObstacleOccupancies, Is.Empty);
+            Assert.That(board.IsEmptyPlayableSpace(second), Is.True);
+        }
+
+        [Test]
+        public void PersistentObstacle_IllegalOrStalePlacement_IsAtomic()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var first = new HexCoordinate(1, 0);
+            var second = new HexCoordinate(0, 1);
+            var obstacle = new ObstacleId("turret-test");
+            var board = new AdjacentMoveAuthority(
+                new[] { origin, first, second },
+                new[] { new HeroOccupancy(new HeroId("actor"), origin) });
+
+            Assert.That(board.TryPlaceOrRepositionObstacle(obstacle, first), Is.True);
+            Assert.That(board.TryPlaceOrRepositionObstacle(obstacle, first), Is.False);
+            Assert.That(board.TryPlaceOrRepositionObstacle(obstacle, origin), Is.False);
+            Assert.That(board.TryPlaceOrRepositionObstacle(obstacle, new HexCoordinate(9, 9)), Is.False);
+            Assert.That(board.ObstacleOccupancies.Single().Coordinate, Is.EqualTo(first));
+            Assert.That(board.IsEmptyPlayableSpace(second), Is.True);
+        }
+
+        [Test]
+        public void PersistentObstacle_BoardRestoreState_PreservesObstacleWithoutMakingTerrain()
+        {
+            var origin = new HexCoordinate(0, 0);
+            var destination = new HexCoordinate(1, 0);
+            var map = BoardMapDefinition.CreateSynthetic(
+                new MapId("turret-test-map"), 1, new[] { origin, destination });
+            var obstacle = new ObstacleId("turret-test");
+            var board = new AdjacentMoveAuthority(
+                map, new[] { new HeroOccupancy(new HeroId("actor"), origin) },
+                Array.Empty<ObstacleOccupancy>());
+            Assert.That(board.TryPlaceOrRepositionObstacle(obstacle, destination), Is.True);
+
+            var restored = AdjacentMoveAuthority.Restore(
+                board.CaptureRestoreState(), map,
+                Array.Empty<GuardsDigital.Core.Setup.QuickGameMinionSetupState>());
+
+            Assert.That(restored.ObstacleOccupancies.Single().ObstacleId, Is.EqualTo(obstacle));
+            Assert.That(restored.ObstacleOccupancies.Single().Coordinate, Is.EqualTo(destination));
+            Assert.That(restored.IsEmptyPlayableSpace(destination), Is.False);
+            Assert.That(restored.IsEmptyPlayableSpace(origin), Is.False);
+        }
+
+        [Test]
         public void TryCommit_LegalAdjacentMove_UpdatesOccupancyAndReturnsMovementEvent()
         {
             var heroId = new HeroId("mover");

@@ -236,6 +236,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 adjacentMoveAuthority,
                 adjacentMoveAuthority,
                 adjacentMoveAuthority,
+                adjacentMoveAuthority,
                 adjacentMoveAuthority);
 
         /// <summary>

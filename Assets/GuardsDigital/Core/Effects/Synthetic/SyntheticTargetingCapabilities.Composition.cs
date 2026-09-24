@@ -84,8 +84,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// and adding one would reach the network codec. Every undealt hero whose clause names a token
         /// kind owns exactly one kind of token, so "a token you own" and "a Zombie token" select the
         /// same pieces for Mortimer; a dealing that composes such a clause records that equivalence
-        /// for its hero. Trinkets, the one hero owning two kinds, names his Turret by its published
-        /// space through <see cref="AdjacentToSpaceParameterName"/> instead.</para>
+        /// for its hero. Trinkets' Turret is not a token at all: its named obstacle position is
+        /// published as a space for <see cref="AdjacentToSpaceParameterName"/> instead.</para>
         /// </summary>
         public const string AdjacentToOwnTokenParameterName = "adjacentToOwnToken";
 
@@ -104,8 +104,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
         /// <summary>
         /// Milestone 8.91. A token KIND whose pieces count toward the adjacency clause, as a
         /// <see cref="EffectValueKind.TokenKind"/> literal - "adjacent to a Zombie token" named by the
-        /// token's definition rather than by its owner, which is what a hero owning two kinds (Min's
-        /// Smoke bomb and Mines, Trinkets' Turret and Barriers) needs. A token that hides its kind
+        /// token's definition rather than by its owner, which is what a hero owning two token kinds
+        /// (Min's Smoke bomb and Mines) needs. Trinkets' Turret is an obstacle, not a token; Barrier
+        /// is his token kind. A token that hides its kind
         /// (a facedown Mine) shows its facedown face to everyone but its owner, so another hero's card
         /// can never find out which facedown piece is which.
         /// </summary>

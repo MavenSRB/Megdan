@@ -84,9 +84,9 @@ namespace GuardsDigital.Core.Components
     /// <summary>
     /// What one token property's rule is addressed to, as definition content. Milestone 8.35z32.
     ///
-    /// <para>Each member is a printed sentence rather than a shape someone thought a token might want.
-    /// The list is exactly as long as Tali's Green line makes it, and a member for an unprinted reading
-    /// would be an invented rule - the same discipline <see cref="TokenRemovalCondition"/> keeps.</para>
+    /// <para>Each non-default member is a verified printed sentence rather than a speculative
+    /// capability. Tali's Green line supplied the original adjacency scopes; Trinkets' Barrier
+    /// supplies the friendly-hero Defense scope.</para>
     /// </summary>
     public enum TokenPropertyAffectedObject
     {
@@ -131,7 +131,13 @@ namespace GuardsDigital.Core.Components
         /// Transcribing each face's own noun is what the standing cards-are-the-definition ruling asks
         /// for; whether the widening was deliberate is not this milestone's question.</para>
         /// </summary>
-        FriendlyMeleeMinionsAdjacentToTheToken = 4
+        FriendlyMeleeMinionsAdjacentToTheToken = 4,
+
+        /// <summary>
+        /// Trinkets' Barrier: the controller and other heroes on the controller's team standing
+        /// adjacent to this token. Each Barrier is a separate +1 Defense source.
+        /// </summary>
+        FriendlyHeroesAdjacentToTheToken = 5
     }
 
     /// <summary>

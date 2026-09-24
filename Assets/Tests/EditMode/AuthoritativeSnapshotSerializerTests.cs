@@ -24,6 +24,31 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class AuthoritativeSnapshotSerializerTests
     {
         [Test]
+        public void RoundTrip_DynamicallyRepositionedObstacleRetainsIdentityAndCanMoveAgain()
+        {
+            var fixture = CreateFixture();
+            var obstacle = new GuardsDigital.Core.Obstacles.ObstacleId("snapshot-rock");
+            var moved = new HexCoordinate(0, 1);
+            Assert.That(fixture.Board.TryPlaceOrRepositionObstacle(obstacle, moved), Is.True);
+
+            var payload = AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board);
+            var restored = AuthoritativeSnapshotSerializer.Deserialize(
+                MatchContentCatalogs.ForThisBuild(), payload,
+                fixture.Configuration.CardDefinitions,
+                new[] { fixture.Board.MapDefinition });
+
+            Assert.That(restored.Board.ObstacleOccupancies.Single().ObstacleId,
+                Is.EqualTo(obstacle));
+            Assert.That(restored.Board.ObstacleOccupancies.Single().Coordinate,
+                Is.EqualTo(moved));
+            Assert.That(restored.Board.TryPlaceOrRepositionObstacle(
+                obstacle, new HexCoordinate(-1, 1)), Is.True);
+            Assert.That(restored.Board.ObstacleOccupancies, Has.Count.EqualTo(1));
+            Assert.That(AuthoritativeSnapshotSerializer.Serialize(fixture.Round, fixture.Board),
+                Is.EqualTo(payload), "The restored board mutation cannot change the source snapshot.");
+        }
+
+        [Test]
         public void RoundTrip_PreservesParticipantsBoardCardsCommitmentAndLogicalContinuation()
         {
             var fixture = CreateFixture();

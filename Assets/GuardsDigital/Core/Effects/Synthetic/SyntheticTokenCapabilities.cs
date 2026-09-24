@@ -98,8 +98,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             EffectCapabilityReference reference,
             TokenDefinition definition,
             PrintedValueChannel reachChannel,
-            string instanceIdentityLabel = null) =>
-            new PlaceHeroTokenHandler(reference, definition, reachChannel, instanceIdentityLabel);
+            string instanceIdentityLabel = null,
+            string adjacentToObstacleKind = null) =>
+            new PlaceHeroTokenHandler(reference, definition, reachChannel,
+                instanceIdentityLabel, adjacentToObstacleKind);
 
         /// <summary>
         /// One p.18 short-supply handler for one token definition. It offers back every token in that
@@ -132,12 +134,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly TokenDefinition definition;
             private readonly PrintedValueChannel reachChannel;
             private readonly string instanceIdentityLabel;
+            private readonly string adjacentToObstacleKind;
 
             public PlaceHeroTokenHandler(
                 EffectCapabilityReference reference,
                 TokenDefinition definition,
                 PrintedValueChannel reachChannel,
-                string instanceIdentityLabel = null)
+                string instanceIdentityLabel = null,
+                string adjacentToObstacleKind = null)
             {
                 if (reachChannel != PrintedValueChannel.Radius && reachChannel != PrintedValueChannel.Range)
                 {
@@ -158,6 +162,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 this.definition = definition ?? throw new ArgumentNullException(nameof(definition));
                 this.reachChannel = reachChannel;
                 this.instanceIdentityLabel = instanceIdentityLabel;
+                if (adjacentToObstacleKind != null && string.IsNullOrWhiteSpace(adjacentToObstacleKind))
+                    throw new ArgumentException("Obstacle kind is named or absent.", nameof(adjacentToObstacleKind));
+                this.adjacentToObstacleKind = adjacentToObstacleKind;
             }
 
             public EffectCapabilityReference Reference { get; }
@@ -225,6 +232,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 {
                     return EffectExecutionResult.ImpossibleMandatory();
                 }
+
+                if (!AdjacentToLiveObstacle(context, components, coordinate))
+                    return EffectExecutionResult.ImpossibleMandatory();
 
                 // The operation re-derives the admitted spaces and re-asks the supply rather than
                 // trusting the paused choice: a space legal when the choice opened may have been taken
@@ -344,7 +354,19 @@ namespace GuardsDigital.Core.Effects.Synthetic
                         Policy(context, components), components.Tokens, origin,
                         Array.Empty<HexCoordinate>(), context.Modifications)
                     .Where(clauses.Admit)
+                    .Where(space => AdjacentToLiveObstacle(context, components, space))
                     .ToArray();
+            }
+
+            private bool AdjacentToLiveObstacle(
+                EffectCapabilityContext context, MatchComponents components, HexCoordinate space)
+            {
+                if (adjacentToObstacleKind == null) return true;
+                return components.Obstacles != null &&
+                    components.Obstacles.TryGetObstacleCoordinate(
+                        SyntheticObstacleCapabilities.OwnedObstacleId(
+                            adjacentToObstacleKind, context.ActorId), out var obstacleAt) &&
+                    HexDistanceQuery.Calculate(space, obstacleAt) == 1;
             }
         }
 

@@ -18,7 +18,7 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
 {
     public sealed class AdjacentMoveAuthority :
         ITokenPlacementAuthority, IBoardDisplacementAuthority, IUnitSpawnAuthority,
-        IBoardObjectExchangeAuthority, ILaneAdvanceAuthority
+        IBoardObjectExchangeAuthority, ILaneAdvanceAuthority, IObstaclePlacementAuthority
     {
         private readonly HashSet<HexCoordinate> boardCoordinates;
         private readonly HashSet<HexCoordinate> terrainCoordinates;
@@ -352,6 +352,43 @@ namespace GuardsDigital.Core.Rules.AdjacentMove
         public ZoneId? CurrentBattleZoneId { get; private set; }
 
         public IReadOnlyList<ObstacleOccupancy> ObstacleOccupancies => obstacleOccupanciesView;
+
+        public bool TryGetObstacleCoordinate(ObstacleId obstacleId, out HexCoordinate coordinate)
+        {
+            var index = obstacleOccupancies.FindIndex(value => value.ObstacleId.Equals(obstacleId));
+            coordinate = index < 0 ? default : obstacleOccupancies[index].Coordinate;
+            return index >= 0;
+        }
+
+        public bool TryPlaceOrRepositionObstacle(ObstacleId obstacleId, HexCoordinate destination)
+        {
+            if (!obstacleId.IsDefined) throw new ArgumentException("Obstacle ID is required.", nameof(obstacleId));
+            if (!IsEmptyPlayableSpace(destination)) return false;
+
+            var index = obstacleOccupancies.FindIndex(value => value.ObstacleId.Equals(obstacleId));
+            if (index < 0)
+            {
+                occupancyIndex.Add(destination, BoardOccupant.ForObstacle(obstacleId), nameof(destination));
+                obstacleOccupancies.Add(new ObstacleOccupancy(obstacleId, destination));
+                return true;
+            }
+
+            var origin = obstacleOccupancies[index].Coordinate;
+            occupancyIndex.Move(origin, destination);
+            obstacleOccupancies[index] = new ObstacleOccupancy(obstacleId, destination);
+            return true;
+        }
+
+        public bool TryRemoveObstacle(ObstacleId obstacleId)
+        {
+            if (!obstacleId.IsDefined) throw new ArgumentException("Obstacle ID is required.", nameof(obstacleId));
+            var index = obstacleOccupancies.FindIndex(value => value.ObstacleId.Equals(obstacleId));
+            if (index < 0) return false;
+
+            occupancyIndex.Remove(obstacleOccupancies[index].Coordinate);
+            obstacleOccupancies.RemoveAt(index);
+            return true;
+        }
 
         public IReadOnlyList<MinionOccupancy> Minions => minionsView;
 

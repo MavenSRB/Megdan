@@ -1,4 +1,5 @@
 using System;
+using GuardsDigital.Core.Obstacles;
 
 namespace GuardsDigital.Core.Components
 {
@@ -25,7 +26,8 @@ namespace GuardsDigital.Core.Components
             IBoardDisplacementAuthority board,
             IUnitSpawnAuthority units,
             IBoardObjectExchangeAuthority exchange,
-            ILaneAdvanceAuthority lanes = null)
+            ILaneAdvanceAuthority lanes = null,
+            IObstaclePlacementAuthority obstacles = null)
         {
             Catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
             Tokens = tokens;
@@ -34,6 +36,7 @@ namespace GuardsDigital.Core.Components
             Units = units;
             Exchange = exchange;
             Lanes = lanes;
+            Obstacles = obstacles;
         }
 
         public ComponentDefinitionCatalog Catalog { get; }
@@ -87,6 +90,9 @@ namespace GuardsDigital.Core.Components
         /// answer the other ports already give.</para>
         /// </summary>
         public ILaneAdvanceAuthority Lanes { get; }
+
+        /// <summary>The board's persistent, non-token obstacle placement port.</summary>
+        public IObstaclePlacementAuthority Obstacles { get; }
 
         /// <summary>
         /// Whether the token and marker authorities are present, so a component operation can run.

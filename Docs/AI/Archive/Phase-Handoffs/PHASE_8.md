@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92a Trinkets component foundation completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92a | One persistent actor-bound generic Turret obstacle, not terrain or token, with atomic place/reposition/remove and live coordinate fact; three Barrier tokens with per-token adjacent-friendly +1 Defense, live-Turret first-placement restriction, cleanup separation, board preimage replay, snapshot and seat-projection proofs. New content is not registered or dealt. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892a-implement-the-persistent-turret-and-finite-barrier-components). | `milestone/8.92a` |
+
 ## Milestone 8.92 Trinkets inventory completion evidence
 
 | Milestone | Outcome and definition | Commit |

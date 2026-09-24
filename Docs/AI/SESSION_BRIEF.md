@@ -1,6 +1,6 @@
 # Guards Digital - Session Brief
 
-Last updated: 2026-09-21
+Last updated: 2026-09-24
 
 ## Purpose and authority
 
@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.92**.
-- Active authorized milestone: **8.92a**.
-- Next proposed milestone: **8.92a**.
+- Current completed milestone: **8.92a**.
+- Active authorized milestone: **8.92b**.
+- Next proposed milestone: **8.92b**.
 
-On 2026-09-24 the user chose **Trinkets the Scavenger** as the TWENTY-THIRD hero. [His approved 8.92-8.92g sequence](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md) runs from source inventory through a fully selectable, artworked hero and the permanent player-path gate. [His rules shard](Rules/HERO_TRINKETS.md) records the user's three Barrier tokens, one persistent Turret obstacle (not terrain, token or unit), Trinkets-owned targeting, and the supplied designer answer that his active Blue discard precedes a defender's use of their sole Defense card. The inventory is complete; the build still deals twenty-two heroes. The previously proposed bot diagnosis 8.35z71 remains queued outside this hero sequence.
+On 2026-09-24 the user chose **Trinkets the Scavenger** as the TWENTY-THIRD hero. [His approved 8.92-8.92g sequence](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md) runs through a fully selectable, artworked hero and the permanent player-path gate. [His rules shard](Rules/HERO_TRINKETS.md) records three Barrier tokens, one persistent Turret obstacle (not terrain, token or unit), Trinkets-owned targeting, and the designer answer that his active Blue discard precedes a defender's sole Defense card. The inventory and component foundation are complete; the build still deals twenty-two heroes. Bot diagnosis 8.35z71 remains queued outside this sequence.
 
 On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 

@@ -655,6 +655,18 @@ namespace GuardsDigital.Core.Rules.Modifications
 
                     break;
 
+                case TokenPropertyAffectedObject.FriendlyHeroesAdjacentToTheToken:
+                    foreach (var occupancy in board.Occupancies)
+                    {
+                        if (HexDistanceQuery.Calculate(token.Coordinate, occupancy.Coordinate) == 1 &&
+                            participants.GetTeamForHero(occupancy.HeroId).Side == controllerSide)
+                        {
+                            yield return RuleObject.ForHero(occupancy.HeroId);
+                        }
+                    }
+
+                    break;
+
                 case TokenPropertyAffectedObject.FriendlyMinionsAdjacentToTheToken:
                 case TokenPropertyAffectedObject.FriendlyMeleeMinionsAdjacentToTheToken:
                 {

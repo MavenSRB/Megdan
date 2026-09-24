@@ -20,7 +20,7 @@ Completed 2026-09-24. The nineteen-front inventory, dashboard/profile, component
 
 Historical evidence: [8.92 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892-trinkets-inventory-completion-evidence).
 
-### [~] 8.92a Implement the persistent Turret and finite Barrier components
+### [x] 8.92a Implement the persistent Turret and finite Barrier components
 
 Outcome: one repositionable non-token Turret obstacle with independent identity and three Barrier tokens can be placed, removed, projected and restored under authoritative rules; synthetic scenarios prove the components before any printed face is composed.
 
@@ -28,7 +28,11 @@ Acceptance: separate supplies and identities; the Turret's occupied-space, non-t
 
 Non-goals: printed face composition, dealing Trinkets.
 
-### [ ] 8.92b Compose the Turret-linked Attacks
+Completed 2026-09-24. A narrow board port places, repositions and removes the one actor-bound generic obstacle; a read-only effect fact publishes its live location. It is neither terrain nor a token, and remains in board state through round cleanup and owner absence. Barrier is a separate three-token definition with per-token +1 Defense for adjacent friendly heroes. A first-placement handler rechecks adjacency to the live Turret after a paused answer; later placements use the ordinary printed-Radius token handler. Synthetic cases cover supply exhaustion, stale choices, obstacle blocking/classification, owner absence, preimage replay/restore, authoritative snapshot and both seat projections. The new capabilities and component definition remain unregistered until a dealt card can reach them. Focused T2 evidence is in the milestone commit; no Unity-facing presentation changed.
+
+Historical evidence: [8.92a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892a-trinkets-component-foundation-completion-evidence).
+
+### [~] 8.92b Compose the Turret-linked Attacks
 
 Outcome: the five Red faces apply their printed targeting, line bonus and repeat clauses, including independent Range from Trinkets and the Turret.
 

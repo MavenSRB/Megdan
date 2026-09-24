@@ -32,6 +32,8 @@ The 8.43a groundwork adds `TokenRemovalCondition.RetainedAtEndOfRound` as an exp
 
 A token definition composes explicit continuous/query/trigger capabilities such as obstacle classification, terrain-like restriction, entry/exit effect, modifier source, immunity interaction, or removal condition. Token art does not define behavior.
 
+Milestone 8.92a adds the verified Barrier property scope: each of Trinkets' three Barrier tokens contributes its own +1 Defense to every adjacent friendly hero, including Trinkets while he stands there. The board derives these modifiers from placed token instances, so they stack, end when their token leaves, and remain available to allies if their controller is defeated. The first Barrier placement can be constrained against the **live** Turret position at offer and answer; later placements use the ordinary printed-Radius token capability. The definition and handlers are not registered until a dealt card can reach them.
+
 The implemented milestone 6.3 declaration carries stable property identity, rule kind, and applicability kind. It establishes the source/lifetime contract without inventing a concrete verified modifier, trigger, or Wasp rule; those consumers arrive with the milestone and source that require them.
 
 Entry/exit effects run from authoritative movement/displacement checkpoints. A unit that ignores obstacles still applies token effects while transiting where the rules require it.
@@ -51,6 +53,8 @@ Milestone 6.2 implements the attachment, its finite supply, its explicit return 
 ### Obstacles and terrain
 
 `ObstacleQuery` uses effective characteristics. Units, terrain, tokens, and qualifying miniatures/objects are obstacles, with no more than one obstacle per space. Milestone 6.8 implements it over the board's shared occupancy index and the playable-space set rather than re-deriving obstacles per kind, and separates the transit question the Move-Through permission can answer from the endpoint question no unit may answer.
+
+Milestone 8.92a adds `IObstaclePlacementAuthority` over that same index: a trusted effect may place a singular actor-bound generic obstacle, reposition the existing instance into a different empty playable space, read its live coordinate, or remove it. The placement rechecks p.18's obstacle overlay and occupancy on answer. The Turret uses this contract and is **not terrain, a token, or a unit**. Generic obstacle state is projected and snapshotted with the board; it does not enter token end-of-round cleanup or owner-defeat return. The handler types remain unregistered until Trinkets is dealt.
 
 Terrain is a space classification and obstacle, not a token or unit. Effects that add/remove terrain-like properties do so through explicit continuous characteristics without replacing the underlying space ID.
 
