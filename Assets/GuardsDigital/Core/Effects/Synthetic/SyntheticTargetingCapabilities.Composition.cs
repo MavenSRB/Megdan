@@ -29,7 +29,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
         UnitsOnly = 1,
 
         /// <summary>Tokens, and no unit: "a Zombie token in range".</summary>
-        TokensOnly = 2
+        TokensOnly = 2,
+
+        /// <summary>A unit or token, excluding an obstacle or other board object.</summary>
+        UnitsAndTokens = 3
     }
 
     public static partial class SyntheticTargetingCapabilities
@@ -399,7 +402,8 @@ namespace GuardsDigital.Core.Effects.Synthetic
             EffectCapabilityContext context,
             PrintedValueChannel channel,
             PrintedIconKinds kinds,
-            bool relationRequired)
+            bool relationRequired,
+            HexCoordinate? originOverride = null)
         {
             var components = context.Components;
             if (components == null || !components.CanDisplace || !context.CardState.IsAvailable)
@@ -447,6 +451,10 @@ namespace GuardsDigital.Core.Effects.Synthetic
             {
                 kinds &= PrintedIconKinds.Tokens;
             }
+            else if (admittedKind == PrintedIconObjectKind.UnitsAndTokens)
+            {
+                kinds &= PrintedIconKinds.Units | PrintedIconKinds.Tokens;
+            }
 
             var printedTotal = channel == PrintedValueChannel.Radius
                 ? RadiusValueQuery.Calculate(
@@ -482,8 +490,11 @@ namespace GuardsDigital.Core.Effects.Synthetic
             var total = printedTotal.Total;
             var includeSelf = context.Input(IncludeSelfParameterName).BooleanValue;
             var measuredFrom = context.Input(MeasuredFromParameterName);
-            var moved = measuredFrom.Kind == EffectValueKind.Coordinate;
-            var origin = moved ? measuredFrom.Coordinate : actorAt;
+            var moved = originOverride.HasValue ||
+                measuredFrom.Kind == EffectValueKind.Coordinate;
+            var origin = originOverride ??
+                (measuredFrom.Kind == EffectValueKind.Coordinate
+                    ? measuredFrom.Coordinate : actorAt);
 
             // p.9 states one geometry for both icons, counted through obstacles because there are no
             // line-of-sight rules. Where the centre has moved, the object standing on it is not the

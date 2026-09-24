@@ -7,7 +7,7 @@ namespace GuardsDigital.Core.Cards.Verified
     /// <summary>Trinkets' five Red faces, composed but not dealt until the complete set exists.</summary>
     public static partial class TrinketsCardContent
     {
-        public const string ContentRevision = "trinkets-8-92c-incomplete";
+        public const string ContentRevision = "trinkets-8-92d-incomplete";
 
         public static ActionDefinitionId PrimaryRangedAttack { get; } =
             new ActionDefinitionId("primary-ranged-attack");

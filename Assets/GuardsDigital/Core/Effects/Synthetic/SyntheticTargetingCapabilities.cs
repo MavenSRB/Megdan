@@ -759,6 +759,14 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 obstacleKind, dualRange);
         }
 
+        /// <summary>Printed Radius measured from the live actor-owned obstacle on each offer and answer.</summary>
+        public static IEffectCapabilityHandler OwnedObstacleRadiusHandler(
+            EffectCapabilityReference reference, string obstacleKind, bool heroesOnly) =>
+            new PrintedIconTargetHandler(reference, PrintedValueChannel.Radius,
+                heroesOnly ? PrintedIconSelectionSubject.Hero :
+                    PrintedIconSelectionSubject.BoardObject,
+                obstacleKind, false, centerOnOwnedObstacle: true);
+
         /// <summary>
         /// Milestone 8.35z33. The declarations this build does <em>not</em> register, stated as its own
         /// list for the reason <see cref="SyntheticRosterCapabilities.DeferredHandlers"/> is: the
@@ -1152,18 +1160,24 @@ namespace GuardsDigital.Core.Effects.Synthetic
             private readonly PrintedIconSelectionSubject subject;
             private readonly string ownedObstacleKind;
             private readonly bool dualRangeFromObstacle;
+            private readonly bool centerOnOwnedObstacle;
 
             public PrintedIconTargetHandler(
                 EffectCapabilityReference reference,
                 PrintedValueChannel channel,
                 PrintedIconSelectionSubject subject = PrintedIconSelectionSubject.BoardObject,
                 string ownedObstacleKind = null,
-                bool dualRangeFromObstacle = false)
+                bool dualRangeFromObstacle = false,
+                bool centerOnOwnedObstacle = false)
             {
                 if (ownedObstacleKind != null &&
                     (string.IsNullOrWhiteSpace(ownedObstacleKind) ||
-                     subject != PrintedIconSelectionSubject.Unit ||
-                     channel != PrintedValueChannel.Range))
+                     !(centerOnOwnedObstacle
+                         ? channel == PrintedValueChannel.Radius &&
+                           (subject == PrintedIconSelectionSubject.Hero ||
+                            subject == PrintedIconSelectionSubject.BoardObject)
+                         : subject == PrintedIconSelectionSubject.Unit &&
+                           channel == PrintedValueChannel.Range)))
                     throw new ArgumentException(
                         "An owned-obstacle clause belongs to a printed-Range unit selection.",
                         nameof(ownedObstacleKind));
@@ -1172,6 +1186,7 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 this.subject = subject;
                 this.ownedObstacleKind = ownedObstacleKind;
                 this.dualRangeFromObstacle = dualRangeFromObstacle;
+                this.centerOnOwnedObstacle = centerOnOwnedObstacle;
 
                 // Milestone 8.88. One declaration for every arm: each filter the family composes, on
                 // every arm it can mean something on, each optional but the ones the arm always required.
@@ -1473,6 +1488,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// </summary>
             private IReadOnlyList<BoardObjectReference> Offered(EffectCapabilityContext context)
             {
+                HexCoordinate? liveOrigin = null;
+                if (centerOnOwnedObstacle)
+                {
+                    if (context.Components?.Obstacles == null ||
+                        !context.Components.Obstacles.TryGetObstacleCoordinate(
+                            OwnedObstacleIdentity.For(ownedObstacleKind, context.ActorId),
+                            out var at))
+                        return Array.Empty<BoardObjectReference>();
+                    liveOrigin = at;
+                }
                 var candidates = PrintedIconSelection(
                     context,
                     channel,
@@ -1483,8 +1508,9 @@ namespace GuardsDigital.Core.Effects.Synthetic
                             : subject == PrintedIconSelectionSubject.Unit
                                 ? PrintedIconKinds.Units
                                 : PrintedIconKinds.All,
-                    relationRequired: subject != PrintedIconSelectionSubject.BoardObject);
-                if (ownedObstacleKind == null)
+                    relationRequired: subject != PrintedIconSelectionSubject.BoardObject,
+                    originOverride: liveOrigin);
+                if (ownedObstacleKind == null || centerOnOwnedObstacle)
                     return candidates;
 
                 // Read the piece on every offer AND answer. An earlier node's coordinate fact is

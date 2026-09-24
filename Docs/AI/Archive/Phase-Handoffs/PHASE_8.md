@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92d Trinkets Green completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92d | Five undealt Green Skills: Turret-conditioned unit/token Swap, live-radius self-Place, distinct up-to-two discard or defeat choices, and printed Turret-removal endings. Stale rechecks, immunity, five paused-choice snapshot/replay prefixes, and focused affected regressions passed. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892d-compose-swap-place-and-turret-removal). | `milestone/8.92d` |
+
 ## Milestone 8.92c Trinkets Blue support completion evidence
 
 | Milestone | Outcome and definition | Commit |

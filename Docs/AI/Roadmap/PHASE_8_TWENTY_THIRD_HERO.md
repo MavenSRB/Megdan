@@ -56,7 +56,7 @@ Completed 2026-09-24. Three Blue Disruptor faces create turn-limited, live Turre
 
 Historical evidence: [8.92c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892c-trinkets-blue-support-completion-evidence).
 
-### [~] 8.92d Compose swap, Place and Turret removal
+### [x] 8.92d Compose swap, Place and Turret removal
 
 Outcome: Early Prototype, Updated Design, Self-Destruct, Perfected Design and Emergency Protocol run their exact conditions, chooser options and endings.
 
@@ -64,7 +64,11 @@ Acceptance: self in Turret Radius; legal unit/token Swap and self Place; Early P
 
 Non-goals: Ultimate, dealing.
 
-### [ ] 8.92e Compose Unlimited Firepower and reconcile the complete set
+Completed 2026-09-24. The five undealt Green faces compose the printed actor-in-Turret-radius condition, live Turret-centred unit-or-token Swap, Perfected Design's self-Place alternative, two distinct enemy choices for discard or defeat, and the correct removal or persistence of the single Turret. Live rechecks prevent a moved Turret from applying a stale Swap/Place answer; Skill immunity excludes a hero from the swap offer. Every Green pending decision restores with the same offer and replays the same next command to byte-identical authoritative state from a retained prefix. Focused affected T2 tests and Unity Edit Mode are green; the full player-path Undo gate remains 8.92g. Evidence is in the milestone commit.
+
+Historical evidence: [8.92d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892d-trinkets-green-completion-evidence).
+
+### [~] 8.92e Compose Unlimited Firepower and reconcile the complete set
 
 Outcome: the unlocked Ultimate grants its printed +1 Range and +1 Radius while Trinkets stands; all eighteen dealt faces plus the boxed Handicap have complete authoritative definitions behind the registration gate.
 

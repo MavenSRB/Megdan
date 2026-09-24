@@ -4,6 +4,7 @@ using System.Linq;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.CardResolution;
 using GuardsDigital.Core.Rules.Modifications;
@@ -92,6 +93,16 @@ namespace GuardsDigital.Core.Effects.Synthetic
 
         public static EffectCapabilityReference PlaceInRadiusV1 =>
             new EffectCapabilityReference(PlaceInRadius, 1);
+
+        /// <summary>Printed Radius Place with a live actor-owned obstacle as destination centre.</summary>
+        public static IEffectCapabilityHandler OwnedObstacleRadiusPlaceHandler(
+            EffectCapabilityReference reference, string obstacleKind)
+        {
+            if (string.IsNullOrWhiteSpace(obstacleKind))
+                throw new ArgumentException("Obstacle kind is required.", nameof(obstacleKind));
+            return new PlaceHandler(reference, PrintedValueChannel.Radius,
+                ownedObstacleKind: obstacleKind);
+        }
 
         /// <summary>
         /// Milestone 8.35z29. The printed-Range arm measured as a <em>ring</em> rather than a disk -
@@ -662,18 +673,21 @@ namespace GuardsDigital.Core.Effects.Synthetic
             /// right, or <see cref="PlaceDestinationQualifier.None"/> on every arm that qualifies none.
             /// </summary>
             private readonly PlaceDestinationQualifier qualifier;
+            private readonly string ownedObstacleKind;
 
             public PlaceHandler(
                 EffectCapabilityReference reference,
                 PrintedValueChannel boundChannel,
                 PlaceDestinationScope destinationScope =
                     PlaceDestinationScope.EmptySpacesWithinRadius,
-                PlaceDestinationQualifier qualifier = PlaceDestinationQualifier.None)
+                PlaceDestinationQualifier qualifier = PlaceDestinationQualifier.None,
+                string ownedObstacleKind = null)
             {
                 Reference = reference;
                 this.boundChannel = boundChannel;
                 this.destinationScope = destinationScope;
                 this.qualifier = qualifier;
+                this.ownedObstacleKind = ownedObstacleKind;
 
                 var parameters = new List<EffectCapabilityParameter>
                 {
@@ -1085,6 +1099,12 @@ namespace GuardsDigital.Core.Effects.Synthetic
                 // Milestone 8.88a. "in radius of the Turret": the reach is measured from a published
                 // space where the declaration moves it, and from the anchor otherwise.
                 measuredFrom = SyntheticTargetingCapabilities.MeasuredFromOr(context, measuredFrom);
+                if (ownedObstacleKind != null &&
+                    (components.Obstacles == null ||
+                     !components.Obstacles.TryGetObstacleCoordinate(
+                         OwnedObstacleIdentity.For(ownedObstacleKind, context.ActorId),
+                         out measuredFrom)))
+                    return false;
 
                 var exclusion = boundChannel == PrintedValueChannel.None
                     ? PlaceSpawnPointExclusion.None
