@@ -141,6 +141,52 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         internal PendingDefenseResponseChoice PendingDefenseChoice => pendingDefenseChoice;
 
+        internal void SuspendDefenseChoice()
+        {
+            if (pendingAttackResolution?.Phase != AttackResolutionPhase.DefenseResponse ||
+                pendingDefenseChoice == null)
+                throw new InvalidOperationException("Only an open Defense choice can be interrupted.");
+            pendingDefenseChoice = null;
+        }
+
+        internal PendingDefenseResponseChoice ReopenDefenseChoice(
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            RuleModificationSet modifications)
+        {
+            if (pendingAttackResolution?.Phase != AttackResolutionPhase.DefenseResponse ||
+                pendingDefenseChoice != null)
+                throw new InvalidOperationException("The interrupted Defense choice must be absent.");
+            var attack = FindPendingAttackOffer(
+                pendingAttackResolution, definitions, instances);
+            if (!attack.HasValue)
+                throw new InvalidOperationException("The interrupted Attack source is unavailable.");
+            var offers = FindDefenseOffers(definitions, instances,
+                pendingAttackResolution.TargetHeroId, modifications, attack.Value);
+            pendingDefenseChoice = new PendingDefenseResponseChoice(
+                pendingAttackResolution.ResolutionId,
+                pendingAttackResolution.CurrentStepId,
+                pendingAttackResolution.TargetHeroId,
+                pendingAttackResolution.ActorId,
+                pendingAttackResolution.SourceCardInstanceId,
+                pendingAttackResolution.SourceDefinitionReference,
+                pendingAttackResolution.ActionDefinitionId,
+                pendingAttackResolution.AttackTotal,
+                offers, true);
+            return pendingDefenseChoice;
+        }
+
+        internal AttackActionResolutionResult FinishAfterDefenderRemovedBeforeDefense()
+        {
+            if (pendingAttackResolution?.Phase != AttackResolutionPhase.DefenseResponse ||
+                adjacentMoveAuthority.TryGetHeroCoordinate(
+                    pendingAttackResolution.TargetHeroId, out _))
+                throw new InvalidOperationException(
+                    "Only a Defense window whose target was removed can end without a response.");
+            return StopAttackWithoutATarget(
+                pendingAttackResolution, new List<ResolutionStep>());
+        }
+
         internal bool HasPendingResolution => pendingAttackResolution != null;
 
         /// <summary>
@@ -2614,7 +2660,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             MarkerAttachmentRegister markers,
             RuleModificationSet modifications,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems = null,
-            EffectRosterState rosterState = null)
+            EffectRosterState rosterState = null,
+            bool defenseInterrupted = false)
         {
             if (state == null)
             {
@@ -2728,6 +2775,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
                 if (pendingResolution.Phase == AttackResolutionPhase.DefenseResponse)
                 {
+                    if (defenseInterrupted && verifiedDefenseChoice != null)
+                        throw new ArgumentException(
+                            "An interrupted Defense cannot also offer a card.",
+                            nameof(verifiedDefenseChoice));
                     var expectedDefenseOffers = FindDefenseOffers(
                         materializedDefinitions, materializedInstances,
                         pendingResolution.TargetHeroId, modifications, offer.Value);
@@ -2737,7 +2788,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                         throw new ArgumentException("Pending Defense response choice does not match authoritative Attack state.", nameof(verifiedDefenseChoice));
                     }
 
-                    defenseChoice = verifiedDefenseChoice ?? new PendingDefenseResponseChoice(
+                    defenseChoice = defenseInterrupted ? null : verifiedDefenseChoice ?? new PendingDefenseResponseChoice(
                         pendingResolution.ResolutionId,
                         pendingResolution.CurrentStepId,
                         pendingResolution.TargetHeroId,

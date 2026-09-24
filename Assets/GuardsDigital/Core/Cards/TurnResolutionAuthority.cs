@@ -2584,6 +2584,15 @@ namespace GuardsDigital.Core.Cards
             GuardsDigital.Core.Rules.CardResolution.PendingPreActionResolution paused,
             List<TurnResolutionEvent> events)
         {
+            if (paused.Kind ==
+                GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind.BeforeDefenseResponse)
+            {
+                var reopened = cardActions.ReopenDefenseChoice(
+                    definitions, instances, CurrentModifications());
+                events.AddRange(MaterializeSteps(
+                    reopened.Steps, TurnResolutionEvent.FromAttackAction));
+                return TurnResolutionResult.Accept(events);
+            }
             var owed = cardActions.PendingPreActionResolution;
             if (owed != null && owed.OwesWork &&
                 owed.Placement ==
@@ -2852,7 +2861,7 @@ namespace GuardsDigital.Core.Cards
                 // Milestone 8.35z29. Misa's three Green `Next turn:` cards open the same window
                 // from an Active effect rather than from a p.16 permanent ability, so the standing
                 // effects are asked here beside the unlocked Ultimates.
-                timing);
+                timing, heroItems);
             if (triggers.Count == 0)
             {
                 return null;
@@ -3658,9 +3667,55 @@ namespace GuardsDigital.Core.Cards
                     continue;
                 }
 
+                if (step.Fact.Kind == CardActionResolutionEventKind.DefenseResponseChoiceRequested &&
+                    TryInterceptDefenseBeforeChoice(events))
+                {
+                    return false;
+                }
                 events.Add(toTurnEvent(step.Fact));
             }
 
+            return true;
+        }
+
+        private bool TryInterceptDefenseBeforeChoice(List<TurnResolutionEvent> events)
+        {
+            var attack = cardActions?.PendingAttackResolution;
+            if (attack == null || attack.Phase != AttackResolutionPhase.DefenseResponse ||
+                cardActions.PendingDefenseChoice == null)
+                return false;
+            var sources = GuardsDigital.Core.Rules.Progression.BeforeActionTriggerQuery
+                .DeriveForDefense(timing, cardActions.Board, participants,
+                    attack.TargetHeroId, heroItems);
+            var source = sources.FirstOrDefault(candidate => !consumedTurnScopedKeys.Contains(
+                $"before-defense:{attack.ResolutionId.Value}:{candidate.SourceId}"));
+            if (source == null)
+                return false;
+            consumedTurnScopedKeys.Add(
+                $"before-defense:{attack.ResolutionId.Value}:{source.SourceId}");
+            var heldOffer = new ActionOffer(
+                attack.SourceCardInstanceId, attack.SourceDefinitionReference,
+                attack.ActionDefinitionId, attack.ActorId, attack.InvocationContext, true);
+            var started = cardActions.StartBeforeActionTrigger(
+                source, attack.ResolutionId, heldOffer, definitions, instances,
+                participants, timing, CurrentModifications(), roundIndex, turnIndex,
+                attack.TargetHeroId,
+                GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind.BeforeDefenseResponse);
+            if (!started.Accepted)
+                throw new InvalidOperationException(
+                    "A configured pre-Defense active effect could not start.");
+            events.AddRange(MaterializeSteps(
+                started.Steps, TurnResolutionEvent.FromTriggeredEffect));
+            if (!cardActions.Board.TryGetHeroCoordinate(attack.TargetHeroId, out _))
+            {
+                var ended = cardActions.FinishAfterDefenderRemovedBeforeDefense();
+                events.AddRange(MaterializeSteps(
+                    ended.Steps, TurnResolutionEvent.FromAttackAction));
+                return true;
+            }
+            if (cardActions.PendingPreActionResolution?.Frame == null)
+                return false;
+            cardActions.SuspendDefenseChoice();
             return true;
         }
 

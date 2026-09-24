@@ -22,7 +22,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// which side is the actor's decision - Xargatha's Charm moves an enemy minion "before or after"
         /// her own Movement. The frame runs first either way, because the decision is inside it.
         /// </summary>
-        AroundPrimaryAction = 2
+        AroundPrimaryAction = 2,
+
+        /// <summary>An enemy pre-primary trigger interrupts p.14 before Defense offers exist.</summary>
+        BeforeDefenseResponse = 3
     }
 
     /// <summary>Which side of the held action this frame's remaining work belongs to.</summary>
@@ -110,6 +113,15 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     "A trigger that fires before an action runs before it; only text applied around a " +
                     "primary action chooses a side.",
                     nameof(placement));
+            }
+
+            if (kind == PreActionContinuationKind.BeforeDefenseResponse &&
+                (placement != PreActionPlacement.BeforeTheAction || frame == null ||
+                    frame.PendingChoice == null))
+            {
+                throw new ArgumentException(
+                    "An interrupted Defense has a live trigger choice before its response.",
+                    nameof(kind));
             }
 
             if (!heldResolutionId.IsDefined || !heldOffer.IsAvailable)

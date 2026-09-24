@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92c Trinkets Blue support completion evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92c | Three turn-limited Turret-centred preprimary Disruptors, Grid's discard-or-defeat, designer-ordered pre-Defense interruption with refreshed Defense offers, and two optional-count Barrier faces using the finite three-token supply. Snapshot restoration and focused affected regressions passed; content is undealt. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892c-compose-disruption-and-barrier-support). | `milestone/8.92c` |
+
 ## Milestone 8.92b Trinkets Red Attack completion evidence
 
 | Milestone | Outcome and definition | Commit |

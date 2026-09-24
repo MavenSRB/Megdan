@@ -44,7 +44,7 @@ Completed 2026-09-24. The five Red faces retain their printed values, items and 
 
 Historical evidence: [8.92b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892b-trinkets-red-attack-completion-evidence).
 
-### [~] 8.92c Compose disruption and Barrier support
+### [x] 8.92c Compose disruption and Barrier support
 
 Outcome: Disruptor Jolt, Pulse and Grid run their timed pre-action discard or defeat effects from the Turret's live Radius; Deployable Barrier and Bastion place their printed up-to counts and grant the printed adjacent Barrier Defense.
 
@@ -52,7 +52,11 @@ Acceptance: discard versus defeat ordering, one-use deactivation, radius and ite
 
 Non-goals: Green faces, dealing.
 
-### [ ] 8.92d Compose swap, Place and Turret removal
+Completed 2026-09-24. Three Blue Disruptor faces create turn-limited, live Turret-centred enemy-primary triggers. A successful discard deactivates its effect; Grid requests defeat when discard is unavailable. The pre-Defense window suspends and rebuilds the defender's offer, so a sole Primary Defense card discarded at that checkpoint cannot defend. Blue Barrier/Bastion use the three-piece supply, optional zero-to-printed-maximum placements, and a live-Turret adjacency check for the first piece. Snapshot restoration of a paused discard and affected timing, token and active-effect regressions pass. The content remains undealt. Focused T2 evidence is in the milestone commit; the full player-path/Undo gate remains 8.92g.
+
+Historical evidence: [8.92c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892c-trinkets-blue-support-completion-evidence).
+
+### [~] 8.92d Compose swap, Place and Turret removal
 
 Outcome: Early Prototype, Updated Design, Self-Destruct, Perfected Design and Emergency Protocol run their exact conditions, chooser options and endings.
 

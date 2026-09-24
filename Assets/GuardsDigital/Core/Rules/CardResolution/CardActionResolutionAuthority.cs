@@ -13,6 +13,7 @@ using GuardsDigital.Core.Rules.Consequences;
 using GuardsDigital.Core.Rules.Placement;
 using GuardsDigital.Core.Rules.EffectResolution;
 using GuardsDigital.Core.Effects;
+using GuardsDigital.Core.Effects.Synthetic;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Timing;
 using GuardsDigital.Core.Units.Heroes;
@@ -266,6 +267,27 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public PendingAttackTargetChoice PendingAttackTargetChoice => attackDefenseBackend.PendingTargetChoice;
 
         public PendingDefenseResponseChoice PendingDefenseChoice => attackDefenseBackend.PendingDefenseChoice;
+
+        public void SuspendDefenseChoice() => attackDefenseBackend.SuspendDefenseChoice();
+
+        public AttackActionResolutionResult FinishAfterDefenderRemovedBeforeDefense() =>
+            attackDefenseBackend.FinishAfterDefenderRemovedBeforeDefense();
+
+        public CardActionResolutionResult ReopenDefenseChoice(
+            IReadOnlyList<CardDefinition> definitions,
+            IReadOnlyList<CardInstance> instances,
+            RuleModificationSet modifications)
+        {
+            var choice = attackDefenseBackend.ReopenDefenseChoice(
+                definitions, instances, modifications);
+            return CardActionResolutionResult.Accept(false, null, null,
+                new[]
+                {
+                    ResolutionStep.FromFact(
+                        CardActionResolutionEvent.DefenseResponseChoiceRequested(
+                            attackDefenseBackend.PendingResolution))
+                });
+        }
 
         public HeroCoinLedger CoinLedger => attackDefenseBackend.CoinLedger;
 
@@ -1837,6 +1859,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
             EffectRosterState rosterState = null)
         {
             if (state == null) throw new ArgumentNullException(nameof(state));
+            if (state.PendingPreAction?.Kind ==
+                PreActionContinuationKind.BeforeDefenseResponse &&
+                (state.PendingAttackResolution?.Phase != AttackResolutionPhase.DefenseResponse ||
+                    verifiedDefenseChoice != null ||
+                    !state.PendingPreAction.HeldResolutionId.Equals(
+                        state.PendingAttackResolution.ResolutionId) ||
+                    !state.PendingPreAction.Frame.PendingChoice.ChooserId.Equals(
+                        state.PendingAttackResolution.TargetHeroId)))
+                throw new ArgumentException(
+                    "A pre-Defense trigger must suspend the matching Attack and defender choice.",
+                    nameof(state));
 
             // Milestone 6.9. Restored outside the continuation switch because a mid-turn Lane-Push
             // request is not one of the continuations: it accompanies whichever one the action left
@@ -1959,7 +1992,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             markers,
                             modifications,
                             heroItems,
-                            rosterState));
+                            rosterState,
+                            state.PendingPreAction?.Kind ==
+                                PreActionContinuationKind.BeforeDefenseResponse));
 
                 case CardActionContinuationKind.Skill:
                     var isTriggered = catalogs.TriggeredEffects.TryGet(
@@ -3835,7 +3870,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
             ActiveEffectLifecycle timing,
             RuleModificationSet modifications,
             int roundIndex,
-            int turnIndex)
+            int turnIndex,
+            HeroId triggeredHeroId = default,
+            PreActionContinuationKind continuationKind =
+                PreActionContinuationKind.BeforeActionTrigger)
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (pendingPreAction != null)
@@ -3852,6 +3890,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
             var materializedDefinitions = definitions?.ToArray() ??
                 throw new ArgumentNullException(nameof(definitions));
+            var sourceReference = source.SourceDefinitionReference.IsDefined
+                ? source.SourceDefinitionReference
+                : instances.Single(card =>
+                    card.Id.Equals(source.SourceCardInstanceId)).DefinitionReference;
             var context = new EffectResolutionContext(
                 effect,
                 ContentCatalogs.Capabilities,
@@ -3862,6 +3904,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 EffectCardState.Of(materializedDefinitions, instances),
                 ActionKind.Skill,
+                opposingHeroId: triggeredHeroId.IsDefined
+                    ? triggeredHeroId
+                    : source.ControllerId.Equals(heldOffer.ActorId)
+                        ? default : heldOffer.ActorId,
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 rosterState: rosterState,
@@ -3870,7 +3916,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 new EffectResolutionId(
                     $"before-action-{source.SourceId}-{heldResolutionId.Value}"),
                 source.SourceCardInstanceId,
-                source.SourceDefinitionReference,
+                sourceReference,
                 source.SourceActionDefinitionId,
                 source.ControllerId,
                 source.ControllerId,
@@ -3882,22 +3928,32 @@ namespace GuardsDigital.Core.Rules.CardResolution
                     CardActionResolutionRejectionReason.InvalidChoice, null, null);
             }
 
+            CancelDiscardSatisfiedBeforeActionEffect(
+                result, source.SourceCardInstanceId, source.SourceActionDefinitionId,
+                source.ControllerId, timing, roundIndex, turnIndex);
+
             if (result.Frame?.PendingChoice != null)
             {
                 pendingPreAction = new PendingPreActionResolution(
                     result.Frame,
-                    PreActionContinuationKind.BeforeActionTrigger,
+                    continuationKind,
                     PreActionPlacement.BeforeTheAction,
                     heldResolutionId,
                     heldOffer);
             }
 
+            var facts = new List<ResolutionStep>(PreActionFacts(
+                result, source.SourceCardInstanceId, source.SourceActionDefinitionId,
+                source.ControllerId, CardTextTiming.None));
+            AppendRequestedHeroDefeats(result,
+                EffectInvokedDefeatSource.FromSkill(
+                    new ActionResolutionId(
+                        $"before-action-{source.SourceId}-{heldResolutionId.Value}"),
+                    source.SourceCardInstanceId, source.SourceActionDefinitionId,
+                    source.ControllerId), materializedDefinitions, instances,
+                participants, modifications, facts);
             return CardActionResolutionResult.Accept(
-                pendingPreAction == null,
-                null,
-                null,
-                PreActionFacts(result, source.SourceCardInstanceId, source.SourceActionDefinitionId,
-                    source.ControllerId, CardTextTiming.None));
+                pendingPreAction == null, null, null, facts);
         }
 
         /// <summary>
@@ -4255,6 +4311,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 EffectCardState.Of(materializedDefinitions, instances),
                 enclosingKind,
+                opposingHeroId: paused.Kind == PreActionContinuationKind.BeforeDefenseResponse
+                    ? attackDefenseBackend.PendingResolution?.TargetHeroId ?? default
+                    : paused.Kind == PreActionContinuationKind.BeforeActionTrigger &&
+                        !paused.Frame.ActorId.Equals(paused.HeldOffer.ActorId)
+                        ? paused.HeldOffer.ActorId : default,
                 components: components,
                 heroItems: skillBackend.HeroItems,
                 rosterState: rosterState,
@@ -4276,12 +4337,25 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 }
             }
 
+            if (paused.Kind == PreActionContinuationKind.BeforeActionTrigger ||
+                paused.Kind == PreActionContinuationKind.BeforeDefenseResponse)
+                CancelDiscardSatisfiedBeforeActionEffect(
+                    step, paused.Frame.SourceCardInstanceId,
+                    paused.Frame.ActionDefinitionId, paused.Frame.ActorId,
+                    timing, roundIndex, turnIndex);
+
             var timingLabel = paused.Kind == PreActionContinuationKind.AroundPrimaryAction
                 ? CardTextTiming.AroundTheAction
                 : CardTextTiming.None;
-            var facts = PreActionFacts(
+            var facts = new List<ResolutionStep>(PreActionFacts(
                 step, paused.Frame.SourceCardInstanceId, paused.Frame.ActionDefinitionId,
-                paused.Frame.ActorId, timingLabel);
+                paused.Frame.ActorId, timingLabel));
+            AppendRequestedHeroDefeats(step,
+                EffectInvokedDefeatSource.FromSkill(
+                    new ActionResolutionId(paused.Frame.ResolutionId.Value),
+                    paused.Frame.SourceCardInstanceId,
+                    paused.Frame.ActionDefinitionId, paused.Frame.ActorId),
+                materializedDefinitions, instances, participants, modifications, facts);
 
             if (!step.IsComplete)
             {
@@ -5590,6 +5664,28 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         /// <summary>Records that the held action has started and the placed work is still owed.</summary>
         public void ParkPreActionContinuation() => pendingPreAction = pendingPreAction?.Parked();
+
+        private static void CancelDiscardSatisfiedBeforeActionEffect(
+            EffectResolutionStepResult result, CardInstanceId sourceCardId,
+            ActionDefinitionId actionId, HeroId controllerId,
+            ActiveEffectLifecycle timing, int roundIndex, int turnIndex)
+        {
+            if (timing == null || !result.Events.Any(value =>
+                    value.Outputs.Any(output =>
+                        output.OutputName == SyntheticCardStateCapabilities.DiscardedOutput &&
+                        output.Value.Kind == EffectValueKind.CardInstance)))
+                return;
+            foreach (var effect in timing.Effects.Where(effect =>
+                effect.Phase == ActiveEffectPhase.Active &&
+                effect.ControllerHeroId.Equals(controllerId) &&
+                effect.SourceCardInstanceId.Equals(sourceCardId) &&
+                effect.SourceActionDefinitionId.Equals(actionId) &&
+                effect.Definition.TriggerCheckpoints.Contains(TimingCheckpoint.BeforePrimaryAction) &&
+                effect.Definition.AffectedScope == ActiveEffectAffectedScopeKind.HeroesInRadius &&
+                effect.Definition.CancellationConditions.Contains(
+                    ActiveEffectCancellationCondition.Explicit)).ToArray())
+                timing.CancelOne(effect.Id, roundIndex, turnIndex);
+        }
 
         private static IReadOnlyList<ResolutionStep> PreActionFacts(
             EffectResolutionStepResult result,

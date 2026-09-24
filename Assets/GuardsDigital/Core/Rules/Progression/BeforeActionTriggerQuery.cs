@@ -2,8 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
+using GuardsDigital.Core.Rules.Modifications;
+using GuardsDigital.Core.Obstacles;
+using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Rules.Progression
 {
@@ -77,7 +82,8 @@ namespace GuardsDigital.Core.Rules.Progression
             ActionOffer offer,
             ActionKind actionKind,
             IReadOnlyCollection<string> consumedSourceIds,
-            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing = null)
+            GuardsDigital.Core.Timing.ActiveEffectLifecycle timing = null,
+            HeroItemState heroItems = null)
         {
             if (ultimates == null) throw new ArgumentNullException(nameof(ultimates));
             if (board == null) throw new ArgumentNullException(nameof(board));
@@ -89,7 +95,8 @@ namespace GuardsDigital.Core.Rules.Progression
             }
 
             return FromUltimates(ultimates, board, offer, actionKind, consumedSourceIds)
-                .Concat(FromActiveEffects(timing, board, offer, actionKind, consumedSourceIds))
+                .Concat(FromActiveEffects(timing, board, participants, offer, actionKind,
+                    consumedSourceIds, heroItems))
                 .ToArray();
         }
 
@@ -148,12 +155,15 @@ namespace GuardsDigital.Core.Rules.Progression
         private static IEnumerable<BeforeActionTriggerSource> FromActiveEffects(
             GuardsDigital.Core.Timing.ActiveEffectLifecycle timing,
             AdjacentMoveAuthority board,
+            MatchParticipants participants,
             ActionOffer offer,
             ActionKind actionKind,
-            IReadOnlyCollection<string> consumedSourceIds)
+            IReadOnlyCollection<string> consumedSourceIds,
+            HeroItemState heroItems)
         {
             if (timing == null ||
-                !BeforeActionTriggerAdmitsKind(actionKind))
+                !BeforeActionTriggerAdmitsKind(actionKind) ||
+                !PrimaryActionQuery.IsPerformingAPrimaryAction(offer.InvocationContext))
             {
                 return Array.Empty<BeforeActionTriggerSource>();
             }
@@ -163,7 +173,12 @@ namespace GuardsDigital.Core.Rules.Progression
                     effect.Definition.TriggeredEffect.HasValue &&
                     effect.Definition.TriggerCheckpoints.Contains(
                         GuardsDigital.Core.Timing.TimingCheckpoint.BeforePrimaryAction) &&
-                    effect.ControllerHeroId.Equals(offer.ActorId) &&
+                    effect.Phase == ActiveEffectPhase.Active &&
+                    ((effect.Definition.AffectedScope ==
+                        ActiveEffectAffectedScopeKind.ControllerHero &&
+                        effect.ControllerHeroId.Equals(offer.ActorId)) ||
+                        EnemyInLiveDisk(effect, timing, board, participants, offer.ActorId,
+                            heroItems)) &&
                     board.TryGetHeroCoordinate(effect.ControllerHeroId, out _) &&
                     !consumedSourceIds.Contains(effect.Id.Value))
                 .OrderBy(effect => effect.CreationSequence)
@@ -175,7 +190,77 @@ namespace GuardsDigital.Core.Rules.Progression
                     effect.SourceActionDefinitionId,
                     effect.Definition.TriggeredEffect.Value,
                     new BeforeActionTrigger(
-                        actionKind, BeforeActionTriggerFrequency.OncePerTurn)))
+                        effect.Definition.AffectedScope ==
+                            ActiveEffectAffectedScopeKind.ControllerHero
+                            ? actionKind : ActionKind.None,
+                        effect.Definition.AffectedScope ==
+                            ActiveEffectAffectedScopeKind.ControllerHero
+                            ? BeforeActionTriggerFrequency.OncePerTurn
+                            : BeforeActionTriggerFrequency.EveryAction)))
+                .ToArray();
+        }
+
+        private static bool EnemyInLiveDisk(
+            ActiveEffectInstance effect, ActiveEffectLifecycle timing,
+            AdjacentMoveAuthority board,
+            MatchParticipants participants, GuardsDigital.Core.Units.Heroes.HeroId actor,
+            HeroItemState heroItems)
+        {
+            if (effect.Definition.AffectedScope != ActiveEffectAffectedScopeKind.HeroesInRadius ||
+                effect.Definition.AffectedUnitRelation != SourceTeamRelation.OpposingSource ||
+                !effect.Definition.Radius.IsDefined ||
+                !board.TryGetHeroCoordinate(actor, out var actorAt) ||
+                !TargetQuery.StandsInRelationTo(
+                    SourceTeamRelation.OpposingSource,
+                    BoardObjectReference.ForHero(actor), effect.ControllerHeroId,
+                    participants, board))
+                return false;
+            if (!board.TryGetHeroCoordinate(effect.ControllerHeroId, out var anchor))
+                return false;
+            if (effect.Definition.TryGetOwnedObstacleRadiusAnchorKind(out var kind) &&
+                !board.TryGetObstacleCoordinate(
+                    OwnedObstacleIdentity.For(kind, effect.ControllerHeroId), out anchor))
+                return false;
+            var radius = effect.Definition.Radius.Resolve(
+                effect.ControllerHeroId, effect.SourceCardInstanceId,
+                effect.SourceActionDefinitionId, heroItems,
+                ItemBonusMultiplierQuery.BonusPerItem(effect.ControllerHeroId, timing));
+            return RadiusQuery.Contains(anchor, new ValueResult(
+                PrintedValueChannel.Radius,
+                new[] { new ValueContribution(ValueContributionKind.PrintedIcon,
+                    effect.SourceCardInstanceId, effect.SourceActionDefinitionId,
+                    PrintedValueChannel.Radius, radius) }), actorAt);
+        }
+
+        /// <summary>
+        /// A Defense primary is selected after p.14 opens the response window. A live enemy-disk
+        /// trigger runs before that selection, so it can discard the only eligible Defense card.
+        /// </summary>
+        public static IReadOnlyList<BeforeActionTriggerSource> DeriveForDefense(
+            ActiveEffectLifecycle timing, AdjacentMoveAuthority board,
+            MatchParticipants participants,
+            GuardsDigital.Core.Units.Heroes.HeroId defenderId,
+            HeroItemState heroItems = null)
+        {
+            if (timing == null || board == null || participants == null ||
+                !defenderId.IsDefined)
+                return Array.Empty<BeforeActionTriggerSource>();
+            return timing.Effects
+                .Where(effect =>
+                    effect.Phase == ActiveEffectPhase.Active &&
+                    effect.Definition.TriggeredEffect.HasValue &&
+                    effect.Definition.TriggerCheckpoints.Contains(
+                        TimingCheckpoint.BeforePrimaryAction) &&
+                    EnemyInLiveDisk(effect, timing, board, participants,
+                        defenderId, heroItems))
+                .OrderBy(effect => effect.CreationSequence)
+                .Select(effect => new BeforeActionTriggerSource(
+                    effect.Id.Value, effect.ControllerHeroId,
+                    effect.SourceCardInstanceId, default,
+                    effect.SourceActionDefinitionId,
+                    effect.Definition.TriggeredEffect.Value,
+                    new BeforeActionTrigger(ActionKind.None,
+                        BeforeActionTriggerFrequency.EveryAction)))
                 .ToArray();
         }
 

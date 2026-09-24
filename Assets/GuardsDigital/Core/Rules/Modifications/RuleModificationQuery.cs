@@ -330,6 +330,13 @@ namespace GuardsDigital.Core.Rules.Modifications
             {
                 yield break;
             }
+            if (effect.Definition.TryGetOwnedObstacleRadiusAnchorKind(out var obstacleKind) &&
+                !board.TryGetObstacleCoordinate(
+                    GuardsDigital.Core.Obstacles.OwnedObstacleIdentity.For(
+                        obstacleKind, effect.ControllerHeroId), out anchor))
+            {
+                yield break;
+            }
 
             var radius = new ValueResult(
                 PrintedValueChannel.Radius,

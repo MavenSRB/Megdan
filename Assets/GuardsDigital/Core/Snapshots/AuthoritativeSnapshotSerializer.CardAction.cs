@@ -462,7 +462,13 @@ namespace GuardsDigital.Core.Snapshots
                     reader, definitions, cards, catalogs.Capabilities, participants, components,
                     timing, modifications, heroItems, catalogs.TriggeredEffects,
                     roundIndex, turnIndex, rosterState,
-                    tieBreakerRevealedSide: tieBreakerRevealedSide)
+                    opposingHeroFor: actor => kind == GuardsDigital.Core.Rules.CardResolution
+                        .PreActionContinuationKind.BeforeActionTrigger &&
+                        !actor.Equals(heldOffer.ActorId)
+                        ? heldOffer.ActorId : default,
+                    tieBreakerRevealedSide: tieBreakerRevealedSide,
+                    useChoiceChooserAsOpposing: kind == GuardsDigital.Core.Rules.CardResolution
+                        .PreActionContinuationKind.BeforeDefenseResponse)
                 : null;
 
             // Every disagreement the shape admits is refused here rather than thrown by the type's own
@@ -472,6 +478,9 @@ namespace GuardsDigital.Core.Snapshots
                     placement == GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.Undecided) ||
                 (kind == GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind.BeforeActionTrigger &&
                     placement != GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.BeforeTheAction) ||
+                (kind == GuardsDigital.Core.Rules.CardResolution.PreActionContinuationKind.BeforeDefenseResponse &&
+                    (placement != GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.BeforeTheAction ||
+                        frame?.PendingChoice == null)) ||
                 (heldActionHasStarted &&
                     placement != GuardsDigital.Core.Rules.CardResolution.PreActionPlacement.AfterTheAction) ||
                 !heldOffer.IsAvailable)
@@ -1205,12 +1214,13 @@ namespace GuardsDigital.Core.Snapshots
             EffectRosterState rosterState,
             HeroId opposingHeroId = default,
             Func<HeroId, HeroId> opposingHeroFor = null,
-            TeamSide tieBreakerRevealedSide = TeamSide.None) =>
+            TeamSide tieBreakerRevealedSide = TeamSide.None,
+            bool useChoiceChooserAsOpposing = false) =>
             ReadSkillResolutionAwaitingItsAttack(
                 reader, definitions, cards, capabilities, participants, components, timing,
                 modifications, heroItems, triggeredEffects, roundIndex, turnIndex, rosterState,
                 opposingHeroId, opposingHeroFor,
-                tieBreakerRevealedSide)(EnclosingAttackFacts.None);
+                tieBreakerRevealedSide, useChoiceChooserAsOpposing)(EnclosingAttackFacts.None);
 
         /// <summary>
         /// Milestone 8.35i. Reads every byte of a skill frame, and returns the frame as a function of
@@ -1242,7 +1252,8 @@ namespace GuardsDigital.Core.Snapshots
             EffectRosterState rosterState,
             HeroId opposingHeroId = default,
             Func<HeroId, HeroId> opposingHeroFor = null,
-            TeamSide tieBreakerRevealedSide = TeamSide.None)
+            TeamSide tieBreakerRevealedSide = TeamSide.None,
+            bool useChoiceChooserAsOpposing = false)
         {
             var common = ReadCommonResolution(reader);
 
@@ -1360,7 +1371,8 @@ namespace GuardsDigital.Core.Snapshots
             return enclosingAttack => MaterializePendingChoice(
                 enclosingAttack, restored, trusted, node, definitions, cards, capabilities,
                 participants, components, timing, modifications, heroItems, rosterState,
-                roundIndex, turnIndex, opposing, common,
+                roundIndex, turnIndex,
+                useChoiceChooserAsOpposing ? chooserId : opposing, common,
                 choiceId, nodeId, chooserId, choiceKind, minimum, maximum, selected,
                 tieBreakerRevealedSide);
         }

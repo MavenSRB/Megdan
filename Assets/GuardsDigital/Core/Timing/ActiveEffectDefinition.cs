@@ -197,6 +197,7 @@ namespace GuardsDigital.Core.Timing
 
     public sealed class ActiveEffectDefinition
     {
+        private readonly string ownedObstacleRadiusAnchorKind;
         /// <summary>
         /// The trigger windows this build actually executes a declared effect at.
         ///
@@ -244,7 +245,8 @@ namespace GuardsDigital.Core.Timing
             DeclaredRadius radius = default,
             SourceTeamRelation affectedUnitRelation = SourceTeamRelation.None,
             EffectDefinitionReference? triggeredEffect = null,
-            ActiveEffectBoundActorSource boundActorSource = ActiveEffectBoundActorSource.None)
+            ActiveEffectBoundActorSource boundActorSource = ActiveEffectBoundActorSource.None,
+            string ownedObstacleRadiusAnchorKind = null)
         {
             if (string.IsNullOrWhiteSpace(definitionId))
                 throw new ArgumentException("An Active-effect definition requires a stable ID.", nameof(definitionId));
@@ -288,6 +290,12 @@ namespace GuardsDigital.Core.Timing
 
             ValidateDuration(durationKind, creationCheckpoint, activationCheckpoint, expirationCheckpoint, carriesAcrossRoundBoundary);
             ValidateDisk(affectedScope, radius, affectedUnitRelation, declaredOverlays.Length);
+            if (ownedObstacleRadiusAnchorKind != null &&
+                (string.IsNullOrWhiteSpace(ownedObstacleRadiusAnchorKind) || !radius.IsDefined))
+                throw new ArgumentException(
+                    "An obstacle-centred active disk requires a named obstacle and a radius.",
+                    nameof(ownedObstacleRadiusAnchorKind));
+            this.ownedObstacleRadiusAnchorKind = ownedObstacleRadiusAnchorKind;
             ValidateBoundActor(boundActorSource, creationCheckpoint, declaredModifications);
             BoundActorSource = boundActorSource;
             Radius = radius;
@@ -359,6 +367,13 @@ namespace GuardsDigital.Core.Timing
         /// consumers read it, and it is resolved - items and all - at derivation, never stored.
         /// </summary>
         public DeclaredRadius Radius { get; }
+
+        /// <summary>Optional live centre for a disk measured from a controller-owned obstacle.</summary>
+        public bool TryGetOwnedObstacleRadiusAnchorKind(out string kind)
+        {
+            kind = ownedObstacleRadiusAnchorKind;
+            return kind != null;
+        }
 
         /// <summary>
         /// Which side of the source the units inside that disk stand on, for every scope

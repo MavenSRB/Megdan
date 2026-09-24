@@ -41,6 +41,15 @@ namespace GuardsDigital.Core.Cards.Verified
         public static TokenDefinitionId BarrierId { get; } =
             new TokenDefinitionId("trinkets-barrier");
 
+        public static EffectCapabilityReference PlaceFirstBarrierV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-place-first-barrier"), 1);
+
+        public static EffectCapabilityReference PlaceBarrierV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-place-barrier"), 1);
+
+        public static EffectCapabilityReference ReclaimBarrierV1 =>
+            new EffectCapabilityReference(new EffectCapabilityId("trinkets-reclaim-barrier"), 1);
+
         public static TokenDefinitionReference BarrierV1 =>
             new TokenDefinitionReference(BarrierId, 1);
 
@@ -63,6 +72,16 @@ namespace GuardsDigital.Core.Cards.Verified
         public static IEnumerable<TokenDefinition> Tokens()
         {
             yield return Barrier;
+        }
+
+        public static IEnumerable<IEffectCapabilityHandler> BarrierHandlers()
+        {
+            yield return SyntheticTokenCapabilities.PlaceHandler(
+                PlaceFirstBarrierV1, Barrier, PrintedValueChannel.Radius,
+                adjacentToObstacleKind: TurretKind);
+            yield return SyntheticTokenCapabilities.PlaceHandler(
+                PlaceBarrierV1, Barrier, PrintedValueChannel.Radius);
+            yield return SyntheticTokenCapabilities.ReclaimHandler(ReclaimBarrierV1, Barrier);
         }
     }
 }
