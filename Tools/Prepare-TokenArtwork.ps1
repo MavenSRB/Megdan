@@ -54,7 +54,7 @@
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('tali', 'widget', 'min', 'ignatia')]
+    [ValidateSet('tali', 'widget', 'min', 'ignatia', 'trinkets')]
     [string] $Hero = 'tali',
     [switch] $Check,
     [switch] $Force
@@ -68,6 +68,72 @@ $ErrorActionPreference = 'Stop'
 if ($Hero -eq 'widget') {
     & (Join-Path $PSScriptRoot 'Prepare-HeroTokens.ps1') -Hero widget -Companion -Neutral -Check:$Check -Force:$Force
     exit
+}
+
+# Trinkets' three Barrier pieces share the one printed Wall_Barrier face. The Turret is an
+# obstacle, not a token; its separate standee is prepared by Prepare-HeroTokens.ps1 -Companion.
+if ($Hero -eq 'trinkets') {
+    $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+    $corpusRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Docs', 'Guards of Atlantis II - Tabletopia Cards', 'extracted', 'text-assets')
+    $targetRoot = [System.IO.Path]::Combine(
+        $projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
+    if (-not (Test-Path -LiteralPath $corpusRoot -PathType Container)) {
+        Write-Output "The private Tabletopia corpus is absent: $corpusRoot. Nothing was written."
+        exit 0
+    }
+    $manifests = @(Get-ChildItem -LiteralPath $corpusRoot -Filter 'manifest-bundled__*.json' -File)
+    if ($manifests.Count -ne 1) { throw 'Expected exactly one bundled manifest.' }
+    $manifest = Get-Content -Raw -LiteralPath $manifests[0].FullName | ConvertFrom-Json
+    $found = @($manifest | Where-Object { $_.elementId -eq 1421882 })
+    if ($found.Count -ne 1 -or $found[0].elementName -ne 'Wall_Barrier' -or
+        $found[0].elementType -ne 'Tokens') {
+        throw 'Trinkets Barrier source identity changed; nothing was written.'
+    }
+    $atlas = $found[0].atlases[0]
+    $rect = $atlas.sprites[0]
+    if ($atlas.resource.id -ne 'Image_0_Atlas' -or $rect.x -ne 2768 -or
+        $rect.y -ne 2233 -or $rect.width -ne 337 -or $rect.height -ne 289) {
+        throw 'Trinkets Barrier source rectangle changed; nothing was written.'
+    }
+    $candidate = @(Get-ChildItem -LiteralPath $corpusRoot -Filter '*.sprite0__*.jpg' -File)
+    if ($candidate.Count -ne 1) { throw 'Expected exactly one Image_0 atlas image.' }
+    $target = [System.IO.Path]::Combine($targetRoot, 'trinkets-barrier.png')
+    Add-Type -AssemblyName System.Drawing
+    if ($Check -or ((Test-Path -LiteralPath $target -PathType Leaf) -and -not $Force)) {
+        if (-not (Test-Path -LiteralPath $target -PathType Leaf)) {
+            throw 'Trinkets Barrier resource has not been prepared.'
+        }
+        $existing = [System.Drawing.Image]::FromFile($target)
+        try {
+            if ($existing.Width -ne 337 -or $existing.Height -ne 289) {
+                throw 'Trinkets Barrier prepared dimensions changed.'
+            }
+        } finally { $existing.Dispose() }
+        Write-Output "PASS: $target (337x289)."
+        exit 0
+    }
+    New-Item -ItemType Directory -Path $targetRoot -Force | Out-Null
+    $source = [System.Drawing.Image]::FromFile($candidate[0].FullName)
+    try {
+        if ($source.Width -ne [int]$atlas.width -or
+            $source.Height -ne [int]$atlas.height) {
+            throw 'Trinkets Barrier atlas dimensions changed.'
+        }
+        $bitmap = New-Object System.Drawing.Bitmap 337, 289
+        try {
+            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+            try {
+                $graphics.DrawImage($source,
+                    (New-Object System.Drawing.Rectangle(0, 0, 337, 289)),
+                    (New-Object System.Drawing.Rectangle(2768, 2233, 337, 289)),
+                    [System.Drawing.GraphicsUnit]::Pixel)
+            } finally { $graphics.Dispose() }
+            $bitmap.Save($target, [System.Drawing.Imaging.ImageFormat]::Png)
+        } finally { $bitmap.Dispose() }
+    } finally { $source.Dispose() }
+    Write-Output "WROTE: $target (337x289); source corpus remains read-only and private."
+    exit 0
 }
 
 # -------------------------------------------------------------------------------------------------

@@ -418,6 +418,8 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public const string IgnatiaHeroIdValue = "hero-ignatia";
 
+        public const string TrinketsHeroIdValue = "hero-trinkets";
+
         private static readonly (
             string HeroIdValue,
             string ContentId,
@@ -537,7 +539,10 @@ namespace GuardsDigital.Core.Setup
                 // the star and role filters over her button.
                 (IgnatiaHeroIdValue, "ignatia", "Ignatia the Mad", HeroComplexity.Wizard,
                     HeroRole.Sniper | HeroRole.Damager | HeroRole.Tokens | HeroRole.Tactician |
-                        HeroRole.Pusher)
+                        HeroRole.Pusher),
+                (TrinketsHeroIdValue, "trinkets", "Trinkets the Scavenger",
+                    HeroComplexity.VeryComplex,
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens)
             };
 
         /// <summary>
@@ -882,6 +887,9 @@ namespace GuardsDigital.Core.Setup
         /// </summary>
         public static QuickGameSetupConfiguration CreateStagedWaspVersusIgnatiaOneVsOne() =>
             CreateOneVsOne(new HeroContentId("ignatia"), "Ignatia");
+
+        public static QuickGameSetupConfiguration CreateStagedWaspVersusTrinketsOneVsOne() =>
+            CreateOneVsOne(new HeroContentId("trinkets"), "Trinkets");
 
         /// <summary>
         /// Milestone 8.75b. Wasp on Red against Ignatia and Arien on Blue - the shape

@@ -38,7 +38,7 @@ namespace GuardsDigital.Tests.EditMode
         {
             var hanu = RegisteredHeroRoster.ForThisBuild
                 .Single(hero => hero.ContentId.Value == HanuCardContent.ContentSetId);
-            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(22),
+            Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(23),
                 "He is the twenty-first hero this build can put on a board.");
             Assert.That(hanu.HeroIdValue, Is.EqualTo(QuickGameSetupConfiguration.HanuHeroIdValue));
             Assert.That(hanu.DisplayName, Is.EqualTo("Hanu the Trickster"),
@@ -499,8 +499,8 @@ namespace GuardsDigital.Tests.EditMode
             }
 
             Assert.That(dealt, Has.Member(HanuCardContent.ContentSetId));
-            Assert.That(dealt, Has.Count.EqualTo(22));
-            Assert.That(dealt.Distinct().Count(), Is.EqualTo(22),
+            Assert.That(dealt, Has.Count.EqualTo(23));
+            Assert.That(dealt.Distinct().Count(), Is.EqualTo(23),
                 "and no two rows name one printed set.");
         }
 

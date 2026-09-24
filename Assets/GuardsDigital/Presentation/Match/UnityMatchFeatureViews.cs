@@ -7,6 +7,7 @@ using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Modifications;
 using GuardsDigital.Core.Setup;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Units.Heroes;
 using GuardsDigital.Presentation.Board;
 using GuardsDigital.Presentation.Units.Heroes;
@@ -20,6 +21,8 @@ namespace GuardsDigital.Presentation.Match
         private readonly IReadOnlyList<PrimitiveHeroView> heroes;
         private IReadOnlyList<StandardMinionView> minions;
         private readonly List<PlacedTokenView> tokens = new List<PlacedTokenView>();
+        private readonly List<PlaceholderObstacleView> projectedObstacles =
+            new List<PlaceholderObstacleView>();
         private readonly Func<PlacedToken, PlacedTokenView> tokenViewFactory;
         private readonly IReadOnlyList<HexTileView> tiles;
         private readonly HexCornerHighlightTemplate cornerHighlightTemplate;
@@ -411,6 +414,7 @@ namespace GuardsDigital.Presentation.Match
 
             RenderMinions(model);
             RenderTokens(model);
+            RenderObstacles(model);
 
             // Milestone 8.30h's revised board language is deliberately uniform: every answer with a
             // board coordinate lights the same six fixed corner marks. Stable piece identity is still
@@ -906,6 +910,50 @@ namespace GuardsDigital.Presentation.Match
                 }
 
                 ApplyPieceTargetCue(view, model, BoardObjectReference.ForToken(state.Id));
+            }
+        }
+
+        /// <summary>Authority-owned obstacles are projected pieces, including Trinkets' single Turret.</summary>
+        private void RenderObstacles(BoardInteractionViewModel model)
+        {
+            var pending = model.Obstacles.ToDictionary(value => value.ObstacleId);
+            var free = new List<PlaceholderObstacleView>();
+            foreach (var view in projectedObstacles)
+            {
+                if (pending.TryGetValue(view.Occupancy.ObstacleId, out var state))
+                {
+                    view.gameObject.SetActive(true);
+                    if (!view.Occupancy.Equals(state))
+                        view.Configure(state, view.OuterRadius);
+                    pending.Remove(state.ObstacleId);
+                }
+                else
+                {
+                    view.gameObject.SetActive(false);
+                    free.Add(view);
+                }
+            }
+
+            var radius = tiles.Count == 0 ? HexWorldLayout.DefaultOuterRadius :
+                tiles[0].OuterRadius;
+            foreach (var state in model.Obstacles.Where(value => pending.ContainsKey(value.ObstacleId)))
+            {
+                PlaceholderObstacleView view;
+                if (free.Count != 0)
+                {
+                    view = free[free.Count - 1];
+                    free.RemoveAt(free.Count - 1);
+                }
+                else
+                {
+                    var piece = new GameObject("Projected Obstacle");
+                    if (tiles.Count != 0) piece.transform.SetParent(tiles[0].transform.parent, false);
+                    view = piece.AddComponent<PlaceholderObstacleView>();
+                    projectedObstacles.Add(view);
+                }
+                view.Configure(state, radius);
+                view.gameObject.SetActive(true);
+                pending.Remove(state.ObstacleId);
             }
         }
 

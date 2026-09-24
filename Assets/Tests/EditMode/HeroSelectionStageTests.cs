@@ -149,7 +149,9 @@ namespace GuardsDigital.Tests.EditMode
                 // over her rendered button; this row is what those filters read.
                 ["hero-ignatia"] = (HeroComplexity.Wizard,
                     HeroRole.Sniper | HeroRole.Damager | HeroRole.Tokens | HeroRole.Tactician |
-                        HeroRole.Pusher)
+                        HeroRole.Pusher),
+                ["hero-trinkets"] = (HeroComplexity.VeryComplex,
+                    HeroRole.Sniper | HeroRole.Damager | HeroRole.Pusher | HeroRole.Tokens)
             };
 
             Assert.That(RegisteredHeroRoster.ForThisBuild.Count, Is.EqualTo(expected.Count));

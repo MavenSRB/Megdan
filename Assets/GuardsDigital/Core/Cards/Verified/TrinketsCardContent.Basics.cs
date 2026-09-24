@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Rules.CardResolution;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
@@ -74,6 +75,30 @@ namespace GuardsDigital.Core.Cards.Verified
 
         public static CardDefinition Definition(CardDefinitionId id) =>
             AllDefinitions.Single(card => card.Id.Equals(id));
+
+        public static IReadOnlyList<CardInstance> CreateDealtCards(
+            HeroId ownerId, string instanceIdPrefix)
+        {
+            if (!ownerId.IsDefined || string.IsNullOrWhiteSpace(instanceIdPrefix))
+                throw new ArgumentException("A dealt hand requires a hero and instance prefix.");
+            return Array.AsReadOnly(DealtDefinitions.Select(definition =>
+            {
+                var id = new CardInstanceId(instanceIdPrefix + "-" + definition.Id.Value);
+                return StartingHand.Contains(definition.Id)
+                    ? CardInstance.CreateInHand(id, definition.Reference, ownerId)
+                    : CardInstance.CreateInDeck(id, definition.Reference, ownerId);
+            }).ToArray());
+        }
+
+        public static ConfiguredHand CreateHand(HeroId ownerId, string instanceIdPrefix)
+        {
+            var cards = CreateDealtCards(ownerId, instanceIdPrefix);
+            return new ConfiguredHand(DealtDefinitions,
+                cards.Where(card => StartingHand.Contains(
+                    card.DefinitionReference.DefinitionId)),
+                cards.Where(card => !StartingHand.Contains(
+                    card.DefinitionReference.DefinitionId)));
+        }
 
         private static CardDefinition BuildRapidRedeployment() =>
             Basic(RapidRedeployment, "Rapid Redeployment", CardColor.Gold, 12, 1, 4,

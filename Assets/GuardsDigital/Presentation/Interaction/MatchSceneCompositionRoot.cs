@@ -1033,7 +1033,10 @@ namespace GuardsDigital.Presentation.Interaction
         /// spaces" is the widest straight-line push in her set, and the flip her Ultimate offers turns
         /// the same card from shoving an enemy into carrying a friend.
         /// </summary>
-        VerifiedStagedIgnatiaWithAllyAtTierThree = 125
+        VerifiedStagedIgnatiaWithAllyAtTierThree = 125,
+
+        /// <summary>Wasp versus Trinkets with his p.6 starting hand.</summary>
+        VerifiedEngagedStagedTrinkets = 126
     }
 
     [ExecuteAlways]
@@ -1722,6 +1725,8 @@ namespace GuardsDigital.Presentation.Interaction
                 SceneCardContent.VerifiedStagedIgnatiaWithAllyAtTierThree =>
                     MatchConfiguration.CreateStagedIgnatiaWithAllyForInternalTest(
                         TeamSide.Red, IgnatiaAllyStage.TierThree),
+                SceneCardContent.VerifiedEngagedStagedTrinkets =>
+                    MatchConfiguration.CreateStagedTrinketsForInternalTest(TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1804,7 +1809,8 @@ namespace GuardsDigital.Presentation.Interaction
                 // as Rowenna's and Hanu's are: what Searing Heat's and Scorching Blaze's sun faces
                 // need is a friendly hero in RADIUS, and the two Blue spawns already are - restaging
                 // them would move the ally out of the disk those pushes measure.
-                IsStagedIgnatia(content))
+                IsStagedIgnatia(content) ||
+                content == SceneCardContent.VerifiedEngagedStagedTrinkets)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -2346,6 +2352,11 @@ namespace GuardsDigital.Presentation.Interaction
                     if (IsStagedIgnatia(content))
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusIgnatiaOneVsOne();
+                    }
+
+                    if (content == SceneCardContent.VerifiedEngagedStagedTrinkets)
+                    {
+                        return QuickGameSetupConfiguration.CreateStagedWaspVersusTrinketsOneVsOne();
                     }
 
                     return QuickGameSetupConfiguration.CreateStagedWaspVersusArienOneVsOne();

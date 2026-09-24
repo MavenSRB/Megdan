@@ -1527,6 +1527,59 @@ namespace GuardsDigital.Tests.PlayMode
                 "his row rather than showing every hero whatever is selected.");
         }
 
+        [UnityTest]
+        public IEnumerator TrinketsIsPickedThroughThreeStarsAndAllFourPrintedRoles()
+        {
+            yield return LoadTheLobby();
+            var driver = Driver();
+            var wire = SeatEveryone(out var seats);
+            ReadyEverySeat(wire, seats);
+            var ordinal = seats.ToList().IndexOf(wire.Session.Selection.PickingSeat.Value) + 1;
+            driver.Presenter.AttachClient(wire.Client(ordinal));
+            yield return null;
+
+            var stars = Named(driver, PrivateLobbyUnityView.HeroStarFilterName)
+                .OfType<Button>().ToArray();
+            var roles = Named(driver, PrivateLobbyUnityView.HeroRoleFilterName)
+                .OfType<Button>().ToArray();
+            Button Star(HeroComplexity value) => stars.Single(button =>
+                button.userData is HeroComplexity complexity && complexity == value);
+            Button Role(HeroRole value) => roles.Single(button =>
+                button.userData is HeroRole role && role == value);
+            bool Visible() => HeroOptions(driver).Any(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-trinkets");
+
+            Assert.That(Visible(), Is.True);
+            UiPlayer.Click(Star(HeroComplexity.VeryComplex));
+            yield return null;
+            Assert.That(Visible(), Is.True);
+            foreach (var role in new[]
+            {
+                HeroRole.Sniper, HeroRole.Damager, HeroRole.Pusher, HeroRole.Tokens
+            })
+            {
+                UiPlayer.Click(Role(role));
+                yield return null;
+                Assert.That(Visible(), Is.True, role.ToString());
+            }
+
+            var trinkets = HeroOptions(driver).Single(button =>
+                ((PrivateLobbyHeroOption)button.userData).HeroIdValue == "hero-trinkets");
+            UiPlayer.Click(trinkets);
+            yield return null;
+            Assert.That(driver.View.HighlightedHero, Is.EqualTo("hero-trinkets"));
+            UiPlayer.PointAt(trinkets.parent ?? trinkets);
+            UiPlayer.PointAt(trinkets);
+            yield return null;
+            Assert.That(UiPlayer.IsShown(Element(driver,
+                PrivateLobbyUnityView.HeroOverviewName)), Is.True);
+            yield return UiPlayer.CaptureScreen("tmp/892f-trinkets-pick-1920x1080.png");
+
+            UiPlayer.Click(Role(HeroRole.Healer));
+            yield return null;
+            Assert.That(Visible(), Is.False);
+        }
+
         /// <summary>
         /// Milestone 8.75b. Ignatia the Mad's roster row carries FOUR stars and five roles - Sniper,
         /// Damager, Tokens, Tactician, Pusher - and this case drives the RENDERED star and role

@@ -620,6 +620,8 @@ namespace GuardsDigital.Core.Participants
                 // covering the same heroes - is what this arm keeps true rather than establishes.
                 case Setup.QuickGameSetupConfiguration.IgnatiaHeroIdValue:
                     return Cards.Verified.IgnatiaCardContent.CreateHand(heroId, instancePrefix);
+                case Setup.QuickGameSetupConfiguration.TrinketsHeroIdValue:
+                    return Cards.Verified.TrinketsCardContent.CreateHand(heroId, instancePrefix);
                 default:
                     throw new ArgumentException(
                         "No verified printed set is registered for hero '" + heroIdValue + "'.",
@@ -2118,6 +2120,13 @@ namespace GuardsDigital.Core.Participants
                 TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
                 CreateVerifiedWaspHand(TeamSide.Red),
                 CreateVerifiedIgnatiaHand(TeamSide.Blue));
+
+        public static MatchConfiguration CreateStagedTrinketsForInternalTest(
+            TeamSide initialTieBreakerSide) =>
+            Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateVerifiedWaspHand(TeamSide.Red),
+                ownerId => Cards.Verified.TrinketsCardContent.CreateHand(ownerId, "blue"));
 
         /// <summary>
         /// Milestone 8.75b. The staged Wasp-versus-Ignatia match at rulebook p.15's Tier II stage,

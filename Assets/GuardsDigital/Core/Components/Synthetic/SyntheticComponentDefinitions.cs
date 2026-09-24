@@ -119,7 +119,8 @@ namespace GuardsDigital.Core.Components.Synthetic
                     // p.19 obstacle her Greens print and her Blues read ("adjacent to a token"). Its
                     // supply of three is the user's own ruling and p.18's short-supply step is what
                     // bounds a face printing "up to 4".
-                    .Concat(GuardsDigital.Core.Cards.Verified.IgnatiaMagmaContent.MagmaTokens()),
+                    .Concat(GuardsDigital.Core.Cards.Verified.IgnatiaMagmaContent.MagmaTokens())
+                    .Concat(GuardsDigital.Core.Cards.Verified.TrinketsComponentContent.Tokens()),
                 // Milestone 8.23. Tigerclaw's Poison marker joins the one registered set for the
                 // reason every verified capability joins the capability catalog: a match registers one
                 // list of what it can put on a dashboard and the snapshot pins that list.

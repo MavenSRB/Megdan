@@ -46,7 +46,7 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
-        public void ConfiguredCatalog_IsA396EntryBijectionWithOnePlayableFrontPerDefinition()
+        public void ConfiguredCatalog_IsA414EntryBijectionWithOnePlayableFrontPerDefinition()
         {
             var catalog = ConfiguredCardArtworkCatalog.Catalog;
             Assert.DoesNotThrow(() =>
@@ -170,15 +170,15 @@ namespace GuardsDigital.Tests.EditMode
             // `RegisteredHeroRoster.ForThisBuild` and is EXPECTED RED until the dealing adds her
             // roster row. That is recorded here rather than worked around: the guard is asking
             // exactly the right question and the answer is not yet yes.
-            Assert.That(catalog.Entries, Has.Count.EqualTo(396));
-            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(396));
+            Assert.That(catalog.Entries, Has.Count.EqualTo(414));
+            Assert.That(ConfiguredCardArtworkCatalog.ConfiguredReferences, Has.Count.EqualTo(414));
             Assert.That(
                 catalog.Entries.Select(entry => entry.Reference),
                 Is.EquivalentTo(ConfiguredCardArtworkCatalog.ConfiguredReferences));
             Assert.That(
                 catalog.Entries.Select(entry => entry.SourcePath).Distinct(
                     StringComparer.OrdinalIgnoreCase).Count(),
-                Is.EqualTo(396),
+                Is.EqualTo(414),
                 "One private front cannot illustrate two stable definitions.");
             Assert.That(
                 catalog.Entries.GroupBy(entry => entry.ContentSetId)
@@ -192,8 +192,8 @@ namespace GuardsDigital.Tests.EditMode
                     ("rowenna", 18),
                     ("sabina", 18),
                     ("silverarrow", 18), ("swift", 18), ("tali", 18),
-                    ("tigerclaw", 18), ("ursafar", 18), ("wasp", 18), ("whisper", 18),
-                    ("widget", 18), ("xargatha", 18)
+                    ("tigerclaw", 18), ("trinkets", 18), ("ursafar", 18), ("wasp", 18),
+                    ("whisper", 18), ("widget", 18), ("xargatha", 18)
                 }));
 
             foreach (var entry in catalog.Entries)

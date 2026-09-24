@@ -81,6 +81,8 @@ $sources = [ordered]@{
     # row as one declared hero the selector does not offer, which is the guard working rather than
     # failing.
     ignatia = 'randomizers-tt12__7729913__front.png'
+    # SHA-256-identical to the private named Trinkets selection front.
+    trinkets = 'randomizers-tt16__7724782__front.png'
 }
 foreach ($source in $sources.Values) {
     if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot $source) -PathType Leaf)) { throw "Missing source: $source" }

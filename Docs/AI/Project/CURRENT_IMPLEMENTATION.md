@@ -6,6 +6,7 @@ Canonical active shard. Return to [../PROJECT_CONTEXT.md](../PROJECT_CONTEXT.md)
 
 ## Current implementation
 
+
 ### Application, configured presentation, and governance
 
 **8.36g1 topology amendment.** The opening dedicated-seatless description below is historical: current HOST starts authority plus one ordinary loopback player client. That client claims an owner-scoped seat, while only the hosting process may expose local Director diagnostics; joiners never receive those controls. The transport, schema 41, reconnect and terminal host-loss boundaries remain unchanged; protocol is 13 since 8.37b, which carries a pending choice's declared value vocabulary so a joined seat draws named colours and directions rather than bare integers.

@@ -80,7 +80,7 @@ Completed 2026-09-24. Both basic Skills now compose their printed movement, Turr
 
 Historical evidence: [8.92e completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892e-trinkets-full-set-completion-evidence).
 
-### [~] 8.92f Deal Trinkets and present his artwork
+### [x] 8.92f Deal Trinkets and present his artwork
 
 Outcome: register eighteen playable definitions, the hero profile and physical components; add Trinkets to every legal picker and configuration route with the printed stars and roles, hero and component artwork, and the card hover/face catalog.
 
@@ -88,7 +88,11 @@ Acceptance: stable ids and measured pins; staged hand and upgrade tree; setup, s
 
 Non-goals: a new distributable package or another hero.
 
-### [ ] 8.92g Gate Trinkets through the complete player path
+Completed 2026-09-24. Trinkets joins both selected formats with eighteen dealt faces, the boxed Handicap excluded, registered handlers and three Barriers. The three-star/four-role picker, hover catalog, private card fronts, profile, hero and Turret standees, and Barrier art are prepared. The board projects the Turret as an obstacle, never a token: Unity tests cover appearance, reposition and removal; real-input picker and filtered selection, focused dealing, identity, and artwork checks pass. Snapshot/wire shape is unchanged; the complete player-path and unfiltered gates remain 8.92g. Focused T2 evidence is in the milestone commit.
+
+Historical evidence: [8.92f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892f-trinkets-dealing-and-artwork-evidence).
+
+### [~] 8.92g Gate Trinkets through the complete player path
 
 Outcome: a content-derived matrix and real-input journeys cover every dealt face and component, with no parked or skipped required journey.
 

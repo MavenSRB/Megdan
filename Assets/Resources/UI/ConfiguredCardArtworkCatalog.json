@@ -402,6 +402,24 @@
     { "definitionId": "ignatia-unstable-portal", "contentRevision": "ignatia-8-75-rev-1", "sourcePath": "active-hero-cards/Ignatia/ignatia15__7641662__front.png" },
     { "definitionId": "ignatia-path-of-flames", "contentRevision": "ignatia-8-75-rev-1", "sourcePath": "active-hero-cards/Ignatia/ignatia16__7641661__front.png" },
     { "definitionId": "ignatia-chaos-gate", "contentRevision": "ignatia-8-75-rev-1", "sourcePath": "active-hero-cards/Ignatia/ignatia17__7641660__front.png" },
-    { "definitionId": "ignatia-chaos-incarnate", "contentRevision": "ignatia-8-75-rev-1", "sourcePath": "active-hero-cards/Ignatia/ignatia18__7590071__front.png" }
+    { "definitionId": "ignatia-chaos-incarnate", "contentRevision": "ignatia-8-75-rev-1", "sourcePath": "active-hero-cards/Ignatia/ignatia18__7590071__front.png" },
+    { "definitionId": "trinkets-rapid-redeployment", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets__7352735__front.png" },
+    { "definitionId": "trinkets-salvage-parts", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets2__7352737__front.png" },
+    { "definitionId": "trinkets-makeshift-minigun", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets3__7426589__front.png" },
+    { "definitionId": "trinkets-gatling-gun", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets4__7426588__front.png" },
+    { "definitionId": "trinkets-steam-discharge", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets5__7352733__front.png" },
+    { "definitionId": "trinkets-supercharged-cannon", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets6__7426587__front.png" },
+    { "definitionId": "trinkets-flame-belcher", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets7__7352739__front.png" },
+    { "definitionId": "trinkets-disruptor-jolt", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets8__7562521__front.png" },
+    { "definitionId": "trinkets-disruptor-pulse", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets9__7562522__front.png" },
+    { "definitionId": "trinkets-deployable-barrier", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets10__7562527__front.png" },
+    { "definitionId": "trinkets-disruptor-grid", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets11__7562526__front.png" },
+    { "definitionId": "trinkets-deployable-bastion", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets12__7562525__front.png" },
+    { "definitionId": "trinkets-early-prototype", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets13__7427033__front.png" },
+    { "definitionId": "trinkets-updated-design", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets14__7427034__front.png" },
+    { "definitionId": "trinkets-self-destruct", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets15__7427037__front.png" },
+    { "definitionId": "trinkets-perfected-design", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets16__7427039__front.png" },
+    { "definitionId": "trinkets-emergency-protocol", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets17__7427040__front.png" },
+    { "definitionId": "trinkets-unlimited-firepower", "contentRevision": "trinkets-8-92e-complete", "sourcePath": "active-hero-cards/Trinkets/trinkets18__7544261__front.png" }
   ]
 }

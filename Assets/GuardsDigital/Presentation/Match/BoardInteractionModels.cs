@@ -6,6 +6,7 @@ using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Effects;
 using GuardsDigital.Core.Participants;
@@ -184,7 +185,8 @@ namespace GuardsDigital.Presentation.Match
             IEnumerable<AttackTargetDefensePreviewProjection> attackTargetDefensePreviews = null,
             ActiveEffectVisibilityModel activeEffects = null,
             HexCoordinate? directionChooserSpace = null,
-            IEnumerable<DirectionCandidateViewModel> directionCandidates = null)
+            IEnumerable<DirectionCandidateViewModel> directionCandidates = null,
+            IEnumerable<ObstacleOccupancy> obstacles = null)
         {
             ActiveEffects = activeEffects ?? ActiveEffectVisibilityModel.Empty;
             Version = version;
@@ -192,6 +194,8 @@ namespace GuardsDigital.Presentation.Match
             Minions = Array.AsReadOnly((minions ?? throw new ArgumentNullException(nameof(minions))).ToArray());
             PlacedTokens = Array.AsReadOnly((placedTokens ??
                 Enumerable.Empty<PlacedToken>()).ToArray());
+            Obstacles = Array.AsReadOnly((obstacles ??
+                Enumerable.Empty<ObstacleOccupancy>()).ToArray());
             MovementDestinations = Array.AsReadOnly((movementDestinations ??
                 throw new ArgumentNullException(nameof(movementDestinations))).ToArray());
             AttackTargets = Array.AsReadOnly((attackTargets ??
@@ -338,6 +342,7 @@ namespace GuardsDigital.Presentation.Match
         /// that is shown rather than a thing presentation reasons about.
         /// </summary>
         public IReadOnlyList<PlacedToken> PlacedTokens { get; }
+        public IReadOnlyList<ObstacleOccupancy> Obstacles { get; }
         public IReadOnlyList<HexCoordinate> MovementDestinations { get; }
         public IReadOnlyList<HeroId> AttackTargets { get; }
         public IReadOnlyList<MinionId> MinionAttackTargets { get; }

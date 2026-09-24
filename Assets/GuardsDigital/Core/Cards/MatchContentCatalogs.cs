@@ -236,6 +236,18 @@ namespace GuardsDigital.Core.Cards
                     IgnatiaEffectContent.TriggeredEffects(IgnatiaCardContent.ContentRevision))
                 .Concat(new[]
                 {
+                    TrinketsEffectContent.DisruptorTrigger(
+                        TrinketsCardContent.DisruptorJolt,
+                        TrinketsCardContent.ContentRevision, false),
+                    TrinketsEffectContent.DisruptorTrigger(
+                        TrinketsCardContent.DisruptorPulse,
+                        TrinketsCardContent.ContentRevision, false),
+                    TrinketsEffectContent.DisruptorTrigger(
+                        TrinketsCardContent.DisruptorGrid,
+                        TrinketsCardContent.ContentRevision, true)
+                })
+                .Concat(new[]
+                {
                     // Milestone 8.71h. What the Red Wayfarer's Hero-scoped end-of-turn effect runs -
                     // the showcase consumer milestone 7.9's gate asks of `hanu-journey-partner@1`,
                     // which is the one contract of his that cannot be proved by a card naming it:
@@ -472,6 +484,9 @@ namespace GuardsDigital.Core.Cards
                 // wake showcase places it and a showcase that named an unregistered definition would
                 // prove only the refusal.
                 .Concat(IgnatiaComponentContent.RegisteredHandlers())
+                .Concat(TrinketsComponentContent.ObstacleHandlers())
+                .Concat(TrinketsComponentContent.BarrierHandlers())
+                .Concat(TrinketsActiveEffectContent.Handlers())
                 // Milestone 8.71h. The ONE creation the showcase owns rather than a hero: the
                 // Hero-scoped end-of-turn effect the Red Wayfarer stands so that
                 // `hanu-journey-partner@1` has an occurrence to read. It is an ordinary

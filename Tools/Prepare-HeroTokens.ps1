@@ -90,7 +90,7 @@ param(
     [ValidateSet(
         'wasp', 'arien', 'brogan', 'sabina', 'tigerclaw', 'xargatha',
         'dodger', 'misa', 'silverarrow', 'ursafar', 'whisper', 'tali', 'swift', 'cutter',
-        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia')]
+        'bain', 'garrus', 'widget', 'rowenna', 'min', 'brynn', 'hanu', 'ignatia', 'trinkets')]
     [string] $Hero = 'wasp',
     [switch] $Neutral,
     [switch] $Companion,
@@ -259,14 +259,19 @@ $declaredHeroes = @{
     # light-blue and one ringed orange. She takes the calibrated 2% field floor unless the tool's own
     # measurement says otherwise; Swift's per-hero zero stays hers alone.
     ignatia = @{ ElementId = 8597496; ElementName = 'Ignatia'; DisplayName = 'Ignatia' }
+    trinkets = @{ ElementId = 8597497; ElementName = 'Kobold'; DisplayName = 'Trinkets' }
 }
 
 $declared = $declaredHeroes[$Hero]
 if ($Companion) {
-    if ($Hero -ne 'widget' -or -not $Neutral) {
-        throw 'The declared companion route is Widget/Pyro and requires -Neutral.'
+    if (($Hero -ne 'widget' -and $Hero -ne 'trinkets') -or -not $Neutral) {
+        throw 'The declared companion route requires Widget/Pyro or Trinkets/Turret and -Neutral.'
     }
-    $declared = @{ ElementId = 8596251; ElementName = 'Pyro2'; DisplayName = 'Pyro' }
+    $declared = if ($Hero -eq 'widget') {
+        @{ ElementId = 8596251; ElementName = 'Pyro2'; DisplayName = 'Pyro' }
+    } else {
+        @{ ElementId = 8597498; ElementName = 'Koboldturret'; DisplayName = 'Turret' }
+    }
 }
 $elementId = $declared.ElementId
 $elementName = $declared.ElementName
@@ -291,7 +296,9 @@ $resourceDirectory = [System.IO.Path]::Combine(
 if ($Companion) {
     $resourceDirectory = [System.IO.Path]::Combine($projectRoot, 'Assets', 'Resources', 'Private', 'Tokens')
 }
-$resourceStem = if ($Companion) { 'widget-pyro' } else { $Hero }
+$resourceStem = if ($Companion) {
+    if ($Hero -eq 'widget') { 'widget-pyro' } else { 'trinkets-turret' }
+} else { $Hero }
 $resources = if ($Neutral) {
     # `RuntimeTeamIdentity.NeutralResourcePath` - the content identity alone, with no team in it.
     [ordered]@{

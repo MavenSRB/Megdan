@@ -35,6 +35,8 @@ namespace GuardsDigital.Presentation.Board
 
         private Mesh ownedMesh;
         private Material ownedMaterial;
+        private GameObject artFace;
+        private Material artMaterial;
 
         public ObstacleOccupancy Occupancy => new ObstacleOccupancy(new ObstacleId(obstacleId), Coordinate);
 
@@ -52,6 +54,7 @@ namespace GuardsDigital.Presentation.Board
             outerRadius = radius;
             ApplyLayout();
             EnsurePrimitiveVisual();
+            EnsurePreparedArtwork();
         }
 
         public void ApplyLayout()
@@ -84,6 +87,51 @@ namespace GuardsDigital.Presentation.Board
                 ownedMaterial = CreatePlaceholderMaterial();
                 meshRenderer.sharedMaterial = ownedMaterial;
             }
+        }
+
+        private void EnsurePreparedArtwork()
+        {
+            // This is a presentation address only. The authoritative obstacle identity and its
+            // occupancy remain independent of whether the private standee is installed.
+            var texture = obstacleId.StartsWith("trinkets-turret:",
+                System.StringComparison.Ordinal)
+                ? Resources.Load<Texture2D>("Private/Tokens/trinkets-turret")
+                : null;
+            var block = GetComponent<MeshRenderer>();
+            if (texture == null)
+            {
+                if (block != null) block.enabled = true;
+                if (artFace != null) artFace.SetActive(false);
+                return;
+            }
+            if (artFace == null)
+            {
+                artFace = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                artFace.name = "Obstacle Standee";
+                artFace.transform.SetParent(transform, false);
+                artFace.transform.localPosition = new Vector3(0f, 0.42f, 0f);
+                artFace.transform.localScale = new Vector3(0.86f, 0.86f, 1f);
+                var collider = artFace.GetComponent<Collider>();
+                if (collider != null) DestroyOwnedResource(collider);
+                var shader = Shader.Find("Universal Render Pipeline/Unlit");
+                artMaterial = new Material(shader)
+                {
+                    name = "Prepared Obstacle Standee",
+                    mainTexture = texture,
+                    color = Color.white
+                };
+                artFace.GetComponent<MeshRenderer>().sharedMaterial = artMaterial;
+            }
+            artFace.SetActive(true);
+            if (block != null) block.enabled = false;
+        }
+
+        private void LateUpdate()
+        {
+            if (artFace == null || !artFace.activeSelf || Camera.main == null) return;
+            var towardCamera = Camera.main.transform.position - artFace.transform.position;
+            if (towardCamera.sqrMagnitude > 0.0001f)
+                artFace.transform.rotation = Quaternion.LookRotation(towardCamera, Vector3.up);
         }
 
         private static Mesh CreateBlockMesh(float blockWidth, float blockHeight)
@@ -147,8 +195,10 @@ namespace GuardsDigital.Presentation.Board
         {
             DestroyOwnedResource(ownedMesh);
             DestroyOwnedResource(ownedMaterial);
+            DestroyOwnedResource(artMaterial);
             ownedMesh = null;
             ownedMaterial = null;
+            artMaterial = null;
         }
 
         private static void DestroyOwnedResource(Object resource)

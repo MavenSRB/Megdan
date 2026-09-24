@@ -160,7 +160,8 @@ namespace GuardsDigital.Presentation.Match
                 // row. Nothing here depends on registration - the catalog names DEALT definitions,
                 // and `IgnatiaCardContent.DealtDefinitions` is a printed set whether or not
                 // `MatchContentCatalogs` knows about it.
-                { "ignatia", "Ignatia" }
+                { "ignatia", "Ignatia" },
+                { "trinkets", "Trinkets" }
             };
 
         private readonly IReadOnlyDictionary<CardDefinitionReference, CardArtworkCatalogEntry> byReference;
@@ -496,6 +497,7 @@ namespace GuardsDigital.Presentation.Match
                 // Quest, Rowenna's Earn the Spurs, Min's Chop Down, Brynn's Home Turf and Hanu's
                 // Fight or Flight are not among theirs.
                 .Concat(IgnatiaCardContent.DealtDefinitions)
+                .Concat(TrinketsCardContent.DealtDefinitions)
                 .Select(definition => definition.Reference)
                 .ToArray());
 

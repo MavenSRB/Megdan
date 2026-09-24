@@ -60,7 +60,8 @@ namespace GuardsDigital.Presentation.Board
                 // redundant - and redundant matters here, because her three Paths can leave three of
                 // them on one file and three stacked captions is a board a player reads slower than
                 // the art.
-                [new TokenDefinitionId("ignatia-magma")] = string.Empty
+                [new TokenDefinitionId("ignatia-magma")] = string.Empty,
+                [new TokenDefinitionId("trinkets-barrier")] = string.Empty
             };
 
         /// <summary>Named fallback discs remain readable when private artwork is absent.</summary>

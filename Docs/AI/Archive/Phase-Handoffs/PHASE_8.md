@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92f Trinkets dealing and artwork evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92f | Eighteen cards and their trusted contracts, the three-piece Barrier supply, 23rd picker profile, private card/component artwork, and projected Turret obstacle are connected. Focused offline, Unity Edit, and real-input picker Play Mode checks pass; the complete player-path gate remains 8.92g. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892f-deal-trinkets-and-present-his-artwork). | `milestone/8.92f` |
+
 ## Milestone 8.92e Trinkets full-set completion evidence
 
 | Milestone | Outcome and definition | Commit |

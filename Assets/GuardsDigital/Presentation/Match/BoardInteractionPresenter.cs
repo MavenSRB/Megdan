@@ -162,7 +162,8 @@ namespace GuardsDigital.Presentation.Match
                     // here, so the arrows are cued exactly when the pause stands and cleared exactly
                     // when it resolves - there is no arrow state of this presenter's own to go stale.
                     directions.ChooserSpace,
-                    directions.Candidates);
+                    directions.Candidates,
+                    projection.Obstacles);
             }
 
             view.Render(lastViewModel);
