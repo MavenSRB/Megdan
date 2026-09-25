@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.94 pre-Snorri package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.94 | `Builds/Playtest-8.92-trinkets` (+ zip, 183 entries, 81.3 MB, no logs), Windows only, cut at `6180674c` (8.92g) plus stamp `1.0-8.92-trinkets+...162141-581cf953`: twenty-three heroes, no Snorri; protocol /21, schema 44, digest `5d4e6203...`. Edit 5587/0/37 and Play 857/857 reused from 8.92g's identical tree; harness 4595/4595 on the packaged tree; smoke passed; packaged exe reached the lobby. [Definition](../../Roadmap/PHASE_8.md#x-894-package-the-twenty-three-hero-playtest-build-before-snorri-for-windows). | `milestone/8.94` |
+
 ## Milestone 8.93b Snorri Gold and Red attacks evidence
 
 | Milestone | Outcome and definition | Commit |

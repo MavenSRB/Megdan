@@ -88,6 +88,20 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [x] 8.94 Package the twenty-three-hero playtest build before Snorri, for Windows
+
+Authorized 2026-09-25 by the user: "cut out the new build ... Dont include snori, but include everything before it", then "we dont need mac build now, only windows".
+
+Outcome: `Builds/Playtest-8.92-trinkets` (+ zip), built in the detached package worktree at `6180674c` (8.92g, tag `milestone/8.92g`, the last commit before any Snorri work) plus the version stamp `1.0-8.92-trinkets`; twenty-three heroes with Trinkets, the 8.88-8.91 composable targeting and 8.90's immune-hero ruling over the 8.87 package; protocol `/21`, schema 44. No Mac package.
+
+Acceptance: T3 - the complete Edit Mode and Play Mode suites and the harness on the packaged tree, whose player source the version string alone changes; the Windows build-and-launch smoke on the packaged tree; the packaged exe launched once from its own folder to `LOBBY_BEGIN`; the zip inspected for logs; the identity, manifest and read-me per the 8.44 recipe.
+
+Non-goals: Snorri (8.93-8.93g) or any later source; a Mac package; code signing; any correction.
+
+Completed 2026-09-25. Stamp `1.0-8.92-trinkets+20260925162141-581cf953`; configured content digest `5d4e6203...` re-measured by the offline probe (108 definitions, 23 playable heroes; moved from `e037a054...` by Trinkets' registrations). Gate: complete Edit Mode 5624 total / 5587 passed / 0 failed / 37 established skips and complete Play Mode 857/857 zero skips are 8.92g's runs on the identical tree (`tmp/trinkets-892g-full-edit-final-results.xml`, `tmp/trinkets-892g-full-play-results.xml`; the 8.68/8.73 gate-reuse precedent); harness re-run on the packaged tree 4595/4595, 0 skipped (11 m 19 s); Windows smoke GATE PASSED; the packaged exe reached `GUARDS_ONLINE: LOBBY_BEGIN` in ~6 s from its own folder. Zip 183 entries / 81.3 MB, no log or DoNotShip folder. The private artwork for Trinkets was synced add-only into the worktree first (every shared file byte-identical); no Snorri file exists among the private resources. A Mac player was built under the same stamp before the user dropped it and is not packaged.
+
+Historical evidence: [8.94 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-894-pre-snorri-package-evidence).
+
 ### [x] 8.88 One composable target selection before the next hero
 
 Recorded as a proposal 2026-09-23 at the user's request ("Yeah, do it") after a read-only audit, and AUTHORIZED the same day ("go do it"). It does not open a hero.
