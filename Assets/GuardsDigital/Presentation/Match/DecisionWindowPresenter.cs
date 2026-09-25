@@ -848,7 +848,9 @@ namespace GuardsDigital.Presentation.Match
 
             var subject = EffectChoicePromptLabels.SubjectOf(
                 choice, projection.PendingEffectChoicePreview);
-            var family = FamilyOf(subject);
+            var family = choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
+                ? DecisionWindowFamily.RuneSlots
+                : FamilyOf(subject);
             var sourceCardId = SourceCardOf(projection, choice);
             var sourceDefinitionId = DefinitionIdOf(projection, sourceCardId);
             var previews = new HashSet<EffectValue>(
@@ -919,7 +921,9 @@ namespace GuardsDigital.Presentation.Match
                     TitleOf(subject, sourceCardId, projection),
                     HeroName(projection, choice.ChooserId), viewerHeroId),
                 EffectChoicePromptLabels.SectionLabel(subject),
-                family == DecisionWindowFamily.Direction
+                family == DecisionWindowFamily.RuneSlots
+                    ? "Drag each rune onto one turn slot."
+                    : family == DecisionWindowFamily.Direction
                     ? "Choose a direction"
                     // A board-answered question is a LINE on the slim bar; the bounds it would
                     // otherwise spell out are already in the count beside it.
@@ -933,7 +937,8 @@ namespace GuardsDigital.Presentation.Match
                     : null,
                 contextCards,
                 controls,
-                corner);
+                corner,
+                isMinimisable: family != DecisionWindowFamily.RuneSlots);
         }
 
         private static void BuildEffectControls(
@@ -997,7 +1002,11 @@ namespace GuardsDigital.Presentation.Match
                         candidate.Value.Kind == EffectValueKind.Integer
                             ? (CardColor)candidate.Value.IntegerValue
                             : CardColor.None,
-                    isChosen: deselect != null));
+                    isChosen: deselect != null,
+                    runeOrdinal: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
+                        ? ((candidate.Value.IntegerValue - 1) / 4) + 1 : 0,
+                    turnSlotIndex: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
+                        ? ((candidate.Value.IntegerValue - 1) % 4) + 1 : 0));
             }
 
             foreach (var unavailable in boardAnswered
@@ -1009,7 +1018,11 @@ namespace GuardsDigital.Presentation.Match
                         projection, choice, unavailable,
                         ordinals.TryGetValue(unavailable, out var ordinal) ? ordinal : 1,
                         sourceDefinitionId),
-                    unavailableReason: ActionUnavailabilityLabels.Generic));
+                    unavailableReason: ActionUnavailabilityLabels.Generic,
+                    runeOrdinal: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
+                        ? ((unavailable.Value.IntegerValue - 1) / 4) + 1 : 0,
+                    turnSlotIndex: choice.ValueVocabulary == EffectChoiceValueVocabulary.RuneTurnSlot
+                        ? ((unavailable.Value.IntegerValue - 1) % 4) + 1 : 0));
             }
 
             // DONE stands only where the selection may really be unfinished. An exactly-one choice

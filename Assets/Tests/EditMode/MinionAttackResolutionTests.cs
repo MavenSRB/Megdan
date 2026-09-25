@@ -185,7 +185,7 @@ namespace GuardsDigital.Tests.EditMode
                 new[] { fixture.Map },
                 new[] { minion });
 
-            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(44),
+            Assert.That(AuthoritativeSnapshotSerializer.CurrentSchemaVersion, Is.EqualTo(45),
                 "Milestone 8.71a moved it to v44 for Hanu's rewritten printed Initiative - a " +
                 "sparse card-keyed list this block owns and nothing here writes.");
             Assert.That(restored.Board.Minions, Is.Empty);

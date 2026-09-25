@@ -1134,7 +1134,8 @@ namespace GuardsDigital.Application
                 new MarkerInstanceId(row.MarkerInstanceId), catalogs.Components.LoadMarker(reference),
                 new HeroId(row.OwnerHeroId), new HeroId(row.HolderHeroId),
                 new CardInstanceId(row.SourceCardInstanceId),
-                new ActionDefinitionId(row.SourceActionDefinitionId));
+                new ActionDefinitionId(row.SourceActionDefinitionId),
+                row.TurnSlotIndex == 0 ? (int?)null : row.TurnSlotIndex);
         }
 
         private static HexCoordinate ToCoordinate(NetworkCoordinateRow row) =>

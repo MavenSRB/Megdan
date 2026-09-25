@@ -785,6 +785,7 @@ namespace GuardsDigital.Core.Snapshots
                 writer.Write(attachment.HolderHeroId.Value);
                 writer.Write(attachment.SourceCardInstanceId.Value ?? string.Empty);
                 writer.Write(attachment.SourceActionDefinitionId.Value ?? string.Empty);
+                writer.Write(attachment.TurnSlotIndex ?? 0);
             }
         }
 
@@ -805,13 +806,19 @@ namespace GuardsDigital.Core.Snapshots
                 participants.GetHero(holder);
                 var sourceCard = ReadOptionalCardInstanceId(reader);
                 var sourceActionValue = reader.ReadString();
+                var turnSlotIndex = reader.ReadInt32();
+                if (turnSlotIndex < 0 || turnSlotIndex > RoundResolutionAuthority.TurnsPerRound)
+                {
+                    throw new InvalidDataException("A marker turn-slot index is outside the four numbered slots.");
+                }
                 return new MarkerAttachment(
                     id,
                     LoadTrustedMarkerDefinition(components, reference),
                     owner,
                     holder,
                     sourceCard,
-                    string.IsNullOrEmpty(sourceActionValue) ? default : new ActionDefinitionId(sourceActionValue));
+                    string.IsNullOrEmpty(sourceActionValue) ? default : new ActionDefinitionId(sourceActionValue),
+                    turnSlotIndex == 0 ? (int?)null : turnSlotIndex);
             }));
         }
 

@@ -29,6 +29,22 @@ namespace GuardsDigital.Core.Effects
     /// </summary>
     public static class MarkerInstanceIdentity
     {
+        /// <summary>
+        /// Multiple distinct marker definitions given to one holder by one activation need
+        /// distinct physical identities without letting each capability invent an ID shape.
+        /// </summary>
+        public static MarkerInstanceId Mint(
+            EffectCapabilityContext context, HeroId holder,
+            MarkerDefinitionReference definition)
+        {
+            if (!definition.IsDefined)
+                throw new ArgumentException("A marker identity requires its definition.",
+                    nameof(definition));
+            return new MarkerInstanceId(
+                Mint(context, holder).Value + ":" + definition.DefinitionId.Value +
+                ":v" + definition.Revision);
+        }
+
         public static MarkerInstanceId Mint(EffectCapabilityContext context, HeroId holder)
         {
             if (context == null)

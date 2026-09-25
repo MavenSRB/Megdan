@@ -124,7 +124,8 @@ namespace GuardsDigital.Tests.EditMode
 
         private static MethodInfo MintMethod() =>
             ILConformanceScanner.Method(
-                typeof(MarkerInstanceIdentity), nameof(MarkerInstanceIdentity.Mint));
+                typeof(MarkerInstanceIdentity), nameof(MarkerInstanceIdentity.Mint),
+                typeof(EffectCapabilityContext), typeof(HeroId));
 
         /// <summary>Deliberate violation: composes an instance ID inside the capability.</summary>
         private sealed class IdComposingSample

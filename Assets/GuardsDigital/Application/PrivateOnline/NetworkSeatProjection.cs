@@ -369,7 +369,8 @@ namespace GuardsDigital.Application
             string ownerHeroId,
             string holderHeroId,
             string sourceCardInstanceId,
-            string sourceActionDefinitionId)
+            string sourceActionDefinitionId,
+            int turnSlotIndex)
         {
             MarkerInstanceId = markerInstanceId;
             MarkerDefinitionId = markerDefinitionId;
@@ -377,6 +378,7 @@ namespace GuardsDigital.Application
             HolderHeroId = holderHeroId;
             SourceCardInstanceId = sourceCardInstanceId;
             SourceActionDefinitionId = sourceActionDefinitionId;
+            TurnSlotIndex = turnSlotIndex;
         }
 
         public string MarkerInstanceId { get; }
@@ -385,6 +387,7 @@ namespace GuardsDigital.Application
         public string HolderHeroId { get; }
         public string SourceCardInstanceId { get; }
         public string SourceActionDefinitionId { get; }
+        public int TurnSlotIndex { get; }
     }
 
     public sealed class NetworkTurnSlotRow
@@ -689,6 +692,7 @@ namespace GuardsDigital.Application
                     WriteOptional(writer, marker.HolderHeroId.IsDefined, marker.HolderHeroId.Value);
                     WriteOptional(writer, marker.SourceCardInstanceId.IsDefined, marker.SourceCardInstanceId.Value);
                     WriteOptional(writer, marker.SourceActionDefinitionId.IsDefined, marker.SourceActionDefinitionId.Value);
+                    writer.Write(marker.TurnSlotIndex ?? 0);
                 }
 
                 writer.Write(projection.TurnSlots.Count);
@@ -1010,7 +1014,14 @@ namespace GuardsDigital.Application
                             return false;
                         }
 
-                        markers.Add(new NetworkMarkerRow(id, definitionId, owner, holder, sourceCard, sourceAction));
+                        var turnSlotIndex = reader.ReadInt32();
+                        if (turnSlotIndex < 0 ||
+                            turnSlotIndex > GuardsDigital.Core.Cards.RoundResolutionAuthority.TurnsPerRound)
+                        {
+                            return false;
+                        }
+                        markers.Add(new NetworkMarkerRow(id, definitionId, owner, holder,
+                            sourceCard, sourceAction, turnSlotIndex));
                     }
 
                     if (!TryReadCount(reader, out var slotCount))

@@ -58,7 +58,10 @@ namespace GuardsDigital.Presentation.Match
         /// <para>The OTHER system-transition kind, p.8's blocked-Spawn Lane Push placement, is
         /// answered by clicking a lit space and stays where it is.</para>
         /// </summary>
-        LevelUp = 14
+        LevelUp = 14,
+
+        /// <summary>Four printed rune glyphs dragged onto four numbered turn-card slots.</summary>
+        RuneSlots = 15
     }
 
     /// <summary>
@@ -105,7 +108,9 @@ namespace GuardsDigital.Presentation.Match
             string unavailableReason = null,
             HeroId hero = default,
             SystemTransitionOptionViewModel upgradeOption = null,
-            DefenseBreakdownViewModel defenseBreakdown = null)
+            DefenseBreakdownViewModel defenseBreakdown = null,
+            int runeOrdinal = 0,
+            int turnSlotIndex = 0)
         {
             Label = string.IsNullOrWhiteSpace(label)
                 ? throw new ArgumentException("A decision control requires a label.", nameof(label))
@@ -115,6 +120,15 @@ namespace GuardsDigital.Presentation.Match
                 throw new ArgumentException(
                     "A decision control answers through one contract, not two.", nameof(command));
             }
+            if ((runeOrdinal == 0) != (turnSlotIndex == 0) ||
+                runeOrdinal < 0 || runeOrdinal > 4 ||
+                turnSlotIndex < 0 || turnSlotIndex > 4)
+            {
+                throw new ArgumentException(
+                    "A rune placement names both a glyph and a numbered turn slot.");
+            }
+            RuneOrdinal = runeOrdinal;
+            TurnSlotIndex = turnSlotIndex;
 
             if (unavailableReason != null && (command != null || agreementCommand != null))
             {
@@ -203,6 +217,12 @@ namespace GuardsDigital.Presentation.Match
 
         /// <summary>Whether this control's candidate is already part of the standing selection.</summary>
         public bool IsChosen { get; }
+
+        /// <summary>Printed glyph ordinal, 1-4, when this control places a rune.</summary>
+        public int RuneOrdinal { get; }
+
+        /// <summary>Numbered turn-card slot, 1-4, for the paired rune placement.</summary>
+        public int TurnSlotIndex { get; }
 
         /// <summary>Why this control is drawn and refused, or null when it answers.</summary>
         public string UnavailableReason { get; }

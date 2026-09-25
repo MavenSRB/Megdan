@@ -27,7 +27,8 @@ namespace GuardsDigital.Core.Components
             HeroId ownerHeroId,
             HeroId holderHeroId,
             CardInstanceId sourceCardInstanceId,
-            ActionDefinitionId sourceActionDefinitionId)
+            ActionDefinitionId sourceActionDefinitionId,
+            int? turnSlotIndex = null)
         {
             if (!id.IsDefined)
             {
@@ -41,12 +42,27 @@ namespace GuardsDigital.Core.Components
                     nameof(holderHeroId));
             }
 
+            if (turnSlotIndex.HasValue && (turnSlotIndex.Value < 1 ||
+                turnSlotIndex.Value > RoundResolutionAuthority.TurnsPerRound))
+            {
+                throw new ArgumentOutOfRangeException(nameof(turnSlotIndex));
+            }
+
+            if (turnSlotIndex.HasValue && definition != null &&
+                definition.ReturnCondition != MarkerReturnCondition.RetainedAtRoundEndAndDefeat)
+            {
+                throw new ArgumentException(
+                    "A marker below a turn slot requires a printed retained-marker definition.",
+                    nameof(turnSlotIndex));
+            }
+
             Id = id;
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
             OwnerHeroId = ownerHeroId;
             HolderHeroId = holderHeroId;
             SourceCardInstanceId = sourceCardInstanceId;
             SourceActionDefinitionId = sourceActionDefinitionId;
+            TurnSlotIndex = turnSlotIndex;
 
             // Milestone 8.23, the exact shape PlacedToken derives its own from - one source per
             // declared property, in declaration order, so the two collections address the same
@@ -82,6 +98,12 @@ namespace GuardsDigital.Core.Components
         public CardInstanceId SourceCardInstanceId { get; }
 
         public ActionDefinitionId SourceActionDefinitionId { get; }
+
+        /// <summary>
+        /// The numbered turn slot this printed retained marker sits below; null for ordinary
+        /// hero-held markers. It is a dashboard association, never a board coordinate.
+        /// </summary>
+        public int? TurnSlotIndex { get; }
 
         /// <summary>
         /// The explicit return state milestone 6.2's second acceptance check requires, read from the

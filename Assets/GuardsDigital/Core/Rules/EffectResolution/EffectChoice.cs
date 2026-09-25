@@ -62,7 +62,14 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// <para>Without it the two candidates reach a player as the buttons "1" and "2", which is
         /// precisely the failure this enum was written for.</para>
         /// </summary>
-        PrintedTextFace = 3
+        PrintedTextFace = 3,
+
+        /// <summary>
+        /// One of four printed rune glyphs paired with one of four numbered turn slots. Integer
+        /// 1-16 encodes (glyph ordinal - 1) * 4 + slot; the authoritative choice still validates
+        /// a complete permutation before attaching anything. Presentation draws this as drag/drop.
+        /// </summary>
+        RuneTurnSlot = 4
     }
 
     public enum EffectChoiceCandidateKind

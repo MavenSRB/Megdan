@@ -355,7 +355,9 @@ namespace GuardsDigital.Application
         // SCHEMA IS UNMOVED at v44: the choice is derived from the authoritative Attack state every
         // time a projection is built and is never persisted, so no snapshot field, corpus digest or
         // pinned constant moves with this bump.
-        public const int Version = 21;
+        // v22: the admission tuple's snapshot schema advances to 45 for persisted marker turn slots.
+        // Peers with older authoritative-state shape must refuse each other before gameplay.
+        public const int Version = 22;
 
         /// <summary>
         /// Milestone 8.35z37. The most characters a hero id may carry in a pick.

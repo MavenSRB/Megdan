@@ -17,8 +17,8 @@ namespace GuardsDigital.Core.Components
     /// Milestone 6.12 wires both checkpoints. They live together here because they are the same sentence
     /// read at two moments: p.8's "Return all markers back into the supply" at the end of a round, and
     /// p.13's "Any markers they had are returned" when a hero is defeated. A marker declaring
-    /// <see cref="MarkerReturnCondition.GeneralCleanup"/> is declaring both, which is exactly what that
-    /// member's own summary says it means.
+    /// <see cref="MarkerReturnCondition.GeneralCleanup"/> is declaring both. Verified printed text may
+    /// declare <see cref="MarkerReturnCondition.RetainedAtRoundEndAndDefeat"/> instead.
     /// </summary>
     public static class ComponentCleanupRules
     {

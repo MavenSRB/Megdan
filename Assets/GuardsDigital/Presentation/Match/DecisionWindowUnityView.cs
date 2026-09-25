@@ -241,6 +241,9 @@ namespace GuardsDigital.Presentation.Match
         private readonly List<KeyValuePair<DecisionWindowControlViewModel, VisualElement>> drawnControls =
             new List<KeyValuePair<DecisionWindowControlViewModel, VisualElement>>();
 
+        private int selectedRuneForSlots;
+        private string selectedRuneDecisionKey;
+
         public DecisionWindowUnityView()
         {
             Root = new VisualElement { name = "gd-decision-window" };
@@ -586,6 +589,11 @@ namespace GuardsDigital.Presentation.Match
 
         private void Rebuild()
         {
+            if (Model == null || selectedRuneDecisionKey != Model.DecisionKey)
+            {
+                selectedRuneForSlots = 0;
+                selectedRuneDecisionKey = Model?.DecisionKey;
+            }
             drawnControls.Clear();
             expandedStatements.Clear();
             expandedContext.Clear();
@@ -685,7 +693,17 @@ namespace GuardsDigital.Presentation.Match
             // Milestone 8.46g. p.15's question is not a row of independent answers: it is the seat's
             // own hand above three PAIRS, and each pair is one card the hero may upgrade. It is laid
             // out as the one shape it is rather than fed through the generic control loop.
-            if (Model.Family == DecisionWindowFamily.LevelUp)
+            if (Model.Family == DecisionWindowFamily.RuneSlots)
+            {
+                expandedControls.style.height = StyleKeyword.Auto;
+                expandedControls.style.flexDirection = FlexDirection.Column;
+                expandedControls.style.alignItems = Align.Center;
+                expandedControls.style.alignSelf = Align.Auto;
+                expandedControls.style.flexWrap = Wrap.NoWrap;
+                expandedBody.style.alignItems = Align.Center;
+                expandedControls.Add(BuildRuneSlotOffer());
+            }
+            else if (Model.Family == DecisionWindowFamily.LevelUp)
             {
                 // The offer's own arithmetic is ABSOLUTE - a 220-unit preview row, an 8-unit gap and
                 // a 428-unit band of candidate faces at the tray's own footprint - so the row that
@@ -914,6 +932,228 @@ namespace GuardsDigital.Presentation.Match
             }
 
             return element;
+        }
+
+        /// <summary>
+        /// The four physical rune pieces and the four numbered turn-card slots, in the existing
+        /// decision pop-up. A drop selects the pending typed pair command; the pop-up never mutates
+        /// marker state. Clicking a rune then a slot is the keyboard/focus path to the same command.
+        /// An occupied slot can be clicked to deselect its pair before another rune is dropped.
+        /// </summary>
+        private VisualElement BuildRuneSlotOffer()
+        {
+            var offer = new VisualElement { name = "gd-rune-slot-offer" };
+            offer.style.flexDirection = FlexDirection.Column;
+            offer.style.alignItems = Align.Center;
+            offer.style.maxWidth = Length.Percent(100f);
+
+            var bank = new VisualElement { name = "gd-rune-bank" };
+            bank.style.flexDirection = FlexDirection.Row;
+            bank.style.justifyContent = Justify.Center;
+            bank.style.flexWrap = Wrap.Wrap;
+            offer.Add(bank);
+
+            var slots = new VisualElement { name = "gd-rune-turn-slots" };
+            slots.style.flexDirection = FlexDirection.Row;
+            slots.style.justifyContent = Justify.Center;
+            slots.style.flexWrap = Wrap.Wrap;
+            slots.style.marginTop = 18f;
+            offer.Add(slots);
+
+            var slotButtons = new Button[5];
+            for (var slot = 1; slot <= 4; slot++)
+            {
+                var slotIndex = slot;
+                var placed = Model.Controls.FirstOrDefault(control =>
+                    control.IsChosen && control.TurnSlotIndex == slotIndex);
+                var button = HudElements.Control(
+                    placed == null
+                        ? "TURN " + slotIndex + "\nDROP RUNE"
+                        : "TURN " + slotIndex + "\nRUNE " + placed.RuneOrdinal,
+                    () =>
+                    {
+                        if (placed != null)
+                        {
+                            ControlActivated?.Invoke(placed);
+                        }
+                        else if (selectedRuneForSlots > 0)
+                        {
+                            ActivateRuneSlotPair(selectedRuneForSlots, slotIndex);
+                        }
+                    },
+                    96f);
+                button.name = "gd-rune-turn-slot-" + slotIndex;
+                button.style.width = 142f;
+                button.style.marginRight = slot == 4 ? 0f : 9f;
+                button.style.unityTextAlign = TextAnchor.MiddleCenter;
+                HudElements.Border(button,
+                    placed == null ? MatchHudTheme.ButtonBorder : MatchHudTheme.CoinFace,
+                    placed == null ? 1f : 2f,
+                    MatchHudTheme.ButtonCornerRadius);
+                slots.Add(button);
+                slotButtons[slotIndex] = button;
+                if (placed != null)
+                {
+                    drawnControls.Add(
+                        new KeyValuePair<DecisionWindowControlViewModel, VisualElement>(
+                            placed, button));
+                }
+            }
+
+            for (var rune = 1; rune <= 4; rune++)
+            {
+                var runeIndex = rune;
+                var assigned = Model.Controls.Any(control =>
+                    control.IsChosen && control.RuneOrdinal == runeIndex);
+                var button = HudElements.Control(
+                    assigned ? "RUNE " + runeIndex + " · PLACED" : "RUNE " + runeIndex,
+                    assigned ? (Action)null : () =>
+                    {
+                        selectedRuneForSlots = runeIndex;
+                        Rebuild();
+                    },
+                    64f);
+                button.name = "gd-rune-piece-" + runeIndex;
+                button.style.width = 142f;
+                button.style.marginRight = rune == 4 ? 0f : 9f;
+                button.style.unityTextAlign = TextAnchor.MiddleCenter;
+                if (selectedRuneForSlots == runeIndex && !assigned)
+                {
+                    HudElements.MarkSelected(button, true);
+                }
+                if (assigned)
+                {
+                    HudElements.MarkUnavailable(button);
+                }
+
+                bank.Add(button);
+                if (!assigned)
+                {
+                    BindRuneDrag(button, runeIndex, slotButtons, offer);
+                }
+            }
+
+            var confirm = Model.Controls.FirstOrDefault(control =>
+                control.Role == DecisionWindowControlRole.Confirm);
+            if (confirm != null)
+            {
+                var done = BuildWordedControl(confirm);
+                done.name = "gd-rune-slot-done";
+                done.style.marginTop = 22f;
+                offer.Add(done);
+                drawnControls.Add(
+                    new KeyValuePair<DecisionWindowControlViewModel, VisualElement>(
+                        confirm, done));
+            }
+
+            return offer;
+        }
+
+        private void ActivateRuneSlotPair(int runeOrdinal, int slotIndex)
+        {
+            if (Model == null || Model.Family != DecisionWindowFamily.RuneSlots ||
+                Model.Controls.Any(control =>
+                    control.IsChosen &&
+                    (control.RuneOrdinal == runeOrdinal || control.TurnSlotIndex == slotIndex)))
+            {
+                return;
+            }
+
+            var pair = Model.Controls.FirstOrDefault(control =>
+                control.RuneOrdinal == runeOrdinal &&
+                control.TurnSlotIndex == slotIndex &&
+                control.IsAnswerable);
+            if (pair != null)
+            {
+                selectedRuneForSlots = 0;
+                ControlActivated?.Invoke(pair);
+            }
+        }
+
+        private void BindRuneDrag(
+            Button piece, int runeOrdinal, IReadOnlyList<Button> slots, VisualElement offer)
+        {
+            var pointer = -1;
+            var start = Vector3.zero;
+            var wasDrag = false;
+            Label proxy = null;
+
+            void EndDrag()
+            {
+                if (pointer >= 0 && piece.HasPointerCapture(pointer))
+                {
+                    piece.ReleasePointer(pointer);
+                }
+                pointer = -1;
+                if (proxy != null)
+                {
+                    proxy.RemoveFromHierarchy();
+                    proxy = null;
+                }
+            }
+
+            piece.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                if (evt.button != 0 || pointer >= 0)
+                {
+                    return;
+                }
+                pointer = evt.pointerId;
+                start = evt.position;
+                wasDrag = false;
+                piece.CapturePointer(pointer);
+            }, TrickleDown.TrickleDown);
+
+            piece.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if (evt.pointerId != pointer || pointer < 0)
+                {
+                    return;
+                }
+                if (!wasDrag && (evt.position - start).sqrMagnitude < 36f)
+                {
+                    return;
+                }
+                wasDrag = true;
+                if (proxy == null)
+                {
+                    proxy = HudElements.Text(
+                        "RUNE " + runeOrdinal, 17f,
+                        MatchHudTheme.CoinFace, FontStyle.Bold);
+                    proxy.name = "gd-rune-drag-proxy";
+                    proxy.style.position = Position.Absolute;
+                    proxy.pickingMode = PickingMode.Ignore;
+                    offer.Add(proxy);
+                }
+                proxy.style.left = evt.position.x - offer.worldBound.x + 12f;
+                proxy.style.top = evt.position.y - offer.worldBound.y + 12f;
+            }, TrickleDown.TrickleDown);
+
+            piece.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (evt.pointerId != pointer)
+                {
+                    return;
+                }
+                var dragged = wasDrag;
+                EndDrag();
+                if (!dragged)
+                {
+                    return;
+                }
+                evt.StopImmediatePropagation();
+                for (var slot = 1; slot <= 4; slot++)
+                {
+                    if (slots[slot].worldBound.Contains(evt.position))
+                    {
+                        ActivateRuneSlotPair(runeOrdinal, slot);
+                        break;
+                    }
+                }
+            }, TrickleDown.TrickleDown);
+
+            piece.RegisterCallback<PointerCancelEvent>(_ => EndDrag(),
+                TrickleDown.TrickleDown);
         }
 
         /// <summary>

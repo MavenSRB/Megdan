@@ -194,10 +194,8 @@ namespace GuardsDigital.Core.Components
     ///
     /// <see cref="GeneralCleanup"/> is the rulebook's baseline and currently the only member: markers
     /// return at the end of every round (p.8, "Remove Tokens, Return Markers") and every marker held by
-    /// a defeated hero is returned (p.13). <c>STATE_CAPABILITIES.md</c> records that exact effects may
-    /// add an *earlier* return condition but cannot weaken those two checkpoints, so this enum is the
-    /// declared seam a later verified card extends. It is deliberately not widened ahead of that text:
-    /// an invented member would be an invented rule.
+    /// a defeated hero is returned (p.13), unless verified card text explicitly overrides a
+    /// checkpoint. Snorri's Silver supplies that exception for both checkpoints.
     ///
     /// Milestone 6.2 records the condition and implements the return transition. It wires no automatic
     /// trigger to either checkpoint; end-of-round cleanup belongs to milestone 6.12.
@@ -207,7 +205,13 @@ namespace GuardsDigital.Core.Components
         None = 0,
 
         /// <summary>Returned at end of round, and when the holding hero is defeated.</summary>
-        GeneralCleanup = 1
+        GeneralCleanup = 1,
+
+        /// <summary>
+        /// Printed exception: retained at both general marker-return checkpoints. Explicit card
+        /// operations may still return it. Snorri's Inscribe the Runes first requires this state.
+        /// </summary>
+        RetainedAtRoundEndAndDefeat = 2
     }
 
     /// <summary>
@@ -505,11 +509,12 @@ namespace GuardsDigital.Core.Components
                     "A marker definition's supply is finite and non-empty.");
             }
 
-            if (returnCondition == MarkerReturnCondition.None)
+            if (returnCondition == MarkerReturnCondition.None ||
+                !Enum.IsDefined(typeof(MarkerReturnCondition), returnCondition))
             {
                 throw new ArgumentException(
-                    "A marker definition requires an explicit return condition; a marker that never returns " +
-                    "would contradict the general cleanup the rulebook applies to every marker.",
+                    "A marker definition requires a supported explicit return condition. " +
+                    "A printed exception is required to retain a marker past general cleanup.",
                     nameof(returnCondition));
             }
 

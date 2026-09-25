@@ -20,15 +20,19 @@ Completed 2026-09-25. Nineteen source fronts and nineteen backs (two byte varian
 
 Historical evidence: [8.93 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893-snorri-inventory-evidence).
 
-### [ ] 8.93a Implement persistent turn-slot runes and Inscribe the Runes
+### [x] 8.93a Implement persistent turn-slot runes and Inscribe the Runes
 
 Outcome: four distinct rune markers belong below Snorri's numbered turn slots in a player-chosen permutation, are active only at the current slot, and persist as printed through round end and defeat. Compose the Silver basic face and its authoritative state, including a drag-and-drop assignment in the existing choice pop-up rather than an implicit order.
 
-Acceptance: all four unique rune pieces can be dragged into distinct 1-4 slots in any player-chosen order; no commit before all four slots are assigned; keyboard or equivalent accessible completion follows the existing UI's interaction contract; placement, active/inactive transitions, re-inscription, round rollover, defeat/respawn, source card changing zones, item/Ultimate interactions where relevant, snapshot/replay/Undo, both seat projections, and directly affected marker and turn-slot regressions. T2 minimum.
+Acceptance: the four distinct physical markers can be dragged or focus-selected into a player-chosen 1-4 permutation in the existing popup; no authority mutation occurs before four selections and DONE. A staged Silver action, live-turn active-rune lookup, re-inscription identity, round/defeat cleanup exception, snapshot round-trip, private-online slot row, format rejection and directly affected regressions are proved here. The complete configured-match replay/Undo, defeat/respawn, Ultimate/item interaction, both-seat player-path projection and tray glyph checks depend on later faces and dealing; their closing checks remain explicitly owned by 8.93e-8.93g. Schema migration promotes this milestone to T3.
 
 Non-goals: other printed faces or dealing.
 
-### [ ] 8.93b Compose the Gold and Red attacks
+Completed 2026-09-25. Four source-backed retained markers have a numbered dashboard slot and live-turn query, Silver's staged Skill commits only a complete chosen permutation, and the decision popup supports pointer drag/drop plus focus/click assignment. Snapshot schema v45 and private-online /22 carry the new slot field and reject older formats. Focused staged action, component, snapshot, online and mounted-panel tests passed; full Unity-free 4,603/4,603, Unity Edit 5,596 passed with 37 pre-existing Explicit diagnostic skips, and Unity Play 858/858 passed. The observed identity-conformance failure was corrected and rerun green before the broad rerun. Remaining configured/dealt interactions stay at 8.93e-8.93g as stated above.
+
+Historical evidence: [8.93a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893a-snorri-rune-foundation-evidence).
+
+### [~] 8.93b Compose the Gold and Red attacks
 
 Outcome: the basic Gold attack and five Red upgrades run printed rune-gated targeting, values, moves, retrieval, discard and repeat clauses.
 

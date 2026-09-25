@@ -134,6 +134,62 @@ namespace GuardsDigital.Core.Components
         }
 
         /// <summary>
+        /// Replace one hero's four distinct dashboard-slot markers as one accepted choice. The caller
+        /// supplies trusted attachments whose definition and source identity have already been
+        /// derived from the card, while this register owns the finite-supply and one-piece-per-slot
+        /// invariants. An invalid or stale permutation leaves the register unchanged.
+        /// </summary>
+        public void SetTurnSlotMarkers(HeroId holderHeroId, IEnumerable<MarkerAttachment> placements)
+        {
+            if (!holderHeroId.IsDefined)
+            {
+                throw new ArgumentException("A turn-slot assignment requires its hero.", nameof(holderHeroId));
+            }
+
+            var proposed = (placements ?? throw new ArgumentNullException(nameof(placements))).ToArray();
+            if (proposed.Length != GuardsDigital.Core.Cards.RoundResolutionAuthority.TurnsPerRound ||
+                proposed.Any(value => value == null || !value.HolderHeroId.Equals(holderHeroId) ||
+                    !value.TurnSlotIndex.HasValue ||
+                    value.ReturnCondition != MarkerReturnCondition.RetainedAtRoundEndAndDefeat) ||
+                proposed.Select(value => value.TurnSlotIndex.Value).Distinct().Count() != proposed.Length ||
+                proposed.Select(value => value.Definition.Reference).Distinct().Count() != proposed.Length ||
+                proposed.Select(value => value.Id).Distinct().Count() != proposed.Length)
+            {
+                throw new ArgumentException(
+                    "Four distinct retained markers must occupy four distinct turn slots.",
+                    nameof(placements));
+            }
+
+            var references = proposed.Select(value => value.Definition.Reference).ToHashSet();
+            foreach (var next in proposed)
+            {
+                var existingPiece = attachments.SingleOrDefault(value =>
+                    value.HolderHeroId.Equals(holderHeroId) &&
+                    value.Definition.Reference.Equals(next.Definition.Reference));
+                if (existingPiece != null && !existingPiece.Id.Equals(next.Id))
+                {
+                    throw new InvalidOperationException(
+                        "Reassigning a physical rune must preserve its marker instance identity.");
+                }
+            }
+            var remaining = attachments.Where(value =>
+                !value.HolderHeroId.Equals(holderHeroId) ||
+                !references.Contains(value.Definition.Reference)).ToArray();
+            if (remaining.Any(value => proposed.Any(next => next.Id.Equals(value.Id))) ||
+                proposed.Any(value => remaining.Count(other =>
+                    other.Definition.Reference.Equals(value.Definition.Reference)) >=
+                    value.Definition.SupplyCount))
+            {
+                throw new InvalidOperationException(
+                    "A rune piece is already held elsewhere or its instance identity is in use.");
+            }
+
+            attachments.Clear();
+            attachments.AddRange(remaining);
+            attachments.AddRange(proposed.OrderBy(value => value.TurnSlotIndex.Value));
+        }
+
+        /// <summary>
         /// Moves one attached marker from the hero holding it to another hero, as ONE operation.
         /// Milestone 8.40b, for Bain's Close Call - "that hero gives the marker to you".
         ///
@@ -180,7 +236,8 @@ namespace GuardsDigital.Core.Components
                 moving.OwnerHeroId,
                 holderHeroId,
                 moving.SourceCardInstanceId,
-                moving.SourceActionDefinitionId);
+                moving.SourceActionDefinitionId,
+                moving.TurnSlotIndex);
             attachments[index] = moved;
             return moved;
         }

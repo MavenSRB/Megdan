@@ -406,6 +406,36 @@ namespace GuardsDigital.Tests.EditMode
             AssertScaleMotionIsWired(control, "a decision window choice");
         }
 
+        [Test]
+        public void RuneDecisionWindow_DrawsFourPiecesAndFourTurnSlotsInTheExistingPopup()
+        {
+            var view = new DecisionWindowUnityView();
+            var pairs = Enumerable.Range(1, 16)
+                .Select(value => new DecisionWindowControlViewModel(
+                    "RUNE " + ((value - 1) / 4 + 1) + " TO TURN " + ((value - 1) % 4 + 1),
+                    DirectorCommand.ReleaseTurn(),
+                    runeOrdinal: (value - 1) / 4 + 1,
+                    turnSlotIndex: (value - 1) % 4 + 1,
+                    isChosen: value == 2))
+                .ToArray();
+            view.Render(new DecisionWindowViewModel(
+                1L, DecisionWindowFamily.RuneSlots, DecisionWindowState.Expanded,
+                "runes-fixture", "INSCRIBE THE RUNES", "SKILL", "Drag each rune onto one turn slot.",
+                count: "1 of 4 chosen",
+                controls: pairs,
+                isMinimisable: false));
+
+            Assert.That(Descendants(view.Root).Count(element =>
+                element.name != null && element.name.StartsWith("gd-rune-piece-")), Is.EqualTo(4));
+            Assert.That(Descendants(view.Root).Count(element =>
+                element.name != null && element.name.StartsWith("gd-rune-turn-slot-")), Is.EqualTo(4));
+            Assert.That(view.Root.Q<Button>("gd-rune-turn-slot-2").text, Does.Contain("RUNE 1"));
+            Assert.That(view.Root.Q("gd-decision-window-expanded"), Is.Not.Null,
+                "The rune arrangement belongs to the existing decision popup.");
+            Assert.That(view.Root.Q("gd-rune-drag-proxy"), Is.Null,
+                "The drag proxy is only painted while a player actually carries a rune.");
+        }
+
         /// <summary>
         /// Milestone 8.58, and the user's note on two separate captures of the shipped window - the
         /// optional step and the Minion Battle bar - "Old buttons here instead of new ones."

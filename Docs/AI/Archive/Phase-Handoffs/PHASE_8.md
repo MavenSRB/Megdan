@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.93a Snorri rune foundation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.93a | Four retained rune markers occupy player-chosen turn slots; the staged Silver Skill and popup drag/focus choice commit atomically. Snapshot v45 and wire /22 preserve slot identity, with full T3 regression green; configured/dealt presentation and replay gates remain 8.93e-8.93g. [Definition](../../Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893a-implement-persistent-turn-slot-runes-and-inscribe-the-runes). | `milestone/8.93a` |
+
 ## Milestone 8.93 Snorri inventory evidence
 
 | Milestone | Outcome and definition | Commit |

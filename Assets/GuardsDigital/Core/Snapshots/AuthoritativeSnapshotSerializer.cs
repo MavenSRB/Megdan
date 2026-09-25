@@ -388,7 +388,10 @@ namespace GuardsDigital.Core.Snapshots
         // from the one the match was playing - p.7 re-checks the Initiative after every resolution, so
         // the wrong number is consulted at the very next selection and nothing in the match could
         // detect it. No persisted state exists outside the version-controlled corpus to strand.
-        public const int CurrentSchemaVersion = 44;
+        // v45: marker attachments carry an optional numbered dashboard turn slot. Snorri's four
+        // distinct runes persist through round end and defeat, so their assignment is match-wide
+        // rules state, not presentation placement. v44 lacks that association and is rejected.
+        public const int CurrentSchemaVersion = 45;
 
         /// <summary>
         /// Instrumentation, not production state. Milestone 6.1i asserts the exact number of full

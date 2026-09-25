@@ -175,6 +175,13 @@ namespace GuardsDigital.Presentation.Match
                         : throw new ArgumentOutOfRangeException(
                             nameof(value),
                             $"{value} is not a member of the declared vocabulary {vocabulary}.");
+                case EffectChoiceValueVocabulary.RuneTurnSlot:
+                    if (value < 1 || value > 16)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(value));
+                    }
+
+                    return $"RUNE {((value - 1) / 4) + 1} TO TURN {((value - 1) % 4) + 1}";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(vocabulary),

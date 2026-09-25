@@ -285,6 +285,85 @@ namespace GuardsDigital.Tests.EditMode
                 "Marker instance identity must stay unique across a restore.");
         }
 
+        [Test]
+        public void PrintedRetainedMarker_StaysBelowItsTurnSlotThroughBothGeneralCleanupCheckpoints()
+        {
+            var definition = new MarkerDefinition(
+                new MarkerDefinitionId("test-persistent-slot-rune"), 1, "TEST - Rune", 1,
+                MarkerReturnCondition.RetainedAtRoundEndAndDefeat);
+            var marker = new MarkerAttachment(
+                new MarkerInstanceId("slot-rune"), definition, ActorId, ActorId,
+                default, default, 3);
+            var markers = new MarkerAttachmentRegister();
+            markers.Give(marker);
+
+            Assert.That(marker.TurnSlotIndex, Is.EqualTo(3));
+            Assert.That(ComponentCleanupRules.MarkersReturnedAtEndOfRound(markers.Attachments), Is.Empty);
+            Assert.That(ComponentCleanupRules.MarkersReturnedOnDefeat(markers.Attachments, ActorId), Is.Empty);
+            Assert.That(markers.CountAvailable(definition), Is.Zero);
+            Assert.That(MarkerAttachmentRegister.Restore(markers.CaptureRestoreState())
+                .Attachments.Single().TurnSlotIndex, Is.EqualTo(3));
+            Assert.That(markers.Return(marker.Id), Is.SameAs(marker),
+                "Printed retention does not prohibit an explicit return operation.");
+        }
+
+        [Test]
+        public void TurnSlotMarkers_RejectOutOfRangeSlotsAndOrdinaryCleanupDefinitions()
+        {
+            var retained = new MarkerDefinition(
+                new MarkerDefinitionId("test-persistent-slot-rune"), 1, "TEST - Rune", 1,
+                MarkerReturnCondition.RetainedAtRoundEndAndDefeat);
+            Assert.That(() => new MarkerAttachment(
+                new MarkerInstanceId("zero"), retained, ActorId, ActorId,
+                default, default, 0), Throws.TypeOf<ArgumentOutOfRangeException>());
+            Assert.That(() => new MarkerAttachment(
+                new MarkerInstanceId("five"), retained, ActorId, ActorId,
+                default, default, 5), Throws.TypeOf<ArgumentOutOfRangeException>());
+            Assert.That(() => new MarkerAttachment(
+                new MarkerInstanceId("ordinary"), SyntheticComponentDefinitions.FocusDefinition,
+                ActorId, ActorId, default, default, 1), Throws.ArgumentException);
+            Assert.That(() => new MarkerDefinition(
+                new MarkerDefinitionId("unknown-return"), 1, "TEST - Unknown", 1,
+                (MarkerReturnCondition)99), Throws.ArgumentException);
+        }
+
+        [Test]
+        public void FourRunePlacement_IsAtomicAndPreservesPhysicalIdentityOnReinscription()
+        {
+            var definitions = Enumerable.Range(1, 4).Select(index => new MarkerDefinition(
+                new MarkerDefinitionId("test-slot-rune-" + index), 1,
+                "TEST - Rune " + index, 1,
+                MarkerReturnCondition.RetainedAtRoundEndAndDefeat)).ToArray();
+            MarkerAttachment[] Place(params int[] slots) => definitions.Select((definition, index) =>
+                new MarkerAttachment(new MarkerInstanceId("rune-" + (index + 1)), definition,
+                    ActorId, ActorId, default, default, slots[index])).ToArray();
+
+            var register = new MarkerAttachmentRegister();
+            register.SetTurnSlotMarkers(ActorId, Place(4, 1, 3, 2));
+            Assert.That(register.Attachments.Select(value => value.TurnSlotIndex),
+                Is.EquivalentTo(new int?[] { 1, 2, 3, 4 }));
+            Assert.That(register.Attachments.Select(value => value.Id).Distinct().Count(), Is.EqualTo(4));
+
+            var beforeInvalid = register.Attachments.ToArray();
+            Assert.That(() => register.SetTurnSlotMarkers(ActorId, Place(1, 1, 3, 4)),
+                Throws.ArgumentException);
+            Assert.That(register.Attachments, Is.EqualTo(beforeInvalid),
+                "An incomplete or duplicate placement must not partially move a rune.");
+
+            register.SetTurnSlotMarkers(ActorId, Place(1, 2, 3, 4));
+            Assert.That(register.Attachments.Select(value => value.Id.Value),
+                Is.EquivalentTo(beforeInvalid.Select(value => value.Id.Value)),
+                "Re-inscribing moves the four physical markers instead of minting four copies.");
+
+            var stale = Place(4, 3, 2, 1);
+            stale[0] = new MarkerAttachment(new MarkerInstanceId("fake-replacement"),
+                definitions[0], ActorId, ActorId, default, default, 4);
+            Assert.That(() => register.SetTurnSlotMarkers(ActorId, stale),
+                Throws.InvalidOperationException);
+            Assert.That(register.Attachments.Select(value => value.TurnSlotIndex),
+                Is.EquivalentTo(new int?[] { 1, 2, 3, 4 }));
+        }
+
         private static AdjacentMoveAuthority CreateBoard(HexCoordinate actorOrigin) =>
             new AdjacentMoveAuthority(
                 Coordinates(),
