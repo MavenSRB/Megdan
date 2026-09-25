@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.93a**.
-- Active authorized milestone: **8.93b**.
-- Next proposed milestone: **8.93b**.
+- Current completed milestone: **8.93b**.
+- Active authorized milestone: **8.93c**.
+- Next proposed milestone: **8.93c**.
 
-On 2026-09-25 the user chose **Snorri the Runescribe** as hero twenty-four, authorizing [8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md). [His rules shard](Rules/HERO_SNORRI.md) owns the card and rune authority. **8.93 and 8.93a are complete**: the inventory, player-chosen drag/drop rune slots, staged Silver, persistent marker state, snapshot v45 and wire /22 passed the T3 gates. 8.93b composes Gold/Red next; the tray and resolving-card Initiative glyphs remain 8.93f. Trinkets is gated at [8.92g](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md); twenty-three heroes are dealt. Bot diagnosis 8.35z71 remains queued. No package or publication is authorized.
+The user chose **Snorri the Runescribe** as hero twenty-four, authorizing [8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md). [His rules shard](Rules/HERO_SNORRI.md) owns the card and rune authority. **8.93-8.93b are complete**: inventory, chosen drag/drop rune slots, staged Silver, retained markers, snapshot v45 and wire /22 passed T3; staged Gold/Red attacks passed T2. 8.93c composes Blue movement/support; tray and Initiative glyphs remain 8.93f, configured replay/Undo/player-path coverage 8.93g. Trinkets is gated at [8.92g](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md); twenty-three heroes are dealt. Bot diagnosis 8.35z71 remains queued. No package or publication is authorized.
 
 On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 

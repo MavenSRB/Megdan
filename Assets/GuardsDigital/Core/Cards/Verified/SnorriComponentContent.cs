@@ -23,6 +23,8 @@ namespace GuardsDigital.Core.Cards.Verified
 
         public static EffectCapabilityReference InscribeRunesV1 { get; } =
             new EffectCapabilityReference(new EffectCapabilityId("snorri-inscribe-runes"), 1);
+        public static EffectCapabilityReference ActiveRuneV1 { get; } =
+            new EffectCapabilityReference(new EffectCapabilityId("snorri-active-rune"), 1);
 
         public static IEnumerable<MarkerDefinition> Markers() => Runes;
 
@@ -44,7 +46,53 @@ namespace GuardsDigital.Core.Cards.Verified
         }
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
-            new IEffectCapabilityHandler[] { new InscribeRunesHandler() };
+            new IEffectCapabilityHandler[] { new InscribeRunesHandler(), new ActiveRuneHandler() };
+
+        /// <summary>
+        /// Pure live-turn predicate for rune-gated card text. A declaration names an ordinal,
+        /// while the marker register and current turn remain the sole authority for its truth.
+        /// </summary>
+        public sealed class ActiveRuneHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => ActiveRuneV1;
+
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[] { new EffectCapabilityParameter("rune", EffectValueKind.Integer) },
+                    new[] { new EffectOutputBinding("active", EffectValueKind.Boolean) });
+
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (context?.Components == null || !context.Components.IsLive ||
+                    !context.ActorId.IsDefined || context.TurnIndex < 1 ||
+                    context.TurnIndex > Core.Cards.RoundResolutionAuthority.TurnsPerRound ||
+                    !context.Inputs.TryGetValue("rune", out var value) ||
+                    value.Kind != EffectValueKind.Integer || value.IntegerValue < 1 ||
+                    value.IntegerValue > Runes.Length)
+                {
+                    return EffectExecutionResult.ImpossibleMandatory();
+                }
+
+                var active = ActiveRune(
+                    context.Components.Markers, context.ActorId, context.TurnIndex);
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("active", EffectValue.Boolean(
+                        active != null &&
+                        active.Definition.Reference.Equals(Runes[value.IntegerValue - 1].Reference)))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("An active-rune predicate never requests a choice.");
+
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Execute(context).Kind;
+        }
 
         /// <summary>
         /// A sixteen-pair offer yields four glyph-to-slot selections. Only a complete permutation

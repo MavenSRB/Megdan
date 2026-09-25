@@ -90,6 +90,29 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ActiveRunePredicateReadsCurrentSlotAndRejectsInvalidGlyph()
+        {
+            var components = Components();
+            var inscribe = new SnorriComponentContent.InscribeRunesHandler();
+            Assert.That(inscribe.Resume(Context(components, 1, 1), Values(3, 5, 12, 14)).Kind,
+                Is.EqualTo(EffectExecutionResultKind.Applied));
+            var predicate = new SnorriComponentContent.ActiveRuneHandler();
+
+            EffectExecutionResult Ask(int turn, int rune) => predicate.Execute(
+                Context(components, 1, turn,
+                    new Dictionary<string, EffectValue> { ["rune"] = EffectValue.Integer(rune) }));
+
+            Assert.That(Ask(1, 2).Outcomes.Single().Value.BooleanValue, Is.True);
+            Assert.That(Ask(1, 1).Outcomes.Single().Value.BooleanValue, Is.False);
+            Assert.That(Ask(3, 1).Outcomes.Single().Value.BooleanValue, Is.True);
+            Assert.That(Ask(4, 3).Outcomes.Single().Value.BooleanValue, Is.True);
+            Assert.That(Ask(2, 0).Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(Ask(2, 5).Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(components.Markers.Attachments.Count, Is.EqualTo(4),
+                "A card-text predicate must never change physical marker placement.");
+        }
+
+        [Test]
         public void SilverFaceHasVerifiedPrimarySkillAndPrintedDefense()
         {
             var silver = SnorriSilverFace.Silver;
@@ -198,7 +221,8 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         private static EffectCapabilityContext Context(
-            MatchComponents components, int round, int turn) =>
+            MatchComponents components, int round, int turn,
+            IReadOnlyDictionary<string, EffectValue> inputs = null) =>
             new EffectCapabilityContext(
                 new EffectNodeId("inscribe-runes"),
                 EffectFailurePolicy.Mandatory,
@@ -206,7 +230,7 @@ namespace GuardsDigital.Tests.EditMode
                 new CardInstanceId("snorri-silver"),
                 new CardDefinitionReference(new CardDefinitionId("snorri-silver"), "fixture-1"),
                 new ActionDefinitionId("inscribe-runes"),
-                null, round, turn, StagedBoardParticipants.Create(), null,
+                inputs, round, turn, StagedBoardParticipants.Create(), null,
                 RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill, components);
     }
 }

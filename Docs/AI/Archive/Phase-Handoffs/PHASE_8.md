@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.93b Snorri Gold and Red attacks evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.93b | Staged Gold and five Red faces run printed rune-gated targets, value, timing, movement, retrieval, repeat and discard/defeat text; focused and affected T2 checks pass. Configured-match replay/Undo remains the post-dealing 8.93g gate. [Definition](../../Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893b-compose-the-gold-and-red-attacks). | milestone/8.93b |
+
 ## Milestone 8.93a Snorri rune foundation evidence
 
 | Milestone | Outcome and definition | Commit |

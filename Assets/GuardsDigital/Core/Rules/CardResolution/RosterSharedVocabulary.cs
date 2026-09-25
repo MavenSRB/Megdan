@@ -213,7 +213,13 @@ namespace GuardsDigital.Core.Rules.CardResolution
         /// the actor's singular obstacle of the trusted kind. Trinkets' three cannon Reds print the
         /// same condition with different +Attack amounts.
         /// </summary>
-        AttackTargetInStraightLineFromActorAndOwnedObstacle = 10
+        AttackTargetInStraightLineFromActorAndOwnedObstacle = 10,
+
+        /// <summary>
+        /// A named marker is below the current numbered turn slot. The query reads the live
+        /// physical-marker register; it does not infer activation from a card's zone.
+        /// </summary>
+        ActiveTurnSlotMarker = 11
     }
 
     /// <summary>
@@ -227,7 +233,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             PrintedValueChannel channel,
             RosterValueQueryKind query,
             int amountPerMatch,
-            string obstacleKind = null)
+            string obstacleKind = null,
+            MarkerDefinitionReference markerDefinition = default)
         {
             if (channel != PrintedValueChannel.Attack &&
                 channel != PrintedValueChannel.Range &&
@@ -290,20 +297,29 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 throw new ArgumentException(
                     "A dual-line obstacle contribution modifies Attack only.", nameof(channel));
 
+            if ((query == RosterValueQueryKind.ActiveTurnSlotMarker) != markerDefinition.IsDefined ||
+                (markerDefinition.IsDefined && channel != PrintedValueChannel.Attack))
+                throw new ArgumentException(
+                    "Only an active-turn-slot-marker Attack contribution names a marker definition.",
+                    nameof(markerDefinition));
+
             Channel = channel;
             Query = query;
             AmountPerMatch = amountPerMatch;
             ObstacleKind = obstacleKind;
+            MarkerDefinition = markerDefinition;
         }
 
         public PrintedValueChannel Channel { get; }
         public RosterValueQueryKind Query { get; }
         public int AmountPerMatch { get; }
         public string ObstacleKind { get; }
+        public MarkerDefinitionReference MarkerDefinition { get; }
 
         public bool Equals(RosterValueContributionDefinition other) =>
             Channel == other.Channel && Query == other.Query && AmountPerMatch == other.AmountPerMatch &&
-            string.Equals(ObstacleKind, other.ObstacleKind, StringComparison.Ordinal);
+            string.Equals(ObstacleKind, other.ObstacleKind, StringComparison.Ordinal) &&
+            MarkerDefinition.Equals(other.MarkerDefinition);
 
         public override bool Equals(object obj) =>
             obj is RosterValueContributionDefinition other && Equals(other);
@@ -311,9 +327,12 @@ namespace GuardsDigital.Core.Rules.CardResolution
         public override int GetHashCode()
         {
             var oldHash = (((int)Channel * 397) ^ (int)Query) * 397 ^ AmountPerMatch;
-            return ObstacleKind == null
+            var obstacleHash = ObstacleKind == null
                 ? oldHash
                 : oldHash * 397 ^ StringComparer.Ordinal.GetHashCode(ObstacleKind);
+            return MarkerDefinition.IsDefined
+                ? obstacleHash * 397 ^ MarkerDefinition.GetHashCode()
+                : obstacleHash;
         }
     }
 
@@ -460,7 +479,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // exact contributions; a declaration that NAMES the query and is handed none is refused
             // loudly rather than answered with a silent zero.
             ITokenPlacementAuthority spaces = null,
-            IObstaclePlacementAuthority obstacles = null)
+            IObstaclePlacementAuthority obstacles = null,
+            MarkerAttachmentRegister markers = null)
         {
             if (action == null) throw new ArgumentNullException(nameof(action));
             if (definitions == null) throw new ArgumentNullException(nameof(definitions));
@@ -476,7 +496,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 var matches = MatchCount(
                     declaration, offer.ActorId, offer.SourceCardInstanceId, target, definitions,
                     instances, participants, board, modifications, rosterState, roundIndex, turnIndex,
-                    actorSpaceAtActionStart, spaces, obstacles);
+                    actorSpaceAtActionStart, spaces, obstacles, markers);
                 if (matches == 0) continue;
                 result.Add(new ValueContribution(
                     ValueContributionKind.CardTextModifier,
@@ -623,7 +643,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             int turnIndex,
             HexCoordinate? actorSpaceAtActionStart,
             ITokenPlacementAuthority spaces,
-            IObstaclePlacementAuthority obstacles)
+            IObstaclePlacementAuthority obstacles,
+            MarkerAttachmentRegister markers)
         {
             var query = declaration.Query;
             if (!board.TryGetObjectCoordinate(BoardObjectReference.ForHero(actorId), out var actorAt))
@@ -726,6 +747,17 @@ namespace GuardsDigital.Core.Rules.CardResolution
                             out var obstacleAt) &&
                         StraightLineQuery.AreInStraightLine(actorAt, dualLineTargetAt) &&
                         StraightLineQuery.AreInStraightLine(obstacleAt, dualLineTargetAt)
+                        ? 1
+                        : 0;
+
+                case RosterValueQueryKind.ActiveTurnSlotMarker:
+                    if (markers == null)
+                        throw new InvalidOperationException(
+                            "An active-turn-slot-marker Attack contribution requires the live marker register.");
+                    return turnIndex >= 1 && turnIndex <= RoundResolutionAuthority.TurnsPerRound &&
+                        markers.HeldBy(actorId).Any(marker =>
+                            marker.TurnSlotIndex == turnIndex &&
+                            marker.Definition.Reference.Equals(declaration.MarkerDefinition))
                         ? 1
                         : 0;
 

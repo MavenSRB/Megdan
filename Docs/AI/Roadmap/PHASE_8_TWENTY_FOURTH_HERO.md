@@ -32,15 +32,19 @@ Completed 2026-09-25. Four source-backed retained markers have a numbered dashbo
 
 Historical evidence: [8.93a completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893a-snorri-rune-foundation-evidence).
 
-### [~] 8.93b Compose the Gold and Red attacks
+### [x] 8.93b Compose the Gold and Red attacks
 
 Outcome: the basic Gold attack and five Red upgrades run printed rune-gated targeting, values, moves, retrieval, discard and repeat clauses.
 
-Acceptance: each face's legal/refused/boundary targets, four rune states, item contributions, before/after Attack timing, different-target repeats, Defense responses, immunity, stale answers, snapshot/replay/Undo and affected attack regressions. T2 minimum.
+Acceptance: each face's legal/refused/boundary targets, four rune states, item contributions, before/after Attack timing, different-target repeats, Defense responses, immunity, stale answers, snapshot/restored continuation and affected attack regressions. The staged faces cannot enter the application's command-history Undo until they are registered; configured-match replay/retained-prefix Undo remains an explicit 8.93g closing check. T2 minimum.
 
 Non-goals: Blue and Green faces or dealing.
 
-### [ ] 8.93c Compose the Blue movement and support faces
+Completed 2026-09-25. Six source-verified faces are staged with live rune-gated Attack value, target and before/after text. Configured rounds prove all six attacks, rune bonuses, legal target boundaries, coins, retrieval, before/after Moves, different-hero and enemy-minion repeats, adjacent-space discard/defeat, Defense responses, stale rune answers and immunity. A paused Gold target choice restores and converges to the same final snapshot as uninterrupted resolution. The existing item authority supplies the four printed Red item icons; attached-item arithmetic is covered by the shared item regression. Focused Snorri and affected attack/item/round/snapshot tests passed on the Unity-free harness and focused Unity Edit Mode. Staged content remains undealt; the complete configured player replay/Undo and UI path are owned by 8.93g.
+
+Historical evidence: [8.93b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893b-snorri-gold-and-red-attacks-evidence).
+
+### [~] 8.93c Compose the Blue movement and support faces
 
 Outcome: five Blue upgrades run their printed movement, obstacle, immunity, friendly-hero Radius, resolved-card swap, retrieval and item-swap clauses.
 
