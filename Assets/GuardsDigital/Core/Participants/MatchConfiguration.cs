@@ -2128,6 +2128,25 @@ namespace GuardsDigital.Core.Participants
                 CreateVerifiedWaspHand(TeamSide.Red),
                 ownerId => Cards.Verified.TrinketsCardContent.CreateHand(ownerId, "blue"));
 
+        public static MatchConfiguration CreateStagedTrinketsTierThreeForInternalTest(
+            TeamSide initialTieBreakerSide)
+        {
+            var configuration = Create(
+                TieBreakerSetupAuthority.CreateInternalTestSetupState(initialTieBreakerSide),
+                CreateProgressedWaspHand(TeamSide.Red, tierThree: true),
+                ownerId => Cards.Verified.TrinketsProgressedHands.CreateTierThreeHand(
+                    ownerId, "blue"));
+            foreach (var ultimate in configuration.CardInstances.Where(card =>
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.WaspCardContent.HighVoltage) ||
+                card.DefinitionReference.DefinitionId.Equals(
+                    Cards.Verified.TrinketsCardContent.UnlimitedFirepower)))
+                if (!CardLifecycleAuthority.TryUnlockUltimateFromDeck(ultimate))
+                    throw new InvalidOperationException(
+                        "The staged Tier III match could not unlock a dealt Ultimate.");
+            return configuration;
+        }
+
         /// <summary>
         /// Milestone 8.75b. The staged Wasp-versus-Ignatia match at rulebook p.15's Tier II stage,
         /// with Ignatia holding one Tier II card of each colour on the branch the caller names - see

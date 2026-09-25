@@ -927,6 +927,21 @@ namespace GuardsDigital.Tests.PlayMode
                 // player is asked comes from the selection it feeds, which declares its own shape.
                 ["synthetic-card-radius"] = Array.Empty<PlayerInteractionShape>(),
 
+                // Trinkets' Turret is an obstacle, never a token or a target. A placement
+                // asks for a board space; a selector asks for the chosen unit or token.
+                ["trinkets-turret-space"] = Array.Empty<PlayerInteractionShape>(),
+                ["trinkets-place-turret-adjacent"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["trinkets-remove-turret"] = Array.Empty<PlayerInteractionShape>(),
+                ["trinkets-actor-in-turret-radius"] = Array.Empty<PlayerInteractionShape>(),
+                ["trinkets-turret-radius-object"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["trinkets-turret-radius-hero"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["trinkets-place-self-turret-radius"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["trinkets-dual-range-turret-unit"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["trinkets-adjacent-turret-unit"] = new[] { PlayerInteractionShape.BoardUnitSelection },
+                ["trinkets-place-first-barrier"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["trinkets-place-barrier"] = new[] { PlayerInteractionShape.BoardSpaceSelection },
+                ["trinkets-reclaim-barrier"] = Array.Empty<PlayerInteractionShape>(),
+
                 // Whether this Attack's own target survived p.14's step 6, read live off board
                 // occupancy. A reading, not a question: the player sees only what the removal rider
                 // does afterwards, on the same terms `pre-consequence-adjacency@1` and

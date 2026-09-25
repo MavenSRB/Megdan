@@ -356,7 +356,8 @@ namespace GuardsDigital.Tests.EditMode
                 .Where(node => node.Capability.Equals(SyntheticRosterCapabilities.ChooseTargetV2))
                 .ToArray();
 
-            Assert.That(nodes.Length, Is.EqualTo(75),
+            Assert.That(nodes.Length, Is.EqualTo(76),
+                "Trinkets' Rapid Redeployment adds one adjacent-minion choice. " +
                 "RE-MEASURED at 8.75a: the 8.69 wave's 71 plus Ignatia the Mad's four, which are " +
                 "her four SUN attack lines that name an adjacent unit - Chaos Bolt ('a minion " +
                 "adjacent to you'), Unreliable Jolt ('a hero adjacent to you'), Crack of Doom and " +

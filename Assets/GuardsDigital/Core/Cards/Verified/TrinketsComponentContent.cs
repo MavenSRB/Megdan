@@ -10,7 +10,7 @@ using GuardsDigital.Core.Timing;
 
 namespace GuardsDigital.Core.Cards.Verified
 {
-    /// <summary>Physical components of Trinkets; registration waits for his dealing milestone.</summary>
+    /// <summary>Registered physical components of Trinkets.</summary>
     public static class TrinketsComponentContent
     {
         public const string TurretKind = "trinkets-turret";

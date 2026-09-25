@@ -708,6 +708,7 @@ namespace GuardsDigital.Tests.EditMode
                 // by any card node, so the walk has to include the triggered effects - which is what
                 // that concat is there for - and by the showcase card above.
                 .Concat(IgnatiaCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
+                .Concat(TrinketsCardContent.DealtDefinitions.SelectMany(NamedCapabilities))
                 .Concat(MatchContentCatalogs.ForThisBuild().TriggeredEffects.Definitions
                     .SelectMany(definition => definition.Nodes)
                     .Where(node => node.Capability.IsDefined)
@@ -741,11 +742,16 @@ namespace GuardsDigital.Tests.EditMode
 
             Assert.That(heroOnlyHandlerTypes, Is.EqualTo(new[]
                 {
+                    "ActorInTurretRadiusHandler",
                     "DefeatMinionHandler",
-                    "HeroAdjacentToMinionHandler"
+                    "HeroAdjacentToMinionHandler",
+                    "ObstacleSpaceHandler",
+                    "PlaceAdjacentObstacleHandler",
+                    "RemoveObstacleHandler"
                 }),
-                "Milestone 8.13's approved reusable delta is exactly one staged minion-Defeat request " +
-                "and one pre-removal adjacency selector. Any further hero-only implementation is an " +
+                "The 8.13 pair and 8.92a's three generic obstacle operations plus Trinkets' " +
+                "actor-in-own-Turret predicate are the measured hero-only handler delta. Each " +
+                "8.92a handler has focused foundation coverage; any additional type is a new " +
                 "unapproved deferral from the synthetic gate.");
 
             // The exclusion list is not allowed to be a place things quietly go. Every entry must still

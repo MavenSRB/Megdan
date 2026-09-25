@@ -865,17 +865,20 @@ namespace GuardsDigital.Tests.EditMode
         // still share one pair, the three defense-discard scenarios still share another, and
         // undo-truncated is still its own. Every value below was MEASURED off one failing run with
         // all nine reported at once.
+        // 8.92g re-pins these nine after adding fifteen Trinkets capability ids and one Barrier
+        // definition. The +514-byte catalog-list delta changes every capture, while no scenario
+        // plays Trinkets and the refusal, restore, replay and Defense equality groups still hold.
         private static readonly ScenarioDigest[] ExpectedDigests =
         {
-            new ScenarioDigest("accepted", "51a397a17495508b50c6d40940075cbf8a63ab472d8ca345f84e1c45cfa7ea28", "8f962148dd9505e99baeea1d9669a534ddcd0a4568a9e103b2f61b5327ec5a74"),
-            new ScenarioDigest("rejected", "51a397a17495508b50c6d40940075cbf8a63ab472d8ca345f84e1c45cfa7ea28", "8f962148dd9505e99baeea1d9669a534ddcd0a4568a9e103b2f61b5327ec5a74"),
-            new ScenarioDigest("stale", "51a397a17495508b50c6d40940075cbf8a63ab472d8ca345f84e1c45cfa7ea28", "8f962148dd9505e99baeea1d9669a534ddcd0a4568a9e103b2f61b5327ec5a74"),
-            new ScenarioDigest("restored", "51a397a17495508b50c6d40940075cbf8a63ab472d8ca345f84e1c45cfa7ea28", "8f962148dd9505e99baeea1d9669a534ddcd0a4568a9e103b2f61b5327ec5a74"),
-            new ScenarioDigest("replayed", "51a397a17495508b50c6d40940075cbf8a63ab472d8ca345f84e1c45cfa7ea28", "8f962148dd9505e99baeea1d9669a534ddcd0a4568a9e103b2f61b5327ec5a74"),
-            new ScenarioDigest("undo-truncated", "399a3fd8326b5864e74495bd8b1ac3668a2fafdebf82db452a24050309d5ea7c", "3c3d86beddaf6ea62d75351243872a21c2154b620df7b791689772630a336054"),
-            new ScenarioDigest("defense-discarded", "80f797bd1480e8d1f123f9d84d6dc44d68f8d96535d1d633c0604aab794fa898", "ab08a4252de7c805d4b82e356d9d909f87560040fb56872efc739b05163631a3"),
-            new ScenarioDigest("defense-discarded-restored", "80f797bd1480e8d1f123f9d84d6dc44d68f8d96535d1d633c0604aab794fa898", "ab08a4252de7c805d4b82e356d9d909f87560040fb56872efc739b05163631a3"),
-            new ScenarioDigest("defense-discarded-replayed", "80f797bd1480e8d1f123f9d84d6dc44d68f8d96535d1d633c0604aab794fa898", "ab08a4252de7c805d4b82e356d9d909f87560040fb56872efc739b05163631a3"),
+            new ScenarioDigest("accepted", "328d9028139cc2e8552ebfaa6c1446dd96c53c290020611ef9dbef1daab8de91", "3e2e5febc187d4814c885fe9a84c30ce5e695683acac9a37c4e7a132cc0be825"),
+            new ScenarioDigest("rejected", "328d9028139cc2e8552ebfaa6c1446dd96c53c290020611ef9dbef1daab8de91", "3e2e5febc187d4814c885fe9a84c30ce5e695683acac9a37c4e7a132cc0be825"),
+            new ScenarioDigest("stale", "328d9028139cc2e8552ebfaa6c1446dd96c53c290020611ef9dbef1daab8de91", "3e2e5febc187d4814c885fe9a84c30ce5e695683acac9a37c4e7a132cc0be825"),
+            new ScenarioDigest("restored", "328d9028139cc2e8552ebfaa6c1446dd96c53c290020611ef9dbef1daab8de91", "3e2e5febc187d4814c885fe9a84c30ce5e695683acac9a37c4e7a132cc0be825"),
+            new ScenarioDigest("replayed", "328d9028139cc2e8552ebfaa6c1446dd96c53c290020611ef9dbef1daab8de91", "3e2e5febc187d4814c885fe9a84c30ce5e695683acac9a37c4e7a132cc0be825"),
+            new ScenarioDigest("undo-truncated", "ce99f180ed06628d129a36001a37075c16d5101a573814d1922948108098fd86", "52c7b0ebdaa0bb53da1933a034e5051f3f958e9ce5e6bc34e3fd5b9c4fd0ab34"),
+            new ScenarioDigest("defense-discarded", "e2a6473bb3467acc2ccccf6354ca2cfc4545cf8dd68af6d64d331367e7edb3a3", "03b378137805da0adaaa3e1ba8b7633104bafbd476d81f0c6e5ec2dc2351c99a"),
+            new ScenarioDigest("defense-discarded-restored", "e2a6473bb3467acc2ccccf6354ca2cfc4545cf8dd68af6d64d331367e7edb3a3", "03b378137805da0adaaa3e1ba8b7633104bafbd476d81f0c6e5ec2dc2351c99a"),
+            new ScenarioDigest("defense-discarded-replayed", "e2a6473bb3467acc2ccccf6354ca2cfc4545cf8dd68af6d64d331367e7edb3a3", "03b378137805da0adaaa3e1ba8b7633104bafbd476d81f0c6e5ec2dc2351c99a"),
         };
 
         // Three invariants are visible in the pinned values themselves, and each would break loudly:

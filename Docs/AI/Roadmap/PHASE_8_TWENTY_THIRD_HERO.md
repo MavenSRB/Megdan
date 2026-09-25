@@ -92,10 +92,14 @@ Completed 2026-09-24. Trinkets joins both selected formats with eighteen dealt f
 
 Historical evidence: [8.92f completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892f-trinkets-dealing-and-artwork-evidence).
 
-### [~] 8.92g Gate Trinkets through the complete player path
+### [x] 8.92g Gate Trinkets through the complete player path
 
 Outcome: a content-derived matrix and real-input journeys cover every dealt face and component, with no parked or skipped required journey.
 
 Acceptance: all declared interaction shapes mapped exactly to named journeys; attacks, repeats, both Turret placements, three-Barrier supply, disruption, Swaps, self Place, Turret removal, Ultimate and items, progression, defeat/respawn, round persistence, stale input, snapshot/restore, retained-prefix Undo, network projection agreement and whole-face footprint; complete unfiltered Edit Mode and Play Mode suites green with zero new skips and no required skip, plus the permanent gate's zero-skip rule. T3.
 
 Non-goals: a package or the next hero.
+
+Completed 2026-09-25. The content-derived permanent gate maps all eighteen dealt faces, the boxed Handicap, components and required interaction shapes to named real-input or authoritative journeys, with no required skip. The journeys close the Disruptor Grid empty-hand pre-primary defeat transition, the pre-Defense discard window, the persistent obstacle versus expiring Barriers, and the stated lifecycle, progression, replay, projection and presentation paths. Prepared private shine overlays now cover Trinkets' dealt fronts. The complete unfiltered offline, Unity Edit Mode and Play Mode gates are green at T3; the initial Edit Mode gate's three findings were corrected and passed focused then unfiltered reruns. Evidence and limitations are in the milestone commit. No package or next hero is authorized.
+
+Historical evidence: [8.92g completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-892g-trinkets-player-path-gate-evidence).

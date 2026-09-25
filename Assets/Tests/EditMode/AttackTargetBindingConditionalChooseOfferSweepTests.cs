@@ -222,6 +222,7 @@ namespace GuardsDigital.Tests.EditMode
             // binding stands INSIDE both arms rather than after the gate, so each branch the
             // predicate can take reaches one, which is what `FindUnresolvedGates` asks.
             foreach (var card in IgnatiaCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("ignatia", d);
+            foreach (var card in TrinketsCardContent.AllDefinitions) foreach (var d in EffectRoots(card)) yield return ("trinkets", d);
         }
 
         /// <summary>

@@ -216,6 +216,11 @@ namespace GuardsDigital.Tests.EditMode
                 // definition. Nothing of hers registers from a `Synthetic*Capabilities` file at all,
                 // which makes her the first dealing since Brynn's with nothing to exclude here.
                 .Concat(IgnatiaComponentContent.RegisteredHandlers())
+                // Trinkets' obstacle, Barrier and Disruptor declarations are mirrored independently
+                // of MatchContentCatalogs, so an omitted registration fails this check.
+                .Concat(TrinketsComponentContent.ObstacleHandlers())
+                .Concat(TrinketsComponentContent.BarrierHandlers())
+                .Concat(TrinketsActiveEffectContent.Handlers())
                 // and the ONE creation the SHOWCASE owns rather than a hero: the Hero-scoped
                 // end-of-turn effect the Red Wayfarer stands so `hanu-journey-partner@1` has an
                 // occurrence to read. It registers beside the verified declarations rather than with

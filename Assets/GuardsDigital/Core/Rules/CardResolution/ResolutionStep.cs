@@ -56,7 +56,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             bool completedPlacedSelf = false,
             PendingAttackResolution cardTextRemainderResolution = null,
             AttackResolutionOutcome cardTextRemainderOutcome = AttackResolutionOutcome.None,
-            bool completedDefeatedMinionWithBasicAttack = false)
+            bool completedDefeatedMinionWithBasicAttack = false,
+            bool beforeDefenseChoice = false)
         {
             CardTextRemainderResolution = cardTextRemainderResolution;
             CardTextRemainderOutcome = cardTextRemainderOutcome;
@@ -75,12 +76,16 @@ namespace GuardsDigital.Core.Rules.CardResolution
             CompletedAttackTarget = completedAttackTarget;
             CompletedPlacedSelf = completedPlacedSelf;
             CompletedDefeatedMinionWithBasicAttack = completedDefeatedMinionWithBasicAttack;
+            BeforeDefenseChoice = beforeDefenseChoice;
         }
 
         public ResolutionStepKind Kind { get; }
 
         /// <summary>Defined only when <see cref="Kind"/> is <see cref="ResolutionStepKind.Fact"/>.</summary>
         public CardActionResolutionEvent Fact { get; }
+
+        /// <summary>The resolver is about to offer the p.14 Defense answer.</summary>
+        public bool BeforeDefenseChoice { get; }
 
         /// <summary>Defined only when <see cref="Kind"/> is <see cref="ResolutionStepKind.Checkpoint"/>.</summary>
         public TimingCheckpoint Checkpoint { get; }
@@ -95,6 +100,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
 
         public static ResolutionStep FromFact(CardActionResolutionEvent fact) =>
             new ResolutionStep(ResolutionStepKind.Fact, fact, TimingCheckpoint.None, default, default);
+
+        public static ResolutionStep AtDefenseChoice(PendingAttackResolution resolution) =>
+            new ResolutionStep(ResolutionStepKind.Fact,
+                CardActionResolutionEvent.DefenseResponseChoiceRequested(resolution),
+                TimingCheckpoint.None, default, default, beforeDefenseChoice: true);
 
         public static ResolutionStep AtCheckpoint(
             TimingCheckpoint checkpoint,

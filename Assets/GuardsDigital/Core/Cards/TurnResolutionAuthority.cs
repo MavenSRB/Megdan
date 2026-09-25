@@ -2887,9 +2887,51 @@ namespace GuardsDigital.Core.Cards
             }
 
             events.AddRange(MaterializeSteps(started.Steps, TurnResolutionEvent.FromTriggeredEffect));
+            // Trinkets' Disruptor Grid can defeat an empty-handed actor at this checkpoint.
+            // The attempted primary never begins, but the trigger and the committed card must
+            // still be one accepted, replayable turn transition. Falling through to the held
+            // Attack/Movement would reject for an absent actor and roll the defeat back.
+            if (cardActions.PendingPreActionResolution?.Frame == null &&
+                !cardActions.Board.TryGetHeroCoordinate(offer.ActorId, out _))
+            {
+                cardActions.ClearPreActionContinuation();
+                return CompleteDefeatedBeforeAction(offer, events);
+            }
             return cardActions.PendingPreActionResolution == null
                 ? (TurnResolutionResult?)null
                 : TurnResolutionResult.Accept(events);
+        }
+
+        private TurnResolutionResult CompleteDefeatedBeforeAction(
+            ActionOffer offer, List<TurnResolutionEvent> events)
+        {
+            var card = instances.Single(candidate =>
+                candidate.Id.Equals(offer.SourceCardInstanceId));
+            // Defeat normally resolves its acting hero's card as part of the consequence.
+            // Only perform that transition here when a different pre-action removal left it
+            // unresolved; resolving it twice would reject and roll the defeat back.
+            if (card.State.ResolutionStatus == CardResolutionStatus.Unresolved)
+            {
+                if (!CardLifecycleAuthority.TryResolveAfterAction(card))
+                    return TurnResolutionResult.Reject(
+                        TurnResolutionRejectionReason.CardResolutionFailed);
+                events.Add(TurnResolutionEvent.CardWasResolvedWithoutAction(
+                    card.Id, offer.ActorId));
+                events.Add(TurnResolutionEvent.CardWasResolved(card.Id, offer.ActorId));
+                foreach (var timingEvent in NotifySourceCardStateChanged(card.Id))
+                    events.Add(TurnResolutionEvent.FromTiming(timingEvent));
+            }
+            else if (card.State.ResolutionStatus != CardResolutionStatus.Resolved)
+            {
+                return TurnResolutionResult.Reject(
+                    TurnResolutionRejectionReason.CardResolutionFailed);
+            }
+            var acknowledgement = AcknowledgeSelectedCardResolved(card.Id);
+            if (!acknowledgement.Accepted)
+                throw new InvalidOperationException(
+                    "A pre-action defeat could not acknowledge its committed card.");
+            events.AddRange(acknowledgement.Events.Select(TurnResolutionEvent.FromInitiative));
+            return AdvanceInitiative(events);
         }
 
         public TurnResolutionResult TryAnswerAttackTarget(AttackTargetChoiceCommand command)
@@ -3667,7 +3709,7 @@ namespace GuardsDigital.Core.Cards
                     continue;
                 }
 
-                if (step.Fact.Kind == CardActionResolutionEventKind.DefenseResponseChoiceRequested &&
+                if (step.BeforeDefenseChoice &&
                     TryInterceptDefenseBeforeChoice(events))
                 {
                     return false;

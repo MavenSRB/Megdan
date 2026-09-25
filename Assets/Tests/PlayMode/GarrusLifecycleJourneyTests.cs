@@ -58,11 +58,16 @@ namespace GuardsDigital.Tests.PlayMode
         {
             var runtime = root.Runtime;
             var hand = runtime.HandsView.Model.Hands.FirstOrDefault(value =>
-                value.CommitmentStatus == TurnCardCommitmentStatus.AwaitingResponse && value.Cards.Count > 0);
-            if (hand != null)
+                value.CommitmentStatus == TurnCardCommitmentStatus.AwaitingResponse);
+            if (hand != null && hand.Cards.Count > 0)
             {
                 yield return PointTrayAt(root,hand.HeroId);
                 yield return CommitThroughTray(root,NameOf(runtime,hand.Cards[0].DefinitionReference.DefinitionId));
+            }
+            else if (hand != null && hand.CanPass)
+            {
+                yield return PointTrayAt(root,hand.HeroId);
+                UiPlayer.Click(UiPlayer.Button(root.Hud,"PASS - NO CARD"));
             }
             // Milestone 8.46e: a tied initiative is drawn on the decision window as card faces.
             else if (UiPlayer.DecisionControl(runtime, command => command.Kind == DirectorCommandKind.ChooseTiedActor) != null)
@@ -95,7 +100,7 @@ namespace GuardsDigital.Tests.PlayMode
             Healthy(runtime);
         }
 
-        private static Button UpgradeButton(MatchSceneCompositionRoot root, SystemTransitionOptionViewModel option) =>
+        internal static Button UpgradeButton(MatchSceneCompositionRoot root, SystemTransitionOptionViewModel option) =>
             UiPlayer.Descendants(root.Hud.RootElement).OfType<Button>().Single(element =>
                 element.name == "gd-upgrade-option" && UiPlayer.IsShown(element) &&
                 element.tooltip == (option.Detail.Length > 0 ? option.Label + " - " + option.Detail : option.Label));

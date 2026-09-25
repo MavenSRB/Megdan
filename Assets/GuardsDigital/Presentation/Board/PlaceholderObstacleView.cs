@@ -114,6 +114,9 @@ namespace GuardsDigital.Presentation.Board
                 var collider = artFace.GetComponent<Collider>();
                 if (collider != null) DestroyOwnedResource(collider);
                 var shader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (shader == null)
+                    throw new System.InvalidOperationException(
+                        "The prepared obstacle standee requires the URP Unlit shader.");
                 artMaterial = new Material(shader)
                 {
                     name = "Prepared Obstacle Standee",

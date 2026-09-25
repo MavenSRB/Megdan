@@ -48,7 +48,8 @@ namespace GuardsDigital.Application
             BoardMapDefinition map,
             QuickGameSetupState setup,
             MatchConfiguration configuration,
-            IEnumerable<BoardMapDefinition> availableMaps = null)
+            IEnumerable<BoardMapDefinition> availableMaps = null,
+            IEnumerable<ObstacleOccupancy> initialObstacles = null)
         {
             if (description == null) throw new ArgumentNullException(nameof(description));
             if (map == null) throw new ArgumentNullException(nameof(map));
@@ -64,7 +65,7 @@ namespace GuardsDigital.Application
                 configuration.SetupSeed,
                 map.Reference,
                 staged.Setup.Heroes.Select(hero => new HeroOccupancy(hero.HeroId, hero.Coordinate)),
-                Array.Empty<ObstacleOccupancy>());
+                initialObstacles ?? Array.Empty<ObstacleOccupancy>());
             return new MatchSessionInitialState(
                 scenario,
                 staged.Setup,

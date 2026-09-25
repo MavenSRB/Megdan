@@ -377,7 +377,8 @@ namespace GuardsDigital.Tests.EditMode
             // the adjacent roster reach, the printed-Range hero arm, the attack-target binding, both
             // discards, the Defeats, the Remove, the Swap, the straight line and the direct Move -
             // and this rule counts TYPES.
-            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(103),
+            // Trinkets' obstacle and Turret-radius handlers add four concrete types at 8.92f.
+            Assert.That(RegisteredHandlerTypes(), Has.Length.EqualTo(107),
                 "The registered contract set changed. A new capability joins these rules rather than " +
                 "arriving outside them.");
         }

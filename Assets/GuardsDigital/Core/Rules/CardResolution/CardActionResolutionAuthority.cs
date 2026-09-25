@@ -283,9 +283,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             return CardActionResolutionResult.Accept(false, null, null,
                 new[]
                 {
-                    ResolutionStep.FromFact(
-                        CardActionResolutionEvent.DefenseResponseChoiceRequested(
-                            attackDefenseBackend.PendingResolution))
+                    ResolutionStep.AtDefenseChoice(
+                        attackDefenseBackend.PendingResolution)
                 });
         }
 

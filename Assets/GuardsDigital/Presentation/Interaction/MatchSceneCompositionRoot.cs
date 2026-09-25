@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Board;
+using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Setup;
 using GuardsDigital.Core.Units.Heroes;
@@ -1036,7 +1037,10 @@ namespace GuardsDigital.Presentation.Interaction
         VerifiedStagedIgnatiaWithAllyAtTierThree = 125,
 
         /// <summary>Wasp versus Trinkets with his p.6 starting hand.</summary>
-        VerifiedEngagedStagedTrinkets = 126
+        VerifiedEngagedStagedTrinkets = 126,
+
+        /// <summary>Wasp versus Trinkets with Tier III hands and their Ultimates faceup.</summary>
+        VerifiedTierThreeEngagedStagedTrinkets = 127
     }
 
     [ExecuteAlways]
@@ -1176,6 +1180,9 @@ namespace GuardsDigital.Presentation.Interaction
         /// <c>Docs/AI/Testing/POLICY.md</c> calls by the same word.</para>
         /// </remarks>
         public static SandboxStagingDescription NextComposedSandboxStaging { get; set; }
+
+        /// <summary>One-shot Director fixture obstacles; never a player command or serialized staging field.</summary>
+        public static IReadOnlyList<ObstacleOccupancy> NextComposedStagedObstacles { get; set; }
 
         /// <summary>
         /// The staging the current runtime was composed from, or <c>null</c> for an ordinary dealt
@@ -1727,6 +1734,9 @@ namespace GuardsDigital.Presentation.Interaction
                         TeamSide.Red, IgnatiaAllyStage.TierThree),
                 SceneCardContent.VerifiedEngagedStagedTrinkets =>
                     MatchConfiguration.CreateStagedTrinketsForInternalTest(TeamSide.Red),
+                SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets =>
+                    MatchConfiguration.CreateStagedTrinketsTierThreeForInternalTest(
+                        TeamSide.Red),
                 // SceneCardContent.ConfiguredMatch, which is every arm not named above. Milestone 8.25:
                 // it deals rulebook p.5's six official seats, which is what a player loads.
                 //
@@ -1810,7 +1820,8 @@ namespace GuardsDigital.Presentation.Interaction
                 // need is a friendly hero in RADIUS, and the two Blue spawns already are - restaging
                 // them would move the ally out of the disk those pushes measure.
                 IsStagedIgnatia(content) ||
-                content == SceneCardContent.VerifiedEngagedStagedTrinkets)
+                content == SceneCardContent.VerifiedEngagedStagedTrinkets ||
+                content == SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets)
             {
                 setup = EngagedMirrorStaging.Restage(map, setup, out _);
             }
@@ -1827,10 +1838,16 @@ namespace GuardsDigital.Presentation.Interaction
             // moved by CardLifecycleAuthority) and composing it twice would deal the hands twice.
             MatchSessionInitialState stagedInitialState = null;
             ComposedSandboxStaging = TakeRequestedSandboxStaging();
+            var stagedObstacles = NextComposedStagedObstacles;
+            NextComposedStagedObstacles = null;
+            if (stagedObstacles != null && ComposedSandboxStaging == null)
+                throw new InvalidOperationException(
+                    "Staged obstacles require a Director sandbox composition.");
             if (ComposedSandboxStaging != null)
             {
                 stagedInitialState = SandboxMatchComposition.Compose(
-                    ComposedSandboxStaging, map, setup, configuration, new[] { map });
+                    ComposedSandboxStaging, map, setup, configuration, new[] { map },
+                    stagedObstacles);
                 setup = stagedInitialState.Setup;
             }
             // Milestone 8.21. A configuration may deal a seat the scene authors no view for - the
@@ -2354,7 +2371,8 @@ namespace GuardsDigital.Presentation.Interaction
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusIgnatiaOneVsOne();
                     }
 
-                    if (content == SceneCardContent.VerifiedEngagedStagedTrinkets)
+                    if (content == SceneCardContent.VerifiedEngagedStagedTrinkets ||
+                        content == SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets)
                     {
                         return QuickGameSetupConfiguration.CreateStagedWaspVersusTrinketsOneVsOne();
                     }

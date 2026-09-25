@@ -1150,8 +1150,7 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 CardActionResolutionEvent.AttackTotalCalculated(defenseResolution)));
             steps.Add(ResolutionStep.AtCheckpoint(
                 TimingCheckpoint.DefenseResponse, defenseResolution.TargetHeroId));
-            steps.Add(ResolutionStep.FromFact(
-                CardActionResolutionEvent.DefenseResponseChoiceRequested(defenseResolution)));
+            steps.Add(ResolutionStep.AtDefenseChoice(defenseResolution));
 
             return AttackActionResolutionResult.Accept(
                 defenseResolution, null, pendingDefenseChoice, steps);

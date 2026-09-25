@@ -118,7 +118,7 @@ namespace GuardsDigital.Tests.EditMode
 
                 var first = new ObstacleOccupancy(id, new HexCoordinate(1, 1));
                 view.Render(Model(first));
-                var piece = UnityEngine.Object.FindObjectsOfType<PlaceholderObstacleView>()
+                var piece = UnityEngine.Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None)
                     .Single(obstacle => obstacle.Occupancy.ObstacleId.Equals(id));
                 piece.transform.SetParent(root.transform, true);
                 Assert.That(piece.Occupancy, Is.EqualTo(first));
@@ -127,7 +127,7 @@ namespace GuardsDigital.Tests.EditMode
                 var moved = new ObstacleOccupancy(id, new HexCoordinate(2, 1));
                 view.Render(Model(moved));
                 Assert.That(piece.Occupancy, Is.EqualTo(moved));
-                Assert.That(UnityEngine.Object.FindObjectsOfType<PlaceholderObstacleView>()
+                Assert.That(UnityEngine.Object.FindObjectsByType<PlaceholderObstacleView>(FindObjectsSortMode.None)
                     .Count(obstacle => obstacle.Occupancy.ObstacleId.Equals(id)), Is.EqualTo(1));
 
                 view.Render(Model());

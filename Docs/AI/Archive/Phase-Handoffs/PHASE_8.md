@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.92g Trinkets player-path gate evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.92g | Trinkets' complete content-derived permanent gate and real-input journeys cover every dealt face and component; the full T3 offline, Edit and Play gates pass after closing the observed timing, projection, API, shader and prepared-shine findings. [Definition](../../Roadmap/PHASE_8_TWENTY_THIRD_HERO.md#x-892g-gate-trinkets-through-the-complete-player-path). | `milestone/8.92g` |
+
 ## Milestone 8.92f Trinkets dealing and artwork evidence
 
 | Milestone | Outcome and definition | Commit |
