@@ -56,7 +56,7 @@ Completed 2026-09-25. Five source-verified Blue faces are staged: Passage Moveme
 
 Historical evidence: [8.93c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893c-snorri-blue-movement-and-support-evidence).
 
-### [~] 8.93d Compose the Green defense and disruption faces
+### [x] 8.93d Compose the Green defense and disruption faces
 
 Outcome: five Green upgrades run their printed attack-category blocks, turn immunity and color-restricted enemy discards.
 
@@ -64,7 +64,11 @@ Acceptance: each face's rune gates, attack classes and Defense order, color-elig
 
 Non-goals: Ultimate or dealing.
 
-### [ ] 8.93e Compose Rune Mastery and reconcile the set
+Completed 2026-09-25. The five staged Green faces retain their printed ribbons and upgrades. Oaths expose separate numeric Defense 2 and primary rune/category Block offers; the latter uses a content-owned typed condition read identically by preview and resolution, including a non-basic Ultimate Attack. Their Defense text creates This Turn enemy-action immunity only with an active rune. Charged Runestone and Inscribed Runebomb target an enemy in Radius and ask that hero to discard the active rune's printed color, if able; the latter explicitly selects one rune. Focused Green tests include unavailable-color discard and immunity, and affected Block, Radius and discard regressions passed (dotnet 181/181; Unity Edit 106/106, zero skips). Configured-match snapshot/replay/Undo and Rune Mastery's extra active rune remain the already approved 8.93e/8.93g gates, not claimed by this staged-content check.
+
+Historical evidence: [8.93d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893d-snorri-green-defense-and-disruption-evidence).
+
+### [~] 8.93e Compose Rune Mastery and reconcile the set
 
 Outcome: the Ultimate's chosen inactive rune counts as active until the next action; all eighteen dealt faces and the boxed Handicap have complete, audited definitions behind the registration gate.
 

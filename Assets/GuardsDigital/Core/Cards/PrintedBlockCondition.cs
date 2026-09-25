@@ -123,6 +123,13 @@ namespace GuardsDigital.Core.Cards
         /// these three print no Defense value at all (MI-05, Tigerclaw's Dodge precedent), an
         /// unfulfilled condition is p.14's other half in full - "If not, you are defeated."</para>
         /// </summary>
-        TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange = 4
+        TheActorsTokenNamedByTheDefenseTextIsWithinTheCardsRange = 4,
+
+        /// <summary>
+        /// A Block whose condition is declared by one typed capability on its own Defense text.
+        /// The shared query asks that declaration with the incoming Attack and live turn state;
+        /// no card identity or printed words are interpreted by the resolver.
+        /// </summary>
+        DeclaredByDefenseTextCapability = 5
     }
 }

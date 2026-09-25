@@ -1135,7 +1135,8 @@ namespace GuardsDigital.Application
                     modifications,
                     board,
                     heroItems,
-                    configuration.ContentCatalogs.Capabilities);
+                    configuration.ContentCatalogs.Capabilities,
+                    round.TurnIndex);
                 if (blockResult != DefenseBlockResult.None)
                 {
                     projectedChoices.Add(new DefenseChoicePreviewProjection(

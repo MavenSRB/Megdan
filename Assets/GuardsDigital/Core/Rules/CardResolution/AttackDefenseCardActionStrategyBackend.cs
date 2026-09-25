@@ -2887,7 +2887,10 @@ namespace GuardsDigital.Core.Rules.CardResolution
                 modifications,
                 adjacentMoveAuthority,
                 heroItems,
-                capabilities);
+                capabilities,
+                rosterState.IsAvailable
+                    ? rosterState.TurnSlots.LastOrDefault()?.TurnIndex ?? 0
+                    : 0);
 
         /// <summary>
         /// Milestone 8.22, finding `F-ATK-01`: the pre-consequence target space is carried across

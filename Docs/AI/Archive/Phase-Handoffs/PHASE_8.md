@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.93d Snorri Green defense and disruption evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.93d | Five staged Green faces compose independent Block/Defense ribbons, rune/category Block conditions, turn immunity, and color-restricted enemy discards. T2 affected dotnet and Unity Edit checks green; configured replay/Undo remains 8.93g. [Definition](../../Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893d-compose-the-green-defense-and-disruption-faces). | milestone/8.93d |
+
 ## Milestone 8.94 pre-Snorri package evidence
 
 | Milestone | Outcome and definition | Commit |

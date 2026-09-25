@@ -9,6 +9,14 @@ using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Rules.CardResolution
 {
+    /// <summary>A pure, content-owned Block condition read from the Defense text graph.</summary>
+    public interface IPrintedBlockConditionDeclaration
+    {
+        bool Fulfils(
+            HeroId defender, MarkerAttachmentRegister markers, int turnIndex,
+            CardClassification attackClassification, AttackRangeKind attackRange);
+    }
+
     /// <summary>
     /// Rulebook p.14's Block condition, asked once and answered the same way everywhere.
     ///
@@ -86,7 +94,8 @@ namespace GuardsDigital.Core.Rules.CardResolution
             RuleModificationSet modifications,
             ITokenPlacementAuthority tokens,
             GuardsDigital.Core.Rules.Progression.HeroItemState heroItems,
-            EffectCapabilityCatalog capabilities)
+            EffectCapabilityCatalog capabilities,
+            int turnIndex = 0)
         {
             if (modifications == null) throw new ArgumentNullException(nameof(modifications));
 
@@ -138,10 +147,38 @@ namespace GuardsDigital.Core.Rules.CardResolution
             // Chivalry and a "Block a non-ranged attack" no longer does. Asking the overlay here rather
             // than letting the resolver hand this query an already-classified value is what keeps the
             // preview and the resolution reading one answer: both call this, and this calls one thing.
-            var attack = definitions
-                .FirstOrDefault(definition => definition.Reference.Equals(attackDefinitionReference))
-                ?.ActionDefinitions
+            var attackDefinition = definitions
+                .FirstOrDefault(definition =>
+                    definition.Reference.Equals(attackDefinitionReference));
+            var attack = attackDefinition?.ActionDefinitions
                 .FirstOrDefault(candidate => candidate.Id.Equals(attackActionDefinitionId));
+            if (action.BlockCondition ==
+                PrintedBlockCondition.DeclaredByDefenseTextCapability)
+            {
+                if (capabilities == null || markers == null ||
+                    turnIndex < 1 || turnIndex > RoundResolutionAuthority.TurnsPerRound)
+                    throw new InvalidOperationException(
+                        "A capability-declared Block requires the live catalog, markers and turn.");
+                var graph = action.CardTextAt(CardTextTiming.DefenseAction);
+                var declarations = graph?.Nodes
+                    .Where(node => node.Capability.IsDefined)
+                    .Select(node => capabilities.TryLoad(node.Capability, out var handler)
+                        ? handler as IPrintedBlockConditionDeclaration : null)
+                    .Where(value => value != null)
+                    .ToArray();
+                if (declarations == null || declarations.Length != 1)
+                    throw new InvalidOperationException(
+                        "A capability-declared Block must name exactly one typed condition " +
+                        "on its Defense text.");
+                return attack != null &&
+                    declarations[0].Fulfils(
+                        defenseOffer.ActorId, markers, turnIndex,
+                        attackDefinition.Progression.Classification,
+                        RangedAttackOverlayQuery.Classify(
+                            attack.AttackRange, attackerId, modifications))
+                    ? DefenseBlockResult.Blocked
+                    : DefenseBlockResult.ConditionUnfulfilled;
+            }
             return attack != null &&
                 Fulfils(
                     action.BlockCondition,

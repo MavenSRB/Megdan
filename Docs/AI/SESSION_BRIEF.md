@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.93c**.
-- Active authorized milestone: **8.93d**.
-- Next proposed milestone: **8.93d**.
+- Current completed milestone: **8.93d**.
+- Active authorized milestone: **8.93e**.
+- Next proposed milestone: **8.93e**.
 
-**Snorri the Runescribe** is authorized as hero twenty-four through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93c complete**: inventory; chosen drag/drop Silver rune slots (retained, v45, wire /22, T3); staged Gold/Red and Blue faces (T2). Copied cards share the current rune; Grace's item swap covers owned resting zones. Active 8.93d: Green; tray/Initiative glyphs 8.93f; dealt replay/Undo/player-path gate 8.93g. Trinkets remains gated at [8.92g](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md); twenty-three heroes are dealt. Bot diagnosis 8.35z71 is queued. No package or publication is authorized.
+**Snorri** is authorized through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, chosen drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. Copied cards share the rune; Grace swaps from owned resting zones. Active 8.93e: Ultimate; 8.93f: tray/Initiative glyphs; 8.93g: dealt replay/Undo/player gate. [Trinkets](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md) remains gated; twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No package or publication authorized.
 
 On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 
