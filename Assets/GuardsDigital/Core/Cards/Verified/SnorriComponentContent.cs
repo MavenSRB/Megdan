@@ -25,28 +25,75 @@ namespace GuardsDigital.Core.Cards.Verified
             new EffectCapabilityReference(new EffectCapabilityId("snorri-inscribe-runes"), 1);
         public static EffectCapabilityReference ActiveRuneV1 { get; } =
             new EffectCapabilityReference(new EffectCapabilityId("snorri-active-rune"), 1);
+        public static EffectCapabilityReference AnySupportRuneV1 { get; } =
+            new EffectCapabilityReference(
+                new EffectCapabilityId("snorri-any-support-rune"), 1);
 
         public static IEnumerable<MarkerDefinition> Markers() => Runes;
 
         /// <summary>
-        /// A dashboard rune is active by the live turn number, not the card currently in its
-        /// slot or the zone of the Silver card that originally gave the physical marker.
+        /// A physical rune is active for every player's card by the live turn number, not by
+        /// the acting hero or the Silver card's zone. Its slot and marker identity are global.
         /// </summary>
         public static MarkerAttachment ActiveRune(
-            MarkerAttachmentRegister markers, HeroId holderHeroId, int turnIndex)
+            MarkerAttachmentRegister markers, HeroId queryingHeroId, int turnIndex)
         {
             if (markers == null) throw new ArgumentNullException(nameof(markers));
-            if (!holderHeroId.IsDefined)
-                throw new ArgumentException("A rune query requires its hero.", nameof(holderHeroId));
+            if (!queryingHeroId.IsDefined)
+                throw new ArgumentException("A rune query requires its acting hero.", nameof(queryingHeroId));
             if (turnIndex < 1 || turnIndex > Core.Cards.RoundResolutionAuthority.TurnsPerRound)
                 throw new ArgumentOutOfRangeException(nameof(turnIndex));
-            return markers.HeldBy(holderHeroId).SingleOrDefault(marker =>
+            return markers.Attachments.SingleOrDefault(marker =>
                 marker.TurnSlotIndex == turnIndex &&
                 Runes.Any(rune => rune.Reference.Equals(marker.Definition.Reference)));
         }
 
         public static IEnumerable<IEffectCapabilityHandler> Handlers() =>
-            new IEffectCapabilityHandler[] { new InscribeRunesHandler(), new ActiveRuneHandler() };
+            new IEffectCapabilityHandler[]
+            {
+                new InscribeRunesHandler(), new ActiveRuneHandler(),
+                new AnySupportRuneHandler()
+            };
+
+        /// <summary>The support target is chosen once, before its individually gated clauses.</summary>
+        public sealed class AnySupportRuneHandler : IEffectCapabilityHandler
+        {
+            public EffectCapabilityReference Reference => AnySupportRuneV1;
+            public EffectCapabilityParameterSchema Schema { get; } =
+                new EffectCapabilityParameterSchema(
+                    new[] { new EffectCapabilityParameter("mask", EffectValueKind.Integer) },
+                    new[] { new EffectOutputBinding("active", EffectValueKind.Boolean) });
+            public IReadOnlyList<ActiveEffectDefinition> ActiveEffectDefinitions { get; } =
+                Array.Empty<ActiveEffectDefinition>();
+
+            public EffectExecutionResult Execute(EffectCapabilityContext context)
+            {
+                if (context?.Components == null || !context.Components.IsLive ||
+                    !context.ActorId.IsDefined || context.TurnIndex < 1 ||
+                    context.TurnIndex > Core.Cards.RoundResolutionAuthority.TurnsPerRound)
+                    return EffectExecutionResult.ImpossibleMandatory();
+                var mask = context.Input("mask");
+                if (mask.Kind != EffectValueKind.Integer || mask.IntegerValue < 1 ||
+                    mask.IntegerValue > 15)
+                    return EffectExecutionResult.ImpossibleMandatory();
+                var rune = ActiveRune(
+                    context.Components.Markers, context.ActorId, context.TurnIndex);
+                var active = rune != null &&
+                    Enumerable.Range(1, Runes.Length).Any(ordinal =>
+                        (mask.IntegerValue & (1 << (ordinal - 1))) != 0 &&
+                        rune.Definition.Reference.Equals(Runes[ordinal - 1].Reference));
+                return EffectExecutionResult.Applied(new[]
+                {
+                    new EffectOutcomeFact("active", EffectValue.Boolean(active))
+                });
+            }
+
+            public EffectExecutionResult Resume(
+                EffectCapabilityContext context, IReadOnlyList<EffectValue> selected) =>
+                throw new InvalidOperationException("A rune predicate never requests a choice.");
+            public EffectExecutionResultKind Anticipate(EffectCapabilityContext context) =>
+                Execute(context).Kind;
+        }
 
         /// <summary>
         /// Pure live-turn predicate for rune-gated card text. A declaration names an ordinal,
@@ -164,7 +211,13 @@ namespace GuardsDigital.Core.Cards.Verified
             private static bool CanInscribe(EffectCapabilityContext context)
             {
                 var components = context?.Components;
-                if (components == null || !components.IsLive || !context.ActorId.IsDefined)
+                if (components == null || !components.IsLive || !context.ActorId.IsDefined ||
+                    !context.CardState.IsAvailable ||
+                    !context.SourceDefinitionReference.Equals(SnorriSilverFace.Silver.Reference) ||
+                    !context.CardState.Instances.Any(card =>
+                        card.Id.Equals(context.SourceCardInstanceId) &&
+                        card.OwnerId.Equals(context.ActorId) &&
+                        card.DefinitionReference.Equals(SnorriSilverFace.Silver.Reference)))
                 {
                     return false;
                 }

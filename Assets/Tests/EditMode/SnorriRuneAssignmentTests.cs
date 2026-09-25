@@ -22,6 +22,8 @@ namespace GuardsDigital.Tests.EditMode
     public sealed class SnorriRuneAssignmentTests
     {
         private static readonly HeroId Actor = new HeroId(StagedBoardParticipants.RedHeroIdValue);
+        private static readonly HeroId OtherActor =
+            new HeroId(StagedBoardParticipants.BlueHeroIdValue);
 
         [Test]
         public void InscribeOffersAllGlyphSlotPairs_ThenCommitsOnlyACompletePermutation()
@@ -110,6 +112,36 @@ namespace GuardsDigital.Tests.EditMode
             Assert.That(Ask(2, 5).Kind, Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
             Assert.That(components.Markers.Attachments.Count, Is.EqualTo(4),
                 "A card-text predicate must never change physical marker placement.");
+            Assert.That(SnorriComponentContent.ActiveRune(
+                components.Markers, OtherActor, 1).Definition.Reference,
+                Is.EqualTo(SnorriComponentContent.Runes[1].Reference),
+                "The current turn's physical rune is active for a copied Snorri card too.");
+        }
+
+        [Test]
+        public void CopiedSilverCannotTakeOrRearrangePhysicalRunes()
+        {
+            var components = Components();
+            var copied = new EffectCapabilityContext(
+                new EffectNodeId("copied-inscribe"),
+                EffectFailurePolicy.Mandatory,
+                OtherActor, OtherActor,
+                new CardInstanceId("borrower-card"),
+                SnorriSilverFace.Silver.Reference,
+                SnorriSilverFace.PrimarySkill,
+                null, 1, 1, StagedBoardParticipants.Create(), null,
+                RuleModificationSet.Empty,
+                EffectCardState.Of(new[] { SnorriSilverFace.Silver }, new[]
+                {
+                    CardInstance.CreateInHand(
+                        new CardInstanceId("borrower-card"),
+                        SnorriSilverFace.Silver.Reference, Actor)
+                }),
+                ActionKind.Skill, components);
+            var handler = new SnorriComponentContent.InscribeRunesHandler();
+            Assert.That(handler.Execute(copied).Kind,
+                Is.EqualTo(EffectExecutionResultKind.ImpossibleMandatory));
+            Assert.That(components.Markers.Attachments, Is.Empty);
         }
 
         [Test]
@@ -179,7 +211,13 @@ namespace GuardsDigital.Tests.EditMode
                 skill.EffectRoot,
                 SyntheticEffectCapabilities.CreateCatalog(SnorriComponentContent.Handlers()),
                 StagedBoardParticipants.Create(), null, 1, 1,
-                RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill,
+                RuleModificationSet.Empty,
+                EffectCardState.Of(new[] { card }, new[]
+                {
+                    CardInstance.CreateInHand(
+                        new CardInstanceId("snorri-silver"), card.Reference, Actor)
+                }),
+                ActionKind.Skill,
                 components: components);
             var step = EffectResolutionSession.Start(
                 new EffectResolutionId("snorri-silver-skill"),
@@ -228,9 +266,16 @@ namespace GuardsDigital.Tests.EditMode
                 EffectFailurePolicy.Mandatory,
                 Actor, Actor,
                 new CardInstanceId("snorri-silver"),
-                new CardDefinitionReference(new CardDefinitionId("snorri-silver"), "fixture-1"),
+                SnorriSilverFace.Silver.Reference,
                 new ActionDefinitionId("inscribe-runes"),
                 inputs, round, turn, StagedBoardParticipants.Create(), null,
-                RuleModificationSet.Empty, EffectCardState.Absent, ActionKind.Skill, components);
+                RuleModificationSet.Empty,
+                EffectCardState.Of(new[] { SnorriSilverFace.Silver }, new[]
+                {
+                    CardInstance.CreateInHand(
+                        new CardInstanceId("snorri-silver"),
+                        SnorriSilverFace.Silver.Reference, Actor)
+                }),
+                ActionKind.Skill, components);
     }
 }

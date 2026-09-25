@@ -2,9 +2,23 @@ using System;
 using System.Collections.Generic;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Rules.Consequences;
+using GuardsDigital.Core.Units.Heroes;
 
 namespace GuardsDigital.Core.Effects
 {
+    /// <summary>A narrow round-owned edit of a recorded, resolved turn-card slot.</summary>
+    public interface IResolvedTurnSlotSwap
+    {
+        bool TrySwapResolvedWithHand(
+            HeroId owner, CardInstanceId resolvedCard, CardInstanceId handCard);
+    }
+
+    public interface IItemCardSwap
+    {
+        bool TrySwapItemWithCard(
+            HeroId owner, CardInstanceId itemCard, CardInstanceId replacementCard);
+    }
+
     /// <summary>
     /// The round-owned rules state roster capabilities may read or mutate, or its named absence.
     ///
@@ -21,6 +35,8 @@ namespace GuardsDigital.Core.Effects
         private readonly RoundHeroDefeatHistory heroDefeats;
         private readonly HeroCoinLedger coins;
         private readonly GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory;
+        private readonly IResolvedTurnSlotSwap resolvedTurnSlotSwap;
+        private readonly IItemCardSwap itemCardSwap;
 
         private EffectRosterState()
         {
@@ -30,12 +46,16 @@ namespace GuardsDigital.Core.Effects
             IReadOnlyList<RoundTurnSlot> turnSlots,
             RoundHeroDefeatHistory heroDefeats,
             HeroCoinLedger coins,
-            GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory)
+            GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory,
+            IResolvedTurnSlotSwap resolvedTurnSlotSwap,
+            IItemCardSwap itemCardSwap)
         {
             this.turnSlots = turnSlots;
             this.heroDefeats = heroDefeats;
             this.coins = coins;
             this.soloVictory = soloVictory;
+            this.resolvedTurnSlotSwap = resolvedTurnSlotSwap;
+            this.itemCardSwap = itemCardSwap;
         }
 
         /// <summary>
@@ -56,12 +76,14 @@ namespace GuardsDigital.Core.Effects
             IReadOnlyList<RoundTurnSlot> turnSlots,
             RoundHeroDefeatHistory heroDefeats,
             HeroCoinLedger coins,
-            GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory = null) =>
+            GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim soloVictory = null,
+            IResolvedTurnSlotSwap resolvedTurnSlotSwap = null,
+            IItemCardSwap itemCardSwap = null) =>
             new EffectRosterState(
                 turnSlots ?? throw new ArgumentNullException(nameof(turnSlots)),
                 heroDefeats ?? throw new ArgumentNullException(nameof(heroDefeats)),
                 coins ?? throw new ArgumentNullException(nameof(coins)),
-                soloVictory);
+                soloVictory, resolvedTurnSlotSwap, itemCardSwap);
 
         public bool IsAvailable => turnSlots != null;
 
@@ -70,6 +92,12 @@ namespace GuardsDigital.Core.Effects
         public RoundHeroDefeatHistory HeroDefeats => Available(heroDefeats);
 
         public HeroCoinLedger Coins => Available(coins);
+
+        public IResolvedTurnSlotSwap ResolvedTurnSlotSwap =>
+            IsAvailable ? resolvedTurnSlotSwap : null;
+
+        public IItemCardSwap ItemCardSwap =>
+            IsAvailable ? itemCardSwap : null;
 
         /// <summary>
         /// Milestone 8.39g1. The round's solo-victory claim, or <c>null</c> where this state was

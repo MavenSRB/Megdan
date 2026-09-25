@@ -122,6 +122,65 @@ namespace GuardsDigital.Core.Cards
             card != null && card.State.Location == CardLocation.TurnArea &&
             card.State.HasBeenPlayed && card.State.ResolutionStatus == CardResolutionStatus.Resolved;
 
+        /// <summary>
+        /// Exchange one resolved turn-area card with an unplayed card in the same owner's hand.
+        /// The replacement occupies a resolved, face-up turn slot; the old card becomes a fresh
+        /// hand card. The slot authority must replace its card identity in the same operation.
+        /// </summary>
+        public static bool TrySwapResolvedWithHand(CardInstance resolved, CardInstance inHand)
+        {
+            if (resolved == null) throw new ArgumentNullException(nameof(resolved));
+            if (inHand == null) throw new ArgumentNullException(nameof(inHand));
+            if (!resolved.OwnerId.Equals(inHand.OwnerId) ||
+                resolved.Id.Equals(inHand.Id) ||
+                !IsResolvedCardInTurnArea(resolved) ||
+                inHand.State.Location != CardLocation.Hand ||
+                inHand.State.HasBeenPlayed ||
+                inHand.State.ResolutionStatus != CardResolutionStatus.None)
+                return false;
+
+            resolved.ApplyState(CardStateFacts.InitialInHand());
+            inHand.ApplyState(new CardStateFacts(
+                CardLocation.TurnArea, true, CardResolutionStatus.Resolved,
+                CardFaceOrientation.FaceUp));
+            return true;
+        }
+
+        /// <summary>
+        /// Exchange an item card with another owned resting card. The latter may be in hand,
+        /// deck, discard or a resolved turn slot; a card currently resolving cannot be taken.
+        /// Item placement and any turn-slot identity change belong to their respective authorities.
+        /// </summary>
+        public static bool TrySwapItemWithRestingCard(
+            CardInstance itemCard, CardInstance replacement)
+        {
+            if (itemCard == null) throw new ArgumentNullException(nameof(itemCard));
+            if (replacement == null) throw new ArgumentNullException(nameof(replacement));
+            if (!itemCard.OwnerId.Equals(replacement.OwnerId) ||
+                itemCard.Id.Equals(replacement.Id) ||
+                itemCard.State.Location != CardLocation.ItemSlot ||
+                itemCard.State.HasBeenPlayed ||
+                itemCard.State.ResolutionStatus != CardResolutionStatus.None ||
+                !IsItemSwapRestingCard(replacement))
+                return false;
+
+            var prior = replacement.State;
+            itemCard.ApplyState(prior);
+            replacement.ApplyState(new CardStateFacts(
+                CardLocation.ItemSlot, false, CardResolutionStatus.None,
+                CardFaceOrientation.FaceUp));
+            return true;
+        }
+
+        public static bool IsItemSwapRestingCard(CardInstance card) =>
+            card != null &&
+            (((card.State.Location == CardLocation.Hand ||
+                card.State.Location == CardLocation.Deck) &&
+                !card.State.HasBeenPlayed &&
+                card.State.ResolutionStatus == CardResolutionStatus.None) ||
+                IsDiscardedRestingCard(card) ||
+                IsResolvedCardInTurnArea(card));
+
         /// <summary>The two legal discarded shapes; an unresolved played discard is not supported.</summary>
         public static bool IsDiscardedRestingCard(CardInstance card) =>
             card != null && card.State.Location == CardLocation.DiscardPile &&

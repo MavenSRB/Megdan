@@ -301,6 +301,61 @@ namespace GuardsDigital.Core.Rules.Progression
         }
 
         /// <summary>
+        /// Ancestral Grace's item exchange admits any owned resting card of the item's
+        /// printed Tier and Color, regardless of its hand/deck/discard/resolved zone.
+        /// The replacement must itself print an item icon accepted by the dashboard.
+        /// </summary>
+        public bool CanSwapItemWithCard(
+            CardInstance itemCard, CardInstance replacement,
+            IEnumerable<CardDefinition> definitions)
+        {
+            if (itemCard == null || replacement == null || definitions == null ||
+                !itemCard.OwnerId.Equals(replacement.OwnerId) ||
+                !itemsByHero.TryGetValue(itemCard.OwnerId, out var owned) ||
+                !owned.Any(item => item.SourceCardInstanceId.Equals(itemCard.Id)) ||
+                itemCard.State.Location != CardLocation.ItemSlot ||
+                !CardLifecycleAuthority.IsItemSwapRestingCard(replacement))
+                return false;
+
+            var available = definitions.Where(definition => definition != null).ToArray();
+            var itemDefinition = available.SingleOrDefault(definition =>
+                definition.Reference.Equals(itemCard.DefinitionReference));
+            var replacementDefinition = available.SingleOrDefault(definition =>
+                definition.Reference.Equals(replacement.DefinitionReference));
+            return itemDefinition != null && replacementDefinition != null &&
+                itemDefinition.Progression.Tier != CardTier.None &&
+                itemDefinition.Progression.Tier == replacementDefinition.Progression.Tier &&
+                itemDefinition.Progression.Color == replacementDefinition.Progression.Color &&
+                replacementDefinition.Progression.HasItemIcon &&
+                AcceptsIcon(itemCard.OwnerId, replacementDefinition.Progression.ItemIcon);
+        }
+
+        public bool TrySwapItemWithCard(
+            CardInstance itemCard, CardInstance replacement,
+            IEnumerable<CardDefinition> definitions)
+        {
+            var available = definitions?.Where(definition => definition != null).ToArray();
+            if (!CanSwapItemWithCard(itemCard, replacement, available))
+                return false;
+
+            var owned = itemsByHero[itemCard.OwnerId];
+            var index = owned.FindIndex(item =>
+                item.SourceCardInstanceId.Equals(itemCard.Id));
+            var oldItem = owned[index];
+            var replacementDefinition = available.Single(definition =>
+                definition.Reference.Equals(replacement.DefinitionReference));
+            var icon = replacementDefinition.Progression.ItemIcon;
+            if (!dashboardsByHero[itemCard.OwnerId].TryFindSlotAccepting(icon, out var slot))
+                return false;
+            var newItem = new HeroItem(
+                itemCard.OwnerId, replacement.Id, slot.Position, icon, oldItem.Order);
+            if (!CardLifecycleAuthority.TrySwapItemWithRestingCard(itemCard, replacement))
+                return false;
+            owned[index] = newItem;
+            return true;
+        }
+
+        /// <summary>
         /// p.16's Gain an Item, performed on one set-aside card: turn it Faceup under the slot matching
         /// its printed Item icon and record the item.
         ///

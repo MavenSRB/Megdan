@@ -1120,9 +1120,20 @@ namespace GuardsDigital.Core.Rules.EffectResolution
                                 continue;
                             }
 
+                            var optionalBoundChooser = BoundChooser(
+                                node, frame, outcomes, context);
+                            if (node.Chooser == EffectChooserRole.BoundHero &&
+                                !optionalBoundChooser.IsDefined)
+                            {
+                                Pop(continuation);
+                                Record(outcomes, events, node.Id,
+                                    EffectExecutionResultKind.DeclinedOptional);
+                                continue;
+                            }
                             return PauseOn(frame, continuation, outcomes, choices, events, BuildChoice(
                                 frame, node, context, EffectChoiceKind.ConfirmOrDecline,
-                                Array.Empty<EffectChoiceCandidate>(), 0, 0));
+                                Array.Empty<EffectChoiceCandidate>(), 0, 0,
+                                chooserHeroOverride: optionalBoundChooser));
                         }
 
                         Pop(continuation);

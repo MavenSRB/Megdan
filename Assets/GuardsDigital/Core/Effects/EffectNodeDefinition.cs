@@ -257,6 +257,13 @@ namespace GuardsDigital.Core.Effects
                     if (FailurePolicy == EffectFailurePolicy.IfAble && Chooser != EffectChooserRole.None)
                         throw new ArgumentException(
                             "An if-able Optional node opens no decision, so it must name no chooser.");
+                    if (Chooser == EffectChooserRole.BoundHero &&
+                        !Inputs.Any(input =>
+                            string.Equals(input.ParameterName, ChooserParameterName, StringComparison.Ordinal) &&
+                            input.ValueKind == EffectValueKind.Hero))
+                        throw new ArgumentException(
+                            $"An Optional node whose chooser is a bound hero binds them as a Hero input " +
+                            $"named '{ChooserParameterName}'.");
                     break;
 
                 case EffectNodeKind.Conditional:

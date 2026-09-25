@@ -25,7 +25,8 @@ namespace GuardsDigital.Core.Cards
 
     public sealed class RoundResolutionAuthority
         : GuardsDigital.Core.Rules.Victory.ISoloVictoryClaim,
-            GuardsDigital.Core.Setup.IMatchTieBreakerCoin
+            GuardsDigital.Core.Setup.IMatchTieBreakerCoin,
+            IResolvedTurnSlotSwap, IItemCardSwap
     {
         public const int TurnsPerRound = 4;
 
@@ -239,7 +240,7 @@ namespace GuardsDigital.Core.Cards
             // otherwise could not name. It is `this` rather than a delegate because the claim is this
             // authority's own state and the interface is already the narrowing.
             this.cardActions?.BindRosterState(EffectRosterState.Of(
-                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this));
+                turnSlots.AsReadOnly(), HeroDefeatHistory, roundCoinLedger, this, this, this));
 
             // Milestone 8.75a. The same arrangement for the match's one Tie Breaker coin: this
             // authority is what answers which face is showing at every moment a turn is not running,
@@ -305,6 +306,102 @@ namespace GuardsDigital.Core.Cards
         }
 
         public IReadOnlyList<RoundTurnSlot> TurnSlots => turnSlots.AsReadOnly();
+
+        /// <summary>
+        /// A printed card exchange changes both card lifecycle and the numbered slot's identity.
+        /// Revalidate the recorded assignment and both resting states when a paused answer arrives.
+        /// </summary>
+        public bool TrySwapResolvedWithHand(
+            HeroId owner, CardInstanceId resolvedCard, CardInstanceId handCard)
+        {
+            if (!owner.IsDefined || !resolvedCard.IsDefined || !handCard.IsDefined ||
+                resolvedCard.Equals(handCard) ||
+                Phase != RoundResolutionPhase.ResolvingTurn)
+                return false;
+
+            var oldCard = instances.SingleOrDefault(card => card.Id.Equals(resolvedCard));
+            var newCard = instances.SingleOrDefault(card => card.Id.Equals(handCard));
+            if (oldCard == null || newCard == null ||
+                !oldCard.OwnerId.Equals(owner) || !newCard.OwnerId.Equals(owner) ||
+                !CardLifecycleAuthority.IsResolvedCardInTurnArea(oldCard) ||
+                newCard.State.Location != CardLocation.Hand ||
+                newCard.State.HasBeenPlayed ||
+                newCard.State.ResolutionStatus != CardResolutionStatus.None)
+                return false;
+
+            var matching = turnSlots
+                .Select((slot, index) => new { slot, index })
+                .Where(entry => entry.slot.RoundIndex == RoundIndex &&
+                    entry.slot.Assignments.Any(assignment =>
+                        assignment.HeroId.Equals(owner) &&
+                        assignment.CardInstanceId.HasValue &&
+                        assignment.CardInstanceId.Value.Equals(resolvedCard)))
+                .ToArray();
+            if (matching.Length != 1)
+                return false;
+
+            var oldSlot = matching[0].slot;
+            var newSlot = new RoundTurnSlot(
+                oldSlot.RoundIndex, oldSlot.TurnIndex,
+                oldSlot.Assignments.Select(assignment =>
+                    assignment.HeroId.Equals(owner)
+                        ? new TurnCardAssignment(owner, handCard, false)
+                        : assignment),
+                instances, participants);
+            if (!CardLifecycleAuthority.TrySwapResolvedWithHand(oldCard, newCard))
+                return false;
+            turnSlots[matching[0].index] = newSlot;
+            return true;
+        }
+
+        public bool TrySwapItemWithCard(
+            HeroId owner, CardInstanceId itemCard, CardInstanceId replacementCard)
+        {
+            if (!owner.IsDefined || !itemCard.IsDefined || !replacementCard.IsDefined ||
+                itemCard.Equals(replacementCard) ||
+                Phase != RoundResolutionPhase.ResolvingTurn || HeroItems == null)
+                return false;
+            var oldItemCard = instances.SingleOrDefault(card => card.Id.Equals(itemCard));
+            var newItemCard = instances.SingleOrDefault(card => card.Id.Equals(replacementCard));
+            if (oldItemCard == null || newItemCard == null ||
+                !oldItemCard.OwnerId.Equals(owner) ||
+                !newItemCard.OwnerId.Equals(owner) ||
+                !HeroItems.CanSwapItemWithCard(
+                    oldItemCard, newItemCard, definitions))
+                return false;
+
+            var resolved = CardLifecycleAuthority.IsResolvedCardInTurnArea(newItemCard);
+            RoundTurnSlot newSlot = null;
+            var slotIndex = -1;
+            if (resolved)
+            {
+                var matches = turnSlots
+                    .Select((slot, index) => new { slot, index })
+                    .Where(entry => entry.slot.RoundIndex == RoundIndex &&
+                        entry.slot.Assignments.Any(assignment =>
+                            assignment.HeroId.Equals(owner) &&
+                            assignment.CardInstanceId.HasValue &&
+                            assignment.CardInstanceId.Value.Equals(replacementCard)))
+                    .ToArray();
+                if (matches.Length != 1)
+                    return false;
+                slotIndex = matches[0].index;
+                var oldSlot = matches[0].slot;
+                newSlot = new RoundTurnSlot(
+                    oldSlot.RoundIndex, oldSlot.TurnIndex,
+                    oldSlot.Assignments.Select(assignment =>
+                        assignment.HeroId.Equals(owner)
+                            ? new TurnCardAssignment(owner, itemCard, false)
+                            : assignment),
+                    instances, participants);
+            }
+            if (!HeroItems.TrySwapItemWithCard(
+                oldItemCard, newItemCard, definitions))
+                return false;
+            if (resolved)
+                turnSlots[slotIndex] = newSlot;
+            return true;
+        }
 
         /// <summary>
         /// EVERY completed round of this match, in order. Milestone 8.35w bounded what
@@ -989,7 +1086,7 @@ namespace GuardsDigital.Core.Cards
                 cardActions.EnsureCoinLedger(participants),
                 // Milestone 8.39g1. A restored round is as claimable as a composed one - the claim is
                 // refused on its own terms when the payload already carries a winner.
-                authority));
+                authority, authority, authority));
 
             // Milestone 8.75a. A restored dispatcher is re-bound to the restored round's coin, the
             // way it is re-bound to the restored roster state one line above and for the same reason:

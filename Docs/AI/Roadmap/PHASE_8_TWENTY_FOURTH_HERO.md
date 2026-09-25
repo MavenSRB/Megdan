@@ -44,7 +44,7 @@ Completed 2026-09-25. Six source-verified faces are staged with live rune-gated 
 
 Historical evidence: [8.93b completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893b-snorri-gold-and-red-attacks-evidence).
 
-### [~] 8.93c Compose the Blue movement and support faces
+### [x] 8.93c Compose the Blue movement and support faces
 
 Outcome: five Blue upgrades run their printed movement, obstacle, immunity, friendly-hero Radius, resolved-card swap, retrieval and item-swap clauses.
 
@@ -52,7 +52,11 @@ Acceptance: each face's rune-gated options, Movement/Radius items, legal/illegal
 
 Non-goals: Green faces or dealing.
 
-### [ ] 8.93d Compose the Green defense and disruption faces
+Completed 2026-09-25. Five source-verified Blue faces are staged: Passage Movement creates only the active rune's obstacle permission, enemy-action immunity or +2 Movement, and both Ancestral Skills choose one friendly hero in printed Radius for owner-controlled optional swaps/retrieval. The user-supplied copying ruling corrected the physical current-slot rune to be global to every player's copied Snorri card; copied Silver cannot move the markers. The user settled Grace's matching item replacement as any owned resting card, including hand, deck, discard or resolved. Card/item/slot state transitions recheck choices and keep the numbered slot and snapshots coherent. Configured rounds and direct choices prove movement through but not onto obstacles, stale refusals, all item zones, friendly-choice ownership, turn-slot exchanges and snapshot round trips. T2: 161/161 focused and affected dotnet Edit cases; focused Unity Edit Mode 76/76, zero skips. These faces remain undealt, so configured-match command-history Undo, both-seat projections and the full player path are the explicit 8.93g gate, not claimed here.
+
+Historical evidence: [8.93c completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893c-snorri-blue-movement-and-support-evidence).
+
+### [~] 8.93d Compose the Green defense and disruption faces
 
 Outcome: five Green upgrades run their printed attack-category blocks, turn immunity and color-restricted enemy discards.
 
