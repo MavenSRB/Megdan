@@ -1,0 +1,77 @@
+# Phase 8 - Twenty-fourth hero: Snorri the Runescribe
+
+Return to [roadmap](../ROADMAP.md). [The session brief](../SESSION_BRIEF.md) owns the active and next route.
+
+## Authorization and scope
+
+On 2026-09-25 the user said "Go for next hero then" and then "ok, you pick then." Snorri the Runescribe is the selected next hero. This authorizes the bounded sequence **8.93 -> 8.93a -> 8.93b -> 8.93c -> 8.93d -> 8.93e -> 8.93f -> 8.93g** through a fully selectable, artworked Snorri, every dealt printed face, and the permanent player-path gate. The user settled that the player chooses the rune-to-slot order and requires drag-and-drop in the existing choice pop-up, runes in his hero-tray turn-card slots, overlaid with a resolved card in its slot, and above the Initiative number on the resolving card and its pre-commit slot. Execute one milestone at a time, each with its own validation and local commit. No other hero, package, remote publication, or rule invention is authorized.
+
+[Snorri's rules shard](../Rules/HERO_SNORRI.md) owns source facts, inventory, capability mapping and any rule questions. Eighteen ordinary fronts are dealt; the nineteenth, a p.20 Handicap, stays boxed at setup.
+
+### [x] 8.93 Inventory Snorri and map the implementation sequence
+
+Outcome: verify the nineteen fronts, profile, dashboard, rune pieces and relevant rulebook pages; record printed values and exact clauses, existing-capability matches, new contracts and bounded unresolved interpretations. No executable content is registered.
+
+Acceptance: all nineteen distinct fronts and both byte variants of the visually shared back accounted for; four rune-piece identities and the four printed card glyphs inspected without mistaking manifest object names for game rules, with any missing standalone piece artwork routed to 8.93f; printed star/role profile, turn slots and items mapped; every novel effect probed against actual engine seams; open questions have an owner and block only their dependent milestone. T0 documentation validation.
+
+Non-goals: gameplay code, build art or a package.
+
+Completed 2026-09-25. Nineteen source fronts and nineteen backs (two byte variants of one visible back), the four-star/six-role profile, dashboard turn slots, four manifest piece identities, printed glyphs, item pattern, exact Silver persistence exception and all face families are inventoried in [Snorri's rules shard](../Rules/HERO_SNORRI.md). The user settled player-chosen rune order and required a drag-and-drop choice window plus tray/Initiative display. Existing marker definitions cannot retain through both cleanup checkpoints or attach to numbered turn slots; the decision window has no four-piece drag control. The absent standalone piece rasters are explicitly routed to 8.93f for faithful glyph preparation. T0; no executable content or Unity run.
+
+Historical evidence: [8.93 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893-snorri-inventory-evidence).
+
+### [ ] 8.93a Implement persistent turn-slot runes and Inscribe the Runes
+
+Outcome: four distinct rune markers belong below Snorri's numbered turn slots in a player-chosen permutation, are active only at the current slot, and persist as printed through round end and defeat. Compose the Silver basic face and its authoritative state, including a drag-and-drop assignment in the existing choice pop-up rather than an implicit order.
+
+Acceptance: all four unique rune pieces can be dragged into distinct 1-4 slots in any player-chosen order; no commit before all four slots are assigned; keyboard or equivalent accessible completion follows the existing UI's interaction contract; placement, active/inactive transitions, re-inscription, round rollover, defeat/respawn, source card changing zones, item/Ultimate interactions where relevant, snapshot/replay/Undo, both seat projections, and directly affected marker and turn-slot regressions. T2 minimum.
+
+Non-goals: other printed faces or dealing.
+
+### [ ] 8.93b Compose the Gold and Red attacks
+
+Outcome: the basic Gold attack and five Red upgrades run printed rune-gated targeting, values, moves, retrieval, discard and repeat clauses.
+
+Acceptance: each face's legal/refused/boundary targets, four rune states, item contributions, before/after Attack timing, different-target repeats, Defense responses, immunity, stale answers, snapshot/replay/Undo and affected attack regressions. T2 minimum.
+
+Non-goals: Blue and Green faces or dealing.
+
+### [ ] 8.93c Compose the Blue movement and support faces
+
+Outcome: five Blue upgrades run their printed movement, obstacle, immunity, friendly-hero Radius, resolved-card swap, retrieval and item-swap clauses.
+
+Acceptance: each face's rune-gated options, Movement/Radius items, legal/illegal/stale choices, action immunity lifetime, round boundary, snapshot/replay/Undo and affected movement/support regressions. T2 minimum.
+
+Non-goals: Green faces or dealing.
+
+### [ ] 8.93d Compose the Green defense and disruption faces
+
+Outcome: five Green upgrades run their printed attack-category blocks, turn immunity and color-restricted enemy discards.
+
+Acceptance: each face's rune gates, attack classes and Defense order, color-eligible and empty hands, Radius items, immunity, defeated target, snapshot/replay/Undo and directly affected Defense/discard regressions. T2 minimum.
+
+Non-goals: Ultimate or dealing.
+
+### [ ] 8.93e Compose Rune Mastery and reconcile the set
+
+Outcome: the Ultimate's chosen inactive rune counts as active until the next action; all eighteen dealt faces and the boxed Handicap have complete, audited definitions behind the registration gate.
+
+Acceptance: choice timing and expiry, no inactive choice, repeated actions, round boundary and persisted rune ownership, snapshot/replay/Undo; all nineteen definitions reconciled with printed inventory; focused full-set and directly affected regressions. T2 minimum.
+
+Non-goals: dealing, artwork or player-path gate.
+
+### [ ] 8.93f Deal Snorri and present his artwork
+
+Outcome: register the eighteen playable definitions, profile and rune pieces; add Snorri to legal pickers and configurations with printed stars and roles, hero and rune artwork, and card faces/hover catalog.
+
+Acceptance: stable identities, setup, hand/upgrades, selection/filter/spawn and both seat projections; each rune is visible in its hero-tray turn-card slot, a resolved card occupies that same slot with its rune showing, and the rune appears above Initiative on the resolving card and on the resolving-card slot before commitment; these states refresh across turn, round, Undo and restore. Private art boundaries, focused Unity input and visual checks plus affected regression tier. T2 minimum.
+
+Non-goals: a distributable package or another hero.
+
+### [ ] 8.93g Gate Snorri through the complete player path
+
+Outcome: a content-derived matrix and real-input journeys cover every dealt face and the rune state, with no parked or skipped required journey.
+
+Acceptance: every declared interaction shape mapped to named journeys; slot and round transitions, rune/tray/card/Initiative presentation before commitment and after resolution, all rune-gated attacks/blocks/support, Ultimate, items, progression, defeat/respawn, stale input, snapshot/restore, retained-prefix Undo, network projection agreement and whole-face footprint; complete unfiltered Edit Mode and Play Mode suites green with zero new skips and no required skip, plus the permanent gate's zero-skip rule. T3.
+
+Non-goals: a package or the next hero.

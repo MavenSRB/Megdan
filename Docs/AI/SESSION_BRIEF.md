@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.92g**.
+- Current completed milestone: **8.93**.
 - Active authorized milestone: **none**.
-- Next proposed milestone: **8.35z71**.
+- Next proposed milestone: **8.93a**.
 
-On 2026-09-24 the user chose **Trinkets the Scavenger** as hero twenty-three. [Approved sequence](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md): 8.92-8.92g is complete through playable art and the permanent player-path gate. [Rules shard](Rules/HERO_TRINKETS.md): three Barrier tokens; one persistent Turret obstacle, not terrain/token/unit; Trinkets-owned targeting; designer-ordered Blue discard before Defense. Nineteen faces are composed; eighteen are registered and dealt with private art, Handicap boxed. The build deals twenty-three heroes and all pass the permanent player-path gate. Bot diagnosis 8.35z71 remains queued, not authorized; another hero, package, or publication requires a new user decision.
+On 2026-09-25 the user chose **Snorri the Runescribe** as hero twenty-four, authorizing [8.93-8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md). [8.93](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893-inventory-snorri-and-map-the-implementation-sequence) inventories the nineteen faces, profile, four runes, rules and capability gaps. [His rules shard](Rules/HERO_SNORRI.md) owns the persistent turn-slot rune contract. The user settled player-chosen rune order with drag-and-drop in the existing choice window, tray-slot runes and resolving-card Initiative rune display. Trinkets is complete and gated at [8.92g](Roadmap/PHASE_8_TWENTY_THIRD_HERO.md); twenty-three heroes are currently dealt. Bot diagnosis 8.35z71 remains queued. No package or publication is authorized.
 
 On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 

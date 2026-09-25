@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.93 Snorri inventory evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.93 | Snorri's nineteen fronts, profile, dashboard, four persistent rune-marker identities and printed glyphs inventoried; the user's chosen-order, drag-and-drop and tray/Initiative requirements recorded; capability gaps and 8.93a-8.93g route mapped. [Definition](../../Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md#x-893-inventory-snorri-and-map-the-implementation-sequence). | `milestone/8.93` |
+
 ## Milestone 8.92g Trinkets player-path gate evidence
 
 | Milestone | Outcome and definition | Commit |
