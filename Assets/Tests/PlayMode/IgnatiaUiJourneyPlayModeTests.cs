@@ -37,7 +37,7 @@ namespace GuardsDigital.Tests.PlayMode
     ///
     /// <para><b>EVERY FACE OF HERS HAS TWO TEXTS, SO EVERY JOURNEY HAS TWO BOARDS.</b> Her whole set is
     /// composed as one <c>Conditional</c> on <c>ignatia-coin-sun@1</c>, and which arm runs is the live
-    /// face of rulebook p.7's Tie Breaker coin - sun on Red, moon on Blue (ID-Q5, user-settled). The
+    /// face of rulebook p.7's Tie Breaker coin - sun on Blue, moon on Red (ID-Q5, user-corrected). The
     /// staged configurations take that face as an argument, so
     /// <see cref="SceneCardContent.VerifiedEngagedStagedIgnatia"/> and
     /// <see cref="SceneCardContent.VerifiedEngagedStagedIgnatiaOnTheMoon"/> are the SAME board under the
@@ -256,7 +256,7 @@ namespace GuardsDigital.Tests.PlayMode
             var banner = TieBreakerBanner(root.Hud);
             Assert.That(UiPlayer.IsShown(banner), Is.True,
                 "The coin strip is on screen. " + UiPlayer.Describe(root.Hud));
-            var expected = face == PrintedTextFace.Sun
+            var expected = CoinSelectedTextQuery.SideShowing(face) == TeamSide.Red
                 ? root.Hud.RedTieBreakerRailBannerRect
                 : root.Hud.BlueTieBreakerRailBannerRect;
             Assert.That(banner.style.left.value.value, Is.EqualTo(expected.x).Within(0.5f),
@@ -782,7 +782,7 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.ViewedHeroId, Is.EqualTo(hers),
                 "A camera ray on her own piece points the tray at her.");
             Assert.That(Coin(runtime), Is.EqualTo(PrintedTextFace.Sun),
-                "Arrange: this staging reveals the coin's SUN face, which is Red (ID-Q5). " +
+                "Arrange: this staging reveals the coin's SUN face, which is Blue (ID-Q5). " +
                 Remaining(runtime));
             foreach (var face in new[]
             {
@@ -1001,7 +1001,7 @@ namespace GuardsDigital.Tests.PlayMode
             var moonRuntime = moonRoot.Runtime;
             var moonEnemy = Enemies(moonRuntime)[0];
             Assert.That(Coin(moonRuntime), Is.EqualTo(PrintedTextFace.Moon),
-                "Arrange: the same board with the coin's MOON face up, which is Blue (ID-Q5). " +
+                "Arrange: the same board with the coin's MOON face up, which is Red (ID-Q5). " +
                 Remaining(moonRuntime));
 
             yield return BeginIgnatia(

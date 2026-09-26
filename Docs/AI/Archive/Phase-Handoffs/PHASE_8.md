@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.105 Ignatia coin mapping correction evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.105 | Ignatia's typed Tie Breaker mapping is corrected to `☀ = Blue`, `☾ = Red`; all semantic stages and tests follow that one mapping. The exact regression failed before the correction and passes afterward; affected Edit Mode is 158/158 and all four Ignatia Play Mode fixtures are 40/40. [Definition](../../Roadmap/PHASE_8.md#x-8105-correct-ignatias-tie-breaker-colour-to-symbol-mapping). | milestone/8.105 |
+
 ## Milestone 8.104 conditional pre-attack relocation evidence
 
 | Milestone | Outcome and definition | Commit |

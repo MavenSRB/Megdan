@@ -120,7 +120,7 @@ namespace GuardsDigital.Tests.EditMode
 
             harness.Witness.Reset();
             Assert.That(harness.StartSkill().Accepted, Is.True);
-            Assert.That(harness.Witness.Arms, Is.EqualTo(new[] { Arm.Moon }),
+            Assert.That(harness.Witness.Arms, Is.EqualTo(new[] { Arm.Sun }),
                 "and every read after the flip is the new face.");
         }
 

@@ -1180,9 +1180,16 @@ namespace GuardsDigital.Tests.PlayMode
                 var offered = pause.Candidates.Select(candidate => candidate.Value.ToString())
                     .OrderBy(value => value, StringComparer.Ordinal).ToArray();
 
+                string expectedNextNode = null;
                 if (isAttack)
                 {
-                    yield return Pick(root, CandidateFor(runtime, RedRanged));
+                    // This case proves Undo/replay of the exact offer, not Loosely-Aimed
+                    // Firebolts' target geometry (its dedicated journey owns that). Take one of
+                    // the offer we just captured so the replay check stays independent of which
+                    // eligible unit the corrected coin face exposes on this board.
+                    yield return Pick(root, pause.Candidates.First(candidate =>
+                        candidate.Value.Kind == EffectValueKind.Minion));
+                    expectedNextNode = runtime.PendingEffectChoice?.NodeId.Value;
                 }
                 else
                 {
@@ -1212,10 +1219,11 @@ namespace GuardsDigital.Tests.PlayMode
 
                 if (isAttack)
                 {
-                    yield return Pick(root, CandidateFor(runtime, RedRanged));
-                    Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
-                        "Replaying the retained prefix reaches the same next question. " +
-                        Remaining(runtime));
+                    yield return Pick(root, restored.Candidates.First(candidate =>
+                        candidate.Value.Kind == EffectValueKind.Minion));
+                    Assert.That(runtime.PendingEffectChoice?.NodeId.Value, Is.EqualTo(expectedNextNode),
+                        "Replaying the retained prefix reaches the same next question, or the same " +
+                        "completed branch when this coin face prints no follow-up. " + Remaining(runtime));
                 }
                 else
                 {

@@ -349,11 +349,11 @@ namespace GuardsDigital.Tests.EditMode
                 IgnatiaCardContent.Definition(IgnatiaCardContent.Equilibrium).Reference,
                 hero);
             var cards = new[] { bolt, equilibrium };
-            var sun = TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Red);
+            var sun = TieBreakerSetupAuthority.CreateInternalTestSetupState(TeamSide.Blue);
 
             Assert.That(CoinSelectedTextQuery.LiveFace(sun), Is.EqualTo(PrintedTextFace.Sun));
             Assert.That(
-                CoinSelectedTextQuery.SideShowing(PrintedTextFace.Sun), Is.EqualTo(TeamSide.Red),
+                CoinSelectedTextQuery.SideShowing(PrintedTextFace.Sun), Is.EqualTo(TeamSide.Blue),
                 "and the side it is showing is where the rail's banner puts it, which is now the " +
                 "only place that reading is drawn.");
             Assert.That(
@@ -393,7 +393,7 @@ namespace GuardsDigital.Tests.EditMode
                 },
                 Has.None.Contains("SUN").And.None.Contains("MOON"));
             Assert.That(
-                PrintedTextFaceLabels.SideWord(CoinSelectedTextQuery.SunSide), Is.EqualTo("RED"),
+                PrintedTextFaceLabels.SideWord(CoinSelectedTextQuery.SunSide), Is.EqualTo("BLUE"),
                 "and the word for the side the rail's banner is on, which is what a journey says " +
                 "while it proves which text is live.");
         }

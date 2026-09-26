@@ -21,9 +21,9 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// hero's content reads it: <c>IgnatiaComponentContent.SunFace</c> and <c>MoonFace</c> are this
     /// type's <see cref="SunSide"/> and <see cref="MoonSide"/>.</para>
     ///
-    /// <para><b>USER-SETTLED 2026-09-22:</b> "Moon is blue team, sun is read team" - so the coin's sun
-    /// face is the one that reveals <see cref="TeamSide.Red"/> and its moon face the one that reveals
-    /// <see cref="TeamSide.Blue"/>. The engine models the coin only as a revealed side
+    /// <para><b>USER-CORRECTED 2026-09-26 from live play:</b> the prior colour reading was inverted.
+    /// The coin's sun face is the one that reveals <see cref="TeamSide.Blue"/> and its moon face the
+    /// one that reveals <see cref="TeamSide.Red"/>. The engine models the coin only as a revealed side
     /// (<see cref="TieBreakerState.RevealedSide"/>); the symbols are what is physically printed on
     /// those sides.</para>
     ///
@@ -33,11 +33,11 @@ namespace GuardsDigital.Core.Rules.CardResolution
     /// </summary>
     public static class CoinSelectedTextQuery
     {
-        /// <summary>The side revealed by the coin face bearing the sun (☀) symbol. USER-SETTLED.</summary>
-        public static TeamSide SunSide => TeamSide.Red;
+        /// <summary>The side revealed by the coin face bearing the sun (☀) symbol. USER-CORRECTED.</summary>
+        public static TeamSide SunSide => TeamSide.Blue;
 
-        /// <summary>The side revealed by the coin face bearing the moon (☾) symbol. USER-SETTLED.</summary>
-        public static TeamSide MoonSide => TeamSide.Blue;
+        /// <summary>The side revealed by the coin face bearing the moon (☾) symbol. USER-CORRECTED.</summary>
+        public static TeamSide MoonSide => TeamSide.Red;
 
         /// <summary>
         /// The symbol printed on the revealed coin face, and <see cref="PrintedTextFace.None"/> for an

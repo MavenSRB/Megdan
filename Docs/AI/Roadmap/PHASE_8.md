@@ -88,6 +88,20 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [x] 8.105 Correct Ignatia's Tie Breaker colour-to-symbol mapping
+
+Authorized 2026-09-26 by the user's live correction: "Ignatias what blue/red means is inverted. On blue initiative it triggers red part of the card." This bounded rules/content corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.
+
+Outcome: the Tie Breaker's Blue face selects Ignatia's printed `☀` line and its Red face selects her printed `☾` line everywhere: card resolution, live-line presentation, staged boards, replay and tests. The player's symbol-first choice controls from 8.103 remain unchanged.
+
+Cause evidence: the single typed mapping in `CoinSelectedTextQuery` encoded `☀ = Red` and `☾ = Blue`, so every consumer consistently selected the opposite printed line. The exact mapping regression failed before the correction with expected Blue / actual Red.
+
+Acceptance: record the failing-then-passing typed mapping regression; run every directly affected Ignatia Edit Mode fixture and all four Ignatia Play Mode fixtures under both staged faces, including replay; update the authoritative hero ruling and preserve schema, wire and card text. T2 because authoritative card resolution changes.
+
+Non-goals: changing initiative rules, the physical coin, the printed card lines, 8.103's glyph controls, Snorri work, package cutting or publication.
+
+Completed 2026-09-26. `CoinSelectedTextQuery` now owns the corrected `☀ = Blue`, `☾ = Red` mapping and all semantic Ignatia stages follow it. The pre-fix regression failed 0/1 with expected Blue / actual Red and passes 1/1 afterward. All directly affected Edit Mode fixtures pass 158/158 and the four Ignatia Play Mode fixtures pass 40/40, including both live faces, Equilibrium, Chaos Incarnate and retained-prefix replay. The replay journey was corrected to compare the next question actually produced by the selected face rather than assume the formerly inverted face's repeat clause. Schema, wire, card text and the symbol-only controls are unchanged. 8.93e resumes.
+
 ### [x] 8.104 Keep a legal target visible after a conditional pre-attack move
 
 Authorized 2026-09-26 by the user's live report: "Whispers red" / "Whisper played red, primary was perfectly legal, but was not even offered" and request to check the current game. This bounded corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.

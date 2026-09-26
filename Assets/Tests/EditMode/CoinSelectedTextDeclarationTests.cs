@@ -35,14 +35,14 @@ namespace GuardsDigital.Tests.EditMode
         /// only as a revealed side, so this is the whole of what makes a face a sun or a moon.
         /// </summary>
         [Test]
-        public void TheCoinsSunFaceIsRedAndItsMoonFaceIsBlue()
+        public void TheCoinsSunFaceIsBlueAndItsMoonFaceIsRed()
         {
-            Assert.That(CoinSelectedTextQuery.SunSide, Is.EqualTo(TeamSide.Red));
-            Assert.That(CoinSelectedTextQuery.MoonSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(CoinSelectedTextQuery.SunSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(CoinSelectedTextQuery.MoonSide, Is.EqualTo(TeamSide.Red));
             Assert.That(
-                CoinSelectedTextQuery.FaceOf(TeamSide.Red), Is.EqualTo(PrintedTextFace.Sun));
+                CoinSelectedTextQuery.FaceOf(TeamSide.Blue), Is.EqualTo(PrintedTextFace.Sun));
             Assert.That(
-                CoinSelectedTextQuery.FaceOf(TeamSide.Blue), Is.EqualTo(PrintedTextFace.Moon));
+                CoinSelectedTextQuery.FaceOf(TeamSide.Red), Is.EqualTo(PrintedTextFace.Moon));
         }
 
         /// <summary>

@@ -184,18 +184,18 @@ namespace GuardsDigital.Tests.EditMode
         /// <summary>
         /// THE COIN FACE IS PART OF THE STAGING, and for her it is the card text. Every other hero's
         /// staged configuration passes a <see cref="TeamSide"/> to settle p.7's Initiative ties;
-        /// hers settles WHICH OF EACH CARD'S TWO PRINTED LINES RUNS (ID-Q5, user-settled: sun is the
-        /// Red face, moon the Blue one), so a dealing that could stage only one of them would leave
+        /// hers settles WHICH OF EACH CARD'S TWO PRINTED LINES RUNS (ID-Q5, user-corrected: sun is the
+        /// Blue face, moon the Red one), so a dealing that could stage only one of them would leave
         /// half her printed set unreachable at every tier.
         /// </summary>
         [Test]
         public void BothCoinFacesAreStageable_WhichIsHalfHerPrintedSetEachWay()
         {
-            var sun = MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Red);
-            var moon = MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Blue);
+            var sun = MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Blue);
+            var moon = MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Red);
 
-            Assert.That(sun.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Red));
-            Assert.That(moon.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(sun.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Blue));
+            Assert.That(moon.TieBreakerState.RevealedSide, Is.EqualTo(TeamSide.Red));
             Assert.That(
                 IgnatiaComponentContent.RevealedFaceIsSun(sun.TieBreakerState.RevealedSide),
                 Is.True);

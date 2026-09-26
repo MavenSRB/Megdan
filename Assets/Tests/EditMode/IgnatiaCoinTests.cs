@@ -55,19 +55,19 @@ namespace GuardsDigital.Tests.EditMode
         // -------------------------------------------------------------------------------------------
 
         /// <summary>
-        /// USER-SETTLED 2026-09-22 ("Moon is blue team, sun is read team"): her two printed symbols are
-        /// the two sides of p.7's Tie Breaker coin, sun on Red and moon on Blue. The mapping is total
+        /// USER-CORRECTED 2026-09-26 from the live table: her two printed symbols are
+        /// the two sides of p.7's Tie Breaker coin, sun on Blue and moon on Red. The mapping is total
         /// over the three <see cref="TeamSide"/> values, opposite on the two real faces, and it refuses
         /// the third - a coin nobody has revealed is not her sun and not her moon.
         /// </summary>
         [Test]
-        public void TheSunIsTheRedFaceAndTheMoonTheBlue_AndAnUnrevealedCoinIsNeither()
+        public void TheSunIsTheBlueFaceAndTheMoonTheRed_AndAnUnrevealedCoinIsNeither()
         {
-            Assert.That(IgnatiaComponentContent.SunFace, Is.EqualTo(TeamSide.Red));
-            Assert.That(IgnatiaComponentContent.MoonFace, Is.EqualTo(TeamSide.Blue));
+            Assert.That(IgnatiaComponentContent.SunFace, Is.EqualTo(TeamSide.Blue));
+            Assert.That(IgnatiaComponentContent.MoonFace, Is.EqualTo(TeamSide.Red));
 
-            Assert.That(IgnatiaComponentContent.RevealedFaceIsSun(TeamSide.Red), Is.True);
-            Assert.That(IgnatiaComponentContent.RevealedFaceIsSun(TeamSide.Blue), Is.False);
+            Assert.That(IgnatiaComponentContent.RevealedFaceIsSun(TeamSide.Blue), Is.True);
+            Assert.That(IgnatiaComponentContent.RevealedFaceIsSun(TeamSide.Red), Is.False);
             Assert.That(IgnatiaComponentContent.RevealedFaceIsSun(TeamSide.None), Is.False,
                 "An unrevealed coin is not her sun, which is what makes the refusal below a refusal " +
                 "rather than a silent moon.");
@@ -120,7 +120,7 @@ namespace GuardsDigital.Tests.EditMode
                 IgnatiaCardContent.PlayingWithFire, IgnatiaBoard.Sun, Board());
             Assert.That(sun.Choice, Is.Not.Null);
             Assert.That(sun.Choice.NodeId.Value, Is.EqualTo("ignatia-attack-sun-select"),
-                "The Red face is her sun, so the SUN arm is the one that runs.");
+                "The Blue face is her sun, so the SUN arm is the one that runs.");
             Assert.That(sun.Candidates(), Is.EqualTo(new[] { IgnatiaBoard.SecondEnemy.Value }),
                 "☀ \"a unit in range NOT in a straight line\" - only the enemy standing off every " +
                 "file qualifies.");
@@ -129,7 +129,7 @@ namespace GuardsDigital.Tests.EditMode
                 IgnatiaCardContent.PlayingWithFire, IgnatiaBoard.Moon, Board());
             Assert.That(moon.Choice, Is.Not.Null);
             Assert.That(moon.Choice.NodeId.Value, Is.EqualTo("ignatia-attack-moon-select"),
-                "and the Blue face is her moon, so the MOON arm is.");
+                "and the Red face is her moon, so the MOON arm is.");
             Assert.That(
                 moon.Candidates(),
                 Is.EquivalentTo(new[]

@@ -1704,34 +1704,34 @@ namespace GuardsDigital.Presentation.Interaction
                 // first two members are one hand on one board under the two faces, and every arm
                 // below them stages the sun. 8.75c's journeys flip the coin from either.
                 SceneCardContent.VerifiedEngagedStagedIgnatia =>
-                    MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Red),
-                SceneCardContent.VerifiedEngagedStagedIgnatiaOnTheMoon =>
                     MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Blue),
+                SceneCardContent.VerifiedEngagedStagedIgnatiaOnTheMoon =>
+                    MatchConfiguration.CreateStagedIgnatiaForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedTierTwoEngagedStagedIgnatia =>
                     MatchConfiguration.CreateStagedIgnatiaTierTwoForInternalTest(
-                        TeamSide.Red,
+                        TeamSide.Blue,
                         GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierTwoAlternateEngagedStagedIgnatia =>
                     MatchConfiguration.CreateStagedIgnatiaTierTwoForInternalTest(
-                        TeamSide.Red,
+                        TeamSide.Blue,
                         GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedTierThreeEngagedStagedIgnatia =>
                     MatchConfiguration.CreateStagedIgnatiaTierThreeForInternalTest(
-                        TeamSide.Red,
+                        TeamSide.Blue,
                         GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.FirstSibling),
                 SceneCardContent.VerifiedTierThreeAlternateEngagedStagedIgnatia =>
                     MatchConfiguration.CreateStagedIgnatiaTierThreeForInternalTest(
-                        TeamSide.Red,
+                        TeamSide.Blue,
                         GuardsDigital.Core.Cards.Verified.IgnatiaUpgradeBranch.SecondSibling),
                 SceneCardContent.VerifiedStagedIgnatiaWithAlly =>
                     MatchConfiguration.CreateStagedIgnatiaWithAllyForInternalTest(
-                        TeamSide.Red, IgnatiaAllyStage.StartingHand),
+                        TeamSide.Blue, IgnatiaAllyStage.StartingHand),
                 SceneCardContent.VerifiedStagedIgnatiaWithAllyAtTierTwo =>
                     MatchConfiguration.CreateStagedIgnatiaWithAllyForInternalTest(
-                        TeamSide.Red, IgnatiaAllyStage.TierTwo),
+                        TeamSide.Blue, IgnatiaAllyStage.TierTwo),
                 SceneCardContent.VerifiedStagedIgnatiaWithAllyAtTierThree =>
                     MatchConfiguration.CreateStagedIgnatiaWithAllyForInternalTest(
-                        TeamSide.Red, IgnatiaAllyStage.TierThree),
+                        TeamSide.Blue, IgnatiaAllyStage.TierThree),
                 SceneCardContent.VerifiedEngagedStagedTrinkets =>
                     MatchConfiguration.CreateStagedTrinketsForInternalTest(TeamSide.Red),
                 SceneCardContent.VerifiedTierThreeEngagedStagedTrinkets =>
