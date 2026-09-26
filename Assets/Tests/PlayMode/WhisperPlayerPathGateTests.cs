@@ -136,9 +136,13 @@ namespace GuardsDigital.Tests.PlayMode
             "DeathSeeker_AppliesBothOfItsBulletsOnceGrimReaperHasRaisedItsCeiling";
 
         /// <summary>
-        /// The Red step-then-target seam, driven on Sanguine Path. Crimson Trail prints the same seam
-        /// behind a boolean condition; its distinct branch rule is covered by the source-linked gate.
+        /// Crimson Trail's boolean-gated step-then-target seam, including the offer from a prospective
+        /// post-step space rather than from her origin alone.
         /// </summary>
+        private const string CrimsonStepJourney =
+            "CrimsonTrail_IsOfferedWhenItsConditionalStepCanReachAnAdjacentUnit";
+
+        /// <summary>The counted Red step-then-target seam, driven on Sanguine Path.</summary>
         private const string RedStepJourney =
             "SanguinePath_BuysItsStepFromTheSpawnPointCountBeforeItNamesTheUnitBesideHer";
 
@@ -278,18 +282,15 @@ namespace GuardsDigital.Tests.PlayMode
                 // left her in. All three compose the identical seam and differ only in what pays for
                 // the step - a boolean here, a counted budget with a printed ceiling on the other two.
                 //
-                // CRIMSON TRAIL'S CONDITIONAL AND ITS INPUT SHAPE HAVE SEPARATE WITNESSES. Milestone
-                // 8.35z49 corrected the source-level binding walk so the boolean gate can fall through
-                // to the mandatory target step. Sanguine Path drives the identical move-then-target
-                // player interaction with a counted budget; the authoritative scenarios below pin the
-                // Conditional-specific branch rather than asking one UI journey to re-prove it.
+                // Crimson Trail owns its exact boolean-gated journey from 8.104 onward. The counted
+                // siblings retain Sanguine Path's budget variants below.
                 Face(WhisperCardContent.CrimsonTrail, "Crimson Trail", new[]
                     {
                         Prove(CommitAndReveal, TrayCommitAndWalk),
-                        Prove(AdjacentAttackTarget, RedStepJourney),
-                        Prove(BeforeAttackTextPause, RedStepJourney),
-                        Prove(BoardSpaceSelection, RedStepJourney),
-                        Prove(BoardUnitSelection, RedStepJourney),
+                        Prove(AdjacentAttackTarget, CrimsonStepJourney),
+                        Prove(BeforeAttackTextPause, CrimsonStepJourney),
+                        Prove(BoardSpaceSelection, CrimsonStepJourney),
+                        Prove(BoardUnitSelection, CrimsonStepJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },

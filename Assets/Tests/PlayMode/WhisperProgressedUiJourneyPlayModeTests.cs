@@ -61,29 +61,61 @@ namespace GuardsDigital.Tests.PlayMode
     public sealed class WhisperProgressedUiJourneyPlayModeTests
     {
         /// <summary>
-        /// Sanguine Path: "Before the attack: You may move up to 1 space for every empty minion spawn
-        /// point in radius in the battle zone up to a maximum of 2 spaces. Target a unit adjacent to
-        /// you."
+        /// Crimson Trail: "Before the attack: You may move up to 1 space if there is an empty minion
+        /// spawn point in radius in the battle zone. Target a unit adjacent to you."
         ///
-        /// <para><b>The printed order decides the target, and that is the whole seam.</b> The move
-        /// comes first, so "a unit adjacent to you" is judged from the space the move left her in -
-        /// milestone 8.19a's shape, which 8.35z25 corrected two Tigerclaw faces onto and the
-        /// 2026-09-06 printed-reading-order ruling settled. The Attack therefore declares its target
-        /// bound by its own card text, and p.14's opening question, asked before any text runs, does
-        /// not ask it.</para>
-        ///
-        /// <para><b>The board supplies the budget and the card supplies its ceiling.</b> Both halves
-        /// are one sentence and yield ONE number: the count capability publishes the lesser of the two
-        /// and the move binds its distance from it, rather than the move being given a printed number
-        /// and a clamp applied somewhere else. So the offered step is bounded by two at this Tier and
-        /// by whatever the board actually holds, and this journey asserts the smaller of them over the
-        /// whole offer.</para>
-        ///
-        /// <para><b>This journey stands in for CRIMSON TRAIL's identical interaction seam.</b>
-        /// Crimson Trail uses a boolean Conditional where Sanguine Path uses a counted budget;
-        /// milestone 8.35z49 corrected the binding walk so an unsatisfied Conditional continues to
-        /// the mandatory target step after it. The source-level conditional regression covers that
-        /// distinction, while this journey drives the shared move-then-target input sequence.</para>
+        /// <para>The staged unit is two spaces from Whisper: nobody is adjacent at the origin, but a
+        /// legal one-space answer to the satisfied conditional move leaves the unit adjacent. The
+        /// primary therefore has a complete legal path and must be offered before the player chooses
+        /// the destination. This is the exact shape hidden in the live packaged match.</para>
+        /// </summary>
+        [UnityTest]
+        public IEnumerator CrimsonTrail_IsOfferedWhenItsConditionalStepCanReachAnAdjacentUnit()
+        {
+            yield return WhisperAuditStaging.WithEmptyBattleSpawn(
+                SceneCardContent.VerifiedEngagedStagedWhisper);
+            var root = Root();
+            var runtime = root.Runtime;
+            var own = WhisperSeat(runtime).HeroId;
+            var pointer = Object.FindAnyObjectByType<PrimitiveHeroPointerInput>();
+            var victim = runtime.Projection.Minions.Single(minion =>
+                minion.MinionId.Value == "audit-step-victim");
+            yield return CommitEverySeat(
+                root, own, NameOf(runtime, WhisperCardContent.CrimsonTrail));
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+
+            var origin = runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate;
+            Assert.That(HexDistanceQuery.Calculate(origin, victim.Coordinate), Is.EqualTo(2),
+                "The live defect requires no target at the origin and one after the printed step.");
+            yield return PointTrayAt(root, own);
+            Assert.That(runtime.RoundView.Model.Actions.Any(value =>
+                    KindOf(runtime, value.Command.ActionDefinitionId) == ActionKind.Attack),
+                Is.True,
+                "Crimson Trail's satisfied conditional move can leave Whisper beside the unit, so " +
+                "the primary Attack must be offered before she chooses that destination. " +
+                Remaining(runtime));
+
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            var destination = LitDestinations(runtime).First(space =>
+                !space.Equals(origin) && HexDistanceQuery.Calculate(space, victim.Coordinate) == 1);
+            Assert.That(UiPlayer.ClickBoard(pointer, root.Hud, Tile(destination).transform.position),
+                Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.RoundView.Model.EffectChoiceTargets.Select(value => value.Space),
+                Does.Contain(victim.Coordinate));
+            Assert.That(UiPlayer.ClickBoard(
+                pointer, root.Hud, Tile(victim.Coordinate).transform.position), Is.True);
+            yield return null;
+            yield return null;
+            Assert.That(runtime.Projection.Minions.Select(minion => minion.MinionId),
+                Has.None.EqualTo(victim.MinionId));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")),
+                Is.False);
+        }
+
+        /// <summary>
+        /// Sanguine Path's counted form of the same printed move-then-target order.
         /// </summary>
         [UnityTest]
         public IEnumerator SanguinePath_BuysItsStepFromTheSpawnPointCountBeforeItNamesTheUnitBesideHer()

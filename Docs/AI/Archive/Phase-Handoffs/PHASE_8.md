@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.104 conditional pre-attack relocation evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.104 | Crimson Trail's primary Attack is offered when its satisfied conditional step can reach an adjacent target from a prospective destination. The shared typed offer walk now carries actor relocation spaces through read-only Conditional, Optional and Sequence containers. The exact journey failed before the correction and passes afterward; focused shared Edit 35/35 and affected journeys plus Whisper's permanent player-path gate Play 15/15 are green. [Definition](../../Roadmap/PHASE_8.md#x-8104-keep-a-legal-target-visible-after-a-conditional-pre-attack-move). | milestone/8.104 |
+
 ## Milestone 8.103 Ignatia printed-symbol choice evidence
 
 | Milestone | Outcome and definition | Commit |

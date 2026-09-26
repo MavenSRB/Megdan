@@ -88,6 +88,20 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [x] 8.104 Keep a legal target visible after a conditional pre-attack move
+
+Authorized 2026-09-26 by the user's live report: "Whispers red" / "Whisper played red, primary was perfectly legal, but was not even offered" and request to check the current game. This bounded corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.
+
+Outcome: Crimson Trail's Attack is offered when its satisfied conditional one-space move can leave Whisper beside a legal target, even if none is adjacent before the move. The shared typed feasibility walk carries the conditional relocation's prospective actor spaces into the later target binding; resolution, player rope, rules, schema and wire remain unchanged.
+
+Cause evidence: the live packaged log revealed `red-01-whisper-crimson-trail`, then accepted only its secondary Movement. The binding walk can enumerate prospective actor spaces for a direct Move child, but a satisfied read-only Conditional returned from that child without publishing those spaces to its enclosing Sequence, so the later actor-origin target selection was judged only at Whisper's old coordinate.
+
+Acceptance: record a failing-then-passing shared feasibility regression for a satisfied Conditional containing an actor relocation before a mandatory actor-origin target binding; reproduce Crimson Trail through the configured player path with no target at the origin and one reachable after its card-text step; retain the false-gate fall-through and no-completion unavailable cases. T2 because shared offer authority changes.
+
+Non-goals: changing Crimson Trail's text or target set, changing movement destinations, Snorri work, package cutting or publication.
+
+Completed 2026-09-26. The live packaged log confirms Crimson Trail was revealed while its primary never started; the later four-space `Move` was its secondary Movement. The shared binding walk now follows one declared actor relocation through read-only Conditional, Optional and Sequence containers and judges later actor-origin selections from every space that answer can actually leave the hero on. An undecidable shape stays conservatively offered, a false gate preserves the unchanged space, and a second hypothetical relocation remains suppressed. The exact Crimson Trail regression failed before the correction because no Attack was offered and passes afterward through commitment, the conditional step, target selection and defeat. Focused shared Edit Mode passed 35/35; directly affected Whisper and Ursafar journeys plus Whisper's permanent player-path gate passed 15/15. No card text, target rule, destination, schema or wire changed. 8.93e resumes.
+
 ### [x] 8.103 Show Ignatia's printed symbols on her face-choice controls
 
 Authorized 2026-09-26 by the user's live correction: "For Ignatia on card choises, dont say \"sun\" \"moon\" its just confusing people, put icons from the card." This bounded presentation corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.

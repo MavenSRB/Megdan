@@ -257,6 +257,16 @@ Two things.
    no rule source: it raises the number of options a modal on one of her *basic* cards admits. Every
    earlier verified Ultimate states something true about the board.
 
+## Live implementation corrections
+
+- **8.104 - Crimson Trail's prospective step must count when offering its Attack.** The 2026-09-26
+  packaged match revealed Crimson Trail at Whisper's turn but offered only its secondary Movement even
+  though a legal one-space card-text step could leave her beside a target. The shared offer walk could
+  enumerate a direct Move followed by an actor-origin target, but lost those prospective spaces when
+  the Move was the active branch of a satisfied read-only Conditional. The walk now carries the typed
+  relocation answer through Conditional, Optional and Sequence containers. The printed condition,
+  destinations, adjacent-unit target rule and player rope are unchanged.
+
 ## Absences that are content
 
 - **No Defense primary, no Movement primary, no p.14 Block, no `!` icon.**

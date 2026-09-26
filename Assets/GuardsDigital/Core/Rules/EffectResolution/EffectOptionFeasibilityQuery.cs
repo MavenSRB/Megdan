@@ -581,8 +581,13 @@ namespace GuardsDigital.Core.Rules.EffectResolution
             EffectResolutionContext context,
             IReadOnlyList<HexCoordinate> alreadyHypothetical)
         {
-            if (alreadyHypothetical == null && TryAnticipateActorSwapClause(nodeId, frame, carried, context, out var swappedSpaces))
-                return swappedSpaces;
+            if (alreadyHypothetical == null &&
+                TryAnticipateActorRelocationClause(
+                    nodeId, frame, carried, context, out var anticipatedSpaces))
+            {
+                return anticipatedSpaces;
+            }
+
             if (alreadyHypothetical != null ||
                 !context.Definition.TryGetNode(nodeId, out var node) ||
                 !context.Catalog.TryLoad(node.Capability, out var handler) ||
@@ -611,53 +616,159 @@ namespace GuardsDigital.Core.Rules.EffectResolution
         /// against the square the piece is about to leave.</para>
         /// </summary>
         private static bool MovesSomebodyThisWalkCannotFollow(EffectNodeId nodeId, EffectResolutionContext context) =>
-            context.Definition.TryGetNode(nodeId, out var node) &&
-            ((node.Kind == EffectNodeKind.Capability && node.Capability.Equals(
-                GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities.DirectMoveV3)) || ContainsActorSwap(nodeId, context));
+            ContainsActorRelocation(nodeId, context);
 
-        private static bool ContainsActorSwap(EffectNodeId id, EffectResolutionContext context)
+        private static bool ContainsActorRelocation(EffectNodeId id, EffectResolutionContext context)
         {
             if (!context.Definition.TryGetNode(id, out var node)) return false;
             if (node.Kind == EffectNodeKind.Capability)
-                return node.Capability.Equals(GuardsDigital.Core.Effects.Synthetic.SyntheticExchangeCapabilities.SwapWithActorV1);
-            return (node.Kind == EffectNodeKind.Optional || node.Kind == EffectNodeKind.Sequence) &&
-                node.ChildNodeIds.Any(child => ContainsActorSwap(child, context));
+            {
+                return node.Capability.Equals(
+                           GuardsDigital.Core.Effects.Synthetic.SyntheticDisplacementCapabilities
+                               .DirectMoveV3) ||
+                       node.Capability.Equals(
+                           GuardsDigital.Core.Effects.Synthetic.SyntheticExchangeCapabilities
+                               .SwapWithActorV1);
+            }
+
+            return (node.Kind == EffectNodeKind.Optional ||
+                    node.Kind == EffectNodeKind.Sequence ||
+                    node.Kind == EffectNodeKind.Conditional) &&
+                node.ChildNodeIds.Any(child => ContainsActorRelocation(child, context));
         }
 
-        // Read-only facts followed by one actor Swap, optionally declined. Other shapes retain the
-        // existing conservative unknown-position result. No board mutation or rule-text inference.
-        private static bool TryAnticipateActorSwapClause(EffectNodeId id, PendingResolution frame,
-            IReadOnlyList<EffectNodeOutcome> outcomes, EffectResolutionContext context, out IReadOnlyList<HexCoordinate> spaces)
+        /// <summary>
+        /// Milestone 8.104: the actor spaces produced by one declared relocation clause, including a
+        /// relocation selected by a read-only Conditional and an optional wrapper that preserves the
+        /// unchanged space. This is the same non-mutating handler contract used for a direct Move;
+        /// containers only carry that answer to the enclosing Sequence.
+        /// </summary>
+        private static bool TryAnticipateActorRelocationClause(
+            EffectNodeId id,
+            PendingResolution frame,
+            IReadOnlyList<EffectNodeOutcome> outcomes,
+            EffectResolutionContext context,
+            out IReadOnlyList<HexCoordinate> spaces)
         {
             spaces = Array.Empty<HexCoordinate>();
-            if (!context.Definition.TryGetNode(id, out var node) || !ContainsActorSwap(id, context)) return false;
-            var optional = node.Kind == EffectNodeKind.Optional;
-            if (optional && !context.Definition.TryGetNode(node.ChildNodeIds[0], out node)) return false;
-            var nodes = node.Kind == EffectNodeKind.Sequence ? node.ChildNodeIds : new[] { node.Id };
-            var carried = outcomes;
-            foreach (var child in nodes)
+            if (!context.Definition.TryGetNode(id, out var node) ||
+                !ContainsActorRelocation(id, context))
             {
+                return false;
+            }
+
+            if (node.Kind == EffectNodeKind.Capability)
+            {
+                if (!context.Catalog.TryLoad(node.Capability, out var capability) ||
+                    !(capability is IEffectActorRelocationCapabilityHandler relocating))
+                {
+                    return false;
+                }
+
+                var capabilityContext =
+                    EffectResolutionSession.BuildCapabilityContext(
+                        frame, node, outcomes, context);
+                return relocating.TryAnticipateActorSpaces(capabilityContext, out spaces) &&
+                    spaces != null;
+            }
+
+            if (node.Kind == EffectNodeKind.Conditional)
+            {
+                if (!context.Catalog.TryLoad(node.Capability, out var predicate) ||
+                    !(predicate is IEffectAnticipatedOutcomeCapabilityHandler publisher) ||
+                    !publisher.PublishesWithoutApplying)
+                {
+                    return false;
+                }
+
+                var predicateContext =
+                    EffectResolutionSession.BuildCapabilityContext(frame, node, outcomes, context);
+                if (!IsDecidable(predicate, predicateContext) ||
+                    predicate.Anticipate(predicateContext) != EffectExecutionResultKind.Applied)
+                {
+                    return false;
+                }
+
+                var facts = publisher.AnticipateOutcomes(
+                    predicateContext, Array.Empty<EffectValue>());
+                if (facts == null ||
+                    !facts.Any(fact => fact.Value.Kind == EffectValueKind.Boolean))
+                {
+                    return false;
+                }
+
+                var branch = facts.Any(fact =>
+                    fact.Value.Kind == EffectValueKind.Boolean && fact.Value.BooleanValue) ? 0 : 1;
+                if (branch >= node.ChildNodeIds.Count)
+                {
+                    return TryCurrentActorSpace(frame, context, out spaces);
+                }
+
+                return TryAnticipateActorRelocationClause(
+                    node.ChildNodeIds[branch], frame,
+                    WithAnticipatedOutputs(id, frame, outcomes, context), context, out spaces);
+            }
+
+            if (node.Kind == EffectNodeKind.Optional)
+            {
+                if (node.ChildNodeIds.Count != 1 ||
+                    !TryAnticipateActorRelocationClause(
+                        node.ChildNodeIds[0], frame, outcomes, context, out spaces))
+                {
+                    return false;
+                }
+
+                if (TryCurrentActorSpace(frame, context, out var unchanged))
+                {
+                    spaces = spaces.Concat(unchanged).Distinct().ToArray();
+                }
+
+                return true;
+            }
+
+            var nodes = node.Kind == EffectNodeKind.Sequence
+                ? node.ChildNodeIds
+                : new[] { node.Id };
+            var carried = outcomes;
+            for (var index = 0; index < nodes.Count; index++)
+            {
+                var child = nodes[index];
+                if (ContainsActorRelocation(child, context))
+                {
+                    return index == nodes.Count - 1 &&
+                        TryAnticipateActorRelocationClause(
+                            child, frame, carried, context, out spaces);
+                }
+
                 if (!context.Definition.TryGetNode(child, out var leaf) || leaf.Kind != EffectNodeKind.Capability ||
                     !context.Catalog.TryLoad(leaf.Capability, out var handler)) return false;
                 var probe = EffectResolutionSession.BuildCapabilityContext(frame, leaf, carried, context);
                 if (!IsDecidable(handler, probe)) return false;
                 if (handler.Anticipate(probe) == EffectExecutionResultKind.ImpossibleMandatory)
                 {
-                    if (!optional || !context.Components.Board.TryGetObjectCoordinate(BoardObjectReference.ForHero(frame.ActorId), out var unchanged)) return false;
-                    spaces = new[] { unchanged };
-                    return true;
-                }
-                if (handler is IEffectActorRelocationCapabilityHandler relocating)
-                {
-                    if (!child.Equals(nodes.Last()) || !relocating.TryAnticipateActorSpaces(probe, out spaces)) return false;
-                    if (optional && context.Components.Board.TryGetObjectCoordinate(BoardObjectReference.ForHero(frame.ActorId), out var unchanged))
-                        spaces = spaces.Concat(new[] { unchanged }).Distinct().ToArray();
-                    return true;
+                    return false;
                 }
                 if (!(handler is IEffectAnticipatedOutcomeCapabilityHandler publisher) || !publisher.PublishesWithoutApplying) return false;
                 carried = WithAnticipatedOutputs(child, frame, carried, context);
             }
+
             return false;
+        }
+
+        private static bool TryCurrentActorSpace(
+            PendingResolution frame,
+            EffectResolutionContext context,
+            out IReadOnlyList<HexCoordinate> spaces)
+        {
+            spaces = Array.Empty<HexCoordinate>();
+            if (!context.Components.Board.TryGetObjectCoordinate(
+                    BoardObjectReference.ForHero(frame.ActorId), out var unchanged))
+            {
+                return false;
+            }
+
+            spaces = new[] { unchanged };
+            return true;
         }
 
         /// <summary>
