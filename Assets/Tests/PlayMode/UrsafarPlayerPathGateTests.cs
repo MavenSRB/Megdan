@@ -80,6 +80,9 @@ namespace GuardsDigital.Tests.PlayMode
         private const string RoarJourney =
             "AngryRoar_GrantsCalmAndOpensTheBorrowChoiceOnceEnraged";
 
+        private const string BorrowedGoldJourney =
+            "AngryRoar_BorrowedGoldAttackMovesIntoRangeAndReturnsToSilver";
+
         /// <summary>The removal family - Prey Drive drives it; Prey Abundance and Feeding Frenzy share it.</summary>
         private const string RemovalJourney =
             "PreyDrive_RemovesAnAdjacentEnemyMinionOnceEnragedAndTheTargetSurvived";
@@ -147,7 +150,9 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(AfterAttackTextPause, ProwlJourney),
                         Prove(ConfirmOrDecline, ProwlJourney),
                         Prove(BoardSpaceSelection, ProwlJourney),
+                        Prove(BoardSpaceSelection, BorrowedGoldJourney),
                         Prove(BoardUnitSelection, ProwlJourney),
+                        Prove(BoardUnitSelection, BorrowedGoldJourney),
                         Prove(ActiveEffectReading, ProwlJourney),
                         Prove(RoundLongActiveEffectReading, ProwlJourney),
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn),
@@ -172,6 +177,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(CommitAndReveal, TrayCommitAndWalk),
                         Prove(PrimarySkillControl, RoarJourney),
                         Prove(HandCardSelection, RoarJourney),
+                        Prove(HandCardSelection, BorrowedGoldJourney),
                         Prove(ActiveEffectReading, RoarJourney),
                         Prove(RoundLongActiveEffectReading, RoarJourney),
                         Prove(SecondaryDefenseOffer, DefeatAndRespawn)

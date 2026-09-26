@@ -188,6 +188,66 @@ namespace GuardsDigital.Tests.EditMode
                 "p.17's sideways signal is exactly 'this card is the source of a live active effect'.");
         }
 
+        [Test]
+        public void ActivePool_ExcludesDormantEffectsThatHaveNotStarted()
+        {
+            var dormant = CardFor(Ursafar, UrsafarCardContent.PreyDrive);
+            var active = CardFor(Ursafar, UrsafarCardContent.ClawsThatCatch);
+            var lifecycle = new ActiveEffectLifecycle();
+            lifecycle.Create(
+                new ActiveEffectId("dormant-enraged"),
+                UrsafarActiveEffectContent.DefinitionFor(UrsafarCardContent.PreyDrive),
+                Ursafar, TeamSide.Red, Ursafar, dormant.Id,
+                new ActionDefinitionId("primary-attack"), 1, 1);
+            var eligible = BorrowedPrimaryActionQuery.EligibleCards(
+                BorrowedPrimaryActionDeclaration.FromActiveCardsWithAnActiveEffect(),
+                Ursafar, UrsafarCardContent.AllDefinitions,
+                new[] { dormant, active },
+                lifecycle.Effects.Concat(LiveEnrage(active, UrsafarCardContent.ClawsThatCatch)),
+                Catalog());
+
+            Assert.That(eligible.Select(card => card.Id), Is.EqualTo(new[] { active.Id }),
+                "A source is sideways and eligible only after its Active effect activates; " +
+                "a merely created, dormant effect does not make its card active.");
+        }
+
+        [Test]
+        public void AngryRoarPool_AuditsEveryUrsafarFaceAtDormantAndActivePhases()
+        {
+            var declaration =
+                BorrowedPrimaryActionDeclaration.FromActiveCardsWithAnActiveEffect();
+            var catalog = Catalog();
+            foreach (var definition in UrsafarCardContent.AllDefinitions)
+            {
+                var card = CardFor(Ursafar, definition.Id);
+                var grants = UrsafarActiveEffectContent.ComposedGrants.Contains(definition.Id);
+                var lifecycle = new ActiveEffectLifecycle();
+                if (grants)
+                    lifecycle.Create(
+                        new ActiveEffectId("enraged-" + definition.Id.Value),
+                        UrsafarActiveEffectContent.DefinitionFor(definition.Id),
+                        Ursafar, TeamSide.Red, Ursafar, card.Id,
+                        new ActionDefinitionId("primary-" + definition.Id.Value), 1, 1);
+
+                var dormant = BorrowedPrimaryActionQuery.EligibleCards(
+                    declaration, Ursafar, UrsafarCardContent.AllDefinitions,
+                    new[] { card }, lifecycle.Effects, catalog);
+                Assert.That(dormant, Is.Empty,
+                    definition.DisplayName + " must not enter Angry Roar's pool before activation.");
+
+                lifecycle.ApplyCheckpoint(
+                    new ActiveEffectCheckpointContext(TimingCheckpoint.ActionEnded, 1, 1),
+                    new TieBreakerState(TeamSide.Red));
+                var active = BorrowedPrimaryActionQuery.EligibleCards(
+                    declaration, Ursafar, UrsafarCardContent.AllDefinitions,
+                    new[] { card }, lifecycle.Effects, catalog);
+                Assert.That(active.Select(candidate => candidate.Id),
+                    grants ? Is.EqualTo(new[] { card.Id }) : Is.Empty,
+                    definition.DisplayName + " must match its live Active-effect source and " +
+                    "borrowable printed primary, independent of color.");
+            }
+        }
+
         /// <summary>
         /// The Ultimate's second clause, and the case the user's ruling names outright: after Unbound
         /// Fury every resolved card counts as active, so Angry Roar reaches one whose own effect has

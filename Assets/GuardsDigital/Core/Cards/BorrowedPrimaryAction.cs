@@ -441,7 +441,7 @@ namespace GuardsDigital.Core.Cards
 
             return (effects ?? Enumerable.Empty<ActiveEffectInstance>()).Any(effect =>
                 effect != null &&
-                effect.Phase != ActiveEffectPhase.Ended &&
+                effect.Phase == ActiveEffectPhase.Active &&
                 effect.SourceCardInstanceId.Equals(card.Id));
         }
 

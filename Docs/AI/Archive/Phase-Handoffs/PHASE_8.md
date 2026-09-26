@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.97 Ursafar Angry Roar and all-card audit evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.97 | Angry Roar now admits only Active-phase source cards, and a borrowed card-text-targeted Attack starts before its optional move is judged for a target. The Gold move-then-target no-op was reproduced and fixed through real player input. All nineteen Ursafar faces were audited; red is legal when its own effect is live. A broad T3 gate exposed and corrected three stale test declarations from earlier milestones; full Unity-free, Edit and Play gates are green with only 37 existing Explicit Edit skips. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-897-ursafar-angry-roar-candidate-and-borrowed-action). | milestone/8.97 |
+
 ## Milestone 8.96 Tali Green art and Totem payment evidence
 
 | Milestone | Outcome and definition | Commit |

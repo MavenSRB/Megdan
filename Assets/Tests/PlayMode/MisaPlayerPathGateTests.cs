@@ -122,6 +122,9 @@ namespace GuardsDigital.Tests.PlayMode
         private const string StepTierTwoJourney =
             "Discipline_ArmsItsFreeStepAndCarriesItAcrossTheTurnBoundary";
 
+        private const string StepBeforeSkillJourney =
+            "FocusAndMastery_AlsoOfferTheirStepBeforeTheNextSkill";
+
         private const string SwapJourney =
             "LivingTornado_SwapsTwoUnitsStandingAtExactlyItsPrintedRadius";
 
@@ -417,6 +420,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(PrimarySkillControl, StepJourney),
                         Prove(ActiveEffectReading, StepJourney),
                         Prove(RoundLongActiveEffectReading, StepJourney),
+                        Prove(RoundLongActiveEffectReading, StepBeforeSkillJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },
@@ -465,6 +469,7 @@ namespace GuardsDigital.Tests.PlayMode
                         Prove(PrimarySkillControl, StepTierTwoJourney),
                         Prove(ActiveEffectReading, StepTierTwoJourney),
                         Prove(RoundLongActiveEffectReading, StepTierTwoJourney),
+                        Prove(RoundLongActiveEffectReading, StepBeforeSkillJourney),
                         Prove(SecondaryDefenseOffer, NumericDefense),
                         Prove(SecondaryMovementDestination, TrayCommitAndWalk)
                     },

@@ -1418,6 +1418,15 @@ namespace GuardsDigital.Core.Cards
                     // `AtomicityViolation` rolled back rather than as a refusal a player could read.
                     // Found by that tier and by no other: the offline tiers never build the board it
                     // needs.</para>
+                    // A text-granted Attack whose own before-attack text binds the target must
+                    // begin at that text. Its optional move can create the adjacent target, so
+                    // probing the current square here would silently consume the borrow before
+                    // the player can take that move. The backend starts this shape with no target
+                    // and lets its mandatory binding stop it if the printed steps reach nobody.
+                    if (ActionOfferQuery.FindActionDefinition(offer, definitions)
+                            .AttackTargetPolicy?.TargetIsBoundByCardText == true)
+                        return StartAttackCore(resolution, offer, events, excluded,
+                            skipTargetPrecheck: true);
                     return cardActions.CanAttackFindTarget(
                             offer, definitions, instances, participants, timing, CurrentModifications(),
                             roundIndex, turnIndex)
@@ -2820,9 +2829,10 @@ namespace GuardsDigital.Core.Cards
             ActionResolutionId resolutionId,
             ActionOffer offer,
             List<TurnResolutionEvent> precedingEvents,
-            IReadOnlyList<GuardsDigital.Core.Rules.CardResolution.AttackTarget> excludedTargets = null)
+            IReadOnlyList<GuardsDigital.Core.Rules.CardResolution.AttackTarget> excludedTargets = null,
+            bool skipTargetPrecheck = false)
         {
-            if (!cardActions.CanAttackFindTarget(
+            if (!skipTargetPrecheck && !cardActions.CanAttackFindTarget(
                     offer, definitions, instances, participants, timing, CurrentModifications(),
                     roundIndex, turnIndex))
             {

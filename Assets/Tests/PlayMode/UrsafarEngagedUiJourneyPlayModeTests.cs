@@ -204,6 +204,95 @@ namespace GuardsDigital.Tests.PlayMode
             Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")), Is.False);
         }
 
+        [UnityTest]
+        public IEnumerator AngryRoar_BorrowedGoldAttackMovesIntoRangeAndReturnsToSilver()
+        {
+            yield return UrsafarAuditStaging.Load(
+                SceneCardContent.VerifiedEngagedStagedUrsafar, enemyDistance: 1);
+            var root = Root(); var runtime = root.Runtime;
+            var own = UrsafarSeat(runtime).HeroId;
+            var enemy = OtherHeroId(runtime, own);
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.ClawsThatCatch);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Attack);
+            Assert.That(UiPlayer.ClickBoard(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, HeroView(enemy).transform.position), Is.True);
+            yield return null; yield return null;
+            yield return UrsafarAuditStaging.AnswerDefense(true);
+            var gold = runtime.Cards.Single(card => card.OwnerId.Equals(own) &&
+                card.DefinitionReference.DefinitionId.Equals(UrsafarCardContent.ClawsThatCatch));
+            Assert.That(runtime.IsActiveEffectSource(gold.Id), Is.True, Remaining(runtime));
+            yield return AdvanceToNextTurn(runtime);
+
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.ProwlingBrute);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Movement);
+            var enemyAt = runtime.Heroes.Single(hero => hero.HeroId.Equals(enemy)).Coordinate;
+            var away = runtime.PendingMovementChoice.LegalDestinations
+                .Select(choice => choice.Destination)
+                .First(space =>
+                    GuardsDigital.Core.Board.HexDistanceQuery.Calculate(space, enemyAt) == 2);
+            Assert.That(UiPlayer.ClickBoard(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, Tile(away).transform.position), Is.True);
+            yield return null;
+            if (runtime.PendingMovementChoice != null)
+            {
+                UiPlayer.Click(UiPlayer.Button(root.Hud, runtime.RoundView.Model.EndTurnInvocation.Label));
+                yield return null;
+            }
+            var swapDecline = runtime.RoundView.Model.EffectChoices
+                .FirstOrDefault(value =>
+                    value.Command.EffectChoice.Kind == EffectChoiceCommandKind.Decline);
+            if (swapDecline != null)
+            {
+                UiPlayer.ClickEffectAnswer(runtime, root.Hud, swapDecline.Command);
+                yield return null;
+            }
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate,
+                Is.EqualTo(away), Remaining(runtime));
+            yield return AdvanceToNextTurn(runtime);
+
+            CommitSoTheNamedSeatActs(runtime, own, UrsafarCardContent.AngryRoar);
+            yield return YieldUntilTheNamedSeatActs(runtime, own);
+            yield return PointTrayAt(root, own);
+            yield return StartActionThroughControl(root, ActionKind.Skill);
+            Assert.That(runtime.PendingEffectChoice?.NodeId.Value, Is.EqualTo("roar-borrow"),
+                Remaining(runtime));
+            var face = UiPlayer.NamedElementWithText(root.Hud, "gd-effect-card", "CLAWS THAT CATCH");
+            UiPlayer.EnsureVisible(face); yield return null; UiPlayer.Click(face); yield return null;
+            Assert.That(runtime.PendingEffectChoice, Is.Not.Null,
+                "The borrowed Gold's before-attack movement must be offered. " + Remaining(runtime));
+            UiPlayer.ClickEffectControl(runtime, root.Hud, EffectChoiceCommandKind.Confirm);
+            yield return null; yield return null;
+            var contact = LitDestinations(runtime).First(space =>
+                GuardsDigital.Core.Board.HexDistanceQuery.Calculate(space, enemyAt) == 1);
+            var moveNode = StandingNode(runtime);
+            Assert.That(UiPlayer.ClickBoard(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, Tile(contact).transform.position), Is.True);
+            yield return null;
+            yield return XargathaEngagedUiJourneyPlayModeTests.ConfirmIfStillStanding(root, moveNode);
+            yield return null;
+            Assert.That(runtime.Heroes.Single(hero => hero.HeroId.Equals(own)).Coordinate,
+                Is.EqualTo(contact), "The borrowed before-attack move must change the board.");
+            Assert.That(UiPlayer.ClickBoard(
+                Object.FindAnyObjectByType<PrimitiveHeroPointerInput>(),
+                root.Hud, HeroView(enemy).transform.position), Is.True);
+            yield return null; yield return null;
+            yield return UrsafarAuditStaging.AnswerDefense(false);
+            Assert.That(runtime.Heroes.Any(hero => hero.HeroId.Equals(enemy)), Is.False,
+                "The borrowed Gold attack must actually reach and defeat its target. " +
+                Remaining(runtime));
+            Assert.That(runtime.PendingAttackTargetChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.PendingEffectChoice, Is.Null, Remaining(runtime));
+            Assert.That(runtime.DiagnosticEvents.Any(entry => entry.EventType.Contains("EngineFault")),
+                Is.False);
+        }
+
         /// <summary>
         /// Prey Drive's "and the target was not removed" - milestone 8.35z50's own new
         /// engine piece, proved end to end: enraged, the target survives its own Attack (a hero

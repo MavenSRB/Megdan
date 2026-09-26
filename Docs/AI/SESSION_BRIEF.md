@@ -14,13 +14,13 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.96**.
-- Active authorized milestone: **8.97**.
-- Next proposed milestone: **8.97**.
+- Current completed milestone: **8.97**.
+- Active authorized milestone: **8.93e**.
+- Next proposed milestone: **8.93e**.
 
-The approved sequence continues through **8.97**, then resumes **8.93e**. Milestone 8.95 corrected Misa's next-turn Green step before Skills; 8.96 corrected Tali's Totem art and payment.
+The approved playtest fixes **8.95-8.97** are complete: Misa's next-turn Green step, Tali's Totem art/payment, and Ursafar's Angry Roar eligibility/borrowed Gold Attack. The route resumes **8.93e**.
 
-**Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. His 8.93e-8.93g sequence is deferred while the user-approved [Misa, Tali and Ursafar playtest fixes](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) run one at a time. Twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No package/publication authorized.
+**Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. His 8.93e-8.93g sequence now resumes after the [playtest fixes](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md). Twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No package/publication authorized.
 
 On 2026-09-20 the user authorized and completed **[8.35z86](Roadmap/PHASE_8_CLEANUP.md)**: client-local hero-pick filter rows (one star value, AND-combined roles, same-family CLEAR); selection authority, bots, schema and wire unchanged.
 
