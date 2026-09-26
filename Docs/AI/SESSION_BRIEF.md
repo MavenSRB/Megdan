@@ -15,10 +15,10 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 ## Current authorization and next route
 
 - Current completed milestone: **8.98**.
-- Active authorized milestone: **8.93e**.
+- Active authorized milestone: **none**.
 - Next proposed milestone: **8.93e**.
 
-The playtest fixes **8.95-8.97** and Windows/macOS packaging **8.98** are complete. The user's 2026-09-26 instruction ("Cut the build. + mac and keep going.") resumes **8.93e-8.93g**.
+The fixes **8.95-8.97** and Windows/macOS packages **8.98** are complete. "Cut the build. + mac and keep going." authorizes **8.93e-8.93g**; 8.93e awaits [SN-Q3](Rules/HERO_SNORRI.md), the Ultimate's before/after-action timing.
 
 **Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. His remaining sequence resumes after 8.98 packaging. Twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No publication authorized.
 

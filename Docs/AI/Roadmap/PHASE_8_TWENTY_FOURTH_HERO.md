@@ -68,13 +68,15 @@ Completed 2026-09-25. The five staged Green faces retain their printed ribbons a
 
 Historical evidence: [8.93d completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-893d-snorri-green-defense-and-disruption-evidence).
 
-### [~] 8.93e Compose Rune Mastery and reconcile the set
+### [!] 8.93e Compose Rune Mastery and reconcile the set
 
 Outcome: the Ultimate's chosen inactive rune counts as active until the next action; all eighteen dealt faces and the boxed Handicap have complete, audited definitions behind the registration gate.
 
 Acceptance: choice timing and expiry, no inactive choice, repeated actions, round boundary and persisted rune ownership, snapshot/replay/Undo; all nineteen definitions reconciled with printed inventory; focused full-set and directly affected regressions. T2 minimum.
 
 Non-goals: dealing, artwork or player-path gate.
+
+Pending 2026-09-26: [SN-Q3](../Rules/HERO_SNORRI.md) asks whether Rune Mastery's chosen rune applies before the current action resolves or after it finishes. Prior 8.93a-8.93d evidence remains valid; no Ultimate code has been changed. Resume this already authorized milestone when the timing is settled, then continue 8.93f-8.93g.
 
 ### [ ] 8.93f Deal Snorri and present his artwork
 
