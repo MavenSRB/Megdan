@@ -267,6 +267,7 @@ namespace GuardsDigital.Presentation.Interaction
         private PrivateOnlineRehearsalOptions options;
         private DateTime startedUtc;
         private DateTime nextActionUtc;
+        private DateTime nextHeroPickAttemptUtc;
         private DateTime? outcomeSeenUtc;
         private bool entryPressed;
         private bool readinessPressed;
@@ -1477,7 +1478,8 @@ namespace GuardsDigital.Presentation.Interaction
         private void PickHeroWhenOffered()
         {
             var model = lobby.Presenter.Model;
-            if (model == null || !model.Offers(PrivateLobbyControl.ChooseHero))
+            if (model == null || !model.Offers(PrivateLobbyControl.ChooseHero) ||
+                DateTime.UtcNow < nextHeroPickAttemptUtc)
                 return;
 
             // PLAYTEST FAILURE #2 gate. In Smoke mode this seat takes the LAST available hero rather
@@ -1502,6 +1504,10 @@ namespace GuardsDigital.Presentation.Interaction
             lobby.Presenter.SelectedHeroIdValue = chosenHeroId;
             if (lobby.Presenter.Press(PrivateLobbyControl.ChooseHero, null))
             {
+                // The lobby offer remains visible until the host answers. Do not enqueue the same
+                // pick every rendered frame while that answer is in flight; a refusal may still
+                // retry after this bounded interval with the host's refreshed roster.
+                nextHeroPickAttemptUtc = DateTime.UtcNow.AddSeconds(1.0);
                 smokePickedHeroId = chosenHeroId;
                 ClientMarker("hero-picked-" + chosenHeroId, -1);
             }

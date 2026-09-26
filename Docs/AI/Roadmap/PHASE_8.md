@@ -98,6 +98,8 @@ Acceptance: because executable network/presentation source changed after 8.98, r
 
 Observed gate correction: the first packaged Full rehearsal exposed that its own privacy audit still rejected every face-up opponent card returned to hand, while the authoritative projection contract deliberately keeps such a card public when the match log names its instance. Align the rehearsal audit with that established rule, retain the owner/deck/facedown exclusions, add the focused regression, and rerun the built Full rehearsal before packaging.
 
+The rerun then reproduced a second harness defect twice: `blue-player-01` pressed the still-visible Choose Hero offer every rendered frame before the first host answer, queued a duplicate refusal, and alone failed to advance through the later host-loss cohort. Give the scripted pick a bounded in-flight interval while preserving refusal retries; the corrected built Full rehearsal must close the match, host-loss and fresh-process rejoin cohorts in one run.
+
 Non-goals: publishing, signing, NAT traversal/Relay, including unfinished Snorri, or changing protocol/schema/content identity merely to label the package.
 
 ### [x] 8.98 Package the playtest fixes for Windows and macOS
