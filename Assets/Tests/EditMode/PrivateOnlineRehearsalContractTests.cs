@@ -61,6 +61,25 @@ namespace GuardsDigital.Tests.EditMode
                 ownHeroId), Is.True);
         }
 
+        [TestCase(false, true, 20, false, false)]
+        [TestCase(true, false, 20, false, false)]
+        [TestCase(true, true, 19, false, false)]
+        [TestCase(true, true, 20, true, false)]
+        [TestCase(true, true, 20, false, true)]
+        public void FreshProcessRejoinCut_WaitsUntilAllPreobservedChoreographyIsActuallyComplete(
+            bool initiativeObserved,
+            bool minionBattleObserved,
+            long version,
+            bool waitingForHost,
+            bool expected)
+        {
+            Assert.That(PrivateOnlineRehearsalDriver.RejoinCutIsReady(
+                initiativeObserved,
+                minionBattleObserved,
+                version,
+                waitingForHost), Is.EqualTo(expected));
+        }
+
         [Test]
         public void FullPlan_HasUniqueStableCaseIdsAndPositiveReplayCoordinates()
         {

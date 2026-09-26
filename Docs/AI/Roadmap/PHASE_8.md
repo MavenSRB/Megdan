@@ -100,6 +100,8 @@ Observed gate correction: the first packaged Full rehearsal exposed that its own
 
 The rerun then reproduced a second harness defect twice: `blue-player-01` pressed the still-visible Choose Hero offer every rendered frame before the first host answer, queued a duplicate refusal, and alone failed to advance through the later host-loss cohort. Give the scripted pick a bounded in-flight interval while preserving refusal retries; the corrected built Full rehearsal must close the match, host-loss and fresh-process rejoin cohorts in one run.
 
+A later randomized lineup exposed the fresh-process cut's false premise: the return process preobserves both scripted agreement flows, so the cut must wait for both Initiative and Minion Battle to have actually completed. Cutting after Initiative alone let the return process agree ordinarily during the still-pending forced Minion Battle and could skip the controller's one-agreement observation. Pin the full cut predicate with a focused regression before the final built rerun.
+
 Non-goals: publishing, signing, NAT traversal/Relay, including unfinished Snorri, or changing protocol/schema/content identity merely to label the package.
 
 ### [x] 8.98 Package the playtest fixes for Windows and macOS

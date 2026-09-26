@@ -806,8 +806,11 @@ namespace GuardsDigital.Presentation.Interaction
         {
             if (!string.Equals(options.Seat.Value, ReconnectSeat, StringComparison.Ordinal))
                 return false;
-            if (!initiativeFinalObserved || machine.LatestProjection.Version < 20 ||
-                machine.IsWaitingForHost)
+            if (!RejoinCutIsReady(
+                initiativeFinalObserved,
+                minionFinalObserved,
+                machine.LatestProjection.Version,
+                machine.IsWaitingForHost))
                 return false;
 
             PrivateOnlineMarkers.Log(
@@ -817,6 +820,13 @@ namespace GuardsDigital.Presentation.Interaction
             Quit(0);
             return true;
         }
+
+        internal static bool RejoinCutIsReady(
+            bool initiativeObserved,
+            bool minionBattleObserved,
+            long version,
+            bool isWaitingForHost) =>
+            initiativeObserved && minionBattleObserved && version >= 20 && !isWaitingForHost;
 
         private bool HandleReconnect(PrivateSessionClient machine)
         {
