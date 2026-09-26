@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.101 reconnect and lobby-host package evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.101 | Private Windows and universal Mac packages `Playtest-8.100-network-fixes` share stamp `1.0-8.100-network-fixes+20260926182502-ff1231f2`, protocol `/22`, schema 45 and digest `5d4e6203...`; 23 heroes, unfinished Snorri excluded. Reused T3 evidence: harness 4682 passed plus 37 explicit diagnostics not executed, Edit 5679 passed plus 37 established skips, Play 860/860. Focused rehearsal contract 14/14; final Windows launch, 327-colour board smoke, packaged lobby boot, and complete seven-process match/host-loss/fresh-process-reclaim cohorts passed. Mac bundle built/inspected but was not launched. ZIPs verified SHA-256 file-for-file: Windows 183 files, Mac 184, no logs/DoNotShip. [Definition](../../Roadmap/PHASE_8.md#x-8101-package-the-reconnect-and-lobby-host-fixes). | milestone/8.101 |
+
 ## Milestone 8.100 automatic lobby host bind evidence
 
 | Milestone | Outcome and definition | Commit |

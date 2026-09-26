@@ -88,7 +88,7 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
-### [~] 8.101 Package the reconnect and lobby-host fixes
+### [x] 8.101 Package the reconnect and lobby-host fixes
 
 Authorized 2026-09-26: "Build after networking fixes, then new hero work." Approved sequence: **8.100 -> 8.101 -> 8.93e -> 8.93f -> 8.93g**, each separately validated and committed.
 
@@ -103,6 +103,10 @@ The rerun then reproduced a second harness defect twice: `blue-player-01` presse
 A later randomized lineup exposed the fresh-process cut's false premise: the return process preobserves both scripted agreement flows, so the cut must wait for both Initiative and Minion Battle to have actually completed. Cutting after Initiative alone let the return process agree ordinarily during the still-pending forced Minion Battle and could skip the controller's one-agreement observation. Pin the full cut predicate with a focused regression before the final built rerun.
 
 Non-goals: publishing, signing, NAT traversal/Relay, including unfinished Snorri, or changing protocol/schema/content identity merely to label the package.
+
+Completed 2026-09-26. Windows and universal Mac packages and ZIPs carry stamp `1.0-8.100-network-fixes+20260926182502-ff1231f2`, protocol `/22`, schema 45, digest `5d4e6203...`, 23 heroes, and no Snorri. Windows build/launch, board rendering, packaged lobby boot and the complete six-client Full rehearsal passed, including terminal host loss and a brand-new process reclaiming an `AWAY` seat; the Mac bundle build/layout passed and remains launch-unverified. Both ZIPs were SHA-256 verified file-for-file (Windows 183 files, Mac 184), with logs and DoNotShip content absent.
+
+Historical evidence: [8.101 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8101-reconnect-and-lobby-host-package-evidence).
 
 ### [x] 8.98 Package the playtest fixes for Windows and macOS
 
