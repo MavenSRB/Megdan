@@ -237,16 +237,16 @@ namespace GuardsDigital.Core.Cards.Verified
         /// order; <c>Offered</c> refuses to swallow them into the card-payment family it was written
         /// for; and milestone 8.37 wired all three call sites phase one named -
         /// <c>AttackDefenseCardActionStrategyBackend.ResolveRemovalStage</c> asks
-        /// <c>RemovalStageDecision.IsAutomaticallyPrevented</c> before ever offering a card-priced pause,
-        /// <c>AnswerRemovalPrevention</c> ORs the same read into its own final decision, and
+        /// <c>RemovalStageDecision.ApplyAutomaticPrevention</c> before ever offering a card-priced pause,
+        /// <c>AnswerRemovalPrevention</c> applies the same operation if a source appeared mid-pause, and
         /// <c>CardActionResolutionAuthority.DescribeRemovalPreventionOptions</c> needed no change because
         /// <c>Offered</c> already excludes a mandatory source structurally. A totem now actually saves an
-        /// adjacent minion.</para>
+        /// adjacent minion and is reclaimed as its printed cost.</para>
         /// </summary>
         public const string MandatoryPreventionWiringIsOwed =
-            "CLOSED at milestone 8.37: RemovalStageDecision.IsAutomaticallyPrevented is " +
-            "asked ahead of the offered, card-priced family at all three OfferedPreventions call sites, " +
-            "so a totem's mandatory save now actually stops the removal rather than merely declaring it.";
+            "CLOSED at milestone 8.37; corrected at 8.96: " +
+            "RemovalStageDecision.ApplyAutomaticPrevention stops the minion removal and " +
+            "reclaims the exact source totem ahead of the offered, card-priced family.";
 
         // -----------------------------------------------------------------------------------------
         // Attack text. Milestone 8.37 composes Spirit Wolf and Spirit Bear's modal

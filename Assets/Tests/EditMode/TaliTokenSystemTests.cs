@@ -422,6 +422,15 @@ namespace GuardsDigital.Tests.EditMode
                 "The mandatory family is never mixed into the offered, card-priced one - Offered's own " +
                 "IsPaidWithACard filter already keeps them apart, so DescribeRemovalPreventionOptions " +
                 "needed no change of its own.");
+            Assert.That(board.PlacedTokens, Has.Count.EqualTo(1),
+                "Reading the available prevention must not spend the source token.");
+            Assert.That(stage.ApplyAutomaticPrevention(minion), Is.True,
+                "A mandatory save is applied without asking anyone.");
+            Assert.That(board.PlacedTokens, Is.Empty,
+                "The Totem that saved the minion is removed as the printed cost.");
+            Assert.That(board.Minions.Any(occupancy =>
+                occupancy.MinionId.Equals(new MinionId(MinionIdValue))), Is.True,
+                "The saved minion remains on the board.");
         }
 
         /// <summary>
@@ -444,6 +453,30 @@ namespace GuardsDigital.Tests.EditMode
                 LanePushCauseKind.Defeat);
 
             Assert.That(stage.IsAutomaticallyPrevented(minion), Is.False);
+            Assert.That(stage.ApplyAutomaticPrevention(minion), Is.False);
+            Assert.That(board.PlacedTokens, Has.Count.EqualTo(1),
+                "An inapplicable Totem cannot be consumed.");
+        }
+
+        [Test]
+        public void TwoAdjacentTotemsConsumeOnlyTheFirstCanonicalSource()
+        {
+            var board = CreateBoard();
+            Place(board, TaliComponentContent.AncestralTotemDefinition,
+                new HexCoordinate(-1, 1), "totem-z");
+            Place(board, TaliComponentContent.AncestralTotemDefinition,
+                TokenAt, "totem-a");
+            var stage = new RemovalStageDecision(
+                RuleActivity.Attack,
+                RuleObject.ForHero(Tali),
+                board, board, StagedBoardParticipants.Create(), Build(board),
+                LanePushCauseKind.Defeat);
+
+            Assert.That(stage.ApplyAutomaticPrevention(
+                BoardObjectReference.ForMinion(new MinionId(MinionIdValue))), Is.True);
+            Assert.That(board.PlacedTokens.Select(token => token.Id.Value),
+                Is.EquivalentTo(new[] { "totem-z" }),
+                "One Defeat costs one Totem, chosen by stable source order.");
         }
 
         [Test]

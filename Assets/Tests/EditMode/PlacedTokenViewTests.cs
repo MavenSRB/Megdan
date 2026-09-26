@@ -32,6 +32,32 @@ namespace GuardsDigital.Tests.EditMode
         private static readonly CardInstanceId Source = new CardInstanceId("token-source-card");
 
         [Test]
+        public void TalisFiveGreenCardsRenderThePreparedIceAndTotemFaces()
+        {
+            var roles = new[]
+            {
+                TaliComponentContent.IceDefinition,
+                TaliComponentContent.AncestralTotemDefinition,
+                TaliComponentContent.VeneratedTotemDefinition
+            };
+            using (var board = new TokenBoard(new HexCoordinate(1, 0)))
+            {
+                for (var index = 0; index < roles.Length; index++)
+                {
+                    var definition = roles[index];
+                    Assert.That(PlacedTokenArtwork.TryLoadTexture(definition.Id, out var face),
+                        Is.True, definition.Id.Value + " must have its prepared private face.");
+                    board.Render(index + 1, Token("tali-green-" + index, definition,
+                        new HexCoordinate(1, 0)));
+                    var view = board.View.TokenViews.Single();
+                    Assert.That(view.GetComponent<MeshRenderer>().sharedMaterial.mainTexture,
+                        Is.SameAs(face),
+                        definition.Id.Value + " must show its face after a pooled-view refresh.");
+                }
+            }
+        }
+
+        [Test]
         public void PyrosPreparedArtworkHasNoNameOverlayAndPooledFallbackKeepsItsName()
         {
             Assert.That(PlacedTokenArtwork.Caption(WidgetComponentContent.PyroDefinition, false), Is.EqualTo("PYRO"));

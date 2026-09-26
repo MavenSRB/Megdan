@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
 using GuardsDigital.Core.Components;
@@ -315,6 +316,40 @@ namespace GuardsDigital.Core.Rules.BoardObjects
             }
 
             return RemovalPreventionQuery.Automatic(unit, modifications).Count > 0;
+        }
+
+        /// <summary>
+        /// Applies the first mandatory prevention in canonical source order. A Totem's
+        /// printed price is its own token, so merely observing the prevention is not
+        /// enough: reclaim that exact live source before reporting the minion saved.
+        /// </summary>
+        public bool ApplyAutomaticPrevention(BoardObjectReference subject)
+        {
+            var unit = subject.AsRuleObject();
+            if (!unit.IsDefined || IsPrevented(subject))
+                return false;
+
+            var sources = RemovalPreventionQuery.Automatic(unit, modifications);
+            if (sources.Count == 0)
+                return false;
+
+            var source = sources[0];
+            if (source.Modification.RemovalPreventionCost.Kind ==
+                RemovalPreventionCostKind.RemoveTheSourceToken)
+            {
+                if (!(board is ITokenPlacementAuthority tokens))
+                    throw new InvalidOperationException(
+                        "A token-priced prevention requires token placement authority.");
+                var token = tokens.PlacedTokens.SingleOrDefault(candidate =>
+                    candidate.PropertySources.Any(property =>
+                        string.Equals(property.SourceId, source.SourceId,
+                            StringComparison.Ordinal)));
+                if (token == null)
+                    throw new InvalidOperationException(
+                        "A token-priced prevention lost its live source.");
+                tokens.CommitValidatedTokenReclamation(token.Id);
+            }
+            return true;
         }
 
         /// <summary>p.8's cause, asked after the piece has actually left the board.</summary>

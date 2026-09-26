@@ -478,8 +478,8 @@ $declared = @{
         IceElement = 1421880
         Tokens = @(
             @{ Face = 'ice'; TokenId = 'tali-ice'; Label = 'Ice' },
-            @{ Face = 'totem'; TokenId = 'tali-ancestral-totem'; Label = 'Ancestral Totem' },
-            @{ Face = 'totem'; TokenId = 'tali-venerated-totem'; Label = 'Venerated Totem' }
+            @{ Face = 'totem'; TokenId = 'tali-totem-ancestral'; Label = 'Ancestral Totem' },
+            @{ Face = 'totem'; TokenId = 'tali-totem-venerated'; Label = 'Venerated Totem' }
         )
     }
 }

@@ -171,12 +171,11 @@ contribution with no floor: a hero adjacent to three Ice tokens is reached by th
 sources, for -3 total, not a single counted -3 modifier
 (`TaliTokenSystemTests.AHeroAdjacentToThreeIceTokensIsAtMinusThree_WithNoFloorAndNothingCounting`).
 
-**SAVE.** The totem's save is mandatory with nobody asked - a `RemovalPreventionCostKind.RemoveTheSourceToken`
-price read by the new `RemovalPreventionQuery.Automatic`, not the card-priced `Offered` family a
-decision opens. This milestone closed the wiring: `RemovalStageDecision.IsAutomaticallyPrevented`
-is asked ahead of the offered family at both call sites in `AttackDefenseCardActionStrategyBackend`
-and in `CardActionResolutionAuthority.AnswerRemovalPrevention`
-(`TaliTokenSystemTests.TheMandatoryTotemSaveIsReadByRemovalStageDecisionItself_NotOnlyByTheBareQuery`).
+**SAVE.** The totem's save is mandatory with nobody asked. The automatic-prevention
+price is removal of the exact source Totem, not a card or a player choice. Milestone
+8.96 corrected the removal stage to reclaim that source before reporting the minion
+saved, including on the post-pause path. The full Attack/Defeat regression and the
+token-system fixture cover the result, multiple sources and inapplicable prevention.
 
 **IMMUNITY (RULING 26).** Only Venerated Totem prints "Totem tokens are immune." - Ancestral Totem
 does not, so an enemy's Clear removes an Ancestral totem and is refused against a Venerated one

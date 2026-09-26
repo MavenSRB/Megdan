@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Cards.Verified;
 using GuardsDigital.Core.Components;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Rules.AdjacentMove;
@@ -193,6 +194,43 @@ namespace GuardsDigital.Tests.EditMode
         // Milestone 8.19c1: the general prevent-removal family this file's summary had been recording
         // as unimplemented since 6.6b, now that a source can declare it and pay for it
         // -------------------------------------------------------------------------------------------
+
+        [Test]
+        public void ATotemSavesTheAttackedMinionAndIsRemovedWithoutAChoice()
+        {
+            var fixture = CreateFixture(
+                CreateMinion(ShieldedMinionId, TeamSide.Blue,
+                    StandardMinionType.Melee, new HexCoordinate(-1, 0)),
+                CreateMinion("red-holder", TeamSide.Red,
+                    StandardMinionType.Melee, new HexCoordinate(2, 0)));
+            var defender = new HeroId(StagedBoardParticipants.BlueHeroIdValue);
+            fixture.Board.CommitValidatedTokenPlacement(new PlacedToken(
+                new TokenInstanceId("tali-save-probe"),
+                TaliComponentContent.AncestralTotemDefinition,
+                defender, defender, new CardInstanceId("tali-save-source"),
+                new HexCoordinate(-2, 0)));
+            var modifications = RuleModificationQuery.Build(
+                new GuardsDigital.Core.Timing.ActiveEffectLifecycle(),
+                fixture.Board,
+                fixture.Configuration.Participants,
+                new TieBreakerState(TeamSide.Red),
+                GuardsDigital.Core.Rules.Progression.UnlockedUltimateSet.None,
+                RuleObject.ForHero(fixture.AttackerId),
+                null,
+                null);
+
+            var result = AttackMinion(fixture, ShieldedMinionId,
+                "tali-save-attack", modifications);
+
+            Assert.That(result.MinionDefeat.RemovalResult.Kind,
+                Is.EqualTo(DefeatRemovalResultKind.RemovalPrevented));
+            Assert.That(fixture.Authority.PendingRemovalPrevention, Is.Null,
+                "Tali's printed mandatory save asks no player.");
+            Assert.That(fixture.Board.Minions.Any(minion =>
+                minion.MinionId.Value == ShieldedMinionId), Is.True);
+            Assert.That(fixture.Board.PlacedTokens, Is.Empty,
+                "The exact source Totem pays for the saved minion.");
+        }
 
         [Test]
         public void AShieldedMinion_StopsThePageAfterItsRewardAndBeforeItsRemoval()

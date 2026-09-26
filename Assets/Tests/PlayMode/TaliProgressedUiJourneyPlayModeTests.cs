@@ -291,12 +291,16 @@ namespace GuardsDigital.Tests.PlayMode
             yield return null;
             yield return null;
 
-            var totem = Object.FindObjectsByType<PlacedTokenView>()
-                .Select(view => view.Token)
-                .Single(token => token != null &&
-                    token.Definition.Id.Equals(TaliComponentContent.VeneratedTotem));
+            var totemView = Object.FindObjectsByType<PlacedTokenView>()
+                .Single(view => view.Token != null &&
+                    view.Token.Definition.Id.Equals(TaliComponentContent.VeneratedTotem));
+            var totem = totemView.Token;
             Assert.That(totem.Coordinate, Is.EqualTo(destination),
                 "The totem stands on the space that was clicked. " + Remaining(runtime));
+            Assert.That(PlacedTokenArtwork.TryLoadTexture(totem.Definition.Id, out var face), Is.True,
+                "The printed Totem side must be loadable by the actual token definition ID.");
+            Assert.That(totemView.GetComponent<MeshRenderer>().sharedMaterial.mainTexture,
+                Is.SameAs(face), "The clicked placement must show that Totem face on the board.");
             Assert.That(
                 runtime.BoardView.Model.Minions.Any(minion =>
                     minion.TeamSide == side &&
@@ -305,13 +309,9 @@ namespace GuardsDigital.Tests.PlayMode
                 "and a friendly minion is standing beside it, which is the board the prevention " +
                 "clause is written about.");
 
-            // STOPS HERE on the save's own drive: bringing a Defeat to bear on the adjacent minion and
-            // observing the totem, not the minion, disappear needs a headless attack sequence this
-            // journey's remaining budget did not reach. The mandatory-no-pause claim itself -
-            // RemovalStageDecision.IsAutomaticallyPrevented asked ahead of the offered family - is
-            // proven directly by RosterTargetGeometryCapabilityTests-style Edit Mode coverage this
-            // milestone owes (see the checklist); what this journey proves is that the totem is a real,
-            // clicked-into-existence piece for that mechanism to protect.
+            // This player journey proves placement and the visible prepared face. The full
+            // Attack/Defeat save, exact token payment, and no-choice path are exercised by
+            // DefeatRemovalStageTests.ATotemSavesTheAttackedMinionAndIsRemovedWithoutAChoice.
         }
 
         /// <summary>

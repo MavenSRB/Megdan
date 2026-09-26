@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.96 Tali Green art and Totem payment evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.96 | Totem resource IDs now match both prepared private faces; mandatory saves remove one exact source Totem without a prompt. Five Green faces' placement roles/counts were audited; Ice art and aura remained correct. Focused T2 rules, full Defeat, renderer and player-input checks green; live non-batch visual inspection was unavailable. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-896-tali-totem-art-and-saveremoval-with-ice-wall-audit). | milestone/8.96 |
+
 ## Milestone 8.95 Misa next-turn Movement evidence
 
 | Milestone | Outcome and definition | Commit |

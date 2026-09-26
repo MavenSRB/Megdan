@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.95**.
-- Active authorized milestone: **8.96**.
-- Next proposed milestone: **8.96**.
+- Current completed milestone: **8.96**.
+- Active authorized milestone: **8.97**.
+- Next proposed milestone: **8.97**.
 
-The approved sequence continues **8.96 -> 8.97**, then resumes **8.93e**. Milestone 8.95 corrected Misa's next-turn Green step before Skills.
+The approved sequence continues through **8.97**, then resumes **8.93e**. Milestone 8.95 corrected Misa's next-turn Green step before Skills; 8.96 corrected Tali's Totem art and payment.
 
 **Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. His 8.93e-8.93g sequence is deferred while the user-approved [Misa, Tali and Ursafar playtest fixes](Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md) run one at a time. Twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No package/publication authorized.
 

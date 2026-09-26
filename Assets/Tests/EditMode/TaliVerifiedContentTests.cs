@@ -381,6 +381,28 @@ namespace GuardsDigital.Tests.EditMode
                 "CompositionOwed.");
         }
 
+        [TestCase("glacial-barrier", 1, 0, "tali-place-ice-token")]
+        [TestCase("wall-of-frost", 2, 2, "tali-place-ice-token")]
+        [TestCase("pack-ice", 3, 3, "tali-place-ice-token")]
+        [TestCase("ancestral-totem", 1, 0, "tali-place-ancestral-totem")]
+        [TestCase("venerated-totem", 1, 0, "tali-place-venerated-totem")]
+        public void EachGreenFacePlacesItsPrintedNumberAndRole(
+            string cardSlug, int count, int optionalCount, string capabilityId)
+        {
+            var card = TaliCardContent.AllDefinitions.Single(definition =>
+                definition.Id.Value.EndsWith("-" + cardSlug, StringComparison.Ordinal));
+            var effect = TaliEffectContent.SkillEffectFor(
+                card.Id, TaliCardContent.ContentRevision);
+            Assert.That(effect, Is.Not.Null);
+            Assert.That(effect.Nodes.Count(node =>
+                node.Kind == EffectNodeKind.Capability &&
+                node.Capability.CapabilityId.Value == capabilityId), Is.EqualTo(count),
+                cardSlug + " must place only its printed token role.");
+            Assert.That(effect.Nodes.Count(node => node.Kind == EffectNodeKind.Optional),
+                Is.EqualTo(optionalCount),
+                "Only the Ice faces printing 'up to' make each placement optional.");
+        }
+
         /// <summary>
         /// Milestone 8.37a. Blizzard's second sentence, asserted where the composition lives rather than
         /// only where a journey drives it: "If Blizzard is in your discard, <b>End of turn:</b> May
