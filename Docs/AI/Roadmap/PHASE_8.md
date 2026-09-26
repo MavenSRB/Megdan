@@ -96,6 +96,8 @@ Outcome: fresh private Windows and universal macOS packages named `Builds/Playte
 
 Acceptance: because executable network/presentation source changed after 8.98, run the T3 pre-build suites at the exact committed source, then fresh Windows build/launch, board rendering, multi-client package smoke and packaged lobby boot. Cross-build and inspect the universal Mac bundle with the same stamp. Regenerate identity/read-me/manifests and byte-verify both ZIPs, excluding logs and DoNotShip content. Mac launch remains an explicit platform limitation.
 
+Observed gate correction: the first packaged Full rehearsal exposed that its own privacy audit still rejected every face-up opponent card returned to hand, while the authoritative projection contract deliberately keeps such a card public when the match log names its instance. Align the rehearsal audit with that established rule, retain the owner/deck/facedown exclusions, add the focused regression, and rerun the built Full rehearsal before packaging.
+
 Non-goals: publishing, signing, NAT traversal/Relay, including unfinished Snorri, or changing protocol/schema/content identity merely to label the package.
 
 ### [x] 8.98 Package the playtest fixes for Windows and macOS

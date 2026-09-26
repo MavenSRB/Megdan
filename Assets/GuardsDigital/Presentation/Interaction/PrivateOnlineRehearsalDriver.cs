@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Cards;
+using GuardsDigital.Core.Diagnostics;
 using GuardsDigital.Core.Participants;
 using GuardsDigital.Core.Replay;
 using GuardsDigital.Core.Rules.Modifications;
@@ -1294,10 +1295,7 @@ namespace GuardsDigital.Presentation.Interaction
                 projection.OwnCards.Any(value =>
                     !string.Equals(value.OwnerHeroId, projection.HeroId, StringComparison.Ordinal)) ||
                 projection.PublicCards.Any(value =>
-                    string.Equals(value.OwnerHeroId, projection.HeroId, StringComparison.Ordinal) ||
-                    value.Location == (int)CardLocation.Hand ||
-                    value.Location == (int)CardLocation.Deck ||
-                    value.FaceOrientation != (int)CardFaceOrientation.FaceUp) ||
+                    !PublicCardVisibilityIsValid(value, machine.MatchLog, projection.HeroId)) ||
                 projection.AuthorizedCommands.Any(value =>
                     !SeatCommandOwnership.Claim(value).IsHeldBy(seat)) ||
                 !AgreementAuthorityIsScoped(projection, seat))
@@ -1305,6 +1303,25 @@ namespace GuardsDigital.Presentation.Interaction
                 privacyFailed = true;
                 Fail("owner-projection-privacy-or-authority");
             }
+        }
+
+        internal static bool PublicCardVisibilityIsValid(
+            NetworkCardRow card,
+            IReadOnlyList<MatchLogEntry> matchLog,
+            string ownHeroId)
+        {
+            if (string.Equals(card.OwnerHeroId, ownHeroId, StringComparison.Ordinal) ||
+                card.Location == (int)CardLocation.Deck ||
+                card.FaceOrientation != (int)CardFaceOrientation.FaceUp)
+            {
+                return false;
+            }
+
+            return card.Location != (int)CardLocation.Hand ||
+                matchLog.Any(entry => string.Equals(
+                    entry.SubjectCardInstanceId.Value,
+                    card.InstanceId,
+                    StringComparison.Ordinal));
         }
 
         private static bool AgreementAuthorityIsScoped(
