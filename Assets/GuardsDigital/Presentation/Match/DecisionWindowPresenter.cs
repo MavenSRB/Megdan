@@ -205,11 +205,28 @@ namespace GuardsDigital.Presentation.Match
             if (!ReferenceEquals(projection, lastProjection))
             {
                 lastProjection = projection;
-                lastViewModel = ApplyManualState(CreateViewModel(projection, homeHeroId));
+                var next = CreateViewModel(projection, homeHeroId);
+                if (next == null && RetainsTiedInitiativeAcrossConnectionPause(projection))
+                {
+                    // A teammate going away pauses the session and strips this seat's private detail
+                    // and commands, but the public owner and authority version still say the SAME
+                    // tied-Initiative question stands. Keep its already-drawn reading until either the
+                    // detail returns or authority advances; the session interaction wall owns the
+                    // temporary inability to press it.
+                    return lastViewModel;
+                }
+
+                lastViewModel = ApplyManualState(next);
             }
 
             return lastViewModel;
         }
+
+        private bool RetainsTiedInitiativeAcrossConnectionPause(IMatchReadModel projection) =>
+            lastViewModel?.Family == DecisionWindowFamily.TiedInitiative &&
+            lastViewModel.Version == projection.Version &&
+            projection.Phase != RoundResolutionPhase.GameEnded &&
+            DecisionOwnerNamesViewer(projection, homeHeroId);
 
         private DecisionWindowViewModel ApplyManualState(DecisionWindowViewModel model)
         {
@@ -292,6 +309,14 @@ namespace GuardsDigital.Presentation.Match
             {
                 return false;
             }
+
+            return DecisionOwnerNamesViewer(projection, viewerHeroId);
+        }
+
+        private static bool DecisionOwnerNamesViewer(
+            IMatchReadModel projection, HeroId viewerHeroId)
+        {
+            var owner = projection.DecisionOwner;
 
             if (!viewerHeroId.IsDefined)
             {

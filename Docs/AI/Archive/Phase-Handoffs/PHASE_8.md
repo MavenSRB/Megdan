@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.106 tied-initiative reconnect visibility evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.106 | `WHO ACTS FIRST?` remains visible when a teammate reconnect pause strips private initiative detail at the unchanged authority version while the public owner still names the viewer; commands remain unavailable until reconnect. The exact regression failed before the correction and passes afterward; affected Edit Mode is 27/27 and Play Mode 4/4. [Definition](../../Roadmap/PHASE_8.md#x-8106-keep-who-acts-first-visible-through-a-teammate-reconnect-pause). | milestone/8.106 |
+
 ## Milestone 8.105 Ignatia coin mapping correction evidence
 
 | Milestone | Outcome and definition | Commit |

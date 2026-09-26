@@ -535,6 +535,47 @@ namespace GuardsDigital.Tests.EditMode
         }
 
         [Test]
+        public void ATiedInitiative_RemainsVisibleWhileAReconnectingTeammatePausesTheSameVersion()
+        {
+            var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
+            OwnerScopedProjectionTests.DriveThroughSeats(
+                host, 400,
+                projection => projection.TeamAgreement?.Kind == TeamAgreementKind.Initiative ||
+                    projection.PendingInitiativeChoice != null);
+            var owner = host.Projection.DecisionOwner;
+            var seat = host.Seats.Seats.First(owner.IsOwnedBy);
+            var seatProjection = host.ProjectionForSeat(seat.Id);
+            Assert.That(NetworkSeatProjectionCodec.TryDecode(
+                NetworkSeatProjectionCodec.Encode(seatProjection), out var record), Is.True);
+
+            var active = new NetworkMatchReadModel(
+                host.Projection, MatchContentCatalogs.ForThisBuild(), record, true);
+            var pausedRecord = WithoutPrivateDetail(record);
+            var paused = new NetworkMatchReadModel(
+                host.Projection, MatchContentCatalogs.ForThisBuild(), pausedRecord, false);
+            Assert.That(paused.Version, Is.EqualTo(active.Version));
+            Assert.That(paused.DecisionOwner, Is.EqualTo(active.DecisionOwner),
+                "The public owner survives the teammate-away pause.");
+            Assert.That(paused.TeamAgreement, Is.Null);
+            Assert.That(paused.PendingInitiativeChoice, Is.Null,
+                "The reconnect pause strips the private question detail and its commands.");
+
+            var client = new SwitchingMatchClient(active);
+            var view = new CapturingDecisionWindowView();
+            var presenter = new DecisionWindowPresenter(client, view, seat.HeroId);
+            presenter.Refresh();
+            var beforePause = view.Model;
+            Assert.That(beforePause?.Family, Is.EqualTo(DecisionWindowFamily.TiedInitiative));
+
+            client.Projection = paused;
+            presenter.Refresh();
+
+            Assert.That(view.Model, Is.SameAs(beforePause),
+                "A same-version connection pause must not erase WHO ACTS FIRST; reconnecting merely " +
+                "restores its answerability.");
+        }
+
+        [Test]
         public void AMinionBattleRemoval_IsTheDockedBarWithItsCount_AndOneVerbOnlyWhenTheCountIsMet()
         {
             var host = MatchHost.Compose(OwnerScopedProjectionTests.CreateOfficialInitialState());
@@ -1059,6 +1100,33 @@ namespace GuardsDigital.Tests.EditMode
             public void Render(DecisionWindowViewModel model) => Model = model;
 
             public DecisionWindowViewModel Model { get; private set; }
+        }
+
+        private static NetworkSeatProjectionRecord WithoutPrivateDetail(
+            NetworkSeatProjectionRecord source) =>
+            new NetworkSeatProjectionRecord(
+                source.Version, source.SeatId, source.PlayerId, source.HeroId, source.TeamSide,
+                source.RoundIndex, source.TurnIndex, source.Phase, source.IsTurnActive,
+                source.IsSeatUndoAvailable, source.EndOfRoundStage, source.TieBreakerRevealedSide,
+                source.SelectedActor, source.Outcome, source.TeamLifeCounters,
+                source.RemainingWaveCounters, source.Heroes, source.Minions, source.Obstacles,
+                source.PlacedTokens, source.HeldMarkers, source.TurnSlots, source.Commitments,
+                source.HandSummaries, source.OwnCards, source.PublicCards,
+                source.HeroProgression, source.Scoreboard, source.ActiveEffectSourceCardInstanceIds,
+                source.DecisionOwner, source.DecisionContractFamilyId,
+                source.DecisionContractCommands, source.AuthorizedCommands, detail: null);
+
+        private sealed class SwitchingMatchClient : IMatchClient
+        {
+            public SwitchingMatchClient(IMatchReadModel projection) => Projection = projection;
+
+            public IMatchReadModel Projection { get; set; }
+            public bool IsDirector => false;
+            public MatchClientResult Submit(DirectorCommand command) =>
+                throw new System.NotSupportedException();
+            public MatchClientResult SubmitAgreement(TeamAgreementCommand command) =>
+                throw new System.NotSupportedException();
+            public MatchClientResult SubmitUndo() => throw new System.NotSupportedException();
         }
     }
 }

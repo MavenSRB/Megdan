@@ -88,6 +88,20 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [x] 8.106 Keep WHO ACTS FIRST visible through a teammate reconnect pause
+
+Authorized 2026-09-26 by the user's live correction: "it disappeared, he reconnected and it appeared again." This bounded presentation corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.
+
+Outcome: a tied-Initiative `WHO ACTS FIRST?` window already visible to its owning side remains visible while a teammate's disconnect pauses the session and strips private decision detail. It becomes answerable again when the same detail returns; it still closes when authority advances, ownership changes or the game ends.
+
+Cause evidence: the paused network projection correctly retained the public `DecisionOwner` and authority version but withheld private `TeamAgreement` / `PendingInitiativeChoice` detail and commands. `DecisionWindowPresenter` rebuilt from that transient projection as `null`, erasing the window; reconnect supplied the detail again and made it reappear. The exact real-wire regression failed before the correction with expected previous model / actual null.
+
+Acceptance: reproduce the same-version actionable-to-paused network transition with a real encoded owner-scoped projection; retain exactly the prior tied-Initiative model while its public owner still names the viewer; preserve command stripping; run the complete decision-window and network-client review fixtures plus the directly affected reconnect and tied-Initiative seat journeys. T2 because Presentation state changes over a network lifecycle.
+
+Non-goals: keeping other stale decision families, allowing input while paused, changing disconnect policy or authority, changing initiative rules, Snorri work, package cutting or publication.
+
+Completed 2026-09-26. The presenter now separates the public fact that a viewer owns the standing decision from whether this transient projection may submit. It retains an already-rendered tied-Initiative model only across the same authority version, same public ownership and non-ended phase; the session interaction wall continues to block its retained controls while private commands are absent. The regression failed 0/1 before the correction and passes 1/1 afterward. Complete decision-window plus network-client review Edit Mode passed 27/27; the reconnect player-experience fixture and exact tied-Initiative seat journey passed 4/4. No authority, initiative rule, schema or wire change. 8.93e resumes.
+
 ### [x] 8.105 Correct Ignatia's Tie Breaker colour-to-symbol mapping
 
 Authorized 2026-09-26 by the user's live correction: "Ignatias what blue/red means is inverted. On blue initiative it triggers red part of the card." This bounded rules/content corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.

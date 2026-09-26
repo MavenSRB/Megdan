@@ -14,11 +14,11 @@ FILL WITH BOTS uses host-owned in-process seats. Built-player 2v2/3v3 human-plus
 
 ## Current authorization and next route
 
-- Current completed milestone: **8.105**.
+- Current completed milestone: **8.106**.
 - Active authorized milestone: **8.93e**.
 - Next authorized milestone: **8.93f**.
 
-**[8.105](Roadmap/PHASE_8.md)** is complete: live play proved Ignatia's colour-to-symbol reading was inverted; the one typed mapping now reads `☀ = Blue`, `☾ = Red`, and all affected card-resolution, staging and replay checks are green. **8.93e-8.93g** remain authorized and 8.93e resumes; [SN-Q3](Rules/HERO_SNORRI.md) is settled.
+**[8.106](Roadmap/PHASE_8.md)** is complete: a teammate-away pause no longer erases the owning side's unchanged `WHO ACTS FIRST?` window; it stays visible but cannot submit until reconnect restores private commands. **8.93e-8.93g** remain authorized and 8.93e resumes; [SN-Q3](Rules/HERO_SNORRI.md) is settled.
 
 **Snorri** is approved through [8.93g](Roadmap/PHASE_8_TWENTY_FOURTH_HERO.md); [his shard](Rules/HERO_SNORRI.md) owns rules. **8.93-8.93d complete**: inventory, drag/drop retained runes (v45, wire /22), staged Gold/Red, Blue and Green. His remaining sequence is active. Twenty-three heroes dealt. Bot diagnosis 8.35z71 queued. No publication authorized.
 
