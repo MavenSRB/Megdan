@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.98 Windows and macOS fix packages evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.98 | Twenty-three-hero Windows and universal Mac ZIPs include 8.95-8.97, share the /22 identity, and exclude undealt Snorri. Windows gameplay/rendering/multi-client/packaged boot and byte-verification passed; Mac build/bundle passed, launch unverified. [Definition](../../Roadmap/PHASE_8.md#x-898-package-the-playtest-fixes-for-windows-and-macos). | milestone/8.98 |
+
 ## Milestone 8.97 Ursafar Angry Roar and all-card audit evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -88,6 +88,20 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [x] 8.98 Package the playtest fixes for Windows and macOS
+
+Authorized 2026-09-26: "Cut the build. + mac and keep going." Approved sequence: **8.98 -> 8.93e -> 8.93f -> 8.93g**, each separately validated and committed.
+
+Outcome: private Windows and universal macOS packages at 8.97, named `Builds/Playtest-8.97-fixes` and `Builds/Playtest-8.97-fixes-mac`, each with a ZIP and matching build identity. Twenty-three playable heroes; Misa, Tali and Ursafar fixes included; Snorri remains undealt.
+
+Acceptance: T3 evidence from 8.97 is reusable while executable sources are unchanged; fresh Windows build/launch, board rendering and multi-client package smoke; fresh Mac build and bundle inspection with the same stamp; packaged Windows lobby boot; identity/read-me/manifest and byte-verified ZIPs excluding logs and DoNotShip content. Mac launch remains an explicit platform limitation.
+
+Non-goals: publication, signing, another hero or additional gameplay changes.
+
+Completed 2026-09-26. Both archives carry stamp `1.0-8.97-fixes+20260926-702b33ad` and the 8.97 fixes. Fresh Windows gameplay, board, three-process lobby and packaged boot checks passed; the universal Mac build and bundle passed. Every ZIP file was byte-verified and diagnostics excluded. Mac launch remains unverified.
+
+Historical evidence: [8.98 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-898-windows-and-macos-fix-packages-evidence).
+
 ### [x] 8.94 Package the twenty-three-hero playtest build before Snorri, for Windows
 
 Authorized 2026-09-25 by the user: "cut out the new build ... Dont include snori, but include everything before it", then "we dont need mac build now, only windows".
