@@ -1,3 +1,4 @@
+using System.Reflection;
 using GuardsDigital.Core.Board;
 using GuardsDigital.Core.Obstacles;
 using GuardsDigital.Presentation.Board;
@@ -50,6 +51,42 @@ namespace GuardsDigital.Tests.EditMode
             }
             finally
             {
+                Object.DestroyImmediate(gameObject);
+            }
+        }
+
+        [Test]
+        public void PreparedTurretFace_PointsItsRenderedNormalTowardTheCamera()
+        {
+            var gameObject = new GameObject("Turret Test");
+            var cameraObject = new GameObject("Turret Camera");
+
+            try
+            {
+                var camera = cameraObject.AddComponent<Camera>();
+                cameraObject.tag = "MainCamera";
+                cameraObject.transform.position = new Vector3(3f, 8f, -4f);
+                var view = gameObject.AddComponent<PlaceholderObstacleView>();
+                view.Configure(new ObstacleOccupancy(
+                    new ObstacleId("trinkets-turret:hero-trinkets"),
+                    new HexCoordinate(0, 0)), 1f);
+
+                var face = gameObject.transform.Find("Obstacle Standee");
+                Assert.That(face, Is.Not.Null,
+                    "The prepared Turret resource must replace the fallback block in this checkout.");
+                typeof(PlaceholderObstacleView).GetMethod("LateUpdate",
+                    BindingFlags.Instance | BindingFlags.NonPublic).Invoke(view, null);
+                var localNormal = face.GetComponent<MeshFilter>().sharedMesh.normals[0];
+                var renderedNormal = face.TransformDirection(localNormal).normalized;
+                Assert.That(Camera.main, Is.Not.Null);
+                var towardCamera = (Camera.main.transform.position - face.position).normalized;
+
+                Assert.That(Vector3.Dot(renderedNormal, towardCamera), Is.GreaterThan(0.999f),
+                    "Unity's Quad renders its local -Z face; that face must point at the camera.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(cameraObject);
                 Object.DestroyImmediate(gameObject);
             }
         }

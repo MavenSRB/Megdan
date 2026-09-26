@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.102 Trinkets Turret face evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.102 | Rapid Redeployment's packaged authoritative path was healthy; the prepared Turret Quad aimed its non-rendered local `+Z` at the camera and hid its fallback block, so the placed obstacle appeared absent. Its rendered local `-Z` face now points at the camera. The orientation regression failed before the correction and passes after it; focused Edit 4/4, exact Rapid Redeployment Play 1/1, and the inspected rendered frame are green. [Definition](../../Roadmap/PHASE_8.md#x-8102-turn-trinkets-prepared-turret-face-toward-the-player). | milestone/8.102 |
+
 ## Milestone 8.101 reconnect and lobby-host package evidence
 
 | Milestone | Outcome and definition | Commit |

@@ -134,7 +134,10 @@ namespace GuardsDigital.Presentation.Board
             if (artFace == null || !artFace.activeSelf || Camera.main == null) return;
             var towardCamera = Camera.main.transform.position - artFace.transform.position;
             if (towardCamera.sqrMagnitude > 0.0001f)
-                artFace.transform.rotation = Quaternion.LookRotation(towardCamera, Vector3.up);
+                // Unity's Quad primitive renders its local -Z face. Aim that normal at the
+                // camera; aiming +Z at it turns the prepared face away and back-face culls the
+                // Turret while the fallback block is disabled.
+                artFace.transform.rotation = Quaternion.LookRotation(-towardCamera, Vector3.up);
         }
 
         private static Mesh CreateBlockMesh(float blockWidth, float blockHeight)

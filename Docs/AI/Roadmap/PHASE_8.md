@@ -88,6 +88,20 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [x] 8.102 Turn Trinkets' prepared Turret face toward the player
+
+Authorized 2026-09-26 by the user's live report: "Triketts gold, offered me correct choises, but no turret appeared after my move" / "it let me choose where to spawn it, but no token appeared." This bounded corrective interrupts 8.93e and returns to it immediately after a separate validation and commit.
+
+Outcome: Rapid Redeployment's accepted move and Turret-space answers leave exactly one visible prepared Turret on every seat. The authoritative obstacle, card resolution, legality and wire shape remain unchanged.
+
+Cause evidence: the exact packaged run accepted the Skill, arm, move and placement submissions and completed the Skill. The view then disabled its fallback block and aimed a Unity Quad's local `+Z` at the camera, while Unity's Quad front normal is local `-Z`; the only textured face was back-face culled. The existing journey asserted an active view object but never asserted that its rendered face pointed toward the camera.
+
+Acceptance: record a failing-then-passing view regression over the prepared Turret face's world normal and camera direction; retain the existing Rapid Redeployment state-and-view journey; run the focused obstacle view/Edit Mode and exact Rapid Redeployment Play Mode checks, then directly affected board-view regressions. T2 because Presentation changes. No schema, wire, card definition or rules change.
+
+Non-goals: card behavior, token semantics, obstacle authority, Snorri work, package cutting or publication.
+
+Completed 2026-09-26. The packaged match log proves Rapid Redeployment accepted its Skill, arm, move and placement answers and emitted `SkillUsed`; the obstacle existed. `PlaceholderObstacleView` had disabled the fallback block after loading the prepared art, then aimed the Quad's local `+Z` at the camera even though Unity renders its local `-Z` face, so back-face culling made the piece invisible. The billboard now aims local `-Z` at the camera. The new regression failed before the correction (world-normal dot camera direction `-0.4866`) and passes afterward. Final focused Edit Mode 4/4 and the exact Rapid Redeployment Play Mode journey 1/1 pass; a rendered frame was inspected and shows the upright Turret beside Trinkets. No rule, choice, obstacle state, schema, wire or content identity changed. 8.93e resumes.
+
 ### [x] 8.101 Package the reconnect and lobby-host fixes
 
 Authorized 2026-09-26: "Build after networking fixes, then new hero work." Approved sequence: **8.100 -> 8.101 -> 8.93e -> 8.93f -> 8.93g**, each separately validated and committed.
