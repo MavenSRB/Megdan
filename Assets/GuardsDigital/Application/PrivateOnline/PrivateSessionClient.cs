@@ -557,11 +557,15 @@ namespace GuardsDigital.Application
                     // Milestone 8.35a. The admission answer says which phase the session is in, so
                     // a returning player knows before it claims anything that the lobby is over.
                     HasMatchStarted = welcome.MatchStarted;
-                    // 8.35z54. A client that arrived without naming a seat stops HERE, with
-                    // the roster this very message carried, and waits for the player to pick one of
-                    // the seats they can now see. Everything below is the seat-claiming handshake and
-                    // has nothing to answer for a connection that is not claiming anything yet.
-                    if (!targetSeat.IsDefined)
+                    // 8.35z54. An ordinary first-time client that arrived without naming a seat
+                    // stops here and waits for the player to choose one of the OPEN seats it can
+                    // now see. Milestone 8.99 adds the one exception the real relaunch path needs:
+                    // if exactly one RESERVED row has a capability retained on this machine, this
+                    // is that seat's returning owner. Select it locally and continue through the
+                    // existing authenticated reclaim below. No capability means an ordinary
+                    // seatless join; more than one means multiple local players are ambiguous and
+                    // must not be guessed at.
+                    if (!targetSeat.IsDefined && !TrySelectRetainedReservedSeat())
                     {
                         State = PrivateSessionClientState.Admitted;
                         return;
@@ -674,6 +678,49 @@ namespace GuardsDigital.Application
                     Fault();
                     return;
             }
+        }
+
+        /// <summary>
+        /// Selects the only reserved seat for which this machine retained the host-issued owner
+        /// capability. The capability remains private and the host still authenticates it.
+        /// </summary>
+        private bool TrySelectRetainedReservedSeat()
+        {
+            SeatId retainedSeat = default;
+            var retainedCapability = string.Empty;
+            foreach (var entry in roster)
+            {
+                if (entry.Occupancy != SeatOccupancyState.Reserved)
+                {
+                    continue;
+                }
+
+                var candidate = retainedCapabilities.Find(SessionCorrelation, entry.Seat);
+                if (candidate.Length == 0 ||
+                    candidate.Length > PrivateSessionProtocol.MaxReconnectCapabilityChars)
+                {
+                    continue;
+                }
+
+                if (retainedSeat.IsDefined)
+                {
+                    return false;
+                }
+
+                retainedSeat = entry.Seat;
+                retainedCapability = candidate;
+            }
+
+            if (!retainedSeat.IsDefined)
+            {
+                return false;
+            }
+
+            targetSeat = retainedSeat;
+            reconnectCapability = retainedCapability;
+            IsReconnecting = true;
+            awaitingReconnectProjection = HasMatchStarted;
+            return true;
         }
 
         /// <summary>

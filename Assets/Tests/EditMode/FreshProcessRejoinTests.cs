@@ -1,7 +1,9 @@
 using System;
+using System.IO;
 using System.Linq;
 using GuardsDigital.Application;
 using GuardsDigital.Core.Participants;
+using GuardsDigital.Network;
 using NUnit.Framework;
 
 namespace GuardsDigital.Tests.EditMode
@@ -85,6 +87,107 @@ namespace GuardsDigital.Tests.EditMode
             harness.AssertConverged();
             Assert.That(harness.MatchHost.Version, Is.GreaterThan(versionBefore),
                 "and the returned seat can act again, which the whole exercise is for.");
+        }
+
+        /// <summary>
+        /// Milestone 8.99. The ordinary launcher does not remember a seat in its entry form: it
+        /// joins the server seatless, then reads the host roster. A hard restart therefore has to
+        /// discover its one locally retained reserved seat from that roster before it can send the
+        /// same authenticated reclaim proved above.
+        /// </summary>
+        [Test]
+        public void RelaunchedOrdinarySeatlessClient_ReclaimsItsReservedSeatAfterMatchStarts()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+            harness.ReadyAndPickEverySeat();
+
+            var ordinal = harness.OrdinalOf(ReturningSeat);
+            var original = harness.Client(ordinal);
+            var seat = new SeatId(ReturningSeat);
+            var retained = harness.MachineStoreOf(ReturningSeat).Find(
+                harness.Session.SessionCorrelation, seat);
+            var root = Path.Combine(
+                Path.GetTempPath(), "guards-8-99-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                new FileRetainedSeatCapabilityStore(root).Retain(
+                    harness.Session.SessionCorrelation, seat, retained);
+                harness.DisconnectClient(ordinal);
+                Assert.That(
+                    Occupancy(harness, ReturningSeat), Is.EqualTo(SeatOccupancyState.Reserved));
+
+                var relaunchedOrdinal = harness.NextOrdinal();
+                var relaunched = harness.ConnectSeatless(
+                    relaunchedOrdinal, new FileRetainedSeatCapabilityStore(root));
+                Assert.That(relaunched, Is.Not.SameAs(original));
+                Assert.That(relaunched.TargetSeat.IsDefined, Is.False,
+                    "The real entry form joins without preselecting a seat.");
+                harness.Pump();
+
+                Assert.That(relaunched.State, Is.EqualTo(PrivateSessionClientState.Seated),
+                    "The seatless process should recognize the one reserved seat for which its " +
+                    "machine retained the owner capability.");
+                Assert.That(relaunched.TargetSeat.Value, Is.EqualTo(ReturningSeat));
+                Assert.That(relaunched.ConnectionEpoch,
+                    Is.EqualTo(PrivateSessionProtocol.InitialConnectionEpoch + 1));
+                Assert.That(relaunched.LatestProjection, Is.Not.Null,
+                    "A process with no old in-memory view receives a fresh owner projection.");
+                Assert.That(
+                    Occupancy(harness, ReturningSeat), Is.EqualTo(SeatOccupancyState.Claimed));
+                Assert.That(harness.Session.DrainEvents().Count(record =>
+                        record.Kind == PrivateSessionEventKind.SeatReclaimed &&
+                        record.Seat.Value == ReturningSeat),
+                    Is.EqualTo(1));
+            }
+            finally
+            {
+                if (Directory.Exists(root))
+                {
+                    Directory.Delete(root, true);
+                }
+            }
+        }
+
+        [Test]
+        public void SeatlessClient_WithNoUniqueRetainedReservedSeat_RemainsUnseated()
+        {
+            var harness = PrivateOnlineWireHarness.Compose();
+            harness.SeatAll();
+
+            var firstSeat = ReturningSeat;
+            var secondSeat = "blue-player-01";
+            var firstOrdinal = harness.OrdinalOf(firstSeat);
+            var secondOrdinal = harness.OrdinalOf(secondSeat);
+            var sharedStore = new InMemoryRetainedSeatCapabilityStore();
+            sharedStore.Retain(
+                harness.Session.SessionCorrelation,
+                new SeatId(firstSeat),
+                harness.MachineStoreOf(firstSeat).Find(
+                    harness.Session.SessionCorrelation, new SeatId(firstSeat)));
+            sharedStore.Retain(
+                harness.Session.SessionCorrelation,
+                new SeatId(secondSeat),
+                harness.MachineStoreOf(secondSeat).Find(
+                    harness.Session.SessionCorrelation, new SeatId(secondSeat)));
+            harness.DisconnectClient(firstOrdinal);
+            harness.DisconnectClient(secondOrdinal);
+
+            var ambiguous = harness.ConnectSeatless(harness.NextOrdinal(), sharedStore);
+            harness.Pump();
+            Assert.That(ambiguous.State, Is.EqualTo(PrivateSessionClientState.Admitted),
+                "Two locally retained players are ambiguous; the client must not guess which " +
+                "owner is at the keyboard.");
+            Assert.That(ambiguous.TargetSeat.IsDefined, Is.False);
+
+            var outsider = harness.ConnectSeatless(
+                harness.NextOrdinal(), new InMemoryRetainedSeatCapabilityStore());
+            harness.Pump();
+            Assert.That(outsider.State, Is.EqualTo(PrivateSessionClientState.Admitted),
+                "The shared invitation key is not ownership of an away seat.");
+            Assert.That(outsider.TargetSeat.IsDefined, Is.False);
+            Assert.That(Occupancy(harness, firstSeat), Is.EqualTo(SeatOccupancyState.Reserved));
+            Assert.That(Occupancy(harness, secondSeat), Is.EqualTo(SeatOccupancyState.Reserved));
         }
 
         /// <summary>

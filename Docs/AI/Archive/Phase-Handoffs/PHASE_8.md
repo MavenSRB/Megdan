@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.99 away-seat reclaim evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.99 | A freshly relaunched ordinary seatless client automatically reclaims its single locally retained reserved seat, including after match start, without weakening capability ownership or guessing among multiple local players. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-899-restore-an-away-player-through-the-real-lobby). | milestone/8.99 |
+
 ## Milestone 8.98 Windows and macOS fix packages evidence
 
 | Milestone | Outcome and definition | Commit |

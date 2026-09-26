@@ -266,7 +266,9 @@ namespace GuardsDigital.Tests.EditMode
         /// <see cref="PrivateSessionClient.TryClaimSeat"/> is answered, so
         /// <see cref="SeatOf"/> reads "(unseated)" until then.
         /// </remarks>
-        public PrivateSessionClient ConnectSeatless(int ordinal)
+        public PrivateSessionClient ConnectSeatless(
+            int ordinal,
+            IRetainedSeatCapabilityStore machineStore = null)
         {
             var link = new ClientLink { Seat = string.Empty, Ordinal = ordinal };
             link.Machine = new PrivateSessionClient(
@@ -276,13 +278,19 @@ namespace GuardsDigital.Tests.EditMode
                 new ClientOutbox(this, link),
                 new CountingNonceSource((byte)ordinal),
                 null,
-                new InMemoryRetainedSeatCapabilityStore());
+                machineStore ?? new InMemoryRetainedSeatCapabilityStore());
             links[ordinal] = link;
             nextOrdinal = Math.Max(nextOrdinal, ordinal + 1);
             link.Machine.OnConnected();
             Session.OnConnected(ordinal, 0);
             return link.Machine;
         }
+
+        /// <summary>
+        /// The retained store belonging to one simulated machine, for a fresh-process fixture that
+        /// must discard the old client object while keeping only its at-rest capability.
+        /// </summary>
+        public IRetainedSeatCapabilityStore MachineStoreOf(string seat) => machineStores[seat];
 
         /// <summary>
         /// 8.35z54. Records the seat a seatless client has since claimed, so the harness's

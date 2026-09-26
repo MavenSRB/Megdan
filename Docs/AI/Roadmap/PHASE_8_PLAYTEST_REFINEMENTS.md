@@ -6,6 +6,18 @@ On 2026-09-17 the user reported Super-Shotgun making the attacked hero discard, 
 
 On 2026-09-26 the user approved investigating and fixing these reports in order: **8.95 -> 8.96 -> 8.97**, before resuming Snorri at 8.93e. Each needs its own failing reproduction, correction if confirmed, green affected checks and local commit before it can be closed. The private host-game log under the 8.92 playtest build is available as evidence; preserve it.
 
+### [x] 8.99 Restore an away player through the real lobby
+
+Authorized 2026-09-26 after the power-loss and alt-tab reports were separated. Outcome: a player whose process or connection dies can relaunch the ordinary seatless lobby client and reclaim the seat the host kept `AWAY`, including after the match has started. The locally retained owner capability selects only that player's reserved seat; no session key, open-seat claim, other local capability or host guess transfers ownership.
+
+Acceptance: preserve the September 25 host log as the failing field observation (the returning connection was admitted but sent no reclaim); add a failing-then-passing fresh-client regression that begins seatless, reads a started roster with its reserved seat, uses the file-store contract rather than copying client state, records `SeatReclaimed`, rotates the connection epoch and receives a fresh owner projection; cover no capability, wrong capability, multiple locally retained reserved seats and ordinary open-seat joining. Exercise the ordinary lobby/socket player path at the applicable focused Edit and Play Mode tier. Record focus changes only if required to reproduce a remaining disconnect; repairing general focus/input behavior is outside this demonstrated recovery defect.
+
+Non-goals: host migration, automatic seat release, weakening owner authentication, changing protocol/schema/content identity, packaging, or claiming that alt-tab itself caused the recorded power-loss disconnect. Snorri 8.93e's in-progress work is preserved and resumes after this correction.
+
+Completed 2026-09-26. The Welcome roster now lets a seatless relaunched process select the single reserved seat for which its machine retained the owner capability, then continue through the existing authenticated reclaim and fresh-projection path. No capability remains an ordinary seatless join; multiple matching reserved seats remain unselected rather than guessing an owner. Protocol, schema and content identity are unchanged.
+
+Historical evidence: [8.99 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-899-away-seat-reclaim-evidence).
+
 ### [x] 8.95 Misa's next-turn Green Movement offer
 
 Reported 2026-09-25: "Misas green does not offer movment" on the **next turn**, when it should. Focus, Discipline and Mastery create the correct Next Turn effect; the turn authority intercepted Attack and Movement starts but omitted Skill starts and could not resume a held Skill. Fixed at the shared pre-action seam. The host log shows Discipline's Skill on round 2 turn 1 and a next-turn Skill with no logged Misa move; the log alone cannot prove a missing offer. Player-input journeys now reach all three tier-specific free-step choices before a next-turn Skill and Discipline's step changes the board before its held Skill resumes. Existing source-linked tests retain once-only, round-boundary, and pre-action snapshot contracts. Status: complete; no content or schema revision.
