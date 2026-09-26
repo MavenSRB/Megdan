@@ -172,7 +172,7 @@ namespace GuardsDigital.Presentation.Interaction
             entry = new VisualElement { name = EntryName };
             entry.style.flexDirection = FlexDirection.Column;
             entry.style.marginTop = 8f;
-            address = Field("ADDRESS", DefaultAddress, AddressFieldName);
+            address = Field("JOIN ADDRESS", DefaultAddress, AddressFieldName);
             port = Field(
                 "PORT",
                 PrivateSessionProtocol.DefaultPort.ToString(CultureInfo.InvariantCulture),
@@ -1689,7 +1689,7 @@ namespace GuardsDigital.Presentation.Interaction
 
         private void BeginHosting(PrivateLobbyEntry entry)
         {
-            if (!TryReadEndpoint(entry, out var endpoint, out var error))
+            if (!TryReadHostEndpoint(entry, out var endpoint, out var error))
             {
                 presenter.ShowEntry(LocalSeats(), error);
                 return;
@@ -2150,6 +2150,34 @@ namespace GuardsDigital.Presentation.Interaction
             }
 
             return PrivateSessionEndpoint.TryCreate(entry.Address, port, out endpoint, out error);
+        }
+
+        /// <summary>
+        /// Milestone 8.100. The lobby address is the destination a joining machine was told to
+        /// dial; it is not a local interface selector for HOST. A keyed invitation listens on all
+        /// local IPv4 interfaces, while an unkeyed plaintext session remains loopback-only. The
+        /// hosting player's own client subsequently uses <see cref="PrivateSessionEndpoint.ResolveLocalDialAddress"/>
+        /// and therefore always reaches either bind through loopback.
+        /// </summary>
+        private static bool TryReadHostEndpoint(
+            PrivateLobbyEntry entry, out PrivateSessionEndpoint endpoint, out string error)
+        {
+            endpoint = null;
+            if (entry == null)
+            {
+                error = "A port is required.";
+                return false;
+            }
+
+            if (!int.TryParse(entry.Port, NumberStyles.None, CultureInfo.InvariantCulture,
+                    out var port))
+            {
+                error = "A port is a whole number between 1 and 65535.";
+                return false;
+            }
+
+            return PrivateSessionEndpoint.TryCreateAutomaticHostBind(
+                port, !string.IsNullOrEmpty(entry.SessionKey), out endpoint, out error);
         }
 
         private void LateUpdate()

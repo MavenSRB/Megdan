@@ -292,6 +292,33 @@ namespace GuardsDigital.Tests.EditMode
             return endpoint;
         }
 
+        [Test]
+        public void AutomaticLobbyHostBind_UnkeyedIsLoopbackAndKeyedIsIPv4Wildcard()
+        {
+            Assert.That(PrivateSessionEndpoint.TryCreateAutomaticHostBind(
+                45677, false, out var localOnly, out var localError), Is.True, localError);
+            Assert.That(localOnly.Address, Is.EqualTo(System.Net.IPAddress.Loopback),
+                "Plaintext owner-private traffic remains local to this machine.");
+            Assert.That(localOnly.ResolveLocalDialAddress(), Is.EqualTo("127.0.0.1"));
+
+            Assert.That(PrivateSessionEndpoint.TryCreateAutomaticHostBind(
+                45677, true, out var invited, out var invitedError), Is.True, invitedError);
+            Assert.That(invited.Address, Is.EqualTo(System.Net.IPAddress.Any),
+                "A keyed invited lobby accepts traffic through any local IPv4 interface.");
+            Assert.That(invited.ResolveLocalDialAddress(), Is.EqualTo("127.0.0.1"),
+                "The hosting player's own ordinary client still dials locally.");
+        }
+
+        [TestCase(0)]
+        [TestCase(65536)]
+        public void AutomaticLobbyHostBind_RejectsAnInvalidPort(int port)
+        {
+            Assert.That(PrivateSessionEndpoint.TryCreateAutomaticHostBind(
+                port, true, out var endpoint, out var error), Is.False);
+            Assert.That(endpoint, Is.Null);
+            Assert.That(error, Is.Not.Empty);
+        }
+
         /// <summary>
         /// The exact fix, pinned directly: before 8.35t, every spawned test driver dialed a
         /// hardcoded "127.0.0.1" regardless of what the host actually bound. A host bound to this

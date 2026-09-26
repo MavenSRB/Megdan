@@ -88,6 +88,16 @@ Milestone **8.37a** is complete. Its exact definition remains active authority i
 
 Milestone **8.37b** is complete. Its exact definition remains active authority in [the tenth shard of completed Phase 8 definitions](PHASE_8_COMPLETED_10.md#x-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece), and its completion evidence is indexed by the [Phase 8 handoff](../Archive/Phase-Handoffs/PHASE_8.md#milestone-837b-give-a-named-colour-and-a-chosen-direction-a-control-a-player-can-actually-answer-and-draw-a-placed-token-as-its-own-piece-completion-evidence).
 
+### [~] 8.101 Package the reconnect and lobby-host fixes
+
+Authorized 2026-09-26: "Build after networking fixes, then new hero work." Approved sequence: **8.100 -> 8.101 -> 8.93e -> 8.93f -> 8.93g**, each separately validated and committed.
+
+Outcome: fresh private Windows and universal macOS packages named `Builds/Playtest-8.100-network-fixes` and `Builds/Playtest-8.100-network-fixes-mac`, each with a ZIP and matching identity. They include 8.99's fresh-process `AWAY` reclaim and 8.100's automatic lobby host bind; the in-progress Snorri work remains excluded.
+
+Acceptance: because executable network/presentation source changed after 8.98, run the T3 pre-build suites at the exact committed source, then fresh Windows build/launch, board rendering, multi-client package smoke and packaged lobby boot. Cross-build and inspect the universal Mac bundle with the same stamp. Regenerate identity/read-me/manifests and byte-verify both ZIPs, excluding logs and DoNotShip content. Mac launch remains an explicit platform limitation.
+
+Non-goals: publishing, signing, NAT traversal/Relay, including unfinished Snorri, or changing protocol/schema/content identity merely to label the package.
+
 ### [x] 8.98 Package the playtest fixes for Windows and macOS
 
 Authorized 2026-09-26: "Cut the build. + mac and keep going." Approved sequence: **8.98 -> 8.93e -> 8.93f -> 8.93g**, each separately validated and committed.

@@ -2,6 +2,12 @@
 
 Each row indexes one completed Phase 8 milestone to the commit whose body carries its evidence. Return to the [active Phase 8 definitions](../../Roadmap/PHASE_8.md).
 
+## Milestone 8.100 automatic lobby host bind evidence
+
+| Milestone | Outcome and definition | Commit |
+| --- | --- | --- |
+| 8.100 | The ordinary lobby labels the address as join-only; HOST ignores it and derives a loopback bind for unkeyed local play or an IPv4 wildcard bind for a keyed invitation, while its own player client dials loopback. [Definition](../../Roadmap/PHASE_8_PLAYTEST_REFINEMENTS.md#x-8100-host-without-entering-this-machines-address). | milestone/8.100 |
+
 ## Milestone 8.99 away-seat reclaim evidence
 
 | Milestone | Outcome and definition | Commit |

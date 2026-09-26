@@ -565,46 +565,47 @@ namespace GuardsDigital.Tests.PlayMode
         }
 
         /// <summary>
-        /// Milestone 8.35a1's closing check. An unkeyed session derives no channel keys, so its
-        /// link stays plaintext, and the architecture record permits an owner-private byte to
-        /// cross plaintext only on the loopback interface. The command line has always refused an
-        /// unkeyed non-loopback bind; the lobby's own HOST control - the path an operator actually
-        /// uses to host an invited playtest - did not, which milestone 8.36's readiness review
-        /// found. The refusal has to come before the bind, so it is read here off the entry form.
+        /// Milestone 8.100's reported player path. ADDRESS used to mean both "where JOIN dials"
+        /// and "which local interface HOST binds", forcing a host to know and type this machine's
+        /// numeric address. It is now join-only input: even deliberately unusable join text cannot
+        /// prevent an unkeyed HOST from opening its local-only listener and admitting its own
+        /// ordinary loopback player client.
         /// </summary>
-        /// <remarks>
-        /// The address is a documentation-range one this machine does not own, so no interface can
-        /// be bound here whatever the rule decides and the test opens no listener of its own. That
-        /// is also what makes the pre-fix observation legible rather than dangerous: before the
-        /// fix this journey reached the bind attempt and the lobby reported the failed bind, which
-        /// on an operator's own public interface would instead have been an unkeyed public host.
-        /// </remarks>
         [UnityTest]
-        public IEnumerator HostingOffLoopbackWithoutASessionKey_IsRefusedBeforeAnyBind()
+        public IEnumerator HostIgnoresTheJoinAddress_AndUnkeyedHostingStaysLocal()
         {
             yield return LoadTheLobby();
             var driver = Driver();
 
-            Field(driver, PrivateLobbyUnityView.AddressFieldName).value = "203.0.113.10";
+            var probe = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            probe.Start();
+            var port = ((System.Net.IPEndPoint)probe.LocalEndpoint).Port;
+            probe.Stop();
+
+            var joinAddress = Field(driver, PrivateLobbyUnityView.AddressFieldName);
+            Assert.That(joinAddress.label, Is.EqualTo("JOIN ADDRESS"));
+            joinAddress.value = "this-is-not-a-numeric-address";
+            Field(driver, PrivateLobbyUnityView.PortFieldName).value =
+                port.ToString(System.Globalization.CultureInfo.InvariantCulture);
             Field(driver, PrivateLobbyUnityView.KeyFieldName).value = string.Empty;
             yield return null;
 
             UiPlayer.Click(Control(driver, "HOST"));
-            yield return null;
+            var deadline = Time.realtimeSinceStartup + 5f;
+            while (Time.realtimeSinceStartup < deadline &&
+                !driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat))
+                yield return null;
 
-            var said = Text(driver, PrivateLobbyUnityView.FeedbackName);
-            Assert.That(said, Does.Contain("session key"),
-                "An unkeyed bind off loopback must be refused for the reason it is refused for - " +
-                "the missing key - rather than being carried as far as a bind attempt. The lobby " +
-                "said: '" + said + "'.");
-            Assert.That(said.Length, Is.LessThanOrEqualTo(PrivateLobbyLabels.MaxLabelChars),
-                "A refusal is one bounded line like every other the lobby draws.");
-            Assert.That(said.Contains("203.0.113.10"), Is.False,
-                "Milestone 8.31's rule: a player-facing diagnostic never names an address.");
-            CollectionAssert.IsSubsetOf(new[] { "2V2", "3V3", "SHORT GAME", "LONG GAME", "HOST", "JOIN" }, ControlLabels(driver),
-                "A refused host keeps every applicable setup control.");
-            Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.None),
-                "A refused host opened no session.");
+            Assert.That(driver.Presenter.Model.Role, Is.EqualTo(PrivateLobbyRole.Host),
+                "HOST must not parse the field that now belongs only to JOIN; the lobby said: '" +
+                Text(driver, PrivateLobbyUnityView.FeedbackName) + "'.");
+            Assert.That(driver.Presenter.Model.Offers(PrivateLobbyControl.ClaimSeat), Is.True,
+                "The hosting player reaches its ordinary owner-scoped client through loopback.");
+
+            yield return null;
+            yield return null;
+            UiPlayer.Click(Control(driver, "LEAVE"));
+            yield return null;
         }
 
         /// <summary>

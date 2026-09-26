@@ -6,6 +6,18 @@ On 2026-09-17 the user reported Super-Shotgun making the attacked hero discard, 
 
 On 2026-09-26 the user approved investigating and fixing these reports in order: **8.95 -> 8.96 -> 8.97**, before resuming Snorri at 8.93e. Each needs its own failing reproduction, correction if confirmed, green affected checks and local commit before it can be closed. The private host-game log under the 8.92 playtest build is available as evidence; preserve it.
 
+### [x] 8.100 Host without entering this machine's address
+
+Authorized 2026-09-26 after 8.99. Outcome: the ordinary lobby's HOST control does not parse or bind the address a player would give a joiner. The field is explicitly labelled `JOIN ADDRESS`; HOST derives its bind locally, using loopback for an unkeyed local-only session and the IPv4 wildcard for a keyed invited session, while its own player client still dials loopback. JOIN continues to validate and dial the entered numeric address and port.
+
+Acceptance: record a failing-then-passing ordinary-lobby journey in which an intentionally unusable join address cannot prevent HOST; prove an unkeyed host remains loopback-only, a keyed host selects the wildcard bind, the hosting player reaches its ordinary claim-seat surface through loopback, and JOIN still rejects or dials the typed address as before. Update the private-online record and visible label. Run the focused lobby Edit/Play Mode contract at T2.
+
+Non-goals: discovering or displaying the machine's LAN/public address, router configuration, NAT traversal, Relay, DNS/hostnames, changing the standalone command-line host contract, weakening the session-key requirement for a remotely reachable listener, protocol/schema/content identity, or packaging. Snorri 8.93e's in-progress work remains preserved and resumes after the separately requested 8.101 package.
+
+Completed 2026-09-26. HOST now validates only the port, selects loopback without a key or the IPv4 wildcard with one, and brings its own owner-scoped client in through loopback. The same field is visibly `JOIN ADDRESS`, and JOIN still parses it normally. Protocol, schema and content identity are unchanged.
+
+Historical evidence: [8.100 completion index](../Archive/Phase-Handoffs/PHASE_8.md#milestone-8100-automatic-lobby-host-bind-evidence).
+
 ### [x] 8.99 Restore an away player through the real lobby
 
 Authorized 2026-09-26 after the power-loss and alt-tab reports were separated. Outcome: a player whose process or connection dies can relaunch the ordinary seatless lobby client and reclaim the seat the host kept `AWAY`, including after the match has started. The locally retained owner capability selects only that player's reserved seat; no session key, open-seat claim, other local capability or host guess transfers ownership.

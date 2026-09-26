@@ -48,6 +48,18 @@ namespace GuardsDigital.Network
                 ? "127.0.0.1"
                 : Address.ToString();
 
+        /// <summary>
+        /// Milestone 8.100. The interactive HOST path has no reason to ask a player which local
+        /// interface should accept the invitation. A keyed session binds every local IPv4
+        /// interface so LAN/forwarded traffic can reach it; an unkeyed plaintext session stays on
+        /// loopback. Standalone command-line hosting keeps its explicit bind contract.
+        /// </summary>
+        public static bool TryCreateAutomaticHostBind(
+            int port, bool hasSessionKey, out PrivateSessionEndpoint endpoint, out string error) =>
+            TryCreate(
+                hasSessionKey ? IPAddress.Any.ToString() : IPAddress.Loopback.ToString(),
+                port, out endpoint, out error);
+
         public static bool TryParseAddress(string text, out PrivateSessionEndpoint endpoint, out string error)
         {
             endpoint = null;
